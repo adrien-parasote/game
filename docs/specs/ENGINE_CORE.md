@@ -46,6 +46,11 @@ Sprites are often taller than a single tile (e.g. 32x48 images on 32x32 tiles).
 - **Visual Anchoring**: Rendered images are offset such that the `bottomright` of the image aligns exactly with the `bottomright` of the physical hitbox. 
 - **Occlusion Check**: To trigger foreground tile overlap (alpha blending), the system uses the full expanded visual rect, not just the physical hitbox.
 
+### F. Overlay Configuration
+The engine supports configurable overlay elements for atmospheric or UI occlusion rendering.
+- **Logic**: Defined via the `overlay` -> `occlusion_alpha` parameter in `settings.json` (accessible via `Settings.OCCLUSION_ALPHA`).
+- **Purpose**: Provides a dynamic alpha value layer to allow tuning future day/night cycles or UI semi-transparency without hardcoding.
+
 ## 3. Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |
