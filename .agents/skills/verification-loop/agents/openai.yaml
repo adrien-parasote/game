@@ -1,0 +1,7 @@
+interface:
+  display_name: "Verification Loop"
+  short_description: "Build, typecheck, lint, test, security verification"
+  brand_color: "#10B981"
+  default_prompt: "Run verification: build, typecheck, lint, test, security, spec conformance"
+policy:
+  allow_implicit_invocation: true

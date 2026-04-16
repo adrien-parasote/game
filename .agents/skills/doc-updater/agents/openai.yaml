@@ -1,0 +1,7 @@
+interface:
+  display_name: "Doc Updater"
+  short_description: "Documentation sync and spec/code drift detection"
+  brand_color: "#3B82F6"
+  default_prompt: "Detect spec/code drift and update documentation"
+policy:
+  allow_implicit_invocation: true

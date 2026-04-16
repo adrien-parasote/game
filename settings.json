@@ -1,0 +1,37 @@
+{
+  "display": {
+    "width": 1280,
+    "height": 720,
+    "fps": 60,
+    "title": "RPG Tile Engine - Customizable",
+    "fullscreen": true
+  },
+  "map": {
+    "tile_size": 32,
+    "map_size": 32,
+    "initial_hour": 20
+  },
+  "colors": {
+    "background": "#1a1a1a",
+    "player": "#00DDFF",
+    "player_border": "white",
+    "tile_floor": "gray15",
+    "tile_border": "gray20",
+    "tile_wall": "red"
+  },
+  "player": {
+    "speed": 150,
+    "size": 32
+  },
+  "controls": {
+    "move_up": "K_UP",
+    "move_down": "K_DOWN",
+    "move_left": "K_LEFT",
+    "move_right": "K_RIGHT",
+    "quit_key": "K_ESCAPE",
+    "toggle_fullscreen_key": "K_p"
+  },
+  "debug": {
+    "log_level": "INFO"
+  }
+}

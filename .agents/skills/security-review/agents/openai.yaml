@@ -1,0 +1,7 @@
+interface:
+  display_name: "Security Review"
+  short_description: "OWASP Top 10 checklist, secrets detection, and security patterns"
+  brand_color: "#EF4444"
+  default_prompt: "Run security checklist: secrets, input validation, injection prevention"
+policy:
+  allow_implicit_invocation: true

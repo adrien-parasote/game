@@ -1,0 +1,7 @@
+interface:
+  display_name: "System Architect"
+  short_description: "Architecture decisions, trade-off analysis, and ADR documentation"
+  brand_color: "#6366F1"
+  default_prompt: "Evaluate architecture: options, trade-offs, ADR documentation"
+policy:
+  allow_implicit_invocation: true
