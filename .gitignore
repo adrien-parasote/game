@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 .pytest_cache/
 .coverage
+*.cpython*
 
 # Environnement virtuel (si tu en crées un)
 venv/
@@ -17,3 +18,6 @@ venv/
 
 # IDE (VS Code / Cursor)
 .vscode/
+
+#Logs
+*.log
