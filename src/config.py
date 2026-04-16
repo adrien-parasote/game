@@ -30,7 +30,8 @@ class Settings:
             "quit_key": "K_ESCAPE", 
             "toggle_fullscreen_key": "K_F11"
         },
-        "debug": {"log_level": "INFO"}
+        "debug": {"log_level": "INFO"},
+        "overlay": {"occlusion_alpha": 102}
     }
 
     @classmethod
@@ -89,6 +90,9 @@ class Settings:
         # Logging
         level_name = data.get("debug", {}).get("log_level", "INFO").upper()
         cls.LOG_LEVEL = getattr(logging, level_name, logging.INFO)
+
+        # Overlay
+        cls.OCCLUSION_ALPHA = data.get("overlay", {}).get("occlusion_alpha", 102)
 
 # Initialize on import
 Settings.load()

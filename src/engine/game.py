@@ -112,9 +112,9 @@ class Game:
                 dest_rect = pygame.Rect(screen_pos[0], screen_pos[1], self.tile_size, self.tile_size)
                 
                 if player_screen_rect.colliderect(dest_rect):
-                    # Occlusion check: 40% opacity (102/255)
+                    # Occlusion check: use dynamic alpha from settings
                     temp_surface = surface.copy()
-                    temp_surface.set_alpha(102)
+                    temp_surface.set_alpha(Settings.OCCLUSION_ALPHA)
                     self.screen.blit(temp_surface, screen_pos)
                 else:
                     self.screen.blit(surface, screen_pos)
