@@ -21,7 +21,8 @@ venv/
 .vscode/
 
 #Logs
-*.Logs
+logs/
+*.log
 
 #tiled
 *.tiled-session
