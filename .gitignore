@@ -1,0 +1,19 @@
+# Python : Fichiers compilés et caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+
+# Environnement virtuel (si tu en crées un)
+venv/
+.env
+
+# Google Antigravity / Agents
+.agents/
+
+# Système Mac
+.DS_Store
+
+# IDE (VS Code / Cursor)
+.vscode/
