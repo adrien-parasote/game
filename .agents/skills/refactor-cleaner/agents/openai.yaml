@@ -1,7 +1,0 @@
-interface:
-  display_name: "Refactor & Cleanup"
-  short_description: "Dead code detection and removal with risk categorization"
-  brand_color: "#F59E0B"
-  default_prompt: "Detect and remove dead code: unused deps, exports, files"
-policy:
-  allow_implicit_invocation: true

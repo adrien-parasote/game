@@ -1,7 +1,0 @@
-interface:
-  display_name: "Implementation Planner"
-  short_description: "Break complex features into ordered, testable phases"
-  brand_color: "#8B5CF6"
-  default_prompt: "Plan implementation: phases, dependencies, risks, tests"
-policy:
-  allow_implicit_invocation: true
