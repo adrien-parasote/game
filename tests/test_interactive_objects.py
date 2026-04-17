@@ -166,12 +166,42 @@ def test_door_dynamic_collision(test_game):
     assert test_game._is_collidable(116, 116) is False
 
 def test_variable_size_alignment(test_game):
-    """Verify that a large object (32x64) aligns bottom on the Tiled rectangle."""
-    # Tiled rect at (100, 100) size (32, 64)
-    # The rect.bottom should be at 100 + 64 = 164
-    # The rect.midbottom.x should be at 100 + 16 = 116
-    obj = InteractiveEntity((100, 100), [], "decor", "tree.png", width=32, height=64)
+    """Verify that a large sprite (64x64) aligns bottom on a Tiled rectangle (64x32)."""
+    # Tiled rect at (100, 100) size (64, 32)
+    # Sprite size is (64, 64)
+    # The rect.bottom should be at 100 + 32 = 132
+    # The rect.midbottom.x should be at 100 + 32 = 132
+    # The rect.top should be at 132 - 64 = 68
+    obj = InteractiveEntity((100, 100), [], "door", "door.png", 
+                            width=64, height=64, 
+                            tiled_width=64, tiled_height=32)
     
-    assert obj.rect.bottom == 164
-    assert obj.rect.centerx == 116
-    assert obj.rect.top == 100 # 164 - 64
+    assert obj.rect.bottom == 132
+    assert obj.rect.centerx == 132
+    assert obj.rect.top == 68
+
+def test_door_interaction_from_above_when_open(test_game):
+    """Verify that an open door can be closed from the 'other' side (North)."""
+    # Door at (100, 100), facing 'up' (expects south interaction usually)
+    door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", direction="up")
+    
+    # 1. Open it first from South
+    door.is_open = True
+    door.is_animating = False
+    
+    # 2. Player is at North of the door (116, 80), facing DOWN
+    # Door footprint center is (116, 116)
+    test_game.player.pos = pygame.math.Vector2(116, 80)
+    test_game.player.current_state = 'down'
+    test_game._interaction_cooldown = 0
+    
+    class MockKeys(dict):
+        def __getitem__(self, key): return self.get(key, False)
+    keys = MockKeys({Settings.INTERACT_KEY: True})
+    
+    with patch('pygame.key.get_pressed', return_value=keys):
+        test_game._handle_interactions()
+        
+    # Door should start animating to close
+    assert door.is_animating is True
+    assert door.is_closing is True

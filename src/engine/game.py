@@ -107,8 +107,10 @@ class Game:
                     depth=int(props.get("depth", 1)),
                     start_row=int(props.get("start_frame", 0)),
                     end_row=int(props.get("end_frame", 3)),
-                    width=ent.get("width", 32),
-                    height=ent.get("height", 32),
+                    width=int(props.get("width", ent.get("width", 32))),
+                    height=int(props.get("height", ent.get("height", 32))),
+                    tiled_width=ent.get("width", 32),
+                    tiled_height=ent.get("height", 32),
                     obstacles_group=self.obstacles_group
                 )
 
@@ -227,6 +229,17 @@ class Game:
                             valid_orientation = True
                         elif o_dir == 'right' and p_state == 'right' and self.player.pos.x < obj.pos.x:
                             valid_orientation = True
+                        
+                        # Relaxation: Open doors can be closed from the other side
+                        if obj.sub_type == 'door' and getattr(obj, "is_open", False):
+                            if o_dir == 'up' and p_state == 'down' and self.player.pos.y < obj.pos.y:
+                                valid_orientation = True
+                            elif o_dir == 'down' and p_state == 'up' and self.player.pos.y > obj.pos.y:
+                                valid_orientation = True
+                            elif o_dir == 'left' and p_state == 'right' and self.player.pos.x < obj.pos.x:
+                                valid_orientation = True
+                            elif o_dir == 'right' and p_state == 'left' and self.player.pos.x > obj.pos.x:
+                                valid_orientation = True
                             
                         if valid_orientation:
                             obj.interact(self.player)

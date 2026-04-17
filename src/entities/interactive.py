@@ -22,8 +22,13 @@ class InteractiveEntity(BaseEntity):
     def __init__(self, pos: tuple, groups: list[pygame.sprite.Group], 
                  sub_type: str, sprite_sheet: str, direction: str = 'down', 
                  depth: int = 1, start_row: int = 0, end_row: int = 3,
-                 width: int = 32, height: int = 32, obstacles_group: pygame.sprite.Group = None):
-        super().__init__((pos[0] + width // 2, pos[1] + height // 2), groups)
+                 width: int = 32, height: int = 32, obstacles_group: pygame.sprite.Group = None,
+                 tiled_width: int = None, tiled_height: int = None):
+        # Default tiled dimensions to sprite dimensions if not provided
+        t_w = tiled_width if tiled_width is not None else width
+        t_h = tiled_height if tiled_height is not None else height
+        
+        super().__init__((pos[0] + t_w // 2, pos[1] + t_h // 2), groups)
         self.sub_type = sub_type
         self.direction_str = direction.lower()
         self.depth = depth
@@ -31,10 +36,17 @@ class InteractiveEntity(BaseEntity):
         self.end_row = end_row
         self.obstacles_group = obstacles_group
         
-        # Load spritesheet using pixel dimensions
+        # Sprite dimensions (for slicing)
+        self.sprite_width = width
+        self.sprite_height = height
+        # Logical dimensions (for alignment)
+        self.tiled_width = t_w
+        self.tiled_height = t_h
+        
+        # Load spritesheet using sprite pixel dimensions
         sheet_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "sprites", sprite_sheet)
         sheet = SpriteSheet(sheet_path)
-        self.frames = sheet.load_grid_by_size(width, height)
+        self.frames = sheet.load_grid_by_size(self.sprite_width, self.sprite_height)
         
         # Select column
         self.col_index = self.DIRECTION_MAP.get(self.direction_str, 0)
@@ -48,9 +60,8 @@ class InteractiveEntity(BaseEntity):
         
         self.image = self._get_frame(int(self.frame_index))
         # Visual Alignment: Center-X on Tiled rect, Bottom on Tiled rect
-        # pos here is (X, Y) of top-left corner
         self.rect = self.image.get_rect()
-        self.rect.midbottom = (pos[0] + width // 2, pos[1] + height)
+        self.rect.midbottom = (pos[0] + self.tiled_width // 2, pos[1] + self.tiled_height)
         # Interaction Position: center of the bottom 32x32 footprint
         self.pos = pygame.math.Vector2(self.rect.centerx, self.rect.bottom - 16)
         
