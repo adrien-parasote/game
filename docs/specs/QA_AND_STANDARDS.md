@@ -23,7 +23,8 @@ This document defines the quality gates and standards for the RPG Tile Engine.
 ## 3. Portability & Maintenance
 
 - **Config**: Always use `Settings` class; never access `settings.json` directly from logic.
-- **Dependencies**: Keep `requirements.txt` updated with pinned versions.
+- **World Status**: Use `WorldTime` snapshots (dataclasses) for passing time state between systems to ensure immutability.
+- **Physics Safety**: Always apply `MAX_DT_CLAMP` (standard: 10.0) to `dt` in all `update()` methods to prevent physics instability after long pauses (e.g. debugger).
 - **Paths**: Use `os.path` for cross-platform compatibility (Windows/Linux/Mac).
 - **Automation**: Standard developer workflows handled via `Makefile` or similar.
 

@@ -7,18 +7,19 @@ To populate the world with static and dynamic NPCs using a decoupled architectur
 
 ## 2. Component Changes
 
-### [NEW] `src/entities/npc.py`
-Creates the `NPC` class inheriting from `BaseEntity`.
-- Uses `SpriteSheet` identical to the Player.
-- Includes a simple state machine: `idle`, `wander`, `interact`.
-- Uses a pathing algorithm restricted to a specified radius from spawn.
+### [IMPLEMENTED] `src/entities/npc.py`
+The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
+- **Visuals**: Uses `SpriteSheet` for 4x4 grid animations.
+- **States**: `idle`, `wander`, `interact`.
+- **Wander Radius**: AI logic enforces a distance check (in tiles) from the original `spawn_pos`.
 
-### [MODIFY] `src/entities/base.py`
-- Add an `interact()` method stub or event hook that can be overridden by subclasses (Player triggering NPC, NPC responding).
+### [IMPLEMENTED] `src/entities/base.py`
+- Provided `interact(initiator)` method stub for subclass overrides.
+- Shared movement and boundary logic.
 
-### [MODIFY] `src/engine/game.py`
-- Add an `npcs` group.
-- Handle interaction input (e.g. `SPACE` key) projecting from Player's `target_pos` or `direction` to find a collidable NPC.
+### [IMPLEMENTED] `src/engine/game.py`
+- Manages `npcs` sprite group.
+- Implements spatial interaction logic via `_handle_interactions`.
 
 ---
 
@@ -28,11 +29,16 @@ Creates the `NPC` class inheriting from `BaseEntity`.
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
-| NPCs check collisions with each other | NPCs check `CollisionMap` or rely on Player checking | Optimizes CPU; $O(N^2)$ collision checks drop frame rate |
+| NPCs check collisions with each other | NPCs check `CollisionMap` only | Optimizes CPU; $O(N^2)$ checks are avoided |
 | Hardcode NPC dialogue in `npc.py` | Use external JSON/YAML | Allows localization and scale |
 | Continuous pathfinding | Intermittent grid step randomizer | Reduces CPU overhead per NPC |
-| Move NPCs when off-camera | Freeze distant NPCs based on Culling bounds | Prevents simulation of 500 NPCs draining CPU |
+| Move NPCs when off-camera | Freeze distant NPCs (CPU Freeze) | Enlarged viewport (128px) determines `is_visible` |
 | `Player` handles dialogue UI | `Game` or `UI_Manager` handles dialogue | Decouples rendering overlay from input entity |
+
+### 3.2. NPC Animation & Facing
+NPCs use a standard 4x4 sprite sheet layout:
+- **Rows**: 0:Down, 1:Left, 2:Right, 3:Up (offsets: 0, 4, 8, 12).
+- **Facing**: NPCs automatically rotate to face the player during interaction by calculating the position delta.
 
 ### 3.2. Test Case Specifications
 

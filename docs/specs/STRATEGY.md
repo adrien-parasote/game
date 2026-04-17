@@ -23,25 +23,29 @@ We are building a modular, scalable 2D tile-based RPG engine in Python. The core
 | **Optimization**| Frustum Culling | Avoid rendering off-screen tiles/sprites to support large worlds. |
 | **Camera** | Visual Clamping | Restrict viewport to map pixels; center view if map < screen. |
 | **Movement** | Grid-Based (Atomic) | Entities move tile-by-tile; cardinal directions only. |
+| **Time** | World Clock | Real-to-game time mapping; seasonal cycles & dynamic lighting. |
 
 ## 5. Tech Stack
 - **Python 3**: High productivity and readability.
 - **Pygame-CE**: Stable, high-performance 2D rendering backend.
+- **JSON**: Standard for configuration and map data exchange.
 
 ## 6. MVP Roadmap & Feature Breakdown
 
-### Phase 1: Engine Foundation
-- Main loop, Input handling, YAML/JSON Settings.
+### Phase 1: Engine Foundation [COMPLETE]
+- Main loop, Input handling, JSON Settings.
 - Rotating log directory (`logs/`).
 
-### Phase 2: World & Entities
+### Phase 2: World & Entities [COMPLETE]
 - Orthogonal tile rendering with Frustum Culling.
 - Player movement with **World Boundaries**.
 - Camera following player with **Map Edge Clamping**.
+- **Time & Seasonal System**: Day/night cycles and seasonal labels.
 
-### Phase 3: Polish & Standards
-- Dynamic FPS display.
+### Phase 3: Polish & Advanced Logic [IN PROGRESS]
+- Dynamic FPS display (implemented).
 - High-coverage test suite (Target: 80%+).
+- NPC System with basic AI and interactions.
 
 ## 7. What we are NOT building
 - No final game assets (tileset/sprites).

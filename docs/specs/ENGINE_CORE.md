@@ -51,6 +51,24 @@ The engine supports configurable overlay elements for atmospheric or UI occlusio
 - **Logic**: Defined via the `overlay` -> `occlusion_alpha` parameter in `settings.json` (accessible via `Settings.OCCLUSION_ALPHA`).
 - **Purpose**: Provides a dynamic alpha value layer to allow tuning future day/night cycles or UI semi-transparency without hardcoding.
 
+### G. Time & Seasonal System
+The engine maintains an internal world clock to drive environmental changes and simulation.
+- **Timing**: 1 real second = 1 game minute; 1 real minute = 1 game hour.
+- **Cycles**: 24-hour days, 30-day seasons, and 4-season years (120 days total).
+- **Lighting**: A sinusoidal brightness factor calculated as `0.5 + 0.5 * sin(2π * time - π/2)`.
+- **Night Overlay**: A full-screen black overlay with alpha calculated from the inverse of brightness (max 180 alpha at midnight).
+
+### H. CPU Freeze Optimization (Entity Visibility)
+To optimize performance in large worlds, entity updates are intelligently skipped.
+- **Mechanism**: The engine calculates an enlarged viewport (screen + 128px margin). 
+- **Behavior**: If an entity's rect is outside this enlarged viewport, its `is_visible` flag is set to `False`, and its `update()` logic (AI, movement, animation) is bypassed.
+
+### I. Spatial Interaction Logic
+Entities can interact with their immediate surroundings based on orientation.
+- **Logic**: When an interaction key (SPACE) is pressed, the system projects a 32x32 `target_rect` exactly one tile ahead of the player based on their current facing direction.
+- **Cooldown**: A 0.5s interaction cooldown prevents input spamming.
+- **Response**: The first entity in the `npcs` group colliding with the `target_rect` receives an `interact()` call.
+
 ## 3. Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |
