@@ -4,6 +4,7 @@ import logging
 import logging.handlers
 import os
 from src.entities.player import Player
+from src.entities.interactive import InteractiveEntity
 from src.entities.groups import CameraGroup
 from src.map.manager import MapManager
 from src.map.layout import OrthogonalLayout
@@ -34,6 +35,7 @@ class Game:
         # Setup Groups
         self.visible_sprites = CameraGroup()
         self.npcs = pygame.sprite.Group()
+        self.interactives = pygame.sprite.Group()
         
         # Setup Map
         from src.map.tmj_parser import TmjParser
@@ -80,11 +82,45 @@ class Game:
             
         self.player = Player(spawn_pos, self.visible_sprites, speed=Settings.PLAYER_SPEED)
         self.player.collision_func = self._is_collidable
+        
+        # Spawn Entities from Map
+        self._spawn_entities(map_result.get("entities", []))
+
+    def _spawn_entities(self, entities: list):
+        """Instantiate NPCs and Interactive objects from map data."""
+        half_tile = self.tile_size // 2
+        for ent in entities:
+            # Check native type OR type in custom properties (common Tiled pattern)
+            props = ent.get("properties", {})
+            e_type = ent.get("type") or props.get("type")
+            
+            e_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
+            
+            if e_type == "interactive_object":
+                InteractiveEntity(
+                    pos=e_pos,
+                    groups=[self.visible_sprites, self.interactives],
+                    sub_type=props.get("sub_type", "unknown"),
+                    sprite_sheet=props.get("sprite_sheet", ""),
+                    direction=props.get("direction", "down"),
+                    depth=int(props.get("depth", 1)),
+                    start_row=int(props.get("start_frame", 0)),
+                    end_row=int(props.get("end_frame", 3))
+                )
 
     def _is_collidable(self, px_center: float, py_center: float) -> bool:
         """Collision checking adapter for Entity target position."""
+        # Check Map Tiles
         wx, wy = self.layout.to_world(px_center, py_center)
-        return self.map_manager.is_collidable(int(wx), int(wy))
+        if self.map_manager.is_collidable(int(wx), int(wy)):
+            return True
+            
+        # Check Interactive Objects
+        for obj in self.interactives:
+            if obj.rect.collidepoint(px_center, py_center):
+                return True
+                
+        return False
 
     def _draw_background(self):
         """Draw tiles with depth <= player depth (behind player)"""
@@ -136,20 +172,26 @@ class Game:
         self.screen.blit(text_surf, (10, 10))
 
     def _handle_interactions(self):
-        """Handle spatial interaction between player and world."""
+        """Handle spatial interaction between player and world objects/NPCs."""
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_SPACE] and not self.player.is_moving:
+        
+        # Check interaction input (SPACE for NPCs, E for Objects/NPCs)
+        interact_pressed = keys[pygame.K_SPACE] or keys[Settings.INTERACT_KEY]
+        
+        if interact_pressed and not self.player.is_moving:
             # Prevent interaction spam
             if hasattr(self, '_interaction_cooldown') and self._interaction_cooldown > 0:
                 return
             self._interaction_cooldown = 0.5
             
+            # --- 1. NPC Interaction (Projection-based) ---
             # Predict interaction cell based on facing direction
             dir_vector = pygame.math.Vector2(0, 0)
-            if self.player.current_state == 'down': dir_vector.y = 1
-            elif self.player.current_state == 'up': dir_vector.y = -1
-            elif self.player.current_state == 'left': dir_vector.x = -1
-            elif self.player.current_state == 'right': dir_vector.x = 1
+            p_state = self.player.current_state
+            if p_state == 'down': dir_vector.y = 1
+            elif p_state == 'up': dir_vector.y = -1
+            elif p_state == 'left': dir_vector.x = -1
+            elif p_state == 'right': dir_vector.x = 1
             
             target_pos = self.player.pos + dir_vector * self.tile_size
             target_rect = pygame.Rect(target_pos.x - 16, target_pos.y - 16, 32, 32)
@@ -157,7 +199,34 @@ class Game:
             for npc in self.npcs:
                 if npc.rect.colliderect(target_rect):
                     npc.interact(self.player)
-                    break
+                    return # Only one interaction at a time
+
+            # --- 2. Interactive Objects (Proximity & Orientation based) ---
+            # Only triggered by E as per spec
+            if keys[Settings.INTERACT_KEY]:
+                for obj in self.interactives:
+                    # Proximity Check (< 45px)
+                    dist = self.player.pos.distance_to(obj.pos)
+                    if dist < 45.0:
+                        # Orientation Check: Player must face the correct side
+                        # Object 'up' -> Player must be south (y > obj_y) and facing 'up'
+                        # Object 'down' -> Player must be north (y < obj_y) and facing 'down'
+                        # etc.
+                        valid_orientation = False
+                        o_dir = getattr(obj, "direction_str", "down")
+                        
+                        if o_dir == 'up' and p_state == 'up' and self.player.pos.y > obj.pos.y:
+                            valid_orientation = True
+                        elif o_dir == 'down' and p_state == 'down' and self.player.pos.y < obj.pos.y:
+                            valid_orientation = True
+                        elif o_dir == 'left' and p_state == 'left' and self.player.pos.x > obj.pos.x:
+                            valid_orientation = True
+                        elif o_dir == 'right' and p_state == 'right' and self.player.pos.x < obj.pos.x:
+                            valid_orientation = True
+                            
+                        if valid_orientation:
+                            obj.interact(self.player)
+                            return
 
     def run(self):
         """Main game loop optimized for 60 FPS."""
@@ -199,6 +268,10 @@ class Game:
             for npc in self.npcs:
                 npc.is_visible = viewport_world.colliderect(npc.rect)
                 npc.update(dt)
+                
+            for obj in self.interactives:
+                # Reuse visibility check logic if desired, or just update
+                obj.update(dt)
 
             # Draw
             self.screen.fill(Settings.COLOR_BG)

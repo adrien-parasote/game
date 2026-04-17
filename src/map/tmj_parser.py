@@ -84,8 +84,8 @@ class TmjParser:
                 "properties": props
             }
             
-            # Check for player spawn property
-            if props.get("spawn_player") is True:
+            # Check for player spawn property or class
+            if props.get("spawn_player") is True or obj_info["type"] == "player":
                 map_result["spawn_player"] = obj_info
             
             # Add to general entity list if it's not just a metadata object
