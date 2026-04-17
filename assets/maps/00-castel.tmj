@@ -188,6 +188,11 @@
                                  "value":48
                                 }, 
                                 {
+                                 "name":"passable",
+                                 "type":"bool",
+                                 "value":false
+                                }, 
+                                {
                                  "name":"sprite_sheet",
                                  "type":"string",
                                  "value":"01-iron-chests.png"
@@ -213,6 +218,64 @@
                          "width":32,
                          "x":480,
                          "y":96
+                        }, 
+                        {
+                         "height":32,
+                         "id":6,
+                         "name":"",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"depth",
+                                 "type":"int",
+                                 "value":1
+                                }, 
+                                {
+                                 "name":"direction",
+                                 "type":"string",
+                                 "value":"up"
+                                }, 
+                                {
+                                 "name":"end_frame",
+                                 "type":"int",
+                                 "value":3
+                                }, 
+                                {
+                                 "name":"height",
+                                 "type":"int",
+                                 "value":62
+                                }, 
+                                {
+                                 "name":"passable",
+                                 "type":"bool",
+                                 "value":true
+                                }, 
+                                {
+                                 "name":"sprite_sheet",
+                                 "type":"string",
+                                 "value":"00-doors.png"
+                                }, 
+                                {
+                                 "name":"start_frame",
+                                 "type":"int",
+                                 "value":0
+                                }, 
+                                {
+                                 "name":"sub_type",
+                                 "type":"string",
+                                 "value":"door"
+                                }, 
+                                {
+                                 "name":"width",
+                                 "type":"int",
+                                 "value":64
+                                }],
+                         "rotation":0,
+                         "type":"interactive_object",
+                         "visible":true,
+                         "width":64,
+                         "x":448,
+                         "y":768
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -228,7 +291,7 @@
          "y":0
         }],
  "nextlayerid":8,
- "nextobjectid":6,
+ "nextobjectid":8,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.1",

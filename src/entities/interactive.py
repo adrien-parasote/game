@@ -79,10 +79,12 @@ class InteractiveEntity(BaseEntity):
         self.pos = pygame.math.Vector2(self.rect.centerx, self.rect.bottom - 16)
         
         # Initial Collision State
-        # If the object is not explicitly passable, add it to obstacles
+        # - Doors are ALWAYS solid at spawn (they start in the closed state)
+        # - Other objects: only solid if not passable
         self.is_passable = is_passable
-        if not self.is_passable and self.obstacles_group is not None:
-            self.obstacles_group.add(self)
+        if self.obstacles_group is not None:
+            if self.sub_type == 'door' or not self.is_passable:
+                self.obstacles_group.add(self)
         
         logging.info(f"Spawned InteractiveEntity '{sub_type}' ({width}x{height}) at {pos} facing {direction}")
 
@@ -119,7 +121,7 @@ class InteractiveEntity(BaseEntity):
                     self.is_animating = False
                     self.is_open = False
                     self.is_closing = False
-                    # Re-enable collision when closed
+                    # Re-enable collision when door is closed (always blocks regardless of passable)
                     if self.sub_type == 'door' and self.obstacles_group:
                         self.obstacles_group.add(self)
             else:
@@ -128,8 +130,8 @@ class InteractiveEntity(BaseEntity):
                     self.frame_index = float(self.end_row)
                     self.is_animating = False
                     self.is_open = True
-                    # Disable collision when fully open
-                    if self.sub_type == 'door' and self.obstacles_group:
+                    # Remove from obstacles when fully open, ONLY if the door is passable
+                    if self.sub_type == 'door' and self.is_passable and self.obstacles_group:
                         self.obstacles_group.remove(self)
             
             self.image = self._get_frame(int(self.frame_index))

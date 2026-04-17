@@ -48,13 +48,21 @@ Valid ONLY if both conditions are met:
 If `sub_type == 'door'` and `is_open == True`, the door can be closed from the "opposite side" (e.g., closing a door from the north while facing `down`). This ensures players can easily close doors behind them.
 
 ### Collision & Barriers
-Interactive objects can be solids or triggers based on their properties.
-- **Passable Property**: If an object has `passable: true`, it is never added to the `obstacles_group`.
-- **Solid Logic**: By default (`passable: false`), all interactive objects are added to the `obstacles_group` upon spawning and block player movement.
-- **Doors (sub_type: door)**:
-  - Doors ignore their initial `passable` setting for dynamic behavior.
-  - Dynamically added to `obstacles_group` when in the `closed` state (frame `start_frame`).
-  - Removed from `obstacles_group` when in the `open` state (frame `end_frame`).
+
+The `passable` property controls **open-state traversability**, not initial collision state.
+
+| Scenario | `passable` | Spawn (closed) | When Open |
+|----------|-----------|----------------|-----------|
+| Standard chest | `false` | Solid (in obstacles) | Solid |
+| Traversable door | `true` | Solid (in obstacles) | Traversable (removed from obstacles) |
+| Decorative door | `false` | Solid (in obstacles) | Still solid |
+| Signpost | `true` | Traversable (never in obstacles) | Traversable |
+
+**Rules:**
+- **Doors (`sub_type: door`)**: Always added to `obstacles_group` at spawn, regardless of `passable`. This ensures all doors start closed and blocking.
+  - On `open` (animation reaches `end_frame`): removed from `obstacles_group` **only if** `passable: true`.
+  - On `close` (animation returns to `start_frame`): **always** re-added to `obstacles_group`.
+- **Non-door objects**: Added to `obstacles_group` at spawn **only if** `passable: false`.
 
 ### Rendering & Alignment
 - **Y-Sort**: Sprites are sorted by their `rect.bottom`.
@@ -87,7 +95,7 @@ Interactive objects can be solids or triggers based on their properties.
 | Interaction Spam| Timer check | Ignore input | cooldown of 0.5s |
 
 ## 6. Deep Links
-- **Interactive Spawning**: [game.py - _spawn_entities](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py)
-- **Base Interaction**: [base.py - interact](file:///Users/adrien.parasote/Documents/perso/game/src/entities/base.py#L73)
-- **Sprite Slicing**: [spritesheet.py - load_grid_by_size](file:///Users/adrien.parasote/Documents/perso/game/src/graphics/spritesheet.py)
-- **Collision Check**: [game.py - _is_collidable](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py)
+- **Interactive Spawning**: [game.py - _spawn_entities](src/engine/game.py)
+- **Base Interaction**: [base.py - interact](src/entities/base.py#L73)
+- **Sprite Slicing**: [spritesheet.py - load_grid_by_size](src/graphics/spritesheet.py)
+- **Collision Check**: [game.py - _is_collidable](src/engine/game.py)

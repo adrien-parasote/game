@@ -123,24 +123,22 @@ def test_interactive_orientation_opposite_failure(test_game):
     assert obj.is_animating is False
 
 def test_chest_remains_solid_when_open(test_game):
-    """Verify that a chest remains in obstacles_group even when open (if not passable)."""
+    """Verify that a chest (passable=False) stays in obstacles even when open."""
     obstacles = pygame.sprite.Group()
-    # Chest at (100, 100), not passable
     obj = InteractiveEntity((100, 100), [], "chest", "chest.png", 
                             obstacles_group=obstacles, is_passable=False)
     
     assert obj in obstacles
     
-    # Open the chest
-    obj.interact(None) # Trigger animation
-    obj.update(1.0) # Advance animation to end
+    obj.interact(None)
+    obj.update(1.0)
     
     assert obj.is_open is True
-    # Should STILL be in obstacles because it's not a door (or because it's not passable)
+    # Non-passable non-door object stays in obstacles
     assert obj in obstacles
 
 def test_explicitly_passable_object(test_game):
-    """Verify that an object marked as passable is NOT added to obstacles."""
+    """Verify that a non-door object marked passable is NOT added to obstacles."""
     obstacles = pygame.sprite.Group()
     obj = InteractiveEntity((100, 100), [], "sign", "sign.png", 
                             obstacles_group=obstacles, is_passable=True)
@@ -181,22 +179,41 @@ def test_spawning_from_properties(test_game):
     obj = test_game.interactives.sprites()[0]
     assert obj.sub_type == "chest"
 def test_door_dynamic_collision(test_game):
-    """Verify that a door blocks movement when closed and allows when open."""
+    """Verify that a door (passable=True) blocks when closed, allows when open."""
     test_game.obstacles_group.empty()
-    door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", direction="up", obstacles_group=test_game.obstacles_group, is_passable=False)
+    # Door with passable=True: blocks when closed, traversable when opened
+    door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", 
+                             direction="up", obstacles_group=test_game.obstacles_group, is_passable=True)
     
-    # Initially closed, should be in obstacles group
+    # Initially closed -> always in obstacles regardless of passable
     assert door in test_game.obstacles_group
-    assert test_game._is_collidable(116, 116) is True # Center of 100,100 -> 116,116
+    assert test_game._is_collidable(116, 116) is True
     
     # Open the door
     door.interact(test_game.player)
-    # Fast forward animation
-    door.update(1.0) # 10.0 * 1.0 = 10, should reach end_frame
+    door.update(1.0)  # 10.0 * 1.0 = 10, reaches end_frame
     
     assert door.is_open is True
+    # passable=True -> removed from obstacles when open
     assert door not in test_game.obstacles_group
     assert test_game._is_collidable(116, 116) is False
+
+def test_door_not_passable_stays_solid_when_open(test_game):
+    """Verify that a door (passable=False) blocks even when open."""
+    test_game.obstacles_group.empty()
+    # Door with passable=False: always solid, never lets player through
+    door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", 
+                             direction="up", obstacles_group=test_game.obstacles_group, is_passable=False)
+    
+    assert door in test_game.obstacles_group
+    
+    # Open the door
+    door.interact(test_game.player)
+    door.update(1.0)
+    
+    assert door.is_open is True
+    # passable=False -> stays in obstacles even when open
+    assert door in test_game.obstacles_group
 
 def test_variable_size_alignment(test_game):
     """Verify that a large sprite (64x62) aligns bottom on a Tiled rectangle (64x32)."""
