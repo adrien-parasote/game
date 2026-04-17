@@ -70,11 +70,13 @@ class Game:
         if spawn_dict:
             # Tiled object coordinates are top-left, we center it accurately by pushing it half a tile
             spawn_pos = (spawn_dict["x"] + half_tile, spawn_dict["y"] + half_tile)
+            logging.info(f"Player spawn point found at {spawn_pos}")
         else:
             spawn_pos = (
                 self.map_size * self.tile_size // 2 + half_tile, 
                 self.map_size * self.tile_size // 2 + half_tile
             )
+            logging.warning(f"No spawn_player found. Defaulting to center: {spawn_pos}")
             
         self.player = Player(spawn_pos, self.visible_sprites, speed=Settings.PLAYER_SPEED)
         self.player.collision_func = self._is_collidable

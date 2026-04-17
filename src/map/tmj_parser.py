@@ -15,9 +15,13 @@ class TmjParser:
     """Parser for Tiled (.tmj) map files and their associated external (.tsx) tilesets."""
     
     def load_map(self, tmj_path: str) -> Dict[str, Any]:
-        """Loads a .tmj file and resolves all local and external dependencies."""
+        """Loads a .tmj file and resolves all local and external dependencies recursively."""
         if not os.path.exists(tmj_path):
-            raise FileNotFoundError(f"Map file not found: {tmj_path}")
+            if not tmj_path.startswith("assets"):
+                # Fallback to absolute if needed but try relative first
+                tmj_path = os.path.join(os.getcwd(), tmj_path)
+            if not os.path.exists(tmj_path):
+                raise FileNotFoundError(f"Map file not found: {tmj_path}")
             
         with open(tmj_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -29,30 +33,63 @@ class TmjParser:
         map_result = {
             "layers": {},
             "tiles": {},
-            "spawn_player": None
+            "spawn_player": None,
+            "entities": [] # All objects from Sprites group
         }
         
         # 1. Parse tilesets
         for ts in data["tilesets"]:
             firstgid = ts["firstgid"]
             source = ts["source"]
+            # Join relative to map file
             tsx_path = os.path.normpath(os.path.join(os.path.dirname(tmj_path), source))
             self._parse_tsx(tsx_path, firstgid, map_result["tiles"])
             
-        # 2. Parse layers
-        for layer in data["layers"]:
-            # If standard layer
-            if layer.get("type") == "tilelayer":
-                self._parse_tilelayer(layer, data["width"], map_result["layers"])
-            # If group (e.g., 'Layers' or 'Sprites')
-            elif layer.get("type") == "group":
-                for sub_layer in layer.get("layers", []):
-                    if sub_layer.get("type") == "tilelayer":
-                        self._parse_tilelayer(sub_layer, data["width"], map_result["layers"])
-                    elif sub_layer.get("type") == "objectgroup" and sub_layer.get("name") == "player":
-                        self._parse_player_spawn(sub_layer, map_result)
+        # 2. Parse layers recursively
+        self._process_layers(data["layers"], data["width"], map_result)
         
         return map_result
+
+    def _process_layers(self, layers: list, map_width: int, map_result: Dict[str, Any]):
+        """Recursively walk through groups and parse layers/objects."""
+        for layer in layers:
+            l_type = layer.get("type")
+            l_name = layer.get("name")
+            
+            if l_type == "tilelayer":
+                self._parse_tilelayer(layer, map_width, map_result["layers"])
+            elif l_type == "group":
+                self._process_layers(layer.get("layers", []), map_width, map_result)
+            elif l_type == "objectgroup":
+                # Collect entities from any objectgroup
+                self._parse_objects(layer, map_result)
+
+    def _parse_objects(self, layer_data: Dict[str, Any], map_result: Dict[str, Any]):
+        """Parse all objects in an objectgroup and identify specific targets like player spawn."""
+        for obj in layer_data.get("objects", []):
+            # Parse custom properties
+            props = {}
+            for p in obj.get("properties", []):
+                props[p.get("name")] = p.get("value")
+            
+            # Map object data for easier consumption
+            obj_info = {
+                "id": obj.get("id"),
+                "name": obj.get("name"),
+                "type": obj.get("type", obj.get("class", "")), # 'class' in 1.10+, 'type' in older
+                "x": obj.get("x", 0),
+                "y": obj.get("y", 0),
+                "width": obj.get("width", 0),
+                "height": obj.get("height", 0),
+                "properties": props
+            }
+            
+            # Check for player spawn property
+            if props.get("spawn_player") is True:
+                map_result["spawn_player"] = obj_info
+            
+            # Add to general entity list if it's not just a metadata object
+            map_result["entities"].append(obj_info)
 
     def _parse_tsx(self, tsx_path: str, firstgid: int, tile_dict: Dict[int, TileMapData]):
         """Parses an external XML tileset (.tsx) and loads images."""

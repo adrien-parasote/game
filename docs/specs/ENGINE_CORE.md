@@ -1,4 +1,4 @@
-# Technical Specification - Engine Core
+# Technical Specification - Engine Core [Implementation]
 
 This document consolidates all rendering, logic, and optimization specifications for the RPG Tile Engine.
 
@@ -68,6 +68,12 @@ Entities can interact with their immediate surroundings based on orientation.
 - **Logic**: When an interaction key (SPACE) is pressed, the system projects a 32x32 `target_rect` exactly one tile ahead of the player based on their current facing direction.
 - **Cooldown**: A 0.5s interaction cooldown prevents input spamming.
 - **Response**: The first entity in the `npcs` group colliding with the `target_rect` receives an `interact()` call.
+### J. Map Data Architecture (TMJ/TSX)
+To maintain modularity and support complex level design, the engine decoupling map parsing from rendering logic.
+- **Recursive Processing**: `TmjParser` traverses the layer tree recursively. It supports arbitrarily nested groups (e.g., `Layers`, `Sprites`, `Metadata`).
+- **Property-Based Spawning**: The player spawn is identified by an object within an `objectgroup` layer containing the custom boolean property `spawn_player: true`.
+- **Entity Extraction**: All objects found in `objectgroup` layers are collected into a unified `entities` list. This enables dynamic population of NPCs and interactive elements.
+- **Coordinates**: Tiled object coordinates (Top-Left) are automatically offset by `TILE_SIZE / 2` in the engine to align with the center-based coordinate system.
 
 ## 3. Anti-Patterns (DO NOT)
 
@@ -105,5 +111,7 @@ Entities can interact with their immediate surroundings based on orientation.
 | Bound Overflow| `pos > 1M` | Log Warn | Clamp to boundary |
 
 ## 6. Deep Links
-- [STRATEGY.md](STRATEGY.md)
-- [QA_AND_STANDARDS.md](QA_AND_STANDARDS.md)
+- **Map Recursive Parsing**: [tmj_parser.py - _process_layers](file:///Users/adrien.parasote/Documents/perso/game/src/map/tmj_parser.py#L44)
+- **Property Detection**: [tmj_parser.py - _parse_objects](file:///Users/adrien.parasote/Documents/perso/game/src/map/tmj_parser.py#L55)
+- **Player Spawn Logic**: [game.py - __init__](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L67)
+- **Frustum Culling**: [map_manager.py - get_visible_chunks](file:///Users/adrien.parasote/Documents/perso/game/src/map/manager.py)

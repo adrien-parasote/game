@@ -9,8 +9,8 @@ def test_game_map_initialization():
     
     game = Game()
     
-    # Check map size (should be 25x25 based on 00-castel.tmj)
-    assert game.map_size == 25
+    # Check map size (should be 30x30 based on 00-castel.tmj)
+    assert game.map_size == 30
     assert hasattr(game, 'map_manager')
     
     # Verify map manager is initialized

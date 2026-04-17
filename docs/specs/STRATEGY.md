@@ -1,4 +1,4 @@
-# Strategic Blueprint - RPG Tile Engine
+# Strategic Blueprint - RPG Tile Engine [Strategic]
 
 ## 1. What exact problem are you solving?
 We are building a modular, scalable 2D tile-based RPG engine in Python. The core focus is overcoming performance bottlenecks (Culling), ensuring visual consistency (Y-sorting, Camera Clamping), and securing entity movement (World Boundaries).

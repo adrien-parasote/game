@@ -1,4 +1,4 @@
-# Technical Specification - NPC System
+# Technical Specification - NPC System [Implementation]
 
 This document specifies the technical implementation of the Non-Playable Character (NPC) system, extending the existing `BaseEntity` and `SpriteSheet` architecture.
 
@@ -34,6 +34,7 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 | Continuous pathfinding | Intermittent grid step randomizer | Reduces CPU overhead per NPC |
 | Move NPCs when off-camera | Freeze distant NPCs (CPU Freeze) | Enlarged viewport (128px) determines `is_visible` |
 | `Player` handles dialogue UI | `Game` or `UI_Manager` handles dialogue | Decouples rendering overlay from input entity |
+| Manual property parsing in AI logic | Use `TmjParser` properties dict | Centralizes data extraction and simplifies AI classes |
 
 ### 3.2. NPC Animation & Facing
 NPCs use a standard 4x4 sprite sheet layout:
@@ -63,6 +64,7 @@ NPCs use a standard 4x4 sprite sheet layout:
 | Missing Spritesheet | `FileNotFoundError` | Use generic blue rectangle (via existing logic) | `is_moving` set false to prevent visual artifacts |
 | Invalid Path/Wander | Wall collision returned | Cancel current wander vector | Re-eval after 2s cooldown |
 | Missing Dialogue Key | `KeyError` on interaction | Show `...` bubble | Log warning |
+| Missing Map Properties | `props.get()` returns `None` | Use engine defaults (NPC speed, etc.) | Log Warning |
 
 ## 4. Deep Links
 - Camera and Rendering: [ENGINE_CORE.md - Render Constraints](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/ENGINE_CORE.md#L15)
