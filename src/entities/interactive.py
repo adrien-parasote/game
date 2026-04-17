@@ -43,10 +43,22 @@ class InteractiveEntity(BaseEntity):
         self.tiled_width = t_w
         self.tiled_height = t_h
         
-        # Load spritesheet using sprite pixel dimensions
+        # Load spritesheet using sprite pixel width; compute real frame height from sheet
         sheet_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "sprites", sprite_sheet)
         sheet = SpriteSheet(sheet_path)
-        self.frames = sheet.load_grid_by_size(self.sprite_width, self.sprite_height)
+        
+        # Compute real frame height: sheet_height / total_expected_rows
+        # This avoids off-by-one errors when Tiled spec and real image dimensions diverge
+        if sheet.valid and sheet.sheet is not None:
+            sheet_w, sheet_h = sheet.sheet.get_size()
+            total_rows = self.end_row + 1  # end_row is the last frame index (0-indexed)
+            real_frame_h = sheet_h // total_rows if total_rows > 0 else self.sprite_height
+        else:
+            real_frame_h = self.sprite_height
+        
+        self.frames = sheet.load_grid_by_size(self.sprite_width, real_frame_h)
+        # Real cols from actual sheet layout (may differ from assumed 4-directional grid)
+        self._sheet_cols = getattr(sheet, 'last_cols', 4)
         
         # Select column
         self.col_index = self.DIRECTION_MAP.get(self.direction_str, 0)
@@ -73,9 +85,10 @@ class InteractiveEntity(BaseEntity):
 
     def _get_frame(self, row_index: int) -> pygame.Surface:
         """Get the specific frame for the current direction and row."""
-        # Calculate total columns automatically from sheet (safe fallback)
-        cols = 4 # Default for our directional system
-        idx = (row_index * cols) + self.col_index
+        # Use real cols from the loaded sheet, not a hardcoded 4
+        cols = self._sheet_cols
+        col = min(self.col_index, cols - 1)  # Clamp to available columns
+        idx = (row_index * cols) + col
         if 0 <= idx < len(self.frames):
             return self.frames[idx]
         return self.frames[0] if self.frames else pygame.Surface((32, 32))

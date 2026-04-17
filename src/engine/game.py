@@ -211,9 +211,9 @@ class Game:
             # Only triggered by E as per spec
             if keys[Settings.INTERACT_KEY]:
                 for obj in self.interactives:
-                    # Proximity Check (< 45px)
+                    # Proximity Check (< 80px to accommodate tall objects and adjacent tiles)
                     dist = self.player.pos.distance_to(obj.pos)
-                    if dist < 45.0:
+                    if dist < 80.0:
                         # Orientation Check: Player must face the correct side
                         # Object 'up' -> Player must be south (y > obj_y) and facing 'up'
                         # Object 'down' -> Player must be north (y < obj_y) and facing 'down'

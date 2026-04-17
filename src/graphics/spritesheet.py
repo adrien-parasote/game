@@ -33,7 +33,8 @@ class SpriteSheet:
     def load_grid_by_size(self, frame_w: int, frame_h: int) -> list[pygame.Surface]:
         """
         Slice the spritesheet into a grid based on fixed frame dimensions.
-        Calculates cols/rows automatically.
+        Calculates cols/rows automatically. Uses exact sheet dimensions,
+        NOT the requested frame dimensions, to avoid off-by-one pixel crops.
         """
         if not self.valid or self.sheet is None:
             # Fallback with dummy surfaces
@@ -42,6 +43,10 @@ class SpriteSheet:
         sheet_w, sheet_h = self.sheet.get_size()
         cols = sheet_w // frame_w
         rows = sheet_h // frame_h
+        
+        # Store actual layout for callers
+        self.last_cols = cols
+        self.last_rows = rows
         
         return self._slice_sheet(cols, rows, frame_w, frame_h)
 

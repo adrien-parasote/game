@@ -11,21 +11,30 @@ def test_game():
     pygame.init()
     pygame.display.set_mode((1, 1), pygame.HIDDEN)
     
-    # Mock spritesheet loading to avoid needing real assets
-    with patch('src.graphics.spritesheet.SpriteSheet.load_grid', return_value=[pygame.Surface((32, 32)) for _ in range(16)]):
-        with patch('src.graphics.spritesheet.SpriteSheet.load_grid_by_size', side_effect=lambda w, h: [pygame.Surface((w, h)) for _ in range(16)]):
-            with patch('src.graphics.spritesheet.SpriteSheet.__init__', return_value=None):
-                game = Game()
-                yield game
-            
+    # Mock spritesheet to avoid needing real assets
+    # We simulate a 128x192 sheet with 4 cols x 4 rows of 32x48 frames
+    def make_mock_sheet(filename):
+        m = MagicMock()
+        m.valid = True
+        mock_surface = MagicMock()
+        mock_surface.get_size.return_value = (128, 192)
+        m.sheet = mock_surface
+        m.last_cols = 4
+        m.load_grid_by_size.side_effect = lambda w, h: [pygame.Surface((w, h)) for _ in range(16)]
+        return m
+    
+    with patch('src.graphics.spritesheet.SpriteSheet', side_effect=make_mock_sheet):
+        game = Game()
+        yield game
+        
     pygame.quit()
 
 def test_interactive_proximity_success(test_game):
-    """TC-I-01: Proximity < 45px should succeed."""
+    """TC-I-01: Proximity < 80px should succeed."""
     obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="up")
     test_game.interactives.add(obj)
     
-    # Player is at distance 40px south (100, 140)
+    # Player is at distance 40px south 
     test_game.player.pos = pygame.math.Vector2(100, 140)
     test_game.player.current_state = 'up'
     test_game.player.is_moving = False
@@ -45,14 +54,13 @@ def test_interactive_proximity_success(test_game):
     assert obj.is_animating is True
 
 def test_interactive_proximity_failure(test_game):
-    """TC-I-02: Proximity > 45px should fail."""
+    """TC-I-02: Proximity > 80px should fail."""
     obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="up")
     test_game.interactives.add(obj)
     
-    # Player is at distance > 45px south. 
-    # Obj is at (100, 100) size 32x32 -> footprint center (116, 116)
-    # Distance to (116, 116) from (116, 116 + 46) = 46px
-    test_game.player.pos = pygame.math.Vector2(116, 162)
+    # Player is at distance > 80px south.
+    # obj.pos footprint is about (116, 116). Player needs to be > 80px away.
+    test_game.player.pos = pygame.math.Vector2(116, 200)  # 84px away
     test_game.player.current_state = 'up'
     test_game.player.is_moving = False
     test_game._interaction_cooldown = 0
