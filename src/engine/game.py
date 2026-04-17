@@ -5,6 +5,7 @@ import logging.handlers
 import os
 from src.entities.player import Player
 from src.entities.interactive import InteractiveEntity
+from src.entities.npc import NPC
 from src.entities.groups import CameraGroup
 from src.map.manager import MapManager
 from src.map.layout import OrthogonalLayout
@@ -113,6 +114,13 @@ class Game:
                     tiled_height=ent.get("height", 32),
                     obstacles_group=self.obstacles_group,
                     is_passable=props.get("is_passable", False)
+                )
+            elif e_type and (e_type == "npc" or e_type.startswith("npc_")):
+                NPC(
+                    pos=e_pos,
+                    groups=[self.visible_sprites, self.npcs],
+                    wander_radius=int(props.get("wander_radius", 1)),
+                    sheet_name=props.get("sprite_sheet", "01-character.png")
                 )
 
     def _is_collidable(self, px_center: float, py_center: float) -> bool:

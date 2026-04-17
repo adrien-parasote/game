@@ -256,3 +256,34 @@ def test_door_interaction_from_above_when_open(test_game):
     # Door should start animating to close
     assert door.is_animating is True
     assert door.is_closing is True
+
+def test_interactive_animation_closing_loop(test_game):
+    # Test the closing logic and collision re-enabling
+    obstacles = pygame.sprite.Group()
+    door = InteractiveEntity((100, 100), [], "door", "door.png", 
+                             obstacles_group=obstacles)
+    
+    # Force open state
+    door.is_open = True
+    door.frame_index = 3.0
+    
+    # Trigger close
+    door.interact(None)
+    assert door.is_closing is True
+    
+    # Update to finish closing (animation speed 10)
+    door.update(0.5) 
+    
+    assert door.is_open is False
+    assert door.is_animating is False
+    assert door in obstacles
+
+def test_interactive_get_frame_fallback(test_game):
+    # Test _get_frame with index out of bounds
+    obj = InteractiveEntity((100, 100), [], "chest", "chest.png")
+    # Force frames empty for testing fallback
+    obj.frames = []
+    # Should return a 32x32 surface
+    surf = obj._get_frame(0)
+    assert surf.get_size() == (32, 32)
+

@@ -72,11 +72,11 @@ Entities can interact with their immediate surroundings based on orientation and
 
 ### J. Map Data Architecture (TMJ/TSX)
 To maintain modularity, the engine decouples map parsing from rendering logic.
-- **Recursive Processing**: `TmjParser` traverses the layer tree recursively, supporting nested groups.
-- **Spawn Detection**: The player spawn is identified by:
-  - Any object with custom property `spawn_player: true`.
-  - Any object with native `class` or `type` set to `player`.
-- **Entity Extraction**: All objects found in `objectgroup` layers are collected into a unified `entities` list.
+- **Data Schema**: The `load_map` method returns a dictionary containing indices:
+  - `width`, `height`: Map dimensions in tiles.
+  - `spawn_player`: Dict with `x` and `y` center coordinates.
+  - `entities`: List of object dictionaries ready for engine spawning.
+  - `tile_dict`: Mapping of GIDs to `TileProperty` objects (including collision and depth).
 - **Coordinates**: Tiled object coordinates (Top-Left) are automatically offset by `TILE_SIZE / 2` to align with the center-based system.
 
 ### K. Entity Collision Logic
@@ -105,11 +105,12 @@ In addition to map tile collisions, the engine supports blocking player movement
 | TC-R-01 | Y-Sorting | [Y=100, Y=50] | Rendered [50, 100] |
 | TC-R-02 | Culling | Viewport at (0,0) | Only first tiles rendered |
 | TC-C-01 | Cam Clamp | Player at (0,0) | Offset = 0 |
-| TC-C-02 | Cam Center | Small map | Map centered on screen |
-| TC-B-01 | Bounds | Player at X=-100 | Player at X=16 (edge) |
-| TC-B-02 | Bounds | Player at X=5000 | Player at X=2032 (edge) |
 | TC-R-03 | Visual Anchor | Image 32x48 | Topleft extends 16px up |
-| TC-B-03 | Player Hitbox | Player spawn | Rect size is 32x32 |
+| TC-M-01 | TSX Parsing | External .tsx file | `tile_dict` populated with collidable data |
+| TC-X-01 | Interaction | Door closed | `_is_collidable` returns `True` |
+| TC-X-02 | Interaction | Door open + Passable | `_is_collidable` returns `False` |
+| TC-H-01 | HUD | Interaction log added | HUD renders message with scrolling logic |
+| TC-G-01 | Run Loop | QUIT event | `sys.exit()` called, loop terminates |
 
 ## 5. Error Handling Matrix (Aggregated)
 
@@ -121,7 +122,7 @@ In addition to map tile collisions, the engine supports blocking player movement
 | Bound Overflow| `pos > 1M` | Log Warn | Clamp to boundary |
 
 ## 6. Deep Links
-- **Map Recursive Parsing**: [tmj_parser.py - _process_layers](src/map/tmj_parser.py#L44)
-- **Property Detection**: [tmj_parser.py - _parse_objects](src/map/tmj_parser.py#L55)
-- **Player Spawn Logic**: [game.py - __init__](src/engine/game.py#L67)
+- **Map Recursive Parsing**: [tmj_parser.py - _process_layers](src/map/tmj_parser.py#L55)
+- **Property Detection**: [tmj_parser.py - _parse_objects](src/map/tmj_parser.py#L69)
+- **Player Spawn Logic**: [game.py - __init__](src/engine/game.py#L18)
 - **Frustum Culling**: [map_manager.py - get_visible_chunks](src/map/manager.py)

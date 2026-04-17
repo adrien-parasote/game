@@ -9,12 +9,21 @@ from src.engine.game import Game
 def test_game():
     pygame.init()
     pygame.display.set_mode((1, 1), pygame.HIDDEN)
-    
-    with patch('src.graphics.spritesheet.SpriteSheet.load_grid', return_value=[pygame.Surface((32, 48)) for _ in range(16)]):
-        with patch('src.graphics.spritesheet.SpriteSheet.__init__', return_value=None):
-            game = Game()
-            yield game
-            
+
+    def make_mock_sheet(filename):
+        m = MagicMock()
+        m.valid = True
+        mock_surface = MagicMock()
+        mock_surface.get_size.return_value = (128, 192)
+        m.sheet = mock_surface
+        m.last_cols = 4
+        m.load_grid_by_size.side_effect = lambda w, h: [pygame.Surface((w, h)) for _ in range(16)]
+        return m
+
+    with patch('src.graphics.spritesheet.SpriteSheet', side_effect=make_mock_sheet):
+        game = Game()
+        yield game
+
     pygame.quit()
 
 def test_player_npc_interaction(test_game):

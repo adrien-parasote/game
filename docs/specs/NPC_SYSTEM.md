@@ -20,7 +20,7 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 ### [PARTIAL] `src/engine/game.py`
 - **[IMPLEMENTED]** Manages `npcs` sprite group.
 - **[IMPLEMENTED]** Implements spatial interaction logic via `_handle_interactions`.
-- **[PENDING]** Manage NPC spawning in `_spawn_entities`.
+- **[IMPLEMENTED]** Manage NPC spawning in `_spawn_entities`.
 
 ---
 
@@ -44,19 +44,19 @@ NPCs use a standard 4x4 sprite sheet layout:
 
 ### 3.2. Test Case Specifications
 
-#### Unit Tests (`tests/test_npc.py`)
-
+#### Unit & Behavior Tests (`tests/test_npc.py`, `tests/test_npc_ai.py`)
 | Test ID | Component | Input | Expected Output |
 |---------|-----------|-------|-----------------|
 | TC-N-01 | NPC Init | Spawn at (16,16) | `NPC.rect.size` == (32,32), anchored correctly |
 | TC-N-02 | NPC Wander | Wander radius=1 on a 10x10 map | `NPC.pos` never exceeds radius from spawn |
 | TC-N-03 | CPU Freeze | `is_visible`=False passed from `Game` | NPC bypasses `move()` logic |
+| TC-N-04 | AI State | Trigger interaction | NPC enters `interact` state and faces player |
 
-#### Integration Tests (`tests/test_interaction.py`)
-
+#### Integration Tests (`tests/test_interaction.py`, `tests/test_game_helpers.py`)
 | Test ID | Flow | Setup | Verification | Teardown |
 |---------|------|-------|--------------|----------|
 | IT-N-01 | Player interacts | Player faces NPC, presses SPACE or E | `NPC.on_interact()` executes | Clear groups |
+| IT-N-02 | NPC Spawn | Tiled Map with NPC data | `Game` spawns instances in `npcs` group | Clear groups |
 
 ### 3.3. Error Handling Matrix
 

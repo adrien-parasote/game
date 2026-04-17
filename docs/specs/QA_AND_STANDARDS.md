@@ -6,7 +6,7 @@ This document defines the quality gates and standards for the RPG Tile Engine.
 
 | Gate | Target | Tool |
 |------|--------|------|
-| **Unit Test Coverage** | >= 80% | `pytest-cov` |
+| **Unit Test Coverage** | >= 90% | `pytest-cov` |
 | **Linting** | Zero Errors | `ruff` / `flake8` |
 | **Static Analysis** | Zero High Risk | `bandit` |
 

@@ -83,7 +83,9 @@ The `is_passable` property controls **open-state traversability**, not initial c
 | TC-I-01 | Proximity | Player at 70px away | Interaction Succeeds |
 | TC-I-02 | Proximity | Player at 90px away | Interaction Fails |
 | TC-I-07 | Alignment | Sprite 64x64 on Tiled 64x32 | `rect.bottom` aligns with Tiled bottom |
-| TC-I-10 | Door Close | Player at North of open door | Close Succeeds (Relaxed Orientation) |
+| TC-I-08 | Door Close | Player at North of open door | Close Succeeds (Relaxed Orientation) |
+| TC-I-09 | Animation | Logic reverse on close | `frame_index` decreases back to start |
+| TC-I-10 | Coverage | Full Module Scan | 100% unit test coverage achieved |
 
 ## 5. Error Handling Matrix
 
@@ -94,7 +96,7 @@ The `is_passable` property controls **open-state traversability**, not initial c
 | Interaction Spam| Timer check | Ignore input | cooldown of 0.5s |
 
 ## 6. Deep Links
-- **Interactive Spawning**: [game.py - _spawn_entities](src/engine/game.py)
+- **Interactive Spawning**: [game.py - _spawn_entities](src/engine/game.py#L91)
 - **Base Interaction**: [base.py - interact](src/entities/base.py#L73)
 - **Sprite Slicing**: [spritesheet.py - load_grid_by_size](src/graphics/spritesheet.py)
-- **Collision Check**: [game.py - _is_collidable](src/engine/game.py)
+- **Collision Check**: [game.py - _is_collidable](src/engine/game.py#L126)

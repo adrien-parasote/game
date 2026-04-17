@@ -31,6 +31,8 @@ class TmjParser:
             raise ValueError("Invalid TMJ format: Missing 'layers' or 'tilesets' keys.")
             
         map_result = {
+            "width": data["width"],
+            "height": data["height"],
             "layers": {},
             "tiles": {},
             "spawn_player": None,
