@@ -79,7 +79,7 @@ def test_interactive_proximity_failure(test_game):
 def test_interactive_orientation_opposite_success(test_game):
     """TC-I-03: Correct orientation (Opposite Rule) should succeed."""
     # Chest facing UP (opening from south)
-    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="up")
+    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="up", is_passable=False)
     test_game.interactives.add(obj)
     
     # Player at South (100, 130), facing UP
@@ -102,7 +102,7 @@ def test_interactive_orientation_opposite_success(test_game):
 def test_interactive_orientation_opposite_failure(test_game):
     """TC-I-04: Incorrect orientation (at North while chest faces UP) should fail."""
     # Chest facing UP
-    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="up")
+    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="up", is_passable=False)
     test_game.interactives.add(obj)
     
     # Player at North (100, 70), facing UP (looking away)
@@ -122,9 +122,34 @@ def test_interactive_orientation_opposite_failure(test_game):
     
     assert obj.is_animating is False
 
+def test_chest_remains_solid_when_open(test_game):
+    """Verify that a chest remains in obstacles_group even when open (if not passable)."""
+    obstacles = pygame.sprite.Group()
+    # Chest at (100, 100), not passable
+    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", 
+                            obstacles_group=obstacles, is_passable=False)
+    
+    assert obj in obstacles
+    
+    # Open the chest
+    obj.interact(None) # Trigger animation
+    obj.update(1.0) # Advance animation to end
+    
+    assert obj.is_open is True
+    # Should STILL be in obstacles because it's not a door (or because it's not passable)
+    assert obj in obstacles
+
+def test_explicitly_passable_object(test_game):
+    """Verify that an object marked as passable is NOT added to obstacles."""
+    obstacles = pygame.sprite.Group()
+    obj = InteractiveEntity((100, 100), [], "sign", "sign.png", 
+                            obstacles_group=obstacles, is_passable=True)
+    
+    assert obj not in obstacles
+
 def test_interactive_animation_trigger(test_game):
     """TC-I-05: Triggering interaction starts animation on correct column."""
-    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="right")
+    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="right", is_passable=False)
     # Column 1 for 'right' according to new DIRECTION_MAP
     assert obj.col_index == 1 
     
@@ -158,7 +183,7 @@ def test_spawning_from_properties(test_game):
 def test_door_dynamic_collision(test_game):
     """Verify that a door blocks movement when closed and allows when open."""
     test_game.obstacles_group.empty()
-    door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", direction="up", obstacles_group=test_game.obstacles_group)
+    door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", direction="up", obstacles_group=test_game.obstacles_group, is_passable=False)
     
     # Initially closed, should be in obstacles group
     assert door in test_game.obstacles_group
@@ -182,7 +207,8 @@ def test_variable_size_alignment(test_game):
     # The rect.top should be at 132 - 62 = 70
     obj = InteractiveEntity((100, 100), [], "door", "door.png", 
                             width=64, height=62, 
-                            tiled_width=64, tiled_height=32)
+                            tiled_width=64, tiled_height=32,
+                            is_passable=False)
     
     assert obj.rect.bottom == 132
     assert obj.rect.centerx == 132

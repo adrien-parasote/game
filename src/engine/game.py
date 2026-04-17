@@ -111,7 +111,8 @@ class Game:
                     height=int(props.get("height", ent.get("height", 32))),
                     tiled_width=ent.get("width", 32),
                     tiled_height=ent.get("height", 32),
-                    obstacles_group=self.obstacles_group
+                    obstacles_group=self.obstacles_group,
+                    is_passable=props.get("passable", False)
                 )
 
     def _is_collidable(self, px_center: float, py_center: float) -> bool:

@@ -23,7 +23,8 @@ class InteractiveEntity(BaseEntity):
                  sub_type: str, sprite_sheet: str, direction: str = 'down', 
                  depth: int = 1, start_row: int = 0, end_row: int = 3,
                  width: int = 32, height: int = 32, obstacles_group: pygame.sprite.Group = None,
-                 tiled_width: int = None, tiled_height: int = None):
+                 tiled_width: int = None, tiled_height: int = None,
+                 is_passable: bool = False):
         # Default tiled dimensions to sprite dimensions if not provided
         t_w = tiled_width if tiled_width is not None else width
         t_h = tiled_height if tiled_height is not None else height
@@ -78,7 +79,9 @@ class InteractiveEntity(BaseEntity):
         self.pos = pygame.math.Vector2(self.rect.centerx, self.rect.bottom - 16)
         
         # Initial Collision State
-        if self.sub_type == 'door' and self.obstacles_group is not None:
+        # If the object is not explicitly passable, add it to obstacles
+        self.is_passable = is_passable
+        if not self.is_passable and self.obstacles_group is not None:
             self.obstacles_group.add(self)
         
         logging.info(f"Spawned InteractiveEntity '{sub_type}' ({width}x{height}) at {pos} facing {direction}")

@@ -17,6 +17,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `height` | int | **Visual** frame height in pixels (for slicing) |
 | `tiled_width` | int | **Logical** hitbox width (from Tiled rect) |
 | `tiled_height` | int | **Logical** hitbox height (from Tiled rect) |
+| `passable` | bool | If `true`, the object does not block movement. (Default: `false`) |
 
 ### Animation Logic
 - **Column Mapping** (User Specified): 
@@ -47,12 +48,13 @@ Valid ONLY if both conditions are met:
 If `sub_type == 'door'` and `is_open == True`, the door can be closed from the "opposite side" (e.g., closing a door from the north while facing `down`). This ensures players can easily close doors behind them.
 
 ### Collision & Barriers
-Interactive objects can be solids or triggers.
-- **Chests/Fixed Objects**: Included in `interactives` group; checked via `_is_collidable`.
-- **Doors**:
+Interactive objects can be solids or triggers based on their properties.
+- **Passable Property**: If an object has `passable: true`, it is never added to the `obstacles_group`.
+- **Solid Logic**: By default (`passable: false`), all interactive objects are added to the `obstacles_group` upon spawning and block player movement.
+- **Doors (sub_type: door)**:
+  - Doors ignore their initial `passable` setting for dynamic behavior.
   - Dynamically added to `obstacles_group` when in the `closed` state (frame `start_frame`).
   - Removed from `obstacles_group` when in the `open` state (frame `end_frame`).
-  - Allows passage ONLY when fully open.
 
 ### Rendering & Alignment
 - **Y-Sort**: Sprites are sorted by their `rect.bottom`.
