@@ -58,6 +58,7 @@ class Game:
         
         # Local state
         self.is_fullscreen = Settings.FULLSCREEN
+        self.active_dialogue: str | None = None
         self.last_fps_update = 0
         
         # Time System
@@ -109,7 +110,8 @@ class Game:
                     end_row=int(props.get("end_frame", 3)),
                     width=ent.get("width", 32),
                     height=ent.get("height", 32),
-                    obstacles_group=self.obstacles_group
+                    obstacles_group=self.obstacles_group,
+                    text=props.get("text")
                 )
 
     def _is_collidable(self, px_center: float, py_center: float) -> bool:
@@ -181,7 +183,16 @@ class Game:
         
         # Check interaction input (SPACE for NPCs, E for Objects/NPCs)
         interact_pressed = keys[pygame.K_SPACE] or keys[Settings.INTERACT_KEY]
-        
+
+        # 0. Dialogue Close Logic
+        if self.active_dialogue is not None:
+            if interact_pressed:
+                if hasattr(self, '_interaction_cooldown') and self._interaction_cooldown > 0:
+                    return
+                self._interaction_cooldown = 0.5
+                self.active_dialogue = None
+            return # Block any other interactions while dialogue is open
+
         if interact_pressed and not self.player.is_moving:
             # Prevent interaction spam
             if hasattr(self, '_interaction_cooldown') and self._interaction_cooldown > 0:
@@ -229,7 +240,11 @@ class Game:
                             valid_orientation = True
                             
                         if valid_orientation:
-                            obj.interact(self.player)
+                            if obj.sub_type == 'sign' and obj.text:
+                                self.active_dialogue = obj.text
+                                logging.info(f"Dialogue opened: {obj.text[:20]}...")
+                            else:
+                                obj.interact(self.player)
                             return
 
     def run(self):
@@ -259,10 +274,13 @@ class Game:
             if hasattr(self, '_interaction_cooldown'):
                 self._interaction_cooldown = max(0, self._interaction_cooldown - dt)
                 
-            self.player.input()
+            if self.active_dialogue is None:
+                self.player.input()
+                
             self._handle_interactions()
             
-            self.visible_sprites.update(dt)
+            if self.active_dialogue is None:
+                self.visible_sprites.update(dt)
             
             # CPU Freeze optimization for NPCs -> freeze if outside enlarged viewport
             screen_rect = self.screen.get_rect()
@@ -302,6 +320,10 @@ class Game:
             # Draw HUD
             self._draw_hud()
             
+            # Draw Dialogue
+            if self.active_dialogue:
+                self._draw_dialogue_box()
+            
             # Dynamic Title Update (Every 1s)
             now = pygame.time.get_ticks()
             if now - self.last_fps_update > 1000:
@@ -310,6 +332,43 @@ class Game:
                 self.last_fps_update = now
             
             pygame.display.update()
+
+    def _draw_dialogue_box(self):
+        """Draw a text box with wrapped text at the bottom of the screen."""
+        if not self.active_dialogue:
+            return
+            
+        screen_w, screen_h = self.screen.get_size()
+        margin = 40
+        box_h = 160
+        box_y = screen_h - box_h - margin
+        box_rect = pygame.Rect(margin, box_y, screen_w - (margin * 2), box_h)
+        
+        # 1. Draw Border and Background
+        pygame.draw.rect(self.screen, (255, 255, 255), box_rect.inflate(4, 4), border_radius=8) # Border
+        pygame.draw.rect(self.screen, (30, 30, 30), box_rect, border_radius=6) # Box
+        
+        # 2. Render Text with Wrapping
+        words = self.active_dialogue.split(' ')
+        lines = []
+        current_line = []
+        max_w = box_rect.width - 40
+        
+        for word in words:
+            test_line = ' '.join(current_line + [word])
+            w, _ = self.hud_font.size(test_line)
+            if w < max_w:
+                current_line.append(word)
+            else:
+                lines.append(' '.join(current_line))
+                current_line = [word]
+        lines.append(' '.join(current_line))
+        
+        # 3. Draw Lines
+        line_height = 25
+        for i, line in enumerate(lines):
+            line_surf = self.hud_font.render(line, True, (255, 255, 255))
+            self.screen.blit(line_surf, (box_rect.x + 20, box_rect.y + 20 + i * line_height))
 
     def toggle_fullscreen(self):
         """Toggle between fullscreen and windowed mode."""
