@@ -174,19 +174,19 @@ def test_door_dynamic_collision(test_game):
     assert test_game._is_collidable(116, 116) is False
 
 def test_variable_size_alignment(test_game):
-    """Verify that a large sprite (64x64) aligns bottom on a Tiled rectangle (64x32)."""
+    """Verify that a large sprite (64x62) aligns bottom on a Tiled rectangle (64x32)."""
     # Tiled rect at (100, 100) size (64, 32)
-    # Sprite size is (64, 64)
+    # Sprite size is (64, 62) - matches actual 00-doors.png frames
     # The rect.bottom should be at 100 + 32 = 132
     # The rect.midbottom.x should be at 100 + 32 = 132
-    # The rect.top should be at 132 - 64 = 68
+    # The rect.top should be at 132 - 62 = 70
     obj = InteractiveEntity((100, 100), [], "door", "door.png", 
-                            width=64, height=64, 
+                            width=64, height=62, 
                             tiled_width=64, tiled_height=32)
     
     assert obj.rect.bottom == 132
     assert obj.rect.centerx == 132
-    assert obj.rect.top == 68
+    assert obj.rect.top == 70
 
 def test_door_interaction_from_above_when_open(test_game):
     """Verify that an open door can be closed from the 'other' side (North)."""
