@@ -36,6 +36,7 @@ class Game:
         self.visible_sprites = CameraGroup()
         self.npcs = pygame.sprite.Group()
         self.interactives = pygame.sprite.Group()
+        self.obstacles_group = pygame.sprite.Group()
         
         # Setup Map
         from src.map.tmj_parser import TmjParser
@@ -98,14 +99,17 @@ class Game:
             
             if e_type == "interactive_object":
                 InteractiveEntity(
-                    pos=e_pos,
+                    pos=(ent["x"], ent["y"]),
                     groups=[self.visible_sprites, self.interactives],
                     sub_type=props.get("sub_type", "unknown"),
                     sprite_sheet=props.get("sprite_sheet", ""),
                     direction=props.get("direction", "down"),
                     depth=int(props.get("depth", 1)),
                     start_row=int(props.get("start_frame", 0)),
-                    end_row=int(props.get("end_frame", 3))
+                    end_row=int(props.get("end_frame", 3)),
+                    width=ent.get("width", 32),
+                    height=ent.get("height", 32),
+                    obstacles_group=self.obstacles_group
                 )
 
     def _is_collidable(self, px_center: float, py_center: float) -> bool:
@@ -115,8 +119,8 @@ class Game:
         if self.map_manager.is_collidable(int(wx), int(wy)):
             return True
             
-        # Check Interactive Objects
-        for obj in self.interactives:
+        # Check Dynamic Obstacles (Doors, etc.)
+        for obj in self.obstacles_group:
             if obj.rect.collidepoint(px_center, py_center):
                 return True
                 

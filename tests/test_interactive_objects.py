@@ -13,9 +13,10 @@ def test_game():
     
     # Mock spritesheet loading to avoid needing real assets
     with patch('src.graphics.spritesheet.SpriteSheet.load_grid', return_value=[pygame.Surface((32, 32)) for _ in range(16)]):
-        with patch('src.graphics.spritesheet.SpriteSheet.__init__', return_value=None):
-            game = Game()
-            yield game
+        with patch('src.graphics.spritesheet.SpriteSheet.load_grid_by_size', side_effect=lambda w, h: [pygame.Surface((w, h)) for _ in range(16)]):
+            with patch('src.graphics.spritesheet.SpriteSheet.__init__', return_value=None):
+                game = Game()
+                yield game
             
     pygame.quit()
 
@@ -48,8 +49,10 @@ def test_interactive_proximity_failure(test_game):
     obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="up")
     test_game.interactives.add(obj)
     
-    # Player is at distance 50px south (100, 150)
-    test_game.player.pos = pygame.math.Vector2(100, 150)
+    # Player is at distance > 45px south. 
+    # Obj is at (100, 100) size 32x32 -> footprint center (116, 116)
+    # Distance to (116, 116) from (116, 116 + 46) = 46px
+    test_game.player.pos = pygame.math.Vector2(116, 162)
     test_game.player.current_state = 'up'
     test_game.player.is_moving = False
     test_game._interaction_cooldown = 0
@@ -144,3 +147,31 @@ def test_spawning_from_properties(test_game):
     assert len(test_game.interactives) == 1
     obj = test_game.interactives.sprites()[0]
     assert obj.sub_type == "chest"
+def test_door_dynamic_collision(test_game):
+    """Verify that a door blocks movement when closed and allows when open."""
+    test_game.obstacles_group.empty()
+    door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", direction="up", obstacles_group=test_game.obstacles_group)
+    
+    # Initially closed, should be in obstacles group
+    assert door in test_game.obstacles_group
+    assert test_game._is_collidable(116, 116) is True # Center of 100,100 -> 116,116
+    
+    # Open the door
+    door.interact(test_game.player)
+    # Fast forward animation
+    door.update(1.0) # 10.0 * 1.0 = 10, should reach end_frame
+    
+    assert door.is_open is True
+    assert door not in test_game.obstacles_group
+    assert test_game._is_collidable(116, 116) is False
+
+def test_variable_size_alignment(test_game):
+    """Verify that a large object (32x64) aligns bottom on the Tiled rectangle."""
+    # Tiled rect at (100, 100) size (32, 64)
+    # The rect.bottom should be at 100 + 64 = 164
+    # The rect.midbottom.x should be at 100 + 16 = 116
+    obj = InteractiveEntity((100, 100), [], "decor", "tree.png", width=32, height=64)
+    
+    assert obj.rect.bottom == 164
+    assert obj.rect.centerx == 116
+    assert obj.rect.top == 100 # 164 - 64
