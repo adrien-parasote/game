@@ -13,8 +13,10 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `depth` | int | Typically 1 (Y-sorted) |
 | `start_frame` | int | Starting row of animation (default 0) |
 | `end_frame` | int | Ending row of animation (default 3) |
-| `width` | int | Frame width in pixels (default 32) |
-| `height` | int | Frame height in pixels (default 32) |
+| `width` | int | **Visual** frame width in pixels (for slicing) |
+| `height` | int | **Visual** frame height in pixels (for slicing) |
+| `tiled_width` | int | **Logical** hitbox width (from Tiled rect) |
+| `tiled_height` | int | **Logical** hitbox height (from Tiled rect) |
 
 ### Animation Logic
 - **Column Mapping** (User Specified): 
@@ -32,13 +34,17 @@ This document defines the requirements for fixed interactive objects (chests, sw
 
 ### Interaction Validation
 Valid ONLY if both conditions are met:
-1. **Proximity**: `Vector2(player.pos).distance_to(footprint_center) < 45.0`.
-   - `footprint_center` is the center of the bottom 32x32 area of the object.
+1. **Proximity**: `Vector2(player.pos).distance_to(obj.pos) < 80.0`.
+   - `obj.pos` is the "footprint center" (center of the bottom 32x32 area).
+   - Increased to 80px to support natural interaction from adjacent tiles.
 2. **Relative Orientation (Opposite Rule)**: 
-   - Object `up` (opens from south) -> Player must be at `y > object.rect.bottom - 16` and facing `up`.
-   - Object `down` -> Player must be at `y < object.rect.bottom - 16` and facing `down`.
-   - Object `left` -> Player must be at `x > object.rect.centerx` and facing `left`.
-   - Object `right` -> Player must be at `x < object.rect.centerx` and facing `right`.
+   - Object `up` (opens from south) -> Player must be south (`y > obj_y`) and facing `up`.
+   - Object `down` -> Player must be north (`y < obj_y`) and facing `down`.
+   - Object `left` -> Player must be east (`x > obj_x`) and facing `left`.
+   - Object `right` -> Player must be west (`x < obj_x`) and facing `right`.
+
+**Relaxation (Doors)**:
+If `sub_type == 'door'` and `is_open == True`, the door can be closed from the "opposite side" (e.g., closing a door from the north while facing `down`). This ensures players can easily close doors behind them.
 
 ### Collision & Barriers
 Interactive objects can be solids or triggers.
@@ -65,19 +71,17 @@ Interactive objects can be solids or triggers.
 
 ## 4. Test Case Specifications
 
-| ID | Component | Input | Expected Output |
-|----|-----------|-------|-----------------|
-| TC-I-06 | Sizing | Door 32x64 | Sprite sliced 32x64 |
-| TC-I-07 | Alignment | Door at (100,100) H:64 | `rect.bottom` == 164 |
-| TC-I-08 | Door Collision| Open door | `obstacles_group`.remove(door) |
-| TC-I-09 | Door Collision| Close door | `obstacles_group`.add(door) |
+| TC-I-01 | Proximity | Player at 70px away | Interaction Succeeds |
+| TC-I-02 | Proximity | Player at 90px away | Interaction Fails |
+| TC-I-07 | Alignment | Sprite 64x64 on Tiled 64x32 | `rect.bottom` aligns with Tiled bottom |
+| TC-I-10 | Door Close | Player at North of open door | Close Succeeds (Relaxed Orientation) |
 
 ## 5. Error Handling Matrix
 
 | Error Type | Detection | Response | Fallback |
 |------------|-----------|----------|----------|
-| Invalid Size | `width % sheet_w != 0` | Log Warning | Default to 32x32 |
-| Group Missing | `obstacles_group is None`| Log Error | Object remains non-solid |
+| Frame Mismatch| `sheet_h % height != 0` | Auto-recalculate `height` | `sheet_h / (end_row + 1)` |
+| Sheet Layout | `cols != 4` | Detect `last_cols` | Use dynamic indexing |
 | Interaction Spam| Timer check | Ignore input | cooldown of 0.5s |
 
 ## 6. Deep Links
