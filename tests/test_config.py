@@ -41,5 +41,5 @@ def test_settings_custom_keys(tmp_path):
 
 def test_settings_initial_hour_load():
     """Verify initial_hour is loaded from config."""
-    # Current value in settings.json is 18
-    assert Settings.INITIAL_HOUR == 18
+    # Current value in settings.json is 12
+    assert Settings.INITIAL_HOUR == 12

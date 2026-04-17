@@ -55,7 +55,7 @@ NPCs use a standard 4x4 sprite sheet layout:
 
 | Test ID | Flow | Setup | Verification | Teardown |
 |---------|------|-------|--------------|----------|
-| IT-N-01 | Player interacts | Player faces NPC, presses SPACE | `NPC.on_interact()` executes | Clear groups |
+| IT-N-01 | Player interacts | Player faces NPC, presses SPACE or E | `NPC.on_interact()` executes | Clear groups |
 
 ### 3.3. Error Handling Matrix
 

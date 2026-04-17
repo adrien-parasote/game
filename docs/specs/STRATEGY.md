@@ -42,10 +42,11 @@ We are building a modular, scalable 2D tile-based RPG engine in Python. The core
 - Camera following player with **Map Edge Clamping**.
 - **Time & Seasonal System**: Day/night cycles and seasonal labels.
 
-### Phase 3: Polish & Advanced Logic [IN PROGRESS]
-- Dynamic FPS display (implemented).
+### Phase 3: Polish & Advanced Logic [COMPLETE]
+- Dynamic FPS display.
 - High-coverage test suite (Target: 80%+).
 - NPC System with basic AI and interactions.
+- Fixed Interactive Objects (chests, switches) with unified interaction and collision.
 
 ## 7. What we are NOT building
 - No final game assets (tileset/sprites).

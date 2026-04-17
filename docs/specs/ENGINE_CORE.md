@@ -64,16 +64,26 @@ To optimize performance in large worlds, entity updates are intelligently skippe
 - **Behavior**: If an entity's rect is outside this enlarged viewport, its `is_visible` flag is set to `False`, and its `update()` logic (AI, movement, animation) is bypassed.
 
 ### I. Spatial Interaction Logic
-Entities can interact with their immediate surroundings based on orientation.
-- **Logic**: When an interaction key (SPACE) is pressed, the system projects a 32x32 `target_rect` exactly one tile ahead of the player based on their current facing direction.
+Entities can interact with their immediate surroundings based on orientation and proximity.
+- **NPCs**: When `SPACE` or `E` is pressed, the system projects a 32x32 `target_rect` one tile ahead of the player. The first NPC colliding with this rect is interacted with.
+- **Objects**: When `E` is pressed, the system performs a proximity check (`< 45px`) and validates the "Opposite Rule" (e.g., player must be south of an object facing 'up').
 - **Cooldown**: A 0.5s interaction cooldown prevents input spamming.
-- **Response**: The first entity in the `npcs` group colliding with the `target_rect` receives an `interact()` call.
+- **Unified Key**: The `E` key (Settings.INTERACT_KEY) acts as a universal interaction trigger for both NPCs and fixed objects.
+
 ### J. Map Data Architecture (TMJ/TSX)
-To maintain modularity and support complex level design, the engine decoupling map parsing from rendering logic.
-- **Recursive Processing**: `TmjParser` traverses the layer tree recursively. It supports arbitrarily nested groups (e.g., `Layers`, `Sprites`, `Metadata`).
-- **Property-Based Spawning**: The player spawn is identified by an object within an `objectgroup` layer containing the custom boolean property `spawn_player: true`.
-- **Entity Extraction**: All objects found in `objectgroup` layers are collected into a unified `entities` list. This enables dynamic population of NPCs and interactive elements.
-- **Coordinates**: Tiled object coordinates (Top-Left) are automatically offset by `TILE_SIZE / 2` in the engine to align with the center-based coordinate system.
+To maintain modularity, the engine decouples map parsing from rendering logic.
+- **Recursive Processing**: `TmjParser` traverses the layer tree recursively, supporting nested groups.
+- **Spawn Detection**: The player spawn is identified by:
+  - Any object with custom property `spawn_player: true`.
+  - Any object with native `class` or `type` set to `player`.
+- **Entity Extraction**: All objects found in `objectgroup` layers are collected into a unified `entities` list.
+- **Coordinates**: Tiled object coordinates (Top-Left) are automatically offset by `TILE_SIZE / 2` to align with the center-based system.
+
+### K. Entity Collision Logic
+In addition to map tile collisions, the engine supports blocking player movement through fixed entities.
+- **Mechanism**: The `_is_collidable` check in `Game` iterates through the `interactives` sprite group.
+- **Detection**: Uses `collidepoint` check on the entity's 32x32 physical hitbox (`obj.rect`).
+- **Scope**: Currently applied only to the `interactives` group to maintain O(N) performance for movement validation.
 
 ## 3. Anti-Patterns (DO NOT)
 

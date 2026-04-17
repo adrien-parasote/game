@@ -160,6 +160,59 @@
                          "width":32,
                          "x":448,
                          "y":864
+                        }, 
+                        {
+                         "height":32,
+                         "id":5,
+                         "name":"chest",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"depth",
+                                 "type":"int",
+                                 "value":1
+                                }, 
+                                {
+                                 "name":"direction",
+                                 "type":"string",
+                                 "value":"up"
+                                }, 
+                                {
+                                 "name":"end_frame",
+                                 "type":"int",
+                                 "value":3
+                                }, 
+                                {
+                                 "name":"height",
+                                 "type":"int",
+                                 "value":48
+                                }, 
+                                {
+                                 "name":"sprite_sheet",
+                                 "type":"string",
+                                 "value":"01-iron-chests.png"
+                                }, 
+                                {
+                                 "name":"start_frame",
+                                 "type":"int",
+                                 "value":0
+                                }, 
+                                {
+                                 "name":"sub_type",
+                                 "type":"string",
+                                 "value":"chest"
+                                }, 
+                                {
+                                 "name":"width",
+                                 "type":"int",
+                                 "value":32
+                                }],
+                         "rotation":0,
+                         "type":"interactive_object",
+                         "visible":true,
+                         "width":32,
+                         "x":480,
+                         "y":96
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -175,7 +228,7 @@
          "y":0
         }],
  "nextlayerid":8,
- "nextobjectid":5,
+ "nextobjectid":6,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.1",
