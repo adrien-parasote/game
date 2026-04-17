@@ -123,7 +123,7 @@ def test_interactive_orientation_opposite_failure(test_game):
     assert obj.is_animating is False
 
 def test_chest_remains_solid_when_open(test_game):
-    """Verify that a chest (passable=False) stays in obstacles even when open."""
+    """Verify that a chest (is_passable=False) stays in obstacles even when open."""
     obstacles = pygame.sprite.Group()
     obj = InteractiveEntity((100, 100), [], "chest", "chest.png", 
                             obstacles_group=obstacles, is_passable=False)
@@ -179,9 +179,9 @@ def test_spawning_from_properties(test_game):
     obj = test_game.interactives.sprites()[0]
     assert obj.sub_type == "chest"
 def test_door_dynamic_collision(test_game):
-    """Verify that a door (passable=True) blocks when closed, allows when open."""
+    """Verify that a door (is_passable=True) blocks when closed, allows when open."""
     test_game.obstacles_group.empty()
-    # Door with passable=True: blocks when closed, traversable when opened
+    # Door with is_passable=True: blocks when closed, traversable when opened
     door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", 
                              direction="up", obstacles_group=test_game.obstacles_group, is_passable=True)
     
@@ -194,12 +194,12 @@ def test_door_dynamic_collision(test_game):
     door.update(1.0)  # 10.0 * 1.0 = 10, reaches end_frame
     
     assert door.is_open is True
-    # passable=True -> removed from obstacles when open
+    # is_passable=True -> removed from obstacles when open
     assert door not in test_game.obstacles_group
     assert test_game._is_collidable(116, 116) is False
 
 def test_door_not_passable_stays_solid_when_open(test_game):
-    """Verify that a door (passable=False) blocks even when open."""
+    """Verify that a door (is_passable=False) blocks even when open."""
     test_game.obstacles_group.empty()
     # Door with passable=False: always solid, never lets player through
     door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", 
@@ -212,7 +212,7 @@ def test_door_not_passable_stays_solid_when_open(test_game):
     door.update(1.0)
     
     assert door.is_open is True
-    # passable=False -> stays in obstacles even when open
+    # is_passable=False -> stays in obstacles even when open
     assert door in test_game.obstacles_group
 
 def test_variable_size_alignment(test_game):

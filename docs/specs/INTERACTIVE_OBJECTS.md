@@ -17,7 +17,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `height` | int | **Visual** frame height in pixels (for slicing) |
 | `tiled_width` | int | **Logical** hitbox width (from Tiled rect) |
 | `tiled_height` | int | **Logical** hitbox height (from Tiled rect) |
-| `passable` | bool | If `true`, the object does not block movement. (Default: `false`) |
+| `is_passable` | bool | If `true`, the object does not block movement. (Default: `false`) |
 
 ### Animation Logic
 - **Column Mapping** (User Specified): 
@@ -49,20 +49,19 @@ If `sub_type == 'door'` and `is_open == True`, the door can be closed from the "
 
 ### Collision & Barriers
 
-The `passable` property controls **open-state traversability**, not initial collision state.
+The `is_passable` property controls **open-state traversability**, not initial collision state.
 
-| Scenario | `passable` | Spawn (closed) | When Open |
+| Scenario | `is_passable` | Spawn (closed) | When Open |
 |----------|-----------|----------------|-----------|
 | Standard chest | `false` | Solid (in obstacles) | Solid |
 | Traversable door | `true` | Solid (in obstacles) | Traversable (removed from obstacles) |
 | Decorative door | `false` | Solid (in obstacles) | Still solid |
-| Signpost | `true` | Traversable (never in obstacles) | Traversable |
 
 **Rules:**
-- **Doors (`sub_type: door`)**: Always added to `obstacles_group` at spawn, regardless of `passable`. This ensures all doors start closed and blocking.
-  - On `open` (animation reaches `end_frame`): removed from `obstacles_group` **only if** `passable: true`.
+- **Doors (`sub_type: door`)**: Always added to `obstacles_group` at spawn, regardless of `is_passable`. This ensures all doors start closed and blocking.
+  - On `open` (animation reaches `end_frame`): removed from `obstacles_group` **only if** `is_passable: true`.
   - On `close` (animation returns to `start_frame`): **always** re-added to `obstacles_group`.
-- **Non-door objects**: Added to `obstacles_group` at spawn **only if** `passable: false`.
+- **Non-door objects**: Added to `obstacles_group` at spawn **only if** `is_passable: false`.
 
 ### Rendering & Alignment
 - **Y-Sort**: Sprites are sorted by their `rect.bottom`.
