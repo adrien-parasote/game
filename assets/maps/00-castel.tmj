@@ -188,7 +188,7 @@
                                  "value":48
                                 }, 
                                 {
-                                 "name":"passable",
+                                 "name":"is_passable",
                                  "type":"bool",
                                  "value":false
                                 }, 
@@ -246,7 +246,7 @@
                                  "value":62
                                 }, 
                                 {
-                                 "name":"passable",
+                                 "name":"is_passable",
                                  "type":"bool",
                                  "value":true
                                 }, 

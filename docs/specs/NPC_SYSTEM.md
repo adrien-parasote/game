@@ -17,9 +17,10 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 - Provided `interact(initiator)` method stub for subclass overrides.
 - Shared movement and boundary logic.
 
-### [IMPLEMENTED] `src/engine/game.py`
-- Manages `npcs` sprite group.
-- Implements spatial interaction logic via `_handle_interactions`.
+### [PARTIAL] `src/engine/game.py`
+- **[IMPLEMENTED]** Manages `npcs` sprite group.
+- **[IMPLEMENTED]** Implements spatial interaction logic via `_handle_interactions`.
+- **[PENDING]** Manage NPC spawning in `_spawn_entities`.
 
 ---
 
@@ -67,5 +68,5 @@ NPCs use a standard 4x4 sprite sheet layout:
 | Missing Map Properties | `props.get()` returns `None` | Use engine defaults (NPC speed, etc.) | Log Warning |
 
 ## 4. Deep Links
-- Camera and Rendering: [ENGINE_CORE.md - Render Constraints](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/ENGINE_CORE.md#L15)
-- Grid Movement Core: [ENGINE_CORE.md - Movement](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/ENGINE_CORE.md#L27)
+- Camera and Rendering: [ENGINE_CORE.md - Render Constraints](ENGINE_CORE.md#L15)
+- Grid Movement Core: [ENGINE_CORE.md - Movement](ENGINE_CORE.md#L27)

@@ -121,7 +121,7 @@ In addition to map tile collisions, the engine supports blocking player movement
 | Bound Overflow| `pos > 1M` | Log Warn | Clamp to boundary |
 
 ## 6. Deep Links
-- **Map Recursive Parsing**: [tmj_parser.py - _process_layers](file:///Users/adrien.parasote/Documents/perso/game/src/map/tmj_parser.py#L44)
-- **Property Detection**: [tmj_parser.py - _parse_objects](file:///Users/adrien.parasote/Documents/perso/game/src/map/tmj_parser.py#L55)
-- **Player Spawn Logic**: [game.py - __init__](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L67)
-- **Frustum Culling**: [map_manager.py - get_visible_chunks](file:///Users/adrien.parasote/Documents/perso/game/src/map/manager.py)
+- **Map Recursive Parsing**: [tmj_parser.py - _process_layers](src/map/tmj_parser.py#L44)
+- **Property Detection**: [tmj_parser.py - _parse_objects](src/map/tmj_parser.py#L55)
+- **Player Spawn Logic**: [game.py - __init__](src/engine/game.py#L67)
+- **Frustum Culling**: [map_manager.py - get_visible_chunks](src/map/manager.py)
