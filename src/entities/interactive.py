@@ -22,8 +22,7 @@ class InteractiveEntity(BaseEntity):
     def __init__(self, pos: tuple, groups: list[pygame.sprite.Group], 
                  sub_type: str, sprite_sheet: str, direction: str = 'down', 
                  depth: int = 1, start_row: int = 0, end_row: int = 3,
-                 width: int = 32, height: int = 32, obstacles_group: pygame.sprite.Group = None,
-                 text: str = None):
+                 width: int = 32, height: int = 32, obstacles_group: pygame.sprite.Group = None):
         super().__init__((pos[0] + width // 2, pos[1] + height // 2), groups)
         self.sub_type = sub_type
         self.direction_str = direction.lower()
@@ -31,7 +30,6 @@ class InteractiveEntity(BaseEntity):
         self.start_row = start_row
         self.end_row = end_row
         self.obstacles_group = obstacles_group
-        self.text = text
         
         # Load spritesheet using pixel dimensions
         sheet_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "sprites", sprite_sheet)

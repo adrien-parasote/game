@@ -15,9 +15,8 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `end_frame` | int | Ending row of animation (default 3) |
 | `width` | int | Frame width in pixels (default 32) |
 | `height` | int | Frame height in pixels (default 32) |
-| `text` | string | Dialogue text (only for `sub_type: sign`) |
 
-### Animation & Logic
+### Animation Logic
 - **Column Mapping** (User Specified): 
   - `up`: Column 0
   - `right`: Column 1
@@ -28,11 +27,6 @@ This document defines the requirements for fixed interactive objects (chests, sw
   - Doors support toggle behavior (Open/Close).
   - Open: Animate from `start_frame` to `end_frame`.
   - Close: Animate from `end_frame` back to `start_frame`.
-- **Signs (sub_type: sign)**:
-  - On interaction: Game enters `dialogue` state. 
-  - Player movement is frozen.
-  - A UI box displays the `text`.
-  - Pressing `E` (Interact) again closes the dialogue and restores movement.
 
 ## 2. Spatial Interaction & Physics
 
