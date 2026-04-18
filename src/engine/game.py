@@ -113,7 +113,11 @@ class Game:
                     tiled_width=ent.get("width", 32),
                     tiled_height=ent.get("height", 32),
                     obstacles_group=self.obstacles_group,
-                    is_passable=props.get("is_passable", False)
+                    is_passable=props.get("is_passable", False),
+                    is_animated=props.get("is_animated", False),
+                    halo_size=int(props.get("halo_size", 0)),
+                    halo_color=props.get("halo_color", "[255, 255, 255]"),
+                    halo_alpha=int(props.get("halo_alpha", 130))
                 )
             elif e_type and (e_type == "npc" or e_type.startswith("npc_")):
                 NPC(
@@ -220,9 +224,9 @@ class Game:
             # Only triggered by E as per spec
             if keys[Settings.INTERACT_KEY]:
                 for obj in self.interactives:
-                    # Proximity Check (< 80px to accommodate tall objects and adjacent tiles)
+                    # Proximity Check (Tightened to 45px)
                     dist = self.player.pos.distance_to(obj.pos)
-                    if dist < 80.0:
+                    if dist < 45.0:
                         # Orientation Check: Player must face the correct side
                         # Object 'up' -> Player must be south (y > obj_y) and facing 'up'
                         # Object 'down' -> Player must be north (y < obj_y) and facing 'down'
@@ -320,6 +324,13 @@ class Game:
                 overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
                 overlay.fill((0, 0, 0, night_alpha))
                 self.screen.blit(overlay, (0, 0))
+            
+            # Draw Lighting Halos (Additive blend mode)
+            for obj in self.interactives:
+                if obj.halo_surf:
+                    cam_offset = self.visible_sprites.offset
+                    halo_pos = obj.pos + cam_offset - pygame.math.Vector2(obj.halo_size, obj.halo_size)
+                    self.screen.blit(obj.halo_surf, halo_pos, special_flags=pygame.BLEND_RGB_ADD)
                 
             # Draw HUD
             self._draw_hud()

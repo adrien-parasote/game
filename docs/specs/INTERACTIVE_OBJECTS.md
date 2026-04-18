@@ -5,19 +5,11 @@ This document defines the requirements for fixed interactive objects (chests, sw
 ## 1. InteractiveEntity Class
 
 ### Data Structure (Tiled)
-| Property | Type | Description |
-|----------|------|-------------|
-| `sub_type` | string | "chest", "sign", etc. |
-| `sprite_sheet` | string | Filename in `assets/images/sprites/` |
-| `direction` | string | "up", "right", "left", "right" |
-| `depth` | int | Typically 1 (Y-sorted) |
-| `start_frame` | int | Starting row of animation (default 0) |
-| `end_frame` | int | Ending row of animation (default 3) |
-| `width` | int | **Visual** frame width in pixels (for slicing) |
-| `height` | int | **Visual** frame height in pixels (for slicing) |
-| `tiled_width` | int | **Logical** hitbox width (from Tiled rect) |
-| `tiled_height` | int | **Logical** hitbox height (from Tiled rect) |
-| `is_passable` | bool | If `true`, the object does not block movement. (Default: `false`) |
+| `is_passable` | bool | If `true`, the object is traversable when ON or permanently if floor decor. |
+| `is_animated` | bool | If `true`, the object loops its animation between `start_frame` and `end_frame` when ON. |
+| `halo_size` | int | Radius of the light halo in pixels (default 0). |
+| `halo_color` | string | Color of the halo in `[R, G, B]` format (text in TMJ). |
+| `halo_alpha` | int | Maximum alpha (center) of the radial gradient (0-255). |
 
 ### Animation Logic
 - **Column Mapping** (User Specified): 
@@ -25,19 +17,21 @@ This document defines the requirements for fixed interactive objects (chests, sw
   - `right`: Column 1
   - `left`: Column 2
   - `down`: Column 3
-- **Behavior**: On interaction, iterate through frames (rows) from `start_frame` to `end_frame` of the selected column once. 
+- **Behavior**: On interaction, state toggles between ON and OFF. Default state is OFF.
+- **Animation (Linear)**: If `is_animated == false`, animation plays once from `start_frame` to `end_frame` (Toggle ON).
+- **Animation (Looping)**: If `is_animated == true`, animation loops between `start_frame` and `end_frame` continuously while the state is ON.
 - **Doors (sub_type: door)**:
-  - Doors support toggle behavior (Open/Close).
-  - Open: Animate from `start_frame` to `end_frame`.
-  - Close: Animate from `end_frame` back to `start_frame`.
+  - Doors support toggle behavior.
+  - Open (ON): Animate from `start_frame` to `end_frame`.
+  - Close (OFF): Animate from `end_frame` back to `start_frame`.
 
 ## 2. Spatial Interaction & Physics
 
 ### Interaction Validation
 Valid ONLY if both conditions are met:
-1. **Proximity**: `Vector2(player.pos).distance_to(obj.pos) < 80.0`.
+1. **Proximity**: `Vector2(player.pos).distance_to(obj.pos) < 45.0`.
    - `obj.pos` is the "footprint center" (center of the bottom 32x32 area).
-   - Increased to 80px to support natural interaction from adjacent tiles.
+   - Constrained to 45px for tight interaction requirements.
 2. **Relative Orientation (Opposite Rule)**: 
    - Object `up` (opens from south) -> Player must be south (`y > obj_y`) and facing `up`.
    - Object `down` -> Player must be north (`y < obj_y`) and facing `down`.
@@ -51,11 +45,11 @@ If `sub_type == 'door'` and `is_open == True`, the door can be closed from the "
 
 The `is_passable` property controls **open-state traversability**, not initial collision state.
 
-| Scenario | `is_passable` | Spawn (closed) | When Open |
+| Scenario | `is_passable` | Spawn (closed/OFF) | When ON |
 |----------|-----------|----------------|-----------|
 | Standard chest | `false` | Solid (in obstacles) | Solid |
 | Traversable door | `true` | Solid (in obstacles) | Traversable (removed from obstacles) |
-| Decorative door | `false` | Solid (in obstacles) | Still solid |
+| Floor decor | `true` | Traversable (not in obstacles) | Traversable |
 
 **Rules:**
 - **Doors (`sub_type: door`)**: Always added to `obstacles_group` at spawn, regardless of `is_passable`. This ensures all doors start closed and blocking.
@@ -64,8 +58,12 @@ The `is_passable` property controls **open-state traversability**, not initial c
 - **Non-door objects**: Added to `obstacles_group` at spawn **only if** `is_passable: false`.
 
 ### Rendering & Alignment
-- **Y-Sort**: Sprites are sorted by their `rect.bottom`.
-- **Alignment**: Sprites are centered horizontally on the Tiled rectangle and aligned by `rect.bottom`. This allows sprites taller than 32px to correctly occlude characters behind them while maintaining grid-aligned collision footprints.
+- **Y-Sort**: Sprites are sorted by their `rect.bottom`. All `interactive_objects` use depth 1.
+- **Alignment**: Sprites are centered horizontally on the Tiled rectangle and aligned by `rect.bottom`.
+- **Halo (Light Logic)**:
+  - If `halo_size > 0`, a radial gradient halo is drawn.
+  - Center: `halo_alpha`. Edge (at `halo_size`): 0.
+  - Rendered using `BLEND_RGB_ADD` blend mode on top of the world, after the dark night overlay.
 
 ## 3. Anti-Patterns (DO NOT)
 
@@ -80,8 +78,10 @@ The `is_passable` property controls **open-state traversability**, not initial c
 
 ## 4. Test Case Specifications
 
-| TC-I-01 | Proximity | Player at 70px away | Interaction Succeeds |
-| TC-I-02 | Proximity | Player at 90px away | Interaction Fails |
+| TC-I-01 | Proximity | Player at 40px away | Interaction Succeeds |
+| TC-I-02 | Proximity | Player at 50px away | Interaction Fails |
+| TC-I-11 | Animation | `is_animated=True` | Loops back from `end_frame` to `start_frame` |
+| TC-I-12 | Halo | `halo_size > 0` | Surface generated with radial alpha gradient |
 | TC-I-07 | Alignment | Sprite 64x64 on Tiled 64x32 | `rect.bottom` aligns with Tiled bottom |
 | TC-I-08 | Door Close | Player at North of open door | Close Succeeds (Relaxed Orientation) |
 | TC-I-09 | Animation | Logic reverse on close | `frame_index` decreases back to start |
