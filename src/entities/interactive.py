@@ -76,8 +76,11 @@ class InteractiveEntity(BaseEntity):
             
         # Selective Animation Speed
         if self.is_light_source:
-            # Real-life flame rhythm (3.0 FPS) - much slower than traversal speed
-            self.animation_speed = 3.0
+            # Atmospheric flame rhythm (1.5 FPS)
+            self.animation_speed = 1.5
+            # Desynchronize starting frames for organic multiple-light vacillation
+            if self.is_animated:
+                self.frame_index = random.uniform(float(self.start_row), float(self.end_row + 1))
         else:
             # Standard objects (chests, doors) get 10.0 FPS
             self.animation_speed = 10.0
