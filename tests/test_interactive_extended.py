@@ -109,16 +109,16 @@ def test_interactive_halo_generation(mock_spritesheet):
         halo_color="[255, 204, 0]", halo_alpha=130
     )
     
-    assert obj.halo_surf is not None
-    assert obj.halo_surf.get_size() == (40, 40)
+    assert obj.light_mask is not None
+    assert obj.light_mask.get_size() == (40, 40)
     assert obj.halo_color == [255, 204, 0]
     
     # Check center alpha
-    center_color = obj.halo_surf.get_at((20, 20))
+    center_color = obj.light_mask.get_at((20, 20))
     assert center_color.a == 130
     
     # Check edge alpha (should be 0 or very close)
-    edge_color = obj.halo_surf.get_at((0, 20))
+    edge_color = obj.light_mask.get_at((0, 20))
     assert edge_color.a == 0
     
     pygame.quit()

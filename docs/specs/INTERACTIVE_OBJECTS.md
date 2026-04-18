@@ -39,9 +39,13 @@ Valid ONLY if both conditions are met:
    - Object `right` -> Player must be west (`x < obj_x`) and facing `right`.
 
 **Relaxation (Doors)**:
-If `sub_type == 'door'` and `is_open == True`, the door can be closed from the "opposite side" (e.g., closing a door from the north while facing `down`). This ensures players can easily close doors behind them.
+If `sub_type == 'door'` and `is_on == True`, the door can be closed from the "opposite side" (e.g., closing a door from the north while facing `down`). This ensures players can easily close doors behind them.
 
-### Collision & Barriers
+### 2.1. Rendering & Alignment
+- **Y-Sort**: Sprites are sorted by their `rect.bottom`. All `interactive_objects` use depth 1.
+- **Alignment**: Sprites are centered horizontally on the Tiled rectangle and aligned by `rect.bottom`.
+
+### 2.2. Collision & Barriers
 
 The `is_passable` property controls **open-state traversability**, not initial collision state.
 
@@ -57,13 +61,22 @@ The `is_passable` property controls **open-state traversability**, not initial c
   - On `close` (animation returns to `start_frame`): **always** re-added to `obstacles_group`.
 - **Non-door objects**: Added to `obstacles_group` at spawn **only if** `is_passable: false`.
 
-### Rendering & Alignment
-- **Y-Sort**: Sprites are sorted by their `rect.bottom`. All `interactive_objects` use depth 1.
-- **Alignment**: Sprites are centered horizontally on the Tiled rectangle and aligned by `rect.bottom`.
-- **Halo (Light Logic)**:
-  - If `halo_size > 0`, a radial gradient halo is drawn.
-  - Center: `halo_alpha`. Edge (at `halo_size`): 0.
-  - Rendered using `BLEND_RGB_ADD` blend mode on top of the world, after the dark night overlay.
+### 2.3. Dynamic Lighting (Halos)
+If `halo_size > 0`, a dynamic radial gradient halo is generated and rendered.
+
+- **Initialization**:
+  - `halo_color` is parsed from string (e.g., `"[255, 204, 0]"`) into an RGB tuple.
+  - A high-quality radial gradient surface is generated once (Center: `halo_alpha`, Edge: 0).
+- **Adaptive Intensity**:
+  - Halo intensity scales with `global_darkness` (provided by the engine).
+  - **Luminosity Floor**: Minimum 15% intensity is maintained even in full daylight if `is_on` is True.
+- **Bio-Inspired Flicker**:
+  - **Frequency**: ~2Hz (sinusoidal).
+  - **Modulation**: ±12% on intensity (alpha), ±3% on size (scale).
+  - **Phase**: Each object uses a unique random phase offset to prevent synchronized "breathing" between multiple instances.
+- **Rendering**:
+  - Drawn at the **footprint center** (horizontal center, 16px above the Tiled rectangle bottom).
+  - Method: `BLEND_RGB_ADD` on top of the dark night overlay.
 
 ## 3. Anti-Patterns (DO NOT)
 
@@ -72,9 +85,17 @@ The `is_passable` property controls **open-state traversability**, not initial c
 | Divide sheet by hardcoded values | Use pixel-based slicing (`load_grid_by_size`) | Supports variable object sizes |
 | Add doors to map collision layer | Use `obstacles_group` | Allows dynamic passage |
 | Pass center pos only | Pass Tiled top-left and dimensions | Ensures correct visual alignment |
-| Hardcode door state | Use `is_open` and `is_closing` flags | Animation state machine consistency |
+| Hardcode door state | Use `is_on` and `is_closing` flags | Animation state machine consistency |
 | Use `SPACE` for objects | Use `E` key (Unified) | UX differentiation for objects |
 | Calculate distance every frame | Calculate only on key press | CPU optimization |
+
+## ✅ Patterns to Reproduce
+
+| Pattern | Description | Why |
+|---------|-------------|-----|
+| **Footprint Centering** | Define interaction `obj.pos` as footprint center, not sprite center. | Supports tall/offset visual assets while keeping grid-consistent logic. |
+| **Boundary Value Specification** | Define procedural textures by boundary values (e.g. Center Alpha -> Edge Alpha). | Eliminates ambiguity in generation loops. |
+| **ADD Blend Post-Overlay** | Apply additive light halos AFTER the night darkness overlay. | Ensures light sources actively cut through the dark rather than being dimmed by it. |
 
 ## 4. Test Case Specifications
 

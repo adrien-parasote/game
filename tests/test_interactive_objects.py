@@ -133,7 +133,7 @@ def test_chest_remains_solid_when_open(test_game):
     obj.interact(None)
     obj.update(1.0)
     
-    assert obj.is_open is True
+    assert obj.is_on is True
     # Non-passable non-door object stays in obstacles
     assert obj in obstacles
 
@@ -193,7 +193,7 @@ def test_door_dynamic_collision(test_game):
     door.interact(test_game.player)
     door.update(1.0)  # 10.0 * 1.0 = 10, reaches end_frame
     
-    assert door.is_open is True
+    assert door.is_on is True
     # is_passable=True -> removed from obstacles when open
     assert door not in test_game.obstacles_group
     assert test_game._is_collidable(116, 116) is False
@@ -211,7 +211,7 @@ def test_door_not_passable_stays_solid_when_open(test_game):
     door.interact(test_game.player)
     door.update(1.0)
     
-    assert door.is_open is True
+    assert door.is_on is True
     # is_passable=False -> stays in obstacles even when open
     assert door in test_game.obstacles_group
 
@@ -237,7 +237,7 @@ def test_door_interaction_from_above_when_open(test_game):
     door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", direction="up")
     
     # 1. Open it first from South
-    door.is_open = True
+    door.is_on = True
     door.is_animating = False
     
     # 2. Player is at North of the door (116, 80), facing DOWN
@@ -264,7 +264,8 @@ def test_interactive_animation_closing_loop(test_game):
                              obstacles_group=obstacles)
     
     # Force open state
-    door.is_open = True
+    door.is_on = True
+    door.is_animating = False
     door.frame_index = 3.0
     
     # Trigger close
@@ -274,7 +275,7 @@ def test_interactive_animation_closing_loop(test_game):
     # Update to finish closing (animation speed 10)
     door.update(0.5) 
     
-    assert door.is_open is False
+    assert door.is_on is False
     assert door.is_animating is False
     assert door in obstacles
 

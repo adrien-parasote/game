@@ -244,7 +244,7 @@ class Game:
                             valid_orientation = True
                         
                         # Relaxation: Open doors can be closed from the other side
-                        if obj.sub_type == 'door' and getattr(obj, "is_open", False):
+                        if obj.sub_type == 'door' and getattr(obj, "is_on", False):
                             if o_dir == 'up' and p_state == 'down' and self.player.pos.y < obj.pos.y:
                                 valid_orientation = True
                             elif o_dir == 'down' and p_state == 'up' and self.player.pos.y > obj.pos.y:
@@ -325,12 +325,10 @@ class Game:
                 overlay.fill((0, 0, 0, night_alpha))
                 self.screen.blit(overlay, (0, 0))
             
-            # Draw Lighting Halos (Additive blend mode)
+            # Draw Lighting Halos (Adaptive additive rendering)
+            cam_offset = self.visible_sprites.offset
             for obj in self.interactives:
-                if obj.halo_surf:
-                    cam_offset = self.visible_sprites.offset
-                    halo_pos = obj.pos + cam_offset - pygame.math.Vector2(obj.halo_size, obj.halo_size)
-                    self.screen.blit(obj.halo_surf, halo_pos, special_flags=pygame.BLEND_RGB_ADD)
+                obj.draw_halo(self.screen, cam_offset, night_alpha)
                 
             # Draw HUD
             self._draw_hud()

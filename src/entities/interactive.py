@@ -1,7 +1,9 @@
 import pygame
 import os
 import logging
-import json
+import ast
+import math
+import random
 from .base import BaseEntity
 from src.config import Settings
 from src.graphics.spritesheet import SpriteSheet
@@ -52,13 +54,18 @@ class InteractiveEntity(BaseEntity):
         self.halo_size = halo_size
         self.halo_alpha = halo_alpha
         try:
-            self.halo_color = json.loads(halo_color)
-        except (json.JSONDecodeError, TypeError):
-            self.halo_color = [255, 255, 255]
+            # ast.literal_eval is safer than json.loads for literal structures
+            self.halo_color = ast.literal_eval(halo_color)
+        except (ValueError, SyntaxError, TypeError):
+            self.halo_color = (255, 255, 255)
+            
+        self.flicker_phase = random.uniform(0, 2 * math.pi)
+        self.f_alpha = 1.0
+        self.f_scale = 1.0
         
-        self.halo_surf = None
+        self.light_mask = None
         if self.halo_size > 0:
-            self.halo_surf = self._create_halo_surf()
+            self.light_mask = self._create_halo_surf()
         
         # Load spritesheet using sprite pixel width; compute real frame height from sheet
         sheet_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "sprites", sprite_sheet)
@@ -105,19 +112,22 @@ class InteractiveEntity(BaseEntity):
         logging.info(f"Spawned InteractiveEntity '{sub_type}' at {pos} (is_animated={is_animated}, halo={halo_size})")
 
     def _create_halo_surf(self) -> pygame.Surface:
-        """Generate a radial gradient surface for the light halo."""
+        """Generate a high-quality radial gradient surface using concentric circles."""
         size = self.halo_size * 2
         surf = pygame.Surface((size, size), pygame.SRCALPHA)
-        center = pygame.math.Vector2(self.halo_size, self.halo_size)
+        center = (self.halo_size, self.halo_size)
         
-        for x in range(size):
-            for y in range(size):
-                dist = center.distance_to((x, y))
-                if dist <= self.halo_size:
-                    # Radial transition: center (alpha_max) to edge (0)
-                    alpha = int(self.halo_alpha * (1 - dist / self.halo_size))
-                    color = list(self.halo_color) + [alpha]
-                    surf.set_at((x, y), color)
+        # Draw concentric circles from outside in for smoother blending
+        for r in range(self.halo_size, 0, -1):
+            # Linearly alpha falloff
+            alpha = int(self.halo_alpha * (1.0 - r / self.halo_size))
+            color = list(self.halo_color) + [alpha]
+            pygame.draw.circle(surf, color, center, r)
+            
+        # Guarantee the center pixel reaches full alpha
+        center_color = list(self.halo_color) + [self.halo_alpha]
+        surf.set_at(center, center_color)
+        
         return surf
 
     def _get_frame(self, row_index: int) -> pygame.Surface:
@@ -142,34 +152,78 @@ class InteractiveEntity(BaseEntity):
             logging.info(f"Object {self.sub_type} toggled to {'ON' if self.is_on else 'OFF'}")
 
     def update(self, dt: float):
-        """Handle animation progression and dynamic collision."""
-        if self.is_animating:
-            if self.is_animated:
-                # Looping behavior: only animates when ON
-                if self.is_on:
-                    self.frame_index += self.animation_speed * dt
-                    if self.frame_index >= self.end_row + 1:
-                        self.frame_index = float(self.start_row)
-                else:
+        """Handle animation progression and dynamic flicker calculations."""
+        # 1. Flicker Logic (2Hz sinusoidal + noise)
+        if self.is_animated and self.halo_size > 0:
+            time_val = pygame.time.get_ticks() / 1000.0
+            # 2Hz = 4 * pi * time
+            self.f_alpha = 1.0 + 0.12 * math.sin(time_val * 4 * math.pi + self.flicker_phase)
+            self.f_alpha += random.uniform(-0.02, 0.02) # Subtle noise
+            
+            # Scale fluctuation (slower/out of sync)
+            self.f_scale = 1.0 + 0.03 * math.sin(time_val * 3 * math.pi + self.flicker_phase + 0.5)
+        else:
+            self.f_alpha = 1.0
+            self.f_scale = 1.0
+
+        # 2. Animation Logic
+        if self.is_animated:
+            if self.is_on:
+                self.frame_index += self.animation_speed * dt
+                if self.frame_index >= self.end_row + 1:
+                    self.frame_index = float(self.start_row)
+            else:
+                self.frame_index = float(self.start_row)
+                self.is_animating = False
+        elif self.is_animating:
+            # Linear behavior (doors, chests)
+            if self.is_closing:
+                self.frame_index -= self.animation_speed * dt
+                if self.frame_index <= self.start_row:
                     self.frame_index = float(self.start_row)
                     self.is_animating = False
+                    if self.sub_type == 'door' and self.obstacles_group:
+                        self.obstacles_group.add(self)
             else:
-                # Linear behavior (doors, chests)
-                if self.is_closing:
-                    self.frame_index -= self.animation_speed * dt
-                    if self.frame_index <= self.start_row:
-                        self.frame_index = float(self.start_row)
-                        self.is_animating = False
-                        # Re-add to obstacles if door closed
-                        if self.sub_type == 'door' and self.obstacles_group:
-                            self.obstacles_group.add(self)
-                else:
-                    self.frame_index += self.animation_speed * dt
-                    if self.frame_index >= self.end_row:
-                        self.frame_index = float(self.end_row)
-                        self.is_animating = False
-                        # Remove from obstacles if door open and passable
-                        if self.sub_type == 'door' and self.is_passable and self.obstacles_group:
-                            self.obstacles_group.remove(self)
-            
-            self.image = self._get_frame(int(self.frame_index))
+                self.frame_index += self.animation_speed * dt
+                if self.frame_index >= self.end_row:
+                    self.frame_index = float(self.end_row)
+                    self.is_animating = False
+                    if self.sub_type == 'door' and self.is_passable and self.obstacles_group:
+                        self.obstacles_group.remove(self)
+        
+        self.image = self._get_frame(int(self.frame_index))
+
+    def draw_halo(self, surface: pygame.Surface, cam_offset: pygame.math.Vector2, global_darkness: int):
+        """Render the modulated light halo with additive blending."""
+        if not self.is_on or not self.light_mask or self.halo_size <= 0:
+            return
+
+        # Intensity modulation: scales with darkness, min 15% floor
+        # darkness: 0 (noon) -> MAX_NIGHT_ALPHA (180 for now)
+        # We normalize to 255 for standard brightness math
+        dark_factor = global_darkness / 255.0 
+        global_factor = max(0.15, dark_factor)
+        
+        final_alpha = int(255 * global_factor * self.f_alpha)
+        final_alpha = max(0, min(255, final_alpha))
+        
+        # Apply scaling if needed
+        if self.f_scale != 1.0:
+            new_size = int(self.halo_size * 2 * self.f_scale)
+            render_surf = pygame.transform.scale(self.light_mask, (new_size, new_size))
+        else:
+            render_surf = self.light_mask
+            new_size = self.halo_size * 2
+
+        # Modulation
+        render_surf.set_alpha(final_alpha)
+        
+        # Centering on FOOTPRINT (16px above rect.bottom)
+        # footprint_center = (self.rect.centerx, self.rect.bottom - 16)
+        # cam_offset is added in Game, so we just calculate screen position
+        screen_center_x = self.rect.centerx + cam_offset.x
+        screen_center_y = (self.rect.bottom - 16) + cam_offset.y
+        
+        halo_pos = (screen_center_x - new_size // 2, screen_center_y - new_size // 2)
+        surface.blit(render_surf, halo_pos, special_flags=pygame.BLEND_RGB_ADD)
