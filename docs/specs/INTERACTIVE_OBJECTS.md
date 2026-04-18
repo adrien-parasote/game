@@ -17,7 +17,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
   - `right`: Column 1
   - `left`: Column 2
   - `down`: Column 3
-- **Behavior**: On interaction, state toggles between ON and OFF. Default state is OFF.
+- **Behavior**: On interaction, state toggles between ON and OFF. Default state is OFF, unless `is_animated` is true, or `sub_type` is a light source (`lamp`, `lantern`, `torch`, `fire`), in which case the default state is ON.
 - **Animation (Linear)**: If `is_animated == false`, animation plays once from `start_frame` to `end_frame` (Toggle ON).
 - **Animation (Looping)**: If `is_animated == true`, animation loops between `start_frame` and `end_frame` continuously while the state is ON.
 - **Doors (sub_type: door)**:
@@ -68,7 +68,7 @@ If `halo_size > 0`, a dynamic radial gradient halo is generated and rendered.
   - `halo_color` is parsed from string (e.g., `"[255, 204, 0]"`) into an RGB tuple.
   - A high-quality radial gradient surface is generated once (Center: `halo_alpha`, Edge: 0).
 - **Adaptive Intensity**:
-  - Halo intensity scales with `global_darkness` (provided by the engine).
+  - Halo intensity scales with `global_darkness` (provided by the engine), normalized against `180` (MAX_NIGHT_ALPHA) to ensure peak brightness at midnight aligns with `halo_alpha`.
   - **Luminosity Floor**: Minimum 15% intensity is maintained even in full daylight if `is_on` is True.
 - **Bio-Inspired Flicker**:
   - **Frequency**: ~2Hz (sinusoidal).

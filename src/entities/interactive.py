@@ -28,6 +28,7 @@ class InteractiveEntity(BaseEntity):
                  width: int = 32, height: int = 32, obstacles_group: pygame.sprite.Group = None,
                  tiled_width: int = None, tiled_height: int = None,
                  is_passable: bool = False, is_animated: bool = False,
+                 is_on: bool = None,
                  halo_size: int = 0, halo_color: str = "[255, 255, 255]",
                  halo_alpha: int = 130):
         # Default tiled dimensions to sprite dimensions if not provided
@@ -87,8 +88,16 @@ class InteractiveEntity(BaseEntity):
         # State
         self.frame_index = float(self.start_row)
         self.animation_speed = 10.0
-        self.is_on = False  # Matches User request: ON/OFF
-        self.is_animating = False
+        
+        # Determine default state
+        light_sources = ['lamp', 'lantern', 'torch', 'fire', 'candle']
+        if is_on is not None:
+            self.is_on = is_on
+        else:
+            # Default to ON for animated objects or specific light subtypes
+            self.is_on = self.is_animated or self.sub_type in light_sources
+            
+        self.is_animating = self.is_on and self.is_animated
         self.is_closing = False
         
         self.image = self._get_frame(int(self.frame_index))
@@ -200,9 +209,8 @@ class InteractiveEntity(BaseEntity):
             return
 
         # Intensity modulation: scales with darkness, min 15% floor
-        # darkness: 0 (noon) -> MAX_NIGHT_ALPHA (180 for now)
-        # We normalize to 255 for standard brightness math
-        dark_factor = global_darkness / 255.0 
+        # Normalize by MAX_NIGHT_ALPHA (180) to reach full halo_alpha at midnight
+        dark_factor = global_darkness / 180.0 
         global_factor = max(0.15, dark_factor)
         
         final_alpha = int(255 * global_factor * self.f_alpha)

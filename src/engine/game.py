@@ -115,6 +115,7 @@ class Game:
                     obstacles_group=self.obstacles_group,
                     is_passable=props.get("is_passable", False),
                     is_animated=props.get("is_animated", False),
+                    is_on=props.get("is_on"),
                     halo_size=int(props.get("halo_size", 0)),
                     halo_color=props.get("halo_color", "[255, 255, 255]"),
                     halo_alpha=int(props.get("halo_alpha", 130))

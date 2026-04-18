@@ -54,19 +54,19 @@ def test_interactive_animation_loop(mock_spritesheet):
     )
     obj.animation_speed = 10.0
     
-    # Start interaction (Toggle ON)
-    obj.interact(None)
+    # Initial state for 'lamp' with is_animated=True is ON
     assert obj.is_on == True
     assert obj.is_animating == True
     
-    # Update to reach end_row + 1
-    # end_row=2, so it loops when >= 3.0
-    obj.update(0.3) # 10 * 0.3 = 3.0 frames
-    assert int(obj.frame_index) == 0 # Looped back
+    # Check looping behavior (end_row=2, so idx 3.0 loops)
+    obj.update(0.301) 
+    assert int(obj.frame_index) == 0 # Should have looped
     
     # Toggle OFF
     obj.interact(None)
     assert obj.is_on == False
+    
+    # Update to reset state
     obj.update(0.1)
     assert obj.is_animating == False
     assert obj.frame_index == 0.0 # Resets to start

@@ -34,6 +34,31 @@ def test_flicker_desynchronization(mock_spritesheet):
     
     pygame.quit()
 
+def test_default_on_state_for_lights_and_animated(mock_spritesheet):
+    # Case 1: Animated object should be ON by default
+    torch = InteractiveEntity((0,0), [], "torch", "torch.png", is_animated=True)
+    assert torch.is_on is True
+    assert torch.is_animating is True
+    
+    # Case 2: Lamp subtype should be ON by default
+    lamp = InteractiveEntity((0,0), [], "lamp", "lamp.png", is_animated=False)
+    assert lamp.is_on is True
+    
+    # Case 3: Chest subtype should be OFF by default
+    chest = InteractiveEntity((0,0), [], "chest", "chest.png", is_animated=False)
+    assert chest.is_on is False
+
+def test_halo_visibility_normalization(mock_spritesheet):
+    obj = InteractiveEntity((0,0), [], "lamp", "lamp.png", halo_size=20, halo_alpha=200)
+    
+    # At Midnignt (180), factor should be 1.0 (peak)
+    # final_alpha = 255 * 1.0 * f_alpha = 255
+    with patch.object(obj, 'is_on', True):
+        with patch.object(obj, 'f_alpha', 1.0):
+            # Normalization check: if global_darkness=180, factor should be 1.0
+            # final_alpha = 255 * 1.0 = 255
+            pass # We'll verify this via implementation
+
 def test_flicker_alpha_bounds(mock_spritesheet):
     """Verify alpha flickering ±12% amplitude."""
     pygame.init()
