@@ -113,13 +113,16 @@ def test_interactive_halo_generation(mock_spritesheet):
     assert obj.light_mask.get_size() == (40, 40)
     assert obj.halo_color == [255, 204, 0]
     
-    # Check center alpha
+    # In the new RGB intensity model, alpha is Always 255 (non-SRCALPHA surface)
+    # The halo effect is achieved by modulating RGB values on a black background
     center_color = obj.light_mask.get_at((20, 20))
-    assert center_color.a == 130
-    
-    # Check edge alpha (should be 0 or very close)
     edge_color = obj.light_mask.get_at((0, 20))
-    assert edge_color.a == 0
+    
+    # Requirement: center is bright, edge is dark (black)
+    assert center_color.r > 0
+    assert edge_color.r == 0
+    assert edge_color.g == 0
+    assert edge_color.b == 0
     
     pygame.quit()
 
@@ -163,3 +166,72 @@ def test_interactive_collision_logic(mock_spritesheet):
     assert chest in obs_group # Still solid
     
     pygame.quit()
+
+def test_selective_animation_speed(mock_spritesheet):
+    """TC-I-13: Verify chest is 10FPS, lamp is organic 1.5FPS, and animated_decor with halo is also 1.5FPS."""
+    pygame.init()
+    pygame.display.set_mode((1, 1), pygame.HIDDEN)
+    
+    chest = InteractiveEntity(
+        (0, 0), [], "chest", "test.png"
+    )
+    assert chest.animation_speed == 10.0
+    
+    lamp = InteractiveEntity(
+        (0, 0), [], "lamp", "test.png"
+    )
+    assert lamp.animation_speed == 1.5
+    
+    # Inclusive detection test: animated_decor with a halo should also be slow
+    decor_light = InteractiveEntity(
+        (0, 0), [], "animated_decor", "test.png", halo_size=80
+    )
+    assert decor_light.animation_speed == 1.5
+    
+    pygame.quit()
+
+def test_light_desynchronization(mock_spritesheet):
+    """TC-I-15: Verify that two animated light sources start at different frame indices (desync)."""
+    pygame.init()
+    pygame.display.set_mode((1, 1), pygame.HIDDEN)
+    
+    # Create two lamps with identical stats
+    # We use a set to check for unique values over several iterations to account for random collisions
+    frame_indices = set()
+    for _ in range(20):
+        lamp = InteractiveEntity(
+            (0, 0), [], "lamp", "test.png", start_row=0, end_row=5, is_animated=True
+        )
+        frame_indices.add(lamp.frame_index)
+    
+    # With 20 samples and a range of [0, 6), we expect more than 1 unique value
+    assert len(frame_indices) > 1
+    
+    pygame.quit()
+
+def test_light_source_frame_sync(mock_spritesheet):
+    """TC-I-14: Verify halo intensity modulation is tethered directly to the sprite frame."""
+    pygame.init()
+    pygame.display.set_mode((1, 1), pygame.HIDDEN)
+    
+    lamp = InteractiveEntity(
+        (0, 0), [], "lamp", "test.png", halo_size=20, start_row=0, end_row=3, is_animated=True
+    )
+    lamp.is_on = True
+    
+    # We will freeze time and manually advance the frame_index to prove time independent logic
+    with patch('pygame.time.get_ticks', return_value=0):
+        lamp.frame_index = 0.0
+        lamp.update(0.1) # DT doesn't matter for our static frame_index override
+        alpha_start = lamp.f_alpha
+        
+        lamp.frame_index = 1.5 # Half-way through a 3-frame 
+        lamp.update(0.1)
+        alpha_mid = lamp.f_alpha
+        
+        # Alpha should meaningfully diverge due to frames, despite time being perfectly 0
+        # If it doesn't, it implies it's still running on ticks
+        assert abs(alpha_start - alpha_mid) > 0.05
+    
+    pygame.quit()
+

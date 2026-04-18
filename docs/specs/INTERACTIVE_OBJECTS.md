@@ -31,6 +31,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
 Valid ONLY if both conditions are met:
 1. **Proximity**: `Vector2(player.pos).distance_to(obj.pos) < 45.0`.
    - `obj.pos` is the "footprint center" (center of the bottom 32x32 area).
+   - This ensures interaction works correctly regardless of the sprite's visual height or offsets.
    - Constrained to 45px for tight interaction requirements.
 2. **Relative Orientation (Opposite Rule)**: 
    - Object `up` (opens from south) -> Player must be south (`y > obj_y`) and facing `up`.
@@ -66,7 +67,16 @@ If `halo_size > 0`, a dynamic radial gradient halo is generated and rendered.
 
 - **Initialization**:
   - `halo_color` is parsed from string (e.g., `"[255, 204, 0]"`) into an RGB tuple.
-  - A high-quality radial gradient surface is generated once (Center: `halo_alpha`, Edge: 0).
+  - A high-quality radial gradient surface is generated using a pixel-by-pixel radius loop (`range(radius, 0, -1)`).
+  - **Additive Technique**: The surface is NOT `SRCALPHA` (transparent). Instead, it uses a **Black background** (`[0, 0, 0]`) and the gradient is created by modulating the RGB intensity (`color = base_color * intensity`). This ensures `pygame.BLEND_RGB_ADD` works correctly and smoothly on all platforms.
+  - **Falloff**: Uses a quadratic falloff (`(1.0 - ratio) ** 2`) for a natural-looking glow.
+  - **Visual Centering**: The halo is centered on the visual middle of the entity (`rect.center`). This is distinct from the logical `pos` (footprint center), ensuring light appears correctly on tall objects.
+  - To optimize rendering, a **Scaling Cache** of 10 variations (0.97 to 1.03 scale) is pre-generated at startup to avoid per-frame `pygame.transform.scale` operations.
+- **Organic Flicker (Animation-Driven)**:
+  - **Applicability**: This specialized logic applies to light-source entities. An entity is considered a light source if its `sub_type` is in `['lamp', 'lantern', 'torch', 'fire', 'candle']` OR if it has a `halo_size > 0`. Traditional animated objects like `chest` or `door` retain their standard animation speed (10.0 FPS).
+  - **Synchronization**: For light sources, flicker modulation (`f_alpha`, `f_scale`) is derived directly from `frame_index`. This ensures the halo is brightest when the fire sprite is at its peak frame.
+  - **Real-Life Timeline**: Light source animation speed is reduced to follow a "real-life flame" rhythm. Target speed is **1.5 FPS**, providing a very slow, atmospheric breathing effect.
+  - **Desynchronization**: To prevent multiple light sources from pulsing in unison, each light source starts at a random `frame_index` offset within its animation loop.
 - **Adaptive Intensity**:
   - Halo intensity scales with `global_darkness` (provided by the engine), normalized against `180` (MAX_NIGHT_ALPHA) to ensure peak brightness at midnight aligns with `halo_alpha`.
   - **Luminosity Floor**: Minimum 15% intensity is maintained even in full daylight if `is_on` is True.
@@ -88,6 +98,8 @@ If `halo_size > 0`, a dynamic radial gradient halo is generated and rendered.
 | Hardcode door state | Use `is_on` and `is_closing` flags | Animation state machine consistency |
 | Use `SPACE` for objects | Use `E` key (Unified) | UX differentiation for objects |
 | Calculate distance every frame | Calculate only on key press | CPU optimization |
+| Scale surfaces in `update` | Pre-calculate a scaling cache in `__init__` | `pygame.transform.scale` causes severe frame drops when called per-frame on multiple objects |
+| Mega `__init__` methods | Refactor into private helper methods (`_parse_properties`, `_setup_physics`) | Ensure compliance with the 50-line maximum per method rule |
 
 ## ✅ Patterns to Reproduce
 
@@ -96,17 +108,25 @@ If `halo_size > 0`, a dynamic radial gradient halo is generated and rendered.
 | **Footprint Centering** | Define interaction `obj.pos` as footprint center, not sprite center. | Supports tall/offset visual assets while keeping grid-consistent logic. |
 | **Boundary Value Specification** | Define procedural textures by boundary values (e.g. Center Alpha -> Edge Alpha). | Eliminates ambiguity in generation loops. |
 | **ADD Blend Post-Overlay** | Apply additive light halos AFTER the night darkness overlay. | Ensures light sources actively cut through the dark rather than being dimmed by it. |
+| **Pre-calculated Scaling Cache** | Pre-generate discrete scaled variants of complex surfaces during startup. | Replaces continuous runtime mathematical operations (which freeze pygame) with discrete memory lookups (which are instant). |
 
 ## 4. Test Case Specifications
 
-| TC-I-01 | Proximity | Player at 40px away | Interaction Succeeds |
-| TC-I-02 | Proximity | Player at 50px away | Interaction Fails |
-| TC-I-11 | Animation | `is_animated=True` | Loops back from `end_frame` to `start_frame` |
-| TC-I-12 | Halo | `halo_size > 0` | Surface generated with radial alpha gradient |
-| TC-I-07 | Alignment | Sprite 64x64 on Tiled 64x32 | `rect.bottom` aligns with Tiled bottom |
-| TC-I-08 | Door Close | Player at North of open door | Close Succeeds (Relaxed Orientation) |
-| TC-I-09 | Animation | Logic reverse on close | `frame_index` decreases back to start |
-| TC-I-10 | Coverage | Full Module Scan | 100% unit test coverage achieved |
+### Unit Tests Required
+| Test ID | Component | Input | Expected Output | Edge Cases |
+|---------|-----------|-------|-----------------|------------|
+| TC-U-01 | State Toggle | Call `interact()` on OFF object | Sets `is_on` to True, `is_animating` to True | Object is `is_animated=True` |
+| TC-U-02 | Animation Step | `update(dt)` when `is_animating=True` | `frame_index` increments based on speed and `dt` | Time step > animation duration |
+| TC-U-03 | Animation Loop | `update(dt)` past `end_frame` for looping obj | `frame_index` resets to `start_frame` | High frame rate |
+| TC-U-04 | Animation Reverse | `update(dt)` when closing door | `frame_index` decrements towards `start_row` | None |
+| TC-U-05 | Pre-calculated Cache | `halo_size=50` | `light_mask_cache` has exactly 10 surfaces (0.97 to 1.03) | `halo_size=0` |
+
+### Integration Tests Required
+| Test ID | Flow | Setup | Verification | Teardown |
+|---------|------|-------|--------------|----------|
+| TC-I-01 | Proximity Validation | Spawn player at `dir=(0,1)`, object at distance 40px | Press E triggers state change | None |
+| TC-I-02 | Proximity Rejection | Spawn player at `dir=(0,1)`, object at distance 50px | Press E does NOT trigger state change | None |
+| TC-I-03 | Orientation Validation | Open door from 'wrong' side (Relaxed rule) | Valid orientation identified, state toggles to close | None |
 
 ## 5. Error Handling Matrix
 

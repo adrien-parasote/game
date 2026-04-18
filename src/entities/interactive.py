@@ -31,31 +31,63 @@ class InteractiveEntity(BaseEntity):
                  is_on: bool = None,
                  halo_size: int = 0, halo_color: str = "[255, 255, 255]",
                  halo_alpha: int = 130):
-        # Default tiled dimensions to sprite dimensions if not provided
+        
+        # 1. Properties & State Initialization
+        self._parse_properties(sub_type, start_row, end_row, is_on, is_animated, 
+                             depth, direction, halo_size, halo_color, halo_alpha)
+        
+        # 2. Asset Loading
+        self._load_assets(sprite_sheet, width, height)
+        
+        # 3. Physics & Layout Setup
         t_w = tiled_width if tiled_width is not None else width
         t_h = tiled_height if tiled_height is not None else height
+        self._setup_physics(pos, t_w, t_h, is_passable, obstacles_group, groups)
         
-        super().__init__((pos[0] + t_w // 2, pos[1] + t_h // 2), groups)
+        # 4. Lighting Initialization
+        self.light_mask_cache = []
+        if self.halo_size > 0:
+            self._setup_lighting()
+            
+        self.image = self._get_frame(int(self.frame_index))
+        logging.info(f"Spawned InteractiveEntity '{sub_type}' at {pos} (is_on={self.is_on})")
+
+    def _parse_properties(self, sub_type, start_row, end_row, is_on, is_animated, 
+                          depth, direction, halo_size, halo_color, halo_alpha):
+        """Parse raw properties and initialize basic state."""
         self.sub_type = sub_type
-        self.direction_str = direction.lower()
-        self.depth = depth
         self.start_row = start_row
         self.end_row = end_row
         self.is_animated = is_animated
-        self.obstacles_group = obstacles_group
+        self.depth = depth
+        self.direction_str = direction.lower()
+        self.col_index = self.DIRECTION_MAP.get(self.direction_str, 0)
         
-        # Sprite dimensions (for slicing)
-        self.sprite_width = width
-        self.sprite_height = height
-        # Logical dimensions (for alignment)
-        self.tiled_width = t_w
-        self.tiled_height = t_h
+        # State
+        self.frame_index = float(self.start_row)
+        # Determine is_on and specific behaviors (Inclusive Detection)
+        self.light_sources = ['lamp', 'lantern', 'torch', 'fire', 'candle']
+        self.is_light_source = (self.sub_type in self.light_sources) or (halo_size > 0)
         
-        # Halo / Light Logic
+        if is_on is not None:
+            self.is_on = is_on
+        else:
+            self.is_on = self.is_animated or self.is_light_source
+            
+        # Selective Animation Speed
+        if self.is_light_source:
+            # Real-life flame rhythm (3.0 FPS) - much slower than traversal speed
+            self.animation_speed = 3.0
+        else:
+            # Standard objects (chests, doors) get 10.0 FPS
+            self.animation_speed = 10.0
+            
+        self.is_animating = self.is_on and self.is_animated
+        
+        # Halo Props
         self.halo_size = halo_size
         self.halo_alpha = halo_alpha
         try:
-            # ast.literal_eval is safer than json.loads for literal structures
             self.halo_color = ast.literal_eval(halo_color)
         except (ValueError, SyntaxError, TypeError):
             self.halo_color = (255, 255, 255)
@@ -63,12 +95,12 @@ class InteractiveEntity(BaseEntity):
         self.flicker_phase = random.uniform(0, 2 * math.pi)
         self.f_alpha = 1.0
         self.f_scale = 1.0
+
+    def _load_assets(self, sprite_sheet, width, height):
+        """Load spritesheet and compute frame dimensions."""
+        self.sprite_width = width
+        self.sprite_height = height
         
-        self.light_mask = None
-        if self.halo_size > 0:
-            self.light_mask = self._create_halo_surf()
-        
-        # Load spritesheet using sprite pixel width; compute real frame height from sheet
         sheet_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "sprites", sprite_sheet)
         sheet = SpriteSheet(sheet_path)
         
@@ -78,65 +110,77 @@ class InteractiveEntity(BaseEntity):
             real_frame_h = sheet_h // total_rows if total_rows > 0 else self.sprite_height
         else:
             real_frame_h = self.sprite_height
-        
+            
         self.frames = sheet.load_grid_by_size(self.sprite_width, real_frame_h)
         self._sheet_cols = getattr(sheet, 'last_cols', 4)
+
+    def _setup_physics(self, pos, t_w, t_h, is_passable, obstacles_group, groups):
+        """Initialize sprite rect, world position and collision state."""
+        # Visual Position: midbottom alignment
+        dummy_rect = pygame.Rect(0, 0, self.sprite_width, self.sprite_height)
+        dummy_rect.midbottom = (pos[0] + t_w // 2, pos[1] + t_h // 2 + t_h // 2) # Equivalent to pos[1] + t_h
         
-        # Select column
-        self.col_index = self.DIRECTION_MAP.get(self.direction_str, 0)
+        # Center position for BaseEntity (used for movement syncing)
+        center_pos = dummy_rect.center
+        super().__init__(center_pos, groups)
         
-        # State
-        self.frame_index = float(self.start_row)
-        self.animation_speed = 10.0
+        self.tiled_width = t_w
+        self.tiled_height = t_h
+        self.is_passable = is_passable
+        self.obstacles_group = obstacles_group
         
-        # Determine default state
-        light_sources = ['lamp', 'lantern', 'torch', 'fire', 'candle']
-        if is_on is not None:
-            self.is_on = is_on
-        else:
-            # Default to ON for animated objects or specific light subtypes
-            self.is_on = self.is_animated or self.sub_type in light_sources
-            
-        self.is_animating = self.is_on and self.is_animated
-        self.is_closing = False
+        # Re-set rect to correct size and position
+        self.rect = dummy_rect
         
-        self.image = self._get_frame(int(self.frame_index))
-        # Visual Alignment: Center-X on Tiled rect, Bottom on Tiled rect
-        self.rect = self.image.get_rect()
-        self.rect.midbottom = (pos[0] + self.tiled_width // 2, pos[1] + self.tiled_height)
-        # Interaction Position: center of the bottom 32x32 footprint
+        # CRITICAL: Interaction point (self.pos) must be the footprint center (bottom-16)
+        # This matches Game's distance check logic for both tall and regular objects
         self.pos = pygame.math.Vector2(self.rect.centerx, self.rect.bottom - 16)
         
-        # Initial Collision State
-        self.is_passable = is_passable
         if self.obstacles_group is not None:
-            # Floor decor (decor sub_type or others with is_passable=True and not door-like) 
-            # should be traversable permanently.
-            # Doors start solid regardless of is_passable.
-            if self.sub_type == 'door':
+            if self.sub_type == 'door' or not self.is_passable:
                 self.obstacles_group.add(self)
-            elif not self.is_passable:
-                self.obstacles_group.add(self)
-        
-        logging.info(f"Spawned InteractiveEntity '{sub_type}' at {pos} (is_animated={is_animated}, halo={halo_size})")
 
-    def _create_halo_surf(self) -> pygame.Surface:
-        """Generate a high-quality radial gradient surface using concentric circles."""
-        size = self.halo_size * 2
-        surf = pygame.Surface((size, size), pygame.SRCALPHA)
-        center = (self.halo_size, self.halo_size)
+    def _setup_lighting(self):
+        """Pre-generate light mask and its 10-step scaling cache for fluidity."""
+        self.light_mask = self._create_halo_surf(self.halo_size)
         
-        # Draw concentric circles from outside in for smoother blending
-        for r in range(self.halo_size, 0, -1):
-            # Linearly alpha falloff
-            alpha = int(self.halo_alpha * (1.0 - r / self.halo_size))
-            color = list(self.halo_color) + [alpha]
+        # 10-step Cache: 0.97 to 1.03 (fine increments for smooth transition)
+        self.light_mask_cache = []
+        for i in range(10):
+            scale = 0.97 + (i * 0.0066)
+            scaled_size = int(round(self.halo_size * scale))
+            # Cache the base surfaces (intensity-based on black background)
+            if scaled_size > 0:
+                self.light_mask_cache.append(self._create_halo_surf(scaled_size))
+            else:
+                self.light_mask_cache.append(self.light_mask)
+
+    def _create_halo_surf(self, radius) -> pygame.Surface:
+        """Generate high-precision radial gradient using RGB intensity on black."""
+        size = int(radius * 2)
+        # Use standard surface (No SRCALPHA) for reliable BLEND_RGB_ADD
+        surf = pygame.Surface((size, size))
+        surf.fill((0, 0, 0))
+        center = (radius, radius)
+        
+        base_color = pygame.Color(*self.halo_color)
+        alpha_factor = self.halo_alpha / 255.0
+        
+        # Pixel-by-pixel sweep for maximum smoothness
+        for r in range(radius, 0, -1):
+            ratio = r / radius
+            # Quadratic falloff for a much softer "natural light" look
+            intensity = (1.0 - ratio) ** 2
+            
+            # Modulate RGB by both distance intensity and the master halo_alpha
+            final_intensity = intensity * alpha_factor
+            color = (
+                int(base_color.r * final_intensity),
+                int(base_color.g * final_intensity),
+                int(base_color.b * final_intensity)
+            )
             pygame.draw.circle(surf, color, center, r)
             
-        # Guarantee the center pixel reaches full alpha
-        center_color = list(self.halo_color) + [self.halo_alpha]
-        surf.set_at(center, center_color)
-        
         return surf
 
     def _get_frame(self, row_index: int) -> pygame.Surface:
@@ -153,24 +197,41 @@ class InteractiveEntity(BaseEntity):
         if not self.is_animating or self.is_animated:
             self.is_on = not self.is_on
             self.is_animating = True
-            
-            # Doors/Linear logic uses is_closing to track direction
             if not self.is_animated:
                 self.is_closing = not self.is_on
-            
             logging.info(f"Object {self.sub_type} toggled to {'ON' if self.is_on else 'OFF'}")
 
     def update(self, dt: float):
-        """Handle animation progression and dynamic flicker calculations."""
-        # 1. Flicker Logic (2Hz sinusoidal + noise)
-        if self.is_animated and self.halo_size > 0:
-            time_val = pygame.time.get_ticks() / 1000.0
-            # 2Hz = 4 * pi * time
-            self.f_alpha = 1.0 + 0.12 * math.sin(time_val * 4 * math.pi + self.flicker_phase)
-            self.f_alpha += random.uniform(-0.02, 0.02) # Subtle noise
-            
-            # Scale fluctuation (slower/out of sync)
-            self.f_scale = 1.0 + 0.03 * math.sin(time_val * 3 * math.pi + self.flicker_phase + 0.5)
+        """Handle animation progression and high-precision flicker calculations."""
+        # 1. Flicker Logic
+        if self.is_on and self.halo_size > 0:
+            if self.is_light_source and self.is_animated:
+                # Organic Animation-Driven Flicker
+                # Tie the light intensity directly to the visual frame
+                num_frames = max(1, self.end_row - self.start_row + 1)
+                # Map the frame index inside the loop to a phase [0, 2π]
+                frame_progress = (self.frame_index - self.start_row) % num_frames
+                animation_phase = (frame_progress / num_frames) * 2 * math.pi
+                
+                # Base intensity derived from animation frame, plus minor noise
+                self.f_alpha = 1.0 + 0.12 * math.sin(animation_phase - math.pi/2) 
+                self.f_alpha += random.uniform(-0.02, 0.02)
+                
+                # Scale pulse delayed slightly from alpha
+                self.f_scale = 1.0 + 0.03 * math.sin(animation_phase)
+            else:
+                # Fallback: Time-based flicker for non-animated or non-light objects with halos
+                ticks = pygame.time.get_ticks()
+                time_sec = ticks / 1000.0
+                
+                # High-Frequency jitter removed, keep slow rhythmic phase
+                main_wave = math.sin(time_sec * 1.5 * math.pi + self.flicker_phase)
+                jitter_wave = 0.3 * math.sin(time_sec * 4.2 * math.pi + self.flicker_phase * 0.5)
+                
+                self.f_alpha = 1.0 + 0.12 * main_wave + 0.02 * jitter_wave
+                self.f_alpha += random.uniform(-0.01, 0.01)
+                
+                self.f_scale = 1.0 + 0.03 * math.sin(time_sec * 1.2 * math.pi + self.flicker_phase + 0.5)
         else:
             self.f_alpha = 1.0
             self.f_scale = 1.0
@@ -185,7 +246,6 @@ class InteractiveEntity(BaseEntity):
                 self.frame_index = float(self.start_row)
                 self.is_animating = False
         elif self.is_animating:
-            # Linear behavior (doors, chests)
             if self.is_closing:
                 self.frame_index -= self.animation_speed * dt
                 if self.frame_index <= self.start_row:
@@ -204,34 +264,32 @@ class InteractiveEntity(BaseEntity):
         self.image = self._get_frame(int(self.frame_index))
 
     def draw_halo(self, surface: pygame.Surface, cam_offset: pygame.math.Vector2, global_darkness: int):
-        """Render the modulated light halo with additive blending."""
-        if not self.is_on or not self.light_mask or self.halo_size <= 0:
+        """Render high-precision modulated light halo from 10-step cache."""
+        if not self.is_on or not self.light_mask_cache or self.halo_size <= 0:
             return
 
-        # Intensity modulation: scales with darkness, min 15% floor
-        # Normalize by MAX_NIGHT_ALPHA (180) to reach full halo_alpha at midnight
+        # Calculate final modulation factor precisely
         dark_factor = global_darkness / 180.0 
         global_factor = max(0.15, dark_factor)
         
-        final_alpha = int(255 * global_factor * self.f_alpha)
-        final_alpha = max(0, min(255, final_alpha))
+        # Select cached surface (10 steps)
+        scale_idx = int(round((self.f_scale - 0.97) / 0.0066))
+        scale_idx = max(0, min(9, scale_idx))
+        render_surf = self.light_mask_cache[scale_idx].copy() # Copy to modulate
         
-        # Apply scaling if needed
-        if self.f_scale != 1.0:
-            new_size = int(self.halo_size * 2 * self.f_scale)
-            render_surf = pygame.transform.scale(self.light_mask, (new_size, new_size))
-        else:
-            render_surf = self.light_mask
-            new_size = self.halo_size * 2
-
-        # Modulation
-        render_surf.set_alpha(final_alpha)
+        # Modulate the entire surface brightness (Flicker + Time of day)
+        # This replaces set_alpha for standard RGB surfaces
+        m = int(round(255 * global_factor * self.f_alpha))
+        m = max(0, min(255, m))
+        if m < 255:
+            render_surf.fill((m, m, m), special_flags=pygame.BLEND_RGB_MULT)
         
-        # Centering on FOOTPRINT (16px above rect.bottom)
-        # footprint_center = (self.rect.centerx, self.rect.bottom - 16)
-        # cam_offset is added in Game, so we just calculate screen position
+        # Position mapping: screen center of DO (Visual Middle)
+        # Using rect.center instead of self.pos ensures tall objects (doors, decors)
+        # have their light emanating from their visual middle.
         screen_center_x = self.rect.centerx + cam_offset.x
-        screen_center_y = (self.rect.bottom - 16) + cam_offset.y
-        
+        screen_center_y = self.rect.centery + cam_offset.y
+        new_size = render_surf.get_width()
         halo_pos = (screen_center_x - new_size // 2, screen_center_y - new_size // 2)
+        
         surface.blit(render_surf, halo_pos, special_flags=pygame.BLEND_RGB_ADD)

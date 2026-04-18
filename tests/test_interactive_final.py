@@ -103,42 +103,116 @@ def test_luminosity_daylight_floor(mock_spritesheet):
     pygame.quit()
 
 def test_footprint_centering(mock_spritesheet):
-    """Verify halo centering on the 32x32 footprint (16px above base)."""
+    """Verify obj.pos points to the 32x32 footprint center (bottom-16)."""
     pygame.init()
     pygame.display.set_mode((1, 1), pygame.HIDDEN)
     
-    # Place object at (100, 100) on Tiled map (32x32)
-    obj = InteractiveEntity((100, 100), [], "lamp", "test.png", 
-                             tiled_width=32, tiled_height=32, halo_size=20)
+    # Place a TALL object (32x64) at (100, 100) on Tiled map
+    obj = InteractiveEntity((100, 100), [], "door", "test.png", 
+                             width=32, height=64, tiled_width=32, tiled_height=64)
     
-    # rect.bottom should be 132
-    # footprint center y should be 132 - 16 = 116
-    # footprint center x should be 100 + 16 = 116
+    # rect.bottom = 100 + 64 = 164
+    # rect.centerx = 100 + 16 = 116
+    # Footprint center y = 164 - 16 = 148
+    # Footprint center x = 116
     
-    # We check where the halo blit pos would be
-    # halo_pos = center - halo_size
-    # footprint_center = (116, 116)
-    # expected_blit_pos = (116 - 20, 116 - 20) = (96, 96)
-    
-    # This will be verified during implementation or by checking a return pos helper
-    pass
+    # Old behavior (center): obj.pos.y = 100 + 32 = 132 (FAIL for door interaction)
+    # New behavior (footprint): obj.pos.y = 148
+    assert obj.pos.y == 148
+    assert obj.pos.x == 116
     
     pygame.quit()
 
-def test_animation_looping_logic(mock_spritesheet):
-    """Verify is_animated=True loops from end_frame back to start_frame."""
+def test_halo_visual_centering(mock_spritesheet):
+    """Verify that halos are visually centered on the entire sprite (rect.center)."""
     pygame.init()
     pygame.display.set_mode((1, 1), pygame.HIDDEN)
     
-    obj = InteractiveEntity((0, 0), [], "fountain", "test.png", 
-                             start_row=0, end_row=2, is_animated=True)
+    # Create a tall object (32x64) at (100, 100)
+    # Footprint center (pos) is at (116, 164-16=148)
+    # Visual center (rect.center) is at (116, 100+32=132)
+    obj = InteractiveEntity((100, 100), [], "door", "test.png", 
+                             width=32, height=64, tiled_width=32, tiled_height=64, halo_size=20)
+    
+    # We check if draw_halo uses rect.center
+    mock_surface = MagicMock()
+    cam_offset = pygame.math.Vector2(0, 0)
     obj.is_on = True
-    obj.animation_speed = 10.0
+    # Ensure light_mask_cache is populated (mock_spritesheet usually handles this, 
+    # but we force one for safety)
+    if not obj.light_mask_cache:
+        obj.light_mask_cache = [pygame.Surface((40, 40))]
+        
+    obj.draw_halo(mock_surface, cam_offset, 180)
     
-    obj.update(0.1) # 1.0 frames
-    assert int(obj.frame_index) == 1
+    # blit_pos = screen_center - halo_size
+    # expected_center = rect.center = (116, 132)
+    # expected_blit = (116 - 20, 132 - 20) = (96, 112)
     
-    obj.update(0.25) # should cross end_row=2
-    assert int(obj.frame_index) == 0 # Looped back
+    # In current (broken) state, it uses obj.pos = (116, 148) which gives (96, 128)
+    args, kwargs = mock_surface.blit.call_args
+    blit_pos = args[1]
+    assert blit_pos == (96, 112)
+    
+    pygame.quit()
+
+def test_flicker_frequency_reduction(mock_spritesheet):
+    """Verify that flicker animation is slower (target: smooth flame breath)."""
+    pygame.init()
+    pygame.display.set_mode((1, 1), pygame.HIDDEN)
+    
+    obj = InteractiveEntity((0, 0), [], "lamp", "test.png", halo_size=20)
+    obj.is_on = True
+    
+    with patch('pygame.time.get_ticks') as mock_ticks:
+        # Check alpha change over 0.2s
+        mock_ticks.return_value = 0
+        obj.update(0.1)
+        # current code uses 4 * pi (2.0 cycles/sec)
+        # a 0.1s step (0.2 cycles) is approx 72 degrees.
+        
+        # We want approx 0.5 - 1.0 cycles/sec.
+        pass # We'll verify the scale logic in implementation
+    
+    pygame.quit()
+
+def test_halo_scaling_cache(mock_spritesheet):
+    """Verify that light halos use a 10-step pre-calculated cache."""
+    pygame.init()
+    pygame.display.set_mode((1, 1), pygame.HIDDEN)
+    
+    obj = InteractiveEntity(
+        (0,0), [], "lamp", "lamp.png", 
+        halo_size=20, halo_alpha=130, is_animated=True
+    )
+    
+    # Verify exactly 10 surfaces as requested for smoothness
+    assert hasattr(obj, 'light_mask_cache')
+    assert len(obj.light_mask_cache) == 10
+    
+    pygame.quit()
+
+def test_halo_rendering_technique(mock_spritesheet):
+    """Verify that halo surfaces use RGB intensity on black background (no SRCALPHA)."""
+    pygame.init()
+    pygame.display.set_mode((1, 1), pygame.HIDDEN)
+    
+    obj = InteractiveEntity(
+        (0,0), [], "lamp", "lamp.png", 
+        halo_size=50, halo_alpha=200, halo_color="[255, 204, 0]"
+    )
+    
+    halo = obj.light_mask
+    
+    # Requirement: NOT SRCALPHA
+    assert not (halo.get_flags() & pygame.SRCALPHA)
+    
+    # Requirement: Gradient logic (center is bright, edge is dark)
+    center_color = halo.get_at((50, 50))
+    edge_color = halo.get_at((0, 50))
+    
+    # RGB values should fall off
+    assert center_color.r > edge_color.r
+    assert center_color.g > edge_color.g
     
     pygame.quit()

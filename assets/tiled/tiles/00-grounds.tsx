@@ -61,7 +61,7 @@
    <property name="depth" type="int" value="0"/>
   </properties>
  </tile>
- <tile id="10">
+ <tile id="10" type="tilset">
   <properties>
    <property name="collidable" type="bool" value="false"/>
    <property name="depth" type="int" value="0"/>

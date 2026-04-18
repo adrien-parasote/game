@@ -10,5 +10,35 @@
     "properties": [
     ],
     "propertyTypes": [
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 1,
+            "members": [
+                {
+                    "name": "collidable",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "depth",
+                    "type": "int",
+                    "value": 0
+                }
+            ],
+            "name": "tilset",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        }
     ]
 }
