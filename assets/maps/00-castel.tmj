@@ -173,54 +173,9 @@
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"depth",
-                                 "type":"int",
-                                 "value":1
-                                }, 
-                                {
-                                 "name":"direction",
-                                 "type":"string",
-                                 "value":"up"
-                                }, 
-                                {
-                                 "name":"end_frame",
-                                 "type":"int",
-                                 "value":3
-                                }, 
-                                {
-                                 "name":"halo_alpha",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
-                                 "name":"halo_color",
-                                 "type":"string",
-                                 "value":"[0, 0, 0]"
-                                }, 
-                                {
-                                 "name":"halo_size",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"height",
                                  "type":"int",
                                  "value":43
-                                }, 
-                                {
-                                 "name":"is_animated",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"is_on",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"is_passable",
-                                 "type":"bool",
-                                 "value":false
                                 }, 
                                 {
                                  "name":"sprite_sheet",
@@ -228,19 +183,9 @@
                                  "value":"01-iron-chests.png"
                                 }, 
                                 {
-                                 "name":"start_frame",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"sub_type",
                                  "type":"string",
                                  "value":"chest"
-                                }, 
-                                {
-                                 "name":"width",
-                                 "type":"int",
-                                 "value":32
                                 }],
                          "rotation":0,
                          "type":"interactive_object",
@@ -256,44 +201,14 @@
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"depth",
-                                 "type":"int",
-                                 "value":1
-                                }, 
-                                {
                                  "name":"direction",
                                  "type":"string",
                                  "value":"up"
                                 }, 
                                 {
-                                 "name":"end_frame",
-                                 "type":"int",
-                                 "value":3
-                                }, 
-                                {
-                                 "name":"halo_color",
-                                 "type":"string",
-                                 "value":"[0, 0, 0]"
-                                }, 
-                                {
-                                 "name":"halo_size",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"height",
                                  "type":"int",
                                  "value":62
-                                }, 
-                                {
-                                 "name":"is_animated",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"is_on",
-                                 "type":"bool",
-                                 "value":false
                                 }, 
                                 {
                                  "name":"is_passable",
@@ -304,11 +219,6 @@
                                  "name":"sprite_sheet",
                                  "type":"string",
                                  "value":"00-doors.png"
-                                }, 
-                                {
-                                 "name":"start_frame",
-                                 "type":"int",
-                                 "value":0
                                 }, 
                                 {
                                  "name":"sub_type",
@@ -334,54 +244,9 @@
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"depth",
-                                 "type":"int",
-                                 "value":1
-                                }, 
-                                {
-                                 "name":"direction",
-                                 "type":"string",
-                                 "value":"down"
-                                }, 
-                                {
-                                 "name":"end_frame",
-                                 "type":"int",
-                                 "value":3
-                                }, 
-                                {
-                                 "name":"halo_alpha",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
-                                 "name":"halo_color",
-                                 "type":"string",
-                                 "value":"[0, 0, 0]"
-                                }, 
-                                {
-                                 "name":"halo_size",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"height",
                                  "type":"int",
                                  "value":43
-                                }, 
-                                {
-                                 "name":"is_animated",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"is_on",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"is_passable",
-                                 "type":"bool",
-                                 "value":false
                                 }, 
                                 {
                                  "name":"sprite_sheet",
@@ -389,19 +254,9 @@
                                  "value":"01-iron-chests.png"
                                 }, 
                                 {
-                                 "name":"start_frame",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"sub_type",
                                  "type":"string",
                                  "value":"chest"
-                                }, 
-                                {
-                                 "name":"width",
-                                 "type":"int",
-                                 "value":32
                                 }],
                          "rotation":0,
                          "type":"interactive_object",
@@ -417,54 +272,9 @@
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"depth",
-                                 "type":"int",
-                                 "value":1
-                                }, 
-                                {
-                                 "name":"direction",
-                                 "type":"string",
-                                 "value":"right"
-                                }, 
-                                {
-                                 "name":"end_frame",
-                                 "type":"int",
-                                 "value":3
-                                }, 
-                                {
-                                 "name":"halo_alpha",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
-                                 "name":"halo_color",
-                                 "type":"string",
-                                 "value":"[0, 0, 0]"
-                                }, 
-                                {
-                                 "name":"halo_size",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"height",
                                  "type":"int",
                                  "value":43
-                                }, 
-                                {
-                                 "name":"is_animated",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"is_on",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"is_passable",
-                                 "type":"bool",
-                                 "value":false
                                 }, 
                                 {
                                  "name":"sprite_sheet",
@@ -472,19 +282,9 @@
                                  "value":"01-iron-chests.png"
                                 }, 
                                 {
-                                 "name":"start_frame",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"sub_type",
                                  "type":"string",
                                  "value":"chest"
-                                }, 
-                                {
-                                 "name":"width",
-                                 "type":"int",
-                                 "value":32
                                 }],
                          "rotation":0,
                          "type":"interactive_object",
@@ -500,54 +300,9 @@
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"depth",
-                                 "type":"int",
-                                 "value":1
-                                }, 
-                                {
-                                 "name":"direction",
-                                 "type":"string",
-                                 "value":"left"
-                                }, 
-                                {
-                                 "name":"end_frame",
-                                 "type":"int",
-                                 "value":3
-                                }, 
-                                {
-                                 "name":"halo_alpha",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
-                                 "name":"halo_color",
-                                 "type":"string",
-                                 "value":"[0, 0, 0]"
-                                }, 
-                                {
-                                 "name":"halo_size",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"height",
                                  "type":"int",
                                  "value":43
-                                }, 
-                                {
-                                 "name":"is_animated",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"is_on",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"is_passable",
-                                 "type":"bool",
-                                 "value":false
                                 }, 
                                 {
                                  "name":"sprite_sheet",
@@ -555,19 +310,9 @@
                                  "value":"01-iron-chests.png"
                                 }, 
                                 {
-                                 "name":"start_frame",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"sub_type",
                                  "type":"string",
                                  "value":"chest"
-                                }, 
-                                {
-                                 "name":"width",
-                                 "type":"int",
-                                 "value":32
                                 }],
                          "rotation":0,
                          "type":"interactive_object",
@@ -579,24 +324,9 @@
                         {
                          "height":32,
                          "id":16,
-                         "name":"light",
+                         "name":"ligh",
                          "opacity":1,
                          "properties":[
-                                {
-                                 "name":"depth",
-                                 "type":"int",
-                                 "value":1
-                                }, 
-                                {
-                                 "name":"direction",
-                                 "type":"string",
-                                 "value":"up"
-                                }, 
-                                {
-                                 "name":"end_frame",
-                                 "type":"int",
-                                 "value":3
-                                }, 
                                 {
                                  "name":"halo_alpha",
                                  "type":"int",
@@ -611,11 +341,6 @@
                                  "name":"halo_size",
                                  "type":"int",
                                  "value":80
-                                }, 
-                                {
-                                 "name":"height",
-                                 "type":"int",
-                                 "value":32
                                 }, 
                                 {
                                  "name":"is_animated",
@@ -638,19 +363,9 @@
                                  "value":"02-torchs.png"
                                 }, 
                                 {
-                                 "name":"start_frame",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"sub_type",
                                  "type":"string",
                                  "value":"animated_decor"
-                                }, 
-                                {
-                                 "name":"width",
-                                 "type":"int",
-                                 "value":32
                                 }],
                          "rotation":0,
                          "type":"interactive_object",
@@ -662,24 +377,9 @@
                         {
                          "height":32,
                          "id":18,
-                         "name":"light",
+                         "name":"ligh",
                          "opacity":1,
                          "properties":[
-                                {
-                                 "name":"depth",
-                                 "type":"int",
-                                 "value":1
-                                }, 
-                                {
-                                 "name":"direction",
-                                 "type":"string",
-                                 "value":"up"
-                                }, 
-                                {
-                                 "name":"end_frame",
-                                 "type":"int",
-                                 "value":3
-                                }, 
                                 {
                                  "name":"halo_alpha",
                                  "type":"int",
@@ -694,11 +394,6 @@
                                  "name":"halo_size",
                                  "type":"int",
                                  "value":80
-                                }, 
-                                {
-                                 "name":"height",
-                                 "type":"int",
-                                 "value":32
                                 }, 
                                 {
                                  "name":"is_animated",
@@ -721,19 +416,9 @@
                                  "value":"02-torchs.png"
                                 }, 
                                 {
-                                 "name":"start_frame",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"sub_type",
                                  "type":"string",
                                  "value":"animated_decor"
-                                }, 
-                                {
-                                 "name":"width",
-                                 "type":"int",
-                                 "value":32
                                 }],
                          "rotation":0,
                          "type":"interactive_object",
@@ -745,24 +430,9 @@
                         {
                          "height":32,
                          "id":19,
-                         "name":"light",
+                         "name":"ligh",
                          "opacity":1,
                          "properties":[
-                                {
-                                 "name":"depth",
-                                 "type":"int",
-                                 "value":1
-                                }, 
-                                {
-                                 "name":"direction",
-                                 "type":"string",
-                                 "value":"up"
-                                }, 
-                                {
-                                 "name":"end_frame",
-                                 "type":"int",
-                                 "value":3
-                                }, 
                                 {
                                  "name":"halo_alpha",
                                  "type":"int",
@@ -777,11 +447,6 @@
                                  "name":"halo_size",
                                  "type":"int",
                                  "value":80
-                                }, 
-                                {
-                                 "name":"height",
-                                 "type":"int",
-                                 "value":32
                                 }, 
                                 {
                                  "name":"is_animated",
@@ -804,19 +469,9 @@
                                  "value":"02-torchs.png"
                                 }, 
                                 {
-                                 "name":"start_frame",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"sub_type",
                                  "type":"string",
                                  "value":"animated_decor"
-                                }, 
-                                {
-                                 "name":"width",
-                                 "type":"int",
-                                 "value":32
                                 }],
                          "rotation":0,
                          "type":"interactive_object",
@@ -828,24 +483,9 @@
                         {
                          "height":32,
                          "id":20,
-                         "name":"light",
+                         "name":"ligh",
                          "opacity":1,
                          "properties":[
-                                {
-                                 "name":"depth",
-                                 "type":"int",
-                                 "value":1
-                                }, 
-                                {
-                                 "name":"direction",
-                                 "type":"string",
-                                 "value":"up"
-                                }, 
-                                {
-                                 "name":"end_frame",
-                                 "type":"int",
-                                 "value":3
-                                }, 
                                 {
                                  "name":"halo_alpha",
                                  "type":"int",
@@ -860,11 +500,6 @@
                                  "name":"halo_size",
                                  "type":"int",
                                  "value":80
-                                }, 
-                                {
-                                 "name":"height",
-                                 "type":"int",
-                                 "value":32
                                 }, 
                                 {
                                  "name":"is_animated",
@@ -887,19 +522,9 @@
                                  "value":"02-torchs.png"
                                 }, 
                                 {
-                                 "name":"start_frame",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
                                  "name":"sub_type",
                                  "type":"string",
                                  "value":"animated_decor"
-                                }, 
-                                {
-                                 "name":"width",
-                                 "type":"int",
-                                 "value":32
                                 }],
                          "rotation":0,
                          "type":"interactive_object",

@@ -13,6 +13,96 @@
         {
             "color": "#ffa0a0a4",
             "drawFill": true,
+            "id": 3,
+            "members": [
+                {
+                    "name": "depth",
+                    "type": "int",
+                    "value": 1
+                },
+                {
+                    "name": "direction",
+                    "type": "string",
+                    "value": "up"
+                },
+                {
+                    "name": "end_frame",
+                    "type": "int",
+                    "value": 3
+                },
+                {
+                    "name": "halo_alpha",
+                    "type": "int",
+                    "value": 0
+                },
+                {
+                    "name": "halo_color",
+                    "type": "string",
+                    "value": "[255, 255, 255]"
+                },
+                {
+                    "name": "halo_size",
+                    "type": "int",
+                    "value": 0
+                },
+                {
+                    "name": "height",
+                    "type": "int",
+                    "value": 32
+                },
+                {
+                    "name": "is_animated",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "is_on",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "is_passable",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "sprite_sheet",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "start_frame",
+                    "type": "int",
+                    "value": 0
+                },
+                {
+                    "name": "sub_type",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "width",
+                    "type": "int",
+                    "value": 32
+                }
+            ],
+            "name": "interactive_object",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
             "id": 1,
             "members": [
                 {
