@@ -21,11 +21,6 @@
                     "value": 1
                 },
                 {
-                    "name": "direction",
-                    "type": "string",
-                    "value": "up"
-                },
-                {
                     "name": "end_frame",
                     "type": "int",
                     "value": 3
@@ -64,6 +59,11 @@
                     "name": "is_passable",
                     "type": "bool",
                     "value": false
+                },
+                {
+                    "name": "position",
+                    "type": "int",
+                    "value": 0
                 },
                 {
                     "name": "sprite_sheet",

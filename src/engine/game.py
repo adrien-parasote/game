@@ -104,7 +104,7 @@ class Game:
                     groups=[self.visible_sprites, self.interactives],
                     sub_type=props.get("sub_type", "unknown"),
                     sprite_sheet=props.get("sprite_sheet", ""),
-                    direction=props.get("direction", "down"),
+                    position=int(props.get("position", 0)),
                     depth=int(props.get("depth", 1)),
                     start_row=int(props.get("start_frame", 0)),
                     end_row=int(props.get("end_frame", 3)),

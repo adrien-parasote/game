@@ -14,16 +14,17 @@ class InteractiveEntity(BaseEntity):
     and optional lighting halo.
     """
     
-    # Column mapping according to user instruction
-    DIRECTION_MAP = {
-        'up': 0,
-        'right': 1,
-        'left': 2,
-        'down': 3
+    # Position to Direction mapping for interaction validation (Opposite Rule)
+    # 0=Up, 1=Right, 2=Left, 3=Down
+    POSITION_TO_DIR = {
+        0: 'up',
+        1: 'right',
+        2: 'left',
+        3: 'down'
     }
 
     def __init__(self, pos: tuple, groups: list[pygame.sprite.Group], 
-                 sub_type: str, sprite_sheet: str, direction: str = 'down', 
+                 sub_type: str, sprite_sheet: str, position: int = 3, 
                  depth: int = 1, start_row: int = 0, end_row: int = 3,
                  width: int = 32, height: int = 32, obstacles_group: pygame.sprite.Group = None,
                  tiled_width: int = None, tiled_height: int = None,
@@ -34,7 +35,7 @@ class InteractiveEntity(BaseEntity):
         
         # 1. Properties & State Initialization
         self._parse_properties(sub_type, start_row, end_row, is_on, is_animated, 
-                             depth, direction, halo_size, halo_color, halo_alpha)
+                             depth, position, halo_size, halo_color, halo_alpha)
         
         # 2. Asset Loading
         self._load_assets(sprite_sheet, width, height)
@@ -53,15 +54,15 @@ class InteractiveEntity(BaseEntity):
         logging.info(f"Spawned InteractiveEntity '{sub_type}' at {pos} (is_on={self.is_on})")
 
     def _parse_properties(self, sub_type, start_row, end_row, is_on, is_animated, 
-                          depth, direction, halo_size, halo_color, halo_alpha):
+                          depth, position, halo_size, halo_color, halo_alpha):
         """Parse raw properties and initialize basic state."""
         self.sub_type = sub_type
         self.start_row = start_row
         self.end_row = end_row
         self.is_animated = is_animated
         self.depth = depth
-        self.direction_str = direction.lower()
-        self.col_index = self.DIRECTION_MAP.get(self.direction_str, 0)
+        self.col_index = position
+        self.direction_str = self.POSITION_TO_DIR.get(position, 'down')
         
         # State
         self.frame_index = float(self.start_row)

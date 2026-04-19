@@ -12,11 +12,9 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `halo_alpha` | int | Maximum alpha (center) of the radial gradient (0-255). |
 
 ### Animation Logic
-- **Column Mapping** (User Specified): 
-  - `up`: Column 0
-  - `right`: Column 1
-  - `left`: Column 2
-  - `down`: Column 3
+- **Column Mapping**: 
+  - The object property `position` (int) determines the sprite-sheet column index directly (0-indexed).
+  - Common convention: 0=Up, 1=Right, 2=Left, 3=Down.
 - **Behavior**: On interaction, state toggles between ON and OFF. Default state is OFF, unless `is_animated` is true, or `sub_type` is a light source (`lamp`, `lantern`, `torch`, `fire`), in which case the default state is ON.
 - **Animation (Linear)**: If `is_animated == false`, animation plays once from `start_frame` to `end_frame` (Toggle ON).
 - **Animation (Looping)**: If `is_animated == true`, animation loops between `start_frame` and `end_frame` continuously while the state is ON.

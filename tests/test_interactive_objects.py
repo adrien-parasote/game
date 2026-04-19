@@ -31,7 +31,7 @@ def test_game():
 
 def test_interactive_proximity_success(test_game):
     """TC-I-01: Proximity < 80px should succeed."""
-    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="up")
+    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", position=0)
     test_game.interactives.add(obj)
     
     # Player is at distance 40px south 
@@ -55,7 +55,7 @@ def test_interactive_proximity_success(test_game):
 
 def test_interactive_proximity_failure(test_game):
     """TC-I-02: Proximity > 80px should fail."""
-    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="up")
+    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", position=0)
     test_game.interactives.add(obj)
     
     # Player is at distance > 80px south.
@@ -79,7 +79,7 @@ def test_interactive_proximity_failure(test_game):
 def test_interactive_orientation_opposite_success(test_game):
     """TC-I-03: Correct orientation (Opposite Rule) should succeed."""
     # Chest facing UP (opening from south)
-    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="up", is_passable=False)
+    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", position=0, is_passable=False)
     test_game.interactives.add(obj)
     
     # Player at South (100, 130), facing UP
@@ -102,7 +102,7 @@ def test_interactive_orientation_opposite_success(test_game):
 def test_interactive_orientation_opposite_failure(test_game):
     """TC-I-04: Incorrect orientation (at North while chest faces UP) should fail."""
     # Chest facing UP
-    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="up", is_passable=False)
+    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", position=0, is_passable=False)
     test_game.interactives.add(obj)
     
     # Player at North (100, 70), facing UP (looking away)
@@ -147,8 +147,8 @@ def test_explicitly_passable_object(test_game):
 
 def test_interactive_animation_trigger(test_game):
     """TC-I-05: Triggering interaction starts animation on correct column."""
-    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", direction="right", is_passable=False)
-    # Column 1 for 'right' according to new DIRECTION_MAP
+    obj = InteractiveEntity((100, 100), [], "chest", "chest.png", position=1, is_passable=False)
+    # Column 1 directly from position
     assert obj.col_index == 1 
     
     obj.interact(test_game.player)
@@ -165,7 +165,7 @@ def test_spawning_from_properties(test_game):
                 "type": "interactive_object",
                 "sub_type": "chest",
                 "sprite_sheet": "chest.png",
-                "direction": "up"
+                "position": 0
             }
         }
     ]
@@ -183,7 +183,7 @@ def test_door_dynamic_collision(test_game):
     test_game.obstacles_group.empty()
     # Door with is_passable=True: blocks when closed, traversable when opened
     door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", 
-                             direction="up", obstacles_group=test_game.obstacles_group, is_passable=True)
+                             position=0, obstacles_group=test_game.obstacles_group, is_passable=True)
     
     # Initially closed -> always in obstacles regardless of passable
     assert door in test_game.obstacles_group
@@ -203,7 +203,7 @@ def test_door_not_passable_stays_solid_when_open(test_game):
     test_game.obstacles_group.empty()
     # Door with passable=False: always solid, never lets player through
     door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", 
-                             direction="up", obstacles_group=test_game.obstacles_group, is_passable=False)
+                             position=0, obstacles_group=test_game.obstacles_group, is_passable=False)
     
     assert door in test_game.obstacles_group
     
@@ -234,7 +234,7 @@ def test_variable_size_alignment(test_game):
 def test_door_interaction_from_above_when_open(test_game):
     """Verify that an open door can be closed from the 'other' side (North)."""
     # Door at (100, 100), facing 'up' (expects south interaction usually)
-    door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", direction="up")
+    door = InteractiveEntity((100, 100), [test_game.interactives], "door", "door.png", position=0)
     
     # 1. Open it first from South
     door.is_on = True
