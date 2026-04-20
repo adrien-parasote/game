@@ -12,6 +12,9 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `halo_alpha` | int | Maximum alpha (center) of the radial gradient (0-255). |
 | `particles` | bool | If `true`, the object emits particles when ON. |
 | `particle_count` | int | Maximum number of active particles simultaneously. |
+| `target_id` | string | Unique identifier for communication. Falls back to the raw Tiled object `id` if absent. |
+| `target` | string | Holds the `target_id` of the object that this entity should activate or interact with. |
+| `entity_type`| string | Logical marker set to `"interactive"`. Prevents coupling spawning logic strictly to Tiled interface class names. Derived normally from the `10-sprite` component class. |
 
 ### Animation Logic
 - **Column Mapping**: 
@@ -110,6 +113,7 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
+| Check strict Tiled `class` or `type` | Check for nested `entity_type` marker | Decouples engine instantiation from Tiled UI custom class hierarchy changes |
 | Divide sheet by hardcoded values | Use pixel-based slicing (`load_grid_by_size`) | Supports variable object sizes |
 | Add doors to map collision layer | Use `obstacles_group` | Allows dynamic passage |
 | Pass center pos only | Pass Tiled top-left and dimensions | Ensures correct visual alignment |

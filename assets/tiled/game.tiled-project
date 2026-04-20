@@ -11,9 +11,39 @@
     ],
     "propertyTypes": [
         {
-            "color": "#ffa0a0a4",
+            "color": "#ff00f900",
             "drawFill": true,
-            "id": 3,
+            "id": 1,
+            "members": [
+                {
+                    "name": "collidable",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "depth",
+                    "type": "int",
+                    "value": 0
+                }
+            ],
+            "name": "00-tilset",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ff0433ff",
+            "drawFill": true,
+            "id": 5,
             "members": [
                 {
                     "name": "depth",
@@ -26,49 +56,15 @@
                     "value": 3
                 },
                 {
-                    "name": "halo_alpha",
-                    "type": "int",
-                    "value": 0
-                },
-                {
-                    "name": "halo_color",
+                    "name": "entity_type",
+                    "propertyType": "20-entity_type",
                     "type": "string",
-                    "value": "[255, 255, 255]"
-                },
-                {
-                    "name": "halo_size",
-                    "type": "int",
-                    "value": 0
+                    "value": "entity"
                 },
                 {
                     "name": "height",
                     "type": "int",
                     "value": 32
-                },
-                {
-                    "name": "is_animated",
-                    "type": "bool",
-                    "value": false
-                },
-                {
-                    "name": "is_on",
-                    "type": "bool",
-                    "value": false
-                },
-                {
-                    "name": "is_passable",
-                    "type": "bool",
-                    "value": false
-                },
-                {
-                    "name": "particle_count",
-                    "type": "int",
-                    "value": 0
-                },
-                {
-                    "name": "particles",
-                    "type": "bool",
-                    "value": false
                 },
                 {
                     "name": "position",
@@ -87,6 +83,7 @@
                 },
                 {
                     "name": "sub_type",
+                    "propertyType": "21-sub_type",
                     "type": "string",
                     "value": ""
                 },
@@ -96,49 +93,137 @@
                     "value": 32
                 }
             ],
-            "name": "interactive_object",
+            "name": "10-sprite",
             "type": "class",
             "useAs": [
                 "property",
-                "map",
-                "layer",
                 "object",
-                "tile",
-                "tileset",
-                "wangcolor",
-                "wangset",
                 "project"
             ]
         },
         {
-            "color": "#ffa0a0a4",
+            "color": "#ff942192",
             "drawFill": true,
-            "id": 1,
+            "id": 7,
             "members": [
                 {
-                    "name": "collidable",
+                    "name": "is_animated",
                     "type": "bool",
                     "value": false
                 },
                 {
-                    "name": "depth",
-                    "type": "int",
-                    "value": 0
+                    "name": "is_on",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "is_passable",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "sprite",
+                    "propertyType": "10-sprite",
+                    "type": "class",
+                    "value": {
+                        "entity_type": "interactive"
+                    }
+                },
+                {
+                    "name": "target",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "target_id",
+                    "type": "string",
+                    "value": ""
                 }
             ],
-            "name": "tilset",
+            "name": "11-interactive_object",
             "type": "class",
             "useAs": [
                 "property",
-                "map",
-                "layer",
                 "object",
-                "tile",
-                "tileset",
-                "wangcolor",
-                "wangset",
                 "project"
             ]
+        },
+        {
+            "color": "#fffffb00",
+            "drawFill": true,
+            "id": 8,
+            "members": [
+                {
+                    "name": "halo_alpha",
+                    "type": "int",
+                    "value": 0
+                },
+                {
+                    "name": "halo_color",
+                    "type": "string",
+                    "value": "[255, 255, 255]"
+                },
+                {
+                    "name": "halo_size",
+                    "type": "int",
+                    "value": 0
+                },
+                {
+                    "name": "interactive_object",
+                    "propertyType": "11-interactive_object",
+                    "type": "class",
+                    "value": {
+                        "is_animated": true,
+                        "is_on": true,
+                        "sprite": {
+                            "entity_type": "interactive",
+                            "start_frame": 0,
+                            "sub_type": "animated_decor"
+                        }
+                    }
+                },
+                {
+                    "name": "particle_count",
+                    "type": "int",
+                    "value": 5
+                },
+                {
+                    "name": "particles",
+                    "type": "bool",
+                    "value": true
+                }
+            ],
+            "name": "12-light_source",
+            "type": "class",
+            "useAs": [
+                "property",
+                "object",
+                "project"
+            ]
+        },
+        {
+            "id": 10,
+            "name": "20-entity_type",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "entity",
+                "interactive"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 11,
+            "name": "21-sub_type",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "",
+                "chest",
+                "door",
+                "animated_decor"
+            ],
+            "valuesAsFlags": false
         }
     ]
 }

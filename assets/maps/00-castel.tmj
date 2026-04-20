@@ -38,7 +38,7 @@
                     72, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 71],
                  "height":30,
                  "id":1,
-                 "name":"1",
+                 "name":"00-layer",
                  "opacity":1,
                  "type":"tilelayer",
                  "visible":true,
@@ -48,7 +48,7 @@
                 }, 
                 {
                  "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 297, 298, 0, 236, 0, 297, 298, 0, 0, 0, 0, 236, 281, 282, 236, 0, 0, 0, 212, 300, 214, 197, 197, 197, 212, 300, 214, 0,
+                    0, 0, 297, 298, 0, 0, 0, 297, 298, 0, 0, 0, 0, 236, 281, 282, 236, 0, 0, 0, 212, 300, 214, 197, 197, 197, 212, 300, 214, 0,
                     0, 285, 305, 306, 201, 202, 203, 305, 306, 0, 0, 0, 285, 287, 289, 290, 287, 285, 0, 0, 220, 308, 222, 205, 205, 205, 220, 308, 222, 0,
                     0, 293, 0, 0, 209, 210, 211, 0, 0, 0, 0, 0, 293, 295, 0, 0, 295, 293, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 257, 258, 257, 258, 0, 257, 258, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -79,7 +79,7 @@
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                  "height":30,
                  "id":3,
-                 "name":"2",
+                 "name":"01-layer",
                  "opacity":1,
                  "type":"tilelayer",
                  "visible":true,
@@ -89,7 +89,7 @@
                 }, 
                 {
                  "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 213, 0, 0, 236, 0, 0, 213, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 213, 0, 0, 0, 0, 0, 213, 0, 0,
                     0, 0, 0, 0, 264, 264, 264, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 288, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 296, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -120,7 +120,7 @@
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                  "height":30,
                  "id":4,
-                 "name":"3",
+                 "name":"02-layer",
                  "opacity":1,
                  "type":"tilelayer",
                  "visible":true,
@@ -140,12 +140,12 @@
          "layers":[
                 {
                  "draworder":"topdown",
-                 "id":7,
-                 "name":"1",
+                 "id":8,
+                 "name":"00-system",
                  "objects":[
                         {
                          "height":32,
-                         "id":4,
+                         "id":21,
                          "name":"spawn_player",
                          "opacity":1,
                          "properties":[
@@ -165,7 +165,18 @@
                          "width":32,
                          "x":448,
                          "y":864
-                        }, 
+                        }],
+                 "opacity":1,
+                 "type":"objectgroup",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                }, 
+                {
+                 "draworder":"topdown",
+                 "id":7,
+                 "name":"01-interactions",
+                 "objects":[
                         {
                          "height":32,
                          "id":5,
@@ -173,22 +184,18 @@
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"height",
-                                 "type":"int",
-                                 "value":43
-                                }, 
-                                {
-                                 "name":"sprite_sheet",
-                                 "type":"string",
-                                 "value":"01-iron-chests.png"
-                                }, 
-                                {
-                                 "name":"sub_type",
-                                 "type":"string",
-                                 "value":"chest"
+                                 "name":"sprite",
+                                 "propertytype":"10-sprite",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "entity_type":"interactive",
+                                     "sprite_sheet":"01-iron-chests.png",
+                                     "sub_type":"chest"
+                                    }
                                 }],
                          "rotation":0,
-                         "type":"interactive_object",
+                         "type":"11-interactive_object",
                          "visible":true,
                          "width":32,
                          "x":480,
@@ -201,37 +208,25 @@
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"direction",
-                                 "type":"string",
-                                 "value":"up"
-                                }, 
-                                {
-                                 "name":"height",
-                                 "type":"int",
-                                 "value":62
-                                }, 
-                                {
                                  "name":"is_passable",
                                  "type":"bool",
                                  "value":true
                                 }, 
                                 {
-                                 "name":"sprite_sheet",
-                                 "type":"string",
-                                 "value":"00-doors.png"
-                                }, 
-                                {
-                                 "name":"sub_type",
-                                 "type":"string",
-                                 "value":"door"
-                                }, 
-                                {
-                                 "name":"width",
-                                 "type":"int",
-                                 "value":64
+                                 "name":"sprite",
+                                 "propertytype":"10-sprite",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "entity_type":"interactive",
+                                     "height":62,
+                                     "sprite_sheet":"00-doors.png",
+                                     "sub_type":"door",
+                                     "width":64
+                                    }
                                 }],
                          "rotation":0,
-                         "type":"interactive_object",
+                         "type":"11-interactive_object",
                          "visible":true,
                          "width":64,
                          "x":448,
@@ -239,32 +234,24 @@
                         }, 
                         {
                          "height":32,
-                         "id":9,
+                         "id":30,
                          "name":"chest",
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"height",
-                                 "type":"int",
-                                 "value":43
-                                }, 
-                                {
-                                 "name":"position",
-                                 "type":"int",
-                                 "value":1
-                                }, 
-                                {
-                                 "name":"sprite_sheet",
-                                 "type":"string",
-                                 "value":"01-iron-chests.png"
-                                }, 
-                                {
-                                 "name":"sub_type",
-                                 "type":"string",
-                                 "value":"chest"
+                                 "name":"sprite",
+                                 "propertytype":"10-sprite",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "entity_type":"interactive",
+                                     "position":1,
+                                     "sprite_sheet":"01-iron-chests.png",
+                                     "sub_type":"chest"
+                                    }
                                 }],
                          "rotation":0,
-                         "type":"interactive_object",
+                         "type":"11-interactive_object",
                          "visible":true,
                          "width":32,
                          "x":608,
@@ -272,32 +259,24 @@
                         }, 
                         {
                          "height":32,
-                         "id":11,
+                         "id":31,
                          "name":"chest",
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"height",
-                                 "type":"int",
-                                 "value":43
-                                }, 
-                                {
-                                 "name":"position",
-                                 "type":"int",
-                                 "value":2
-                                }, 
-                                {
-                                 "name":"sprite_sheet",
-                                 "type":"string",
-                                 "value":"01-iron-chests.png"
-                                }, 
-                                {
-                                 "name":"sub_type",
-                                 "type":"string",
-                                 "value":"chest"
+                                 "name":"sprite",
+                                 "propertytype":"10-sprite",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "entity_type":"interactive",
+                                     "position":2,
+                                     "sprite_sheet":"01-iron-chests.png",
+                                     "sub_type":"chest"
+                                    }
                                 }],
                          "rotation":0,
-                         "type":"interactive_object",
+                         "type":"11-interactive_object",
                          "visible":true,
                          "width":32,
                          "x":672,
@@ -305,32 +284,24 @@
                         }, 
                         {
                          "height":32,
-                         "id":12,
+                         "id":32,
                          "name":"chest",
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"height",
-                                 "type":"int",
-                                 "value":43
-                                }, 
-                                {
-                                 "name":"position",
-                                 "type":"int",
-                                 "value":3
-                                }, 
-                                {
-                                 "name":"sprite_sheet",
-                                 "type":"string",
-                                 "value":"01-iron-chests.png"
-                                }, 
-                                {
-                                 "name":"sub_type",
-                                 "type":"string",
-                                 "value":"chest"
+                                 "name":"sprite",
+                                 "propertytype":"10-sprite",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "entity_type":"interactive",
+                                     "position":3,
+                                     "sprite_sheet":"01-iron-chests.png",
+                                     "sub_type":"chest"
+                                    }
                                 }],
                          "rotation":0,
-                         "type":"interactive_object",
+                         "type":"11-interactive_object",
                          "visible":true,
                          "width":32,
                          "x":736,
@@ -338,8 +309,8 @@
                         }, 
                         {
                          "height":32,
-                         "id":16,
-                         "name":"ligh",
+                         "id":38,
+                         "name":"torch",
                          "opacity":1,
                          "properties":[
                                 {
@@ -358,105 +329,23 @@
                                  "value":80
                                 }, 
                                 {
-                                 "name":"is_animated",
-                                 "type":"bool",
-                                 "value":true
-                                }, 
-                                {
-                                 "name":"is_on",
-                                 "type":"bool",
-                                 "value":true
-                                }, 
-                                {
-                                 "name":"is_passable",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"particle_count",
-                                 "type":"int",
-                                 "value":5
-                                }, 
-                                {
-                                 "name":"particles",
-                                 "type":"bool",
-                                 "value":true
-                                }, 
-                                {
-                                 "name":"sprite_sheet",
-                                 "type":"string",
-                                 "value":"02-torchs.png"
-                                }, 
-                                {
-                                 "name":"sub_type",
-                                 "type":"string",
-                                 "value":"animated_decor"
+                                 "name":"interactive_object",
+                                 "propertytype":"11-interactive_object",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "is_animated":true,
+                                     "is_on":true,
+                                     "sprite":
+                                        {
+                                         "entity_type":"interactive",
+                                         "sprite_sheet":"02-torchs.png",
+                                         "sub_type":"animated_decor"
+                                        }
+                                    }
                                 }],
                          "rotation":0,
-                         "type":"interactive_object",
-                         "visible":true,
-                         "width":32,
-                         "x":320,
-                         "y":736
-                        }, 
-                        {
-                         "height":32,
-                         "id":18,
-                         "name":"ligh",
-                         "opacity":1,
-                         "properties":[
-                                {
-                                 "name":"halo_alpha",
-                                 "type":"int",
-                                 "value":120
-                                }, 
-                                {
-                                 "name":"halo_color",
-                                 "type":"string",
-                                 "value":"[255, 204, 0]"
-                                }, 
-                                {
-                                 "name":"halo_size",
-                                 "type":"int",
-                                 "value":80
-                                }, 
-                                {
-                                 "name":"is_animated",
-                                 "type":"bool",
-                                 "value":true
-                                }, 
-                                {
-                                 "name":"is_on",
-                                 "type":"bool",
-                                 "value":true
-                                }, 
-                                {
-                                 "name":"is_passable",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"particle_count",
-                                 "type":"int",
-                                 "value":5
-                                }, 
-                                {
-                                 "name":"particles",
-                                 "type":"bool",
-                                 "value":true
-                                }, 
-                                {
-                                 "name":"sprite_sheet",
-                                 "type":"string",
-                                 "value":"02-torchs.png"
-                                }, 
-                                {
-                                 "name":"sub_type",
-                                 "type":"string",
-                                 "value":"animated_decor"
-                                }],
-                         "rotation":0,
-                         "type":"interactive_object",
+                         "type":"12-light_source",
                          "visible":true,
                          "width":32,
                          "x":64,
@@ -464,8 +353,8 @@
                         }, 
                         {
                          "height":32,
-                         "id":19,
-                         "name":"ligh",
+                         "id":39,
+                         "name":"torch",
                          "opacity":1,
                          "properties":[
                                 {
@@ -484,42 +373,67 @@
                                  "value":80
                                 }, 
                                 {
-                                 "name":"is_animated",
-                                 "type":"bool",
-                                 "value":true
-                                }, 
-                                {
-                                 "name":"is_on",
-                                 "type":"bool",
-                                 "value":true
-                                }, 
-                                {
-                                 "name":"is_passable",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"particle_count",
-                                 "type":"int",
-                                 "value":5
-                                }, 
-                                {
-                                 "name":"particles",
-                                 "type":"bool",
-                                 "value":true
-                                }, 
-                                {
-                                 "name":"sprite_sheet",
-                                 "type":"string",
-                                 "value":"02-torchs.png"
-                                }, 
-                                {
-                                 "name":"sub_type",
-                                 "type":"string",
-                                 "value":"animated_decor"
+                                 "name":"interactive_object",
+                                 "propertytype":"11-interactive_object",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "is_animated":true,
+                                     "is_on":true,
+                                     "sprite":
+                                        {
+                                         "entity_type":"interactive",
+                                         "sprite_sheet":"02-torchs.png",
+                                         "sub_type":"animated_decor"
+                                        }
+                                    }
                                 }],
                          "rotation":0,
-                         "type":"interactive_object",
+                         "type":"12-light_source",
+                         "visible":true,
+                         "width":32,
+                         "x":320,
+                         "y":736
+                        }, 
+                        {
+                         "height":32,
+                         "id":40,
+                         "name":"torch",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"halo_alpha",
+                                 "type":"int",
+                                 "value":120
+                                }, 
+                                {
+                                 "name":"halo_color",
+                                 "type":"string",
+                                 "value":"[255, 204, 0]"
+                                }, 
+                                {
+                                 "name":"halo_size",
+                                 "type":"int",
+                                 "value":80
+                                }, 
+                                {
+                                 "name":"interactive_object",
+                                 "propertytype":"11-interactive_object",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "is_animated":true,
+                                     "is_on":true,
+                                     "sprite":
+                                        {
+                                         "entity_type":"interactive",
+                                         "sprite_sheet":"02-torchs.png",
+                                         "sub_type":"animated_decor"
+                                        }
+                                    }
+                                }],
+                         "rotation":0,
+                         "type":"12-light_source",
                          "visible":true,
                          "width":32,
                          "x":608,
@@ -527,8 +441,8 @@
                         }, 
                         {
                          "height":32,
-                         "id":20,
-                         "name":"ligh",
+                         "id":41,
+                         "name":"torch",
                          "opacity":1,
                          "properties":[
                                 {
@@ -547,46 +461,115 @@
                                  "value":80
                                 }, 
                                 {
-                                 "name":"is_animated",
-                                 "type":"bool",
-                                 "value":true
-                                }, 
-                                {
-                                 "name":"is_on",
-                                 "type":"bool",
-                                 "value":true
-                                }, 
-                                {
-                                 "name":"is_passable",
-                                 "type":"bool",
-                                 "value":false
-                                }, 
-                                {
-                                 "name":"particle_count",
-                                 "type":"int",
-                                 "value":8
-                                }, 
-                                {
-                                 "name":"particles",
-                                 "type":"bool",
-                                 "value":true
-                                }, 
-                                {
-                                 "name":"sprite_sheet",
-                                 "type":"string",
-                                 "value":"02-torchs.png"
-                                }, 
-                                {
-                                 "name":"sub_type",
-                                 "type":"string",
-                                 "value":"animated_decor"
+                                 "name":"interactive_object",
+                                 "propertytype":"11-interactive_object",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "is_animated":true,
+                                     "is_on":true,
+                                     "sprite":
+                                        {
+                                         "entity_type":"interactive",
+                                         "sprite_sheet":"02-torchs.png",
+                                         "sub_type":"animated_decor"
+                                        }
+                                    }
                                 }],
                          "rotation":0,
-                         "type":"interactive_object",
+                         "type":"12-light_source",
                          "visible":true,
                          "width":32,
                          "x":864,
                          "y":736
+                        }, 
+                        {
+                         "height":32,
+                         "id":42,
+                         "name":"torch",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"halo_alpha",
+                                 "type":"int",
+                                 "value":120
+                                }, 
+                                {
+                                 "name":"halo_color",
+                                 "type":"string",
+                                 "value":"[255, 204, 0]"
+                                }, 
+                                {
+                                 "name":"halo_size",
+                                 "type":"int",
+                                 "value":80
+                                }, 
+                                {
+                                 "name":"interactive_object",
+                                 "propertytype":"11-interactive_object",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "is_animated":true,
+                                     "is_on":true,
+                                     "sprite":
+                                        {
+                                         "entity_type":"interactive",
+                                         "sprite_sheet":"02-torchs.png",
+                                         "sub_type":"animated_decor"
+                                        }
+                                    }
+                                }],
+                         "rotation":0,
+                         "type":"12-light_source",
+                         "visible":true,
+                         "width":32,
+                         "x":768,
+                         "y":32
+                        }, 
+                        {
+                         "height":32,
+                         "id":43,
+                         "name":"torch",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"halo_alpha",
+                                 "type":"int",
+                                 "value":120
+                                }, 
+                                {
+                                 "name":"halo_color",
+                                 "type":"string",
+                                 "value":"[255, 204, 0]"
+                                }, 
+                                {
+                                 "name":"halo_size",
+                                 "type":"int",
+                                 "value":80
+                                }, 
+                                {
+                                 "name":"interactive_object",
+                                 "propertytype":"11-interactive_object",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "is_animated":true,
+                                     "is_on":true,
+                                     "sprite":
+                                        {
+                                         "entity_type":"interactive",
+                                         "sprite_sheet":"02-torchs.png",
+                                         "sub_type":"animated_decor"
+                                        }
+                                    }
+                                }],
+                         "rotation":0,
+                         "type":"12-light_source",
+                         "visible":true,
+                         "width":32,
+                         "x":160,
+                         "y":32
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -601,8 +584,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":8,
- "nextobjectid":21,
+ "nextlayerid":9,
+ "nextobjectid":44,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.1",
