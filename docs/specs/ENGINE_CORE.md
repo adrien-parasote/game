@@ -53,10 +53,11 @@ The engine supports configurable overlay elements for atmospheric or UI occlusio
 
 ### G. Time & Seasonal System
 The engine maintains an internal world clock to drive environmental changes and simulation.
-- **Timing**: 1 real second = 1 game minute; 1 real minute = 1 game hour.
-- **Cycles**: 24-hour days, 30-day seasons, and 4-season years (120 days total).
-- **Lighting**: A sinusoidal brightness factor calculated as `0.5 + 0.5 * sin(2π * time - π/2)`.
-- **Night Overlay**: A full-screen black overlay with alpha calculated from the inverse of brightness (max 180 alpha at midnight).
+- **Timing**: Configurable via `Settings.MINUTE_DURATION` (default 1.5 real seconds per game minute).
+- **Conversion**: `1 real second = (1 / MINUTE_DURATION)` game minutes.
+- **Cycles**: 24-hour days, `Settings.DAYS_PER_SEASON` game days per season, and 4-season years.
+- **Lighting**: A sinusoidal brightness factor calculated as `0.5 + 0.5 * sin(2π * hour/24 - π/2)`.
+- **Night Overlay**: A full-screen black overlay (`#000000`) with alpha calculated from the inverse of brightness (max 180 alpha at midnight).
 
 ### H. CPU Freeze Optimization (Entity Visibility)
 To optimize performance in large worlds, entity updates are intelligently skipped.
@@ -84,6 +85,16 @@ In addition to map tile collisions, the engine supports blocking player movement
 - **Mechanism**: The `_is_collidable` check in `Game` iterates through the `interactives` sprite group.
 - **Detection**: Uses `collidepoint` check on the entity's 32x32 physical hitbox (`obj.rect`).
 - **Scope**: Currently applied only to the `interactives` group to maintain O(N) performance for movement validation.
+
+### L. GameHUD (Visual UI)
+The HUD provides information about the current time, day, and season.
+- **Rendering**: Drawn at the very end of the `Game.draw()` loop to ensure top-level visibility.
+- **Scaling**: Uses `HUD_SCALE = 0.4` (internal resolution scaling) for the main clock graphic.
+- **Anchors**: Pixel-precise coordinates for elements (scaled):
+  - **Time**: Center `(262.5, 107.5)` relative to clock surface.
+  - **Season Icon**: Center `(313.0, 279.0)`.
+  - **Day Label**: Center `(143.0, 289.0)`.
+- **Label System**: Uses `LabelRegistry` for multilingual support (Day/Jour titles).
 
 ## 3. Anti-Patterns (DO NOT)
 

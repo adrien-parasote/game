@@ -1,6 +1,7 @@
 import pygame
 import pytest
 from src.entities.groups import CameraGroup
+from src.config import Settings
 
 class MockSprite(pygame.sprite.Sprite):
     def __init__(self, y_pos):
@@ -121,8 +122,8 @@ def test_player_input_grid_logic():
             
     # Mock keys: UP and RIGHT held
     mock_keys = MockKeys()
-    mock_keys[pygame.K_UP] = True
-    mock_keys[pygame.K_RIGHT] = True
+    mock_keys[Settings.MOVE_UP] = True
+    mock_keys[Settings.MOVE_RIGHT] = True
     
     with patch('pygame.key.get_pressed', return_value=mock_keys):
         player.input()
@@ -139,7 +140,7 @@ def test_player_input_grid_logic():
 
     # 2. Mock keys: RIGHT only
     player.is_moving = False
-    mock_keys_right = MockKeys({pygame.K_RIGHT: True})
+    mock_keys_right = MockKeys({Settings.MOVE_RIGHT: True})
     with patch('pygame.key.get_pressed', return_value=mock_keys_right):
         player.input()
         player.update(0.01)

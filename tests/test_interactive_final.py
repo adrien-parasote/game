@@ -98,7 +98,7 @@ def test_luminosity_daylight_floor(mock_spritesheet):
     # We mock or check the internal method calculating intensity
     
     # For now, we expect the method to be present
-    assert hasattr(obj, 'draw_halo')
+    assert hasattr(obj, 'draw_effects')
     
     pygame.quit()
 
@@ -123,33 +123,24 @@ def test_footprint_centering(mock_spritesheet):
     
     pygame.quit()
 
-def test_halo_visual_centering(mock_spritesheet):
-    """Verify that halos are visually centered on the entire sprite (rect.center)."""
-    pygame.init()
-    pygame.display.set_mode((1, 1), pygame.HIDDEN)
-    
-    # Create a tall object (32x64) at (100, 100)
-    # Footprint center (pos) is at (116, 164-16=148)
-    # Visual center (rect.center) is at (116, 100+32=132)
     obj = InteractiveEntity((100, 100), [], "door", "test.png", 
                              width=32, height=64, tiled_width=32, tiled_height=64, halo_size=20)
     
-    # We check if draw_halo uses rect.center
+    # We check if draw_effects uses rect.center
     mock_surface = MagicMock()
     cam_offset = pygame.math.Vector2(0, 0)
     obj.is_on = True
-    # Ensure light_mask_cache is populated (mock_spritesheet usually handles this, 
-    # but we force one for safety)
+    # Ensure light_mask_cache is populated
     if not obj.light_mask_cache:
-        obj.light_mask_cache = [pygame.Surface((40, 40))]
+        obj.light_mask_cache = [pygame.Surface((40, 40)) for _ in range(10)]
         
-    obj.draw_halo(mock_surface, cam_offset, 180)
+    obj.draw_effects(mock_surface, cam_offset, 180)
     
-    # blit_pos = screen_center - halo_size
-    # expected_center = rect.center = (116, 132)
-    # expected_blit = (116 - 20, 132 - 20) = (96, 112)
+    # screen_center_x = 116 + 0 = 116
+    # screen_center_y = 132 + 0 = 132
+    # new_size = 40
+    # blit_pos = (116 - 20, 132 - 20) = (96, 112)
     
-    # In current (broken) state, it uses obj.pos = (116, 148) which gives (96, 128)
     args, kwargs = mock_surface.blit.call_args
     blit_pos = args[1]
     assert blit_pos == (96, 112)

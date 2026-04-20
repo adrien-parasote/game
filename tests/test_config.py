@@ -5,12 +5,12 @@ import json
 from src.config import Settings
 
 def test_settings_default_keys():
-    """Verify default movement keys are correctly set."""
+    """Verify default movement keys are correctly set (ZQSD)."""
     Settings.load()
-    assert Settings.MOVE_UP == pygame.K_UP
-    assert Settings.MOVE_DOWN == pygame.K_DOWN
-    assert Settings.MOVE_LEFT == pygame.K_LEFT
-    assert Settings.MOVE_RIGHT == pygame.K_RIGHT
+    assert Settings.MOVE_UP == pygame.K_z
+    assert Settings.MOVE_DOWN == pygame.K_s
+    assert Settings.MOVE_LEFT == pygame.K_q
+    assert Settings.MOVE_RIGHT == pygame.K_d
 
 def test_settings_custom_keys(tmp_path):
     """Verify custom movement keys from JSON are mapped to Pygame constants."""

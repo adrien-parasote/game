@@ -174,7 +174,7 @@ def test_handle_interactions_object(monkeypatch, game_instance):
         groups=[game_instance.visible_sprites, game_instance.interactives],
         sub_type='door',
         sprite_sheet='dummy.png',
-        direction='up',
+        position=0,
         is_passable=True
     )
     

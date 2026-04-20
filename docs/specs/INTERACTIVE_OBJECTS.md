@@ -15,8 +15,9 @@ This document defines the requirements for fixed interactive objects (chests, sw
 
 ### Animation Logic
 - **Column Mapping**: 
-  - The object property `position` (int) determines the sprite-sheet column index directly (0-indexed).
-  - Common convention: 0=Up, 1=Right, 2=Left, 3=Down.
+  - The object property `position` (int, 0-3) determines the sprite-sheet column index directly (0-indexed).
+  - Mapping: 0=Up, 1=Right, 2=Left, 3=Down.
+  - The engine uses this index to slice the correct vertical strip from the spritesheet.
 - **Behavior**: On interaction, state toggles between ON and OFF. Default state is OFF, unless `is_animated` is true, or `sub_type` is a light source (`lamp`, `lantern`, `torch`, `fire`), in which case the default state is ON.
 - **Animation (Linear)**: If `is_animated == false`, animation plays once from `start_frame` to `end_frame` (Toggle ON).
 - **Animation (Looping)**: If `is_animated == true`, animation loops between `start_frame` and `end_frame` continuously while the state is ON.
@@ -85,8 +86,8 @@ If `halo_size > 0`, a dynamic radial gradient halo is generated and rendered.
   - **Modulation**: ±12% on intensity (alpha), ±3% on size (scale).
   - **Phase**: Each object uses a unique random phase offset to prevent synchronized "breathing" between multiple instances.
 - **Rendering**:
-  - Drawn at the **footprint center** (horizontal center, 16px above the Tiled rectangle bottom).
-  - Method: `BLEND_RGB_ADD` on top of the dark night overlay.
+  - Drawn onto the main surface in the `draw_effects` method.
+  - Method: `BLEND_RGB_ADD` on top of the final rendered frame.
 
 ### 2.4. Particle System
 If `particles` is true, the object acts as a lightweight particle emitter when `is_on` is True.
