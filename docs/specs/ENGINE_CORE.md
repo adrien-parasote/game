@@ -96,9 +96,9 @@ The HUD provides information about the current time, day, and season.
 - **Rendering**: Drawn at the very end of the `Game.draw()` loop to ensure top-level visibility.
 - **Scaling**: Uses `HUD_SCALE = 0.4` (internal resolution scaling) for the main clock graphic.
 - **Anchors**: Pixel-precise coordinates for elements (scaled):
-  - **Time**: Center `(100.0, 47.2)` relative to clock surface (derived from `(250, 118) * 0.4`).
+  - **Time**: Center `(100.0, 47.6)` relative to clock surface (derived from `(250, 119) * 0.4`).
   - **Season Icon**: Center `(125.2, 111.6)` (derived from `(313, 279) * 0.4`).
-  - **Day Label**: Center `(57.2, 120.8)` (derived from `(143, 302) * 0.4`).
+  - **Day Label**: Center `(57.2, 121.2)` (derived from `(143, 303) * 0.4`).
 - **Margins**: `20px` from top and right screen edges.
 - **Label System**: Uses `LabelRegistry` for multilingual support (Day/Jour titles).
 
