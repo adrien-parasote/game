@@ -24,10 +24,10 @@
     "size": 32
   },
   "controls": {
-    "move_up": "K_UP",
-    "move_down": "K_DOWN",
-    "move_left": "K_LEFT",
-    "move_right": "K_RIGHT",
+    "move_up": "K_z",
+    "move_down": "K_s",
+    "move_left": "K_q",
+    "move_right": "K_d",
     "quit_key": "K_ESCAPE",
     "toggle_fullscreen_key": "K_p"
   },
@@ -36,5 +36,10 @@
   },
   "overlay": {
     "occlusion_alpha": 130
+  },
+  "time": {
+    "minute_duration": 1.5,
+    "days_per_season": 30,
+    "initial_season": 0
   }
 }

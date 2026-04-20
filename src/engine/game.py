@@ -11,6 +11,7 @@ from src.map.manager import MapManager
 from src.map.layout import OrthogonalLayout
 from src.engine.time_system import TimeSystem
 from src.config import Settings
+from src.ui.hud import GameHUD
 
 class Game:
     """Main game class that manages the core loop and state."""
@@ -63,7 +64,7 @@ class Game:
         
         # Time System
         self.time_system = TimeSystem(initial_hour=Settings.INITIAL_HOUR)
-        self.hud_font = pygame.font.SysFont("monospace", 18, bold=True)
+        self.hud = GameHUD(self.time_system, lang="fr")
         
         logging.info(f"Screen setup: {Settings.WINDOW_WIDTH}x{Settings.WINDOW_HEIGHT} (Fullscreen: {self.is_fullscreen})")
         
@@ -180,18 +181,8 @@ class Game:
                     self.screen.blit(surface, screen_pos)
 
     def _draw_hud(self):
-        """Draw time and season HUD overlay top-left."""
-        time_text = self.time_system.time_label
-        season_text = self.time_system.season_label
-        hud_str = f"{time_text} | {season_text}"
-        
-        # Render shadow first
-        shadow_surf = self.hud_font.render(hud_str, True, (20, 20, 20))
-        self.screen.blit(shadow_surf, (11, 11))
-        
-        # Render main text
-        text_surf = self.hud_font.render(hud_str, True, (255, 255, 255))
-        self.screen.blit(text_surf, (10, 10))
+        """Draw time and season HUD overlay (top-right, fixed to screen)."""
+        self.hud.draw(self.screen)
 
     def _handle_interactions(self):
         """Handle spatial interaction between player and world objects/NPCs."""

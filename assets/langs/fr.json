@@ -1,0 +1,9 @@
+{
+  "seasons": {
+    "SPRING": "Printemps",
+    "SUMMER": "Été",
+    "AUTUMN": "Automne",
+    "WINTER": "Hiver"
+  },
+  "day_label": "Jour"
+}
