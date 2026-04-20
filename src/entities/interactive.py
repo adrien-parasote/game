@@ -107,14 +107,8 @@ class InteractiveEntity(BaseEntity):
         self.f_scale = 1.0
         
         # Particle System
-        # Automate particles for all light sources (torches, fire, etc.) if not specified
-        if self.is_light_source and not particles:
-            self.particles = True
-            self.particle_count = max(particle_count, 15)
-        else:
-            self.particles = particles
-            self.particle_count = particle_count
-            
+        self.particles = particles
+        self.particle_count = particle_count
         self.particles_list = []
 
     def _load_assets(self, sprite_sheet, width, height):

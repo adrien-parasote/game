@@ -13,26 +13,25 @@ from src.engine.time_system import TimeSystem
 from src.config import Settings
 from src.ui.hud import GameHUD
 
-def _get_nested_prop(props: dict, key: str, default=None):
+
+def _get_property(props: dict, key: str, default=None):
     """
-    Search for a property across nested dictionaries generated from Tiled class structures.
-    Resolution order: root -> interactive_object.sprite -> sprite -> interactive_object
+    Look for a property in the resolved Tiled properties dictionary.
+    Handles common paths for Tiled 1.10+ nested class structures.
     """
     if key in props:
         return props[key]
-        
+    
+    # Check common nested paths (interactive_object -> sprite)
     io = props.get("interactive_object", {})
     if isinstance(io, dict):
+        if key in io: return io[key]
         sp = io.get("sprite", {})
-        if isinstance(sp, dict) and key in sp:
-            return sp[key]
+        if isinstance(sp, dict) and key in sp: return sp[key]
             
     sp = props.get("sprite", {})
     if isinstance(sp, dict) and key in sp:
         return sp[key]
-        
-    if isinstance(io, dict) and key in io:
-        return io[key]
         
     return default
 
@@ -117,35 +116,39 @@ class Game:
         half_tile = self.tile_size // 2
         for ent in entities:
             props = ent.get("properties", {})
-            entity_type = _get_nested_prop(props, "entity_type", default="unknown")
-            
+            entity_type = _get_property(props, "entity_type", default="unknown")
             e_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
             
             if entity_type == "interactive":
+                # Ensure we have a valid target_id (fallback to Tiled object ID)
+                target_id = _get_property(props, "target_id")
+                if not target_id:
+                    target_id = str(ent.get("id"))
+
                 InteractiveEntity(
                     pos=(ent["x"], ent["y"]),
                     groups=[self.visible_sprites, self.interactives],
-                    sub_type=_get_nested_prop(props, "sub_type", "unknown"),
-                    sprite_sheet=_get_nested_prop(props, "sprite_sheet", ""),
-                    position=int(_get_nested_prop(props, "position", 0)),
-                    depth=int(_get_nested_prop(props, "depth", 1)),
-                    start_row=int(_get_nested_prop(props, "start_frame", 0)),
-                    end_row=int(_get_nested_prop(props, "end_frame", 3)),
-                    width=int(_get_nested_prop(props, "width", ent.get("width", 32))),
-                    height=int(_get_nested_prop(props, "height", ent.get("height", 32))),
+                    sub_type=_get_property(props, "sub_type", "unknown"),
+                    sprite_sheet=_get_property(props, "sprite_sheet", ""),
+                    position=int(_get_property(props, "position", 0)),
+                    depth=int(_get_property(props, "depth", 1)),
+                    start_row=int(_get_property(props, "start_frame", 0)),
+                    end_row=int(_get_property(props, "end_frame", 3)),
+                    width=int(_get_property(props, "width", ent.get("width", 32))),
+                    height=int(_get_property(props, "height", ent.get("height", 32))),
                     tiled_width=ent.get("width", 32),
                     tiled_height=ent.get("height", 32),
                     obstacles_group=self.obstacles_group,
-                    is_passable=_get_nested_prop(props, "is_passable", False),
-                    is_animated=_get_nested_prop(props, "is_animated", False),
-                    is_on=_get_nested_prop(props, "is_on"),
-                    halo_size=int(_get_nested_prop(props, "halo_size", 0)),
-                    halo_color=_get_nested_prop(props, "halo_color", "[255, 255, 255]"),
-                    halo_alpha=int(_get_nested_prop(props, "halo_alpha", 130)),
-                    particles=_get_nested_prop(props, "particles", False),
-                    particle_count=int(_get_nested_prop(props, "particle_count", 0)),
-                    target_id=_get_nested_prop(props, "target_id", ent.get("id")),
-                    target=_get_nested_prop(props, "target")
+                    is_passable=_get_property(props, "is_passable", False),
+                    is_animated=_get_property(props, "is_animated", False),
+                    is_on=_get_property(props, "is_on"),
+                    halo_size=int(_get_property(props, "halo_size", 0)),
+                    halo_color=_get_property(props, "halo_color", "[255, 255, 255]"),
+                    halo_alpha=int(_get_property(props, "halo_alpha", 130)),
+                    particles=_get_property(props, "particles", False),
+                    particle_count=int(_get_property(props, "particle_count", 0)),
+                    target_id=target_id,
+                    target=_get_property(props, "target")
                 )
             else:
                 # Handle NPCs

@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
 import pygame
+from src.map.project_schema import TiledProject
 
 @dataclass
 class TileMapData:
@@ -14,6 +15,12 @@ class TileMapData:
 class TmjParser:
     """Parser for Tiled (.tmj) map files and their associated external (.tsx) tilesets."""
     
+    def __init__(self):
+        self.project: Optional[TiledProject] = None
+        # Attempt to load project from standard location
+        project_path = "assets/tiled/game.tiled-project"
+        if os.path.exists(project_path):
+            self.project = TiledProject(project_path)
     def load_map(self, tmj_path: str) -> Dict[str, Any]:
         """Loads a .tmj file and resolves all local and external dependencies recursively."""
         if not os.path.exists(tmj_path):
@@ -74,11 +81,18 @@ class TmjParser:
             for p in obj.get("properties", []):
                 props[p.get("name")] = p.get("value")
             
+            # Resolve properties via Tiled Project if enabled
+            obj_type = obj.get("type", obj.get("class", ""))
+            
+            if self.project and obj_type:
+                # Use project defaults as base, override with map properties
+                props = self.project.resolve(obj_type, props)
+                
             # Map object data for easier consumption
             obj_info = {
                 "id": obj.get("id"),
                 "name": obj.get("name"),
-                "type": obj.get("type", obj.get("class", "")), # 'class' in 1.10+, 'type' in older
+                "type": obj_type,
                 "x": obj.get("x", 0),
                 "y": obj.get("y", 0),
                 "width": obj.get("width", 0),
