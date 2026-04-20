@@ -318,7 +318,27 @@ class InteractiveEntity(BaseEntity):
 
     def draw_effects(self, surface: pygame.Surface, cam_offset: pygame.math.Vector2, global_darkness: int):
         """Render high-precision modulated light halo AND particles from 10-step cache."""
-        if not self.is_on or not self.light_mask_cache or self.halo_size <= 0:
+        if not self.is_on:
+            return
+
+        # 1. Draw particles if any (before early return for halo)
+        if self.particles_list:
+            base_color = getattr(self, 'halo_color', (250, 250, 250))
+            for p in self.particles_list:
+                # Power-falloff alpha keeps particles bright longer before fading out
+                alpha = (p['life'] / p['max_life']) ** 0.6
+                # Fading by multiplying RGB by alpha for BLEND_RGB_ADD
+                color = (
+                    int(base_color[0] * alpha),
+                    int(base_color[1] * alpha),
+                    int(base_color[2] * alpha)
+                )
+                px = int(p['x'] + cam_offset.x)
+                py = int(p['y'] + cam_offset.y)
+                pygame.draw.circle(surface, color, (px, py), p['size'])
+
+        # 2. Draw light halo
+        if not self.light_mask_cache or self.halo_size <= 0:
             return
 
         # Calculate final modulation factor precisely

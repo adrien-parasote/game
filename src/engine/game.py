@@ -12,7 +12,6 @@ from src.map.layout import OrthogonalLayout
 from src.engine.time_system import TimeSystem
 from src.config import Settings
 from src.ui.hud import GameHUD
-from src.ui.hud import GameHUD
 
 def _get_nested_prop(props: dict, key: str, default=None):
     """

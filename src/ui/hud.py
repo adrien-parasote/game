@@ -14,13 +14,13 @@ from src.engine.time_system import TimeSystem, Season
 HUD_SCALE: float = 0.4                 # Scale factor for the large original HUD asset
 
 SEASON_ICON_CENTER: tuple = (int(313 * HUD_SCALE), int(279 * HUD_SCALE))
-TIME_ANCHOR: tuple = (int(262.5 * HUD_SCALE), int(107.5 * HUD_SCALE))
+TIME_ANCHOR: tuple = (int(268 * HUD_SCALE), int(112 * HUD_SCALE))
 SEASON_DAY_ANCHOR: tuple = (int(143 * HUD_SCALE), int(289 * HUD_SCALE))
 
 SEASON_ICON_SIZE: int = int(147 * HUD_SCALE)  # Circular icon native size is ~147px
 
-HUD_MARGIN_X: int = 20                 # Pixels from right edge
-HUD_MARGIN_Y: int = 20                 # Pixels from top edge
+HUD_MARGIN_X: int = 30                 # Pixels from right edge
+HUD_MARGIN_Y: int = 30                 # Pixels from top edge
 
 TEXT_COLOR: tuple = (240, 235, 210)    # Warm off-white
 SHADOW_COLOR: tuple = (0, 0, 0)
