@@ -86,17 +86,6 @@ def test_tmj_parser_validation_errors(tmp_path):
     with pytest.raises(ValueError):
         parser.load_map(str(map_file))
 
-def test_tmj_parser_parse_player_spawn():
-    # Test the standalone helper (currently isolated in parser)
-    parser = TmjParser()
-    sub_layer = {
-        "objects": [
-            {"name": "spawn_player", "x": 100, "y": 200}
-        ]
-    }
-    map_result = {"spawn_player": None}
-    parser._parse_player_spawn(sub_layer, map_result)
-    assert map_result["spawn_player"] == {"x": 100, "y": 200}
 
 def test_tmj_parser_parse_tsx(monkeypatch, tmp_path):
     # Ensure display is initialized for convert_alpha

@@ -14,17 +14,6 @@ class MapManager:
         self.height = len(first_layer)
         self.width = len(first_layer[0]) if self.height > 0 else 0
 
-    def get_tile(self, layer_id: int, x: int, y: int) -> Optional[int]:
-        """Get tile value at tile coordinates (x, y) on a specific layer."""
-        if layer_id in self.layers and 0 <= y < self.height and 0 <= x < self.width:
-            return self.layers[layer_id][y][x]
-        return None
-
-    def get_tile_at_px(self, layer_id: int, px: float, py: float) -> Optional[int]:
-        """Get tile value at screen pixel coordinates (px, py) on a specific layer."""
-        wx, wy = self.layout.to_world(px, py)
-        # We use floor to get the tile index
-        return self.get_tile(layer_id, int(wx), int(wy))
         
     def is_collidable(self, x: int, y: int) -> bool:
         """Check if any layer at the given (x,y) coordinates contains a collidable tile."""

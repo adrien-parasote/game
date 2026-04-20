@@ -41,7 +41,7 @@ class Game:
     def __init__(self):
         self._setup_logging()
         pygame.init()
-        logging.info("Initializing Game Engine...")
+        logging.info(f"Initializing Game Engine v{Settings.VERSION}...")
         
         # Display initialization with Fullscreen support
         display_flags = pygame.FULLSCREEN if Settings.FULLSCREEN else 0
@@ -49,7 +49,7 @@ class Game:
             (Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT), 
             display_flags
         )
-        pygame.display.set_caption(Settings.GAME_TITLE)
+        pygame.display.set_caption(f"{Settings.GAME_TITLE} (v{Settings.VERSION})")
         self.clock = pygame.time.Clock()
         
         # Load Constants from Settings
@@ -365,7 +365,7 @@ class Game:
             now = pygame.time.get_ticks()
             if now - self.last_fps_update > 1000:
                 fps = self.clock.get_fps()
-                pygame.display.set_caption(f"{Settings.GAME_TITLE} - {fps:.1f} FPS")
+                pygame.display.set_caption(f"{Settings.GAME_TITLE} (v{Settings.VERSION}) - {fps:.1f} FPS")
                 self.last_fps_update = now
             
             pygame.display.update()

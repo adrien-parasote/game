@@ -59,3 +59,15 @@ def test_game_draw():
     game._draw_hud()
     
     pygame.quit()
+
+def test_game_title_version():
+    """Verify the window title contains the version."""
+    pygame.init()
+    pygame.display.set_mode((1, 1), pygame.HIDDEN)
+    game = Game()
+    
+    title = pygame.display.get_caption()[0]
+    from src.config import Settings
+    assert f"v{Settings.VERSION}" in title
+    
+    pygame.quit()

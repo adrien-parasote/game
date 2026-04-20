@@ -41,5 +41,10 @@ def test_settings_custom_keys(tmp_path):
 
 def test_settings_initial_hour_load():
     """Verify initial_hour is loaded from config."""
-    # Current value in settings.json is 23
-    assert Settings.INITIAL_HOUR == 23
+    # Current value in settings.json is 10
+    assert Settings.INITIAL_HOUR == 10
+
+def test_settings_version_load():
+    """Verify game version is loaded from config."""
+    # We expect 0.1.0 to be the version after implementation
+    assert Settings.VERSION == "0.1.0"

@@ -1,4 +1,5 @@
 {
+  "version": "0.1.0",
   "display": {
     "width": 1280,
     "height": 720,
@@ -12,12 +13,7 @@
     "initial_hour": 10
   },
   "colors": {
-    "background": "#000000",
-    "player": "#00DDFF",
-    "player_border": "white",
-    "tile_floor": "gray15",
-    "tile_border": "gray20",
-    "tile_wall": "red"
+    "background": "#000000"
   },
   "player": {
     "speed": 150,

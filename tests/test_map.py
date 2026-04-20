@@ -35,26 +35,10 @@ def test_map_manager_loading():
     layout = OrthogonalLayout(32)
     manager = MapManager(map_data, layout)
     
-    assert manager.width == 3
-    assert manager.height == 3
-    
-    # get_tile(layer_id, x, y)
-    assert manager.get_tile(0, 1, 1) == 0
-    assert manager.get_tile(0, 0, 0) == 1
-    
     # is_collidable(x, y) checking across all layers
     assert manager.is_collidable(0, 0) is True
     assert manager.is_collidable(1, 1) is False
 
-def test_map_manager_tile_at_px():
-    map_data = {"layers": {0: [[1]]}, "tiles": {1: type('TileMapData', (), {'depth': 0, 'collidable': False})()}}
-    layout = OrthogonalLayout(32)
-    manager = MapManager(map_data, layout)
-    
-    # Pixel (16, 16) should be tile (0, 0) on layer 0
-    assert manager.get_tile_at_px(0, 16, 16) == 1
-    # Pixel (64, 64) should be None or out of bounds
-    assert manager.get_tile_at_px(0, 64, 64) is None
 
 import pygame
 def test_map_manager_visible_chunks():

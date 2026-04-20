@@ -12,14 +12,14 @@ class Settings:
     
     # Internal Defaults (Fallback)
     _DEFAULTS = {
+        "version": "0.0.0",
         "display": {
             "width": 1280, "height": 720, "fps": 60, 
             "title": "RPG Tile Engine", "fullscreen": False
         },
         "map": {"tile_size": 32, "map_size": 32, "initial_hour": 16},
         "colors": {
-            "background": "#1a1a1a", "player": "#00DDFF", "player_border": "white",
-            "tile_floor": "gray15", "tile_border": "gray20", "tile_wall": "red"
+            "background": "#1a1a1a"
         },
         "player": {"speed": 150, "size": 32},
         "controls": {
@@ -59,9 +59,15 @@ class Settings:
                     user_config = json.load(f)
                     for section, values in user_config.items():
                         if section in data:
-                            data[section].update(values)
+                            if isinstance(values, dict) and isinstance(data[section], dict):
+                                data[section].update(values)
+                            else:
+                                data[section] = values
             except (json.JSONDecodeError, IOError) as e:
                 print(f"Warning: Could not load settings.json ({e}). Using defaults.")
+
+        # Versioning
+        cls.VERSION: str = data.get("version", "0.0.0")
 
         # Display
         cls.WINDOW_WIDTH: int = data["display"]["width"]
@@ -77,8 +83,6 @@ class Settings:
         
         # Colors
         cls.COLOR_BG = data["colors"]["background"]
-        cls.COLOR_PLAYER = data["colors"]["player"]
-        cls.COLOR_PLAYER_BORDER = data["colors"]["player_border"]
         
         # Player
         cls.PLAYER_SPEED: int = data["player"]["speed"]

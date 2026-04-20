@@ -363,21 +363,4 @@ class InteractiveEntity(BaseEntity):
         screen_center_y = self.rect.centery + cam_offset.y
         new_size = render_surf.get_width()
         halo_pos = (screen_center_x - new_size // 2, screen_center_y - new_size // 2)
-        
         surface.blit(render_surf, halo_pos, special_flags=pygame.BLEND_RGB_ADD)
-
-        # Draw particles if any
-        if self.particles_list:
-            base_color = getattr(self, 'halo_color', (250, 250, 250))
-            for p in self.particles_list:
-                # Power-falloff alpha keeps particles bright longer before fading out
-                alpha = (p['life'] / p['max_life']) ** 0.6
-                # Fading by multiplying RGB by alpha for BLEND_RGB_ADD
-                color = (
-                    int(base_color[0] * alpha),
-                    int(base_color[1] * alpha),
-                    int(base_color[2] * alpha)
-                )
-                px = int(p['x'] + cam_offset.x)
-                py = int(p['y'] + cam_offset.y)
-                pygame.draw.circle(surface, color, (px, py), p['size'])

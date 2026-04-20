@@ -188,12 +188,3 @@ class TmjParser:
             
         layers_dict[layer_id] = matrix
         
-    def _parse_player_spawn(self, sub_layer: Dict[str, Any], map_result: Dict[str, Any]):
-        """Find the spawn_player object."""
-        for obj in sub_layer.get("objects", []):
-            if obj.get("name") == "spawn_player":
-                map_result["spawn_player"] = {
-                    "x": obj.get("x", 0),
-                    "y": obj.get("y", 0)
-                }
-                break
