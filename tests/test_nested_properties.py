@@ -35,24 +35,23 @@ def base_props():
     }
 
 def test_get_nested_prop(base_props):
-    # Tests the _get_nested_prop standalone if we make it a static method or module level function
-    # Assuming we put it in game.py as _get_nested_prop module-level or Game method
-    from src.engine.game import _get_nested_prop
+    # Tests the _get_property standalone
+    from src.engine.game import _get_property
     
     props = base_props["properties"]
     
     # 1. Direct hit
-    assert _get_nested_prop(props, "is_animated") is True
+    assert _get_property(props, "is_animated") is True
     # 2. interactive_object -> sprite
-    assert _get_nested_prop(props, "sub_type") == "torch"
-    assert _get_nested_prop(props, "halo_size") == 20
+    assert _get_property(props, "sub_type") == "torch"
+    assert _get_property(props, "halo_size") == 20
     # 3. sprite
-    assert _get_nested_prop(props, "sprite_sheet") == "chest.png"
-    assert _get_nested_prop(props, "entity_type") == "interactive"
+    assert _get_property(props, "sprite_sheet") == "chest.png"
+    assert _get_property(props, "entity_type") == "interactive"
     # 4. interactive_object
-    assert _get_nested_prop(props, "is_on") is False
+    assert _get_property(props, "is_on") is False
     # 5. Default fallback
-    assert _get_nested_prop(props, "non_existent", "hello") == "hello"
+    assert _get_property(props, "non_existent", "hello") == "hello"
 
 def test_interactive_entity_target_args(dummy_display):
     groups = [pygame.sprite.Group()]
@@ -98,5 +97,5 @@ def test_game_spawn_nested_interactive(mock_parser_class, dummy_display):
     
     assert entity.sub_type == "unknown"  # Not provided in mockup
     assert entity.is_passable is True    # Found in nested props
-    assert getattr(entity, "target_id", None) == 99  # Fallback to Tiled id
+    assert getattr(entity, "target_id", None) == "99"  # Fallback to Tiled id as string
     assert getattr(entity, "target", None) == "chest_abc"

@@ -79,10 +79,11 @@ To maintain modularity, the engine decouples map parsing from rendering logic.
   - `entities`: List of object dictionaries ready for engine spawning.
   - `tile_dict`: Mapping of GIDs to `TileProperty` objects (including collision and depth).
 - **Coordinates**: Tiled object coordinates (Top-Left) are automatically offset by `TILE_SIZE / 2` to align with the center-based system.
-- **Property Extraction & Nested Classes**: Since Tiled 1.10+, object custom classes store properties in nested dictionaries under the hood (e.g. `interactive_object -> sprite -> sprite_sheet`).
-  - Spawning logic avoids checking direct Tiled "type" or "class" assignments. Instead, it uses a generic nested search to find logical markers like `entity_type`.
-  - Resolution order for any property `key` during entity spawn is: `root` -> `interactive_object -> sprite` -> `sprite` -> `interactive_object`.
-  - This effectively flattens structured configurations back into easy access values during object construction, allowing entities to remain ignorant to map architecture.
+- **Property Extraction & Schema Resolution**: Since Tiled 1.10+, object custom classes store properties in nested dictionaries under the hood. 
+  - **TiledProject Resolver**: The engine now loads `assets/tiled/game.tiled-project` to handle recursive inheritance for Tiled Classes (`propertyTypes`).
+  - **Logic**: It deep-merges project defaults with map-level overrides. 
+  - **Example**: If a `torch` is defined as a `12-light_source` class in Tiled, the engine automatically populates it with `particles: true` even if not present in the `.tmj` file.
+  - **Resolution**: Spawning logic uses a generic nested search helper (`_get_property`) to find logical markers across resolved structures.
 
 ### K. Entity Collision Logic
 In addition to map tile collisions, the engine supports blocking player movement through fixed entities.
@@ -95,7 +96,7 @@ The HUD provides information about the current time, day, and season.
 - **Rendering**: Drawn at the very end of the `Game.draw()` loop to ensure top-level visibility.
 - **Scaling**: Uses `HUD_SCALE = 0.4` (internal resolution scaling) for the main clock graphic.
 - **Anchors**: Pixel-precise coordinates for elements (scaled):
-  - **Time**: Center `(100.0, 48.8)` relative to clock surface (derived from `(250, 122) * 0.4`).
+  - **Time**: Center `(99.2, 50.4)` relative to clock surface (derived from `(248, 126) * 0.4`).
   - **Season Icon**: Center `(125.2, 111.6)` (derived from `(313, 279) * 0.4`).
   - **Day Label**: Center `(57.2, 122.0)` (derived from `(143, 305) * 0.4`).
 - **Margins**: `20px` from top and right screen edges.
