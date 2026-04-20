@@ -61,6 +61,16 @@
                     "value": false
                 },
                 {
+                    "name": "particle_count",
+                    "type": "int",
+                    "value": 0
+                },
+                {
+                    "name": "particles",
+                    "type": "bool",
+                    "value": false
+                },
+                {
                     "name": "position",
                     "type": "int",
                     "value": 0

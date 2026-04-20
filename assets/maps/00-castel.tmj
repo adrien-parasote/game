@@ -373,6 +373,16 @@
                                  "value":false
                                 }, 
                                 {
+                                 "name":"particle_count",
+                                 "type":"int",
+                                 "value":5
+                                }, 
+                                {
+                                 "name":"particles",
+                                 "type":"bool",
+                                 "value":true
+                                }, 
+                                {
                                  "name":"sprite_sheet",
                                  "type":"string",
                                  "value":"02-torchs.png"
@@ -424,6 +434,16 @@
                                  "name":"is_passable",
                                  "type":"bool",
                                  "value":false
+                                }, 
+                                {
+                                 "name":"particle_count",
+                                 "type":"int",
+                                 "value":5
+                                }, 
+                                {
+                                 "name":"particles",
+                                 "type":"bool",
+                                 "value":true
                                 }, 
                                 {
                                  "name":"sprite_sheet",
@@ -479,6 +499,16 @@
                                  "value":false
                                 }, 
                                 {
+                                 "name":"particle_count",
+                                 "type":"int",
+                                 "value":5
+                                }, 
+                                {
+                                 "name":"particles",
+                                 "type":"bool",
+                                 "value":true
+                                }, 
+                                {
                                  "name":"sprite_sheet",
                                  "type":"string",
                                  "value":"02-torchs.png"
@@ -530,6 +560,16 @@
                                  "name":"is_passable",
                                  "type":"bool",
                                  "value":false
+                                }, 
+                                {
+                                 "name":"particle_count",
+                                 "type":"int",
+                                 "value":8
+                                }, 
+                                {
+                                 "name":"particles",
+                                 "type":"bool",
+                                 "value":true
                                 }, 
                                 {
                                  "name":"sprite_sheet",

@@ -10,6 +10,8 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `halo_size` | int | Radius of the light halo in pixels (default 0). |
 | `halo_color` | string | Color of the halo in `[R, G, B]` format (text in TMJ). |
 | `halo_alpha` | int | Maximum alpha (center) of the radial gradient (0-255). |
+| `particles` | bool | If `true`, the object emits particles when ON. |
+| `particle_count` | int | Maximum number of active particles simultaneously. |
 
 ### Animation Logic
 - **Column Mapping**: 
@@ -86,6 +88,23 @@ If `halo_size > 0`, a dynamic radial gradient halo is generated and rendered.
   - Drawn at the **footprint center** (horizontal center, 16px above the Tiled rectangle bottom).
   - Method: `BLEND_RGB_ADD` on top of the dark night overlay.
 
+### 2.4. Particle System
+If `particles` is true, the object acts as a lightweight particle emitter when `is_on` is True.
+
+- **Initialization & Cycle**:
+  - Max particles bounded by `particle_count` (int). 
+  - **Spawning**:
+    - `x`: `centerx ± 4px` (Concentrated in the middle).
+    - `y`: `top + (height * 0.33) ± 2px` (Upper third of the object).
+  - **Physics**:
+    - Velocity Y: Negative (drifting slowly upwards).
+    - Velocity X: Slight sinusoidal oscillation (`math.sin(phase + life * 3.0) * 5.0`).
+- **Rendering**:
+  - **Data Structure**: Use simple lists of dicts (e.g. `[x, y, vx, vy, life, max_life, size, phase]`).
+  - **Drawing**: `pygame.draw.circle` with a radius of `1px` (90%) or `2px` (10%).
+  - **Fading**: `alpha = (life / max_life) ** 0.6`. Multiply RGB by alpha using `BLEND_RGB_ADD` for vibrant luminosity.
+
+
 ## 3. Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |
@@ -98,6 +117,7 @@ If `halo_size > 0`, a dynamic radial gradient halo is generated and rendered.
 | Calculate distance every frame | Calculate only on key press | CPU optimization |
 | Scale surfaces in `update` | Pre-calculate a scaling cache in `__init__` | `pygame.transform.scale` causes severe frame drops when called per-frame on multiple objects |
 | Mega `__init__` methods | Refactor into private helper methods (`_parse_properties`, `_setup_physics`) | Ensure compliance with the 50-line maximum per method rule |
+| Use Pygame Sprites for particles | Use simple lists of dicts | Sprite allocation overhead causes GC lag when managing hundreds of short-lived particles |
 
 ## ✅ Patterns to Reproduce
 
@@ -118,6 +138,8 @@ If `halo_size > 0`, a dynamic radial gradient halo is generated and rendered.
 | TC-U-03 | Animation Loop | `update(dt)` past `end_frame` for looping obj | `frame_index` resets to `start_frame` | High frame rate |
 | TC-U-04 | Animation Reverse | `update(dt)` when closing door | `frame_index` decrements towards `start_row` | None |
 | TC-U-05 | Pre-calculated Cache | `halo_size=50` | `light_mask_cache` has exactly 10 surfaces (0.97 to 1.03) | `halo_size=0` |
+| TC-U-06 | Particle Spawn | `update(dt)` with `particles=True` & `is_on=True` | Active particles list is populated up to `particle_count` | dt=0 |
+| TC-U-07 | Particle Cleanup| particle life expires | Removed from active particles list | Empty list |
 
 ### Integration Tests Required
 | Test ID | Flow | Setup | Verification | Teardown |

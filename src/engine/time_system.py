@@ -1,24 +1,15 @@
 """
 TimeSystem — Internal world clock for the RPG engine.
-
-Timing contract:
-    - 1 real second = 1 game minute
-    - 1 real minute  = 1 game hour
-    - 1 game day     = 24 game hours = 24 real minutes
-    - 1 game season  = 30 game days
-    - 1 game year    = 120 game days (4 seasons)
 """
 import math
 from dataclasses import dataclass
 from enum import IntEnum
+from src.config import Settings
 
 # --- Constants ---
-REAL_SECONDS_PER_GAME_MINUTE: int = 1      # 1s real = 1 game-minute
 GAME_MINUTES_PER_HOUR: int = 60
 GAME_HOURS_PER_DAY: int = 24
-GAME_DAYS_PER_SEASON: int = 30
 GAME_SEASONS_PER_YEAR: int = 4
-GAME_DAYS_PER_YEAR: int = GAME_DAYS_PER_SEASON * GAME_SEASONS_PER_YEAR  # 120
 MAX_DT_CLAMP: float = 10.0                 # Clamp large dt gaps (debugger pauses)
 MAX_NIGHT_ALPHA: int = 180                 # 70% opacity max at midnight
 
@@ -65,14 +56,21 @@ class TimeSystem:
         """
         # Ensure hour is within [0, 23]
         safe_hour = initial_hour % GAME_HOURS_PER_DAY
-        self._total_minutes: float = float(safe_hour * GAME_MINUTES_PER_HOUR)
+        
+        # Calculate starting minutes based on initial season and hour
+        initial_minutes = (
+            Settings.INITIAL_SEASON * Settings.DAYS_PER_SEASON * GAME_HOURS_PER_DAY * GAME_MINUTES_PER_HOUR
+        ) + (safe_hour * GAME_MINUTES_PER_HOUR)
+        
+        self._total_minutes: float = float(initial_minutes)
 
     def update(self, dt: float) -> None:
         """Advance world time by `dt` real seconds. Guards against negative / huge jumps."""
         if dt <= 0:
             return
         dt = min(dt, MAX_DT_CLAMP)
-        self._total_minutes += dt * REAL_SECONDS_PER_GAME_MINUTE
+        # 1 real second = (1 / MINUTE_DURATION) game minutes
+        self._total_minutes += dt / Settings.MINUTE_DURATION
 
     # ------------------------------------------------------------------
     # Derived state (computed from _total_minutes)
@@ -103,9 +101,10 @@ class TimeSystem:
 
     @property
     def current_season(self) -> Season:
-        """Current season derived from total elapsed days (cycles every 120 days)."""
+        """Current season derived from total elapsed days."""
         day = self.world_time.day
-        season_index = (day % GAME_DAYS_PER_YEAR) // GAME_DAYS_PER_SEASON
+        days_per_year = Settings.DAYS_PER_SEASON * GAME_SEASONS_PER_YEAR
+        season_index = (day % days_per_year) // Settings.DAYS_PER_SEASON
         return Season(season_index)
 
     @property

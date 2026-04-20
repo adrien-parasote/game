@@ -31,11 +31,12 @@ class InteractiveEntity(BaseEntity):
                  is_passable: bool = False, is_animated: bool = False,
                  is_on: bool = None,
                  halo_size: int = 0, halo_color: str = "[255, 255, 255]",
-                 halo_alpha: int = 130):
+                 halo_alpha: int = 130, particles: bool = False, particle_count: int = 0):
         
         # 1. Properties & State Initialization
         self._parse_properties(sub_type, start_row, end_row, is_on, is_animated, 
-                             depth, position, halo_size, halo_color, halo_alpha)
+                             depth, position, halo_size, halo_color, halo_alpha,
+                             particles, particle_count)
         
         # 2. Asset Loading
         self._load_assets(sprite_sheet, width, height)
@@ -54,7 +55,8 @@ class InteractiveEntity(BaseEntity):
         logging.info(f"Spawned InteractiveEntity '{sub_type}' at {pos} (is_on={self.is_on})")
 
     def _parse_properties(self, sub_type, start_row, end_row, is_on, is_animated, 
-                          depth, position, halo_size, halo_color, halo_alpha):
+                          depth, position, halo_size, halo_color, halo_alpha,
+                          particles, particle_count):
         """Parse raw properties and initialize basic state."""
         self.sub_type = sub_type
         self.start_row = start_row
@@ -99,6 +101,11 @@ class InteractiveEntity(BaseEntity):
         self.flicker_phase = random.uniform(0, 2 * math.pi)
         self.f_alpha = 1.0
         self.f_scale = 1.0
+        
+        # Particle System
+        self.particles = particles
+        self.particle_count = particle_count
+        self.particles_list = []
 
     def _load_assets(self, sprite_sheet, width, height):
         """Load spritesheet and compute frame dimensions."""
@@ -267,8 +274,46 @@ class InteractiveEntity(BaseEntity):
         
         self.image = self._get_frame(int(self.frame_index))
 
-    def draw_halo(self, surface: pygame.Surface, cam_offset: pygame.math.Vector2, global_darkness: int):
-        """Render high-precision modulated light halo from 10-step cache."""
+        # 3. Particle System Logic
+        if self.particles and self.is_on:
+            if len(self.particles_list) < self.particle_count:
+                # Target an average spawn rate that maintains particle_count
+                expected_spawns = (self.particle_count / 1.5) * dt  # 1.5s average life
+                # Spawn guaranteed integer count + chance for fractional remainder
+                spawns = int(expected_spawns)
+                if random.random() < (expected_spawns - spawns):
+                    spawns += 1
+                
+                # Minimum 30% chance frame threshold for visual randomness when count is small
+                if spawns == 0 and random.random() < 0.30:
+                    spawns = 1
+                    
+                for _ in range(spawns):
+                    life = random.uniform(1.0, 2.0)
+                    self.particles_list.append({
+                        'x': self.rect.centerx + random.uniform(-4, 4),
+                        'y': self.rect.top + (self.rect.height * 0.33) + random.uniform(-2, 2),
+                        'vx': random.uniform(-2.0, 2.0),
+                        'vy': random.uniform(-10.0, -5.0),
+                        'life': life,
+                        'max_life': life,
+                        'size': 1 if random.random() < 0.9 else 2,
+                        'phase': random.uniform(0, math.pi * 2)
+                    })
+
+        # Update existing particles
+        if self.particles_list:
+            alive_particles = []
+            for p in self.particles_list:
+                p['life'] -= dt
+                if p['life'] > 0:
+                    p['x'] += (p['vx'] + math.sin(p['phase'] + p['life'] * 3.0) * 5.0) * dt
+                    p['y'] += p['vy'] * dt
+                    alive_particles.append(p)
+            self.particles_list = alive_particles
+
+    def draw_effects(self, surface: pygame.Surface, cam_offset: pygame.math.Vector2, global_darkness: int):
+        """Render high-precision modulated light halo AND particles from 10-step cache."""
         if not self.is_on or not self.light_mask_cache or self.halo_size <= 0:
             return
 
@@ -297,3 +342,19 @@ class InteractiveEntity(BaseEntity):
         halo_pos = (screen_center_x - new_size // 2, screen_center_y - new_size // 2)
         
         surface.blit(render_surf, halo_pos, special_flags=pygame.BLEND_RGB_ADD)
+
+        # Draw particles if any
+        if self.particles_list:
+            base_color = getattr(self, 'halo_color', (250, 250, 250))
+            for p in self.particles_list:
+                # Power-falloff alpha keeps particles bright longer before fading out
+                alpha = (p['life'] / p['max_life']) ** 0.6
+                # Fading by multiplying RGB by alpha for BLEND_RGB_ADD
+                color = (
+                    int(base_color[0] * alpha),
+                    int(base_color[1] * alpha),
+                    int(base_color[2] * alpha)
+                )
+                px = int(p['x'] + cam_offset.x)
+                py = int(p['y'] + cam_offset.y)
+                pygame.draw.circle(surface, color, (px, py), p['size'])

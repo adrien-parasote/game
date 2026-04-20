@@ -118,7 +118,9 @@ class Game:
                     is_on=props.get("is_on"),
                     halo_size=int(props.get("halo_size", 0)),
                     halo_color=props.get("halo_color", "[255, 255, 255]"),
-                    halo_alpha=int(props.get("halo_alpha", 130))
+                    halo_alpha=int(props.get("halo_alpha", 130)),
+                    particles=props.get("particles", False),
+                    particle_count=int(props.get("particle_count", 0))
                 )
             elif e_type and (e_type == "npc" or e_type.startswith("npc_")):
                 NPC(
@@ -326,10 +328,11 @@ class Game:
                 overlay.fill((0, 0, 0, night_alpha))
                 self.screen.blit(overlay, (0, 0))
             
-            # Draw Lighting Halos (Adaptive additive rendering)
+            # Draw Lighting Halos and Particles (Adaptive additive rendering)
             cam_offset = self.visible_sprites.offset
             for obj in self.interactives:
-                obj.draw_halo(self.screen, cam_offset, night_alpha)
+                if hasattr(obj, 'draw_effects'):
+                    obj.draw_effects(self.screen, cam_offset, night_alpha)
                 
             # Draw HUD
             self._draw_hud()

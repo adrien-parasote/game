@@ -32,7 +32,12 @@ class Settings:
             "toggle_fullscreen_key": "K_F11"
         },
         "debug": {"log_level": "INFO"},
-        "overlay": {"occlusion_alpha": 102}
+        "overlay": {"occlusion_alpha": 102},
+        "time": {
+            "minute_duration": 1.0, 
+            "days_per_season": 30, 
+            "initial_season": 0
+        }
     }
 
     @classmethod
@@ -95,6 +100,12 @@ class Settings:
 
         # Overlay
         cls.OCCLUSION_ALPHA = data.get("overlay", {}).get("occlusion_alpha", 102)
+
+        # Time
+        time_data = data.get("time", {})
+        cls.MINUTE_DURATION: float = time_data.get("minute_duration", 1.0)
+        cls.DAYS_PER_SEASON: int = time_data.get("days_per_season", 30)
+        cls.INITIAL_SEASON: int = time_data.get("initial_season", 0)
 
 # Initialize on import
 Settings.load()

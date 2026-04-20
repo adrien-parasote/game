@@ -288,3 +288,41 @@ def test_interactive_get_frame_fallback(test_game):
     surf = obj._get_frame(0)
     assert surf.get_size() == (32, 32)
 
+def test_particle_spawn_cycle(test_game):
+    """TC-U-06: Particle list is populated when particles=True and is_on=True, bounded by particle_count."""
+    obj = InteractiveEntity((100, 100), [], "torch", "torch.png", 
+                            particles=True, particle_count=10, is_on=True)
+    
+    assert hasattr(obj, 'particles_list')
+    assert len(obj.particles_list) == 0
+    
+    # Update to trigger spawn over a few frames
+    for _ in range(50):
+        obj.update(0.1)
+        
+    assert len(obj.particles_list) > 0
+    assert len(obj.particles_list) <= 10
+    
+    # Verify spawn bounds (Top 33% and centripetal X)
+    for p in obj.particles_list:
+        # Give a small margin for particle movement during the 50 frames
+        assert p['y'] <= obj.rect.top + obj.rect.height * 0.5, f"Particle spawned too low: {p['y']} (rect bottom: {obj.rect.bottom})"
+        assert obj.rect.centerx - 10 <= p['x'] <= obj.rect.centerx + 10, f"Particle spawned too far horizontally: {p['x']}"
+
+def test_particle_cleanup(test_game):
+    """TC-U-07: Particles with expired life are removed from the list."""
+    obj = InteractiveEntity((100, 100), [], "torch", "torch.png", 
+                            particles=True, particle_count=10, is_on=True)
+    
+    # Inject a dead particle manually
+    obj.particles_list = [{
+        'x': 100, 'y': 100, 'vx': 0, 'vy': -1,
+        'life': -0.1, 'max_life': 1.0, 'size': 2.0
+    }]
+    
+    # Turn off object so no new particles spawn during update
+    obj.is_on = False
+    
+    obj.update(0.1)
+    
+    assert len(obj.particles_list) == 0
