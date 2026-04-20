@@ -17,7 +17,7 @@ SEASON_ICON_CENTER: tuple = (int(306.8 * HUD_SCALE), int(261.3 * HUD_SCALE))
 TIME_ANCHOR: tuple = (int(263.5 * HUD_SCALE), int(98.3 * HUD_SCALE))
 SEASON_DAY_ANCHOR: tuple = (int(134.8 * HUD_SCALE), int(283.4 * HUD_SCALE))
 
-SEASON_ICON_SIZE: int = int(120 * HUD_SCALE)  # Circular hole is ~120px natively
+SEASON_ICON_SIZE: int = int(147 * HUD_SCALE)  # Circular icon native size is ~147px
 
 HUD_MARGIN_X: int = 20                 # Pixels from right edge
 HUD_MARGIN_Y: int = 20                 # Pixels from top edge
@@ -176,7 +176,7 @@ class GameHUD:
         # Season / Day label — bottom zone (single line)
         wt = self.time_system.world_time
         day_label = self._lang.get("day_label", "Day")
-        season_day_text = f"{self._season_label()} - {day_label} {wt.day + 1}"
+        season_day_text = f"{day_label} {wt.day + 1}"
         self._render_text_centered(
             screen,
             season_day_text,
