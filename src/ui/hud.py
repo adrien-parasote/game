@@ -13,9 +13,9 @@ from src.engine.time_system import TimeSystem, Season
 # ------------------------------------------------------------------
 HUD_SCALE: float = 0.4                 # Scale factor for the large original HUD asset
 
-SEASON_ICON_CENTER: tuple = (int(292.0 * HUD_SCALE), int(262.0 * HUD_SCALE))
-TIME_ANCHOR: tuple = (int(290.0 * HUD_SCALE), int(118.0 * HUD_SCALE))
-SEASON_DAY_ANCHOR: tuple = (int(103.5 * HUD_SCALE), int(246.0 * HUD_SCALE))
+SEASON_ICON_CENTER: tuple = (int(312.0 * HUD_SCALE), int(277.0 * HUD_SCALE))
+TIME_ANCHOR: tuple = (int(269.5 * HUD_SCALE), int(96.0 * HUD_SCALE))
+SEASON_DAY_ANCHOR: tuple = (int(137.0 * HUD_SCALE), int(281.5 * HUD_SCALE))
 
 SEASON_ICON_SIZE: int = int(147 * HUD_SCALE)  # Circular icon native size is ~147px
 
