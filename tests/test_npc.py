@@ -28,8 +28,9 @@ def test_npc_initialization(npc_instance):
     assert npc_instance.state == 'idle'
     assert npc_instance.spawn_pos == pygame.math.Vector2(16, 16)
 
-def test_npc_wander_radius(npc_instance):
+def test_npc_wander_radius(npc_instance, monkeypatch):
     """TC-N-02: NPC does not wander beyond wander_radius."""
+    monkeypatch.setattr(Settings, "MAP_SIZE", 100)
     npc_instance.speed = 1000
 
     npc_instance.direction = pygame.math.Vector2(1, 0)

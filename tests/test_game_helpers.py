@@ -119,6 +119,7 @@ def test_spawn_entities_complex(game_instance):
             "type": "interactive_object",
             "x": 100, "y": 100, "width": 32, "height": 32,
             "properties": {
+                "entity_type": "interactive",
                 "sub_type": "door",
                 "is_passable": True,
                 "direction": "up"

@@ -12,6 +12,30 @@ from src.map.layout import OrthogonalLayout
 from src.engine.time_system import TimeSystem
 from src.config import Settings
 from src.ui.hud import GameHUD
+from src.ui.hud import GameHUD
+
+def _get_nested_prop(props: dict, key: str, default=None):
+    """
+    Search for a property across nested dictionaries generated from Tiled class structures.
+    Resolution order: root -> interactive_object.sprite -> sprite -> interactive_object
+    """
+    if key in props:
+        return props[key]
+        
+    io = props.get("interactive_object", {})
+    if isinstance(io, dict):
+        sp = io.get("sprite", {})
+        if isinstance(sp, dict) and key in sp:
+            return sp[key]
+            
+    sp = props.get("sprite", {})
+    if isinstance(sp, dict) and key in sp:
+        return sp[key]
+        
+    if isinstance(io, dict) and key in io:
+        return io[key]
+        
+    return default
 
 class Game:
     """Main game class that manages the core loop and state."""
@@ -93,43 +117,47 @@ class Game:
         """Instantiate NPCs and Interactive objects from map data."""
         half_tile = self.tile_size // 2
         for ent in entities:
-            # Check native type OR type in custom properties (common Tiled pattern)
             props = ent.get("properties", {})
-            e_type = ent.get("type") or props.get("type")
+            entity_type = _get_nested_prop(props, "entity_type", default="unknown")
             
             e_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
             
-            if e_type == "interactive_object":
+            if entity_type == "interactive":
                 InteractiveEntity(
                     pos=(ent["x"], ent["y"]),
                     groups=[self.visible_sprites, self.interactives],
-                    sub_type=props.get("sub_type", "unknown"),
-                    sprite_sheet=props.get("sprite_sheet", ""),
-                    position=int(props.get("position", 0)),
-                    depth=int(props.get("depth", 1)),
-                    start_row=int(props.get("start_frame", 0)),
-                    end_row=int(props.get("end_frame", 3)),
-                    width=int(props.get("width", ent.get("width", 32))),
-                    height=int(props.get("height", ent.get("height", 32))),
+                    sub_type=_get_nested_prop(props, "sub_type", "unknown"),
+                    sprite_sheet=_get_nested_prop(props, "sprite_sheet", ""),
+                    position=int(_get_nested_prop(props, "position", 0)),
+                    depth=int(_get_nested_prop(props, "depth", 1)),
+                    start_row=int(_get_nested_prop(props, "start_frame", 0)),
+                    end_row=int(_get_nested_prop(props, "end_frame", 3)),
+                    width=int(_get_nested_prop(props, "width", ent.get("width", 32))),
+                    height=int(_get_nested_prop(props, "height", ent.get("height", 32))),
                     tiled_width=ent.get("width", 32),
                     tiled_height=ent.get("height", 32),
                     obstacles_group=self.obstacles_group,
-                    is_passable=props.get("is_passable", False),
-                    is_animated=props.get("is_animated", False),
-                    is_on=props.get("is_on"),
-                    halo_size=int(props.get("halo_size", 0)),
-                    halo_color=props.get("halo_color", "[255, 255, 255]"),
-                    halo_alpha=int(props.get("halo_alpha", 130)),
-                    particles=props.get("particles", False),
-                    particle_count=int(props.get("particle_count", 0))
+                    is_passable=_get_nested_prop(props, "is_passable", False),
+                    is_animated=_get_nested_prop(props, "is_animated", False),
+                    is_on=_get_nested_prop(props, "is_on"),
+                    halo_size=int(_get_nested_prop(props, "halo_size", 0)),
+                    halo_color=_get_nested_prop(props, "halo_color", "[255, 255, 255]"),
+                    halo_alpha=int(_get_nested_prop(props, "halo_alpha", 130)),
+                    particles=_get_nested_prop(props, "particles", False),
+                    particle_count=int(_get_nested_prop(props, "particle_count", 0)),
+                    target_id=_get_nested_prop(props, "target_id", ent.get("id")),
+                    target=_get_nested_prop(props, "target")
                 )
-            elif e_type and (e_type == "npc" or e_type.startswith("npc_")):
-                NPC(
-                    pos=e_pos,
-                    groups=[self.visible_sprites, self.npcs],
-                    wander_radius=int(props.get("wander_radius", 1)),
-                    sheet_name=props.get("sprite_sheet", "01-character.png")
-                )
+            else:
+                # Handle NPCs
+                e_type = ent.get("type") or props.get("type")
+                if e_type and (e_type == "npc" or e_type.startswith("npc_")):
+                    NPC(
+                        pos=e_pos,
+                        groups=[self.visible_sprites, self.npcs],
+                        wander_radius=int(props.get("wander_radius", 1)),
+                        sheet_name=props.get("sprite_sheet", "01-character.png")
+                    )
 
     def _is_collidable(self, px_center: float, py_center: float) -> bool:
         """Collision checking adapter for Entity target position."""

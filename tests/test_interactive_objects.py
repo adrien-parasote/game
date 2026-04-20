@@ -162,7 +162,7 @@ def test_spawning_from_properties(test_game):
             "y": 96,
             "type": "",
             "properties": {
-                "type": "interactive_object",
+                "entity_type": "interactive",
                 "sub_type": "chest",
                 "sprite_sheet": "chest.png",
                 "position": 0
