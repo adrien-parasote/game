@@ -9,10 +9,10 @@
   "map": {
     "tile_size": 32,
     "map_size": 32,
-    "initial_hour": 23
+    "initial_hour": 10
   },
   "colors": {
-    "background": "#1a1a1a",
+    "background": "#000000",
     "player": "#00DDFF",
     "player_border": "white",
     "tile_floor": "gray15",
