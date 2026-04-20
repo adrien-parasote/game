@@ -11,13 +11,13 @@ import pygame
 from src.engine.time_system import TimeSystem, Season
 
 # ------------------------------------------------------------------
-# Layout constants (pixels relative to clock image top-left)
-# ------------------------------------------------------------------
-SEASON_ICON_CENTER: tuple = (33, 36)   # Center of season circle icon
-TIME_ANCHOR: tuple = (75, 22)           # Center of time text zone (top-right)
-SEASON_DAY_ANCHOR: tuple = (88, 52)    # Center of season/day text zone (bottom)
+HUD_SCALE: float = 0.4                 # Scale factor for the large original HUD asset
 
-SEASON_ICON_SIZE: int = 50             # Scaled size of season icon in the circle
+SEASON_ICON_CENTER: tuple = (int(306.8 * HUD_SCALE), int(261.3 * HUD_SCALE))
+TIME_ANCHOR: tuple = (int(263.5 * HUD_SCALE), int(98.3 * HUD_SCALE))
+SEASON_DAY_ANCHOR: tuple = (int(134.8 * HUD_SCALE), int(283.4 * HUD_SCALE))
+
+SEASON_ICON_SIZE: int = int(120 * HUD_SCALE)  # Circular hole is ~120px natively
 
 HUD_MARGIN_X: int = 20                 # Pixels from right edge
 HUD_MARGIN_Y: int = 20                 # Pixels from top edge
@@ -25,7 +25,7 @@ HUD_MARGIN_Y: int = 20                 # Pixels from top edge
 TEXT_COLOR: tuple = (240, 235, 210)    # Warm off-white
 SHADOW_COLOR: tuple = (0, 0, 0)
 SHADOW_OFFSET: int = 1
-FONT_SIZE: int = 14
+FONT_SIZE: int = 16                    # Slightly larger base font since boxes are scaled
 
 # Map Season enum to lang key and filename
 _SEASON_FILES: dict = {
@@ -56,7 +56,7 @@ class GameHUD:
     def __init__(self, time_system: TimeSystem, lang: str = "fr") -> None:
         self.time_system = time_system
         self._lang = self._load_lang(lang)
-        self._clock_surf = self._load_image("00-clock.png")
+        self._clock_surf = self._load_scaled_clock()
         self._season_surfs = self._load_season_icons()
         self._font = self._load_font()
 
@@ -95,7 +95,14 @@ class GameHUD:
             return pygame.image.load(path).convert_alpha()
         except pygame.error as e:
             logging.error(f"GameHUD: Could not load image '{filename}': {e}")
-            return pygame.Surface((390, 350), pygame.SRCALPHA)
+            return pygame.Surface((int(390 * HUD_SCALE), int(350 * HUD_SCALE)), pygame.SRCALPHA)
+
+    def _load_scaled_clock(self) -> pygame.Surface:
+        """Load and scale the main HUD frame."""
+        raw = self._load_image("00-clock.png")
+        return pygame.transform.smoothscale(
+            raw, (int(raw.get_width() * HUD_SCALE), int(raw.get_height() * HUD_SCALE))
+        )
 
     def _load_season_icons(self) -> dict:
         """Load and pre-scale all season icons."""
