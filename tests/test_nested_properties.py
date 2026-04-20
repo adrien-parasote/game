@@ -57,12 +57,13 @@ def test_interactive_entity_target_args(dummy_display):
     groups = [pygame.sprite.Group()]
     entity = InteractiveEntity(
         pos=(0,0), groups=groups, sub_type="test", sprite_sheet="test.png",
-        target_id="chest_01", target="door_01"
+        element_id="chest_01", target_id="door_01"
     )
+    assert hasattr(entity, "element_id")
+    assert entity.element_id == "chest_01"
     assert hasattr(entity, "target_id")
-    assert entity.target_id == "chest_01"
-    assert hasattr(entity, "target")
-    assert entity.target == "door_01"
+    assert entity.target_id == "door_01"
+    assert not hasattr(entity, "target")
 
 @patch("src.map.tmj_parser.TmjParser")
 def test_game_spawn_nested_interactive(mock_parser_class, dummy_display):
@@ -97,5 +98,6 @@ def test_game_spawn_nested_interactive(mock_parser_class, dummy_display):
     
     assert entity.sub_type == "unknown"  # Not provided in mockup
     assert entity.is_passable is True    # Found in nested props
-    assert getattr(entity, "target_id", None) == "99"  # Fallback to Tiled id as string
-    assert getattr(entity, "target", None) == "chest_abc"
+    assert getattr(entity, "element_id", None) == "99"  # Fallback to Tiled id string
+    assert getattr(entity, "target_id", None) == "chest_abc"
+    assert not hasattr(entity, "target")

@@ -105,7 +105,7 @@ class Game:
             )
             logging.warning(f"No spawn_player found. Defaulting to center: {spawn_pos}")
             
-        self.player = Player(spawn_pos, self.visible_sprites, speed=Settings.PLAYER_SPEED)
+        self.player = Player(spawn_pos, self.visible_sprites, speed=Settings.PLAYER_SPEED, element_id="player")
         self.player.collision_func = self._is_collidable
         
         # Spawn Entities from Map
@@ -120,10 +120,12 @@ class Game:
             e_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
             
             if entity_type == "interactive":
-                # Ensure we have a valid target_id (fallback to Tiled object ID)
-                target_id = _get_property(props, "target_id")
-                if not target_id:
-                    target_id = str(ent.get("id"))
+                # Extract and resolve IDs
+                element_id = _get_property(props, "element_id")
+                if not element_id:
+                    element_id = str(ent.get("id"))
+
+                target_id = _get_property(props, "target_id") or _get_property(props, "target")
 
                 InteractiveEntity(
                     pos=(ent["x"], ent["y"]),
@@ -147,8 +149,8 @@ class Game:
                     halo_alpha=int(_get_property(props, "halo_alpha", 130)),
                     particles=_get_property(props, "particles", False),
                     particle_count=int(_get_property(props, "particle_count", 0)),
-                    target_id=target_id,
-                    target=_get_property(props, "target")
+                    element_id=element_id,
+                    target_id=target_id
                 )
             else:
                 # Handle NPCs
@@ -158,7 +160,8 @@ class Game:
                         pos=e_pos,
                         groups=[self.visible_sprites, self.npcs],
                         wander_radius=int(props.get("wander_radius", 1)),
-                        sheet_name=props.get("sprite_sheet", "01-character.png")
+                        sheet_name=props.get("sprite_sheet", "01-character.png"),
+                        element_id=props.get("element_id") or str(ent.get("id"))
                     )
 
     def _is_collidable(self, px_center: float, py_center: float) -> bool:

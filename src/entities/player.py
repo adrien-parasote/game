@@ -7,8 +7,9 @@ import os
 class Player(BaseEntity):
     """Player entity with keyboard input handling."""
     
-    def __init__(self, pos: tuple, groups: pygame.sprite.Group = None, speed: int = Settings.PLAYER_SPEED):
-        super().__init__(pos, groups)
+    def __init__(self, pos: tuple, groups: pygame.sprite.Group = None, 
+                 speed: int = Settings.PLAYER_SPEED, element_id: str = None):
+        super().__init__(pos, groups, element_id=element_id)
         self.speed = speed
         
         # Load Spritesheet

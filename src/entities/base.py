@@ -4,11 +4,12 @@ from src.config import Settings
 class BaseEntity(pygame.sprite.Sprite):
     """Base class for all game entities (Player, NPCs, Obstacles)."""
     
-    def __init__(self, pos: tuple, groups: pygame.sprite.Group = None):
+    def __init__(self, pos: tuple, groups: pygame.sprite.Group = None, element_id: str = None):
         if groups is not None:
             super().__init__(groups)
         else:
             super().__init__()
+        self.element_id = element_id
         self.image = pygame.Surface((Settings.PLAYER_SIZE, Settings.PLAYER_SIZE))
         self.image.fill('white') # Placeholder
         self.rect = self.image.get_rect(center=pos)

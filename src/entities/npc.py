@@ -9,8 +9,9 @@ class NPC(BaseEntity):
     """Non-Playable Character with basic wandering and interaction."""
     
     def __init__(self, pos: tuple, groups: pygame.sprite.Group = None, 
-                 wander_radius: int = 1, sheet_name: str = "01-character.png"):
-        super().__init__(pos, groups)
+                 wander_radius: int = 1, sheet_name: str = "01-character.png",
+                 element_id: str = None):
+        super().__init__(pos, groups, element_id=element_id)
         self.spawn_pos = pygame.math.Vector2(pos)
         self.wander_radius = wander_radius
         self.state = 'idle'  # 'idle', 'wander', 'interact'

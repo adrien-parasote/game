@@ -32,11 +32,10 @@ class InteractiveEntity(BaseEntity):
                  is_on: bool = None,
                  halo_size: int = 0, halo_color: str = "[255, 255, 255]",
                  halo_alpha: int = 130, particles: bool = False, particle_count: int = 0,
-                 target_id: str = None, target: str = None):
+                 element_id: str = None, target_id: str = None):
         
         # 1. Properties & State Initialization
         self.target_id = target_id
-        self.target = target
         
         self._parse_properties(sub_type, start_row, end_row, is_on, is_animated, 
                              depth, position, halo_size, halo_color, halo_alpha,
@@ -48,7 +47,7 @@ class InteractiveEntity(BaseEntity):
         # 3. Physics & Layout Setup
         t_w = tiled_width if tiled_width is not None else width
         t_h = tiled_height if tiled_height is not None else height
-        self._setup_physics(pos, t_w, t_h, is_passable, obstacles_group, groups)
+        self._setup_physics(pos, t_w, t_h, is_passable, obstacles_group, groups, element_id)
         
         # 4. Lighting Initialization
         self.light_mask_cache = []
@@ -129,7 +128,7 @@ class InteractiveEntity(BaseEntity):
         self.frames = sheet.load_grid_by_size(self.sprite_width, real_frame_h)
         self._sheet_cols = getattr(sheet, 'last_cols', 4)
 
-    def _setup_physics(self, pos, t_w, t_h, is_passable, obstacles_group, groups):
+    def _setup_physics(self, pos, t_w, t_h, is_passable, obstacles_group, groups, element_id):
         """Initialize sprite rect, world position and collision state."""
         # Visual Position: midbottom alignment
         dummy_rect = pygame.Rect(0, 0, self.sprite_width, self.sprite_height)
@@ -137,7 +136,7 @@ class InteractiveEntity(BaseEntity):
         
         # Center position for BaseEntity (used for movement syncing)
         center_pos = dummy_rect.center
-        super().__init__(center_pos, groups)
+        super().__init__(center_pos, groups, element_id=element_id)
         
         self.tiled_width = t_w
         self.tiled_height = t_h

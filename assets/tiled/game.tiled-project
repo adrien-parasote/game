@@ -51,6 +51,11 @@
                     "value": 1
                 },
                 {
+                    "name": "element_id",
+                    "type": "string",
+                    "value": ""
+                },
+                {
                     "name": "end_frame",
                     "type": "int",
                     "value": 3
@@ -128,11 +133,6 @@
                     "value": {
                         "entity_type": "interactive"
                     }
-                },
-                {
-                    "name": "target",
-                    "type": "string",
-                    "value": ""
                 },
                 {
                     "name": "target_id",
