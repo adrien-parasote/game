@@ -150,7 +150,8 @@ class Game:
                     particles=_get_property(props, "particles", False),
                     particle_count=int(_get_property(props, "particle_count", 0)),
                     element_id=element_id,
-                    target_id=target_id
+                    target_id=target_id,
+                    activate_from_anywhere=_get_property(props, "activate_from_anywhere", False)
                 )
             else:
                 # Handle NPCs
@@ -251,35 +252,38 @@ class Game:
             # Only triggered by E as per spec
             if keys[Settings.INTERACT_KEY]:
                 for obj in self.interactives:
-                    # Proximity Check (Tightened to 45px)
-                    dist = self.player.pos.distance_to(obj.pos)
-                    if dist < 45.0:
-                        # Orientation Check: Player must face the correct side
-                        # Object 'up' -> Player must be south (y > obj_y) and facing 'up'
-                        # Object 'down' -> Player must be north (y < obj_y) and facing 'down'
-                        # etc.
+                        dist = self.player.pos.distance_to(obj.pos)
+                        # 2. Logic Check
                         valid_orientation = False
-                        o_dir = getattr(obj, "direction_str", "down")
                         
-                        if o_dir == 'up' and p_state == 'up' and self.player.pos.y > obj.pos.y:
-                            valid_orientation = True
-                        elif o_dir == 'down' and p_state == 'down' and self.player.pos.y < obj.pos.y:
-                            valid_orientation = True
-                        elif o_dir == 'left' and p_state == 'left' and self.player.pos.x > obj.pos.x:
-                            valid_orientation = True
-                        elif o_dir == 'right' and p_state == 'right' and self.player.pos.x < obj.pos.x:
-                            valid_orientation = True
-                        
-                        # Relaxation: Open doors can be closed from the other side
-                        if obj.sub_type == 'door' and getattr(obj, "is_on", False):
-                            if o_dir == 'up' and p_state == 'down' and self.player.pos.y < obj.pos.y:
+                        # 2a. Omni-directional check (48px threshold)
+                        if getattr(obj, "activate_from_anywhere", False):
+                            if dist < 48.0:
                                 valid_orientation = True
-                            elif o_dir == 'down' and p_state == 'up' and self.player.pos.y > obj.pos.y:
+                                
+                        # 2b. Standard Directional Logic (45px threshold)
+                        if not valid_orientation and dist < 45.0:
+                            o_dir = getattr(obj, "direction_str", "down")
+                            
+                            if o_dir == 'up' and p_state == 'up' and self.player.pos.y > obj.pos.y:
                                 valid_orientation = True
-                            elif o_dir == 'left' and p_state == 'right' and self.player.pos.x < obj.pos.x:
+                            elif o_dir == 'down' and p_state == 'down' and self.player.pos.y < obj.pos.y:
                                 valid_orientation = True
-                            elif o_dir == 'right' and p_state == 'left' and self.player.pos.x > obj.pos.x:
+                            elif o_dir == 'left' and p_state == 'left' and self.player.pos.x > obj.pos.x:
                                 valid_orientation = True
+                            elif o_dir == 'right' and p_state == 'right' and self.player.pos.x < obj.pos.x:
+                                valid_orientation = True
+                            
+                            # Relaxation: Open doors can be closed from the other side
+                            if obj.sub_type == 'door' and getattr(obj, "is_on", False):
+                                if o_dir == 'up' and p_state == 'down' and self.player.pos.y < obj.pos.y:
+                                    valid_orientation = True
+                                elif o_dir == 'down' and p_state == 'up' and self.player.pos.y > obj.pos.y:
+                                    valid_orientation = True
+                                elif o_dir == 'left' and p_state == 'right' and self.player.pos.x < obj.pos.x:
+                                    valid_orientation = True
+                                elif o_dir == 'right' and p_state == 'left' and self.player.pos.x > obj.pos.x:
+                                    valid_orientation = True
                             
                         if valid_orientation:
                             obj.interact(self.player)
