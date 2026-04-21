@@ -427,19 +427,33 @@ class Game:
 
     def _check_teleporters(self, was_moving: bool):
         """Active spatial check testing if interaction just resolved over teleport rect."""
-        # Triggered on arrival (movement end) OR on intent (movement start)
-        if was_moving == self.player.is_moving:
+        just_arrived = was_moving and not self.player.is_moving
+        intent_active = not was_moving and not self.player.is_moving and self.player.direction.magnitude() > 0
+        
+        if not just_arrived and not intent_active:
             return 
             
         for tp in self.teleports_group:
             # Player hits teleport zone via strict collision rect
             if not self.player.rect.colliderect(tp.rect):
                 continue
-            # Direction guard: only fire if player faces the required direction
+            
             req = getattr(tp, 'required_direction', 'any')
-            if req != 'any' and self.player.current_state != req:
-                logging.debug(f"Teleport skipped — required '{req}', player facing '{self.player.current_state}'")
-                continue
+            
+            if just_arrived:
+                # Direction guard: on arrival, must match required direction (unless 'any')
+                if req != 'any' and self.player.current_state != req:
+                    logging.debug(f"Teleport skipped (Arrival) — required '{req}', player facing '{self.player.current_state}'")
+                    continue
+            elif intent_active:
+                # Intent guard: do not trigger intent for 'any' portals to avoid trapping the player
+                # when they try to turn around.
+                if req == 'any':
+                    continue
+                if self.player.current_state != req:
+                    logging.debug(f"Teleport skipped (Intent) — required '{req}', player faced '{self.player.current_state}'")
+                    continue
+                
             logging.info(f"Teleport triggered -> {tp.target_map} / {tp.target_spawn_id}")
             self.transition_map(tp.target_map, tp.target_spawn_id, tp.transition_type)
             break

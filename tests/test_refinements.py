@@ -185,19 +185,32 @@ class TestRefinements:
                 mock_interact.assert_called()
 
     def test_teleport_intent_trigger(self, mock_pygame_display):
-        """Bug Fix: Verify teleport triggers on intent (movement start)."""
+        """Bug Fix: Verify teleport triggers on intent (direction magnitude) even if blocked."""
         from src.entities.teleport import Teleport
         with patch('src.engine.game.os.path.exists', return_value=True), \
              patch('src.map.tmj_parser.TmjParser.load_map', return_value={"entities": []}):
             game = Game()
-            tp = Teleport(pygame.Rect(0, 0, 32, 32), [], "map.tmj", "spawn", "instant", "any")
+            tp = Teleport(pygame.Rect(0, 0, 32, 32), [], "map.tmj", "spawn", "instant", "down")
+            tp_any = Teleport(pygame.Rect(64, 0, 32, 32), [], "map.tmj", "spawn", "instant", "any")
             game.teleports_group.add(tp)
+            game.teleports_group.add(tp_any)
             
-            # Scenario: Player is ALREADY on the tile, and STARTS moving
-            game.player.rect.center = (16, 16)
-            game.player.is_moving = True # Moving now
+            # Scenario 1: Intent on an 'any' portal is ignored (prevents trap)
+            game.player.rect.center = (80, 16)
+            game.player.is_moving = False
+            game.player.direction = pygame.math.Vector2(0, -1) # Pretend attempting to walk up
+            game.player.current_state = 'up'
             
             with patch.object(game, 'transition_map') as mock_trans:
-                # was_moving=False, is_moving=True -> Intent trigger
+                game._check_teleporters(was_moving=False)
+                mock_trans.assert_not_called()
+                
+            # Scenario 2: Intent on a 'down' portal checking 'down' direction
+            game.player.rect.center = (16, 16)
+            game.player.is_moving = False
+            game.player.direction = pygame.math.Vector2(0, 1) # Trying to walk down
+            game.player.current_state = 'down'
+            
+            with patch.object(game, 'transition_map') as mock_trans:
                 game._check_teleporters(was_moving=False)
                 mock_trans.assert_called()
