@@ -48,8 +48,8 @@ Sprites are often taller than a single tile (e.g. 32x48 images on 32x32 tiles).
 
 ### F. Overlay Configuration
 The engine supports configurable overlay elements for atmospheric or UI occlusion rendering.
-- **Logic**: Defined via the `overlay` -> `occlusion_alpha` parameter in `settings.json` (accessible via `Settings.OCCLUSION_ALPHA`).
-- **Purpose**: Provides a dynamic alpha value layer to allow tuning future day/night cycles or UI semi-transparency without hardcoding.
+- **Logic**: Defined via the `overlay` -> `occlusion_alpha` parameter in `settings.json` (accessible via `Settings.OCCLUSION_ALPHA`, default: `102`).
+- **Purpose**: Provides a dynamic alpha value layer to allow tuning foreground tile transparency during occlusion checks.
 
 ### G. Time & Seasonal System
 The engine maintains an internal world clock to drive environmental changes and simulation.
@@ -61,7 +61,8 @@ The engine maintains an internal world clock to drive environmental changes and 
 
 ### H. CPU Freeze Optimization (Entity Visibility)
 To optimize performance in large worlds, entity updates are intelligently skipped.
-- **Mechanism**: The engine calculates an enlarged viewport (screen + 128px margin). 
+- **Mechanism**: The engine calculates an enlarged viewport based on current screen dimensions.
+- **Margin**: A **+128px margin** is added to all sides of the viewport using `inflate_ip(128, 128)`.
 - **Behavior**: If an entity's rect is outside this enlarged viewport, its `is_visible` flag is set to `False`, and its `update()` logic (AI, movement, animation) is bypassed.
 
 ### I. Spatial Interaction Logic

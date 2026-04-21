@@ -40,8 +40,8 @@ This section defines the behavior and failure modes for autonomous entities.
 | Manual property parsing in AI logic | Use `TmjParser` properties dict | Centralizes data extraction and simplifies AI classes |
 
 ### 3.2. NPC Animation & Facing
-NPCs use a standard 4x4 sprite sheet layout:
-- **Rows**: 0:Down, 1:Left, 2:Right, 3:Up (offsets: 0, 4, 8, 12).
+- **Rows**: 0:Down, 1:Left, 2:Right, 3:Up (Physical sheet offsets: 0, 4, 8, 12).
+- **Animation speed**: Base speed of `1.0 / 0.15` (~6.6 FPS) when moving.
 - **Facing**: NPCs automatically rotate to face the player during interaction by calculating the position delta.
 
 ### 3.2. Test Case Specifications

@@ -24,11 +24,11 @@
 - Camera following player with Map Edge Clamping.
 - Time & Seasonal System: Day/night cycles and seasonal labels.
 
-### Milestone: Interactions & Polish [IN PROGRESS]
+### Milestone: Interactions & Polish [COMPLETE]
 - Dynamic FPS display and high-coverage test suite.
 - NPC System with basic AI and spatial interactions.
 - Fixed Interactive Objects (chests, switches) with unified interaction and collision.
-- Interaction Chaining and Omni-directional trigger support.
+- Interaction Chaining and Omni-directional trigger support implemented.
 
 ## 🛠️ Core Architecture Decisions (ADRs)
 
@@ -40,7 +40,7 @@
 | **Camera** | Visual Clamping | Restrict viewport to map pixels; center view if map < screen. |
 | **Movement** | Grid-Based (Atomic) | Entities move tile-by-tile; cardinal directions only. |
 | **Time** | World Clock | Real-to-game time mapping; seasonal cycles & dynamic lighting. |
-| **Interactions**| Mediator Pattern | The Game engine resolves `target_id` -> `element_id` connections to keep entities decoupled. |
+| **Interactions**| ID-Based Chaining | The Game engine resolves `target_id` -> `element_id` connections to keep entities decoupled. |
 
 ## 🔗 Implementation Specs
 - [Engine Core](specs/ENGINE_CORE.md)

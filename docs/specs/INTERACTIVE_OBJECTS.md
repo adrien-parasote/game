@@ -44,7 +44,10 @@ If `activate_from_anywhere` is `True`:
 #### II. Standard Directional Objects
 If `activate_from_anywhere` is `False` (Default):
 1. **Proximity**: `Vector2(player.pos).distance_to(obj.pos) < 45.0`.
+   - `obj.pos` is the **footprint center** (center of the bottom 32x32 area).
+   - Interaction is calculated as **Footprint-to-Footprint** distance.
 2. **Relative Orientation (Opposite Rule)**: 
+   - Uses `InteractiveEntity.POSITION_TO_DIR` mapping: `0:Up, 1:Right, 2:Left, 3:Down`.
    - Object `up` (opens from south) -> Player must be south (`y > obj_y`) and facing `up`.
    - Object `down` -> Player must be north (`y < obj_y`) and facing `down`.
    - Object `left` -> Player must be east (`x > obj_x`) and facing `left`.
