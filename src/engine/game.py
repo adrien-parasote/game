@@ -37,6 +37,17 @@ def _get_property(props: dict, key: str, default=None):
         
     return default
 
+
+def _facing_toward(player_pos: pygame.math.Vector2, facing: str, obj_pos: pygame.math.Vector2) -> bool:
+    """Return True if the player is looking in the direction of obj_pos from player_pos."""
+    dx = obj_pos.x - player_pos.x
+    dy = obj_pos.y - player_pos.y
+    if abs(dx) >= abs(dy):  # horizontal dominant axis
+        return (facing == 'right' and dx > 0) or (facing == 'left' and dx < 0)
+    # vertical dominant axis
+    return (facing == 'down' and dy > 0) or (facing == 'up' and dy < 0)
+
+
 class Game:
     """Main game class that manages the core loop and state."""
     
@@ -207,12 +218,13 @@ class Game:
                     target_id=target_id,
                     activate_from_anywhere=_get_property(props, "activate_from_anywhere", False)
                 )
-            elif entity_type == "13-teleport" or ent.get("type") == "13-teleport":
+            elif _get_property(props, "type") == "teleport":
                 t_rect = pygame.Rect(ent["x"], ent["y"], ent.get("width", 32), ent.get("height", 32))
                 t_map = _get_property(props, "target_map", "")
                 t_spawn_id = _get_property(props, "target_spawn_id", "")
                 t_trans = _get_property(props, "transition_type", "instant")
-                Teleport(t_rect, [self.teleports_group], t_map, t_spawn_id, t_trans)
+                t_req_dir = _get_property(props, "required_direction", "any")
+                Teleport(t_rect, [self.teleports_group], t_map, t_spawn_id, t_trans, t_req_dir)
             else:
                 # Handle NPCs
                 e_type = ent.get("type") or props.get("type")
@@ -316,9 +328,10 @@ class Game:
                         # 2. Logic Check
                         valid_orientation = False
                         
-                        # 2a. Omni-directional check (48px threshold)
+                        # 2a. Adjacent + directional check for activate_from_anywhere objects
+                        # Player must be on an adjacent cell AND looking toward the object.
                         if getattr(obj, "activate_from_anywhere", False):
-                            if dist < 48.0:
+                            if dist < 48.0 and _facing_toward(self.player.pos, p_state, obj.pos):
                                 valid_orientation = True
                                 
                         # 2b. Standard Directional Logic (45px threshold)
@@ -419,10 +432,16 @@ class Game:
             
         for tp in self.teleports_group:
             # Player hits teleport zone via strict collision rect
-            if self.player.rect.colliderect(tp.rect):
-                logging.info(f"Teleport triggered -> {tp.target_map} / {tp.target_spawn_id}")
-                self.transition_map(tp.target_map, tp.target_spawn_id, tp.transition_type)
-                break
+            if not self.player.rect.colliderect(tp.rect):
+                continue
+            # Direction guard: only fire if player faces the required direction
+            req = getattr(tp, 'required_direction', 'any')
+            if req != 'any' and self.player.current_state != req:
+                logging.debug(f"Teleport skipped — required '{req}', player facing '{self.player.current_state}'")
+                continue
+            logging.info(f"Teleport triggered -> {tp.target_map} / {tp.target_spawn_id}")
+            self.transition_map(tp.target_map, tp.target_spawn_id, tp.transition_type)
+            break
 
     def _draw_scene(self):
         """A helper representing the entire scene rendering logic."""
