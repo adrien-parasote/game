@@ -65,7 +65,7 @@ class Game:
         # Setup Map
         from src.map.tmj_parser import TmjParser
         parser = TmjParser()
-        map_path = os.path.join("assets", "maps", "00-castel.tmj")
+        map_path = os.path.join("assets", "tiled", "maps", "00-castel.tmj")
         map_result = parser.load_map(map_path)
         
         self.layout = OrthogonalLayout(self.tile_size)

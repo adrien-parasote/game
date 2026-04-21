@@ -13,7 +13,7 @@
         {
             "color": "#ff00f900",
             "drawFill": true,
-            "id": 1,
+            "id": 3,
             "members": [
                 {
                     "name": "collidable",
@@ -43,7 +43,7 @@
         {
             "color": "#ff0433ff",
             "drawFill": true,
-            "id": 5,
+            "id": 4,
             "members": [
                 {
                     "name": "depth",
@@ -109,7 +109,7 @@
         {
             "color": "#ff942192",
             "drawFill": true,
-            "id": 7,
+            "id": 5,
             "members": [
                 {
                     "name": "activate_from_anywhere",
@@ -136,7 +136,7 @@
                     "propertyType": "10-sprite",
                     "type": "class",
                     "value": {
-                        "entity_type": "interactive"
+                        "entity_type": 1
                     }
                 },
                 {
@@ -156,7 +156,7 @@
         {
             "color": "#fffffb00",
             "drawFill": true,
-            "id": 8,
+            "id": 6,
             "members": [
                 {
                     "name": "halo_alpha",
@@ -181,9 +181,9 @@
                         "is_animated": true,
                         "is_on": true,
                         "sprite": {
-                            "entity_type": "interactive",
+                            "entity_type": 1,
                             "start_frame": 0,
-                            "sub_type": "animated_decor"
+                            "sub_type": 3
                         }
                     }
                 },
@@ -207,7 +207,7 @@
             ]
         },
         {
-            "id": 10,
+            "id": 7,
             "name": "20-entity_type",
             "storageType": "string",
             "type": "enum",
@@ -218,7 +218,7 @@
             "valuesAsFlags": false
         },
         {
-            "id": 11,
+            "id": 8,
             "name": "21-sub_type",
             "storageType": "string",
             "type": "enum",

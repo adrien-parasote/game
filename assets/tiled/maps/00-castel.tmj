@@ -630,23 +630,23 @@
  "tilesets":[
         {
          "firstgid":1,
-         "source":"..\/tiled\/tiles\/00-grounds.tsx"
+         "source":"..\/tiles\/00-grounds.tsx"
         }, 
         {
          "firstgid":65,
-         "source":"..\/tiled\/tiles\/01-walls-top.tsx"
+         "source":"..\/tiles\/01-walls-top.tsx"
         }, 
         {
          "firstgid":129,
-         "source":"..\/tiled\/tiles\/01-walls.tsx"
+         "source":"..\/tiles\/01-walls.tsx"
         }, 
         {
          "firstgid":193,
-         "source":"..\/tiled\/tiles\/04-indoor-furnitures.tsx"
+         "source":"..\/tiles\/04-indoor-furnitures.tsx"
         }, 
         {
          "firstgid":297,
-         "source":"..\/tiled\/tiles\/03-windows.tsx"
+         "source":"..\/tiles\/03-windows.tsx"
         }],
  "tilewidth":32,
  "type":"map",
