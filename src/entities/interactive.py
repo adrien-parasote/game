@@ -71,7 +71,11 @@ class InteractiveEntity(BaseEntity):
         self.direction_str = self.POSITION_TO_DIR.get(position, 'down')
         
         # State
-        self.frame_index = float(self.start_row)
+        # If starting ON and not animated, jump to end frame (e.g., open door)
+        if is_on and not is_animated:
+            self.frame_index = float(self.end_row)
+        else:
+            self.frame_index = float(self.start_row)
         # Determine is_on and specific behaviors (Inclusive Detection)
         self.light_sources = ['lamp', 'lantern', 'torch', 'fire', 'candle']
         self.is_light_source = (self.sub_type in self.light_sources) or (halo_size > 0)
@@ -155,8 +159,12 @@ class InteractiveEntity(BaseEntity):
         self.pos = pygame.math.Vector2(self.rect.centerx, self.rect.bottom - 16)
         
         if self.obstacles_group is not None:
+            # Doors always added at spawn because they start closed visually 
+            # BUT if we start ON and is_passable, we stay out of obstacles
             if self.sub_type == 'door' or not self.is_passable:
-                self.obstacles_group.add(self)
+                # If we are already ON and passable, don't add to obstacles
+                if not (self.is_on and self.is_passable):
+                    self.obstacles_group.add(self)
 
     def _setup_lighting(self):
         """Pre-generate light mask and its 10-step scaling cache for fluidity."""

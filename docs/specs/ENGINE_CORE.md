@@ -113,9 +113,11 @@ The engine supports a multiverse structure defined by Tiled World files.
   - `transition_type`: `"fade"` (slow black overlay) or `"instant"`.
   - `required_direction`: `"any"` (default), `"up"`, `"down"`, `"left"`, or `"right"`.
 - **Transition Logic**:
-  - Triggered only when a player **finishes** a movement step (`was_moving=True` and `is_moving=False`) while overlapping a teleport rect.
-  - **Direction Guard**: If `required_direction` is not `"any"`, the player's `current_state` must match the property Value to trigger the transition.
+  - Triggered when a player **finishes** a movement step (`was_moving=True` and `is_moving=False`) while overlapping a teleport rect (Arrival trigger).
+  - **Intent Trigger**: Triggered if the player is already on a teleport rect and **initiates** movement (`was_moving=False` and `is_moving=True`) in the `required_direction`.
+  - **Direction Guard**: If `required_direction` is not `"any"`, the player's `current_state` (facing direction) must match the property Value to trigger the transition.
   - **Fading**: Uses a full-screen black surface with incrementing alpha. The `time_system` continues to update during the fade to maintain simulation continuity.
+
   - **Infinite Loop Protection**: Atomic detection after movement prevents a player from being immediately teleported back if spawned on a portal.
 - **Map Loading (`_load_map`)**:
   - Systematic cleanup of `interactives`, `npcs`, `obstacles_group`, and `teleports_group`.

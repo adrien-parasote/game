@@ -23,6 +23,8 @@ This document defines the requirements for fixed interactive objects (chests, sw
   - Mapping: 0=Up, 1=Right, 2=Left, 3=Down.
   - The engine uses this index to slice the correct vertical strip from the spritesheet.
 - **Behavior**: On interaction, state toggles between ON and OFF. Default state is OFF, unless `is_animated` is true, or `sub_type` is a light source (`lamp`, `lantern`, `torch`, `fire`), in which case the default state is ON.
+  - **Initialization**: If `is_on` is explicitly set to `true` at spawn, the object immediately enters its ON state. For non-animated objects (e.g., doors), `frame_index` is set to `end_row` and dynamic collision is updated accordingly during physics setup.
+
 - **Animation (Linear)**: If `is_animated == false`, animation plays once from `start_frame` to `end_frame` (Toggle ON).
 - **Animation (Looping)**: If `is_animated == true`, animation loops between `start_frame` and `end_frame` continuously while the state is ON.
 - **Doors (sub_type: door)**:

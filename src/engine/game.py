@@ -344,7 +344,7 @@ class Game:
                                 valid_orientation = True
                             elif o_dir == 'left' and p_state == 'left' and self.player.pos.x > obj.pos.x:
                                 valid_orientation = True
-                            elif o_dir == 'right' and p_state == 'right' and self.player.pos.x > obj.pos.x:
+                            elif o_dir == 'right' and p_state == 'right' and self.player.pos.x < obj.pos.x:
                                 valid_orientation = True
                             
                             # Relaxation: Open doors can be closed from the other side
@@ -427,8 +427,9 @@ class Game:
 
     def _check_teleporters(self, was_moving: bool):
         """Active spatial check testing if interaction just resolved over teleport rect."""
-        if not was_moving or self.player.is_moving:
-            return # Only proc active arrival step completion
+        # Triggered on arrival (movement end) OR on intent (movement start)
+        if was_moving == self.player.is_moving:
+            return 
             
         for tp in self.teleports_group:
             # Player hits teleport zone via strict collision rect
