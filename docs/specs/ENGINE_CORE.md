@@ -66,10 +66,10 @@ To optimize performance in large worlds, entity updates are intelligently skippe
 
 ### I. Spatial Interaction Logic
 Entities can interact with their immediate surroundings based on orientation and proximity.
-- **NPCs**: When `SPACE` or `E` is pressed, the system projects a 32x32 `target_rect` one tile ahead of the player. The first NPC colliding with this rect is interacted with.
-- **Objects**: When `E` is pressed, the system performs a proximity check (`< 80px`) and validates the "Opposite Rule". For **open doors**, this orientation check is relaxed to allow closing from the opposite side.
-- **Cooldown**: A 0.5s interaction cooldown prevents input spamming.
-- **Unified Key**: The `E` key (Settings.INTERACT_KEY) acts as a universal interaction trigger for both NPCs and fixed objects.
+- **NPCs**: Project a 32x32 `target_rect` one tile ahead of the player. See [NPC_SYSTEM.md](NPC_SYSTEM.md) for details.
+- **Objects**: Proximity and orientation checks defined by object type. See [INTERACTIVE_OBJECTS.md](INTERACTIVE_OBJECTS.md) for detailed validation logic (Omni vs Directional).
+- **Cooldown**: A 0.5s interaction cooldown (`_interaction_cooldown`) prevents input spamming.
+- **Unified Key**: The `E` key (`Settings.INTERACT_KEY`) is the universal trigger for both NPCs and fixed objects.
 
 ### J. Map Data Architecture (TMJ/TSX)
 To maintain modularity, the engine decouples map parsing from rendering logic.

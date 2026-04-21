@@ -14,6 +14,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `particle_count` | int | Maximum number of active particles simultaneously. |
 | `element_id` | string | Unique identifier for communication. Falls back to the raw Tiled object `id` if absent. |
 | `target_id` | string | Holds the `target_id` of the object that this entity should activate or interact with. |
+| `activate_from_anywhere` | bool | If `true`, the object can be activated from any direction within 48px. |
 | `entity_type`| string | Logical marker set to `"interactive"`. Prevents coupling spawning logic strictly to Tiled interface class names. Derived normally from the `10-sprite` component class. |
 
 ### Animation Logic
@@ -32,11 +33,17 @@ This document defines the requirements for fixed interactive objects (chests, sw
 ## 2. Spatial Interaction & Physics
 
 ### Interaction Validation
-Valid ONLY if both conditions are met:
+
+Interaction is valid if the following conditions are met:
+
+#### I. Omni-directional Objects
+If `activate_from_anywhere` is `True`:
+1. **Proximity**: `Vector2(player.pos).distance_to(obj.pos) < 48.0`.
+2. **Orientation**: Any orientation allowed.
+
+#### II. Standard Directional Objects
+If `activate_from_anywhere` is `False` (Default):
 1. **Proximity**: `Vector2(player.pos).distance_to(obj.pos) < 45.0`.
-   - `obj.pos` is the "footprint center" (center of the bottom 32x32 area).
-   - This ensures interaction works correctly regardless of the sprite's visual height or offsets.
-   - Constrained to 45px for tight interaction requirements.
 2. **Relative Orientation (Opposite Rule)**: 
    - Object `up` (opens from south) -> Player must be south (`y > obj_y`) and facing `up`.
    - Object `down` -> Player must be north (`y < obj_y`) and facing `down`.
@@ -45,6 +52,12 @@ Valid ONLY if both conditions are met:
 
 **Relaxation (Doors)**:
 If `sub_type == 'door'` and `is_on == True`, the door can be closed from the "opposite side" (e.g., closing a door from the north while facing `down`). This ensures players can easily close doors behind them.
+
+### Interaction Chaining
+When an object is successfully interacted with, it checks its `target_id`.
+- **Logic**: The `Game` engine searches for any entity with a matching `element_id`.
+- **Recursion Guard**: Chaining is limited to a depth of 1 (A -> B) to prevent infinite loops.
+- **Trigger**: The target's `interact()` method is called automatically.
 
 ### 2.1. Rendering & Alignment
 - **Y-Sort**: Sprites are sorted by their `rect.bottom`. All `interactive_objects` use depth 1.
@@ -123,6 +136,8 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | Scale surfaces in `update` | Pre-calculate a scaling cache in `__init__` | `pygame.transform.scale` causes severe frame drops when called per-frame on multiple objects |
 | Mega `__init__` methods | Refactor into private helper methods (`_parse_properties`, `_setup_physics`) | Ensure compliance with the 50-line maximum per method rule |
 | Use Pygame Sprites for particles | Use simple lists of dicts | Sprite allocation overhead causes GC lag when managing hundreds of short-lived particles |
+| Unlimited interaction chaining | Limit chaining depth to 1 | Prevents accidental infinite loops and stack overflows in map data |
+| Ignore distance for omni-objects | Maintain 48px proximity threshold | Keeps interaction grounded in spatial proximity |
 
 ## ✅ Patterns to Reproduce
 
@@ -152,6 +167,8 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | TC-I-01 | Proximity Validation | Spawn player at `dir=(0,1)`, object at distance 40px | Press E triggers state change | None |
 | TC-I-02 | Proximity Rejection | Spawn player at `dir=(0,1)`, object at distance 50px | Press E does NOT trigger state change | None |
 | TC-I-03 | Orientation Validation | Open door from 'wrong' side (Relaxed rule) | Valid orientation identified, state toggles to close | None |
+| TC-I-04 | Omni-directional Interaction | `activate_from_anywhere=True`, player facing away | Interaction triggered if dist < 48px | Boundary at 48px |
+| TC-I-05 | Interaction Chaining | Lever `target_id` points to Door `element_id` | Pulling lever opens door | Recursion depth limit |
 
 ## 5. Error Handling Matrix
 

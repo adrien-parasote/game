@@ -24,7 +24,9 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 
 ---
 
-## 3. Mandatory Spec Sections
+## 3. 📋 SPEC: NPC AI and Interaction Logic
+
+This section defines the behavior and failure modes for autonomous entities.
 
 ### 3.1. Anti-Patterns (DO NOT)
 

@@ -112,6 +112,11 @@
             "id": 7,
             "members": [
                 {
+                    "name": "activate_from_anywhere",
+                    "type": "bool",
+                    "value": false
+                },
+                {
                     "name": "is_animated",
                     "type": "bool",
                     "value": false
