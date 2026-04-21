@@ -283,7 +283,30 @@ class Game:
                             
                         if valid_orientation:
                             obj.interact(self.player)
+                            
+                            target = getattr(obj, "target_id", None)
+                            if target:
+                                self.toggle_entity_by_id(target, depth=1)
                             return
+
+    def toggle_entity_by_id(self, target_id: str, depth: int = 0):
+        """Toggle the state of any entity matching element_id == target_id."""
+        if not target_id:
+            return
+            
+        if depth > 1:
+            logging.warning(f"Interaction chaining loop detected for target_id={target_id}. Breaking chain.")
+            return
+
+        for group in (self.interactives, self.npcs):
+            for entity in group:
+                if getattr(entity, 'element_id', None) == target_id:
+                    if hasattr(entity, 'interact'):
+                        entity.interact(self.player)
+                        
+                        next_target = getattr(entity, 'target_id', None)
+                        if next_target:
+                            self.toggle_entity_by_id(next_target, depth + 1)
 
     def run(self):
         """Main game loop optimized for 60 FPS."""
