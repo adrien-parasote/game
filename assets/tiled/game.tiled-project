@@ -221,7 +221,8 @@
                 "",
                 "chest",
                 "door",
-                "animated_decor"
+                "animated_decor",
+                "lever"
             ],
             "valuesAsFlags": false
         }

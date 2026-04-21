@@ -382,6 +382,7 @@
                                      "is_on":true,
                                      "sprite":
                                         {
+                                         "element_id":"actionnable_torche",
                                          "entity_type":"interactive",
                                          "sprite_sheet":"02-torchs.png",
                                          "sub_type":"animated_decor"
@@ -570,6 +571,37 @@
                          "width":32,
                          "x":160,
                          "y":32
+                        }, 
+                        {
+                         "height":32,
+                         "id":44,
+                         "name":"lever",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"sprite",
+                                 "propertytype":"10-sprite",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "end_frame":1,
+                                     "entity_type":"interactive",
+                                     "position":0,
+                                     "sprite_sheet":"03-levers.png",
+                                     "sub_type":"lever"
+                                    }
+                                }, 
+                                {
+                                 "name":"target_id",
+                                 "type":"string",
+                                 "value":"actionnable_torche"
+                                }],
+                         "rotation":0,
+                         "type":"11-interactive_object",
+                         "visible":true,
+                         "width":32,
+                         "x":320,
+                         "y":832
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -585,7 +617,7 @@
          "y":0
         }],
  "nextlayerid":9,
- "nextobjectid":44,
+ "nextobjectid":45,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.1",
