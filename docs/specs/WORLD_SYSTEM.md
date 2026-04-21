@@ -28,16 +28,19 @@ Teleporters are detected in Tiled maps strictly by the property:
 - `value`: "teleport"
 
 ### 3.2 Trigger Logic (`required_direction`)
-Teleporters are passive (trigger on arrival) but gated by intent:
-- **`required_direction = "any"`** (Default): Triggers as soon as player enters the rect regardless of facing.
-- **`required_direction = [up/down/left/right]`**: Triggers ONLY if the player's `current_state` matches the value.
+Teleporters support dual-triggering (Arrival + Intent):
+- **Arrival Trigger**: Triggers when a movement step ends (`was_moving=True`, `is_moving=False`) while overlapping the rect.
+- **Intent Trigger**: Triggers while the player is already standing on the rect and pushes a movement key (`direction.magnitude() > 0`) towards the `required_direction`. This works even if the player is blocked by a wall or map edge.
+- **`required_direction = "any"`** (Default): Triggers from all directions on **Arrival** only. **Intent-based triggering is ignored** for "any" portals to prevent players from getting trapped in infinite teleport loops when attempting to walk away.
+- **`required_direction = [up/down/left/right]`**: Triggers if the player's `current_state` (facing direction) matches the value during an Arrival or Intent.
+
 
 ## 4. Anti-Patterns
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
 | Use Tiled "Class" or numerical IDs for detection | Check for `type=teleport` property | Decouples logic from Tiled versioning/internal IDs |
-| Trigger teleport on every frame in rect | Trigger only when `is_moving` becomes `False` | Prevents infinite loading loops |
+| Trigger teleport on every frame in rect | Trigger on Arrival (move end) or Intent (direction magnitude while idle) | Prevents infinite loading loops while supporting responsive transitions |
 | Allow interaction while facing away | Use `_facing_toward` helper | Increases realism and control precision |
 | Hardcode map paths in loaders | Join paths via `os.path.join` and config | Ensures cross-platform compatibility |
 | Clear player group on map load | Move player to new spawn then re-add | Preserves player state across maps |

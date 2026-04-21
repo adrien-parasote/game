@@ -114,7 +114,8 @@ The engine supports a multiverse structure defined by Tiled World files.
   - `required_direction`: `"any"` (default), `"up"`, `"down"`, `"left"`, or `"right"`.
 - **Transition Logic**:
   - Triggered when a player **finishes** a movement step (`was_moving=True` and `is_moving=False`) while overlapping a teleport rect (Arrival trigger).
-  - **Intent Trigger**: Triggered if the player is already on a teleport rect and **initiates** movement (`was_moving=False` and `is_moving=True`) in the `required_direction`.
+  - **Intent Trigger**: Triggered while the player is already idle on a teleport rect and **pushes** a movement key (`direction.magnitude() > 0`) in the `required_direction`. This ensures transitions fire even if the move is physically blocked by a wall.
+  - **'Any' Portal Exception**: To prevent infinite "spawn-and-re-teleport" loops, portals with `required_direction="any"` ignore Intent triggers and only fire on Arrival.
   - **Direction Guard**: If `required_direction` is not `"any"`, the player's `current_state` (facing direction) must match the property Value to trigger the transition.
   - **Fading**: Uses a full-screen black surface with incrementing alpha. The `time_system` continues to update during the fade to maintain simulation continuity.
 
@@ -169,7 +170,7 @@ The engine supports a multiverse structure defined by Tiled World files.
 | Pattern | Description | Why |
 |---------|-------------|-----|
 | **Defensive Asset Normalization** | Always include an extension normalization step (e.g. `.tjm` -> `.tmj`) when resolving external map/tileset paths. | Handles common export-to-filesystem naming typos from the Tiled editor. |
-| **Atomic Teleport Logic** | Trigger teleport only on the transition from `was_moving=True` to `is_moving=False`. | Prevents infinite teleport loops when the player spawns directly on a portal. |
+| **Explicit Teleport Triggers** | Trigger teleport only on Arrival (move end) or Intent (explicit movement input while idle). | Prevents infinite teleport loops while ensuring physics-blocked moves still trigger transitions. |
 
 ## 6. Deep Links
 - **Map Recursive Parsing**: [tmj_parser.py - _process_layers](src/map/tmj_parser.py#L55)

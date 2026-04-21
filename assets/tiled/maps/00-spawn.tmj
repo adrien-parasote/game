@@ -280,12 +280,18 @@
                          "opacity":1,
                          "properties":[
                                 {
+                                 "name":"is_on",
+                                 "type":"bool",
+                                 "value":true
+                                }, 
+                                {
                                  "name":"sprite",
                                  "propertytype":"10-sprite",
                                  "type":"class",
                                  "value":
                                     {
                                      "entity_type":"interactive",
+                                     "position":1,
                                      "sprite_sheet":"01-iron-chests.png",
                                      "sub_type":"chest"
                                     }
@@ -294,8 +300,8 @@
                          "type":"11-interactive_object",
                          "visible":true,
                          "width":32,
-                         "x":96,
-                         "y":96
+                         "x":192,
+                         "y":192
                         }, 
                         {
                          "height":32,
@@ -320,31 +326,6 @@
                          "visible":true,
                          "width":32,
                          "x":32,
-                         "y":128
-                        }, 
-                        {
-                         "height":32,
-                         "id":50,
-                         "name":"chest",
-                         "opacity":1,
-                         "properties":[
-                                {
-                                 "name":"sprite",
-                                 "propertytype":"10-sprite",
-                                 "type":"class",
-                                 "value":
-                                    {
-                                     "entity_type":"interactive",
-                                     "position":1,
-                                     "sprite_sheet":"01-iron-chests.png",
-                                     "sub_type":"chest"
-                                    }
-                                }],
-                         "rotation":0,
-                         "type":"11-interactive_object",
-                         "visible":true,
-                         "width":32,
-                         "x":256,
                          "y":128
                         }, 
                         {
@@ -378,6 +359,11 @@
                          "name":"door",
                          "opacity":1,
                          "properties":[
+                                {
+                                 "name":"is_on",
+                                 "type":"bool",
+                                 "value":true
+                                }, 
                                 {
                                  "name":"is_passable",
                                  "type":"bool",
@@ -466,6 +452,30 @@
                          "width":8,
                          "x":504,
                          "y":256
+                        }, 
+                        {
+                         "height":32,
+                         "id":58,
+                         "name":"chest",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"sprite",
+                                 "propertytype":"10-sprite",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "entity_type":"interactive",
+                                     "sprite_sheet":"01-iron-chests.png",
+                                     "sub_type":"chest"
+                                    }
+                                }],
+                         "rotation":0,
+                         "type":"11-interactive_object",
+                         "visible":true,
+                         "width":32,
+                         "x":104,
+                         "y":88
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -481,7 +491,7 @@
          "y":0
         }],
  "nextlayerid":9,
- "nextobjectid":58,
+ "nextobjectid":59,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.1",
