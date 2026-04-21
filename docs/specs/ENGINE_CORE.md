@@ -106,13 +106,15 @@ The HUD provides information about the current time, day, and season.
 ### M. Interconnected World (Teleportation)
 The engine supports a multiverse structure defined by Tiled World files.
 - **World Config**: The initial map is resolved at startup by parsing `assets/tiled/maps/world.world` (JSON). 
-- **Teleport Entity**: A logical trigger volume (`13-teleport`) that is invisible and non-collidable.
+- **Teleport Entity**: A logical trigger volume strictly defined by the Tiled property `type: teleport`. It is invisible and non-collidable.
 - **Properties**:
   - `target_map`: The `.tmj` file to load.
   - `target_spawn_id`: The `spawn_id` of the destination `00-spawn_point`.
   - `transition_type`: `"fade"` (slow black overlay) or `"instant"`.
+  - `required_direction`: `"any"` (default), `"up"`, `"down"`, `"left"`, or `"right"`.
 - **Transition Logic**:
   - Triggered only when a player **finishes** a movement step (`was_moving=True` and `is_moving=False`) while overlapping a teleport rect.
+  - **Direction Guard**: If `required_direction` is not `"any"`, the player's `current_state` must match the property Value to trigger the transition.
   - **Fading**: Uses a full-screen black surface with incrementing alpha. The `time_system` continues to update during the fade to maintain simulation continuity.
   - **Infinite Loop Protection**: Atomic detection after movement prevents a player from being immediately teleported back if spawned on a portal.
 - **Map Loading (`_load_map`)**:
@@ -170,6 +172,8 @@ The engine supports a multiverse structure defined by Tiled World files.
 ## 6. Deep Links
 - **Map Recursive Parsing**: [tmj_parser.py - _process_layers](src/map/tmj_parser.py#L55)
 - **Property Detection**: [tmj_parser.py - _parse_objects](src/map/tmj_parser.py#L69)
-- **Player Spawn Logic**: [game.py - _load_map](src/engine/game.py#L145)
+- **Player Spawn Logic**: [game.py - _load_map](src/engine/game.py#L95)
+- **Entity Spawning**: [game.py - _spawn_entities](src/engine/game.py#L179)
+- **Interaction Logic**: [game.py - _handle_interactions](src/engine/game.py#L293)
 - **Frustum Culling**: [map_manager.py - get_visible_chunks](src/map/manager.py)
-- **Teleport Logic**: [game.py - _check_teleporters](src/engine/game.py#L410)
+- **Teleport Logic**: [game.py - _check_teleporters](src/engine/game.py#L428)

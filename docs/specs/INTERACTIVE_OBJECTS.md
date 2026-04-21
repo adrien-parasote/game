@@ -14,7 +14,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `particle_count` | int | Maximum number of active particles simultaneously. |
 | `element_id` | string | Unique identifier for communication. Falls back to the raw Tiled object `id` if absent. |
 | `target_id` | string | Holds the `target_id` of the object that this entity should activate or interact with. |
-| `activate_from_anywhere` | bool | If `true`, the object can be activated from any direction within 48px. |
+| `activate_from_anywhere` | bool | If `true`, the object can be activated from any adjacent cell within 48px, but REQUIRES the player to be facing it. |
 | `entity_type`| string | Logical marker set to `"interactive"`. Prevents coupling spawning logic strictly to Tiled interface class names. Derived normally from the `10-sprite` component class. |
 
 ### Animation Logic
@@ -36,10 +36,11 @@ This document defines the requirements for fixed interactive objects (chests, sw
 
 Interaction is valid if the following conditions are met:
 
-#### I. Omni-directional Objects
+#### I. Omni-directional Objects (Spatial Adjacency)
 If `activate_from_anywhere` is `True`:
 1. **Proximity**: `Vector2(player.pos).distance_to(obj.pos) < 48.0`.
-2. **Orientation**: Any orientation allowed.
+2. **Orientation**: Player must be **facing towards** the object center (Directional Adjacency).
+   - This ensures players cannot interact with objects while walking past them with their back turned.
 
 #### II. Standard Directional Objects
 If `activate_from_anywhere` is `False` (Default):
@@ -140,7 +141,7 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | Mega `__init__` methods | Refactor into private helper methods (`_parse_properties`, `_setup_physics`) | Ensure compliance with the 50-line maximum per method rule |
 | Use Pygame Sprites for particles | Use simple lists of dicts | Sprite allocation overhead causes GC lag when managing hundreds of short-lived particles |
 | Unlimited interaction chaining | Limit chaining depth to 1 | Prevents accidental infinite loops and stack overflows in map data |
-| Ignore distance for omni-objects | Maintain 48px proximity threshold | Keeps interaction grounded in spatial proximity |
+| Ignore direction for omni-objects | Maintain 48px proximity AND facing requirement | Keeps interaction grounded in spatial awareness and intentionality |
 
 ## ✅ Patterns to Reproduce
 
@@ -170,7 +171,7 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | TC-I-01 | Proximity Validation | Spawn player at `dir=(0,1)`, object at distance 40px | Press E triggers state change | None |
 | TC-I-02 | Proximity Rejection | Spawn player at `dir=(0,1)`, object at distance 50px | Press E does NOT trigger state change | None |
 | TC-I-03 | Orientation Validation | Open door from 'wrong' side (Relaxed rule) | Valid orientation identified, state toggles to close | None |
-| TC-I-04 | Omni-directional Interaction | `activate_from_anywhere=True`, player facing away | Interaction triggered if dist < 48px | Boundary at 48px |
+| TC-I-04 | Omni-directional Interaction | `activate_from_anywhere=True`, player facing away | Interaction REJECTED (requires facing) | Boundary at 48px |
 | TC-I-05 | Interaction Chaining | Lever `target_id` points to Door `element_id` | Pulling lever opens door | Recursion depth limit |
 
 ## 5. Error Handling Matrix
@@ -182,7 +183,8 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | Interaction Spam| Timer check | Ignore input | cooldown of 0.5s |
 
 ## 6. Deep Links
-- **Interactive Spawning**: [game.py - _spawn_entities](src/engine/game.py#L91)
+- **Interactive Spawning**: [game.py - _spawn_entities](src/engine/game.py?#L179)
 - **Base Interaction**: [base.py - interact](src/entities/base.py#L73)
 - **Sprite Slicing**: [spritesheet.py - load_grid_by_size](src/graphics/spritesheet.py)
-- **Collision Check**: [game.py - _is_collidable](src/engine/game.py#L126)
+- **Collision Check**: [game.py - _is_collidable](src/engine/game.py#L228)
+- **Unified Interaction Handling**: [game.py - _handle_interactions](src/engine/game.py#L293)
