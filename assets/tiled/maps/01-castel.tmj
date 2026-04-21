@@ -30,12 +30,12 @@
                     74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 75, 1, 1, 73, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74, 74,
                     79, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 82, 80,
                     75, 162, 162, 162, 162, 162, 162, 162, 162, 162, 162, 162, 162, 163, 1, 1, 161, 162, 162, 162, 162, 162, 162, 162, 162, 162, 162, 162, 162, 73,
-                    75, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 171, 1, 1, 169, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 73,
-                    75, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 73,
-                    75, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 73,
-                    75, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 73,
-                    75, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 73,
-                    72, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 71],
+                    83, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 171, 1, 1, 169, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 170, 73,
+                    161, 2, 1, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 1, 2, 73,
+                    169, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 73,
+                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 73,
+                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 73,
+                    66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 71],
                  "height":30,
                  "id":1,
                  "name":"00-layer",
@@ -145,25 +145,38 @@
                  "objects":[
                         {
                          "height":32,
-                         "id":21,
+                         "id":48,
                          "name":"spawn_player",
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"halo_alpha",
-                                 "type":"int",
-                                 "value":0
-                                }, 
-                                {
-                                 "name":"spawn_player",
-                                 "type":"bool",
-                                 "value":true
+                                 "name":"spawn_id",
+                                 "type":"string",
+                                 "value":"corridor_b"
                                 }],
                          "rotation":0,
-                         "type":"",
+                         "type":"14-spawn_point",
                          "visible":true,
                          "width":32,
-                         "x":448,
+                         "x":0,
+                         "y":896
+                        }, 
+                        {
+                         "height":32,
+                         "id":49,
+                         "name":"spawn_player",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"spawn_id",
+                                 "type":"string",
+                                 "value":"corridor_u"
+                                }],
+                         "rotation":0,
+                         "type":"14-spawn_point",
+                         "visible":true,
+                         "width":32,
+                         "x":0,
                          "y":864
                         }],
                  "opacity":1,
@@ -231,81 +244,6 @@
                          "width":64,
                          "x":448,
                          "y":768
-                        }, 
-                        {
-                         "height":32,
-                         "id":30,
-                         "name":"chest",
-                         "opacity":1,
-                         "properties":[
-                                {
-                                 "name":"sprite",
-                                 "propertytype":"10-sprite",
-                                 "type":"class",
-                                 "value":
-                                    {
-                                     "entity_type":"interactive",
-                                     "position":1,
-                                     "sprite_sheet":"01-iron-chests.png",
-                                     "sub_type":"chest"
-                                    }
-                                }],
-                         "rotation":0,
-                         "type":"11-interactive_object",
-                         "visible":true,
-                         "width":32,
-                         "x":608,
-                         "y":864
-                        }, 
-                        {
-                         "height":32,
-                         "id":31,
-                         "name":"chest",
-                         "opacity":1,
-                         "properties":[
-                                {
-                                 "name":"sprite",
-                                 "propertytype":"10-sprite",
-                                 "type":"class",
-                                 "value":
-                                    {
-                                     "entity_type":"interactive",
-                                     "position":2,
-                                     "sprite_sheet":"01-iron-chests.png",
-                                     "sub_type":"chest"
-                                    }
-                                }],
-                         "rotation":0,
-                         "type":"11-interactive_object",
-                         "visible":true,
-                         "width":32,
-                         "x":672,
-                         "y":864
-                        }, 
-                        {
-                         "height":32,
-                         "id":32,
-                         "name":"chest",
-                         "opacity":1,
-                         "properties":[
-                                {
-                                 "name":"sprite",
-                                 "propertytype":"10-sprite",
-                                 "type":"class",
-                                 "value":
-                                    {
-                                     "entity_type":"interactive",
-                                     "position":3,
-                                     "sprite_sheet":"01-iron-chests.png",
-                                     "sub_type":"chest"
-                                    }
-                                }],
-                         "rotation":0,
-                         "type":"11-interactive_object",
-                         "visible":true,
-                         "width":32,
-                         "x":736,
-                         "y":864
                         }, 
                         {
                          "height":32,
@@ -574,39 +512,111 @@
                         }, 
                         {
                          "height":32,
-                         "id":44,
-                         "name":"lever",
+                         "id":46,
+                         "name":"torch",
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"activate_from_anywhere",
-                                 "type":"bool",
-                                 "value":true
+                                 "name":"halo_alpha",
+                                 "type":"int",
+                                 "value":120
                                 }, 
                                 {
-                                 "name":"sprite",
-                                 "propertytype":"10-sprite",
+                                 "name":"halo_color",
+                                 "type":"string",
+                                 "value":"[255, 204, 0]"
+                                }, 
+                                {
+                                 "name":"halo_size",
+                                 "type":"int",
+                                 "value":80
+                                }, 
+                                {
+                                 "name":"interactive_object",
+                                 "propertytype":"11-interactive_object",
                                  "type":"class",
                                  "value":
                                     {
-                                     "end_frame":1,
-                                     "entity_type":"interactive",
-                                     "position":0,
-                                     "sprite_sheet":"03-levers.png",
-                                     "sub_type":"lever"
+                                     "is_animated":true,
+                                     "is_on":true,
+                                     "sprite":
+                                        {
+                                         "entity_type":"interactive",
+                                         "sprite_sheet":"02-torchs.png",
+                                         "sub_type":"animated_decor"
+                                        }
                                     }
-                                }, 
-                                {
-                                 "name":"target_id",
-                                 "type":"string",
-                                 "value":"actionnable_torche"
                                 }],
                          "rotation":0,
-                         "type":"11-interactive_object",
+                         "type":"12-light_source",
                          "visible":true,
                          "width":32,
                          "x":320,
-                         "y":832
+                         "y":736
+                        }, 
+                        {
+                         "height":32,
+                         "id":47,
+                         "name":"teleport",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"required_direction",
+                                 "propertytype":"23-direction",
+                                 "type":"string",
+                                 "value":"left"
+                                }, 
+                                {
+                                 "name":"target_map",
+                                 "type":"string",
+                                 "value":"00-spawn.tmj"
+                                }, 
+                                {
+                                 "name":"target_spawn_id",
+                                 "type":"string",
+                                 "value":"spawn_u"
+                                }],
+                         "rotation":0,
+                         "type":"13-teleport",
+                         "visible":true,
+                         "width":8,
+                         "x":0,
+                         "y":864
+                        }, 
+                        {
+                         "height":32,
+                         "id":50,
+                         "name":"teleport",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"required_direction",
+                                 "propertytype":"23-direction",
+                                 "type":"string",
+                                 "value":"left"
+                                }, 
+                                {
+                                 "name":"target_map",
+                                 "type":"string",
+                                 "value":"00-spawn.tmj"
+                                }, 
+                                {
+                                 "name":"target_spawn_id",
+                                 "type":"string",
+                                 "value":"spawn_d"
+                                }, 
+                                {
+                                 "name":"transition_type",
+                                 "propertytype":"22-transition",
+                                 "type":"string",
+                                 "value":"instant"
+                                }],
+                         "rotation":0,
+                         "type":"13-teleport",
+                         "visible":true,
+                         "width":8,
+                         "x":0,
+                         "y":896
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -622,7 +632,7 @@
          "y":0
         }],
  "nextlayerid":9,
- "nextobjectid":45,
+ "nextobjectid":51,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.1",

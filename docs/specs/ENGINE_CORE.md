@@ -8,7 +8,7 @@ This document consolidates all rendering, logic, and optimization specifications
 |--------|----------------|-----------------|
 | **Engine** | Lifecycle, Config, Events | `Game`, `Settings`, `Logger` |
 | **Map** | Data, Culling, Layout | `MapManager`, `LayoutStrategy` |
-| **Entity** | Sprites, Sorting, Movement | `BaseEntity`, `Player`, `CameraGroup` |
+| **Entity** | Sprites, Sorting, Movement | `BaseEntity`, `Player`, `CameraGroup`, `Teleport` |
 
 ## 2. Implementation Details
 
@@ -103,6 +103,23 @@ The HUD provides information about the current time, day, and season.
 - **Margins**: `20px` from top and right screen edges.
 - **Label System**: Uses `LabelRegistry` for multilingual support (Day/Jour titles).
 
+### M. Interconnected World (Teleportation)
+The engine supports a multiverse structure defined by Tiled World files.
+- **World Config**: The initial map is resolved at startup by parsing `assets/tiled/maps/world.world` (JSON). 
+- **Teleport Entity**: A logical trigger volume (`13-teleport`) that is invisible and non-collidable.
+- **Properties**:
+  - `target_map`: The `.tmj` file to load.
+  - `target_spawn_id`: The `spawn_id` of the destination `00-spawn_point`.
+  - `transition_type`: `"fade"` (slow black overlay) or `"instant"`.
+- **Transition Logic**:
+  - Triggered only when a player **finishes** a movement step (`was_moving=True` and `is_moving=False`) while overlapping a teleport rect.
+  - **Fading**: Uses a full-screen black surface with incrementing alpha. The `time_system` continues to update during the fade to maintain simulation continuity.
+  - **Infinite Loop Protection**: Atomic detection after movement prevents a player from being immediately teleported back if spawned on a portal.
+- **Map Loading (`_load_map`)**:
+  - Systematic cleanup of `interactives`, `npcs`, `obstacles_group`, and `teleports_group`.
+  - The `Player` instance is preserved and repositioned to the exact coordinates of the target `00-spawn_point`.
+  - Logically handles `.tjm` vs `.tmj` extension mismatches for compatibility.
+
 ## 3. Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |
@@ -129,6 +146,8 @@ The HUD provides information about the current time, day, and season.
 | TC-X-02 | Interaction | Door open + Passable | `_is_collidable` returns `False` |
 | TC-H-01 | HUD | Interaction log added | HUD renders message with scrolling logic |
 | TC-G-01 | Run Loop | QUIT event | `sys.exit()` called, loop terminates |
+| TC-T-01 | Teleport | Overlap + Finish Move | `_load_map` called with correct target |
+| TC-T-02 | Fading | `transition_type="fade"` | Screen alpha increments, player frozen |
 
 ## 5. Error Handling Matrix (Aggregated)
 
@@ -138,9 +157,19 @@ The HUD provides information about the current time, day, and season.
 | Map Missing | `FileNotFoundError` | Log Critical | Safe loop abort |
 | Surface None | `display is None` | Log Error | Use dummy surface |
 | Bound Overflow| `pos > 1M` | Log Warn | Clamp to boundary |
+| Map Target Fail | `transition_map` target missing | Log Error | Abort transition, keep current map |
+| Spawn ID Fail | `spawn_id` mismatch | Log Warning | Default to map center |
+
+## ✅ Patterns to Reproduce
+
+| Pattern | Description | Why |
+|---------|-------------|-----|
+| **Defensive Asset Normalization** | Always include an extension normalization step (e.g. `.tjm` -> `.tmj`) when resolving external map/tileset paths. | Handles common export-to-filesystem naming typos from the Tiled editor. |
+| **Atomic Teleport Logic** | Trigger teleport only on the transition from `was_moving=True` to `is_moving=False`. | Prevents infinite teleport loops when the player spawns directly on a portal. |
 
 ## 6. Deep Links
 - **Map Recursive Parsing**: [tmj_parser.py - _process_layers](src/map/tmj_parser.py#L55)
 - **Property Detection**: [tmj_parser.py - _parse_objects](src/map/tmj_parser.py#L69)
-- **Player Spawn Logic**: [game.py - __init__](src/engine/game.py#L18)
+- **Player Spawn Logic**: [game.py - _load_map](src/engine/game.py#L145)
 - **Frustum Culling**: [map_manager.py - get_visible_chunks](src/map/manager.py)
+- **Teleport Logic**: [game.py - _check_teleporters](src/engine/game.py#L410)

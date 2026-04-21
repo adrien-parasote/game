@@ -136,7 +136,8 @@
                     "propertyType": "10-sprite",
                     "type": "class",
                     "value": {
-                        "entity_type": 1
+                        "entity_type": {
+                        }
                     }
                 },
                 {
@@ -181,7 +182,8 @@
                         "is_animated": true,
                         "is_on": true,
                         "sprite": {
-                            "entity_type": 1,
+                            "entity_type": {
+                            },
                             "start_frame": 0,
                             "sub_type": 3
                         }
@@ -199,6 +201,77 @@
                 }
             ],
             "name": "12-light_source",
+            "type": "class",
+            "useAs": [
+                "property",
+                "object",
+                "project"
+            ]
+        },
+        {
+            "color": "#ff00fdff",
+            "drawFill": true,
+            "id": 10,
+            "members": [
+                {
+                    "name": "required_direction",
+                    "propertyType": "23-direction",
+                    "type": "string",
+                    "value": "any"
+                },
+                {
+                    "name": "target_map",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "target_spawn_id",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "transition_type",
+                    "propertyType": "22-transition",
+                    "type": "string",
+                    "value": "fade"
+                },
+                {
+                    "name": "type",
+                    "type": "string",
+                    "value": "teleport"
+                }
+            ],
+            "name": "13-teleport",
+            "type": "class",
+            "useAs": [
+                "property",
+                "object",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffff9300",
+            "drawFill": true,
+            "id": 12,
+            "members": [
+                {
+                    "name": "facing_direction",
+                    "propertyType": "23-direction",
+                    "type": "string",
+                    "value": "down"
+                },
+                {
+                    "name": "is_initial_spawn",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "spawn_id",
+                    "type": "string",
+                    "value": ""
+                }
+            ],
+            "name": "14-spawn_point",
             "type": "class",
             "useAs": [
                 "property",
@@ -228,6 +301,31 @@
                 "door",
                 "animated_decor",
                 "lever"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 11,
+            "name": "22-transition",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "fade",
+                "instant"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 13,
+            "name": "23-direction",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "up",
+                "down",
+                "right",
+                "left",
+                "any"
             ],
             "valuesAsFlags": false
         }

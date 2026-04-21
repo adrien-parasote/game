@@ -6,12 +6,14 @@ import os
 from src.entities.player import Player
 from src.entities.interactive import InteractiveEntity
 from src.entities.npc import NPC
+from src.entities.teleport import Teleport
 from src.entities.groups import CameraGroup
 from src.map.manager import MapManager
 from src.map.layout import OrthogonalLayout
 from src.engine.time_system import TimeSystem
 from src.config import Settings
 from src.ui.hud import GameHUD
+import json
 
 
 def _get_property(props: dict, key: str, default=None):
@@ -61,11 +63,48 @@ class Game:
         self.npcs = pygame.sprite.Group()
         self.interactives = pygame.sprite.Group()
         self.obstacles_group = pygame.sprite.Group()
+        self.teleports_group = pygame.sprite.Group()
         
-        # Setup Map
+        # Local state
+        self.is_fullscreen = Settings.FULLSCREEN
+        self.last_fps_update = 0
+        
+        # Time System
+        self.time_system = TimeSystem(initial_hour=Settings.INITIAL_HOUR)
+        self.hud = GameHUD(self.time_system, lang="fr")
+        
+        logging.info(f"Screen setup: {Settings.WINDOW_WIDTH}x{Settings.WINDOW_HEIGHT} (Fullscreen: {self.is_fullscreen})")
+        
+        # Player is persisted across maps
+        self.player = Player((0, 0), self.visible_sprites, speed=Settings.PLAYER_SPEED, element_id="player")
+        self.player.collision_func = self._is_collidable
+        
+        # First load reads the default map from world.world
+        default_map = "00-spawn.tmj"
+        world_path = os.path.join("assets", "tiled", "maps", "world.world")
+        if os.path.exists(world_path):
+            try:
+                with open(world_path, "r", encoding="utf-8") as f:
+                    world_data = json.load(f)
+                    default_map = world_data.get("maps", [{}])[0].get("fileName", "00-spawn.tmj")
+            except Exception as e:
+                logging.error(f"Failed to read world.world: {e}")
+                
+        self._load_map(default_map)
+
+    def _load_map(self, map_name: str, target_spawn_id: str = None, transition_type: str = "instant"):
+        """Unload current elements and load a new map from Tiled."""
         from src.map.tmj_parser import TmjParser
+        
+        # Handle known typo in current maps
+        map_name = map_name.replace(".tjm", ".tmj")
+        
+        map_path = os.path.join("assets", "tiled", "maps", map_name)
+        if not os.path.exists(map_path):
+            logging.error(f"Target map not found: {map_path}")
+            return
+            
         parser = TmjParser()
-        map_path = os.path.join("assets", "tiled", "maps", "00-castel.tmj")
         map_result = parser.load_map(map_path)
         
         self.layout = OrthogonalLayout(self.tile_size)
@@ -80,36 +119,51 @@ class Game:
         world_height_px = self.map_manager.height * self.tile_size
         self.visible_sprites.set_world_size(world_width_px, world_height_px)
         
-        # Local state
-        self.is_fullscreen = Settings.FULLSCREEN
-        self.last_fps_update = 0
+        # Clean entities for new map (excluding player)
+        self.interactives.empty()
+        self.npcs.empty()
+        self.obstacles_group.empty()
+        self.teleports_group.empty()
         
-        # Time System
-        self.time_system = TimeSystem(initial_hour=Settings.INITIAL_HOUR)
-        self.hud = GameHUD(self.time_system, lang="fr")
-        
-        logging.info(f"Screen setup: {Settings.WINDOW_WIDTH}x{Settings.WINDOW_HEIGHT} (Fullscreen: {self.is_fullscreen})")
-        
-        # Create Player
-        half_tile = self.tile_size // 2
-        spawn_dict = map_result.get("spawn_player")
-        
-        if spawn_dict:
-            # Tiled object coordinates are top-left, we center it accurately by pushing it half a tile
-            spawn_pos = (spawn_dict["x"] + half_tile, spawn_dict["y"] + half_tile)
-            logging.info(f"Player spawn point found at {spawn_pos}")
-        else:
-            spawn_pos = (
-                self.map_size * self.tile_size // 2 + half_tile, 
-                self.map_size * self.tile_size // 2 + half_tile
-            )
-            logging.warning(f"No spawn_player found. Defaulting to center: {spawn_pos}")
-            
-        self.player = Player(spawn_pos, self.visible_sprites, speed=Settings.PLAYER_SPEED, element_id="player")
-        self.player.collision_func = self._is_collidable
+        # Only keep player in visible sprites
+        self.visible_sprites.empty()
+        self.visible_sprites.add(self.player)
         
         # Spawn Entities from Map
         self._spawn_entities(map_result.get("entities", []))
+        
+        # Resolve spawn exact position 
+        half_tile = self.tile_size // 2
+        spawn_pos = (world_width_px // 2, world_height_px // 2) # Center fallback
+        
+        # Find the specific spawn point
+        for ent in map_result.get("entities", []):
+            ent_type = ent.get("type", "")
+            props = ent.get("properties", {})
+            if ent_type == "14-spawn_point" or props.get("spawn_player") is True:
+                if target_spawn_id:
+                    if props.get("spawn_id") == target_spawn_id:
+                        spawn_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
+                        break
+                elif props.get("is_initial_spawn") is True:
+                    spawn_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
+                    break
+        
+        # Default fallback to `spawn_player` root map object if no specific matches
+        if target_spawn_id is None and spawn_pos == (world_width_px // 2, world_height_px // 2):
+            spawn_dict = map_result.get("spawn_player")
+            if spawn_dict:
+                spawn_pos = (spawn_dict["x"] + half_tile, spawn_dict["y"] + half_tile)
+            else:
+                logging.warning(f"No valid spawn_player found on map {map_name}. Defaulting to center.")
+                
+        # Force player transform
+        self.player.pos = pygame.math.Vector2(spawn_pos)
+        self.player.target_pos = pygame.math.Vector2(spawn_pos)
+        self.player.rect.center = (int(spawn_pos[0]), int(spawn_pos[1]))
+        self.player.is_moving = False
+        self.player.direction = pygame.math.Vector2(0, 0)
+        logging.info(f"Loaded map {map_name}, player spawned at {spawn_pos}")
 
     def _spawn_entities(self, entities: list):
         """Instantiate NPCs and Interactive objects from map data."""
@@ -153,6 +207,12 @@ class Game:
                     target_id=target_id,
                     activate_from_anywhere=_get_property(props, "activate_from_anywhere", False)
                 )
+            elif entity_type == "13-teleport" or ent.get("type") == "13-teleport":
+                t_rect = pygame.Rect(ent["x"], ent["y"], ent.get("width", 32), ent.get("height", 32))
+                t_map = _get_property(props, "target_map", "")
+                t_spawn_id = _get_property(props, "target_spawn_id", "")
+                t_trans = _get_property(props, "transition_type", "instant")
+                Teleport(t_rect, [self.teleports_group], t_map, t_spawn_id, t_trans)
             else:
                 # Handle NPCs
                 e_type = ent.get("type") or props.get("type")
@@ -271,7 +331,7 @@ class Game:
                                 valid_orientation = True
                             elif o_dir == 'left' and p_state == 'left' and self.player.pos.x > obj.pos.x:
                                 valid_orientation = True
-                            elif o_dir == 'right' and p_state == 'right' and self.player.pos.x < obj.pos.x:
+                            elif o_dir == 'right' and p_state == 'right' and self.player.pos.x > obj.pos.x:
                                 valid_orientation = True
                             
                             # Relaxation: Open doors can be closed from the other side
@@ -312,6 +372,79 @@ class Game:
                         if next_target:
                             self.toggle_entity_by_id(next_target, depth + 1)
 
+    def transition_map(self, target_map: str, target_spawn_id: str, transition_type: str):
+        """Handle screen fading and triggering map load cleanly."""
+        target_map = target_map.replace(".tjm", ".tmj")
+        
+        map_path = os.path.join("assets", "tiled", "maps", target_map)
+        if not os.path.exists(map_path) and target_map != "00-spawn.tmj":
+            # Safety checks for bad targets
+            logging.error(f"Fading failed, map missing: {map_path}")
+            return
+            
+        fade_surf = pygame.Surface(self.screen.get_size())
+        fade_surf.fill((0, 0, 0))
+        
+        if transition_type == "fade":
+            # Fade Out
+            for alpha in range(0, 256, 15):
+                dt = self.clock.tick(Settings.FPS) / 1000.0
+                self.time_system.update(dt) # Flow of time continues
+                
+                self._draw_scene()
+                fade_surf.set_alpha(alpha)
+                self.screen.blit(fade_surf, (0, 0))
+                pygame.display.update()
+                
+        # Load exactly at climax of transition
+        self._load_map(target_map, target_spawn_id, transition_type)
+        
+        if transition_type == "fade":
+            # Fade In
+            for alpha in range(255, -1, -15):
+                dt = self.clock.tick(Settings.FPS) / 1000.0
+                self.time_system.update(dt)
+                
+                self._draw_scene()
+                fade_surf.set_alpha(alpha)
+                self.screen.blit(fade_surf, (0, 0))
+                pygame.display.update()
+                
+        self.clock.tick(Settings.FPS) # Reset dt so next frame logic doesn't jump
+
+    def _check_teleporters(self, was_moving: bool):
+        """Active spatial check testing if interaction just resolved over teleport rect."""
+        if not was_moving or self.player.is_moving:
+            return # Only proc active arrival step completion
+            
+        for tp in self.teleports_group:
+            # Player hits teleport zone via strict collision rect
+            if self.player.rect.colliderect(tp.rect):
+                logging.info(f"Teleport triggered -> {tp.target_map} / {tp.target_spawn_id}")
+                self.transition_map(tp.target_map, tp.target_spawn_id, tp.transition_type)
+                break
+
+    def _draw_scene(self):
+        """A helper representing the entire scene rendering logic."""
+        self.screen.fill(Settings.COLOR_BG)
+        self.visible_sprites.calculate_offset(self.player)
+        self._draw_background()
+        self.visible_sprites.custom_draw(self.screen)
+        self._draw_foreground()
+        
+        night_alpha = self.time_system.night_alpha
+        if night_alpha > 0:
+            overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, night_alpha))
+            self.screen.blit(overlay, (0, 0))
+            
+        cam_offset = self.visible_sprites.offset
+        for obj in self.interactives:
+            if hasattr(obj, 'draw_effects'):
+                obj.draw_effects(self.screen, cam_offset, night_alpha)
+            
+        self._draw_hud()
+
     def run(self):
         """Main game loop optimized for 60 FPS."""
         while True:
@@ -334,15 +467,15 @@ class Game:
             self.time_system.update(dt)
             
             # Input & Logic
-            
-            # Decrease interaction cooldown
             if hasattr(self, '_interaction_cooldown'):
                 self._interaction_cooldown = max(0, self._interaction_cooldown - dt)
                 
             self.player.input()
             self._handle_interactions()
             
+            was_moving = self.player.is_moving
             self.visible_sprites.update(dt)
+            self._check_teleporters(was_moving)
             
             # CPU Freeze optimization for NPCs -> freeze if outside enlarged viewport
             screen_rect = self.screen.get_rect()
@@ -357,36 +490,8 @@ class Game:
                 # Reuse visibility check logic if desired, or just update
                 obj.update(dt)
 
-            # Draw
-            self.screen.fill(Settings.COLOR_BG)
-            
-            # Update camera offset BEFORE drawing anything
-            self.visible_sprites.calculate_offset(self.player)
-            
-            # Draw layers behind the player
-            self._draw_background()
-
-            # Draw sorted sprites (Entities, etc.)
-            self.visible_sprites.custom_draw(self.screen)
-            
-            # Draw layers in front of the player (occlusion with alpha)
-            self._draw_foreground()
-            
-            # Apply darkness overlay
-            night_alpha = self.time_system.night_alpha
-            if night_alpha > 0:
-                overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
-                overlay.fill((0, 0, 0, night_alpha))
-                self.screen.blit(overlay, (0, 0))
-            
-            # Draw Lighting Halos and Particles (Adaptive additive rendering)
-            cam_offset = self.visible_sprites.offset
-            for obj in self.interactives:
-                if hasattr(obj, 'draw_effects'):
-                    obj.draw_effects(self.screen, cam_offset, night_alpha)
-                
-            # Draw HUD
-            self._draw_hud()
+            # Draw complete sequence
+            self._draw_scene()
             
             # Dynamic Title Update (Every 1s)
             now = pygame.time.get_ticks()
@@ -415,8 +520,7 @@ class Game:
     def _setup_logging(self):
         """Configure rotating file logging and console output."""
         log_dir = "logs"
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
+        os.makedirs(log_dir, exist_ok=True)
             
         log_file = os.path.join(log_dir, "game.log")
         

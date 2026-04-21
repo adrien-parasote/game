@@ -38,8 +38,5 @@ To maintain a 10-20x velocity multiplier, all contributions must pass through th
 - **Portability**: Use `Settings` for all keys/constants; never access raw JSON in logic.
 - **Stability**: Always apply `MAX_DT_CLAMP` (default: 10.0) in `update()` to prevent physics explosion after long pauses or debugging.
 - **Cross-Platform**: Use `os.path` for all file path operations.
-- **Cleanliness**: Files < 800 lines, methods < 50 lines. No nesting > 4 levels.
-
-## 3. Deep Links
 - [STRATEGIC_BLUEPRINT.md](../STRATEGIC_BLUEPRINT.md)
 - [ENGINE_CORE.md](ENGINE_CORE.md)

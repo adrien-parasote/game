@@ -12,7 +12,6 @@ def test_game():
     pygame.display.set_mode((1, 1), pygame.HIDDEN)
     
     # Mock spritesheet to avoid needing real assets
-    # We simulate a 128x192 sheet with 4 cols x 4 rows of 32x48 frames
     def make_mock_sheet(filename):
         m = MagicMock()
         m.valid = True
@@ -23,7 +22,18 @@ def test_game():
         m.load_grid_by_size.side_effect = lambda w, h: [pygame.Surface((w, h)) for _ in range(16)]
         return m
     
-    with patch('src.graphics.spritesheet.SpriteSheet', side_effect=make_mock_sheet):
+    # Minimal map data to satisfy Game initialization
+    fake_map = {
+        "width": 10, "height": 10,
+        "layers": {"grounds": [[0]*10]*10},
+        "tiles": {},
+        "entities": [],
+        "spawn_player": {"x": 16, "y": 16}
+    }
+    
+    with patch('src.graphics.spritesheet.SpriteSheet', side_effect=make_mock_sheet), \
+         patch('src.map.tmj_parser.TmjParser.load_map', return_value=fake_map), \
+         patch('src.engine.game.os.path.exists', return_value=True):
         game = Game()
         yield game
         
@@ -31,6 +41,7 @@ def test_game():
 
 def test_interactive_proximity_success(test_game):
     """TC-I-01: Proximity < 80px should succeed."""
+    test_game.interactives.empty()
     obj = InteractiveEntity((100, 100), [], "chest", "chest.png", position=0)
     test_game.interactives.add(obj)
     
@@ -55,6 +66,7 @@ def test_interactive_proximity_success(test_game):
 
 def test_interactive_proximity_failure(test_game):
     """TC-I-02: Proximity > 80px should fail."""
+    test_game.interactives.empty()
     obj = InteractiveEntity((100, 100), [], "chest", "chest.png", position=0)
     test_game.interactives.add(obj)
     
@@ -78,6 +90,7 @@ def test_interactive_proximity_failure(test_game):
 
 def test_interactive_orientation_opposite_success(test_game):
     """TC-I-03: Correct orientation (Opposite Rule) should succeed."""
+    test_game.interactives.empty()
     # Chest facing UP (opening from south)
     obj = InteractiveEntity((100, 100), [], "chest", "chest.png", position=0, is_passable=False)
     test_game.interactives.add(obj)
@@ -101,6 +114,7 @@ def test_interactive_orientation_opposite_success(test_game):
 
 def test_interactive_orientation_opposite_failure(test_game):
     """TC-I-04: Incorrect orientation (at North while chest faces UP) should fail."""
+    test_game.interactives.empty()
     # Chest facing UP
     obj = InteractiveEntity((100, 100), [], "chest", "chest.png", position=0, is_passable=False)
     test_game.interactives.add(obj)
@@ -147,6 +161,7 @@ def test_explicitly_passable_object(test_game):
 
 def test_interactive_animation_trigger(test_game):
     """TC-I-05: Triggering interaction starts animation on correct column."""
+    test_game.interactives.empty()
     obj = InteractiveEntity((100, 100), [], "chest", "chest.png", position=1, is_passable=False)
     # Column 1 directly from position
     assert obj.col_index == 1 
@@ -178,6 +193,7 @@ def test_spawning_from_properties(test_game):
     assert len(test_game.interactives) == 1
     obj = test_game.interactives.sprites()[0]
     assert obj.sub_type == "chest"
+
 def test_door_dynamic_collision(test_game):
     """Verify that a door (is_passable=True) blocks when closed, allows when open."""
     test_game.obstacles_group.empty()
