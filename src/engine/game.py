@@ -11,6 +11,7 @@ from src.entities.groups import CameraGroup
 from src.map.manager import MapManager
 from src.map.layout import OrthogonalLayout
 from src.engine.time_system import TimeSystem
+from src.engine.world_state import WorldState
 from src.config import Settings
 from src.ui.hud import GameHUD
 import json
@@ -84,6 +85,9 @@ class Game:
         self.time_system = TimeSystem(initial_hour=Settings.INITIAL_HOUR)
         self.hud = GameHUD(self.time_system, lang="fr")
         
+        # World State
+        self.world_state = WorldState()
+        
         logging.info(f"Screen setup: {Settings.WINDOW_WIDTH}x{Settings.WINDOW_HEIGHT} (Fullscreen: {self.is_fullscreen})")
         
         # Player is persisted across maps
@@ -141,7 +145,8 @@ class Game:
         self.visible_sprites.add(self.player)
         
         # Spawn Entities from Map
-        self._spawn_entities(map_result.get("entities", []))
+        self._current_map_name = map_name
+        self._spawn_entities(map_result.get("entities", []), map_name)
         
         # Resolve spawn exact position 
         half_tile = self.tile_size // 2
@@ -176,7 +181,7 @@ class Game:
         self.player.direction = pygame.math.Vector2(0, 0)
         logging.info(f"Loaded map {map_name}, player spawned at {spawn_pos}")
 
-    def _spawn_entities(self, entities: list):
+    def _spawn_entities(self, entities: list, map_name: str = ""):
         """Instantiate NPCs and Interactive objects from map data."""
         half_tile = self.tile_size // 2
         for ent in entities:
@@ -192,7 +197,7 @@ class Game:
 
                 target_id = _get_property(props, "target_id") or _get_property(props, "target")
 
-                InteractiveEntity(
+                entity = InteractiveEntity(
                     pos=(ent["x"], ent["y"]),
                     groups=[self.visible_sprites, self.interactives],
                     sub_type=_get_property(props, "sub_type", "unknown"),
@@ -218,6 +223,15 @@ class Game:
                     target_id=target_id,
                     activate_from_anywhere=_get_property(props, "activate_from_anywhere", False)
                 )
+                
+                # Persist State Integration
+                tiled_id = ent.get("id")
+                if tiled_id is not None and map_name:
+                    key = WorldState.make_key(map_name, tiled_id)
+                    entity._world_state_key = key
+                    saved_state = self.world_state.get(key)
+                    if saved_state is not None:
+                        entity.restore_state(saved_state)
             elif _get_property(props, "type") == "teleport":
                 t_rect = pygame.Rect(ent["x"], ent["y"], ent.get("width", 32), ent.get("height", 32))
                 t_map = _get_property(props, "target_map", "")
@@ -361,6 +375,10 @@ class Game:
                         if valid_orientation:
                             obj.interact(self.player)
                             
+                            # Save state
+                            if hasattr(obj, '_world_state_key'):
+                                self.world_state.set(obj._world_state_key, {'is_on': obj.is_on})
+                            
                             target = getattr(obj, "target_id", None)
                             if target:
                                 self.toggle_entity_by_id(target, depth=1)
@@ -380,6 +398,10 @@ class Game:
                 if getattr(entity, 'element_id', None) == target_id:
                     if hasattr(entity, 'interact'):
                         entity.interact(self.player)
+                        
+                        # Save state
+                        if hasattr(entity, '_world_state_key'):
+                            self.world_state.set(entity._world_state_key, {'is_on': entity.is_on})
                         
                         next_target = getattr(entity, 'target_id', None)
                         if next_target:

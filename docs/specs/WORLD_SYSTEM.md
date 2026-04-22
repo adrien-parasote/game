@@ -35,19 +35,36 @@ Teleporters support dual-triggering (Arrival + Intent):
 - **`required_direction = [up/down/left/right]`**: Triggers if the player's `current_state` (facing direction) matches the value during an Arrival or Intent.
 
 
-## 4. Anti-Patterns
+## 5. WorldState Persistence
+
+### 5.1 Concept
+The world must have an infallible memory. When an interactive object changes state (e.g. a door opens, a lever is pulled), this change must be remembered persistently throughout the game session, even if the player transitions between maps.
+
+### 5.2 Persistence Key
+Every interactive object is assigned a unique persistence key based on its map and native Tiled ID:
+`{map_basename}_{tiled_id}`
+Example: The lever with ID 58 in `01-castel.tmj` will have the key `01-castel_58`.
+
+### 5.3 Behavior
+- **Spawn Registration**: When a map loads, the engine constructs the `InteractiveEntity`. Before generating its visual layout, the engine queries the `WorldState` dictionary using the persistence key. If a state exists (e.g., `{'is_on': True}`), the object's `is_on` status is overridden, and its visual frame is snapped immediately.
+- **State Mutation**: When an interaction resolves (by the player hitting the interact key, or via an interaction chain), the updated `is_on` state is written to the `WorldState` dictionary via its key.
+
+## 6. Anti-Patterns
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
-| Use Tiled "Class" or numerical IDs for detection | Check for `type=teleport` property | Decouples logic from Tiled versioning/internal IDs |
+| Use Tiled "Class" or numerical IDs for teleport detection | Check for `type=teleport` property | Decouples logic from Tiled versioning/internal IDs |
 | Trigger teleport on every frame in rect | Trigger on Arrival (move end) or Intent (direction magnitude while idle) | Prevents infinite loading loops while supporting responsive transitions |
 | Allow interaction while facing away | Use `_facing_toward` helper | Increases realism and control precision |
 | Hardcode map paths in loaders | Join paths via `os.path.join` and config | Ensures cross-platform compatibility |
 | Clear player group on map load | Move player to new spawn then re-add | Preserves player state across maps |
+| Target `element_id` as persistence primary key | Target Native Tiled `obj['id']` | The Tiled ID is always present and guaranteed unique per TMJ file. `element_id` relies on manual configuration and could be missing. |
+| Persist position of objects | Persist only `is_on` | Current engine objects are static. Persisting state changes covers all interactive logic needs without inflating the footprint. |
+| Save WorldState per-frame | Save only in `interact()` or toggles | Avoiding excessive state writes preserves 60FPS target. |
 
-## 5. Test Case Specifications
+## 7. Test Case Specifications
 
-### 5.1 Unit Tests (`tests/test_world_teleport.py`)
+### 7.1 Unit Tests (`tests/test_world_teleport.py`)
 | Test ID | Scenario | Input | Expected Result |
 |---------|----------|-------|-----------------|
 | TC-006 | Strict Detection | Property `type=teleport` | Object spawned as `Teleport` |
@@ -56,7 +73,19 @@ Teleporters support dual-triggering (Arrival + Intent):
 | TC-009 | Teleport Guard (Valid) | `req_dir="down"`, Player facing "down"| `transition_map` called |
 | TC-010 | Teleport 'Any' | `req_dir="any"`, Player facing any | `transition_map` called |
 
-## 6. Error Handling Matrix
+### 7.2 Unit Tests (`tests/test_world_state.py`)
+| Test ID | Scenario | Expected Result |
+|---------|----------|-----------------|
+| WS-001 | `make_key("00-spawn.tmj", 58)` | `"00-spawn_58"` |
+| WS-002 | `set` then `get` | Value properly stored and retrieved |
+| WS-003 | `get` inexistent key | `None` returned |
+| WS-004 | Entity spawn (Saved ON) | `is_on` is True, `frame_index` at `end_row` |
+| WS-005 | Entity spawn (Saved OFF) | `is_on` is False, `frame_index` at `start_row` |
+| WS-006 | Standard interact saves state | `world_state.get()` reflects ON state |
+| WS-007 | Map reload maintains state | Full simulation of `A -> B -> A` loads the correct toggled state |
+| WS-008 | Interaction chaining saves state | State correctly updated via `toggle_entity_by_id` |
+
+## 8. Error Handling Matrix
 
 | Error Type | Detection | Mitigation | Result |
 |------------|-----------|------------|--------|
@@ -64,8 +93,9 @@ Teleporters support dual-triggering (Arrival + Intent):
 | Missing Spawn ID| Spawn ID not found in entities | Log warning, spawn in map center | Player safe-spawns at center |
 | Invalid Config | `required_direction` value typo | Default to "any" behavior | Teleport remains functional |
 
-## 7. Deep Links
+## 9. Deep Links
 - **Spawning Logic**: [game.py:L168](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L168)
 - **Interaction Logic**: [game.py:L281](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L281)
 - **Teleport Check**: [game.py:L415](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L415)
 - **Teleport Entity**: [teleport.py](file:///Users/adrien.parasote/Documents/perso/game/src/entities/teleport.py)
+

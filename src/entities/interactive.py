@@ -227,6 +227,24 @@ class InteractiveEntity(BaseEntity):
                 self.is_closing = not self.is_on
             logging.info(f"Object {self.sub_type} toggled to {'ON' if self.is_on else 'OFF'}")
 
+    def restore_state(self, state: dict):
+        """Restore persisted state from WorldState."""
+        if 'is_on' in state:
+            is_on = state['is_on']
+            self.is_on = is_on
+            # Snap frame to correct visual state
+            if is_on and not self.is_animated:
+                self.frame_index = float(self.end_row)
+            elif not is_on:
+                self.frame_index = float(self.start_row)
+            # Sync obstacles group (door opened/closed)
+            if self.sub_type == 'door' and self.obstacles_group:
+                if is_on and self.is_passable:
+                    self.obstacles_group.remove(self)
+                else:
+                    self.obstacles_group.add(self)
+            self.image = self._get_frame(int(self.frame_index))
+
     def update(self, dt: float):
         """Handle animation progression and high-precision flicker calculations."""
         # 1. Flicker Logic
