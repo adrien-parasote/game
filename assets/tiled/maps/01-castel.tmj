@@ -283,7 +283,7 @@
                                     }
                                 }],
                          "rotation":0,
-                         "type":"12-light_source",
+                         "type":"12-interactive_object_halo",
                          "visible":true,
                          "width":32,
                          "x":64,
@@ -320,7 +320,7 @@
                                      "is_on":true,
                                      "sprite":
                                         {
-                                         "element_id":"actionnable_torche",
+                                         "element_id":"",
                                          "entity_type":"interactive",
                                          "sprite_sheet":"02-torchs.png",
                                          "sub_type":"animated_decor"
@@ -328,7 +328,7 @@
                                     }
                                 }],
                          "rotation":0,
-                         "type":"12-light_source",
+                         "type":"12-interactive_object_halo",
                          "visible":true,
                          "width":32,
                          "x":320,
@@ -372,7 +372,7 @@
                                     }
                                 }],
                          "rotation":0,
-                         "type":"12-light_source",
+                         "type":"12-interactive_object_halo",
                          "visible":true,
                          "width":32,
                          "x":608,
@@ -416,7 +416,7 @@
                                     }
                                 }],
                          "rotation":0,
-                         "type":"12-light_source",
+                         "type":"12-interactive_object_halo",
                          "visible":true,
                          "width":32,
                          "x":864,
@@ -460,7 +460,7 @@
                                     }
                                 }],
                          "rotation":0,
-                         "type":"12-light_source",
+                         "type":"12-interactive_object_halo",
                          "visible":true,
                          "width":32,
                          "x":768,
@@ -504,55 +504,11 @@
                                     }
                                 }],
                          "rotation":0,
-                         "type":"12-light_source",
+                         "type":"12-interactive_object_halo",
                          "visible":true,
                          "width":32,
                          "x":160,
                          "y":32
-                        }, 
-                        {
-                         "height":32,
-                         "id":46,
-                         "name":"torch",
-                         "opacity":1,
-                         "properties":[
-                                {
-                                 "name":"halo_alpha",
-                                 "type":"int",
-                                 "value":120
-                                }, 
-                                {
-                                 "name":"halo_color",
-                                 "type":"string",
-                                 "value":"[255, 204, 0]"
-                                }, 
-                                {
-                                 "name":"halo_size",
-                                 "type":"int",
-                                 "value":80
-                                }, 
-                                {
-                                 "name":"interactive_object",
-                                 "propertytype":"11-interactive_object",
-                                 "type":"class",
-                                 "value":
-                                    {
-                                     "is_animated":true,
-                                     "is_on":true,
-                                     "sprite":
-                                        {
-                                         "entity_type":"interactive",
-                                         "sprite_sheet":"02-torchs.png",
-                                         "sub_type":"animated_decor"
-                                        }
-                                    }
-                                }],
-                         "rotation":0,
-                         "type":"12-light_source",
-                         "visible":true,
-                         "width":32,
-                         "x":320,
-                         "y":736
                         }, 
                         {
                          "height":32,
@@ -611,6 +567,37 @@
                          "width":8,
                          "x":0,
                          "y":896
+                        }, 
+                        {
+                         "height":32,
+                         "id":51,
+                         "name":"",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"name",
+                                 "type":"string",
+                                 "value":"Butler"
+                                }, 
+                                {
+                                 "name":"sprite",
+                                 "propertytype":"10-sprite",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "element_id":"butler",
+                                     "entity_type":"npc",
+                                     "height":48,
+                                     "sprite_sheet":"02-butler.png",
+                                     "sub_type":"npc"
+                                    }
+                                }],
+                         "rotation":0,
+                         "type":"15-npc",
+                         "visible":true,
+                         "width":32,
+                         "x":192,
+                         "y":832
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -626,7 +613,7 @@
          "y":0
         }],
  "nextlayerid":9,
- "nextobjectid":51,
+ "nextobjectid":53,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.1",

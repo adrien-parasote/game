@@ -8,6 +8,6 @@
   "day_label": "Jour",
   "dialogues": {
     "01-castel-butler": "Messire ! Vous êtes enfin de retour. Le roi vous attend dans la grande salle.",
-    "01-castel-Book": "Il était une fois...."
+    "00-spawn-book": "Il était une fois...."
   }
 }

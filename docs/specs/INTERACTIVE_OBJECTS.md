@@ -16,6 +16,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `target_id` | string | Holds the `target_id` of the object that this entity should activate or interact with. |
 | `activate_from_anywhere` | bool | If `true`, the object can be activated from any adjacent cell within 48px, but REQUIRES the player to be facing it. |
 | `entity_type`| string | Logical marker set to `"interactive"`. Prevents coupling spawning logic strictly to Tiled interface class names. Derived normally from the `10-sprite` component class. |
+| `facing_direction` | string | Optional. Overrides the `position`-based `direction_str`. Useful for signs. |
 
 ### Animation Logic
 - **Column Mapping**: 
@@ -55,6 +56,9 @@ If `activate_from_anywhere` is `False` (Default):
    - Object `down` -> Player must be north (`y < obj_y`) and facing `down`.
    - Object `left` -> Player must be east (`x > obj_x`) and facing `left`.
    - Object `right` -> Player must be west (`x < obj_x`) and facing `right`.
+
+**Signs (`sub_type == 'sign'`)**:
+Signs prioritize the `facing_direction` property (e.g., `up`, `down`) to determine the valid interaction side. If absent, they fallback to the `position` index mapping.
 
 **Relaxation (Doors)**:
 If `sub_type == 'door'` and `is_on == True`, the door can be closed from the "opposite side" (e.g., closing a door from the north while facing `down`). This ensures players can easily close doors behind them.
@@ -182,6 +186,7 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 |------------|-----------|----------|----------|
 | Frame Mismatch| `sheet_h % height != 0` | Auto-recalculate `height` | `sheet_h / (end_row + 1)` |
 | Sheet Layout | `cols != 4` | Detect `last_cols` | Use dynamic indexing |
+186: | Missing Asset (Sign)| `sub_type == 'sign'` and sheet missing | Use transparent surface | Allows invisible triggers without visual artifacts |
 | Interaction Spam| Timer check | Ignore input | cooldown of 0.5s |
 
 ## 6. Deep Links

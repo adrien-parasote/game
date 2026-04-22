@@ -87,10 +87,10 @@ To maintain modularity, the engine decouples map parsing from rendering logic.
   - **Resolution**: Spawning logic uses a generic nested search helper (`_get_property`) to find logical markers across resolved structures.
 
 ### K. Entity Collision Logic
-In addition to map tile collisions, the engine supports blocking player movement through fixed entities.
-- **Mechanism**: The `_is_collidable` check in `Game` iterates through the `interactives` sprite group.
-- **Detection**: Uses `collidepoint` check on the entity's 32x32 physical hitbox (`obj.rect`).
-- **Scope**: Currently applied only to the `interactives` group to maintain O(N) performance for movement validation.
+In addition to map tile collisions, the engine supports blocking player movement through dynamic entities.
+- **Mechanism**: The `_is_collidable` check in `Game` iterates through the `interactives` and `npcs` sprite groups.
+- **Detection**: Uses `collidepoint` check on the entity's physical hitbox (`obj.rect`).
+- **Scope**: Applied to `interactives` (Doors, etc.) and `npcs` to ensure physical consistency.
 
 ### L. GameHUD (Visual UI)
 The HUD provides information about the current time, day, and season.

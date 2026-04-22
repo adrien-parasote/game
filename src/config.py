@@ -49,15 +49,19 @@ class Settings:
 
     @classmethod
     def load(cls):
-        """Load settings from JSON file and map to class attributes."""
-        config_path = os.path.join(os.path.dirname(__file__), "..", "settings.json")
+        """Load settings from JSON files and map to class attributes."""
+        root = os.path.join(os.path.dirname(__file__), "..")
+        tech_path = os.path.join(root, "settings.json")
+        game_path = os.path.join(root, "gameplay.json")
+        
         data = cls._DEFAULTS.copy()
         
-        if os.path.exists(config_path):
+        # Load Tech
+        if os.path.exists(tech_path):
             try:
-                with open(config_path, "r") as f:
-                    user_config = json.load(f)
-                    for section, values in user_config.items():
+                with open(tech_path, "r") as f:
+                    tech_config = json.load(f)
+                    for section, values in tech_config.items():
                         if section in data:
                             if isinstance(values, dict) and isinstance(data[section], dict):
                                 data[section].update(values)
@@ -65,6 +69,23 @@ class Settings:
                                 data[section] = values
             except (json.JSONDecodeError, IOError) as e:
                 print(f"Warning: Could not load settings.json ({e}). Using defaults.")
+
+        # Load Gameplay
+        if os.path.exists(game_path):
+            try:
+                with open(game_path, "r") as f:
+                    game_config = json.load(f)
+                    for section, values in game_config.items():
+                        # Gameplay might have sections NOT in tech defaults, or overlapping
+                        if section in data:
+                            if isinstance(values, dict) and isinstance(data[section], dict):
+                                data[section].update(values)
+                            else:
+                                data[section] = values
+                        else:
+                            data[section] = values
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"Warning: Could not load gameplay.json ({e}).")
 
         # Versioning
         cls.VERSION: str = data.get("version", "0.0.0")
@@ -110,6 +131,10 @@ class Settings:
         cls.MINUTE_DURATION: float = time_data.get("minute_duration", 1.0)
         cls.DAYS_PER_SEASON: int = time_data.get("days_per_season", 30)
         cls.INITIAL_SEASON: int = time_data.get("initial_season", 0)
+
+        # UI
+        ui_data = data.get("ui", {})
+        cls.TEXT_SPEED: float = ui_data.get("text_speed", 0.05)
 
 # Initialize on import
 Settings.load()

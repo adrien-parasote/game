@@ -136,8 +136,6 @@
                     "propertyType": "10-sprite",
                     "type": "class",
                     "value": {
-                        "entity_type": {
-                        }
                     }
                 },
                 {
@@ -200,7 +198,7 @@
                     "value": true
                 }
             ],
-            "name": "12-light_source",
+            "name": "12-interactive_object_halo",
             "type": "class",
             "useAs": [
                 "property",
@@ -280,13 +278,81 @@
             ]
         },
         {
+            "color": "#ffaa7942",
+            "drawFill": true,
+            "id": 14,
+            "members": [
+                {
+                    "name": "name",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "sprite",
+                    "propertyType": "10-sprite",
+                    "type": "class",
+                    "value": {
+                        "entity_type": "npc",
+                        "height": 48,
+                        "sub_type": "npc"
+                    }
+                }
+            ],
+            "name": "15-npc",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffffffff",
+            "drawFill": true,
+            "id": 15,
+            "members": [
+                {
+                    "name": "facing_direction",
+                    "propertyType": "23-direction",
+                    "type": "string",
+                    "value": "any"
+                },
+                {
+                    "name": "interactive_object",
+                    "propertyType": "11-interactive_object",
+                    "type": "class",
+                    "value": {
+                        "sprite": {
+                            "end_frame": 0,
+                            "entity_type": "interactive",
+                            "sub_type": "sign"
+                        }
+                    }
+                }
+            ],
+            "name": "16-interactive_object_static",
+            "type": "class",
+            "useAs": [
+                "property",
+                "object",
+                "project"
+            ]
+        },
+        {
             "id": 7,
             "name": "20-entity_type",
             "storageType": "string",
             "type": "enum",
             "values": [
                 "entity",
-                "interactive"
+                "interactive",
+                "npc"
             ],
             "valuesAsFlags": false
         },
@@ -300,7 +366,9 @@
                 "chest",
                 "door",
                 "animated_decor",
-                "lever"
+                "lever",
+                "npc",
+                "sign"
             ],
             "valuesAsFlags": false
         },

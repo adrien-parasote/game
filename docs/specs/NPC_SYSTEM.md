@@ -21,6 +21,7 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 - **[IMPLEMENTED]** Manages `npcs` sprite group.
 - **[IMPLEMENTED]** Implements spatial interaction logic via `_handle_interactions`.
 - **[IMPLEMENTED]** Manage NPC spawning in `_spawn_entities`.
+- **[IMPLEMENTED]** Integrated NPCs into `_is_collidable` logic (NPCs act as dynamic obstacles).
 
 ---
 
@@ -32,7 +33,7 @@ This section defines the behavior and failure modes for autonomous entities.
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
-| NPCs check collisions with each other | NPCs check `CollisionMap` only | Optimizes CPU; $O(N^2)$ checks are avoided |
+| NPCs check collisions with each other | NPCs use `_is_collidable` (shared logic) | Prevents overlapping and ensures physical presence |
 | Hardcode NPC dialogue in `npc.py` | Use external JSON/YAML | Allows localization and scale |
 | Continuous pathfinding | Intermittent grid step randomizer | Reduces CPU overhead per NPC |
 | Move NPCs when off-camera | Freeze distant NPCs (CPU Freeze) | Enlarged viewport (128px) determines `is_visible` |

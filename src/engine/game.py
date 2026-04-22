@@ -192,6 +192,7 @@ class Game:
             props = ent.get("properties", {})
             entity_type = _get_property(props, "entity_type", default="unknown")
             e_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
+            logging.debug(f"Processing map entity ID {ent.get('id')} ({ent.get('name')}) type={entity_type} at {e_pos}")
             
             if entity_type == "interactive":
                 # Extract and resolve IDs
@@ -225,7 +226,8 @@ class Game:
                     particle_count=int(_get_property(props, "particle_count", 0)),
                     element_id=element_id,
                     target_id=target_id,
-                    activate_from_anywhere=_get_property(props, "activate_from_anywhere", False)
+                    activate_from_anywhere=_get_property(props, "activate_from_anywhere", False),
+                    facing_direction=_get_property(props, "facing_direction")
                 )
                 
                 # Persist State Integration
@@ -243,28 +245,39 @@ class Game:
                 t_trans = _get_property(props, "transition_type", "instant")
                 t_req_dir = _get_property(props, "required_direction", "any")
                 Teleport(t_rect, [self.teleports_group], t_map, t_spawn_id, t_trans, t_req_dir)
-            else:
-                # Handle NPCs
-                e_type = ent.get("type") or props.get("type")
-                if e_type and (e_type == "npc" or e_type.startswith("npc_")):
-                    NPC(
-                        pos=e_pos,
-                        groups=[self.visible_sprites, self.npcs],
-                        wander_radius=int(props.get("wander_radius", 1)),
-                        sheet_name=props.get("sprite_sheet", "01-character.png"),
-                        element_id=props.get("element_id") or str(ent.get("id"))
-                    )
+            elif entity_type == "npc":
+                npc = NPC(
+                    pos=e_pos,
+                    groups=[self.visible_sprites, self.npcs],
+                    wander_radius=int(_get_property(props, "wander_radius", 1)),
+                    sheet_name=_get_property(props, "sprite_sheet", "01-character.png"),
+                    element_id=_get_property(props, "element_id") or str(ent.get("id"))
+                )
+                npc.collision_func = self._is_collidable
+                logging.info(f"Spawned NPC '{npc.element_id}' at {e_pos}")
 
-    def _is_collidable(self, px_center: float, py_center: float) -> bool:
+    def _is_collidable(self, px_center: float, py_center: float, requester=None) -> bool:
         """Collision checking adapter for Entity target position."""
-        # Check Map Tiles
+        # 1. Check Map Tiles
         wx, wy = self.layout.to_world(px_center, py_center)
         if self.map_manager.is_collidable(int(wx), int(wy)):
             return True
             
-        # Check Dynamic Obstacles (Doors, etc.)
+        # 2. Check Dynamic Obstacles (Doors, etc.)
         for obj in self.obstacles_group:
+            if obj == requester: continue
             if obj.rect.collidepoint(px_center, py_center):
+                return True
+        
+        # 3. Check NPCs
+        for npc in self.npcs:
+            if npc == requester: continue
+            if npc.rect.collidepoint(px_center, py_center):
+                return True
+        
+        # 4. Check Player (if requester is an NPC)
+        if self.player != requester:
+            if self.player.rect.collidepoint(px_center, py_center):
                 return True
                 
         return False

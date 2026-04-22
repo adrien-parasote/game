@@ -15,14 +15,14 @@ class SpriteSheet:
             self.sheet = None
             self.valid = False
 
-    def load_grid(self, cols: int, rows: int) -> list[pygame.Surface]:
+    def load_grid(self, cols: int, rows: int, transparent: bool = False) -> list[pygame.Surface]:
         """
         Slice the spritesheet into a grid of images.
         Returns a 1D list of surfaces mapped row by row.
         """
         if not self.valid or self.sheet is None:
             # Fallback returning a list of plain colored dummy surfaces
-            return [self._create_dummy_surface((32, 32)) for _ in range(cols * rows)]
+            return [self._create_dummy_surface((32, 32), transparent) for _ in range(cols * rows)]
             
         sheet_w, sheet_h = self.sheet.get_size()
         frame_w = sheet_w // cols
@@ -30,15 +30,13 @@ class SpriteSheet:
         
         return self._slice_sheet(cols, rows, frame_w, frame_h)
 
-    def load_grid_by_size(self, frame_w: int, frame_h: int) -> list[pygame.Surface]:
+    def load_grid_by_size(self, frame_w: int, frame_h: int, transparent: bool = False) -> list[pygame.Surface]:
         """
         Slice the spritesheet into a grid based on fixed frame dimensions.
-        Calculates cols/rows automatically. Uses exact sheet dimensions,
-        NOT the requested frame dimensions, to avoid off-by-one pixel crops.
         """
         if not self.valid or self.sheet is None:
             # Fallback with dummy surfaces
-            return [self._create_dummy_surface((frame_w, frame_h)) for _ in range(16)]
+            return [self._create_dummy_surface((frame_w, frame_h), transparent) for _ in range(16)]
             
         sheet_w, sheet_h = self.sheet.get_size()
         cols = sheet_w // frame_w
@@ -57,12 +55,15 @@ class SpriteSheet:
             for col in range(cols):
                 rect = pygame.Rect(col * frame_w, row * frame_h, frame_w, frame_h)
                 image = pygame.Surface(rect.size, pygame.SRCALPHA).convert_alpha()
-                image.blit(self.sheet, (0, 0), rect)
+                if self.sheet:
+                    image.blit(self.sheet, (0, 0), rect)
                 frames.append(image)
         return frames
 
-    def _create_dummy_surface(self, size: tuple) -> pygame.Surface:
+    def _create_dummy_surface(self, size: tuple, transparent: bool = False) -> pygame.Surface:
         """Internal helper to create a fallback surface."""
+        if transparent:
+            return pygame.Surface(size, pygame.SRCALPHA).convert_alpha()
         surf = pygame.Surface(size)
         surf.fill((0, 0, 255)) # Blue default
         return surf

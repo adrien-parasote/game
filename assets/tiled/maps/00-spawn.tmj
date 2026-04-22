@@ -34,7 +34,7 @@
                     0, 0, 0, 0, 0, 0, 0, 0, 285, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 293, 0, 0, 228, 0, 0, 228, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 288, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 296, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 237, 0, 0, 0, 0, 0, 296, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                  "height":10,
@@ -186,7 +186,7 @@
                                     }
                                 }],
                          "rotation":0,
-                         "type":"12-light_source",
+                         "type":"12-interactive_object_halo",
                          "visible":true,
                          "width":32,
                          "x":128,
@@ -231,7 +231,7 @@
                                     }
                                 }],
                          "rotation":0,
-                         "type":"12-light_source",
+                         "type":"12-interactive_object_halo",
                          "visible":true,
                          "width":32,
                          "x":224,
@@ -444,6 +444,12 @@
                                  "name":"target_spawn_id",
                                  "type":"string",
                                  "value":"corridor_b"
+                                }, 
+                                {
+                                 "name":"transition_type",
+                                 "propertytype":"22-transition",
+                                 "type":"string",
+                                 "value":"instant"
                                 }],
                          "rotation":0,
                          "type":"13-teleport",
@@ -473,8 +479,45 @@
                          "type":"11-interactive_object",
                          "visible":true,
                          "width":32,
-                         "x":104,
-                         "y":88
+                         "x":96,
+                         "y":96
+                        }, 
+                        {
+                         "height":32,
+                         "id":61,
+                         "name":"Book",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"element_id",
+                                 "type":"string",
+                                 "value":"book"
+                                }, 
+                                {
+                                 "name":"facing_direction",
+                                 "type":"string",
+                                 "value":"right"
+                                }, 
+                                {
+                                 "name":"interactive_object",
+                                 "propertytype":"11-interactive_object",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "activate_from_anywhere":false,
+                                     "sprite":
+                                        {
+                                         "entity_type":"interactive",
+                                         "sub_type":"sign"
+                                        }
+                                    }
+                                }],
+                         "rotation":0,
+                         "type":"16-interactive_object_static",
+                         "visible":true,
+                         "width":32,
+                         "x":128,
+                         "y":224
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -490,7 +533,7 @@
          "y":0
         }],
  "nextlayerid":9,
- "nextobjectid":59,
+ "nextobjectid":63,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.1",

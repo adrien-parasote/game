@@ -33,14 +33,16 @@ class InteractiveEntity(BaseEntity):
                  halo_size: int = 0, halo_color: str = "[255, 255, 255]",
                  halo_alpha: int = 130, particles: bool = False, particle_count: int = 0,
                  element_id: str = None, target_id: str = None,
-                 activate_from_anywhere: bool = False):
+                 activate_from_anywhere: bool = False,
+                 facing_direction: str = None):
         
         # 1. Properties & State Initialization
         self.target_id = target_id
         
         self._parse_properties(sub_type, start_row, end_row, is_on, is_animated, 
                              depth, position, halo_size, halo_color, halo_alpha,
-                             particles, particle_count, activate_from_anywhere)
+                             particles, particle_count, activate_from_anywhere,
+                             sprite_sheet, facing_direction)
         
         # 2. Asset Loading
         self._load_assets(sprite_sheet, width, height)
@@ -59,8 +61,9 @@ class InteractiveEntity(BaseEntity):
         logging.info(f"Spawned InteractiveEntity '{sub_type}' at {pos} (is_on={self.is_on})")
 
     def _parse_properties(self, sub_type, start_row, end_row, is_on, is_animated, 
-                          depth, position, halo_size, halo_color, halo_alpha,
-                          particles, particle_count, activate_from_anywhere):
+                           depth, position, halo_size, halo_color, halo_alpha,
+                           particles, particle_count, activate_from_anywhere,
+                           sprite_sheet, facing_direction):
         """Parse raw properties and initialize basic state."""
         self.sub_type = sub_type
         self.start_row = start_row
@@ -68,7 +71,9 @@ class InteractiveEntity(BaseEntity):
         self.is_animated = is_animated
         self.depth = depth
         self.col_index = position
-        self.direction_str = self.POSITION_TO_DIR.get(position, 'down')
+        
+        # Determine direction_str (Priority: facing_direction > POSITION_TO_DIR)
+        self.direction_str = facing_direction if facing_direction else self.POSITION_TO_DIR.get(position, 'down')
         
         # State
         # If starting ON and not animated, jump to end frame (e.g., open door)
@@ -123,18 +128,30 @@ class InteractiveEntity(BaseEntity):
         self.sprite_width = width
         self.sprite_height = height
         
-        sheet_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "sprites", sprite_sheet)
-        sheet = SpriteSheet(sheet_path)
+        sheet_path = ""
+        if sprite_sheet and sprite_sheet.strip():
+            sheet_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "sprites", sprite_sheet)
         
-        if sheet.valid and sheet.sheet is not None:
+        sheet = SpriteSheet(sheet_path) if sheet_path else None
+        
+        # Signs are invisible if they have no sprite sheet
+        is_transparent = (self.sub_type == 'sign' and (not sprite_sheet or not sheet or not sheet.valid))
+        
+        if sheet and sheet.valid and sheet.sheet is not None:
             _, sheet_h = sheet.sheet.get_size()
             total_rows = self.end_row + 1 
             real_frame_h = sheet_h // total_rows if total_rows > 0 else self.sprite_height
+            self.frames = sheet.load_grid_by_size(self.sprite_width, real_frame_h, transparent=is_transparent)
+            self._sheet_cols = getattr(sheet, 'last_cols', 4)
         else:
             real_frame_h = self.sprite_height
-            
-        self.frames = sheet.load_grid_by_size(self.sprite_width, real_frame_h)
-        self._sheet_cols = getattr(sheet, 'last_cols', 4)
+            # Fallback for invisible or missing sprites (like signs)
+            dummy_count = 16 # Sufficient for most grid lookups
+            self.frames = [pygame.Surface((self.sprite_width, real_frame_h), pygame.SRCALPHA) for _ in range(dummy_count)]
+            for f in self.frames:
+                f.convert_alpha()
+                f.fill((0, 0, 0, 0)) # Fully transparent
+            self._sheet_cols = 4
 
     def _setup_physics(self, pos, t_w, t_h, is_passable, obstacles_group, groups, element_id):
         """Initialize sprite rect, world position and collision state."""

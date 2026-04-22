@@ -63,7 +63,7 @@ class BaseEntity(pygame.sprite.Sprite):
         
         # Check custom collisions (e.g. MapManager wall tiles)
         if self.collision_func is not None:
-            if self.collision_func(self.target_pos.x, self.target_pos.y):
+            if self.collision_func(self.target_pos.x, self.target_pos.y, requester=self):
                 self.target_pos = pygame.math.Vector2(self.pos)
                 return
         
