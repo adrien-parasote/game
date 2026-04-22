@@ -604,12 +604,6 @@
                                  "name":"target_spawn_id",
                                  "type":"string",
                                  "value":"spawn_d"
-                                }, 
-                                {
-                                 "name":"transition_type",
-                                 "propertytype":"22-transition",
-                                 "type":"string",
-                                 "value":"instant"
                                 }],
                          "rotation":0,
                          "type":"13-teleport",

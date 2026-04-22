@@ -282,7 +282,7 @@
                                 {
                                  "name":"is_on",
                                  "type":"bool",
-                                 "value":true
+                                 "value":false
                                 }, 
                                 {
                                  "name":"sprite",
@@ -335,6 +335,11 @@
                          "opacity":1,
                          "properties":[
                                 {
+                                 "name":"is_on",
+                                 "type":"bool",
+                                 "value":true
+                                }, 
+                                {
                                  "name":"sprite",
                                  "propertytype":"10-sprite",
                                  "type":"class",
@@ -362,7 +367,7 @@
                                 {
                                  "name":"is_on",
                                  "type":"bool",
-                                 "value":true
+                                 "value":false
                                 }, 
                                 {
                                  "name":"is_passable",
@@ -439,12 +444,6 @@
                                  "name":"target_spawn_id",
                                  "type":"string",
                                  "value":"corridor_b"
-                                }, 
-                                {
-                                 "name":"transition_type",
-                                 "propertytype":"22-transition",
-                                 "type":"string",
-                                 "value":"instant"
                                 }],
                          "rotation":0,
                          "type":"13-teleport",
