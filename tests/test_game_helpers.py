@@ -68,19 +68,20 @@ def game_instance(monkeypatch):
     
     # Patch the TmjParser in its own module to ensure local imports find it
     monkeypatch.setattr('src.map.tmj_parser.TmjParser', DummyParser)
-    # Also patch MapManager in its module
-    monkeypatch.setattr('src.map.manager.MapManager', DummyMapManager)
-    # And specifically for game.py scope if needed
-    monkeypatch.setattr('src.engine.game.MapManager', DummyMapManager, raising=False)
-    
     # Mock settings to avoid MapManager trying to read them during some parts of init if any
     monkeypatch.setattr(Settings, "FULLSCREEN", False)
+    
+    # Force Game to use our dummy MapManager by patching it right before init
+    monkeypatch.setattr('src.engine.game.MapManager', DummyMapManager)
     
     game = Game()
     # Replace layout with dummy
     game.layout = DummyLayout()
-    # Ensure obstacles_group empty
+    # Explicitly set map_manager just in case
+    game.map_manager = DummyMapManager(None, None)
+    # Ensure obstacles_group and npcs empty
     game.obstacles_group = pygame.sprite.Group()
+    game.npcs = pygame.sprite.Group()
     return game
 
 def test_game_is_collidable_map(monkeypatch, game_instance):
@@ -98,6 +99,8 @@ def test_game_is_collidable_obstacle(monkeypatch, game_instance):
     assert result is True
 
 def test_game_is_collidable_none(monkeypatch, game_instance):
+    # Move player far away
+    game_instance.player.rect.center = (1000, 1000)
     # Point not collidable and no obstacle
     result = game_instance._is_collidable(0, 0)
     assert result is False
@@ -129,6 +132,7 @@ def test_spawn_entities_complex(game_instance):
             "type": "npc",
             "x": 200, "y": 200, "width": 32, "height": 32,
             "properties": {
+                "entity_type": "npc",
                 "type": "npc_villager",
                 "wander_radius": 5
             }
@@ -148,7 +152,8 @@ def test_handle_interactions_npc(monkeypatch, game_instance):
     npc = NPC(pos=(100, 132), groups=game_instance.npcs)
     
     # Mock keys to simulate SPACE pressed
-    monkeypatch.setattr(pygame.key, "get_pressed", lambda: {pygame.K_SPACE: True, Settings.INTERACT_KEY: False})
+    # Mock keys to simulate INTERACT_KEY pressed
+    monkeypatch.setattr(pygame.key, "get_pressed", lambda: {Settings.INTERACT_KEY: True})
     
     # Spy on NPC interact
     interacted = False

@@ -150,7 +150,8 @@ class InteractiveEntity(BaseEntity):
             dummy_count = 16 
             self.frames = [pygame.Surface((self.sprite_width, real_frame_h), pygame.SRCALPHA) for _ in range(dummy_count)]
             for f in self.frames:
-                f.convert_alpha()
+                if pygame.display.get_surface() is not None:
+                    f.convert_alpha()
                 f.fill((0, 0, 0, 0)) 
             self._sheet_cols = 4
 

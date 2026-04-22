@@ -1,69 +1,76 @@
 import pytest
 import pygame
 from src.ui.dialogue import DialogueManager
+from src.config import Settings
 
 @pytest.fixture
 def dialogue_env():
     pygame.init()
     pygame.display.set_mode((1280, 720), pygame.HIDDEN)
+    # Ensure settings are loaded
+    Settings.load()
     yield
     pygame.quit()
 
 def test_dialogue_initializes(dialogue_env):
-    """DialogueManager should start in IDLE state."""
+    """DialogueManager should start in inactive state."""
     dm = DialogueManager()
     assert dm.is_active is False
-    assert dm.state == "IDLE"
+    assert dm.message == ""
 
 def test_dialogue_start(dialogue_env):
-    """Starting a dialogue should move state to SCROLLING."""
+    """Starting a dialogue should activate the manager and set text."""
     dm = DialogueManager()
     dm.start_dialogue("Test Message")
     assert dm.is_active is True
-    assert dm.state == "SCROLLING"
-    assert dm._full_text == "Test Message"
-    assert dm._current_text == ""
+    assert dm.message == "Test Message"
+    assert dm.displayed_text == ""
+    assert dm.text_index == 0.0
 
 def test_dialogue_typewriter(dialogue_env):
-    """Typewriter effect should advance text based on dt."""
+    """Typewriter effect should advance text based on dt and speed."""
     dm = DialogueManager()
-    dm._type_speed = 0.05
-    dm.start_dialogue("Hello")
+    # Force speed for deterministic test: 20 chars/sec
+    dm.typewriter_speed = 20.0
+    dm.start_dialogue("Hello World")
     
-    # 0.1s / 0.05s = 2 chars
+    # 0.1s * 20 chars/sec = 2 chars
     dm.update(0.1)
-    assert dm._current_text == "He"
+    assert dm.displayed_text == "He"
     
-    # Another 0.2s should finish "Hello" (5 chars total)
+    # Another 0.2s = 4 more chars (6 total)
     dm.update(0.2)
-    assert dm._current_text == "Hello"
-    assert dm.state == "WAITING"
-
-def test_dialogue_close(dialogue_env):
-    """Closing dialogue should return to IDLE state."""
-    dm = DialogueManager()
-    dm.start_dialogue("Short")
-    dm.update(1.0) # Finish scrolling
-    assert dm.state == "WAITING"
+    assert dm.displayed_text == "Hello "
     
-    dm.close_dialogue()
-    assert dm.is_active is False
-    assert dm.state == "IDLE"
+    # Finish it
+    dm.update(1.0)
+    assert dm.displayed_text == "Hello World"
+    assert dm.text_index >= len(dm.message)
 
-def test_dialogue_skip_scrolling(dialogue_env):
-    """Calling start while already scrolling should finish the text instantly (optional design choice). 
-    Actually, let's implement 'advance' logic where it finishes if scrolling, closes if waiting."""
+def test_dialogue_advance_skip(dialogue_env):
+    """Advance should skip typing if in progress."""
     dm = DialogueManager()
-    dm.start_dialogue("Very long message that takes time")
+    dm.typewriter_speed = 1.0 # Very slow
+    dm.start_dialogue("Wait for it...")
     dm.update(0.1)
-    assert dm.state == "SCROLLING"
+    assert len(dm.displayed_text) < len(dm.message)
     
-    # Advance should finish text
+    # First advance: finish text
     dm.advance()
-    assert dm._current_text == "Very long message that takes time"
-    assert dm.state == "WAITING"
+    assert dm.displayed_text == "Wait for it..."
+    assert dm.is_active is True
     
-    # Advance again should close
+    # Second advance: close
     dm.advance()
     assert dm.is_active is False
-    assert dm.state == "IDLE"
+
+def test_dialogue_rolling_logic(dialogue_env):
+    """Verify that _wrapped_lines is reset on start."""
+    dm = DialogueManager()
+    dm.start_dialogue("Initial")
+    # Simulate some drawing state if needed, but primarily test reset
+    dm._wrapped_lines = ["Line 1", "Line 2"]
+    
+    dm.start_dialogue("New")
+    assert dm.message == "New"
+    assert dm._wrapped_lines == []

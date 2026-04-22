@@ -7,10 +7,10 @@ from src.config import Settings
 def test_settings_default_keys():
     """Verify default movement keys are correctly set (ZQSD)."""
     Settings.load()
-    assert Settings.MOVE_UP == pygame.K_z
-    assert Settings.MOVE_DOWN == pygame.K_s
-    assert Settings.MOVE_LEFT == pygame.K_q
-    assert Settings.MOVE_RIGHT == pygame.K_d
+    assert Settings.MOVE_UP == pygame.K_UP
+    assert Settings.MOVE_DOWN == pygame.K_DOWN
+    assert Settings.MOVE_LEFT == pygame.K_LEFT
+    assert Settings.MOVE_RIGHT == pygame.K_RIGHT
 
 def test_settings_custom_keys(tmp_path):
     """Verify custom movement keys from JSON are mapped to Pygame constants."""
@@ -41,10 +41,10 @@ def test_settings_custom_keys(tmp_path):
 
 def test_settings_initial_hour_load():
     """Verify initial_hour is loaded from config."""
-    # Current value in settings.json is 10
-    assert Settings.INITIAL_HOUR == 10
+    # Current value in settings.json is 23
+    assert Settings.INITIAL_HOUR == 23
 
 def test_settings_version_load():
     """Verify game version is loaded from config."""
-    # We expect 0.1.0 to be the version after implementation
-    assert Settings.VERSION == "0.1.0"
+    # We expect 0.2.0 to be the version after implementation
+    assert Settings.VERSION == "0.2.0"

@@ -19,7 +19,7 @@ def test_game():
         mock_surface.get_size.return_value = (128, 192)
         m.sheet = mock_surface
         m.last_cols = 4
-        m.load_grid_by_size.side_effect = lambda w, h: [pygame.Surface((w, h)) for _ in range(16)]
+        m.load_grid_by_size.side_effect = lambda w, h, **kwargs: [pygame.Surface((w, h)) for _ in range(16)]
         return m
     
     # Minimal map data to satisfy Game initialization
@@ -32,6 +32,7 @@ def test_game():
     }
     
     with patch('src.graphics.spritesheet.SpriteSheet', side_effect=make_mock_sheet), \
+         patch('src.entities.interactive.SpriteSheet', side_effect=make_mock_sheet), \
          patch('src.map.tmj_parser.TmjParser.load_map', return_value=fake_map), \
          patch('src.engine.game.os.path.exists', return_value=True):
         game = Game()

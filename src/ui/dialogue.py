@@ -174,7 +174,7 @@ class DialogueManager:
                 y_offset += line_height
 
         # 4. Draw Next Arrow
-        if self.next_arrow:
+        if self.next_arrow and self.text_index >= len(self.message):
             arrow_x = box_rect.x + box_rect.width - content_margin_x + 10
             arrow_y = box_rect.y + 140
             screen.blit(self.next_arrow, (arrow_x, arrow_y))
