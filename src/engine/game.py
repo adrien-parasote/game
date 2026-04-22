@@ -261,6 +261,7 @@ class Game:
                     sheet_name=_get_property(props, "sprite_sheet", "01-character.png"),
                     element_id=_get_property(props, "element_id") or str(ent.get("id"))
                 )
+                npc.name = _get_property(props, "name", ent.get("name", ""))
                 npc.collision_func = self._is_collidable
                 logging.info(f"Spawned NPC '{npc.element_id}' at {e_pos}")
 
@@ -358,7 +359,8 @@ class Game:
                 if npc.rect.colliderect(target_rect):
                     res = npc.interact(self.player)
                     if res:
-                        self._trigger_dialogue(res)
+                        title = getattr(npc, 'name', '')
+                        self._trigger_dialogue(res, title=title)
                     return # Only one interaction at a time
 
             # --- 2. Interactive Objects (Proximity & Orientation based) ---
@@ -414,14 +416,14 @@ class Game:
                                     self.toggle_entity_by_id(target, depth=1)
                             return
 
-    def _trigger_dialogue(self, element_id: str):
+    def _trigger_dialogue(self, element_id: str, title: str = ""):
         """Fetch localized message and start dialogue."""
         map_base = self._current_map_name.split('.')[0]
         full_key = f"{map_base}-{element_id}"
         
         msg = self.hud._lang.get("dialogues", {}).get(full_key)
         if msg:
-            self.dialogue_manager.start_dialogue(msg)
+            self.dialogue_manager.start_dialogue(msg, title=title)
         else:
             logging.warning(f"Dialogue key not found: {full_key}")
 
