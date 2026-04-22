@@ -37,6 +37,10 @@ class Settings:
             "minute_duration": 1.0, 
             "days_per_season": 30, 
             "initial_season": 0
+        },
+        "npc": {
+            "speed": 40,
+            "animation_speed": 8.0
         }
     }
 
@@ -135,6 +139,11 @@ class Settings:
         # UI
         ui_data = data.get("ui", {})
         cls.TEXT_SPEED: float = ui_data.get("text_speed", 0.05)
+
+        # NPC
+        npc_data = data.get("npc", {})
+        cls.NPC_SPEED: float = npc_data.get("speed", 40)
+        cls.NPC_ANIMATION_SPEED: float = npc_data.get("animation_speed", 8.0)
 
 # Initialize on import
 Settings.load()

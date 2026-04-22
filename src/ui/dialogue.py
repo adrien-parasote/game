@@ -1,168 +1,144 @@
-import os
 import pygame
+import os
 import logging
 from src.config import Settings
 
-# Scaling factor to fit 2000px wide asset into 1280px screen (1280/2000 = 0.64)
-HUD_SCALE: float = 0.64
-
 class DialogueManager:
     """
-    Manages the UI for game dialogues, including typewriter effect 
-    and interaction cursor.
+    Handles dialogue box rendering, text wrapping, and state management.
+    Recalibrated for assets/images/hud/05-textbox.png (2000x450 layout).
     """
     
     def __init__(self):
         self.is_active = False
-        self.state = "IDLE" # IDLE, SCROLLING, WAITING
+        self.message = ""
+        self.title = ""
         
         # UI Assets
-        self._textbox_surf = self._load_scaled_image("05-textbox.png")
-        self._cursor_surf = self._load_scaled_image("06-cursor.png")
+        self.dialogue_box = None
+        self.next_arrow = None
         
-        # Text State
-        self._full_text = ""
-        self._current_text = ""
-        self._char_index = 0.0
+        # Scaling (based on HUD scale 0.5)
+        self.scale = 0.5
         
-        # Font setup
-        self._font = self._load_font()
-        self._text_color = (240, 235, 210) # Warm off-white
+        # Style
         self._shadow_color = (20, 20, 20)
         self._shadow_offset = 2
+        self._text_color = (255, 255, 255)
         
-        # Layout cache
-        self._update_layout()
+        # Fonts
+        self.font_title = None
+        self.font_message = None
+        
+        self._load_assets()
 
-    def _load_scaled_image(self, filename: str) -> pygame.Surface:
-        """Load and scale a HUD asset."""
-        path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "HUD", filename)
+    def _load_assets(self):
+        """Load HUD assets and prepare fonts."""
         try:
-            raw = pygame.image.load(path).convert_alpha()
-            return pygame.transform.smoothscale(
-                raw, (int(raw.get_width() * HUD_SCALE), int(raw.get_height() * HUD_SCALE))
-            )
-        except (pygame.error, FileNotFoundError) as e:
-            logging.error(f"DialogueManager: Could not load {filename}: {e}")
-            fallback = pygame.Surface((int(2000 * HUD_SCALE), int(450 * HUD_SCALE)), pygame.SRCALPHA)
-            fallback.fill((30, 30, 30, 200))
-            return fallback
+            hud_dir = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "hud")
+            
+            # 1. Dialogue Box (05-textbox.png)
+            box_path = os.path.join(hud_dir, "05-textbox.png")
+            if os.path.exists(box_path):
+                img = pygame.image.load(box_path).convert_alpha()
+                w, h = img.get_size()
+                self.dialogue_box = pygame.transform.smoothscale(img, (int(w * self.scale), int(h * self.scale)))
+            
+            # 2. Next Arrow (06-cursor.png)
+            arrow_path = os.path.join(hud_dir, "06-cursor.png")
+            if os.path.exists(arrow_path):
+                img = pygame.image.load(arrow_path).convert_alpha()
+                w, h = img.get_size()
+                self.next_arrow = pygame.transform.smoothscale(img, (int(w * self.scale), int(h * self.scale)))
+            
+            # 3. Fonts
+            font_size_msg = int(34 * self.scale * 1.5)
+            font_size_title = int(38 * self.scale * 1.5)
+            
+            self.font_message = pygame.font.SysFont("Arial", font_size_msg)
+            self.font_title = pygame.font.SysFont("Arial", font_size_title, bold=True)
+            
+        except Exception as e:
+            logging.error(f"Failed to load dialogue assets: {e}")
 
-    def _load_font(self) -> pygame.font.Font:
-        """Load a readable pixel-art style font."""
-        for name in ("Verdana", "Arial", "sans-serif", None):
-            try:
-                # Scaled size for 0.64 HUD
-                return pygame.font.SysFont(name, 22, bold=True)
-            except Exception:
-                continue
-        return pygame.font.Font(None, 22)
-
-    def _update_layout(self):
-        """Pre-calculate screen positions for UI elements based on 2000x450 reference."""
-        screen_w = Settings.WINDOW_WIDTH
-        screen_h = Settings.WINDOW_HEIGHT
-        
-        box_w = self._textbox_surf.get_width()
-        box_h = self._textbox_surf.get_height()
-        
-        # Box is fixed at bottom center
-        self._box_pos = (0, screen_h - box_h)
-        
-        # BLUE ZONE: Message (x=230, y=80, w=1500, h=300 in raw)
-        self._message_rect = pygame.Rect(
-            self._box_pos[0] + int(230 * HUD_SCALE),
-            self._box_pos[1] + int(80 * HUD_SCALE),
-            int(1500 * HUD_SCALE),
-            int(300 * HUD_SCALE)
-        )
-        
-        # GREEN ZONE: Arrow (x=1750, y=320 in raw)
-        self._cursor_pos = (
-            self._box_pos[0] + int(1750 * HUD_SCALE),
-            self._box_pos[1] + int(320 * HUD_SCALE)
-        )
-
-    def start_dialogue(self, text: str):
-        """Initiate a new dialogue sequence."""
-        if not text:
-            return
-        self._full_text = text
-        self._current_text = ""
-        self._char_index = 0.0
+    def start_dialogue(self, text: str, title: str = ""):
+        """Activate the dialogue system with a message and optional title."""
+        self.message = text
+        self.title = title
         self.is_active = True
-        self.state = "SCROLLING"
-
-    def close_dialogue(self):
-        """End the dialogue."""
-        self.is_active = False
-        self.state = "IDLE"
+        logging.info(f"Dialogue started: [{title}] {text[:30]}...")
 
     def advance(self):
-        """Action key handler."""
-        if self.state == "SCROLLING":
-            self._current_text = self._full_text
-            self._char_index = float(len(self._full_text))
-            self.state = "WAITING"
-        elif self.state == "WAITING":
-            self.close_dialogue()
+        """Close the dialogue when the user interacts."""
+        self.is_active = False
+        self.message = ""
+        self.title = ""
 
     def update(self, dt: float):
-        """Progress typewriter effect using Settings.TEXT_SPEED."""
-        if not self.is_active or self.state != "SCROLLING":
-            return
-            
-        # Use settings value
-        speed = getattr(Settings, "TEXT_SPEED", 0.05)
-        self._char_index += dt / speed
-        idx = int(self._char_index)
-        
-        if idx >= len(self._full_text):
-            self._current_text = self._full_text
-            self.state = "WAITING"
-        else:
-            self._current_text = self._full_text[:idx]
+        """Update any dialogue animations (placeholder)."""
+        pass
 
-    def _render_text_wrapped(self, surface: pygame.Surface, text: str, rect: pygame.Rect):
-        """Render wrapped text within a target rectangle."""
+    def _draw_text_with_shadow(self, surface, text, pos, color, font, max_width, line_spacing=1.2):
+        """Draw multiline text with shadow and custom line spacing."""
         words = text.split(' ')
         lines = []
         current_line = []
         
         for word in words:
             test_line = ' '.join(current_line + [word])
-            w, _ = self._font.size(test_line)
-            if w < rect.width:
+            if font.size(test_line)[0] <= max_width:
                 current_line.append(word)
             else:
                 lines.append(' '.join(current_line))
                 current_line = [word]
         lines.append(' '.join(current_line))
         
-        line_h = self._font.get_height() + 4
-        for i, line in enumerate(lines):
-            y = rect.y + i * line_h
-            if y + line_h > rect.bottom: break # Truncate if too many lines
-            
+        y_offset = 0
+        line_height = font.get_linesize() * line_spacing
+        for line in lines:
             # Shadow
-            s_surf = self._font.render(line, True, self._shadow_color)
-            surface.blit(s_surf, (rect.x + self._shadow_offset, y + self._shadow_offset))
-            # Main
-            m_surf = self._font.render(line, True, self._text_color)
-            surface.blit(m_surf, (rect.x, y))
+            shadow_surf = font.render(line, True, self._shadow_color)
+            surface.blit(shadow_surf, (pos[0] + self._shadow_offset, pos[1] + y_offset + self._shadow_offset))
+            # Main text
+            line_surface = font.render(line, True, color)
+            surface.blit(line_surface, (pos[0], pos[1] + y_offset))
+            y_offset += line_height
 
-    def draw(self, screen: pygame.Surface):
-        """Render dialogue UI."""
-        if not self.is_active:
+    def draw(self, screen):
+        """Draw the dialogue box with title and message."""
+        if not self.is_active or not self.dialogue_box:
             return
             
-        # 1. Background Box
-        screen.blit(self._textbox_surf, self._box_pos)
+        # 1. Position box at bottom
+        box_rect = self.dialogue_box.get_rect(midbottom=(Settings.WINDOW_WIDTH // 2, Settings.WINDOW_HEIGHT - 20))
+        screen.blit(self.dialogue_box, box_rect)
         
-        # 2. Wrapped Message
-        self._render_text_wrapped(screen, self._current_text, self._message_rect)
+        # Recalibrated offsets based on target image (scaled by 0.5)
+        # Original target margins: Left ~280px -> 140px scaled
+        content_margin_x = 140
         
-        # 3. Blinking Cursor
-        if self.state == "WAITING":
-            if (pygame.time.get_ticks() // 400) % 2 == 0:
-                screen.blit(self._cursor_surf, self._cursor_pos)
+        # 2. Draw Title (RED Zone)
+        if self.title and self.font_title:
+            title_x = box_rect.x + content_margin_x
+            title_y = box_rect.y + 42
+            
+            # Shadow
+            s_surf = self.font_title.render(self.title, True, self._shadow_color)
+            screen.blit(s_surf, (title_x + self._shadow_offset, title_y + self._shadow_offset))
+            # Title
+            title_surf = self.font_title.render(self.title, True, self._text_color)
+            screen.blit(title_surf, (title_x, title_y))
+            
+        # 3. Draw Message (BLUE Zone)
+        if self.message and self.font_message:
+            message_x = box_rect.x + content_margin_x
+            message_y = box_rect.y + 100
+            max_w = box_rect.width - (content_margin_x * 2)
+            self._draw_text_with_shadow(screen, self.message, (message_x, message_y), self._text_color, self.font_message, max_w)
+            
+        # 4. Draw Next Arrow (GREEN Zone)
+        if self.next_arrow:
+            # Position: bottom-right of the text area
+            arrow_x = box_rect.x + box_rect.width - content_margin_x + 10
+            arrow_y = box_rect.y + 140
+            screen.blit(self.next_arrow, (arrow_x, arrow_y))

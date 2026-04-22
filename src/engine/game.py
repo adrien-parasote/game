@@ -192,6 +192,11 @@ class Game:
             props = ent.get("properties", {})
             entity_type = _get_property(props, "entity_type", default="unknown")
             e_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
+            
+            # Filter out spawn points
+            if _get_property(props, "is_initial_spawn") is True:
+                continue
+                
             logging.debug(f"Processing map entity ID {ent.get('id')} ({ent.get('name')}) type={entity_type} at {e_pos}")
             
             if entity_type == "interactive":
@@ -199,6 +204,9 @@ class Game:
                 element_id = _get_property(props, "element_id")
                 if not element_id:
                     element_id = str(ent.get("id"))
+                
+                if _get_property(props, "sub_type") == "sign":
+                    logging.info(f"Sign detected with ID: {element_id}")
 
                 target_id = _get_property(props, "target_id") or _get_property(props, "target")
 
@@ -386,7 +394,7 @@ class Game:
                                     valid_orientation = True
                                 elif o_dir == 'down' and p_state == 'up' and self.player.pos.y > obj.pos.y:
                                     valid_orientation = True
-                                elif o_dir == 'left' and p_state == 'right' and self.player.pos.x < obj.pos.x:
+                                elif o_dir == 'left' and p_state == 'right' and self.player.pos.x > obj.pos.x:
                                     valid_orientation = True
                                 elif o_dir == 'right' and p_state == 'left' and self.player.pos.x > obj.pos.x:
                                     valid_orientation = True

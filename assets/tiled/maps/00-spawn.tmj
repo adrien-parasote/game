@@ -494,17 +494,12 @@
                                  "value":"book"
                                 }, 
                                 {
-                                 "name":"facing_direction",
-                                 "type":"string",
-                                 "value":"right"
-                                }, 
-                                {
                                  "name":"interactive_object",
                                  "propertytype":"11-interactive_object",
                                  "type":"class",
                                  "value":
                                     {
-                                     "activate_from_anywhere":false,
+                                     "activate_from_anywhere":true,
                                      "sprite":
                                         {
                                          "entity_type":"interactive",

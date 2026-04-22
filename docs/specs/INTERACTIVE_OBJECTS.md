@@ -12,11 +12,10 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `halo_alpha` | int | Maximum alpha (center) of the radial gradient (0-255). |
 | `particles` | bool | If `true`, the object emits particles when ON. |
 | `particle_count` | int | Maximum number of active particles simultaneously. |
-| `element_id` | string | Unique identifier for communication. Falls back to the raw Tiled object `id` if absent. |
-| `target_id` | string | Holds the `target_id` of the object that this entity should activate or interact with. |
-| `activate_from_anywhere` | bool | If `true`, the object can be activated from any adjacent cell within 48px, but REQUIRES the player to be facing it. |
-| `entity_type`| string | Logical marker set to `"interactive"`. Prevents coupling spawning logic strictly to Tiled interface class names. Derived normally from the `10-sprite` component class. |
+| `element_id` | string | Unique identifier for communication and dialogue. Falls back to the raw Tiled object `id` (e.g. "61") if absent. |
+| `target_id` | string | Holds the `element_id` of the object that this entity should activate or interact with. |
 | `facing_direction` | string | Optional. Overrides the `position`-based `direction_str`. Useful for signs. |
+| `is_on` | bool | The initial state of the object. Persisted in `WorldState` using `{map}-{element_id}` as key. |
 
 ### Animation Logic
 - **Column Mapping**: 

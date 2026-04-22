@@ -46,15 +46,16 @@ Sprites are often taller than a single tile (e.g. 32x48 images on 32x32 tiles).
 - **Visual Anchoring**: Rendered images are offset such that the `bottomright` of the image aligns exactly with the `bottomright` of the physical hitbox. 
 - **Occlusion Check**: To trigger foreground tile overlap (alpha blending), the system uses the full expanded visual rect, not just the physical hitbox.
 
-### F. Overlay Configuration
-The engine supports configurable overlay elements for atmospheric or UI occlusion rendering.
-- **Logic**: Defined via the `overlay` -> `occlusion_alpha` parameter in `settings.json` (accessible via `Settings.OCCLUSION_ALPHA`, default: `102`).
-- **Purpose**: Provides a dynamic alpha value layer to allow tuning foreground tile transparency during occlusion checks.
+### F. Configuration Split
+The engine uses a dual-configuration architecture to separate technical and gameplay concerns.
+- **`settings.json`**: Technical parameters (resolution, fullscreen, log level, culling margins, map paths).
+- **`gameplay.json`**: Logic parameters (player speed, NPC speed multipliers, interaction keys, time scales, UI text speed).
+- **Logic**: The `src/config.py` manager merges these into a single `Settings` object for engine-wide access.
 
 ### G. Time & Seasonal System
 The engine maintains an internal world clock to drive environmental changes and simulation.
 - **Timing**: Configurable via `Settings.MINUTE_DURATION` (default 1.5 real seconds per game minute).
-- **Conversion**: `1 real second = (1 / MINUTE_DURATION)` game minutes.
+- **Conversion**: 1 real second = (1 / MINUTE_DURATION) game minutes.
 - **Cycles**: 24-hour days, `Settings.DAYS_PER_SEASON` game days per season, and 4-season years.
 - **Lighting**: A sinusoidal brightness factor calculated as `0.5 + 0.5 * sin(2π * hour/24 - π/2)`.
 - **Night Overlay**: A full-screen black overlay (`#000000`) with alpha calculated from the inverse of brightness (max 180 alpha at midnight).
@@ -70,7 +71,7 @@ Entities can interact with their immediate surroundings based on orientation and
 - **NPCs**: Project a 32x32 `target_rect` one tile ahead of the player. See [NPC_SYSTEM.md](NPC_SYSTEM.md) for details.
 - **Objects**: Proximity and orientation checks defined by object type. See [INTERACTIVE_OBJECTS.md](INTERACTIVE_OBJECTS.md) for detailed validation logic (Omni vs Directional).
 - **Cooldown**: A 0.5s interaction cooldown (`_interaction_cooldown`) prevents input spamming.
-- **Unified Key**: The `E` key (`Settings.INTERACT_KEY`) is the universal trigger for both NPCs and fixed objects.
+- **Unified Key**: The `E` key (`Settings.INTERACT_KEY`) is the universal trigger for both NPCs and fixed objects. Space is NOT used for interaction.
 
 ### J. Map Data Architecture (TMJ/TSX)
 To maintain modularity, the engine decouples map parsing from rendering logic.
@@ -95,13 +96,11 @@ In addition to map tile collisions, the engine supports blocking player movement
 ### L. GameHUD (Visual UI)
 The HUD provides information about the current time, day, and season.
 - **Rendering**: Drawn at the very end of the `Game.draw()` loop to ensure top-level visibility.
-- **Scaling**: Uses `HUD_SCALE = 0.4` (internal resolution scaling) for the main clock graphic.
-- **Anchors**: Pixel-precise coordinates for elements (scaled):
-  - **Time**: Center `(104.0, 39.2)` relative to clock surface (derived from `(260, 98) * 0.4`).
-  - **Season Icon**: Center `(125.2, 111.6)` (derived from `(313, 279) * 0.4`).
-  - **Day Label**: Center `(53.2, 113.6)` (derived from `(133, 284) * 0.4`).
-- **Margins**: `20px` from top and right screen edges.
-- **Label System**: Uses `LabelRegistry` for multilingual support (Day/Jour titles).
+- **Scaling**: Uses `HUD_SCALE = 0.4` for the clock and `HUD_SCALE = 0.64` for the dialogue box (fit 2000px assets to 1280px screen).
+- **Dialogue UI**:
+  - **Message Zone**: Centered horizontally, occupies the middle-third of the text box.
+  - **Typewriter Effect**: Speed controlled by `Settings.TEXT_SPEED` (seconds per character).
+- **Label System**: Uses `fr.json` (or other lang) for localized strings.
 
 ### M. Interconnected World (Teleportation)
 The engine supports a multiverse structure defined by Tiled World files.

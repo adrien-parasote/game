@@ -18,5 +18,9 @@
   },
   "ui": {
     "text_speed": 0.05
+  },
+  "npc": {
+    "speed": 40,
+    "animation_speed": 8.0
   }
 }

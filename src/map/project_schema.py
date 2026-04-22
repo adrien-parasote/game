@@ -81,4 +81,10 @@ class TiledProject:
                 # For primitives, instance override takes absolute priority
                 resolved[name] = instance_override if instance_override is not None else current_val
                 
+        # 3. Preserve any properties from overrides that weren't in the template members
+        # This ensures ad-hoc properties added in the map but not in the Tiled Project Class are kept.
+        for key, value in overrides.items():
+            if key not in resolved:
+                resolved[key] = value
+                
         return resolved

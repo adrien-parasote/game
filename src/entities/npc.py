@@ -15,7 +15,7 @@ class NPC(BaseEntity):
         self.spawn_pos = pygame.math.Vector2(pos)
         self.wander_radius = wander_radius
         self.state = 'idle'  # 'idle', 'wander', 'interact'
-        self.speed = Settings.PLAYER_SPEED * 0.4 # Slower than player
+        self.speed = getattr(Settings, "NPC_SPEED", 40)
         
         # Load Spritesheet
         sheet_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "characters", sheet_name)
@@ -23,7 +23,7 @@ class NPC(BaseEntity):
         self.frames = sheet.load_grid(4, 4)
         
         self.frame_index = 0.0
-        self.animation_speed = 8.0 # Match walking rhythm
+        self.animation_speed = getattr(Settings, "NPC_ANIMATION_SPEED", 8.0)
         self.current_facing = 'down'
         
         self.image = self.frames[0]

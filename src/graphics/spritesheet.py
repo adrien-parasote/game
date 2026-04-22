@@ -7,11 +7,24 @@ class SpriteSheet:
     
     def __init__(self, filename: str):
         self.filename = filename
+        if not filename or filename.endswith("/") or filename.endswith("\\"):
+            # If filename is empty or just a path to a directory, we consider it a 'no-sprite' case
+            # This is common for invisible interactive objects like 'Sign' or 'Trigger'
+            self.sheet = None
+            self.valid = False
+            return
+
+        if not os.path.exists(filename):
+            logging.error(f"Unable to load spritesheet image: {filename}. File does not exist.")
+            self.sheet = None
+            self.valid = False
+            return
+
         try:
             self.sheet = pygame.image.load(filename).convert_alpha()
             self.valid = True
-        except (pygame.error, FileNotFoundError) as e:
-            logging.error(f"Unable to load spritesheet image: {filename}. Error: {e}")
+        except pygame.error as e:
+            logging.error(f"Pygame error loading {filename}: {e}")
             self.sheet = None
             self.valid = False
 

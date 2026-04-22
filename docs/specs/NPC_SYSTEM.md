@@ -42,7 +42,8 @@ This section defines the behavior and failure modes for autonomous entities.
 
 ### 3.2. NPC Animation & Facing
 - **Rows**: 0:Down, 1:Left, 2:Right, 3:Up (Physical sheet offsets: 0, 4, 8, 12).
-- **Animation speed**: Base speed of `1.0 / 0.15` (~6.6 FPS) when moving.
+- **Animation speed**: Base speed of `8.0` FPS when moving (matched to walking rhythm).
+- **Movement speed**: Defined as `0.4` of `Settings.PLAYER_SPEED`.
 - **Facing**: NPCs automatically rotate to face the player during interaction by calculating the position delta.
 
 ### 3.2. Test Case Specifications
