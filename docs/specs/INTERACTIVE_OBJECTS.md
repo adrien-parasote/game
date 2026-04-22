@@ -185,7 +185,8 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 |------------|-----------|----------|----------|
 | Frame Mismatch| `sheet_h % height != 0` | Auto-recalculate `height` | `sheet_h / (end_row + 1)` |
 | Sheet Layout | `cols != 4` | Detect `last_cols` | Use dynamic indexing |
-186: | Missing Asset (Sign)| `sub_type == 'sign'` and sheet missing | Use transparent surface | Allows invisible triggers without visual artifacts |
+| Missing Asset (Sign)| `sub_type == 'sign'` and sheet missing | Use transparent surface | Allows invisible triggers without visual artifacts |
+| Headless Display| `pygame.display.get_surface()` is None | Skip `.convert_alpha()` | Prevents crashes during headless unit testing |
 | Interaction Spam| Timer check | Ignore input | cooldown of 0.5s |
 
 ## 6. Deep Links

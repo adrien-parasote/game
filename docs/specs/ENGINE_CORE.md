@@ -99,7 +99,8 @@ The HUD provides information about the current time, day, and season.
 - **Scaling**: Uses `HUD_SCALE = 0.4` for the clock and `HUD_SCALE = 0.64` for the dialogue box (fit 2000px assets to 1280px screen).
 - **Dialogue UI**:
   - **Message Zone**: Centered horizontally, occupies the middle-third of the text box.
-  - **Typewriter Effect**: Speed controlled by `Settings.TEXT_SPEED` (seconds per character).
+  - **Typewriter Effect**: Speed controlled by `Settings.TEXT_SPEED` (characters per second).
+  - **Rolling Logic**: Automatic line management. If the wrapped text exceeds the box's vertical capacity, the oldest line is removed from the top to allow new lines to "roll" into view.
 - **Label System**: Uses `fr.json` (or other lang) for localized strings.
 
 ### M. Interconnected World (Teleportation)
