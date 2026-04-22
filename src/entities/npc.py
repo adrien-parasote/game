@@ -38,8 +38,8 @@ class NPC(BaseEntity):
         self._action_timer = 0
         self._action_cooldown = random.uniform(1.0, 3.0)
 
-    def interact(self, initiator: BaseEntity):
-        """Called when Player interacts with this NPC."""
+    def interact(self, initiator: BaseEntity) -> str:
+        """Called when Player interacts with this NPC. Returns element_id for dialogue."""
         self.state = 'interact'
         # Face the initiator
         diff = initiator.pos - self.pos
@@ -48,13 +48,11 @@ class NPC(BaseEntity):
         else:
             self.current_facing = 'down' if diff.y > 0 else 'up'
             
-        print(f"NPC at {self.pos} says: Hello!") # Placeholder dialogue
-        
-        # Release interaction after 2 seconds (simple stub)
-        self._action_cooldown = 2.0
-        self._action_timer = 0
+        # Reset movement
         self.direction = pygame.math.Vector2(0, 0)
         self.is_moving = False
+        
+        return self.element_id
 
     def start_move(self):
         """Override to strictly strictly enforce wander_radius constraint."""

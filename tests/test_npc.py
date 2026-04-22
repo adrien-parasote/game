@@ -68,12 +68,12 @@ def test_npc_interact_facing_from_east(npc_instance):
     initiator.pos = pygame.math.Vector2(100, 16)  # Player far to the right
     npc_instance.pos = pygame.math.Vector2(16, 16)
 
-    npc_instance.interact(initiator)
+    res = npc_instance.interact(initiator)
 
+    assert res == npc_instance.element_id
     assert npc_instance.state == 'interact'
     assert npc_instance.current_facing == 'right'
     assert npc_instance.is_moving is False
-    assert npc_instance._action_cooldown == 2.0
 
 def test_npc_interact_facing_from_north(npc_instance):
     """NPC faces player when player is to the north (diff.y dominates, up)."""
@@ -84,19 +84,6 @@ def test_npc_interact_facing_from_north(npc_instance):
     npc_instance.interact(initiator)
 
     assert npc_instance.current_facing == 'up'
-
-def test_npc_interact_releases_after_timeout(npc_instance):
-    """NPC returns to idle state after interact cooldown expires."""
-    initiator = MagicMock()
-    initiator.pos = pygame.math.Vector2(100, 16)
-    npc_instance.interact(initiator)
-
-    assert npc_instance.state == 'interact'
-
-    # Advance time past the interaction cooldown (2.0s)
-    npc_instance.update(2.1)
-
-    assert npc_instance.state == 'idle'
 
 def test_npc_process_ai_frozen_during_interact(npc_instance):
     """process_ai returns immediately when state is 'interact'."""

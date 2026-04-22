@@ -47,7 +47,8 @@ def test_player_npc_interaction(test_game):
         def __getitem__(self, key):
             return self.get(key, False)
             
-    keys = MockKeys({pygame.K_SPACE: True})
+    from src.config import Settings
+    keys = MockKeys({Settings.INTERACT_KEY: True})
     
     # We call standard engine logic for handling input
     with patch('pygame.key.get_pressed', return_value=keys):

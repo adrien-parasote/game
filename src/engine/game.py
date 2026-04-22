@@ -14,6 +14,7 @@ from src.engine.time_system import TimeSystem
 from src.engine.world_state import WorldState
 from src.config import Settings
 from src.ui.hud import GameHUD
+from src.ui.dialogue import DialogueManager
 import json
 
 
@@ -87,6 +88,9 @@ class Game:
         
         # World State
         self.world_state = WorldState()
+        
+        # Dialogue System
+        self.dialogue_manager = DialogueManager()
         
         logging.info(f"Screen setup: {Settings.WINDOW_WIDTH}x{Settings.WINDOW_HEIGHT} (Fullscreen: {self.is_fullscreen})")
         
@@ -308,8 +312,8 @@ class Game:
         """Handle spatial interaction between player and world objects/NPCs."""
         keys = pygame.key.get_pressed()
         
-        # Check interaction input (SPACE for NPCs, E for Objects/NPCs)
-        interact_pressed = keys[pygame.K_SPACE] or keys[Settings.INTERACT_KEY]
+        # Check interaction input (E for Objects/NPCs)
+        interact_pressed = keys[Settings.INTERACT_KEY]
         
         if interact_pressed and not self.player.is_moving:
             # Prevent interaction spam
@@ -331,7 +335,9 @@ class Game:
             
             for npc in self.npcs:
                 if npc.rect.colliderect(target_rect):
-                    npc.interact(self.player)
+                    res = npc.interact(self.player)
+                    if res:
+                        self._trigger_dialogue(res)
                     return # Only one interaction at a time
 
             # --- 2. Interactive Objects (Proximity & Orientation based) ---
@@ -373,16 +379,30 @@ class Game:
                                     valid_orientation = True
                             
                         if valid_orientation:
-                            obj.interact(self.player)
+                            res = obj.interact(self.player)
                             
-                            # Save state
-                            if hasattr(obj, '_world_state_key'):
-                                self.world_state.set(obj._world_state_key, {'is_on': obj.is_on})
-                            
-                            target = getattr(obj, "target_id", None)
-                            if target:
-                                self.toggle_entity_by_id(target, depth=1)
+                            if res:
+                                self._trigger_dialogue(res)
+                            else:
+                                # Save state (only for toggleable objects)
+                                if hasattr(obj, '_world_state_key'):
+                                    self.world_state.set(obj._world_state_key, {'is_on': obj.is_on})
+                                
+                                target = getattr(obj, "target_id", None)
+                                if target:
+                                    self.toggle_entity_by_id(target, depth=1)
                             return
+
+    def _trigger_dialogue(self, element_id: str):
+        """Fetch localized message and start dialogue."""
+        map_base = self._current_map_name.split('.')[0]
+        full_key = f"{map_base}-{element_id}"
+        
+        msg = self.hud._lang.get("dialogues", {}).get(full_key)
+        if msg:
+            self.dialogue_manager.start_dialogue(msg)
+        else:
+            logging.warning(f"Dialogue key not found: {full_key}")
 
     def toggle_entity_by_id(self, target_id: str, depth: int = 0):
         """Toggle the state of any entity matching element_id == target_id."""
@@ -500,6 +520,9 @@ class Game:
                 obj.draw_effects(self.screen, cam_offset, night_alpha)
             
         self._draw_hud()
+        
+        if self.dialogue_manager.is_active:
+            self.dialogue_manager.draw(self.screen)
 
     def run(self):
         """Main game loop optimized for 60 FPS."""
@@ -515,36 +538,48 @@ class Game:
                         sys.exit()
                     if event.key == Settings.TOGGLE_FULLSCREEN_KEY:
                         self.toggle_fullscreen()
+                    
+                    # Dialogue advance
+                    if event.key == Settings.INTERACT_KEY and self.dialogue_manager.is_active:
+                        self.dialogue_manager.advance()
+                        if not self.dialogue_manager.is_active:
+                            # Resume NPCs
+                            for npc in self.npcs:
+                                if npc.state == 'interact':
+                                    npc.state = 'idle'
 
             # Update (Fixed 60 FPS)
             dt = self.clock.tick(Settings.FPS) / 1000.0
             
-            # Update Time
-            self.time_system.update(dt)
-            
-            # Input & Logic
-            if hasattr(self, '_interaction_cooldown'):
-                self._interaction_cooldown = max(0, self._interaction_cooldown - dt)
+            # --- Logical Pause for Dialogue ---
+            if self.dialogue_manager.is_active:
+                self.dialogue_manager.update(dt)
+            else:
+                # Update Time
+                self.time_system.update(dt)
                 
-            self.player.input()
-            self._handle_interactions()
-            
-            was_moving = self.player.is_moving
-            self.visible_sprites.update(dt)
-            self._check_teleporters(was_moving)
-            
-            # CPU Freeze optimization for NPCs -> freeze if outside enlarged viewport
-            screen_rect = self.screen.get_rect()
-            viewport_world = screen_rect.move(-self.visible_sprites.offset.x, -self.visible_sprites.offset.y)
-            viewport_world.inflate_ip(128, 128)
-            
-            for npc in self.npcs:
-                npc.is_visible = viewport_world.colliderect(npc.rect)
-                npc.update(dt)
+                # Input & Logic
+                if hasattr(self, '_interaction_cooldown'):
+                    self._interaction_cooldown = max(0, self._interaction_cooldown - dt)
+                    
+                self.player.input()
+                self._handle_interactions()
                 
-            for obj in self.interactives:
-                # Reuse visibility check logic if desired, or just update
-                obj.update(dt)
+                was_moving = self.player.is_moving
+                self.visible_sprites.update(dt)
+                self._check_teleporters(was_moving)
+                
+                # CPU Freeze optimization for NPCs -> freeze if outside enlarged viewport
+                screen_rect = self.screen.get_rect()
+                viewport_world = screen_rect.move(-self.visible_sprites.offset.x, -self.visible_sprites.offset.y)
+                viewport_world.inflate_ip(128, 128)
+                
+                for npc in self.npcs:
+                    npc.is_visible = viewport_world.colliderect(npc.rect)
+                    npc.update(dt)
+                    
+                for obj in self.interactives:
+                    obj.update(dt)
 
             # Draw complete sequence
             self._draw_scene()

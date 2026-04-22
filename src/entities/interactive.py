@@ -218,14 +218,19 @@ class InteractiveEntity(BaseEntity):
             return self.frames[idx]
         return self.frames[0] if self.frames else pygame.Surface((32, 32))
 
-    def interact(self, initiator):
-        """Toggle ON/OFF state and start animation."""
+    def interact(self, initiator) -> str:
+        """Toggle ON/OFF state and start animation. Returns element_id for dialogue."""
+        if self.sub_type == 'sign':
+            return self.element_id
+            
         if not self.is_animating or self.is_animated:
             self.is_on = not self.is_on
             self.is_animating = True
             if not self.is_animated:
                 self.is_closing = not self.is_on
             logging.info(f"Object {self.sub_type} toggled to {'ON' if self.is_on else 'OFF'}")
+        
+        return None
 
     def restore_state(self, state: dict):
         """Restore persisted state from WorldState."""
