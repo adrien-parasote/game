@@ -15,6 +15,7 @@ from src.engine.world_state import WorldState
 from src.config import Settings
 from src.ui.hud import GameHUD
 from src.ui.dialogue import DialogueManager
+from src.engine.audio import AudioManager
 import json
 
 
@@ -92,6 +93,9 @@ class Game:
         # Dialogue System
         self.dialogue_manager = DialogueManager()
         
+        # Audio System
+        self.audio_manager = AudioManager()
+        
         logging.info(f"Screen setup: {Settings.WINDOW_WIDTH}x{Settings.WINDOW_HEIGHT} (Fullscreen: {self.is_fullscreen})")
         
         # Player is persisted across maps
@@ -128,6 +132,10 @@ class Game:
         
         self.layout = OrthogonalLayout(self.tile_size)
         self.map_manager = MapManager(map_result, self.layout)
+        
+        bgm = map_result.get("properties", {}).get("bgm")
+        if bgm:
+            self.audio_manager.play_bgm(bgm)
         
         # Override MAP_SIZE for boundary logic in BaseEntity if needed
         self.map_size = max(self.map_manager.width, self.map_manager.height)
@@ -235,7 +243,8 @@ class Game:
                     element_id=element_id,
                     target_id=target_id,
                     activate_from_anywhere=_get_property(props, "activate_from_anywhere", False),
-                    facing_direction=_get_property(props, "facing_direction")
+                    facing_direction=_get_property(props, "facing_direction"),
+                    sfx=_get_property(props, "sfx", "")
                 )
                 
                 # Persist State Integration
@@ -252,7 +261,8 @@ class Game:
                 t_spawn_id = _get_property(props, "target_spawn_id", "")
                 t_trans = _get_property(props, "transition_type", "instant")
                 t_req_dir = _get_property(props, "required_direction", "any")
-                Teleport(t_rect, [self.teleports_group], t_map, t_spawn_id, t_trans, t_req_dir)
+                tp = Teleport(t_rect, [self.teleports_group], t_map, t_spawn_id, t_trans, t_req_dir)
+                tp.sfx = _get_property(props, "sfx", "")
             elif entity_type == "npc":
                 npc = NPC(
                     pos=e_pos,
@@ -404,6 +414,9 @@ class Game:
                         if valid_orientation:
                             res = obj.interact(self.player)
                             
+                            if getattr(obj, "sfx", None):
+                                self.audio_manager.play_sfx(obj.sfx, getattr(obj, "element_id", None))
+                            
                             if res:
                                 self._trigger_dialogue(res)
                             else:
@@ -441,6 +454,9 @@ class Game:
                 if getattr(entity, 'element_id', None) == target_id:
                     if hasattr(entity, 'interact'):
                         entity.interact(self.player)
+                        
+                        if getattr(entity, "sfx", None):
+                            self.audio_manager.play_sfx(entity.sfx, getattr(entity, "element_id", None))
                         
                         # Save state
                         if hasattr(entity, '_world_state_key'):
@@ -520,6 +536,9 @@ class Game:
                     continue
                 
             logging.info(f"Teleport triggered -> {tp.target_map} / {tp.target_spawn_id}")
+            if getattr(tp, 'sfx', None):
+                self.audio_manager.play_sfx(tp.sfx, str(id(tp)))
+                
             self.transition_map(tp.target_map, tp.target_spawn_id, tp.transition_type)
             break
 

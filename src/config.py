@@ -41,6 +41,10 @@ class Settings:
         "npc": {
             "speed": 40,
             "animation_speed": 8.0
+        },
+        "audio": {
+            "bgm_volume": 0.5,
+            "sfx_volume": 0.5
         }
     }
 
@@ -72,7 +76,7 @@ class Settings:
                             else:
                                 data[section] = values
             except (json.JSONDecodeError, IOError) as e:
-                print(f"Warning: Could not load settings.json ({e}). Using defaults.")
+                logging.warning(f"Could not load settings.json ({e}). Using defaults.")
 
         # Load Gameplay
         if os.path.exists(game_path):
@@ -89,7 +93,7 @@ class Settings:
                         else:
                             data[section] = values
             except (json.JSONDecodeError, IOError) as e:
-                print(f"Warning: Could not load gameplay.json ({e}).")
+                logging.warning(f"Could not load gameplay.json ({e}).")
 
         # Versioning
         cls.VERSION: str = data.get("version", "0.0.0")
@@ -144,6 +148,11 @@ class Settings:
         npc_data = data.get("npc", {})
         cls.NPC_SPEED: float = npc_data.get("speed", 40)
         cls.NPC_ANIMATION_SPEED: float = npc_data.get("animation_speed", 8.0)
+        
+        # Audio
+        audio_data = data.get("audio", {})
+        cls.BGM_VOLUME: float = audio_data.get("bgm_volume", 0.5)
+        cls.SFX_VOLUME: float = audio_data.get("sfx_volume", 0.5)
 
 # Initialize on import
 Settings.load()

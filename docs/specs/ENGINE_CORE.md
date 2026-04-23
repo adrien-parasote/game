@@ -125,6 +125,16 @@ The engine supports a multiverse structure defined by Tiled World files.
   - The `Player` instance is preserved and repositioned to the exact coordinates of the target `00-spawn_point`.
   - Logically handles `.tjm` vs `.tmj` extension mismatches for compatibility.
 
+### N. Audio Management (BGM & SFX)
+The engine features a centralized audio system for atmospheric music and interactive sound effects.
+- **Module**: `src/engine/audio.py` (`AudioManager`).
+- **Technical Configuration**:
+  - `bgm_volume`, `sfx_volume` (0.0 to 1.0) defined in `Settings`.
+  - Preloading: All `.ogg` files in `assets/audio/sfx/` are loaded into memory during initialization.
+- **Continuum Logic**: When transitioning between maps, the engine checks the `bgm` property of the target map. If it matches the current BGM name, the track continues uninterrupted.
+- **Transitions**: BGM changes involve a 500ms fade-out/fade-in.
+- **SFX Overlap Guard**: SFX playback tracks a `source_id`. If the same source (e.g., a lever) triggers its SFX again before completion, the previous instance is stopped to prevent volume doubling/flanging.
+
 ## 3. Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |

@@ -34,7 +34,8 @@ class InteractiveEntity(BaseEntity):
                  halo_alpha: int = 130, particles: bool = False, particle_count: int = 0,
                  element_id: str = None, target_id: str = None,
                  activate_from_anywhere: bool = False,
-                 facing_direction: str = None):
+                 facing_direction: str = None,
+                 sfx: str = ""):
         
         # 1. Properties & State Initialization
         self.target_id = target_id
@@ -42,7 +43,7 @@ class InteractiveEntity(BaseEntity):
         self._parse_properties(sub_type, start_row, end_row, is_on, is_animated, 
                              depth, position, halo_size, halo_color, halo_alpha,
                              particles, particle_count, activate_from_anywhere,
-                             sprite_sheet, facing_direction)
+                             sprite_sheet, facing_direction, sfx)
         
         # 2. Asset Loading
         self._load_assets(sprite_sheet, width, height)
@@ -63,7 +64,7 @@ class InteractiveEntity(BaseEntity):
     def _parse_properties(self, sub_type, start_row, end_row, is_on, is_animated, 
                            depth, position, halo_size, halo_color, halo_alpha,
                            particles, particle_count, activate_from_anywhere,
-                           sprite_sheet, facing_direction):
+                           sprite_sheet, facing_direction, sfx):
         """Parse raw properties and initialize basic state."""
         self.sub_type = sub_type
         self.start_row = start_row
@@ -123,6 +124,7 @@ class InteractiveEntity(BaseEntity):
         
         # Interaction
         self.activate_from_anywhere = activate_from_anywhere
+        self.sfx = sfx
 
     def _load_assets(self, sprite_sheet, width, height):
         """Load spritesheet and compute frame dimensions."""

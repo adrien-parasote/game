@@ -43,7 +43,8 @@ class TmjParser:
             "layers": {},
             "tiles": {},
             "spawn_player": None,
-            "entities": [] # All objects from Sprites group
+            "entities": [], # All objects from Sprites group
+            "properties": {p["name"]: p["value"] for p in data.get("properties", [])}
         }
         
         # 1. Parse tilesets
