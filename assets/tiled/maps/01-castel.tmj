@@ -1,4 +1,5 @@
-{ "compressionlevel":-1,
+{ "class":"02-map",
+ "compressionlevel":-1,
  "height":30,
  "infinite":false,
  "layers":[
@@ -197,6 +198,11 @@
                          "opacity":1,
                          "properties":[
                                 {
+                                 "name":"sfx",
+                                 "type":"string",
+                                 "value":"02-open_chest"
+                                }, 
+                                {
                                  "name":"sprite",
                                  "propertytype":"10-sprite",
                                  "type":"class",
@@ -224,6 +230,11 @@
                                  "name":"is_passable",
                                  "type":"bool",
                                  "value":true
+                                }, 
+                                {
+                                 "name":"sfx",
+                                 "type":"string",
+                                 "value":"00-wooden_door"
                                 }, 
                                 {
                                  "name":"sprite",
@@ -615,6 +626,12 @@
  "nextlayerid":9,
  "nextobjectid":53,
  "orientation":"orthogonal",
+ "properties":[
+        {
+         "name":"bgm",
+         "type":"string",
+         "value":"00-castel"
+        }],
  "renderorder":"right-down",
  "tiledversion":"1.12.1",
  "tileheight":32,

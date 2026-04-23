@@ -29,14 +29,38 @@
             "name": "00-tilset",
             "type": "class",
             "useAs": [
-                "property",
-                "map",
-                "layer",
-                "object",
                 "tile",
                 "tileset",
-                "wangcolor",
-                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 16,
+            "members": [
+            ],
+            "name": "01-audio",
+            "type": "class",
+            "useAs": [
+                "property"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 17,
+            "members": [
+                {
+                    "name": "bgm",
+                    "type": "string",
+                    "value": ""
+                }
+            ],
+            "name": "02-map",
+            "type": "class",
+            "useAs": [
+                "map",
                 "project"
             ]
         },
@@ -130,6 +154,11 @@
                     "name": "is_passable",
                     "type": "bool",
                     "value": false
+                },
+                {
+                    "name": "sfx",
+                    "type": "string",
+                    "value": ""
                 },
                 {
                     "name": "sprite",
@@ -302,13 +331,7 @@
             "type": "class",
             "useAs": [
                 "property",
-                "map",
-                "layer",
                 "object",
-                "tile",
-                "tileset",
-                "wangcolor",
-                "wangset",
                 "project"
             ]
         },
