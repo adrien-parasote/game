@@ -15,7 +15,18 @@ Target ID Check → Game.find_entity(target_id) → Target.interact()
 Entity.move() → Game._is_collidable() → Obstacles Group + Interactives + NPCs
 If collide → move cancelled → move_timer reset
 
-## UI State Machine
-Dialogue.is_active=True → Game.update() stops Player movement input
-Dialogue.advance() → Typing Skip → Next Page → Close → Dialogue.is_active=False
-Dialogue.is_active=False → Player input restored
+## UI & Dialogue State Machine
+1. **Trigger**: `Game._trigger_dialogue(id)` → `HUD._lang.get(key)` → `DialogueManager.start_dialogue(msg)`
+2. **Paging**: `_paginate()` wraps text into `_pages` (max 3-5 lines per page).
+3. **Animation**: `update()` advances typewriter char index. `_is_page_complete` set when full page revealed.
+4. **Input**: `INTERACT_KEY` → `DialogueManager.advance()`:
+   - If typing: skip to end of page.
+   - If page complete: flip to next page.
+   - If last page: set `is_active=False` and restore player control.
+
+## Teleportation Pipeline
+1. **Detection**: `Game.update()` → `_check_teleporters()`
+2. **Trigger Types**:
+   - **Arrival**: `was_moving=True` + `is_moving=False` (triggers if facing matches).
+   - **Intent**: `is_moving=False` + `magnitude > 0` (triggers if facing matches).
+3. **Logic**: `Game.transition_map()` → Fade Out → `_load_map()` → `_spawn_entities()` → Fade In.

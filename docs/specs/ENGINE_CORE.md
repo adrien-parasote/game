@@ -140,20 +140,43 @@ The engine includes a technical debugging layer for development verification.
 - **Toggle**: Controlled by `Settings.DEBUG` (loaded from `settings.json`'s `debug.enabled` field).
 - **Map Override**: If `DEBUG` is active, the engine bypasses the default map and loads `99-debug_room.tmj` at startup.
 - **Hitbox Rendering**: When active, all entity physical hitboxes (`rect`) are outlined in red (`(255, 0, 0)`) in the `CameraGroup` draw loop.
-- **Robustness**: Debug rendering is wrapped in safety checks to handle mock surfaces during automated testing.
+- **Robustness**: Debug rendering is wrapped in safety checks (`try-except TypeError`) to handle mock surfaces during automated testing.
+
+### P. Paginated Dialogue System
+The dialogue system (HUD) uses a multi-page architecture with typewriter effects.
+- **Pagination Strategy**: Pre-calculates wrapping based on `font_message` metrics and `dialogue_box` internal margins (140px).
+- **Dynamic Layout**: Line count per page automatically adjusts based on the presence of a `title` (3 lines with title, 5 lines without).
+- **State Machine**:
+  1. **Typing**: Text is revealed character-by-character.
+  2. **Page Complete**: Reveals the "Next" cursor (`06-cursor.png`).
+  3. **Skip**: Pressing `Settings.INTERACT_KEY` while typing immediately fills the current page.
+  4. **Next**: Pressing `Settings.INTERACT_KEY` when page is complete advances to the next page or closes the dialogue.
+- **Shadowing**: All text is rendered twice (2px offset) to ensure visibility against complex backgrounds.
+
+### Q. World State Persistence
+To maintain consistency across map transitions, the engine uses a session-persistent state dictionary.
+- **Unique Key**: Generated as `{map_basename}_{tiled_id}` to ensure zero collisions across different maps.
+- **Persistence Scope**: Only the `is_on` state of `InteractiveEntity` objects is currently tracked.
+- **Lifecycle**:
+  - **Save**: Triggered immediately during `interact()` or interaction chaining (`toggle_entity_by_id`).
+  - **Restore**: Performed during map loading (`Game._spawn_entities`) before any rendering occurs.
+  - **Visual Sync**: Restored entities automatically snap to their final frame (start/end row) to prevent animation glitches on reload.
 
 ## 3. Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
-| Load assets in `draw()` | Use pre-cached assets | Frame drops |
-| Clamp `rect` directly | Clamp `pos` (float) | Better precision/no jitter |
-| Hardcode screen sizes | Use `surface.get_size()` | Support Fullscreen/Resizing |
-| Direct coordinate access | Use `CoordinateSystem` | Blocks future Isometric support |
-| Scroll camera off map | Apply Map Clamping | Professional polish |
-| Call `.fill()` on a shared `Surface` | Remove debug rendering | Modifies frames persistently |
-| Use `image.get_rect()` for hitbox | Use `Rect(0,0,TILE,TILE)` | Prevents physical vs visual conflict |
-| Blit starting from `topleft` | Align `bottomright` | Prevents tall sprites from sinking |
+| Load assets in `draw()` | Use pre-cached assets | Frame drops and I/O overhead |
+| Clamp `rect` directly | Clamp `pos` (float) | Prevents sub-pixel jitter and rounding errors |
+| Hardcode screen sizes | Use `surface.get_size()` | Support Fullscreen and dynamic resizing |
+| Direct coordinate access | Use `CoordinateSystem` | Decouples rendering from game logic |
+| Scroll camera off map | Apply Map Clamping | Professional polish and boundary consistency |
+| Call `.fill()` on a shared `Surface` | Remove debug rendering | Modifies frames persistently and breaks culling |
+| Use `image.get_rect()` for hitbox | Use `Rect(0,0,TILE,TILE)` | Prevents physical vs visual conflict (offset logic) |
+| Blit starting from `topleft` | Align `bottomright` | Prevents tall sprites from "sinking" into tiles |
+| Use `print()` for debugging | Use the `logging` module | Standardized output and production-ready tracking |
+| Interact while facing away | Validate facing direction | Prevents "psychic" interactions through back-facing |
+| Render to non-Surface objects | Type-check or wrap with `try-except` | Prevents crashes in unit tests using Mocks |
 
 ## 4. Test Case Specifications (Aggregated)
 
@@ -163,13 +186,11 @@ The engine includes a technical debugging layer for development verification.
 | TC-R-02 | Culling | Viewport at (0,0) | Only first tiles rendered |
 | TC-C-01 | Cam Clamp | Player at (0,0) | Offset = 0 |
 | TC-R-03 | Visual Anchor | Image 32x48 | Topleft extends 16px up |
-| TC-M-01 | TSX Parsing | External .tsx file | `tile_dict` populated with collidable data |
-| TC-X-01 | Interaction | Door closed | `_is_collidable` returns `True` |
-| TC-X-02 | Interaction | Door open + Passable | `_is_collidable` returns `False` |
-| TC-H-01 | HUD | Interaction log added | HUD renders message with paging logic |
-| TC-G-01 | Run Loop | QUIT event | `sys.exit()` called, loop terminates |
-| TC-T-01 | Teleport | Overlap + Finish Move | `_load_map` called with correct target |
-| TC-T-02 | Fading | `transition_type="fade"` | Screen alpha increments, player frozen |
+| TC-H-01 | HUD | Dialogue started | Text paginated and typing initiated |
+| TC-H-02 | HUD | Skip request | `displayed_text` immediately filled |
+| TC-W-01 | WorldState | Toggle lever + Reload | Lever remains in toggled state |
+| TC-T-01 | Teleport | Overlap + Intent (DIR) | `transition_map` triggered |
+| TC-T-02 | Teleport | Overlap + 'Any' Portal | Intent ignored, triggers on Arrival |
 
 ## 5. Error Handling Matrix (Aggregated)
 
@@ -177,10 +198,10 @@ The engine includes a technical debugging layer for development verification.
 |---------|-----------|----------|----------|
 | Config Corrupt | `JSONDecodeError` | Log Warning | Use internal defaults |
 | Map Missing | `FileNotFoundError` | Log Critical | Safe loop abort |
-| Surface None | `display is None` | Log Error | Use dummy surface |
-| Bound Overflow| `pos > 1M` | Log Warn | Clamp to boundary |
-| Map Target Fail | `transition_map` target missing | Log Error | Abort transition, keep current map |
-| Spawn ID Fail | `spawn_id` mismatch | Log Warning | Default to map center |
+| Surface None | `TypeError` in Draw | Log Error | Ignore rendering step (safe for tests) |
+| Dialogue Key Fail| Missing `fr.json` key | Log Warning | Show raw key or empty string |
+| Audio Init Fail | `pygame.mixer` error | Log Warning | Disable audio system, continue game |
+| Interaction Loop | Chaining depth > 1 | Log Warning | Break chain to prevent recursion crash |
 
 ## ✅ Patterns to Reproduce
 
@@ -188,12 +209,12 @@ The engine includes a technical debugging layer for development verification.
 |---------|-------------|-----|
 | **Defensive Asset Normalization** | Always include an extension normalization step (e.g. `.tjm` -> `.tmj`) when resolving external map/tileset paths. | Handles common export-to-filesystem naming typos from the Tiled editor. |
 | **Explicit Teleport Triggers** | Trigger teleport only on Arrival (move end) or Intent (explicit movement input while idle). | Prevents infinite teleport loops while ensuring physics-blocked moves still trigger transitions. |
+| **State Snapshot Restoration** | Objects must restore their state *before* the first frame of map display. | Prevents "flicker" where an object starts in default state before snapping to saved state. |
 
 ## 6. Deep Links
 - **Map Recursive Parsing**: [tmj_parser.py - _process_layers](src/map/tmj_parser.py#L55)
-- **Property Detection**: [tmj_parser.py - _parse_objects](src/map/tmj_parser.py#L69)
-- **Player Spawn Logic**: [game.py - _load_map](src/engine/game.py#L95)
-- **Entity Spawning**: [game.py - _spawn_entities](src/engine/game.py#L179)
-- **Interaction Logic**: [game.py - _handle_interactions](src/engine/game.py#L293)
-- **Frustum Culling**: [map_manager.py - get_visible_chunks](src/map/manager.py)
-- **Teleport Logic**: [game.py - _check_teleporters](src/engine/game.py#L428)
+- **World State Logic**: [world_state.py](src/engine/world_state.py)
+- **Dialogue Paging Logic**: [dialogue.py - _paginate](src/ui/dialogue.py#L74)
+- **Teleport Logic**: [game.py - _check_teleporters](src/engine/game.py#L517)
+- **SFX Overlap Guard**: [audio.py - play_sfx](src/engine/audio.py#L111)
+- **Hitbox Debugging**: [groups.py - custom_draw](src/entities/groups.py#L65)

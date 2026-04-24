@@ -28,11 +28,24 @@ Teleporters are detected in Tiled maps strictly by the property:
 - `value`: "teleport"
 
 ### 3.2 Trigger Logic (`required_direction`)
-Teleporters support dual-triggering (Arrival + Intent):
-- **Arrival Trigger**: Triggers when a movement step ends (`was_moving=True`, `is_moving=False`) while overlapping the rect.
-- **Intent Trigger**: Triggers while the player is already standing on the rect and pushes a movement key (`direction.magnitude() > 0`) towards the `required_direction`. This works even if the player is blocked by a wall or map edge.
-- **`required_direction = "any"`** (Default): Triggers from all directions on **Arrival** only. **Intent-based triggering is ignored** for "any" portals to prevent players from getting trapped in infinite teleport loops when attempting to walk away.
-- **`required_direction = [up/down/left/right]`**: Triggers if the player's `current_state` (facing direction) matches the value during an Arrival or Intent.
+Teleporters support dual-triggering mechanisms to balance convenience and control:
+
+#### A. Arrival Trigger (Default)
+- **Condition**: Triggers exactly when a movement step ends (`was_moving=True`, `is_moving=False`) while the player's physical hitbox overlaps the teleport volume.
+- **Direction Guard**: If `required_direction` is NOT `"any"`, the player's final facing direction (`current_state`) must match the property.
+- **Use Case**: Entering a building or crossing a map boundary while walking.
+
+#### B. Intent Trigger (Responsive)
+- **Condition**: Triggers while the player is already idle inside the teleport rect and pushes a movement key (`magnitude > 0`) in the `required_direction`.
+- **Logic**: This allows a teleport to fire even if the move is physically blocked (e.g., trying to walk "into" a wall that is actually a portal).
+- **'Any' Exception**: Portals with `required_direction="any"` **ignore Intent triggers**. This is a critical safety feature to prevent players from getting stuck in an infinite loop (teleporting, then immediately teleporting back when trying to walk away).
+
+### 3.3 Map Loading Pipeline (`_load_map`)
+1. **Clean Slate**: Disposes of all current entities except the persistent `Player`.
+2. **Data Fetch**: `TmjParser` resolves the JSON/TMJ file and applies Project Resolver logic.
+3. **WorldState Query**: Before spawning, the engine checks for saved states using `{map}_{id}` keys.
+4. **Placement**: Player is moved to the target `00-spawn_point`.
+5. **Finalization**: SFX is played, and the screen fade is cleared.
 
 
 ## 5. WorldState Persistence
