@@ -28,30 +28,32 @@ class EmoteManager:
             
         try:
             sheet = SpriteSheet(sheet_path)
-            # The sheet is 4 frames horizontally, 1 vertically (assumption based on 32x32 size and 4 indices)
-            self.frames = sheet.load_grid(cols=4, rows=1)
+            # 4 columns (one per emote) and 8 rows (animation frames)
+            self.frames_grid = sheet.load_grid(cols=4, rows=8)
         except Exception as e:
             logging.error(f"Failed to load emote spritesheet: {e}")
             self.frames = []
 
     def trigger(self, name: str):
         """Trigger an emote by name. Replaces any existing emote."""
-        if not self.emote_group:
+        if self.emote_group is None:
             logging.warning("EmoteManager: emote_group not set.")
             return
             
         index = self.emote_map.get(name)
-        if index is None or index >= len(self.frames):
+        if index is None or not self.frames_grid or index >= len(self.frames_grid):
             logging.warning(f"EmoteManager: Emote '{name}' not found or index out of range.")
             return
             
         # Replace existing emotes (clear the group for this player)
-        # In this simple implementation, we just clear the whole group 
-        # since it's dedicated to player emotes in the Game class.
+        logging.debug(f"Triggering emote: {name} (index {index})")
         self.emote_group.empty()
         
+        # Get all frames for this emote (column)
+        emote_frames = [self.frames_grid[index + i * 4] for i in range(8)]
+        
         # Create the new emote sprite
-        EmoteSprite(self.frames[index], self.player, self.emote_group)
+        EmoteSprite(emote_frames, self.player, self.emote_group)
 
         
         # Play sound

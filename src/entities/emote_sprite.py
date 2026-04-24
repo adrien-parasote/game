@@ -4,13 +4,15 @@ class EmoteSprite(pygame.sprite.Sprite):
     """
     A sprite representing an emote bubble that rises 15px over its lifetime.
     """
-    def __init__(self, image: pygame.Surface, player, groups: pygame.sprite.Group, duration: float = 1.0):
+    def __init__(self, frames: list[pygame.Surface], player, groups: pygame.sprite.Group, duration: float = 1.0):
         super().__init__(groups)
-        self.image = image
+        self.frames = frames
+        self.image = self.frames[0]
         self.player = player
         self.rect = self.image.get_rect(centerx=player.rect.centerx, bottom=player.rect.top)
         self.duration = duration
         self.elapsed = 0.0
+        self.animation_speed = len(self.frames) / self.duration
 
 
     def update(self, dt: float):
@@ -19,6 +21,11 @@ class EmoteSprite(pygame.sprite.Sprite):
         if self.elapsed >= self.duration:
             self.kill()
             return
+
+        # Animation logic
+        frame_idx = int(self.elapsed * self.animation_speed)
+        if frame_idx < len(self.frames):
+            self.image = self.frames[frame_idx]
 
         # Linear interpolation for the rise effect
         progress = self.elapsed / self.duration

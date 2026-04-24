@@ -200,13 +200,15 @@ The engine uses a multi-pass rendering pipeline to combine layers, entities, and
 - **Rendering**: `pygame.draw.circle` with alpha fading: `alpha = (life / max_life)`.
 
 #### Player Emote System (Visual Indicators)
-- **Asset**: `assets/images/sprites/04-emotes.png` (32x32 sprites).
-- **Animation**: Emote bubble appears at `player.rect.top` and rises 15px over 1 second before self-destructing.
-- **Follow Logic**: The bubble is pinned to the player's X coordinate and relative Y during its entire lifetime.
+- **Asset**: `assets/images/sprites/04-emotes.png` (128x256, mapped as a 4-column x 8-row grid).
+- **Animation**: 
+    - The bubble is constructed using all 8 frames of the assigned column to provide visual animation.
+    - It appears at `player.rect.top` and linearly interpolates 15px upwards over its 1-second lifetime before self-destructing.
+- **Follow Logic**: Pinned to the player's X coordinate and relative Y during its entire lifetime.
 - **Triggers**:
-    - **Proximity (`interact`)**: Triggered when the player is within 48px of any interactive object or NPC.
-    - **Fail Feedback (`question`)**: Triggered when an interaction input occurs but no target is found or the interaction is blocked.
-- **Replacement Policy**: Triggering a new emote immediately clears any existing emote bubble for that player.
+    - **Proximity (`interact`)**: Triggered when within 48px of any interactive object or NPC. Strictly limited by a **1.5s cooldown** to prevent sprite stacking and frame-by-frame spam when iterating spatial checks.
+    - **Fail Feedback (`question`)**: Triggered when an interaction input occurs but no target is found or blocked.
+- **Replacement Policy**: Triggering a new emote immediately `empty()`s the rendering group for that player.
 - **Audio**: Plays `03-emote.ogg` on trigger.
 
 ## 4. Anti-Patterns (DO NOT)

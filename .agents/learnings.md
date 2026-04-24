@@ -55,3 +55,35 @@ This document tracks universal patterns and anti-patterns extracted from the BUI
 **ID:** A-TEST-001
 **Anti-pattern:** Patching `__init__` on a class without manually recreating its mandatory public attributes.
 **Why:** Dependent objects will crash on `AttributeError` when trying to read configuration flags that were never initialized.
+
+### 3. Ambiguous Spritesheet Definitions
+**ID:** A-SPEC-001
+**Anti-pattern:** Defining a spritesheet asset as "animated" in a spec without explicitly stating the grid layout (rows × columns) and frame mapping.
+**Why:** Leads to static frames or incorrect slicing (e.g. slicing 4x1 instead of 4x8), causing "pas en mode animation" bugs.
+
+### 4. Unthrottled Spatial Polling
+**ID:** A-GAME-001
+**Anti-pattern:** Running continuous proximity checks (`distance_to < range`) that trigger visual/audio side-effects without an explicit time-based cooldown.
+**Why:** Causes effect stacking, sprite duplication, or frame-by-frame spam when the logic group clears the state asynchronously or conditionally.
+
+## Learning: Object Orientation vs Player Facing Direction
+**Date:** 2026-04-24
+**Spec:** docs/specs/INTERACTIVE_OBJECTS.md
+**Outcome:** Major Rework
+**Project:** Python Pygame RPG
+
+### What happened
+The player's interaction with directional objects (like chests opening to the right or left) failed because the orientation logic interpreted the object's `direction` as the required player facing direction, rather than the object's physical front side.
+
+### Root cause
+Implicit assumption that interaction direction properties describe the actor's state rather than the target's state.
+
+### Anti-pattern (what to avoid)
+❌ **Don't** treat an object's directional property (e.g., `direction='left'`) as the required player facing direction.
+✅ **Do Instead** treat it as the physical orientation of the object (its front side). If an object faces left, the player must stand on its left side (`player.x < obj.x`) and face the opposite direction (`player.facing = 'right'`).
+
+### Evidence
+- Bug fix in `InteractionManager._verify_orientation` required reversing player `p_state` and verifying orthogonal positioning (`x_aligned`/`y_aligned`) against the object's physical side.
+
+### Scope
+- [x] Universal (applies across top-down 2D grid/pixel-based games)
