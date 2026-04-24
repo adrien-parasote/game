@@ -16,7 +16,8 @@
     "background": "#000000"
   },
   "debug": {
-    "log_level": "INFO"
+    "log_level": "INFO",
+    "enabled": true
   },
   "overlay": {
     "occlusion_alpha": 130

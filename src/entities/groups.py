@@ -69,3 +69,9 @@ class CameraGroup(pygame.sprite.Group):
             screen_sprite_rect = pygame.Rect(offset_pos, visual_rect.size)
             if screen_rect.colliderect(screen_sprite_rect):
                 surface.blit(sprite.image, offset_pos)
+                
+                # Debug Hitbox Rendering
+                from src.config import Settings
+                if Settings.DEBUG:
+                    debug_rect = sprite.rect.move(self.offset.x, self.offset.y)
+                    pygame.draw.rect(surface, (255, 0, 0), debug_rect, 1)

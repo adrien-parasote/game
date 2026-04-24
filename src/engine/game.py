@@ -104,14 +104,22 @@ class Game:
         
         # First load reads the default map from world.world
         default_map = "00-spawn.tmj"
-        world_path = os.path.join("assets", "tiled", "maps", "world.world")
-        if os.path.exists(world_path):
-            try:
-                with open(world_path, "r", encoding="utf-8") as f:
-                    world_data = json.load(f)
-                    default_map = world_data.get("maps", [{}])[0].get("fileName", "00-spawn.tmj")
-            except Exception as e:
-                logging.error(f"Failed to read world.world: {e}")
+        
+        # Debug Room Priority
+        debug_room = "99-debug_room.tmj"
+        debug_path = os.path.join("assets", "tiled", "maps", debug_room)
+        if Settings.DEBUG and os.path.exists(debug_path):
+            logging.info(f"Debug Mode active: Loading {debug_room} as initial map.")
+            default_map = debug_room
+        else:
+            world_path = os.path.join("assets", "tiled", "maps", "world.world")
+            if os.path.exists(world_path):
+                try:
+                    with open(world_path, "r", encoding="utf-8") as f:
+                        world_data = json.load(f)
+                        default_map = world_data.get("maps", [{}])[0].get("fileName", "00-spawn.tmj")
+                except Exception as e:
+                    logging.error(f"Failed to read world.world: {e}")
                 
         self._load_map(default_map)
 
@@ -173,7 +181,7 @@ class Game:
                     if props.get("spawn_id") == target_spawn_id:
                         spawn_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
                         break
-                elif props.get("is_initial_spawn") is True:
+                elif props.get("is_initial_spawn") is True or props.get("is_initial_pawn") is True:
                     spawn_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
                     break
         

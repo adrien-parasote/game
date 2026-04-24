@@ -130,6 +130,7 @@ class Settings:
         # Logging
         level_name = data.get("debug", {}).get("log_level", "INFO").upper()
         cls.LOG_LEVEL = getattr(logging, level_name, logging.INFO)
+        cls.DEBUG: bool = data.get("debug", {}).get("enabled", False)
 
         # Overlay
         cls.OCCLUSION_ALPHA = data.get("overlay", {}).get("occlusion_alpha", 102)
