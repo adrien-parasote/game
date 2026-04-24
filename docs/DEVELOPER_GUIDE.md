@@ -74,4 +74,12 @@ def test_feature():
 1.  Add the `sub_type` to `INTERACTIVE_OBJECTS.md`.
 2.  Define the animation frames in `src/entities/interactive.py`.
 3.  Add any custom logic to `InteractionManager` if it requires new spatial rules.
-4.  Update `fr.json` for any new localized dialogues.
+
+## 7. How to trigger Player Emotes
+
+1.  **Manual Trigger**: Call `player.playerEmote('name')`.
+    - Supported names: `love`, `bored`, `interact`, `question`.
+2.  **Logic Integration**: Emotes are typically triggered from `InteractionManager`.
+    - Proximity-based triggers should be added to `_check_proximity_emotes()`.
+    - Input-based triggers (feedback) should be added to `handle_interactions()`.
+3.  **Rendering**: Emotes are drawn in `Game._draw_scene()` after the HUD pass to ensure they stay on top of all world and UI elements.

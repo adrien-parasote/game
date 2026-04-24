@@ -39,6 +39,9 @@ This document defines the requirements for fixed interactive objects (chests, sw
 
 Interaction is valid if the following conditions are met:
 
+#### 0. Visual Feedback (Indicators)
+The system automatically triggers an **interact** emote (!) above the player when they are within 48px of a valid target. This serves as a "ready to interact" visual cue.
+
 #### I. Omni-directional Objects (Spatial Adjacency)
 If `activate_from_anywhere` is `True`:
 1. **Proximity**: `Vector2(player.pos).distance_to(obj.pos) < 48.0`.

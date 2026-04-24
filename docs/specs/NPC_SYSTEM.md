@@ -19,6 +19,7 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 
 ### [DELEGATED] `src/engine/interaction.py`
 - **[IMPLEMENTED]** Handles all spatial proximity and orientation checks for NPCs.
+- **[IMPLEMENTED]** Triggers the **interact** emote (!) above the player when in proximity (<48px).
 - **[IMPLEMENTED]** Triggers `npc.interact()` and updates NPC state to `interact`.
 
 ### [IMPLEMENTED] `src/engine/game.py`

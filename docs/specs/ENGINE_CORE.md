@@ -185,6 +185,7 @@ The engine uses a multi-pass rendering pipeline to combine layers, entities, and
     *   **Light Halos**: Blit pre-calculated light masks using `BLEND_RGB_ADD` **after** the night overlay to "cut through" the darkness.
 4.  **Pass 3: Foreground**: Draw map layers with `depth=1` (Occlusion).
 5.  **Pass 5: UI/HUD**: Draw clock, season, and active dialogue boxes.
+6.  **Pass 6: Player Emotes**: Rendered manually from `emote_group` with camera offset after the HUD to ensure top-level visibility.
 
 ### S. Dynamic Effect Specifications
 
@@ -197,6 +198,16 @@ The engine uses a multi-pass rendering pipeline to combine layers, entities, and
 - **Data Model**: Simple list of dicts (x, y, vx, vy, life).
 - **Update**: `life -= dt`. Remove if `life <= 0`.
 - **Rendering**: `pygame.draw.circle` with alpha fading: `alpha = (life / max_life)`.
+
+#### Player Emote System (Visual Indicators)
+- **Asset**: `assets/images/sprites/04-emotes.png` (32x32 sprites).
+- **Animation**: Emote bubble appears at `player.rect.top` and rises 15px over 1 second before self-destructing.
+- **Follow Logic**: The bubble is pinned to the player's X coordinate and relative Y during its entire lifetime.
+- **Triggers**:
+    - **Proximity (`interact`)**: Triggered when the player is within 48px of any interactive object or NPC.
+    - **Fail Feedback (`question`)**: Triggered when an interaction input occurs but no target is found or the interaction is blocked.
+- **Replacement Policy**: Triggering a new emote immediately clears any existing emote bubble for that player.
+- **Audio**: Plays `03-emote.ogg` on trigger.
 
 ## 4. Anti-Patterns (DO NOT)
 

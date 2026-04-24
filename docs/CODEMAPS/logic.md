@@ -13,6 +13,16 @@
 - `obj.interact()` → Toggle state + SFX + `WorldState.set`
 - `Game.toggle_entity_by_id` (Chaining recursion depth 1)
 
+## Emote Chain
+`InteractionManager.update` → `_check_proximity_emotes`
+- Check proximity to interactives/NPCs (<48px)
+- `Player.playerEmote('interact')` → `EmoteManager.trigger` → `EmoteSprite` spawn
+`InteractionManager.handle_interactions` (Failed check)
+- `Player.playerEmote('question')`
+`EmoteSprite.update`
+- Follow player + Rise 15px
+- Self-destruct after 1s
+
 ## Dialogue Chain
 `Game._trigger_dialogue` → `DialogueManager.start_dialogue`
 - Pre-calculates wrapping via `_paginate`

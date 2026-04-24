@@ -69,6 +69,8 @@ class Game:
         self.interactives = pygame.sprite.Group()
         self.obstacles_group = pygame.sprite.Group()
         self.teleports_group = pygame.sprite.Group()
+        self.emote_group = pygame.sprite.Group()
+
         
         # Local state
         self.is_fullscreen = Settings.FULLSCREEN
@@ -94,7 +96,10 @@ class Game:
         
         # Player is persisted across maps
         self.player = Player((0, 0), self.visible_sprites, speed=Settings.PLAYER_SPEED, element_id="player")
+        self.player.audio_manager = self.audio_manager
+        self.player.emote_manager.emote_group = self.emote_group
         self.player.collision_func = self._is_collidable
+
         
         # First load reads the default map from world.world
         default_map = "00-spawn.tmj"
@@ -476,6 +481,13 @@ class Game:
             
         self._draw_hud()
         
+        # Draw Emotes (after HUD, with camera offset)
+        cam_offset = self.visible_sprites.offset
+        for sprite in self.emote_group:
+            screen_pos = (sprite.rect.x + cam_offset.x, sprite.rect.y + cam_offset.y)
+            self.screen.blit(sprite.image, screen_pos)
+
+        
         if self.dialogue_manager.is_active:
             self.dialogue_manager.draw(self.screen)
 
@@ -507,6 +519,7 @@ class Game:
             dt = self.clock.tick(Settings.FPS) / 1000.0
             
             # --- Logical Pause for Dialogue ---
+            self.emote_group.update(dt)
             if self.dialogue_manager.is_active:
                 self.dialogue_manager.update(dt)
             else:

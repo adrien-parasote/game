@@ -3,6 +3,7 @@ from .base import BaseEntity
 from src.config import Settings
 from src.graphics.spritesheet import SpriteSheet
 import os
+from src.entities.emote import EmoteManager
 
 class Player(BaseEntity):
     """Player entity with keyboard input handling."""
@@ -26,6 +27,11 @@ class Player(BaseEntity):
         # Ensure physical hitbox remains exactly 32x32 regardless of image size
         self.rect = pygame.Rect(0, 0, Settings.TILE_SIZE, Settings.TILE_SIZE)
         self.rect.center = pos
+        
+        # Emote System
+        self.audio_manager = None # Set by Game
+        self.emote_manager = EmoteManager(self)
+
 
     def input(self):
         """Get keyboard input and set direction."""
@@ -79,3 +85,8 @@ class Player(BaseEntity):
         # But in the game loop we would
         self.move(dt)
         self._update_animation(dt)
+
+    def playerEmote(self, name: str):
+        """Trigger an emote on the player."""
+        self.emote_manager.trigger(name)
+

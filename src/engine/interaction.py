@@ -13,9 +13,11 @@ class InteractionManager:
         self._interaction_cooldown = 0
         
     def update(self, dt: float):
-        """Update timers for interaction gating."""
+        """Update timers and check for nearby interactives to trigger indicators."""
         if self._interaction_cooldown > 0:
             self._interaction_cooldown = max(0, self._interaction_cooldown - dt)
+            
+        self._check_proximity_emotes()
 
     def handle_interactions(self):
         """Main entry point for checking interactions based on player input."""
@@ -35,7 +37,35 @@ class InteractionManager:
                 return
 
             # 2. Interactive Objects (Proximity & Orientation based)
-            self._check_object_interactions()
+            if self._check_object_interactions():
+                return
+                
+            # 3. Failed Interaction (Question mark)
+            # Trigger 'question' emote if we are facing a collision or just pressed Action in thin air
+            self.game.player.playerEmote('question')
+
+    def _check_proximity_emotes(self):
+        """Trigger 'interact' emote when near an interactive object or NPC."""
+        # Only check if no emote is active to avoid spamming
+        if self.game.emote_group:
+            return
+            
+        p_pos = self.game.player.pos
+        range_dist = 48.0 # 48 pixels
+        
+        # Check Objects
+        for obj in self.game.interactives:
+            if p_pos.distance_to(obj.pos) < range_dist:
+                self.game.player.playerEmote('interact')
+                return
+                
+        # Check NPCs
+        for npc in self.game.npcs:
+            if p_pos.distance_to(npc.pos) < range_dist:
+                self.game.player.playerEmote('interact')
+                return
+
+
 
     def _check_npc_interactions(self) -> bool:
         """Check for nearby NPCs in front of the player."""
@@ -86,7 +116,8 @@ class InteractionManager:
                     target = getattr(obj, "target_id", None)
                     if target:
                         self.game.toggle_entity_by_id(target, depth=1)
-                return
+                return True
+        return False
 
     def _get_player_facing_vector(self) -> pygame.math.Vector2:
         """Get unit vector based on player facing direction."""

@@ -19,6 +19,12 @@ Even if an object has `activate_from_anywhere = true`, it now requires **Directi
 - **Logic**: 
   - If horizontal distance > vertical distance: Player must face `right` if `dx > 0`, or `left` if `dx < 0`.
   - Otherwise: Player must face `down` if `dy > 0`, or `up` if `dy < 0`.
+  
+### 2.3 Visual Proximity Indicators (Emotes)
+The engine provides visual feedback to guide the player toward interactions.
+- **Trigger**: Automatic `interact` (!) emote when `distance < 48px` to an interactive object or NPC.
+- **Gating**: Only triggers if no emote is currently active to prevent visual clutter.
+- **Feedback**: Provides immediate spatial awareness of interactable elements before the player presses any key.
 
 ## 3. Teleportation System
 
