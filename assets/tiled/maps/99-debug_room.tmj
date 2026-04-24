@@ -512,7 +512,7 @@
                                  "name":"required_direction",
                                  "propertytype":"23-direction",
                                  "type":"string",
-                                 "value":"right"
+                                 "value":"left"
                                 }, 
                                 {
                                  "name":"target_map",
@@ -541,7 +541,7 @@
                                  "name":"required_direction",
                                  "propertytype":"23-direction",
                                  "type":"string",
-                                 "value":"right"
+                                 "value":"left"
                                 }, 
                                 {
                                  "name":"target_map",
