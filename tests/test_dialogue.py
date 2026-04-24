@@ -75,3 +75,25 @@ def test_dialogue_paging_logic_reset(dialogue_env):
     assert dm.message == "New"
     # New message should have its own pages
     assert dm._pages != [["Line 1"], ["Line 2"]]
+
+def test_dialogue_pagination_height_adjustment(dialogue_env):
+    """Verify that no title allows more lines than with title."""
+    dm = DialogueManager()
+    # Force fonts and box to be loaded/mocked if necessary, 
+    # but here we rely on standard init.
+    
+    long_text = "word " * 100
+    
+    # 1. With Title
+    dm.start_dialogue(long_text, title="Title")
+    lines_with_title = sum(len(p) for p in dm._pages)
+    max_lines_with_title = len(dm._pages[0])
+    
+    # 2. Without Title
+    dm.start_dialogue(long_text, title="")
+    lines_without_title = sum(len(p) for p in dm._pages)
+    max_lines_without_title = len(dm._pages[0])
+    
+    # Without title, we should have more lines per page (or fewer pages for same text)
+    assert max_lines_without_title > max_lines_with_title
+

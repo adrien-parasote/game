@@ -81,8 +81,10 @@ class DialogueManager:
         content_margin_x = 140
         max_w = self.dialogue_box.get_width() - (content_margin_x * 2)
         
-        # Simplified: title is often present or we want consistent paging
-        available_h = self.dialogue_box.get_height() - 90 - 40 
+        # Available height calculation
+        # Matches draw() logic: message_y starts at 90 with title, 42 without.
+        message_y_offset = 90 if self.title else 42
+        available_h = self.dialogue_box.get_height() - message_y_offset - 40 
         
         line_spacing = 1.2
         line_height = self.font_message.get_linesize() * line_spacing
