@@ -135,6 +135,13 @@ The engine features a centralized audio system for atmospheric music and interac
 - **Transitions**: BGM changes involve a 500ms fade-out/fade-in.
 - **SFX Overlap Guard**: SFX playback tracks a `source_id`. If the same source (e.g., a lever) triggers its SFX again before completion, the previous instance is stopped to prevent volume doubling/flanging.
 
+### O. Debug Mode & Visual Hitboxes
+The engine includes a technical debugging layer for development verification.
+- **Toggle**: Controlled by `Settings.DEBUG` (loaded from `settings.json`'s `debug.enabled` field).
+- **Map Override**: If `DEBUG` is active, the engine bypasses the default map and loads `99-debug_room.tmj` at startup.
+- **Hitbox Rendering**: When active, all entity physical hitboxes (`rect`) are outlined in red (`(255, 0, 0)`) in the `CameraGroup` draw loop.
+- **Robustness**: Debug rendering is wrapped in safety checks to handle mock surfaces during automated testing.
+
 ## 3. Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |
