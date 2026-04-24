@@ -148,6 +148,8 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | Use Pygame Sprites for particles | Use simple lists of dicts | Sprite allocation overhead causes GC lag when managing hundreds of short-lived particles |
 | Unlimited interaction chaining | Limit chaining depth to 1 | Prevents accidental infinite loops and stack overflows in map data |
 | Ignore direction for omni-objects | Maintain 48px proximity AND facing requirement | Keeps interaction grounded in spatial awareness and intentionality |
+| Rolling text for signs/books | Use Paginated Dialogue System | Allows for multi-page reading with user control |
+
 
 ## ✅ Patterns to Reproduce
 

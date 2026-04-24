@@ -39,6 +39,8 @@ This section defines the behavior and failure modes for autonomous entities.
 | Move NPCs when off-camera | Freeze distant NPCs (CPU Freeze) | Enlarged viewport (128px) determines `is_visible` |
 | `Player` handles dialogue UI | `Game` or `UI_Manager` handles dialogue | Decouples rendering overlay from input entity |
 | Manual property parsing in AI logic | Use `TmjParser` properties dict | Centralizes data extraction and simplifies AI classes |
+| Immediate full-text display | Use Paginated Dialogue System | Improves readability for long NPC dialogues |
+
 
 ### 3.2. NPC Animation & Facing
 - **Rows**: 0:Down, 1:Left, 2:Right, 3:Up (Physical sheet offsets: 0, 4, 8, 12).
