@@ -1,20 +1,32 @@
 <!-- Generated: 2026-04-24 | Files scanned: 25 | Token estimate: ~400 -->
 
-# RPG Engine Architecture
+# Game Engine Architecture
 
-## Core Flow
-main.py → Game.run() → Game.update() → Game.draw()
-Game.update() → TimeSystem.update() → Entities.update() → Interaction Check
-Game.draw() → Map.render() → Y-Sorted Entities → UIManager.draw()
+## System Overview
+`src/main.py` → `Game.run()` (Main Loop) → `Event Handling` + `Logic Update` + `Render Sequence`
 
-## Key Modules
-- **Engine**: `src/engine/game.py` (Main loop, event bus, state)
-- **Data**: `src/map/tmj_parser.py` (Tiled TMJ/TSX resolving), `src/engine/world_state.py` (Persistence)
-- **Entities**: `src/entities/base.py` (Grid movement), `src/entities/npc.py` (AI), `src/entities/interactive.py` (Triggers)
-- **UI**: `src/ui/hud.py` (Clock), `src/ui/dialogue.py` (Paginated UI)
-- **Graphics**: `src/graphics/spritesheet.py` (Asset management)
+## Core Coordination (src/engine/)
+- `game.py`: Main Orchestrator. Coordinates managers and main sprite groups.
+- `interaction.py`: `InteractionManager`. Handles spatial triggers and orientation math.
+- `time_system.py`: `TimeSystem`. Drives game clock, seasons, and lighting alpha.
+- `world_state.py`: `WorldState`. Session-persistent dictionary for interactive states.
+- `audio.py`: `AudioManager`. Centralized BGM and SFX controller.
 
-## Tech Stack
-- **Runtime**: Python 3.13+
-- **Framework**: Pygame-ce (Rendering, Input, Audio)
-- **Map Format**: Tiled 1.10+ (TMJ/TSX + .world)
+## Data Flow
+`assets/*.tmj` → `TmjParser` (Resolves Tiled Project Schema) → `MapManager` (Frustum Culling) → `Game` (Rendering Pass)
+
+## Rendering Pipeline
+`Game._draw_scene`
+1. Background Layers (depth=0)
+2. Sorted Entities (Y-Sort via `CameraGroup`)
+3. Night Overlay (Alpha blending)
+4. Light Halos & Particles (Additive blending)
+5. Foreground Layers (depth=1)
+6. HUD & Dialogue Overlay
+
+## Key Sprite Groups
+- `visible_sprites`: `CameraGroup` with custom Y-Sort drawing.
+- `interactives`: `InteractiveEntity` (Chests, doors, levers).
+- `npcs`: `NPC` (Wandering AI entities).
+- `teleports_group`: `Teleport` (Logical trigger volumes).
+- `obstacles_group`: Solid hitboxes for collision detection.
