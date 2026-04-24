@@ -19,7 +19,7 @@ Detailed implementation specification for the debug room and visual hitbox debug
 |---------|-----------|-------|-----------------|------------|
 | TC-CONF-01 | Settings | JSON with `debug.enabled: true` | `Settings.DEBUG == True` | Missing section (default to False) |
 | TC-MAP-01 | Game Init | `DEBUG == True` | `default_map == "99-debug_room.tmj"` | Debug map file missing (fallback) |
-| TC-SPAWN-01 | Game Spawn | Object with `is_initial_pawn: True` | Player position == Object position | Multiple spawn points (first one wins) |
+| TC-SPAWN-01 | Game Spawn | Object with `is_initial_pawn: True` | Player position == Object position | Supported alongside `is_initial_spawn` |
 
 ### Integration Tests
 | Test ID | Flow | Setup | Verification | Teardown |
