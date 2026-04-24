@@ -25,7 +25,7 @@ def test_dialogue_start(dialogue_env):
     assert dm.is_active is True
     assert dm.message == "Test Message"
     assert dm.displayed_text == ""
-    assert dm.text_index == 0.0
+    assert dm._page_char_index == 0.0
 
 def test_dialogue_typewriter(dialogue_env):
     """Typewriter effect should advance text based on dt and speed."""
@@ -45,7 +45,7 @@ def test_dialogue_typewriter(dialogue_env):
     # Finish it
     dm.update(1.0)
     assert dm.displayed_text == "Hello World"
-    assert dm.text_index >= len(dm.message)
+    assert dm._page_char_index >= len(dm.displayed_text)
 
 def test_dialogue_advance_skip(dialogue_env):
     """Advance should skip typing if in progress."""
@@ -53,24 +53,25 @@ def test_dialogue_advance_skip(dialogue_env):
     dm.typewriter_speed = 1.0 # Very slow
     dm.start_dialogue("Wait for it...")
     dm.update(0.1)
-    assert len(dm.displayed_text) < len(dm.message)
+    assert len(dm.displayed_text) < len("Wait for it...")
     
-    # First advance: finish text
+    # First advance: finish current page text
     dm.advance()
     assert dm.displayed_text == "Wait for it..."
     assert dm.is_active is True
     
-    # Second advance: close
+    # Second advance: close (since it's only one page)
     dm.advance()
     assert dm.is_active is False
 
-def test_dialogue_rolling_logic(dialogue_env):
-    """Verify that _wrapped_lines is reset on start."""
+def test_dialogue_paging_logic_reset(dialogue_env):
+    """Verify that _pages is reset on start."""
     dm = DialogueManager()
     dm.start_dialogue("Initial")
-    # Simulate some drawing state if needed, but primarily test reset
-    dm._wrapped_lines = ["Line 1", "Line 2"]
+    # Manually inject dummy pages
+    dm._pages = [["Line 1"], ["Line 2"]]
     
     dm.start_dialogue("New")
     assert dm.message == "New"
-    assert dm._wrapped_lines == []
+    # New message should have its own pages
+    assert dm._pages != [["Line 1"], ["Line 2"]]

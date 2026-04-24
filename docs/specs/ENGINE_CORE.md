@@ -100,7 +100,7 @@ The HUD provides information about the current time, day, and season.
 - **Dialogue UI**:
   - **Message Zone**: Centered horizontally, occupies the middle-third of the text box.
   - **Typewriter Effect**: Speed controlled by `Settings.TEXT_SPEED` (characters per second).
-  - **Rolling Logic**: Automatic line management. If the wrapped text exceeds the box's vertical capacity, the oldest line is removed from the top to allow new lines to "roll" into view.
+  - **Paging Logic**: Automatic pagination. If text exceeds the box's capacity, the typing stops. The user must press the interaction key (`Settings.INTERACT_KEY`) to skip typing or advance to the next page.
 - **Label System**: Uses `fr.json` (or other lang) for localized strings.
 
 ### M. Interconnected World (Teleportation)
@@ -159,7 +159,7 @@ The engine features a centralized audio system for atmospheric music and interac
 | TC-M-01 | TSX Parsing | External .tsx file | `tile_dict` populated with collidable data |
 | TC-X-01 | Interaction | Door closed | `_is_collidable` returns `True` |
 | TC-X-02 | Interaction | Door open + Passable | `_is_collidable` returns `False` |
-| TC-H-01 | HUD | Interaction log added | HUD renders message with scrolling logic |
+| TC-H-01 | HUD | Interaction log added | HUD renders message with paging logic |
 | TC-G-01 | Run Loop | QUIT event | `sys.exit()` called, loop terminates |
 | TC-T-01 | Teleport | Overlap + Finish Move | `_load_map` called with correct target |
 | TC-T-02 | Fading | `transition_type="fade"` | Screen alpha increments, player frozen |

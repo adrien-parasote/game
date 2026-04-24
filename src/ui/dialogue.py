@@ -14,13 +14,15 @@ class DialogueManager:
         self.message = ""
         self.title = ""
         self.displayed_text = ""
-        self.text_index = 0.0
+        
         # Settings.TEXT_SPEED is delay per character (seconds); convert to chars per second
         self.typewriter_speed = 1.0 / getattr(Settings, "TEXT_SPEED", 0.05)
-        # Rolling text state
-        self._wrapped_lines: list[str] = []  # lines currently visible
-        self._max_lines: int = 0  # will be computed during draw
-
+        
+        # Paginated text state
+        self._pages: list[list[str]] = []  # List of pages, each page is a list of lines
+        self._current_page_index = 0
+        self._page_char_index = 0.0
+        self._is_page_complete = False
         
         # UI Assets
         self.dialogue_box = None
@@ -69,42 +71,111 @@ class DialogueManager:
         except Exception as e:
             logging.error(f"Failed to load dialogue assets: {e}")
 
+    def _paginate(self, text: str):
+        """Split text into pages based on font metrics and box size."""
+        if not self.font_message or not self.dialogue_box:
+            self._pages = [[text]] if text else []
+            return
+
+        # Fixed layout metrics (aligned with draw logic)
+        content_margin_x = 140
+        max_w = self.dialogue_box.get_width() - (content_margin_x * 2)
+        
+        # Simplified: title is often present or we want consistent paging
+        available_h = self.dialogue_box.get_height() - 90 - 40 
+        
+        line_spacing = 1.2
+        line_height = self.font_message.get_linesize() * line_spacing
+        max_lines = max(1, int(available_h // line_height))
+        
+        # 1. Wrap all text into lines
+        all_lines = []
+        words = text.split(' ')
+        current_line_words = []
+        
+        for word in words:
+            test_line = ' '.join(current_line_words + [word]) if current_line_words else word
+            if self.font_message.size(test_line)[0] <= max_w:
+                current_line_words.append(word)
+            else:
+                all_lines.append(' '.join(current_line_words))
+                current_line_words = [word]
+        if current_line_words:
+            all_lines.append(' '.join(current_line_words))
+            
+        # 2. Group lines into pages
+        self._pages = []
+        for i in range(0, len(all_lines), max_lines):
+            self._pages.append(all_lines[i:i + max_lines])
+
     def start_dialogue(self, text: str, title: str = ""):
         """Activate the dialogue system with a message and optional title."""
+        if not text:
+            self.is_active = False
+            return
+
         self.message = text
         self.title = title
         self.is_active = True
         self.displayed_text = ""
-        self.text_index = 0.0
-        self._wrapped_lines = []
-        logging.info(f"Dialogue started: [{title}] {text[:30]}...")
+        self._current_page_index = 0
+        self._page_char_index = 0.0
+        self._is_page_complete = False
+        
+        self._paginate(text)
+        
+        if not self._pages:
+            self.is_active = False
+            return
+            
+        logging.info(f"Dialogue started: [{title}] {text[:30]}... ({len(self._pages)} pages)")
 
     def advance(self):
-        """Close the dialogue when the user interacts, or skip typewriter."""
-        if self.text_index < len(self.message):
-            # Skip to end of text
-            self.text_index = float(len(self.message))
-            self.displayed_text = self.message
+        """Handle dialogue progression: skip typing, next page, or close."""
+        if not self.is_active:
+            return
+
+        # 1. If currently typing, skip to end of page
+        if not self._is_page_complete:
+            current_page_text = " ".join(self._pages[self._current_page_index])
+            self._page_char_index = float(len(current_page_text))
+            self.displayed_text = current_page_text
+            self._is_page_complete = True
+            return
+
+        # 2. If page is complete, check if there are more pages
+        if self._current_page_index < len(self._pages) - 1:
+            self._current_page_index += 1
+            self._page_char_index = 0.0
+            self._is_page_complete = False
+            self.displayed_text = ""
         else:
+            # 3. Last page finished, close dialogue
             self.is_active = False
             self.message = ""
             self.title = ""
             self.displayed_text = ""
+            self._pages = []
 
     def update(self, dt: float):
-        """Update typewriter animation and manage rolling lines."""
-        if self.is_active and self.text_index < len(self.message):
-            # Advance typing
-            self.text_index += self.typewriter_speed * dt
-            current_len = int(self.text_index)
-            if current_len > len(self.message):
-                current_len = len(self.message)
-            self.displayed_text = self.message[:current_len]
-        # Store dt for possible future use
-        self._last_dt = dt
+        """Update typewriter animation for the current page."""
+        if not self.is_active or self._is_page_complete:
+            return
+            
+        current_page_text = " ".join(self._pages[self._current_page_index])
+        
+        if self._page_char_index < len(current_page_text):
+            self._page_char_index += self.typewriter_speed * dt
+            current_len = int(self._page_char_index)
+            if current_len >= len(current_page_text):
+                current_len = len(current_page_text)
+                self._is_page_complete = True
+            self.displayed_text = current_page_text[:current_len]
+        else:
+            self._is_page_complete = True
 
     def draw(self, screen):
-        """Draw the dialogue box with title and message."""
+        """Draw the dialogue box and paginated text."""
         if not self.is_active or not self.dialogue_box:
             return
             
@@ -112,59 +183,47 @@ class DialogueManager:
         box_rect = self.dialogue_box.get_rect(midbottom=(Settings.WINDOW_WIDTH // 2, Settings.WINDOW_HEIGHT - 20))
         screen.blit(self.dialogue_box, box_rect)
         
-        # Recalibrated offsets based on target image (scaled by 0.5)
-        # Original target margins: Left ~280px -> 140px scaled
         content_margin_x = 140
 
+        # 2. Draw Title
         if self.title and self.font_title:
             title_x = box_rect.x + content_margin_x
             title_y = box_rect.y + 42
-
             # Shadow
             s_surf = self.font_title.render(self.title, True, self._shadow_color)
             screen.blit(s_surf, (title_x + self._shadow_offset, title_y + self._shadow_offset))
             # Title
             title_surf = self.font_title.render(self.title, True, self._text_color)
             screen.blit(title_surf, (title_x, title_y))
-
-            # Message starts below title
             message_y = box_rect.y + 90
         else:
-            # No title, message takes full height starting from title's y-position
             message_y = box_rect.y + 42
 
-        # 3. Draw Message
-        message_x = box_rect.x + content_margin_x
-        max_w = box_rect.width - (content_margin_x * 2)
-        # Compute available vertical space for text
-        available_h = box_rect.height - (message_y - box_rect.y) - 40 # 40px bottom margin
-        
-        if self.font_message:
+        # 3. Draw Message Lines for Current Page
+        if self.font_message and self._pages:
+            message_x = box_rect.x + content_margin_x
             line_spacing = 1.2
             line_height = self.font_message.get_linesize() * line_spacing
-            max_lines = int(available_h // line_height)
             
-            # Wrap displayed text
+            # Determine which lines of the current page to show based on displayed_text
+            # We reconstruct the lines from displayed_text using the same wrapping logic
+            max_w = box_rect.width - (content_margin_x * 2)
             words = self.displayed_text.split(' ')
-            lines = []
+            lines_to_draw = []
             current_line = []
             for word in words:
                 test_line = ' '.join(current_line + [word]) if current_line else word
                 if self.font_message.size(test_line)[0] <= max_w:
                     current_line.append(word)
                 else:
-                    lines.append(' '.join(current_line))
+                    lines_to_draw.append(' '.join(current_line))
                     current_line = [word]
             if current_line:
-                lines.append(' '.join(current_line))
+                lines_to_draw.append(' '.join(current_line))
             
-            # Rolling effect: keep only the last N lines that fit
-            if len(lines) > max_lines:
-                lines = lines[-max_lines:]
-            
-            # Draw lines
+            # Draw each line
             y_offset = 0
-            for line in lines:
+            for line in lines_to_draw:
                 # Shadow
                 shadow_surf = self.font_message.render(line, True, self._shadow_color)
                 screen.blit(shadow_surf, (message_x + self._shadow_offset, message_y + y_offset + self._shadow_offset))
@@ -173,8 +232,9 @@ class DialogueManager:
                 screen.blit(line_surf, (message_x, message_y + y_offset))
                 y_offset += line_height
 
-        # 4. Draw Next Arrow
-        if self.next_arrow and self.text_index >= len(self.message):
+        # 4. Draw Next Arrow when page is complete
+        if self.next_arrow and self._is_page_complete:
+            # Subtle bounce effect could be added here
             arrow_x = box_rect.x + box_rect.width - content_margin_x + 10
             arrow_y = box_rect.y + 140
             screen.blit(self.next_arrow, (arrow_x, arrow_y))
