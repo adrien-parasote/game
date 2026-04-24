@@ -11,11 +11,15 @@ class InteractionManager:
     def __init__(self, game):
         self.game = game
         self._interaction_cooldown = 0
+        self._emote_cooldown = 0 # Cooldown between proximity emote triggers
+        self._last_proximity_target = None # Tracks the last entity we emoted for
         
     def update(self, dt: float):
         """Update timers and check for nearby interactives to trigger indicators."""
         if self._interaction_cooldown > 0:
             self._interaction_cooldown = max(0, self._interaction_cooldown - dt)
+        if self._emote_cooldown > 0:
+            self._emote_cooldown = max(0, self._emote_cooldown - dt)
             
         self._check_proximity_emotes()
 
@@ -46,24 +50,46 @@ class InteractionManager:
 
     def _check_proximity_emotes(self):
         """Trigger 'interact' emote when near an interactive object or NPC."""
-        # Only check if no emote is active to avoid spamming
-        if self.game.emote_group:
+        # Only check if no emote is active and cooldown is over to avoid spamming
+        if self._emote_cooldown > 0 or len(self.game.emote_group) > 0:
             return
             
         p_pos = self.game.player.pos
+        p_state = self.game.player.current_state
         range_dist = 48.0 # 48 pixels
         
         # Check Objects
         for obj in self.game.interactives:
             if p_pos.distance_to(obj.pos) < range_dist:
-                self.game.player.playerEmote('interact')
-                return
+                is_aligned = abs(p_pos.x - obj.pos.x) < 20 or abs(p_pos.y - obj.pos.y) < 20
+                
+                valid_position = False
+                if getattr(obj, "activate_from_anywhere", False):
+                    valid_position = is_aligned and self._facing_toward(p_pos, p_state, obj.pos)
+                else:
+                    valid_position = is_aligned and self._verify_orientation(obj, p_state, p_pos)
+                    
+                if valid_position:
+                    if obj != getattr(self, '_last_proximity_target', None):
+                        self.game.player.playerEmote('interact')
+                        self._emote_cooldown = 1.5 # 1s animation + 0.5s pause
+                        self._last_proximity_target = obj
+                    return
                 
         # Check NPCs
         for npc in self.game.npcs:
             if p_pos.distance_to(npc.pos) < range_dist:
-                self.game.player.playerEmote('interact')
-                return
+                is_aligned = abs(p_pos.x - npc.pos.x) < 20 or abs(p_pos.y - npc.pos.y) < 20
+                is_facing = self._facing_toward(p_pos, p_state, npc.pos)
+                if is_aligned and is_facing:
+                    if npc != getattr(self, '_last_proximity_target', None):
+                        self.game.player.playerEmote('interact')
+                        self._emote_cooldown = 1.5
+                        self._last_proximity_target = npc
+                    return
+                
+        # Reset if nothing is in range
+        self._last_proximity_target = None
 
 
 
@@ -139,20 +165,29 @@ class InteractionManager:
 
     def _verify_orientation(self, obj, p_state: str, p_pos: pygame.math.Vector2) -> bool:
         """Verify if player is correctly oriented toward an object to interact."""
+        # o_dir is the direction the object faces (its front).
+        # To interact with its front, the player must be on that side, facing the opposite way.
         o_dir = getattr(obj, "direction_str", "down")
         o_pos = obj.pos
         
-        # Standard directional check
-        if o_dir == 'up' and p_state == 'up' and p_pos.y > o_pos.y: return True
-        if o_dir == 'down' and p_state == 'down' and p_pos.y < o_pos.y: return True
-        if o_dir == 'left' and p_state == 'left' and p_pos.x > o_pos.x: return True
-        if o_dir == 'right' and p_state == 'right' and p_pos.x < o_pos.x: return True
+        # Enforce orthogonal alignment
+        x_aligned = abs(p_pos.x - o_pos.x) < 20
+        y_aligned = abs(p_pos.y - o_pos.y) < 20
         
-        # Relaxation for open doors
+        # DEBUG LOGGING (to trace the exact reason for failure)
+        # logging.info(f"[Verify] o_dir={o_dir}, p_state={p_state}, x_aligned={x_aligned}, y_aligned={y_aligned}, p_pos={p_pos}, o_pos={o_pos}")
+        
+        # Standard directional check
+        if o_dir == 'up' and p_state == 'down' and p_pos.y < o_pos.y and x_aligned: return True
+        if o_dir == 'down' and p_state == 'up' and p_pos.y > o_pos.y and x_aligned: return True
+        if o_dir == 'left' and p_state == 'right' and p_pos.x < o_pos.x and y_aligned: return True
+        if o_dir == 'right' and p_state == 'left' and p_pos.x > o_pos.x and y_aligned: return True
+        
+        # Relaxation for open doors (allow walking through/closing from the opposite side)
         if obj.sub_type == 'door' and getattr(obj, "is_on", False):
-            if o_dir == 'up' and p_state == 'down' and p_pos.y > o_pos.y: return True
-            if o_dir == 'down' and p_state == 'up' and p_pos.y < o_pos.y: return True
-            if o_dir == 'left' and p_state == 'right' and p_pos.x < o_pos.x: return True
-            if o_dir == 'right' and p_state == 'left' and p_pos.x > o_pos.x: return True
+            if o_dir == 'up' and p_state == 'up' and p_pos.y > o_pos.y and x_aligned: return True
+            if o_dir == 'down' and p_state == 'down' and p_pos.y < o_pos.y and x_aligned: return True
+            if o_dir == 'left' and p_state == 'left' and p_pos.x > o_pos.x and y_aligned: return True
+            if o_dir == 'right' and p_state == 'right' and p_pos.x < o_pos.x and y_aligned: return True
             
         return False

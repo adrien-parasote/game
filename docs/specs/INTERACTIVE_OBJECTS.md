@@ -53,12 +53,18 @@ If `activate_from_anywhere` is `False` (Default):
 1. **Proximity**: `Vector2(player.pos).distance_to(obj.pos) < 45.0`.
    - `obj.pos` is the **footprint center** (center of the bottom 32x32 area).
    - Interaction is calculated as **Footprint-to-Footprint** distance.
-2. **Relative Orientation (Opposite Rule)**: 
-   - Uses `InteractiveEntity.POSITION_TO_DIR` mapping: `0:Up, 1:Right, 2:Left, 3:Down`.
-   - Object `up` (opens from south) -> Player must be south (`y > obj_y`) and facing `up`.
-   - Object `down` -> Player must be north (`y < obj_y`) and facing `down`.
-   - Object `left` -> Player must be east (`x > obj_x`) and facing `left`.
-   - Object `right` -> Player must be west (`x < obj_x`) and facing `right`.
+2. **Relative Orientation (Physical Front Side Rule)**: 
+   - Uses `InteractiveEntity.POSITION_TO_DIR` standard mapping: `0:Down, 1:Left, 2:Right, 3:Up`.
+   - The direction specifies the object's **front side** (e.g. `down` means it faces the bottom of the screen).
+   - The player must stand on the **corresponding physical side**, facing the **opposite way** (towards the object).
+   - Object `down` -> Player must be south (`y > obj_y`), facing `up`.
+   - Object `up` -> Player must be north (`y < obj_y`), facing `down`.
+   - Object `left` -> Player must be west (`x < obj_x`), facing `right`.
+   - Object `right` -> Player must be east (`x > obj_x`), facing `left`.
+3. **Orthogonal Alignment**: 
+   - The player must be orthogonally aligned to the front side (`abs(dx) < 20` or `abs(dy) < 20`), preventing diagonal triggers.
+4. **Exception for Doors**:
+   - Open doors (`is_on=True`) allow interaction from the opposite side to allow closing them while walking through.
 
 **Signs (`sub_type == 'sign'`)**:
 Signs prioritize the `facing_direction` property (e.g., `up`, `down`) to determine the valid interaction side. If absent, they fallback to the `position` index mapping.

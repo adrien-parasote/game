@@ -14,13 +14,13 @@ class InteractiveEntity(BaseEntity):
     and optional lighting halo.
     """
     
-    # Position to Direction mapping for interaction validation (Opposite Rule)
-    # 0=Up, 1=Right, 2=Left, 3=Down
+    # Position to Direction mapping for interaction validation
+    # Standard RPG spritesheet layout: 0=Down, 1=Left, 2=Right, 3=Up
     POSITION_TO_DIR = {
-        0: 'up',
-        1: 'right',
-        2: 'left',
-        3: 'down'
+        0: 'down',
+        1: 'left',
+        2: 'right',
+        3: 'up'
     }
 
     def __init__(self, pos: tuple, groups: list[pygame.sprite.Group], 
@@ -74,7 +74,10 @@ class InteractiveEntity(BaseEntity):
         self.col_index = position
         
         # Determine direction_str (Priority: facing_direction > POSITION_TO_DIR)
-        self.direction_str = facing_direction if facing_direction else self.POSITION_TO_DIR.get(position, 'down')
+        if facing_direction:
+            self.direction_str = facing_direction
+        else:
+            self.direction_str = self.POSITION_TO_DIR.get(position, 'down')
         
         # State
         # If starting ON and not animated, jump to end frame (e.g., open door)

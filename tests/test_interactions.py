@@ -61,21 +61,24 @@ def test_object_interaction_facing(mock_game):
     """Interaction with object should require correct orientation."""
     im = InteractionManager(mock_game)
     obj = MagicMock(spec=InteractiveEntity)
-    obj.pos = pygame.math.Vector2(100, 140) # Close to player
+    # Chest is facing DOWN (opens towards bottom of screen)
     obj.direction_str = 'down'
     obj.sub_type = 'chest'
     obj.interact.return_value = None
     mock_game.interactives.add(obj)
     
-    # Player facing down, obj is down -> OK
-    mock_game.player.current_state = 'down'
+    # Player is BELOW chest (y > obj.y), facing UP -> OK
+    mock_game.player.pos = pygame.math.Vector2(100, 140)
+    obj.pos = pygame.math.Vector2(100, 120)
+    mock_game.player.current_state = 'up'
     with patch('pygame.key.get_pressed', return_value={Settings.INTERACT_KEY: True}):
         im.handle_interactions()
     assert obj.interact.call_count == 1
     
-    # Player facing up, obj is down -> NO
+    # Player is ABOVE chest, facing DOWN -> NO (back of the chest)
     obj.interact.reset_mock()
-    mock_game.player.current_state = 'up'
+    mock_game.player.pos = pygame.math.Vector2(100, 100)
+    mock_game.player.current_state = 'down'
     im._interaction_cooldown = 0 # reset cooldown
     with patch('pygame.key.get_pressed', return_value={Settings.INTERACT_KEY: True}):
         im.handle_interactions()
@@ -85,13 +88,13 @@ def test_door_relaxation_logic(mock_game):
     """Open doors can be closed from the 'wrong' side."""
     im = InteractionManager(mock_game)
     door = MagicMock(spec=InteractiveEntity)
-    door.pos = pygame.math.Vector2(100, 80) # Above player
-    door.direction_str = 'up'
+    door.pos = pygame.math.Vector2(100, 120) 
+    door.direction_str = 'down' # Front faces down
     door.sub_type = 'door'
     door.is_on = True # Door is open
     mock_game.interactives.add(door)
     
-    # Player is below door, facing DOWN (wrong side but it's open) -> OK
+    # Player is ABOVE door, facing DOWN (wrong side but it's open) -> OK
     mock_game.player.current_state = 'down'
     mock_game.player.pos = pygame.math.Vector2(100, 100)
     
