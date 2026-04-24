@@ -3,6 +3,7 @@ import sys
 import logging
 import logging.handlers
 import os
+import json
 from src.entities.player import Player
 from src.entities.interactive import InteractiveEntity
 from src.entities.npc import NPC
@@ -16,7 +17,7 @@ from src.config import Settings
 from src.ui.hud import GameHUD
 from src.ui.dialogue import DialogueManager
 from src.engine.audio import AudioManager
-import json
+from src.engine.interaction import InteractionManager
 
 
 def _get_property(props: dict, key: str, default=None):
@@ -39,16 +40,6 @@ def _get_property(props: dict, key: str, default=None):
         return sp[key]
         
     return default
-
-
-def _facing_toward(player_pos: pygame.math.Vector2, facing: str, obj_pos: pygame.math.Vector2) -> bool:
-    """Return True if the player is looking in the direction of obj_pos from player_pos."""
-    dx = obj_pos.x - player_pos.x
-    dy = obj_pos.y - player_pos.y
-    if abs(dx) >= abs(dy):  # horizontal dominant axis
-        return (facing == 'right' and dx > 0) or (facing == 'left' and dx < 0)
-    # vertical dominant axis
-    return (facing == 'down' and dy > 0) or (facing == 'up' and dy < 0)
 
 
 class Game:
@@ -95,6 +86,9 @@ class Game:
         
         # Audio System
         self.audio_manager = AudioManager()
+        
+        # Interaction System
+        self.interaction_manager = InteractionManager(self)
         
         logging.info(f"Screen setup: {Settings.WINDOW_WIDTH}x{Settings.WINDOW_HEIGHT} (Fullscreen: {self.is_fullscreen})")
         
@@ -348,95 +342,6 @@ class Game:
         """Draw time and season HUD overlay (top-right, fixed to screen)."""
         self.hud.draw(self.screen)
 
-    def _handle_interactions(self):
-        """Handle spatial interaction between player and world objects/NPCs."""
-        keys = pygame.key.get_pressed()
-        
-        # Check interaction input (E for Objects/NPCs)
-        interact_pressed = keys[Settings.INTERACT_KEY]
-        
-        if interact_pressed and not self.player.is_moving:
-            # Prevent interaction spam
-            if hasattr(self, '_interaction_cooldown') and self._interaction_cooldown > 0:
-                return
-            self._interaction_cooldown = 0.5
-            
-            # --- 1. NPC Interaction (Projection-based) ---
-            # Predict interaction cell based on facing direction
-            dir_vector = pygame.math.Vector2(0, 0)
-            p_state = self.player.current_state
-            if p_state == 'down': dir_vector.y = 1
-            elif p_state == 'up': dir_vector.y = -1
-            elif p_state == 'left': dir_vector.x = -1
-            elif p_state == 'right': dir_vector.x = 1
-            
-            target_pos = self.player.pos + dir_vector * self.tile_size
-            target_rect = pygame.Rect(target_pos.x - 16, target_pos.y - 16, 32, 32)
-            
-            for npc in self.npcs:
-                if npc.rect.colliderect(target_rect):
-                    res = npc.interact(self.player)
-                    if res:
-                        title = getattr(npc, 'name', '')
-                        self._trigger_dialogue(res, title=title)
-                    return # Only one interaction at a time
-
-            # --- 2. Interactive Objects (Proximity & Orientation based) ---
-            # Only triggered by E as per spec
-            if keys[Settings.INTERACT_KEY]:
-                for obj in self.interactives:
-                        dist = self.player.pos.distance_to(obj.pos)
-                        # 2. Logic Check
-                        valid_orientation = False
-                        
-                        # 2a. Adjacent + directional check for activate_from_anywhere objects
-                        # Player must be on an adjacent cell AND looking toward the object.
-                        if getattr(obj, "activate_from_anywhere", False):
-                            if dist < 48.0 and _facing_toward(self.player.pos, p_state, obj.pos):
-                                valid_orientation = True
-                                
-                        # 2b. Standard Directional Logic (45px threshold)
-                        if not valid_orientation and dist < 45.0:
-                            o_dir = getattr(obj, "direction_str", "down")
-                            
-                            if o_dir == 'up' and p_state == 'up' and self.player.pos.y > obj.pos.y:
-                                valid_orientation = True
-                            elif o_dir == 'down' and p_state == 'down' and self.player.pos.y < obj.pos.y:
-                                valid_orientation = True
-                            elif o_dir == 'left' and p_state == 'left' and self.player.pos.x > obj.pos.x:
-                                valid_orientation = True
-                            elif o_dir == 'right' and p_state == 'right' and self.player.pos.x < obj.pos.x:
-                                valid_orientation = True
-                            
-                            # Relaxation: Open doors can be closed from the other side
-                            if obj.sub_type == 'door' and getattr(obj, "is_on", False):
-                                if o_dir == 'up' and p_state == 'down' and self.player.pos.y < obj.pos.y:
-                                    valid_orientation = True
-                                elif o_dir == 'down' and p_state == 'up' and self.player.pos.y > obj.pos.y:
-                                    valid_orientation = True
-                                elif o_dir == 'left' and p_state == 'right' and self.player.pos.x > obj.pos.x:
-                                    valid_orientation = True
-                                elif o_dir == 'right' and p_state == 'left' and self.player.pos.x > obj.pos.x:
-                                    valid_orientation = True
-                            
-                        if valid_orientation:
-                            res = obj.interact(self.player)
-                            
-                            if getattr(obj, "sfx", None):
-                                self.audio_manager.play_sfx(obj.sfx, getattr(obj, "element_id", None))
-                            
-                            if res:
-                                self._trigger_dialogue(res)
-                            else:
-                                # Save state (only for toggleable objects)
-                                if hasattr(obj, '_world_state_key'):
-                                    self.world_state.set(obj._world_state_key, {'is_on': obj.is_on})
-                                
-                                target = getattr(obj, "target_id", None)
-                                if target:
-                                    self.toggle_entity_by_id(target, depth=1)
-                            return
-
     def _trigger_dialogue(self, element_id: str, title: str = ""):
         """Fetch localized message and start dialogue."""
         map_base = self._current_map_name.split('.')[0]
@@ -609,11 +514,10 @@ class Game:
                 self.time_system.update(dt)
                 
                 # Input & Logic
-                if hasattr(self, '_interaction_cooldown'):
-                    self._interaction_cooldown = max(0, self._interaction_cooldown - dt)
+                self.interaction_manager.update(dt)
                     
                 self.player.input()
-                self._handle_interactions()
+                self.interaction_manager.handle_interactions()
                 
                 was_moving = self.player.is_moving
                 self.visible_sprites.update(dt)

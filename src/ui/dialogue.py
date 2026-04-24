@@ -6,7 +6,7 @@ from src.config import Settings
 class DialogueManager:
     """
     Handles dialogue box rendering, text wrapping, and state management.
-    Recalibrated for assets/images/hud/05-textbox.png (2000x450 layout).
+    Optimized for performance by pre-calculating text wrapping.
     """
     
     def __init__(self):
@@ -45,7 +45,7 @@ class DialogueManager:
     def _load_assets(self):
         """Load HUD assets and prepare fonts."""
         try:
-            hud_dir = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "hud")
+            hud_dir = os.path.join("assets", "images", "hud")
             
             # 1. Dialogue Box (05-textbox.png)
             box_path = os.path.join(hud_dir, "05-textbox.png")
@@ -77,12 +77,11 @@ class DialogueManager:
             self._pages = [[text]] if text else []
             return
 
-        # Fixed layout metrics (aligned with draw logic)
+        # Fixed layout metrics
         content_margin_x = 140
         max_w = self.dialogue_box.get_width() - (content_margin_x * 2)
         
         # Available height calculation
-        # Matches draw() logic: message_y starts at 90 with title, 42 without.
         message_y_offset = 90 if self.title else 42
         available_h = self.dialogue_box.get_height() - message_y_offset - 40 
         
@@ -201,42 +200,47 @@ class DialogueManager:
         else:
             message_y = box_rect.y + 42
 
-        # 3. Draw Message Lines for Current Page
+        # 3. Draw Message Lines for Current Page (Optimized)
         if self.font_message and self._pages:
             message_x = box_rect.x + content_margin_x
             line_spacing = 1.2
             line_height = self.font_message.get_linesize() * line_spacing
             
-            # Determine which lines of the current page to show based on displayed_text
-            # We reconstruct the lines from displayed_text using the same wrapping logic
-            max_w = box_rect.width - (content_margin_x * 2)
-            words = self.displayed_text.split(' ')
-            lines_to_draw = []
-            current_line = []
-            for word in words:
-                test_line = ' '.join(current_line + [word]) if current_line else word
-                if self.font_message.size(test_line)[0] <= max_w:
-                    current_line.append(word)
-                else:
-                    lines_to_draw.append(' '.join(current_line))
-                    current_line = [word]
-            if current_line:
-                lines_to_draw.append(' '.join(current_line))
+            current_page_lines = self._pages[self._current_page_index]
+            chars_to_show = len(self.displayed_text)
+            accumulated_chars = 0
             
-            # Draw each line
             y_offset = 0
-            for line in lines_to_draw:
-                # Shadow
-                shadow_surf = self.font_message.render(line, True, self._shadow_color)
-                screen.blit(shadow_surf, (message_x + self._shadow_offset, message_y + y_offset + self._shadow_offset))
-                # Main text
-                line_surf = self.font_message.render(line, True, self._text_color)
-                screen.blit(line_surf, (message_x, message_y + y_offset))
+            for line in current_page_lines:
+                if accumulated_chars >= chars_to_show:
+                    break
+                
+                # Determine how much of THIS line to show
+                # Lines are conceptually joined by a space in typewriter logic
+                line_len_with_space = len(line) + 1
+                
+                if accumulated_chars + len(line) <= chars_to_show:
+                    # Show full line
+                    text_to_draw = line
+                    accumulated_chars += line_len_with_space
+                else:
+                    # Show partial line
+                    chars_in_this_line = chars_to_show - accumulated_chars
+                    text_to_draw = line[:chars_in_this_line]
+                    accumulated_chars = chars_to_show
+                
+                if text_to_draw:
+                    # Shadow
+                    shadow_surf = self.font_message.render(text_to_draw, True, self._shadow_color)
+                    screen.blit(shadow_surf, (message_x + self._shadow_offset, message_y + y_offset + self._shadow_offset))
+                    # Main text
+                    line_surf = self.font_message.render(text_to_draw, True, self._text_color)
+                    screen.blit(line_surf, (message_x, message_y + y_offset))
+                
                 y_offset += line_height
 
         # 4. Draw Next Arrow when page is complete
         if self.next_arrow and self._is_page_complete:
-            # Subtle bounce effect could be added here
             arrow_x = box_rect.x + box_rect.width - content_margin_x + 10
             arrow_y = box_rect.y + 140
             screen.blit(self.next_arrow, (arrow_x, arrow_y))

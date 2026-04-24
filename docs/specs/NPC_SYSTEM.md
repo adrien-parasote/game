@@ -17,9 +17,12 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 - Provided `interact(initiator)` method stub for subclass overrides.
 - Shared movement and boundary logic.
 
-### [PARTIAL] `src/engine/game.py`
+### [DELEGATED] `src/engine/interaction.py`
+- **[IMPLEMENTED]** Handles all spatial proximity and orientation checks for NPCs.
+- **[IMPLEMENTED]** Triggers `npc.interact()` and updates NPC state to `interact`.
+
+### [IMPLEMENTED] `src/engine/game.py`
 - **[IMPLEMENTED]** Manages `npcs` sprite group.
-- **[IMPLEMENTED]** Implements spatial interaction logic via `_handle_interactions`.
 - **[IMPLEMENTED]** Manage NPC spawning in `_spawn_entities`.
 - **[IMPLEMENTED]** Integrated NPCs into `_is_collidable` logic (NPCs act as dynamic obstacles).
 
@@ -50,7 +53,7 @@ This section defines the behavior and failure modes for autonomous entities.
 
 ### 3.2. Test Case Specifications
 
-#### Unit & Behavior Tests (`tests/test_npc.py`, `tests/test_npc_ai.py`)
+#### Unit & Behavior Tests (`tests/test_entities_logic.py`)
 | Test ID | Component | Input | Expected Output |
 |---------|-----------|-------|-----------------|
 | TC-N-01 | NPC Init | Spawn at (16,16) | `NPC.rect.size` == (32,32), anchored correctly |
@@ -58,10 +61,10 @@ This section defines the behavior and failure modes for autonomous entities.
 | TC-N-03 | CPU Freeze | `is_visible`=False passed from `Game` | NPC bypasses `move()` logic |
 | TC-N-04 | AI State | Trigger interaction | NPC enters `interact` state and faces player |
 
-#### Integration Tests (`tests/test_interaction.py`, `tests/test_game_helpers.py`)
+#### Integration Tests (`tests/test_interactions.py`)
 | Test ID | Flow | Setup | Verification | Teardown |
 |---------|------|-------|--------------|----------|
-| IT-N-01 | Player interacts | Player faces NPC, presses SPACE or E | `NPC.on_interact()` executes | Clear groups |
+| IT-N-01 | Player interacts | Player faces NPC, presses E | `InteractionManager` triggers `npc.interact()` | Clear groups |
 | IT-N-02 | NPC Spawn | Tiled Map with NPC data | `Game` spawns instances in `npcs` group | Clear groups |
 
 ### 3.3. Error Handling Matrix

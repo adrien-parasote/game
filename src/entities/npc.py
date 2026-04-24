@@ -55,7 +55,7 @@ class NPC(BaseEntity):
         return self.element_id
 
     def start_move(self):
-        """Override to strictly strictly enforce wander_radius constraint."""
+        """Override to strictly strictly enforce wander_radius constraint and handle state reversion."""
         if self.direction.magnitude() == 0:
             return
             
@@ -64,9 +64,15 @@ class NPC(BaseEntity):
         
         if dist_from_spawn > self.wander_radius:
             self.direction = pygame.math.Vector2(0, 0)
+            self.state = 'idle'
             return
             
+        # Call base move logic (which handles collisions)
         super().start_move()
+        
+        # If move was blocked by collision, revert state
+        if not self.is_moving:
+            self.state = 'idle'
 
     def process_ai(self, dt: float):
         """Process wandering AI restricted by radius."""
@@ -103,7 +109,8 @@ class NPC(BaseEntity):
                     elif self.direction.y > 0: self.current_facing = 'down'
                     elif self.direction.y < 0: self.current_facing = 'up'
                 else:
-                    self.direction = pygame.math.Vector2(0, 0) # Cancel
+                    self.direction = pygame.math.Vector2(0, 0)
+                    self.state = 'idle'
                     
     def _update_animation(self, dt: float):
         row_offsets = {'down': 0, 'left': 4, 'right': 8, 'up': 12}

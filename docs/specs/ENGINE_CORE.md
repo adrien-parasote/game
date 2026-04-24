@@ -9,8 +9,20 @@ This document consolidates all rendering, logic, and optimization specifications
 | **Engine** | Lifecycle, Config, Events | `Game`, `Settings`, `Logger` |
 | **Map** | Data, Culling, Layout | `MapManager`, `LayoutStrategy` |
 | **Entity** | Sprites, Sorting, Movement | `BaseEntity`, `Player`, `CameraGroup`, `Teleport` |
+| **Logic** | Interaction gating, Proximity | `InteractionManager` |
+| **System** | Persistence, State | `WorldState` |
 
-## 2. Implementation Details
+## 2. Context Stack (AI Prompting Guide)
+
+Before performing any code changes, an AI agent MUST load the following "Context Stack" to understand the interconnected logic:
+
+1.  **Strategic**: `ENGINE_CORE.md` (This document) - High-level architectural rules.
+2.  **Implementation**: `INTERACTIVE_OBJECTS.md` - If touching any map objects.
+3.  **Core Logic**: `src/engine/game.py` - The main coordination loop.
+4.  **Spatial Logic**: `src/engine/interaction.py` - How entities see each other.
+5.  **Global State**: `src/config.py` - All thresholds and constants.
+
+## 3. Implementation Details
 
 ### A. Rendering Optimization (Frustum Culling)
 To support large maps, only visible tiles are processed.
@@ -67,11 +79,12 @@ To optimize performance in large worlds, entity updates are intelligently skippe
 - **Behavior**: If an entity's rect is outside this enlarged viewport, its `is_visible` flag is set to `False`, and its `update()` logic (AI, movement, animation) is bypassed.
 
 ### I. Spatial Interaction Logic
-Entities can interact with their immediate surroundings based on orientation and proximity.
-- **NPCs**: Project a 32x32 `target_rect` one tile ahead of the player. See [NPC_SYSTEM.md](NPC_SYSTEM.md) for details.
-- **Objects**: Proximity and orientation checks defined by object type. See [INTERACTIVE_OBJECTS.md](INTERACTIVE_OBJECTS.md) for detailed validation logic (Omni vs Directional).
-- **Cooldown**: A 0.5s interaction cooldown (`_interaction_cooldown`) prevents input spamming.
-- **Unified Key**: The `E` key (`Settings.INTERACT_KEY`) is the universal trigger for both NPCs and fixed objects. Space is NOT used for interaction.
+Decoupled logic in `InteractionManager` handles all entity/player spatial triggers.
+- **NPCs**: Project a 32x32 `target_rect` one tile ahead of the player.
+- **Objects**: Proximity (<45px) and orientation checks defined by object type.
+- **Door Relaxation**: Open doors (`is_on=True`) allow interaction from the "wrong" side to enable closing after passing through.
+- **Cooldown**: A 0.5s interaction cooldown prevents input spamming.
+- **Unified Key**: The `E` key (`Settings.INTERACT_KEY`) is the universal trigger.
 
 ### J. Map Data Architecture (TMJ/TSX)
 To maintain modularity, the engine decouples map parsing from rendering logic.
@@ -161,8 +174,31 @@ To maintain consistency across map transitions, the engine uses a session-persis
   - **Save**: Triggered immediately during `interact()` or interaction chaining (`toggle_entity_by_id`).
   - **Restore**: Performed during map loading (`Game._spawn_entities`) before any rendering occurs.
   - **Visual Sync**: Restored entities automatically snap to their final frame (start/end row) to prevent animation glitches on reload.
+### R. The Rendering Pipeline (`_draw_scene`)
 
-## 3. Anti-Patterns (DO NOT)
+The engine uses a multi-pass rendering pipeline to combine layers, entities, and environmental effects.
+
+1.  **Pass 1: Background**: Draw map layers with `depth=0`.
+2.  **Pass 2: Sorted Entities**: Draw `visible_sprites` using Y-Sorting.
+3.  **Pass 4: Environmental Overlay**:
+    *   **Night Surface**: If `night_alpha > 0`, blit a full-screen black overlay with `SRCALPHA`.
+    *   **Light Halos**: Blit pre-calculated light masks using `BLEND_RGB_ADD` **after** the night overlay to "cut through" the darkness.
+4.  **Pass 3: Foreground**: Draw map layers with `depth=1` (Occlusion).
+5.  **Pass 5: UI/HUD**: Draw clock, season, and active dialogue boxes.
+
+### S. Dynamic Effect Specifications
+
+#### Light Halos (Premium Glow)
+- **Generation**: Radial gradient from `halo_color` to `(0,0,0)`.
+- **Scaling**: Each halo uses a pre-calculated cache of 10 surfaces (size 97% to 103%) to simulate "breathing".
+- **Flicker**: Derived from `sin(time * flicker_speed)`.
+
+#### Particle Logic (Performance-Safe)
+- **Data Model**: Simple list of dicts (x, y, vx, vy, life).
+- **Update**: `life -= dt`. Remove if `life <= 0`.
+- **Rendering**: `pygame.draw.circle` with alpha fading: `alpha = (life / max_life)`.
+
+## 4. Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
@@ -214,6 +250,7 @@ To maintain consistency across map transitions, the engine uses a session-persis
 ## 6. Deep Links
 - **Map Recursive Parsing**: [tmj_parser.py - _process_layers](src/map/tmj_parser.py#L55)
 - **World State Logic**: [world_state.py](src/engine/world_state.py)
+- **Interaction Logic**: [interaction.py](src/engine/interaction.py)
 - **Dialogue Paging Logic**: [dialogue.py - _paginate](src/ui/dialogue.py#L74)
 - **Teleport Logic**: [game.py - _check_teleporters](src/engine/game.py#L517)
 - **SFX Overlap Guard**: [audio.py - play_sfx](src/engine/audio.py#L111)

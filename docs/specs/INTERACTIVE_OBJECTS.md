@@ -149,6 +149,11 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | Unlimited interaction chaining | Limit chaining depth to 1 | Prevents accidental infinite loops and stack overflows in map data |
 | Ignore direction for omni-objects | Maintain 48px proximity AND facing requirement | Keeps interaction grounded in spatial awareness and intentionality |
 | Rolling text for signs/books | Use Paginated Dialogue System | Allows for multi-page reading with user control |
+| Mock `SpriteSheet.__init__` without `valid` attribute | Ensure mock instances have `valid = True` | Entities require `self.spritesheet.valid` to avoid AttributeErrors during initialization |
+| Call `Teleport` with `pos` keyword | Use `rect: pygame.Rect` | `Teleport` requires a rect as its first positional argument |
+| Use raw element IDs for dialogue | Prefix keys with `{map_name}-` | Dialogue lookups are composite to prevent cross-map collisions |
+| Access `current_message` on Dialogue | Access `message` | `DialogueManager` uses `message` for raw content and `displayed_text` for visual state |
+| Toggle objects twice in one frame | Call `update(dt)` between interactions | `is_on` toggle is gated by `is_animating`. Animation must finish before toggling back |
 
 
 ## ✅ Patterns to Reproduce
@@ -159,6 +164,7 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | **Boundary Value Specification** | Define procedural textures by boundary values (e.g. Center Alpha -> Edge Alpha). | Eliminates ambiguity in generation loops. |
 | **ADD Blend Post-Overlay** | Apply additive light halos AFTER the night darkness overlay. | Ensures light sources actively cut through the dark rather than being dimmed by it. |
 | **Pre-calculated Scaling Cache** | Pre-generate discrete scaled variants of complex surfaces during startup. | Replaces continuous runtime mathematical operations (which freeze pygame) with discrete memory lookups (which are instant). |
+| **Door Relaxation Logic** | Allow `is_on=True` state to bypass standard orientation checks for `door` objects. | Enables players to close doors from the "behind" side after passing through them, improving spatial UX. |
 
 ## 4. Test Case Specifications
 
