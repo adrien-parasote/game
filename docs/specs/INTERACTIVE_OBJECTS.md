@@ -65,6 +65,9 @@ If `activate_from_anywhere` is `False` (Default):
    - The player must be orthogonally aligned to the front side (`abs(dx) < 20` or `abs(dy) < 20`), preventing diagonal triggers.
 4. **Exception for Doors**:
    - Open doors (`is_on=True`) allow interaction from the opposite side to allow closing them while walking through.
+5. **Emote Suppression**:
+   - Proximity emotes (`!`) are suppressed if the object is in the `ON` (open) state and its `sub_type` is a container or barrier (e.g., `chest`, `door`).
+   - Mechanical toggles (e.g., `lever`, `button`) always trigger proximity emotes regardless of state.
 
 **Signs (`sub_type == 'sign'`)**:
 Signs prioritize the `facing_direction` property (e.g., `up`, `down`) to determine the valid interaction side. If absent, they fallback to the `position` index mapping.

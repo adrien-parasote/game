@@ -70,6 +70,10 @@ class InteractionManager:
                     valid_position = is_aligned and self._verify_orientation(obj, p_state, p_pos)
                     
                 if valid_position:
+                    # Suppress emote if the object is open/activated and is a container/barrier type
+                    if obj.is_on and getattr(obj, "sub_type", "") in ["chest", "door"]:
+                        continue
+                        
                     if obj != getattr(self, '_last_proximity_target', None):
                         self.game.player.playerEmote('interact')
                         self._emote_cooldown = 1.5 # 1s animation + 0.5s pause
