@@ -18,6 +18,7 @@ class InventoryUI:
         # Load Assets
         self.bg = self._load_asset("01-inventory.png")
         self.slot_img = self._load_asset("03-inventory_slot.png")
+        # User requested 08-active_tab.png but only 02 exists, using 02 as per previous correction
         self.active_tab_img = self._load_asset("02-active_tab.png")
         
         # UI Layout Constants (Detected from asset colors)
@@ -91,10 +92,13 @@ class InventoryUI:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: # Left click
                 mouse_pos = event.pos
+                logging.debug(f"Inventory click at {mouse_pos}")
                 
                 # Check Tabs
                 for i, rect in enumerate(self.tab_rects):
+                    # Expand rect slightly for easier clicking if needed
                     if rect.collidepoint(mouse_pos):
+                        logging.info(f"Tab {i} selected")
                         self.set_tab(i)
                         return
                 

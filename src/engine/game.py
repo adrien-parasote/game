@@ -93,9 +93,6 @@ class Game:
         # Interaction System
         self.interaction_manager = InteractionManager(self)
         
-        # Inventory System
-        self.inventory_ui = InventoryUI(self.player)
-        
         logging.info(f"Screen setup: {Settings.WINDOW_WIDTH}x{Settings.WINDOW_HEIGHT} (Fullscreen: {self.is_fullscreen})")
         
         # Player is persisted across maps
@@ -103,6 +100,9 @@ class Game:
         self.player.audio_manager = self.audio_manager
         self.player.emote_manager.emote_group = self.emote_group
         self.player.collision_func = self._is_collidable
+        
+        # Inventory System
+        self.inventory_ui = InventoryUI(self.player)
 
         
         # First load reads the default map from world.world
@@ -526,9 +526,9 @@ class Game:
                     if event.key == Settings.INVENTORY_KEY and not self.dialogue_manager.is_active:
                         self.inventory_ui.toggle()
                         
-                    # Inventory Input
-                    if self.inventory_ui.is_open:
-                        self.inventory_ui.handle_input(event)
+                # Inventory Input (Outside KEYDOWN, inside event loop)
+                if self.inventory_ui.is_open:
+                    self.inventory_ui.handle_input(event)
 
             # Update (Fixed 60 FPS)
             dt = self.clock.tick(Settings.FPS) / 1000.0
