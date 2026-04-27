@@ -18,7 +18,6 @@ class InventoryUI:
         # Load Assets
         self.bg = self._load_asset("01-inventory.png")
         self.slot_img = self._load_asset("03-inventory_slot.png")
-        # User requested 08-active_tab.png but only 02 exists, using 02 as per previous correction
         self.active_tab_img = self._load_asset("02-active_tab.png")
         
         # UI Layout Constants (Detected from asset colors)
@@ -27,8 +26,8 @@ class InventoryUI:
         # Tabs positions (RED zone) - Centers of the 4 red boxes
         # Moved Y from 128 to 135 to lower the highlight
         self.tab_rects = [
-            self.active_tab_img.get_rect(center=(self.bg_rect.x + x, self.bg_rect.y + 135))
-            for x in [734, 864, 993, 1122]
+            self.active_tab_img.get_rect(center=(self.bg_rect.x + x, self.bg_rect.y + 130))
+            for x in [733, 863, 992, 1121]
         ]
         
         # Equipment Slots (MAGENTA zone - Left) - Centers of boxes
@@ -152,11 +151,7 @@ class InventoryUI:
         except Exception as e:
             logging.error(f"InventoryUI: Character preview failed: {e}")
 
-        # 4. Draw Equipment Slots
-        for slot_pos in self.equipment_slots.values():
-            slot_rect = self.slot_img.get_rect(center=slot_pos)
-            screen.blit(self.slot_img, slot_rect)
-            
+        # 4. Equipment Zones (Interaction only, no image as per request)
         # 5. Draw Inventory Grid (only if tab 0 is active)
         if self.active_tab == 0:
             for row in range(self.grid_rows):
