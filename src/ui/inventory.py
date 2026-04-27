@@ -20,35 +20,38 @@ class InventoryUI:
         self.slot_img = self._load_asset("03-inventory_slot.png")
         self.active_tab_img = self._load_asset("02-active_tab.png")
         
-        # UI Layout Constants (Estimations - to be adjusted)
+        # UI Layout Constants (Detected from asset colors)
         self.bg_rect = self.bg.get_rect(center=(Settings.WINDOW_WIDTH // 2, Settings.WINDOW_HEIGHT // 2))
         
-        # Tabs positions (Rouge zone)
+        # Tabs positions (RED zone) - Centers of the 4 red boxes
         self.tab_rects = [
-            pygame.Rect(self.bg_rect.x + 770 + (i * 125), self.bg_rect.y + 40, 120, 45)
-            for i in range(4)
+            self.active_tab_img.get_rect(center=(self.bg_rect.x + x, self.bg_rect.y + 128))
+            for x in [734, 864, 993, 1122]
         ]
         
-        # Equipment Slots (Magenta zone - Left)
+        # Equipment Slots (MAGENTA zone - Left) - Centers of boxes
         self.equipment_slots = {
-            "HEAD": (self.bg_rect.x + 225, self.bg_rect.y + 115),
-            "UPPER_BODY": (self.bg_rect.x + 225, self.bg_rect.y + 215),
-            "LOWER_BODY": (self.bg_rect.x + 225, self.bg_rect.y + 315),
-            "SHOES": (self.bg_rect.x + 225, self.bg_rect.y + 415),
-            "RIGHT_HAND": (self.bg_rect.x + 105, self.bg_rect.y + 215),
-            "LEFT_HAND": (self.bg_rect.x + 345, self.bg_rect.y + 215),
-            "BELT": (self.bg_rect.x + 345, self.bg_rect.y + 315),
-            "BAG": (self.bg_rect.x + 105, self.bg_rect.y + 315)
+            "HEAD": (self.bg_rect.x + 354, self.bg_rect.y + 160),
+            "BAG": (self.bg_rect.x + 212, self.bg_rect.y + 290),
+            "BELT": (self.bg_rect.x + 211, self.bg_rect.y + 405),
+            "LEFT_HAND": (self.bg_rect.x + 242, self.bg_rect.y + 529),
+            "UPPER_BODY": (self.bg_rect.x + 499, self.bg_rect.y + 291),
+            "LOWER_BODY": (self.bg_rect.x + 498, self.bg_rect.y + 406),
+            "RIGHT_HAND": (self.bg_rect.x + 469, self.bg_rect.y + 529),
+            "SHOES": (self.bg_rect.x + 354, self.bg_rect.y + 549)
         }
         
-        # Inventory Grid (Blue zone - Right)
-        self.grid_start = (self.bg_rect.x + 755, self.bg_rect.y + 135)
+        # Inventory Grid (BLUE zone - Right)
+        # Bounds: (674, 184, 1182, 470)
+        self.grid_start = (self.bg_rect.x + 695, self.bg_rect.y + 210) # Offset slightly into the zone
         self.grid_cols = 6
         self.grid_rows = 4
-        self.slot_spacing = 85 # Estimation based on 6 cols in ~500px width
+        self.grid_spacing_x = 83 # 508 / 6 ~ 84
+        self.grid_spacing_y = 70 # 286 / 4 ~ 71
         
-        # Character Preview (Orange zone - Center Left)
-        self.char_preview_pos = (self.bg_rect.x + 225, self.bg_rect.y + 265)
+        # Character Preview (ORANGE zone - Center Left)
+        # avg(358, 311)
+        self.char_preview_pos = (self.bg_rect.x + 358, self.bg_rect.y + 311)
         self.anim_timer = 0
         self.anim_frame = 0
 
@@ -105,9 +108,9 @@ class InventoryUI:
                 if self.active_tab == 0:
                     for row in range(self.grid_rows):
                         for col in range(self.grid_cols):
-                            x = self.grid_start[0] + (col * self.slot_spacing)
-                            y = self.grid_start[1] + (row * self.slot_spacing)
-                            rect = self.slot_img.get_rect(topleft=(x, y))
+                            x = self.grid_start[0] + (col * self.grid_spacing_x)
+                            y = self.grid_start[1] + (row * self.grid_spacing_y)
+                            rect = self.slot_img.get_rect(center=(x, y))
                             if rect.collidepoint(mouse_pos):
                                 index = row * self.grid_cols + col
                                 logging.info(f"Inventory grid slot clicked: {index}")
@@ -154,25 +157,31 @@ class InventoryUI:
         if self.active_tab == 0:
             for row in range(self.grid_rows):
                 for col in range(self.grid_cols):
-                    x = self.grid_start[0] + (col * self.slot_spacing)
-                    y = self.grid_start[1] + (row * self.slot_spacing)
-                    screen.blit(self.slot_img, (x, y))
+                    x = self.grid_start[0] + (col * self.grid_spacing_x)
+                    y = self.grid_start[1] + (row * self.grid_spacing_y)
+                    # Center slot image on the calculated grid point
+                    slot_rect = self.slot_img.get_rect(center=(x, y))
+                    screen.blit(self.slot_img, slot_rect)
 
         # 6. Draw Stats (Info Zone - Bottom Right)
         self._draw_stats(screen)
 
     def _draw_stats(self, screen):
-        stats_x = self.bg_rect.x + 850
-        stats_y = self.bg_rect.y + 550
+        # GREEN zone: avg(929, 551)
+        stats_x = self.bg_rect.x + 695
+        stats_y = self.bg_rect.y + 551
         
-        # LVL
-        lvl_text = self.font.render(f"LVL {self.player.level}", True, (240, 235, 210))
-        screen.blit(lvl_text, (stats_x, stats_y))
+        # LVL (Left part of green bar)
+        lvl_text = self.font.render(f"LVL {self.player.level}", True, (30, 30, 30)) # Darker text for bright green?
+        lvl_rect = lvl_text.get_rect(midleft=(stats_x, stats_y))
+        screen.blit(lvl_text, lvl_rect)
         
-        # HP
-        hp_text = self.font.render(f"HP {self.player.hp}/{self.player.max_hp}", True, (240, 235, 210))
-        screen.blit(hp_text, (stats_x, stats_y + 30))
+        # HP (Center)
+        hp_text = self.font.render(f"HP {self.player.hp}/{self.player.max_hp}", True, (30, 30, 30))
+        hp_rect = hp_text.get_rect(center=(self.bg_rect.x + 929, stats_y))
+        screen.blit(hp_text, hp_rect)
         
-        # GOLD
-        gold_text = self.font.render(f"GOLD {self.player.gold}", True, (240, 235, 210))
-        screen.blit(gold_text, (stats_x, stats_y + 60))
+        # GOLD (Right)
+        gold_text = self.font.render(f"GOLD {self.player.gold}", True, (30, 30, 30))
+        gold_rect = gold_text.get_rect(midright=(self.bg_rect.x + 1160, stats_y))
+        screen.blit(gold_text, gold_rect)
