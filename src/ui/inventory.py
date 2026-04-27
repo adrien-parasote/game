@@ -24,8 +24,9 @@ class InventoryUI:
         self.bg_rect = self.bg.get_rect(center=(Settings.WINDOW_WIDTH // 2, Settings.WINDOW_HEIGHT // 2))
         
         # Tabs positions (RED zone) - Centers of the 4 red boxes
+        # Moved Y from 128 to 135 to lower the highlight
         self.tab_rects = [
-            self.active_tab_img.get_rect(center=(self.bg_rect.x + x, self.bg_rect.y + 128))
+            self.active_tab_img.get_rect(center=(self.bg_rect.x + x, self.bg_rect.y + 135))
             for x in [734, 864, 993, 1122]
         ]
         
@@ -42,12 +43,12 @@ class InventoryUI:
         }
         
         # Inventory Grid (BLUE zone - Right)
-        # Bounds: (674, 184, 1182, 470)
-        self.grid_start = (self.bg_rect.x + 695, self.bg_rect.y + 210) # Offset slightly into the zone
-        self.grid_cols = 6
+        # Bounds: (674, 184, 1182, 470). Spacing equalized to 72px.
+        self.grid_start = (self.bg_rect.x + 715, self.bg_rect.y + 225) # Centering adjustment
+        self.grid_cols = 7
         self.grid_rows = 4
-        self.grid_spacing_x = 83 # 508 / 6 ~ 84
-        self.grid_spacing_y = 70 # 286 / 4 ~ 71
+        self.grid_spacing_x = 72
+        self.grid_spacing_y = 72
         
         # Character Preview (ORANGE zone - Center Left)
         # avg(358, 311)
@@ -141,10 +142,9 @@ class InventoryUI:
         # Assuming Player frames are loaded in Player.__init__
         try:
             char_image = self.player.frames[self.anim_frame]
-            # Scale up for preview
-            char_preview = pygame.transform.scale(char_image, (128, 128))
-            preview_rect = char_preview.get_rect(center=self.char_preview_pos)
-            screen.blit(char_preview, preview_rect)
+            # Base size preview (no scaling)
+            preview_rect = char_image.get_rect(center=self.char_preview_pos)
+            screen.blit(char_image, preview_rect)
         except Exception as e:
             logging.error(f"InventoryUI: Character preview failed: {e}")
 
