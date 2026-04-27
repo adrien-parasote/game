@@ -1,85 +1,56 @@
-# Technical Spec - RPG Inventory Interface
+# Technical Spec - RPG Inventory Interface (v1.1)
 
-## 📋 AI-Ready Documentation
+## 📋 System Architecture
 
 ### 1. Asset Mapping
+| Component | Path | Description |
+|-----------|------|-------------|
+| Background | `assets/images/ui/01-inventory.png` | Main 1344x704 parchment background |
+| Slot Frame | `assets/images/ui/03-inventory_slot.png` | Used for grid slots only (55x58) |
+| Active Tab | `assets/images/ui/02-active_tab.png` | Highlight overlay (143x67) |
 
-| Component | Path | fallback |
-|-----------|------|----------|
-| Background | `assets/images/ui/01-inventory.png` | None |
-| Slot Frame | `assets/images/ui/03-inventory_slot.png` | None |
-| Active Tab | `assets/images/ui/02-active_tab.png` | None |
+### 2. Layout & Positioning (Relative to Background Top-Left)
 
-### 2. Layout & Coordinates (Screen: 1280x720)
+#### Character Preview (Center Left)
+- **Position:** (358, 311)
+- **Behavior:** No scaling (base sprite size).
+- **Controls:** Animates in place. Direction can be changed using `MOVE_UP/DOWN/LEFT/RIGHT` keys while inventory is open.
 
-#### Character Zone (Left)
-- **Position:** Orange zone on background.
-- **Content:** Player 'Idle' animation scaled to fit.
-- **Equipment Slots (Magenta):** 
-    1. HEAD
-    2. UPPER BODY
-    3. LOWER BODY
-    4. SHOES
-    5. RIGHT HAND
-    6. LEFT HAND
-    7. BELT
-    8. BAG
-    *(Exact pixels to be determined by background asset analysis or manual alignment)*
+#### Equipment Zones (Interaction Only)
+- **Rendering:** No slot frames drawn (transparent zones).
+- **Coordinates (Centers):**
+    - HEAD: (354, 160) | BAG: (212, 290) | BELT: (211, 405) | LEFT_HAND: (242, 529)
+    - UPPER_BODY: (499, 291) | LOWER_BODY: (498, 406) | RIGHT_HAND: (469, 529) | SHOES: (354, 549)
 
-#### Tabs & Grid (Right)
-- **Tabs (Rouge):** 4 tabs. 
-    - Tab 1: 'Inventaire' (Default active).
-- **Grid (Blue):** 24 slots (6x4).
-    - Grid Start Pos: (To be determined).
-    - Slot Size: 32x32 (standard) or adjusted to asset.
+#### Inventory Grid (Right Tab)
+- **Dimensions:** 7 Columns x 4 Rows (28 total slots).
+- **Spacing:** Equalized at 72px (horizontal & vertical).
+- **Start Pos:** (713, 219)
 
-#### Info Zone (Bottom Right - Green)
-- **Stats:** 'LVL {n}', 'HP {current}/{max}', 'GOLD {n}'.
-- **Font:** Use HUD font (pixel-friendly).
+#### Tab System
+- **Quantity:** 4 Tabs.
+- **Positions (Centers):** X: [733, 863, 992, 1121] | Y: 130
+- **Logic:** `02-active_tab.png` is rendered only on the currently selected tab.
+
+#### Info Bar (Bottom Right)
+- **Green Zone:** Center (929, 551).
+- **Content:** LVL (Left), HP (Center), GOLD (Right) aligned in the bar.
 
 ### 3. Interaction Matrix
 
 | Action | Input | Result |
 |--------|-------|--------|
-| Open | Key 'I' | `is_inventory_open = True`, TimeSystem paused, `mouse_visible = True` |
-| Close | Key 'I' | `is_inventory_open = False`, TimeSystem resumed, `mouse_visible = False` |
-| Switch Tab | Mouse Click | Updates `active_tab`, renders `08-active_tab.png` on selected tab. |
-| Hover Slot | Mouse Move | Highlight slot (if visual feedback asset exists) |
+| Toggle | Key 'I' | Toggles `is_open`, pauses `TimeSystem`, manages `mouse_visible`. |
+| Rotate Preview | Dir Keys | Updates `preview_state` ('up', 'down', 'left', 'right'). |
+| Select Tab | Left Click | Updates `active_tab` index. |
+| Click Slot | Left Click | Logs interaction for grid index or equipment ID. |
 
-## Anti-Patterns (DO NOT)
+## ❌ Anti-Patterns (DO NOT)
+1.  **Do NOT scale** the character preview sprite; use native resolution.
+2.  **Do NOT draw** `03-inventory_slot.png` over equipment zones.
+3.  **Do NOT process** movement while inventory is open (pause logic).
+4.  **Do NOT hardcode** offsets; always relate to `bg_rect.topleft`.
 
-| ❌ Don't | ✅ Do Instead | Why |
-|----------|---------------|-----|
-| Update game entities while inventory is open | Early return in `update()` | Prevents physics/logic glitches during pause |
-| Hardcode all coordinates in `Game` | Use a dedicated `InventoryUI` class | Separation of concerns |
-| Redraw background every frame unnecessarily | Cache background surface if possible | Performance |
-| Mix UI assets with Game assets | Keep them in `assets/images/ui/` | Organization |
-| Use raw pixels without scaling awareness | Use relative offsets or scale constants | Resolution flexibility |
-
-## Test Case Specifications
-
-### Unit Tests Required
-| Test ID | Component | Input | Expected Output |
-|---------|-----------|-------|-----------------|
-| INV-001 | InventoryUI | `toggle()` | `is_open` toggles correctly |
-| INV-002 | Player | `stats` init | Level=1, HP=100, Gold=0 |
-| INV-003 | InventoryUI | Click Tab 2 | `active_tab` = 1 (index 1) |
-
-### Integration Tests Required
-| Test ID | Flow | Setup | Verification |
-|---------|------|-------|--------------|
-| IT-INV-01 | Toggle Pause | Open Inventory | `Game` loop skips system updates |
-| IT-INV-02 | Mouse Visibility | Toggle Inventory | `pygame.mouse.get_visible()` matches state |
-
-## Error Handling Matrix
-
-| Error Type | Detection | Response | Fallback |
-|------------|-----------|----------|----------|
-| Missing Asset | `FileNotFoundError` | Log error | Render colored placeholder box |
-| Invalid Tab Index | `IndexError` | Clamp to 0..3 | Default to tab 0 |
-| Player Ref Missing | `None` check | Log CRITICAL | Disable Inventory |
-
-## Deep Links
-- [Game Engine Loop](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L494)
-- [Player Stats](file:///Users/adrien.parasote/Documents/perso/game/src/entities/player.py)
-- [Control Settings](file:///Users/adrien.parasote/Documents/perso/game/src/config.py#L25)
+## 🔍 Verification
+- **TDD:** `tests/test_inventory.py` covers logic states.
+- **Coords:** Verified via `detect_clusters_fuzzy.py` on the legacy asset.
