@@ -165,6 +165,11 @@ class InventoryUI:
         except Exception as e:
             logging.error(f"InventoryUI: Character preview failed: {e}")
 
+        # Draw Player Name (Bottom of Orange zone)
+        name_text = self.font.render("Player", True, (60, 40, 30)) # Dark brown for parchment style
+        name_rect = name_text.get_rect(midbottom=(self.bg_rect.x + 358, self.bg_rect.y + 410))
+        screen.blit(name_text, name_rect)
+
         # 4. Equipment Zones (Interaction only, no image as per request)
         # 5. Draw Inventory Grid (only if tab 0 is active)
         if self.active_tab == 0:
