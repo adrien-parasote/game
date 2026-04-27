@@ -483,7 +483,8 @@ class Game:
             if hasattr(obj, 'draw_effects'):
                 obj.draw_effects(self.screen, cam_offset, night_alpha)
             
-        self._draw_hud()
+        if not self.inventory_ui.is_open:
+            self._draw_hud()
         
         # Draw Emotes (after HUD, with camera offset)
         cam_offset = self.visible_sprites.offset
