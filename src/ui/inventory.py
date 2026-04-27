@@ -44,7 +44,7 @@ class InventoryUI:
         
         # Inventory Grid (BLUE zone - Right)
         # Bounds: (674, 184, 1182, 470). Spacing equalized to 72px.
-        self.grid_start = (self.bg_rect.x + 715, self.bg_rect.y + 225) # Centering adjustment
+        self.grid_start = (self.bg_rect.x + 713, self.bg_rect.y + 219) # Centering adjustment
         self.grid_cols = 7
         self.grid_rows = 4
         self.grid_spacing_x = 72
@@ -55,6 +55,7 @@ class InventoryUI:
         self.char_preview_pos = (self.bg_rect.x + 358, self.bg_rect.y + 311)
         self.anim_timer = 0
         self.anim_frame = 0
+        self.preview_state = 'down'
 
     def _load_asset(self, filename):
         path = os.path.join("assets", "images", "ui", filename)
@@ -119,6 +120,17 @@ class InventoryUI:
                                 index = row * self.grid_cols + col
                                 logging.info(f"Inventory grid slot clicked: {index}")
                                 return
+                                
+        elif event.type == pygame.KEYDOWN:
+            # Change character preview direction
+            if event.key == Settings.MOVE_UP:
+                self.preview_state = 'up'
+            elif event.key == Settings.MOVE_DOWN:
+                self.preview_state = 'down'
+            elif event.key == Settings.MOVE_LEFT:
+                self.preview_state = 'left'
+            elif event.key == Settings.MOVE_RIGHT:
+                self.preview_state = 'right'
 
     def update(self, dt):
         if not self.is_open:
@@ -141,10 +153,12 @@ class InventoryUI:
         screen.blit(self.active_tab_img, self.tab_rects[self.active_tab])
         
         # 3. Draw Character Preview
-        # Using Player's 'down' idle frames (index 0, 1, 2, 3 in row 0)
-        # Assuming Player frames are loaded in Player.__init__
+        # Selecting row based on preview state (down: 0, left: 4, right: 8, up: 12)
+        row_offsets = {'down': 0, 'left': 4, 'right': 8, 'up': 12}
+        offset = row_offsets.get(self.preview_state, 0)
+        
         try:
-            char_image = self.player.frames[self.anim_frame]
+            char_image = self.player.frames[offset + self.anim_frame]
             # Base size preview (no scaling)
             preview_rect = char_image.get_rect(center=self.char_preview_pos)
             screen.blit(char_image, preview_rect)
