@@ -21,9 +21,5 @@
   },
   "overlay": {
     "occlusion_alpha": 130
-  },
-  "audio": {
-    "bgm_volume": 0.5,
-    "sfx_volume": 0.5
   }
 }
