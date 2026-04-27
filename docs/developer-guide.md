@@ -5,8 +5,8 @@ This document serves as the primary handoff for future developers and AI agents.
 ## 1. The Handoff Context (MUST READ)
 
 When starting a new task, always load the following context in order:
-1.  **Strategic**: `docs/specs/ENGINE_CORE.md` (The "Bible")
-2.  **Implementation**: `docs/specs/INTERACTIVE_OBJECTS.md` or `NPC_SYSTEM.md`
+1.  **Strategic**: `docs/specs/engine-core.md` (The "Bible")
+2.  **Implementation**: `docs/specs/interactive-objects.md` or `npc-system.md`
 3.  **Global Rules**: `.agent/rules/coding-standards.md`
 4.  **Local State**: `src/config.py` (For current thresholds)
 
@@ -71,7 +71,7 @@ def test_feature():
 
 ## 6. How to build a new Interactive Object
 
-1.  Add the `sub_type` to `INTERACTIVE_OBJECTS.md`.
+1.  Add the `sub_type` to `interactive-objects.md`.
 2.  Define the animation frames in `src/entities/interactive.py`.
 3.  Add any custom logic to `InteractionManager` if it requires new spatial rules.
 
