@@ -18,6 +18,7 @@ from src.ui.hud import GameHUD
 from src.ui.dialogue import DialogueManager
 from src.engine.audio import AudioManager
 from src.engine.interaction import InteractionManager
+from src.ui.inventory import InventoryUI
 
 
 def _get_property(props: dict, key: str, default=None):
@@ -91,6 +92,9 @@ class Game:
         
         # Interaction System
         self.interaction_manager = InteractionManager(self)
+        
+        # Inventory System
+        self.inventory_ui = InventoryUI(self.player)
         
         logging.info(f"Screen setup: {Settings.WINDOW_WIDTH}x{Settings.WINDOW_HEIGHT} (Fullscreen: {self.is_fullscreen})")
         
@@ -490,6 +494,9 @@ class Game:
         
         if self.dialogue_manager.is_active:
             self.dialogue_manager.draw(self.screen)
+            
+        if self.inventory_ui.is_open:
+            self.inventory_ui.draw(self.screen)
 
     def run(self):
         """Main game loop optimized for 60 FPS."""
@@ -514,14 +521,24 @@ class Game:
                             for npc in self.npcs:
                                 if npc.state == 'interact':
                                     npc.state = 'idle'
+                                    
+                    # Inventory Toggle
+                    if event.key == Settings.INVENTORY_KEY and not self.dialogue_manager.is_active:
+                        self.inventory_ui.toggle()
+                        
+                    # Inventory Input
+                    if self.inventory_ui.is_open:
+                        self.inventory_ui.handle_input(event)
 
             # Update (Fixed 60 FPS)
             dt = self.clock.tick(Settings.FPS) / 1000.0
             
-            # --- Logical Pause for Dialogue ---
+            # --- Logical Pause for Dialogue/Inventory ---
             self.emote_group.update(dt)
             if self.dialogue_manager.is_active:
                 self.dialogue_manager.update(dt)
+            elif self.inventory_ui.is_open:
+                self.inventory_ui.update(dt)
             else:
                 # Update Time
                 self.time_system.update(dt)

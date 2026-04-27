@@ -28,6 +28,12 @@ class Player(BaseEntity):
         self.rect = pygame.Rect(0, 0, Settings.TILE_SIZE, Settings.TILE_SIZE)
         self.rect.center = pos
         
+        # Stats
+        self.level = 1
+        self.hp = 100
+        self.max_hp = 100
+        self.gold = 0
+
         # Emote System
         self.audio_manager = None # Set by Game
         self.emote_manager = EmoteManager(self)
