@@ -15,44 +15,58 @@ class InventoryUI:
         self.active_tab = 0 # 0: Inventory, 1-3: Other
         self.font = self._load_font()
         
-        # Load Assets
+        # Load and Scale Assets
         self.bg = self._load_asset("01-inventory.png")
         self.slot_img = self._load_asset("03-inventory_slot.png")
         self.active_tab_img = self._load_asset("02-active_tab.png")
         
-        # UI Layout Constants (Detected from asset colors)
+        # Urbanization: Scale down to fit 1280px screen (1344 -> 1200)
+        target_width = 1200
+        original_width = self.bg.get_width()
+        self.scale_factor = target_width / original_width
+        
+        # Rescale all visual assets
+        new_bg_size = (int(self.bg.get_width() * self.scale_factor), int(self.bg.get_height() * self.scale_factor))
+        self.bg = pygame.transform.smoothscale(self.bg, new_bg_size)
         self.bg_rect = self.bg.get_rect(center=(Settings.WINDOW_WIDTH // 2, Settings.WINDOW_HEIGHT // 2))
         
-        # Tabs positions (RED zone) - Centers of the 4 red boxes
-        # Moved Y from 128 to 135 to lower the highlight
+        self.slot_img = pygame.transform.smoothscale(self.slot_img, 
+            (int(self.slot_img.get_width() * self.scale_factor), int(self.slot_img.get_height() * self.scale_factor)))
+        self.active_tab_img = pygame.transform.smoothscale(self.active_tab_img, 
+            (int(self.active_tab_img.get_width() * self.scale_factor), int(self.active_tab_img.get_height() * self.scale_factor)))
+        
+        # UI Layout Constants (Scaled from original 1344x704 coordinates)
+        s = self.scale_factor
+        
+        # Tabs positions (RED zone)
         self.tab_rects = [
-            self.active_tab_img.get_rect(center=(self.bg_rect.x + x, self.bg_rect.y + 130))
+            self.active_tab_img.get_rect(center=(self.bg_rect.x + int(x * s), self.bg_rect.y + int(130 * s)))
             for x in [733, 863, 992, 1121]
         ]
         
-        # Equipment Slots (MAGENTA zone - Left) - Centers of boxes
+        # Equipment Slots (MAGENTA zone - Left)
         self.equipment_slots = {
-            "HEAD": (self.bg_rect.x + 354, self.bg_rect.y + 160),
-            "BAG": (self.bg_rect.x + 212, self.bg_rect.y + 290),
-            "BELT": (self.bg_rect.x + 211, self.bg_rect.y + 405),
-            "LEFT_HAND": (self.bg_rect.x + 242, self.bg_rect.y + 529),
-            "UPPER_BODY": (self.bg_rect.x + 499, self.bg_rect.y + 291),
-            "LOWER_BODY": (self.bg_rect.x + 498, self.bg_rect.y + 406),
-            "RIGHT_HAND": (self.bg_rect.x + 469, self.bg_rect.y + 529),
-            "SHOES": (self.bg_rect.x + 354, self.bg_rect.y + 549)
+            "HEAD": (self.bg_rect.x + int(354 * s), self.bg_rect.y + int(160 * s)),
+            "BAG": (self.bg_rect.x + int(212 * s), self.bg_rect.y + int(290 * s)),
+            "BELT": (self.bg_rect.x + int(211 * s), self.bg_rect.y + int(405 * s)),
+            "LEFT_HAND": (self.bg_rect.x + int(242 * s), self.bg_rect.y + int(529 * s)),
+            "UPPER_BODY": (self.bg_rect.x + int(499 * s), self.bg_rect.y + int(291 * s)),
+            "LOWER_BODY": (self.bg_rect.x + int(498 * s), self.bg_rect.y + int(406 * s)),
+            "RIGHT_HAND": (self.bg_rect.x + int(469 * s), self.bg_rect.y + int(529 * s)),
+            "SHOES": (self.bg_rect.x + int(354 * s), self.bg_rect.y + int(549 * s))
         }
         
         # Inventory Grid (BLUE zone - Right)
-        # Bounds: (674, 184, 1182, 470). Spacing equalized to 72px.
-        self.grid_start = (self.bg_rect.x + 713, self.bg_rect.y + 219) # Centering adjustment
+        self.grid_start = (self.bg_rect.x + int(713 * s), self.bg_rect.y + int(219 * s))
         self.grid_cols = 7
         self.grid_rows = 4
-        self.grid_spacing_x = 72
-        self.grid_spacing_y = 72
+        self.grid_spacing_x = int(72 * s)
+        self.grid_spacing_y = int(72 * s)
         
         # Character Preview (ORANGE zone - Center Left)
-        # avg(358, 311)
-        self.char_preview_pos = (self.bg_rect.x + 358, self.bg_rect.y + 311)
+        self.char_preview_pos = (self.bg_rect.x + int(358 * s), self.bg_rect.y + int(311 * s))
+        self.char_name_pos = (self.bg_rect.x + int(358 * s), self.bg_rect.y + int(410 * s))
+        
         self.anim_timer = 0
         self.anim_frame = 0
         self.preview_state = 'down'
@@ -167,7 +181,7 @@ class InventoryUI:
 
         # Draw Player Name (Bottom of Orange zone)
         name_text = self.font.render("Player", True, (60, 40, 30)) # Dark brown for parchment style
-        name_rect = name_text.get_rect(midbottom=(self.bg_rect.x + 358, self.bg_rect.y + 410))
+        name_rect = name_text.get_rect(midbottom=self.char_name_pos)
         screen.blit(name_text, name_rect)
 
         # 4. Equipment Zones (Interaction only, no image as per request)
@@ -185,21 +199,22 @@ class InventoryUI:
         self._draw_stats(screen)
 
     def _draw_stats(self, screen):
+        s = self.scale_factor
         # GREEN zone: avg(929, 551)
-        stats_x = self.bg_rect.x + 695
-        stats_y = self.bg_rect.y + 551
+        stats_x = self.bg_rect.x + int(695 * s)
+        stats_y = self.bg_rect.y + int(551 * s)
         
         # LVL (Left part of green bar)
-        lvl_text = self.font.render(f"LVL {self.player.level}", True, (30, 30, 30)) # Darker text for bright green?
+        lvl_text = self.font.render(f"LVL {self.player.level}", True, (30, 30, 30))
         lvl_rect = lvl_text.get_rect(midleft=(stats_x, stats_y))
         screen.blit(lvl_text, lvl_rect)
         
         # HP (Center)
         hp_text = self.font.render(f"HP {self.player.hp}/{self.player.max_hp}", True, (30, 30, 30))
-        hp_rect = hp_text.get_rect(center=(self.bg_rect.x + 929, stats_y))
+        hp_rect = hp_text.get_rect(center=(self.bg_rect.x + int(929 * s), stats_y))
         screen.blit(hp_text, hp_rect)
         
         # GOLD (Right)
         gold_text = self.font.render(f"GOLD {self.player.gold}", True, (30, 30, 30))
-        gold_rect = gold_text.get_rect(midright=(self.bg_rect.x + 1160, stats_y))
+        gold_rect = gold_text.get_rect(midright=(self.bg_rect.x + int(1160 * s), stats_y))
         screen.blit(gold_text, gold_rect)
