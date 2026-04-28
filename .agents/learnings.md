@@ -43,6 +43,21 @@ This document tracks universal patterns and anti-patterns extracted from the BUI
 **Pattern:** Use composite keys (`{map_base_name}-{element_id}`) for global resource lookups (Dialogue, WorldState).
 **Why:** Prevents ID collisions across map boundaries and ensures resource uniqueness in a modular world.
 
+### 8. Map: Deterministic Semantic Layering
+**ID:** L-MAP-001
+**Pattern:** Sort map layers primarily by name-based semantic prefixes (e.g., `00-layer`, `01-layer`) rather than Tiled's internal JSON order.
+**Why:** Tiled IDs change; names are deterministic and allow background layers to be explicitly prioritized in a flattened group-recursive structure.
+
+### 9. UX: Interruption-First Feedback Chaining
+**ID:** L-UX-001
+**Pattern:** Allow new visual feedback triggers (emotes, effects) to clear/overwrite existing ones immediately rather than waiting for the previous animation to complete.
+**Why:** Prevents the game from feeling "stuck" or unresponsive when multiple interaction triggers occur in rapid succession.
+
+### 10. Test: Centralized Headless Initialization
+**ID:** L-TEST-003
+**Pattern:** Consolidate Pygame initialization, headless environment variables (SDL_VIDEODRIVER=dummy), and global fixtures in `tests/conftest.py`.
+**Why:** Reduces drift between test files, simplifies imports, and ensures a consistent environment for CI/CD.
+
 
 ## ❌ Anti-patterns to Avoid
 
@@ -66,145 +81,93 @@ This document tracks universal patterns and anti-patterns extracted from the BUI
 **Anti-pattern:** Running continuous proximity checks (`distance_to < range`) that trigger visual/audio side-effects without an explicit time-based cooldown.
 **Why:** Causes effect stacking, sprite duplication, or frame-by-frame spam when the logic group clears the state asynchronously or conditionally.
 
-## Learning: Object Orientation vs Player Facing Direction
-**Date:** 2026-04-24
-**Spec:** docs/specs/INTERACTIVE_OBJECTS.md
+### 5. Index-Based Layer Priority
+**ID:** A-MAP-001
+**Anti-pattern:** Relying on Tiled's internal JSON list order or layer IDs for rendering priority.
+**Why:** Moving layers in Tiled or using nested groups unpredictably changes the rendering order, causing background layers to pop over sprites.
+
+### 6. Over-Conservative Feedback Gates
+**ID:** A-UX-002
+**Anti-pattern:** Guarding a visual feedback trigger (like an emote) behind a check that requires the previous animation to finish (`if len(group) == 0`).
+**Why:** Breaks input chaining and feedback responsiveness, making the UI feel sluggish.
+
+### 7. Tile vs Pixel Coordinate Mixups
+**ID:** A-GAME-002
+**Anti-pattern:** Passing world pixel coordinates to functions that expect grid (tile) indices, or vice-versa, without explicit validation or conversion.
+**Why:** Causes out-of-bounds errors or silent logic failures (e.g., `is_collidable` returning `True` because it treats a pixel coordinate of 128 as a tile index out of bounds).
+
+
+## Learning: Deterministic Semantic Layer Rendering
+**Date:** 2026-04-28
+**Spec:** Stabilization Implementation Plan
 **Outcome:** Major Rework
-**Project:** Python Pygame RPG
+**Project:** RPG Engine
 
 ### What happened
-The player's interaction with directional objects (like chests opening to the right or left) failed because the orientation logic interpreted the object's `direction` as the required player facing direction, rather than the object's physical front side.
+Relying on Tiled's internal layer order or simple overrides for specific IDs failed when the map structure used nested groups. The `00-layer` (background) disappeared because it was pushed to the end of the rendering order.
 
 ### Root cause
-Implicit assumption that interaction direction properties describe the actor's state rather than the target's state.
+Tiled JSON layer list order is not a stable proxy for semantic depth when groups are involved.
 
 ### Anti-pattern (what to avoid)
-❌ **Don't** treat an object's directional property (e.g., `direction='left'`) as the required player facing direction.
-✅ **Do Instead** treat it as the physical orientation of the object (its front side). If an object faces left, the player must stand on its left side (`player.x < obj.x`) and face the opposite direction (`player.facing = 'right'`).
-
-### Evidence
-- Bug fix in `InteractionManager._verify_orientation` required reversing player `p_state` and verifying orthogonal positioning (`x_aligned`/`y_aligned`) against the object's physical side.
-
-### Scope
-- [x] Universal (applies across top-down 2D grid/pixel-based games)
-
-## Learning: Pygame Surface Mocking for Blit Operations
-**Date:** 2026-04-28
-**Spec:** docs/specs/INTERACTIVE_OBJECTS.md (Test Hardening Cycle)
-**Outcome:** Minor Rework
-**Project:** Python Pygame RPG
-
-### What happened
-While writing tests for `InventoryUI` and `DialogueManager`, `TypeError: argument 1 must be pygame.surface.Surface, not MagicMock` occurred during `screen.blit()` calls. The tests mocked `pygame.font.render` and `asset_manager.get_image` with standard `MagicMock` objects.
-
-### Root cause
-Pygame's `blit` function has strict C-level type checking and does not accept Python `MagicMock` objects. It requires an actual `pygame.Surface`.
+❌ **Don't** rely on the Tiled list order for critical rendering priorities (like background/foreground).
 
 ### Pattern (what to reproduce)
-✅ **Do Instead:** When mocking any Pygame function that returns an image or text to be drawn, explicitly set its return value to a dummy `pygame.Surface`.
-```python
-# Correct Mocking Pattern for Pygame UI Tests
-mock_font = MagicMock()
-mock_font.render.return_value = pygame.Surface((10, 10))
-mock_asset_manager.get_image.return_value = pygame.Surface((32, 32))
-```
+✅ **Do Instead** use a semantic naming convention (e.g., `00-layer`, `01-layer`) and perform an explicit sort by name in the `MapManager` before rendering.
 
 ### Evidence
-- Fix applied in `test_ui_extended.py` to `ui.font.render.return_value` replacing default MagicMocks with `pygame.Surface((10, 10))`.
+- `MapManager.layer_order` updated to `sorted(raw_order, key=lambda lid: self.layer_names.get(lid, ""))`.
+- `tests/test_map.py` verified nested group layers are rendered in the correct numeric prefix order.
 
 ### Scope
-- [X] Project-specific (Pygame UI/Testing)
-- [ ] Universal
+- [x] Universal (applies to any data-driven 2D tile engine)
 
-## Learning: Entity Initialization Signature Verification
-**Date:** 2026-04-28
-**Spec:** Test Hardening Cycle
-**Outcome:** Minor Rework
-**Project:** Python Pygame RPG
 
-### What happened
-Tests for `NPC` and `InteractiveEntity` failed with `TypeError` during instantiation because the tests passed a dictionary instead of a tuple for `pos`, missed required arguments like `sprite_sheet`, and used incorrect kwarg names (`sound_effect` instead of `sfx`).
-
-### Root cause
-Test scaffolding was written based on generalized assumptions of entity data structures rather than inspecting the explicit `__init__` signatures of the target classes.
-
-### Anti-pattern (what to avoid)
-❌ **Don't:** Write test instantiations blindly based on JSON data structures without verifying the target class constructor.
-
-### Pattern (what to reproduce)
-✅ **Do Instead:** Before writing tests for a class, verify its `__init__` signature (e.g. by viewing the file or running a grep) and copy the exact parameter list into the test file as a reference.
-
-### Evidence
-- `InteractiveEntity` in `test_entities_extended.py` required explicit positional and keyword arguments matching its `def __init__(self, pos: tuple, groups: list[pygame.sprite.Group], ...)` signature.
-
-### Scope
-- [ ] Project-specific
-- [X] Universal (Testing practices)
-
-## Learning: Guard Clauses and Hidden UI State in Tests
-**Date:** 2026-04-28
-**Spec:** Test Hardening Cycle
-**Outcome:** Minor Rework
-**Project:** Python Pygame RPG
-
-### What happened
-Initial attempts to test `InventoryUI.draw()` resulted in 0% coverage increase for that method despite calling it in tests.
-
-### Root cause
-The `InventoryUI` class contains a guard clause `if not self.is_open: return`. Because `is_open` defaults to `False`, the test immediately returned without executing any drawing logic.
-
-### Anti-pattern (what to avoid)
-❌ **Don't:** Call update/draw methods in UI tests without explicitly initializing the component's visibility/active state flags.
-
-### Evidence
-- Coverage increased only after setting `ui.is_open = True` before calling `ui.draw(screen)` in `test_ui_extended.py`.
-
-### Scope
-- [X] Project-specific (UI Architecture)
-- [ ] Universal
-
-## Learning: Hardcoded Mock Lengths for Data-Driven Assets
-**Date:** 2026-04-28
-**Spec:** docs/specs/engine-core.md
-**Outcome:** Minor Rework
-**Project:** Python Pygame RPG
-
-### What happened
-After updating the emotes spritesheet from 4 columns to 5 columns in the engine logic, `test_emotes.py` failed with `IndexError: list index out of range`.
-
-### Root cause
-The unit test hardcoded the mock grid size to exactly 32 frames (`[pygame.Surface] * 32`), tightly coupling the test to the previous implementation detail of exactly 4 columns.
-
-### Anti-pattern (what to avoid)
-❌ **Don't** hardcode exact sequence lengths in mock returns for data-driven assets (like grid structures) unless the test specifically validates that exact length constraint.
-✅ **Do Instead** either dynamically calculate the mock size based on the tested variables, use an oversized mock (e.g., `* 100`) if the exact length is irrelevant, or remember to explicitly update associated mocks when changing spec constraints (like grid dimensions).
-
-### Evidence
-- `tests/test_emotes.py::test_emote_manager_trigger` failed when the new extraction logic requested `index + i * 5` (which accessed indices > 31) because the mock returned a fixed list of 32 items.
-
-### Scope
-- [ ] Project-specific
-- [X] Universal (Testing practices)
-
-## Learning: State Mutation Requires Test Mock Updates
-
+## Learning: Interruption-First Feedback Chaining
 **Date:** 2026-04-28
 **Spec:** Stabilization Implementation Plan
 **Outcome:** Minor Rework
 **Project:** RPG Engine
 
 ### What happened
-We added `layer_order` as a required field in the `MapManager` state. The actual engine logic was updated correctly, but a legacy unit test (`test_map_manager_viewport_culling`) failed because its mocked data payload lacked the new `layer_order` field, causing the logic to return an empty array.
+The player's emotes were blocked if another was active, causing rapid interactions to fail silently.
 
 ### Root cause
-The spec explicitly stated what to change in the business logic but did not explicitly specify that test mock payloads must be updated to reflect the newly mutated state expectations.
+Over-conservative safety check: `if len(self.emote_group) == 0: return`.
 
 ### Anti-pattern (what to avoid)
-❌ Changing state requirements in business logic without explicitly specifying the test mocks that need to be updated.
+❌ **Don't** block visual feedback triggers (emotes, sounds, effects) based on the completion of the previous instance.
+
+### Pattern (what to reproduce)
+✅ **Do Instead** clear the existing group or overwrite the state immediately to provide instant feedback for the latest user action.
 
 ### Evidence
-- `test_map_manager_viewport_culling` failed with `AssertionError: assert 0 == 4` because `layer_order` was empty in the mocked `map_result`.
+- Refactored `InteractionManager._check_proximity_emotes` to clear `emote_group` before adding new sprites.
+- Verified in `tests/test_interaction.py`.
+
+### Scope
+- [x] Universal (applies to UI/UX responsiveness in any interactive software)
+
+
+## Learning: Domain-Based Test Consolidation
+**Date:** 2026-04-28
+**Spec:** Stabilization Implementation Plan
+**Outcome:** Minor Rework
+**Project:** RPG Engine
+
+### What happened
+Moving from scattered test files to domain modules broke multiple tests due to missing local imports, stale mocks, and environment-dependent pygame initialization.
+
+### Root cause
+High coupling between test files and their specific local mock setups, combined with fragmented initialization boilerplate.
+
+### Pattern (what to reproduce)
+✅ **Do Instead** Use `conftest.py` for all global fixtures (Headless Pygame, Asset Mocking) and organize tests into semantic domains (`engine`, `map`, `ui`, `interaction`).
+
+### Evidence
+- Consolidated 11 test files into 6 domain-based modules with 100% pass rate.
+- Shared fixtures moved to `tests/conftest.py`.
 
 ### Scope
 - [ ] Project-specific
-- [x] Universal
+- [x] Universal (Testing practices)
