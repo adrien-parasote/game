@@ -368,6 +368,44 @@
             ]
         },
         {
+            "color": "#ffd4fb79",
+            "drawFill": true,
+            "id": 18,
+            "members": [
+                {
+                    "name": "interactive_object",
+                    "propertyType": "11-interactive_object",
+                    "type": "class",
+                    "value": {
+                        "activate_from_anywhere": true,
+                        "sprite": {
+                            "end_frame": 0,
+                            "entity_type": "object",
+                            "sprite_sheet": "05-potion",
+                            "sub_type": "consumable"
+                        }
+                    }
+                },
+                {
+                    "name": "object_id",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "quantity",
+                    "type": "int",
+                    "value": 1
+                }
+            ],
+            "name": "17-object",
+            "type": "class",
+            "useAs": [
+                "property",
+                "object",
+                "project"
+            ]
+        },
+        {
             "id": 7,
             "name": "20-entity_type",
             "storageType": "string",
@@ -375,7 +413,8 @@
             "values": [
                 "entity",
                 "interactive",
-                "npc"
+                "npc",
+                "object"
             ],
             "valuesAsFlags": false
         },
@@ -391,7 +430,8 @@
                 "animated_decor",
                 "lever",
                 "npc",
-                "sign"
+                "sign",
+                "consumable"
             ],
             "valuesAsFlags": false
         },
