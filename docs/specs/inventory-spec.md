@@ -15,6 +15,11 @@
 ### 2. Layout & Positioning (Scaled for 1280x720)
 *Urbanization Note: All original 1344x704 coordinates are multiplied by a scale factor of ~0.89x (Target Width 1200px) to fit the screen.*
 
+#### Custom Cursor Scaling
+- **Default Height:** 48px (configurable via `Settings.CURSOR_SIZE`).
+- **Aspect Ratio:** Preserved (original 309x535 -> ~27x48).
+- **Layering:** Absolute top-level (drawn after stats and HUD).
+
 #### Character Preview (Center Left)
 - **Position:** (358, 311)
 - **Behavior:** No scaling (base sprite size).
@@ -51,13 +56,20 @@
 | Click Slot | Left Click | Logs interaction for grid index or equipment ID. |
 | Hover Grid | Mouse Move | Renders `04-inventory_slot_hover.png` over grid slots. |
 | Hover Equip | Mouse Move | Renders a gold border around the equipment slot. |
-| Custom Cursor| Always | Replaces system cursor. Switches to 'select' image on left-click. |
+| Custom Cursor| Always | Replaces system cursor. Switches to 'select' image on left-click. Size controlled by `Settings.CURSOR_SIZE`. |
 
 ## ❌ Anti-Patterns (DO NOT)
 1.  **Do NOT scale** the character preview sprite; use native resolution.
 2.  **Do NOT draw** `03-inventory_slot.png` over equipment zones.
 3.  **Do NOT process** movement while inventory is open (pause logic).
 4.  **Do NOT hardcode** offsets; always relate to `bg_rect.topleft`.
+5.  **Do NOT scale** cursors without preserving aspect ratio.
+6.  **Do NOT draw** the cursor before any other UI element (must be absolute last).
+
+## ✅ Patterns to Reproduce
+1.  **Preserved Aspect Ratio Scaling:** Calculate target dimensions based on a configurable height (Settings) and the asset's native ratio.
+2.  **Absolute Top-Level Layering:** Place the custom cursor at the very end of the main `draw` cycle to overlay HUD, stats, and emotes.
+3.  **Conditional Emote Suppression:** Provide user settings to toggle visual feedback for failed actions ("?") to avoid UX annoyance.
 
 ## 🔍 Verification
 - **TDD:** `tests/test_inventory.py` covers logic states.

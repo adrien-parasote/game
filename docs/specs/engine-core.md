@@ -186,6 +186,7 @@ The engine uses a multi-pass rendering pipeline to combine layers, entities, and
 4.  **Pass 3: Foreground**: Draw map layers with `depth=1` (Occlusion).
 5.  **Pass 5: UI/HUD**: Draw clock, season, and active dialogue boxes.
 6.  **Pass 6: Player Emotes**: Rendered manually from `emote_group` with camera offset after the HUD to ensure top-level visibility.
+7.  **Pass 7: Custom Cursor**: The absolute last rendering step. Size is configurable via `Settings.CURSOR_SIZE`.
 
 ### S. Dynamic Effect Specifications
 
@@ -207,7 +208,7 @@ The engine uses a multi-pass rendering pipeline to combine layers, entities, and
 - **Follow Logic**: Pinned to the player's X coordinate and relative Y during its entire lifetime.
 - **Triggers**:
     - **Proximity (`interact`)**: Triggered when within 48px of any interactive object or NPC. Strictly limited by a **1.5s cooldown** to prevent sprite stacking and frame-by-frame spam when iterating spatial checks.
-    - **Fail Feedback (`question`)**: Triggered when an interaction input occurs but no target is found or blocked.
+    - **Fail Feedback (`question`)**: Triggered when an interaction input occurs but no target is found or blocked. Optional via `Settings.ENABLE_FAILED_INTERACTION_EMOTE`.
 - **Replacement Policy**: Triggering a new emote immediately `empty()`s the rendering group for that player.
 - **Audio**: Plays `03-emote.ogg` on trigger.
 

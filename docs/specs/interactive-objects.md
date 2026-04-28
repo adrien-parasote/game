@@ -209,6 +209,7 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | Missing Asset (Sign)| `sub_type == 'sign'` and sheet missing | Use transparent surface | Allows invisible triggers without visual artifacts |
 | Headless Display| `pygame.display.get_surface()` is None | Skip `.convert_alpha()` | Prevents crashes during headless unit testing |
 | Interaction Spam| Timer check | Ignore input | cooldown of 0.5s |
+| Failed Interact | No target found | Show 'question' emote | Optional via `Settings.ENABLE_FAILED_INTERACTION_EMOTE` |
 
 ## 6. Deep Links
 - **Interactive Spawning**: [game.py - _spawn_entities](src/engine/game.py?#L179)
