@@ -137,3 +137,29 @@ def test_inventory_draw():
     screen = pygame.Surface((1280, 720))
     # Should not crash
     inv.draw(screen)
+
+# NEW: Hover detection
+def test_inventory_hover_detection():
+    """Verify that hovered_slot updates correctly based on mouse position."""
+    from src.ui.inventory import InventoryUI
+    player = Player((0, 0))
+    inv = InventoryUI(player)
+    inv.is_open = True
+    
+    # Initially none
+    assert hasattr(inv, 'hovered_slot')
+    assert inv.hovered_slot is None
+    
+    # 1. Test Equipment Hover (HEAD)
+    head_pos = inv.equipment_slots["HEAD"]
+    inv.update_hover(head_pos)
+    assert inv.hovered_slot == ("equipment", "HEAD")
+    
+    # 2. Test Grid Hover (Slot 0)
+    grid_pos = inv.grid_start
+    inv.update_hover(grid_pos)
+    assert inv.hovered_slot == ("grid", 0)
+    
+    # 3. Test No Hover
+    inv.update_hover((0, 0))
+    assert inv.hovered_slot is None

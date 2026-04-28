@@ -8,6 +8,7 @@
 | Background | `assets/images/ui/01-inventory.png` | Main 1344x704 parchment background |
 | Slot Frame | `assets/images/ui/03-inventory_slot.png` | Used for grid slots only (55x58) |
 | Active Tab | `assets/images/ui/02-active_tab.png` | Highlight overlay (143x67) |
+| Slot Hover | `assets/images/ui/04-inventory_slot_hover.png`| Superposed on hovered slot (55x58) |
 
 ### 2. Layout & Positioning (Scaled for 1280x720)
 *Urbanization Note: All original 1344x704 coordinates are multiplied by a scale factor of ~0.89x (Target Width 1200px) to fit the screen.*
@@ -45,6 +46,7 @@
 | Rotate Preview | Dir Keys | Updates `preview_state` ('up', 'down', 'left', 'right'). |
 | Select Tab | Left Click | Updates `active_tab` index. |
 | Click Slot | Left Click | Logs interaction for grid index or equipment ID. |
+| Hover Slot | Mouse Move | Renders `04-inventory_slot_hover.png` over the slot. |
 
 ## ❌ Anti-Patterns (DO NOT)
 1.  **Do NOT scale** the character preview sprite; use native resolution.

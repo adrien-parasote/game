@@ -19,6 +19,7 @@ class InventoryUI:
         self.bg = self._load_asset("01-inventory.png")
         self.slot_img = self._load_asset("03-inventory_slot.png")
         self.active_tab_img = self._load_asset("02-active_tab.png")
+        self.hover_img = self._load_asset("04-inventory_slot_hover.png")
         
         # Urbanization: Scale down to fit 1280px screen (1344 -> 1200)
         target_width = 1200
@@ -34,6 +35,8 @@ class InventoryUI:
             (int(self.slot_img.get_width() * self.scale_factor), int(self.slot_img.get_height() * self.scale_factor)))
         self.active_tab_img = pygame.transform.smoothscale(self.active_tab_img, 
             (int(self.active_tab_img.get_width() * self.scale_factor), int(self.active_tab_img.get_height() * self.scale_factor)))
+        self.hover_img = pygame.transform.smoothscale(self.hover_img, 
+            (int(self.hover_img.get_width() * self.scale_factor), int(self.hover_img.get_height() * self.scale_factor)))
         
         # UI Layout Constants (Scaled from original 1344x704 coordinates)
         s = self.scale_factor
@@ -70,6 +73,7 @@ class InventoryUI:
         self.anim_timer = 0
         self.anim_frame = 0
         self.preview_state = 'down'
+        self.hovered_slot = None # None, ('equipment', name), or ('grid', index)
 
     def _load_asset(self, filename):
         path = os.path.join("assets", "images", "ui", filename)
@@ -146,6 +150,28 @@ class InventoryUI:
             elif event.key == Settings.MOVE_RIGHT:
                 self.preview_state = 'right'
 
+    def update_hover(self, mouse_pos):
+        """Detect which slot is under the mouse."""
+        self.hovered_slot = None
+        
+        # Check Equipment Slots
+        for name, pos in self.equipment_slots.items():
+            rect = self.slot_img.get_rect(center=pos)
+            if rect.collidepoint(mouse_pos):
+                self.hovered_slot = ("equipment", name)
+                return
+        
+        # Check Grid Slots (only if Tab 0)
+        if self.active_tab == 0:
+            for row in range(self.grid_rows):
+                for col in range(self.grid_cols):
+                    x = self.grid_start[0] + (col * self.grid_spacing_x)
+                    y = self.grid_start[1] + (row * self.grid_spacing_y)
+                    rect = self.slot_img.get_rect(center=(x, y))
+                    if rect.collidepoint(mouse_pos):
+                        self.hovered_slot = ("grid", row * self.grid_cols + col)
+                        return
+
     def update(self, dt):
         if not self.is_open:
             return
@@ -155,6 +181,9 @@ class InventoryUI:
         if self.anim_timer >= 0.15: # 150ms per frame
             self.anim_timer = 0
             self.anim_frame = (self.anim_frame + 1) % 4
+            
+        # Update hover state
+        self.update_hover(pygame.mouse.get_pos())
 
     def draw(self, screen):
         if not self.is_open:
@@ -195,7 +224,23 @@ class InventoryUI:
                     slot_rect = self.slot_img.get_rect(center=(x, y))
                     screen.blit(self.slot_img, slot_rect)
 
-        # 6. Draw Stats (Info Zone - Bottom Right)
+        # 6. Draw Hover Highlight
+        if self.hovered_slot:
+            slot_type, value = self.hovered_slot
+            pos = None
+            if slot_type == "equipment":
+                pos = self.equipment_slots[value]
+            elif slot_type == "grid":
+                row = value // self.grid_cols
+                col = value % self.grid_cols
+                pos = (self.grid_start[0] + (col * self.grid_spacing_x),
+                       self.grid_start[1] + (row * self.grid_spacing_y))
+            
+            if pos:
+                hover_rect = self.hover_img.get_rect(center=pos)
+                screen.blit(self.hover_img, hover_rect)
+
+        # 7. Draw Stats (Info Zone - Bottom Right)
         self._draw_stats(screen)
 
     def _draw_stats(self, screen):
