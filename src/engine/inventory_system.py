@@ -9,6 +9,7 @@ class Item:
     id: str
     name: str
     description: str
+    icon: Optional[str] = None
     quantity: int = 1
     stack_max: int = 1
 
@@ -42,7 +43,8 @@ class Inventory:
         data = self.item_data.get(item_id, {
             "name": item_id.replace("_", " ").title(),
             "description": "Un objet mystérieux.",
-            "stack_max": 1
+            "stack_max": 1,
+            "icon": f"{item_id}.png"
         })
         
         stack_max = data.get("stack_max", 1)
@@ -65,6 +67,7 @@ class Inventory:
                     id=item_id,
                     name=data["name"],
                     description=data["description"],
+                    icon=data.get("icon", f"{item_id}.png"),
                     quantity=can_add,
                     stack_max=stack_max
                 )

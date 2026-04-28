@@ -244,7 +244,7 @@ class InventoryUI:
                     index = row * self.grid_cols + col
                     item = self.player.inventory.get_item_at(index)
                     if item:
-                        icon = self._get_item_icon(item.id)
+                        icon = self._get_item_icon(item.icon if item.icon else f"{item.id}.png")
                         if icon:
                             icon_rect = icon.get_rect(center=(x, y))
                             screen.blit(icon, icon_rect)
@@ -325,22 +325,26 @@ class InventoryUI:
         gold_rect = gold_text.get_rect(midright=(self.bg_rect.x + int(1160 * s), stats_y))
         screen.blit(gold_text, gold_rect)
 
-    def _get_item_icon(self, item_id):
+    def _get_item_icon(self, icon_filename):
         """Load and cache item icon."""
-        if item_id in self.icon_cache:
-            return self.icon_cache[item_id]
+        if icon_filename in self.icon_cache:
+            return self.icon_cache[icon_filename]
         
-        filename = f"{item_id}.png"
-        path = os.path.join("assets", "images", "icons", filename)
+        path = os.path.join("assets", "images", "icons", icon_filename)
+        # Ensure .png extension if missing
+        if not path.endswith(".png"):
+            path += ".png"
+            icon_filename += ".png"
+            
         try:
             if os.path.exists(path):
                 img = pygame.image.load(path).convert_alpha()
                 # Scale icon to fit slot (approx 48x48 base, scaled by s)
                 target_size = int(48 * self.scale_factor)
                 img = pygame.transform.smoothscale(img, (target_size, target_size))
-                self.icon_cache[item_id] = img
+                self.icon_cache[icon_filename] = img
                 return img
         except Exception as e:
-            logging.error(f"InventoryUI: Could not load icon {filename}: {e}")
+            logging.error(f"InventoryUI: Could not load icon {icon_filename}: {e}")
         
         return None

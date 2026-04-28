@@ -2,6 +2,7 @@
     "ether_potion": { 
         "name": "Potion de Soin", 
         "description": "Une potion rouge qui restaure 50 PV.", 
-        "stack_max": 10 
+        "stack_max": 10,
+        "icon": "05-potion.png"
     } 
 }

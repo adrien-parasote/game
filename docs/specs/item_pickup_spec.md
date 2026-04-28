@@ -9,6 +9,8 @@
 | Use `pygame.display.flip()` in entity code | Manage rendering in `Game` or `UI` classes | Separation of concerns and performance |
 | Directly modify `Player` attributes from UI | Use `Inventory` methods (encapsulation) | Safer state management |
 | Use absolute paths for assets | Use `os.path.join` and relative paths | Portability across OS |
+| Assume `item_id` == `icon_filename` | Allow explicit `icon` property in metadata | Decouples IDs from asset filenames |
+| Use full visual rect for pickup sorting | Use thin/shrunken hitbox for ground items | Ensures player always appears in front |
 
 ## 2. Test Case Specifications
 
@@ -52,6 +54,7 @@
 2. Lookup in `propertytypes.json`.
 3. Try to add to `player.inventory`.
 4. If successful, remove entity from `all_sprites` and `interactives`.
+5. Depth Handling: Use shrunken hitbox (`20x10`) for pickups to ensure Y-sorting places player "in front".
 
 ### UI Logic
 - Icons: `assets/images/icons/{item_id}.png`.

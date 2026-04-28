@@ -379,6 +379,7 @@
                     "value": {
                         "activate_from_anywhere": true,
                         "sprite": {
+                            "depth": 0,
                             "end_frame": 0,
                             "entity_type": "object",
                             "sprite_sheet": "05-potion",

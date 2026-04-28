@@ -27,6 +27,8 @@ Pygame (existing) for low-level rendering control. Modular Python structure for 
 - 8 Equipment slots + 24 Item slots.
 - 4-tab system with visual state.
 - Player stats display.
+- Item pickup system with stacking logic.
+- Hover-based item tooltips in Inventory UI.
 
 ### 7. What are you NOT building?
 - Item movement/dragging (deferred).
