@@ -10,7 +10,7 @@
   "map": {
     "tile_size": 32,
     "map_size": 32,
-    "initial_hour": 13
+    "initial_hour": 22
   },
   "colors": {
     "background": "#000000"
@@ -21,12 +21,16 @@
   },
   "ui": {
     "cursor_size": 32,
-    "enable_failed_interaction_emote": false
+    "enable_failed_interaction_emote": false,
+    "text_speed": 0.05
   },
   "overlay": {
     "occlusion_alpha": 130
   },
   "fonts": {
-    "main": "assets/fonts/Pixel.ttf"
+    "main": "assets/fonts/Pixel.ttf",
+    "size_ui": 20,
+    "size_dialogue": 24,
+    "size_hud": 16
   }
 }

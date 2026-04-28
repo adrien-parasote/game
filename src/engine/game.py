@@ -351,7 +351,16 @@ class Game:
                         break
                 if sample_tile_id != 0: break
             
-            depth = getattr(self.map_manager.tiles.get(sample_tile_id), "depth", 0) if sample_tile_id else 0
+            # Use name-based hint if available (e.g. "01-layer" -> depth 1)
+            layer_name = self.map_manager.layer_names.get(layer_id, "")
+            name_depth = None
+            if len(layer_name) >= 3 and layer_name[:2].isdigit() and layer_name[2] == "-":
+                name_depth = int(layer_name[:2])
+            
+            if name_depth is not None:
+                depth = name_depth
+            else:
+                depth = getattr(self.map_manager.tiles.get(sample_tile_id), "depth", 0) if sample_tile_id else 0
             
             if depth <= self.player.depth:
                 surface = self.map_manager.get_layer_surface(layer_id, pygame)

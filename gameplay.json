@@ -22,9 +22,6 @@
     "days_per_season": 30,
     "initial_season": 0
   },
-  "ui": {
-    "text_speed": 0.06
-  },
   "npc": {
     "speed": 40,
     "animation_speed": 8.0
