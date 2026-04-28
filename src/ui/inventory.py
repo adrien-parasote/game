@@ -39,10 +39,8 @@ class InventoryUI:
             (int(self.active_tab_img.get_width() * self.scale_factor), int(self.active_tab_img.get_height() * self.scale_factor)))
         self.hover_img = pygame.transform.smoothscale(self.hover_img, 
             (int(self.hover_img.get_width() * self.scale_factor), int(self.hover_img.get_height() * self.scale_factor)))
-        self.pointer_img = pygame.transform.smoothscale(self.pointer_img, 
-            (int(self.pointer_img.get_width() * self.scale_factor), int(self.pointer_img.get_height() * self.scale_factor)))
-        self.pointer_select_img = pygame.transform.smoothscale(self.pointer_select_img, 
-            (int(self.pointer_select_img.get_width() * self.scale_factor), int(self.pointer_select_img.get_height() * self.scale_factor)))
+        self.pointer_img = pygame.transform.smoothscale(self.pointer_img, (40, 64))
+        self.pointer_select_img = pygame.transform.smoothscale(self.pointer_select_img, (40, 64))
         
         # UI Layout Constants (Scaled from original 1344x704 coordinates)
         s = self.scale_factor
@@ -251,7 +249,10 @@ class InventoryUI:
                 hover_rect = self.hover_img.get_rect(center=pos)
                 screen.blit(self.hover_img, hover_rect)
 
-        # 7. Draw Custom Cursor (Always on top)
+        # 7. Draw Stats (Info Zone - Bottom Right)
+        self._draw_stats(screen)
+
+        # 8. Draw Custom Cursor (Always on top - must be last)
         mouse_pos = pygame.mouse.get_pos()
         if pygame.mouse.get_pressed()[0]:
             cursor_img = self.pointer_select_img
@@ -260,9 +261,6 @@ class InventoryUI:
         
         # Offset cursor slightly so tip is at mouse position
         screen.blit(cursor_img, mouse_pos)
-
-        # 8. Draw Stats (Info Zone - Bottom Right)
-        self._draw_stats(screen)
 
     def _draw_stats(self, screen):
         s = self.scale_factor
