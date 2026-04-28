@@ -4,7 +4,7 @@ class EmoteSprite(pygame.sprite.Sprite):
     """
     A sprite representing an emote bubble that rises 15px over its lifetime.
     """
-    def __init__(self, frames: list[pygame.Surface], player, groups: pygame.sprite.Group, duration: float = 1.0):
+    def __init__(self, frames: list[pygame.Surface], player, groups: pygame.sprite.Group, duration: float = 0.6):
         super().__init__(groups)
         self.frames = frames
         self.image = self.frames[0]

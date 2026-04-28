@@ -2,6 +2,7 @@ import pygame
 import os
 import logging
 from src.config import Settings
+from src.engine.asset_manager import AssetManager
 
 class DialogueManager:
     """
@@ -62,11 +63,12 @@ class DialogueManager:
                 self.next_arrow = pygame.transform.smoothscale(img, (int(w * self.scale), int(h * self.scale)))
             
             # 3. Fonts
-            font_size_msg = int(34 * self.scale * 1.5)
-            font_size_title = int(38 * self.scale * 1.5)
+            am = AssetManager()
+            font_size_msg = Settings.FONT_SIZE_DIALOGUE
+            font_size_title = Settings.FONT_SIZE_DIALOGUE + 4
             
-            self.font_message = pygame.font.SysFont("Arial", font_size_msg)
-            self.font_title = pygame.font.SysFont("Arial", font_size_title)
+            self.font_message = am.get_font(Settings.MAIN_FONT, font_size_msg)
+            self.font_title = am.get_font(Settings.MAIN_FONT, font_size_title)
             
         except Exception as e:
             logging.error(f"Failed to load dialogue assets: {e}")

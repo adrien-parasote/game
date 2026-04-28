@@ -51,6 +51,12 @@ class Settings:
         "audio": {
             "bgm_volume": 0.5,
             "sfx_volume": 0.5
+        },
+        "fonts": {
+            "main": "assets/fonts/Inter-Regular.ttf",
+            "size_ui": 20,
+            "size_dialogue": 24,
+            "size_hud": 16
         }
     }
 
@@ -163,6 +169,13 @@ class Settings:
         audio_data = data.get("audio", {})
         cls.BGM_VOLUME: float = audio_data.get("bgm_volume", 0.5)
         cls.SFX_VOLUME: float = audio_data.get("sfx_volume", 0.5)
+
+        # Fonts
+        font_data = data.get("fonts", {})
+        cls.MAIN_FONT: str = font_data.get("main", "assets/fonts/Inter-Regular.ttf")
+        cls.FONT_SIZE_UI: int = font_data.get("size_ui", 20)
+        cls.FONT_SIZE_DIALOGUE: int = font_data.get("size_dialogue", 24)
+        cls.FONT_SIZE_HUD: int = font_data.get("size_hud", 16)
 
 # Initialize on import
 Settings.load()

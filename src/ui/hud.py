@@ -9,6 +9,8 @@ import json
 import logging
 import pygame
 from src.engine.time_system import TimeSystem, Season
+from src.engine.asset_manager import AssetManager
+from src.config import Settings
 
 # ------------------------------------------------------------------
 HUD_SCALE: float = 0.4                 # Scale factor for the large original HUD asset
@@ -25,7 +27,7 @@ HUD_MARGIN_Y: int = 20                 # Pixels from top edge
 TEXT_COLOR: tuple = (240, 235, 210)    # Warm off-white
 SHADOW_COLOR: tuple = (0, 0, 0)
 SHADOW_OFFSET: int = 1
-FONT_SIZE: int = 16                    # Slightly larger base font since boxes are scaled
+FONT_SIZE: int = Settings.FONT_SIZE_HUD
 
 # Map Season enum to lang key and filename
 _SEASON_FILES: dict = {
@@ -116,13 +118,9 @@ class GameHUD:
 
     @staticmethod
     def _load_font() -> pygame.font.Font:
-        """Load the best available pixel-friendly font."""
-        for name in ("freesansbold", "dejavusans", "sans-serif", None):
-            try:
-                return pygame.font.SysFont(name, FONT_SIZE, bold=True)
-            except Exception:
-                continue
-        return pygame.font.Font(None, FONT_SIZE)
+        """Load the centralized font via AssetManager."""
+        am = AssetManager()
+        return am.get_font(Settings.MAIN_FONT, FONT_SIZE)
 
     # ------------------------------------------------------------------
     # Rendering helpers

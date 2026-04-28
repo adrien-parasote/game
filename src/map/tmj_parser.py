@@ -22,6 +22,7 @@ class TmjParser:
         project_path = "assets/tiled/game.tiled-project"
         if os.path.exists(project_path):
             self.project = TiledProject(project_path)
+            
     def load_map(self, tmj_path: str) -> Dict[str, Any]:
         """Loads a .tmj file and resolves all local and external dependencies recursively."""
         if not os.path.exists(tmj_path):
@@ -43,6 +44,8 @@ class TmjParser:
             "height": data["height"],
             "layers": {},
             "tiles": {},
+            "layer_names": {}, # Store ID -> Name mapping
+            "layer_order": [], # Store IDs in rendering order
             "spawn_player": None,
             "entities": [], # All objects from Sprites group
             "properties": {p["name"]: p["value"] for p in data.get("properties", [])}
@@ -68,6 +71,9 @@ class TmjParser:
             l_name = layer.get("name")
             
             if l_type == "tilelayer":
+                l_id = layer.get("id")
+                map_result["layer_names"][l_id] = l_name
+                map_result["layer_order"].append(l_id)
                 self._parse_tilelayer(layer, map_width, map_result["layers"])
             elif l_type == "group":
                 self._process_layers(layer.get("layers", []), map_width, map_result)
@@ -199,4 +205,3 @@ class TmjParser:
             matrix.append(raw_data[i:i+map_width])
             
         layers_dict[layer_id] = matrix
-        

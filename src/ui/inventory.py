@@ -1,7 +1,9 @@
 import pygame
 import os
+import json
 import logging
 from src.config import Settings
+from src.engine.asset_manager import AssetManager
 
 class InventoryUI:
     """
@@ -9,12 +11,14 @@ class InventoryUI:
     Handles rendering of the inventory background, slots, tabs, and character preview.
     """
     
-    def __init__(self, player):
+    def __init__(self, player, lang: str = "fr"):
         self.player = player
         self.is_open = False
         self.active_tab = 0 # 0: Inventory, 1-3: Other
+        self._lang = self._load_lang(lang)
         self.font = self._load_font()
-        self.item_font = pygame.font.SysFont("arial", 16, bold=True)
+        am = AssetManager()
+        self.item_font = am.get_font(Settings.MAIN_FONT, 16)
         self.icon_cache = {}
         
         # Load and Scale Assets
@@ -87,6 +91,17 @@ class InventoryUI:
         self.preview_state = 'down'
         self.hovered_slot = None # None, ('equipment', name), or ('grid', index)
 
+    def _load_lang(self, lang: str) -> dict:
+        """Load the language file for item names and descriptions."""
+        base = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "langs")
+        path = os.path.normpath(os.path.join(base, f"{lang}.json"))
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            logging.warning(f"InventoryUI: Could not load lang '{lang}': {e}. Using defaults.")
+            return {"items": {}}
+
     def _load_asset(self, filename):
         path = os.path.join("assets", "images", "ui", filename)
         try:
@@ -99,10 +114,9 @@ class InventoryUI:
             return surf
 
     def _load_font(self):
-        try:
-            return pygame.font.SysFont("freesansbold", 24, bold=True)
-        except:
-            return pygame.font.Font(None, 24)
+        """Load the centralized UI font."""
+        am = AssetManager()
+        return am.get_font(Settings.MAIN_FONT, Settings.FONT_SIZE_UI)
 
     def toggle(self):
         self.is_open = not self.is_open
@@ -301,9 +315,12 @@ class InventoryUI:
             if slot_type == "grid":
                 item = self.player.inventory.get_item_at(value)
                 if item:
-                    # Draw Item Name and Description
-                    name_text = self.font.render(item.name, True, (30, 30, 30))
-                    desc_text = self.item_font.render(item.description, True, (60, 60, 60))
+                    # Draw Item Name and Description (Localized)
+                    name = self._lang.get("items", {}).get(item.id, {}).get("name", item.name)
+                    description = self._lang.get("items", {}).get(item.id, {}).get("description", item.description)
+                    
+                    name_text = self.font.render(name, True, (30, 30, 30))
+                    desc_text = self.item_font.render(description, True, (60, 60, 60))
                     
                     screen.blit(name_text, (stats_x, stats_y - int(10 * s)))
                     screen.blit(desc_text, (stats_x, stats_y + int(12 * s)))

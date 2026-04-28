@@ -8,6 +8,15 @@ class MapManager:
     def __init__(self, map_data: dict, layout: LayoutStrategy):
         self.layers = map_data.get("layers", {})
         self.tiles = map_data.get("tiles", {})
+        self.layer_names = map_data.get("layer_names", {})
+        
+        # Sort layer_order: force '00-' to be at the bottom (first rendered), then preserve original order
+        raw_order = map_data.get("layer_order", [])
+        self.layer_order = sorted(
+            raw_order, 
+            key=lambda lid: (0 if self.layer_names.get(lid, "").startswith("00-") else 1, raw_order.index(lid))
+        )
+        
         self.layout = layout
         
         first_layer = next(iter(self.layers.values()), [])
@@ -50,8 +59,8 @@ class MapManager:
         if not (0 <= y < self.height and 0 <= x < self.width):
             return True # Out of bounds blocks movement
             
-        for layer_id in self.layers.values():
-            tile_id = layer_id[y][x]
+        for layer_data in self.layers.values():
+            tile_id = layer_data[y][x]
             if tile_id in self.tiles and getattr(self.tiles[tile_id], "collidable", False):
                 return True
         return False
@@ -70,7 +79,7 @@ class MapManager:
         start_row = max(0, int(viewport_rect.top // tile_size))
         end_row = min(self.height, int(math.ceil(viewport_rect.bottom / tile_size)))
         
-        for layer_id in sorted(self.layers.keys()):
+        for layer_id in self.layer_order:
             layer_data = self.layers[layer_id]
             for y in range(start_row, end_row):
                 for x in range(start_col, end_col):

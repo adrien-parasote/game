@@ -19,6 +19,7 @@ class AssetManager:
         self._images = {}
         self._tilesets = {}
         self._sounds = {}
+        self._fonts = {}
         
     def get_image(self, path: str, fallback: bool = False) -> pygame.Surface:
         """Load, convert and cache an image."""
@@ -48,8 +49,28 @@ class AssetManager:
                 return placeholder
             raise
 
+    def get_font(self, path: str, size: int) -> pygame.font.Font:
+        """Load and cache a font."""
+        key = (path, size)
+        if key in self._fonts:
+            return self._fonts[key]
+        
+        try:
+            # If path is None or empty, use default system font
+            if path and os.path.exists(path):
+                font = pygame.font.Font(path, size)
+            else:
+                # Fallback to system font if the file doesn't exist
+                font = pygame.font.SysFont("Arial", size)
+            self._fonts[key] = font
+            return font
+        except Exception as e:
+            logging.error(f"Failed to load font {path}: {e}")
+            return pygame.font.Font(None, size)
+
     def clear_cache(self):
         """Clear all cached assets."""
         self._images.clear()
         self._tilesets.clear()
         self._sounds.clear()
+        self._fonts.clear()

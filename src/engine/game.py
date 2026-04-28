@@ -334,7 +334,7 @@ class Game:
         cam_offset = self.visible_sprites.offset
         
         # Get all layers that should be behind the player
-        for layer_id in sorted(self.map_manager.layers.keys()):
+        for layer_id in self.map_manager.layer_order:
             # We need to know the depth of tiles in this layer. 
             # In Tiled, layers usually have a uniform depth via properties.
             # If not, we fall back to checking the first non-zero tile.
@@ -532,81 +532,90 @@ class Game:
     def run(self):
         """Main game loop optimized for 60 FPS."""
         while True:
-            # Event handling
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == Settings.QUIT_KEY:
-                        pygame.quit()
-                        sys.exit()
-                    if event.key == Settings.TOGGLE_FULLSCREEN_KEY:
-                        self.toggle_fullscreen()
-                    
-                    # Dialogue advance
-                    if event.key == Settings.INTERACT_KEY and self.dialogue_manager.is_active:
-                        self.dialogue_manager.advance()
-                        if not self.dialogue_manager.is_active:
-                            # Resume NPCs
-                            for npc in self.npcs:
-                                if npc.state == 'interact':
-                                    npc.state = 'idle'
-                                    
-                    # Inventory Toggle
-                    if event.key == Settings.INVENTORY_KEY and not self.dialogue_manager.is_active:
-                        self.inventory_ui.toggle()
-                        
-                # Inventory Input (Outside KEYDOWN, inside event loop)
-                if self.inventory_ui.is_open:
-                    self.inventory_ui.handle_input(event)
-
+            self._handle_events()
+            
             # Update (Fixed 60 FPS)
             dt = self.clock.tick(Settings.FPS) / 1000.0
-            
-            # --- Logical Pause for Dialogue/Inventory ---
-            self.emote_group.update(dt)
-            if self.dialogue_manager.is_active:
-                self.dialogue_manager.update(dt)
-            elif self.inventory_ui.is_open:
-                self.inventory_ui.update(dt)
-            else:
-                # Update Time
-                self.time_system.update(dt)
-                
-                # Input & Logic
-                self.interaction_manager.update(dt)
-                    
-                self.player.input()
-                self.interaction_manager.handle_interactions()
-                
-                was_moving = self.player.is_moving
-                self.visible_sprites.update(dt)
-                self._check_teleporters(was_moving)
-                
-                # CPU Freeze optimization for NPCs -> freeze if outside enlarged viewport
-                screen_rect = self.screen.get_rect()
-                viewport_world = screen_rect.move(-self.visible_sprites.offset.x, -self.visible_sprites.offset.y)
-                viewport_world.inflate_ip(128, 128)
-                
-                for npc in self.npcs:
-                    npc.is_visible = viewport_world.colliderect(npc.rect)
-                    npc.update(dt)
-                    
-                for obj in self.interactives:
-                    obj.update(dt)
+            self._update(dt)
 
             # Draw complete sequence
-            self._draw_scene()
+            self._draw()
+
+    def _handle_events(self):
+        """Handle all pygame events."""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == Settings.QUIT_KEY:
+                    pygame.quit()
+                    sys.exit()
+                if event.key == Settings.TOGGLE_FULLSCREEN_KEY:
+                    self.toggle_fullscreen()
+                
+                # Dialogue advance
+                if event.key == Settings.INTERACT_KEY and self.dialogue_manager.is_active:
+                    self.dialogue_manager.advance()
+                    if not self.dialogue_manager.is_active:
+                        # Resume NPCs
+                        for npc in self.npcs:
+                            if npc.state == 'interact':
+                                npc.state = 'idle'
+                                
+                # Inventory Toggle
+                if event.key == Settings.INVENTORY_KEY and not self.dialogue_manager.is_active:
+                    self.inventory_ui.toggle()
+                    
+            # Inventory Input (Outside KEYDOWN, inside event loop)
+            if self.inventory_ui.is_open:
+                self.inventory_ui.handle_input(event)
+
+    def _update(self, dt: float):
+        """Update game state by dt."""
+        # --- Logical Pause for Dialogue/Inventory ---
+        self.emote_group.update(dt)
+        if self.dialogue_manager.is_active:
+            self.dialogue_manager.update(dt)
+        elif self.inventory_ui.is_open:
+            self.inventory_ui.update(dt)
+        else:
+            # Update Time
+            self.time_system.update(dt)
             
-            # Dynamic Title Update (Every 1s)
-            now = pygame.time.get_ticks()
-            if now - self.last_fps_update > 1000:
-                fps = self.clock.get_fps()
-                pygame.display.set_caption(f"{Settings.GAME_TITLE} (v{Settings.VERSION}) - {fps:.1f} FPS")
-                self.last_fps_update = now
+            # Input & Logic
+            self.interaction_manager.update(dt)
+                
+            self.player.input()
+            self.interaction_manager.handle_interactions()
             
-            pygame.display.update()
+            was_moving = self.player.is_moving
+            self.visible_sprites.update(dt)
+            self._check_teleporters(was_moving)
+            
+            # CPU Freeze optimization for NPCs -> freeze if outside enlarged viewport
+            screen_rect = self.screen.get_rect()
+            viewport_world = screen_rect.move(-self.visible_sprites.offset.x, -self.visible_sprites.offset.y)
+            viewport_world.inflate_ip(128, 128)
+            
+            for npc in self.npcs:
+                npc.is_visible = viewport_world.colliderect(npc.rect)
+                npc.update(dt)
+                
+            for obj in self.interactives:
+                obj.update(dt)
+                
+        # Dynamic Title Update (Every 1s)
+        now = pygame.time.get_ticks()
+        if now - self.last_fps_update > 1000:
+            fps = self.clock.get_fps()
+            pygame.display.set_caption(f"{Settings.GAME_TITLE} (v{Settings.VERSION}) - {fps:.1f} FPS")
+            self.last_fps_update = now
+
+    def _draw(self):
+        """Draw complete scene and update display."""
+        self._draw_scene()
+        pygame.display.update()
 
     def toggle_fullscreen(self):
         """Toggle between fullscreen and windowed mode."""
