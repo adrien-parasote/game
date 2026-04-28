@@ -58,6 +58,11 @@ This document tracks universal patterns and anti-patterns extracted from the BUI
 **Pattern:** Consolidate Pygame initialization, headless environment variables (SDL_VIDEODRIVER=dummy), and global fixtures in `tests/conftest.py`.
 **Why:** Reduces drift between test files, simplifies imports, and ensures a consistent environment for CI/CD.
 
+### 11. Test: Native Object State Positioning
+**ID:** L-TEST-004
+**Pattern:** Instead of mocking methods on built-in types (like `pygame.Rect.collidepoint`), manipulate the object's properties (like `topleft` or `width`) to force the desired logical outcome.
+**Why:** Native Pygame objects are often implemented in C and their methods are read-only, making them impossible to mock directly.
+
 
 ## ❌ Anti-patterns to Avoid
 
@@ -95,6 +100,11 @@ This document tracks universal patterns and anti-patterns extracted from the BUI
 **ID:** A-GAME-002
 **Anti-pattern:** Passing world pixel coordinates to functions that expect grid (tile) indices, or vice-versa, without explicit validation or conversion.
 **Why:** Causes out-of-bounds errors or silent logic failures (e.g., `is_collidable` returning `True` because it treats a pixel coordinate of 128 as a tile index out of bounds).
+
+### 8. Singleton State Pollution
+**ID:** A-TEST-002
+**Anti-pattern:** Modifying global configuration objects (like `src.config.Settings`) during a test without restoring the original state.
+**Why:** Causes non-deterministic failures in unrelated test files depending on the execution order (State Leakage).
 
 
 ## Learning: Deterministic Semantic Layer Rendering
