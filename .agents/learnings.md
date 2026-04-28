@@ -185,3 +185,26 @@ The unit test hardcoded the mock grid size to exactly 32 frames (`[pygame.Surfac
 ### Scope
 - [ ] Project-specific
 - [X] Universal (Testing practices)
+
+## Learning: State Mutation Requires Test Mock Updates
+
+**Date:** 2026-04-28
+**Spec:** Stabilization Implementation Plan
+**Outcome:** Minor Rework
+**Project:** RPG Engine
+
+### What happened
+We added `layer_order` as a required field in the `MapManager` state. The actual engine logic was updated correctly, but a legacy unit test (`test_map_manager_viewport_culling`) failed because its mocked data payload lacked the new `layer_order` field, causing the logic to return an empty array.
+
+### Root cause
+The spec explicitly stated what to change in the business logic but did not explicitly specify that test mock payloads must be updated to reflect the newly mutated state expectations.
+
+### Anti-pattern (what to avoid)
+❌ Changing state requirements in business logic without explicitly specifying the test mocks that need to be updated.
+
+### Evidence
+- `test_map_manager_viewport_culling` failed with `AssertionError: assert 0 == 4` because `layer_order` was empty in the mocked `map_result`.
+
+### Scope
+- [ ] Project-specific
+- [x] Universal
