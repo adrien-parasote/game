@@ -39,8 +39,13 @@ class InventoryUI:
             (int(self.active_tab_img.get_width() * self.scale_factor), int(self.active_tab_img.get_height() * self.scale_factor)))
         self.hover_img = pygame.transform.smoothscale(self.hover_img, 
             (int(self.hover_img.get_width() * self.scale_factor), int(self.hover_img.get_height() * self.scale_factor)))
-        self.pointer_img = pygame.transform.smoothscale(self.pointer_img, (40, 64))
-        self.pointer_select_img = pygame.transform.smoothscale(self.pointer_select_img, (40, 64))
+        # Scale cursors while preserving aspect ratio
+        target_h = Settings.CURSOR_SIZE
+        ratio = target_h / 535 # 535 is original height
+        target_w = int(309 * ratio) # 309 is original width
+        
+        self.pointer_img = pygame.transform.smoothscale(self.pointer_img, (target_w, target_h))
+        self.pointer_select_img = pygame.transform.smoothscale(self.pointer_select_img, (target_w, target_h))
         
         # UI Layout Constants (Scaled from original 1344x704 coordinates)
         s = self.scale_factor

@@ -45,8 +45,9 @@ class InteractionManager:
                 return
                 
             # 3. Failed Interaction (Question mark)
-            # Trigger 'question' emote if we are facing a collision or just pressed Action in thin air
-            self.game.player.playerEmote('question')
+            # Trigger 'question' emote if enabled and we are facing a collision or just pressed Action in thin air
+            if Settings.ENABLE_FAILED_INTERACTION_EMOTE:
+                self.game.player.playerEmote('question')
 
     def _check_proximity_emotes(self):
         """Trigger 'interact' emote when near an interactive object or NPC."""

@@ -43,6 +43,11 @@ class Settings:
             "speed": 40,
             "animation_speed": 8.0
         },
+        "ui": {
+            "text_speed": 0.05,
+            "cursor_size": 48,
+            "enable_failed_interaction_emote": True
+        },
         "audio": {
             "bgm_volume": 0.5,
             "sfx_volume": 0.5
@@ -146,6 +151,8 @@ class Settings:
         # UI
         ui_data = data.get("ui", {})
         cls.TEXT_SPEED: float = ui_data.get("text_speed", 0.05)
+        cls.CURSOR_SIZE: int = ui_data.get("cursor_size", 48)
+        cls.ENABLE_FAILED_INTERACTION_EMOTE: bool = ui_data.get("enable_failed_interaction_emote", True)
 
         # NPC
         npc_data = data.get("npc", {})

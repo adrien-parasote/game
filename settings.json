@@ -17,7 +17,11 @@
   },
   "debug": {
     "log_level": "INFO",
-    "enabled": true
+    "enabled": false
+  },
+  "ui": {
+    "cursor_size": 32,
+    "enable_failed_interaction_emote": false
   },
   "overlay": {
     "occlusion_alpha": 130
