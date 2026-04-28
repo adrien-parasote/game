@@ -62,3 +62,41 @@ def test_map_manager_collision():
     manager = MapManager(map_data, OrthogonalLayout(32))
     assert manager.is_collidable(0, 0) is True
     assert manager.is_collidable(1, 0) is False
+
+def test_orthogonal_layout():
+    from src.map.layout import OrthogonalLayout
+    layout = OrthogonalLayout(32)
+    assert layout.to_screen(1, 1) == (32, 32)
+    assert layout.to_world(64, 64) == (2, 2)
+
+def test_tiled_project_resolution():
+    from src.map.project_schema import TiledProject
+    
+    project_data = {
+        "propertyTypes": [
+            {
+                "type": "class",
+                "name": "base_entity",
+                "members": [
+                    {"name": "speed", "type": "int", "value": 100},
+                    {"name": "name", "type": "string", "value": "Unknown"}
+                ]
+            }
+        ]
+    }
+    
+    with patch("os.path.exists", return_value=True):
+        with patch("builtins.open", MagicMock()):
+            with patch("json.load", return_value=project_data):
+                project = TiledProject("dummy.tiled-project")
+                
+                # Resolve with no overrides
+                res = project.resolve("base_entity")
+                assert res["speed"] == 100
+                assert res["name"] == "Unknown"
+                
+                # Resolve with overrides
+                res = project.resolve("base_entity", {"speed": 200, "ad_hoc": "test"})
+                assert res["speed"] == 200
+                assert res["name"] == "Unknown"
+                assert res["ad_hoc"] == "test"

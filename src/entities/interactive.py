@@ -247,7 +247,7 @@ class InteractiveEntity(BaseEntity):
                 self.frame_index = float(self.end_row)
             elif not is_on:
                 self.frame_index = float(self.start_row)
-            if self.sub_type == 'door' and self.obstacles_group:
+            if self.sub_type == 'door' and self.obstacles_group is not None:
                 if is_on and self.is_passable:
                     self.obstacles_group.remove(self)
                 else:
