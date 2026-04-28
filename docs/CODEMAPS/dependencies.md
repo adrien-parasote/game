@@ -10,6 +10,7 @@
 ## Asset Directory Map
 - `assets/images/sprites/`: Spritesheets for Player, NPCs, and Objects.
 - `assets/images/hud/`: UI elements (textbox, cursor, clock).
+- `assets/images/ui/`: Inventory background, slots, tabs, and custom pointers (`05-pointer.png`).
 - `assets/audio/bgm/`: Background music (.ogg).
 - `assets/audio/sfx/`: Interaction sounds (.ogg).
 - `assets/tiled/maps/`: `.tmj` map files.

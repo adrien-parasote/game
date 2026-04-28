@@ -24,6 +24,11 @@ If collide → move cancelled → move_timer reset
    - If page complete: flip to next page.
    - If last page: set `is_active=False` and restore player control.
 
+## Inventory & Custom Cursor
+1. **Init**: `Settings.CURSOR_SIZE` → `InventoryUI` scales `05-pointer` assets (preserves 309x535 ratio).
+2. **State**: `InventoryUI.toggle()` handles `mouse.set_visible()`.
+3. **Render**: `InventoryUI.draw()` blits the custom pointer at `pygame.mouse.get_pos()` as the absolute final step.
+
 ## Teleportation Pipeline
 1. **Detection**: `Game.update()` → `_check_teleporters()`
 2. **Trigger Types**:

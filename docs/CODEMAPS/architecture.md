@@ -11,6 +11,7 @@
 - `time_system.py`: `TimeSystem`. Drives game clock, seasons, and lighting alpha.
 - `world_state.py`: `WorldState`. Session-persistent dictionary for interactive states.
 - `audio.py`: `AudioManager`. Centralized BGM and SFX controller.
+- `inventory.py`: `InventoryUI`. Manages inventory display, tabs, and custom cursor.
 
 ## Data Flow
 `assets/*.tmj` → `TmjParser` (Resolves Tiled Project Schema) → `MapManager` (Frustum Culling) → `Game` (Rendering Pass)
@@ -23,6 +24,8 @@
 4. Light Halos & Particles (Additive blending)
 5. Foreground Layers (depth=1)
 6. HUD & Dialogue Overlay
+7. Player Emotes
+8. Custom Cursor (Absolute Top)
 
 ## Key Sprite Groups
 - `visible_sprites`: `CameraGroup` with custom Y-Sort drawing.
