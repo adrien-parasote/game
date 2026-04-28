@@ -20,6 +20,8 @@ class InventoryUI:
         self.slot_img = self._load_asset("03-inventory_slot.png")
         self.active_tab_img = self._load_asset("02-active_tab.png")
         self.hover_img = self._load_asset("04-inventory_slot_hover.png")
+        self.pointer_img = self._load_asset("05-pointer.png")
+        self.pointer_select_img = self._load_asset("06-pointer_select.png")
         
         # Urbanization: Scale down to fit 1280px screen (1344 -> 1200)
         target_width = 1200
@@ -37,6 +39,10 @@ class InventoryUI:
             (int(self.active_tab_img.get_width() * self.scale_factor), int(self.active_tab_img.get_height() * self.scale_factor)))
         self.hover_img = pygame.transform.smoothscale(self.hover_img, 
             (int(self.hover_img.get_width() * self.scale_factor), int(self.hover_img.get_height() * self.scale_factor)))
+        self.pointer_img = pygame.transform.smoothscale(self.pointer_img, 
+            (int(self.pointer_img.get_width() * self.scale_factor), int(self.pointer_img.get_height() * self.scale_factor)))
+        self.pointer_select_img = pygame.transform.smoothscale(self.pointer_select_img, 
+            (int(self.pointer_select_img.get_width() * self.scale_factor), int(self.pointer_select_img.get_height() * self.scale_factor)))
         
         # UI Layout Constants (Scaled from original 1344x704 coordinates)
         s = self.scale_factor
@@ -95,7 +101,8 @@ class InventoryUI:
 
     def toggle(self):
         self.is_open = not self.is_open
-        pygame.mouse.set_visible(self.is_open)
+        # Custom pointer replaces system cursor
+        pygame.mouse.set_visible(not self.is_open)
         logging.info(f"Inventory {'opened' if self.is_open else 'closed'}")
 
     def set_tab(self, index):
@@ -155,6 +162,14 @@ class InventoryUI:
     def update_hover(self, mouse_pos):
         """Detect which slot is under the mouse."""
         self.hovered_slot = None
+        
+        # Check Equipment Slots
+        for name, pos in self.equipment_slots.items():
+            rect = pygame.Rect(0, 0, self.equip_rect_side, self.equip_rect_side)
+            rect.center = pos
+            if rect.collidepoint(mouse_pos):
+                self.hovered_slot = ("equipment", name)
+                return
         
         # Check Grid Slots (only if Tab 0)
         if self.active_tab == 0:
@@ -222,20 +237,31 @@ class InventoryUI:
         # 6. Draw Hover Highlight
         if self.hovered_slot:
             slot_type, value = self.hovered_slot
-            pos = None
             if slot_type == "equipment":
                 pos = self.equipment_slots[value]
+                rect = pygame.Rect(0, 0, self.equip_rect_side, self.equip_rect_side)
+                rect.center = pos
+                # Gold border (brightening effect)
+                pygame.draw.rect(screen, (255, 215, 0), rect, 3)
             elif slot_type == "grid":
                 row = value // self.grid_cols
                 col = value % self.grid_cols
                 pos = (self.grid_start[0] + (col * self.grid_spacing_x),
                        self.grid_start[1] + (row * self.grid_spacing_y))
-            
-            if pos:
                 hover_rect = self.hover_img.get_rect(center=pos)
                 screen.blit(self.hover_img, hover_rect)
 
-        # 7. Draw Stats (Info Zone - Bottom Right)
+        # 7. Draw Custom Cursor (Always on top)
+        mouse_pos = pygame.mouse.get_pos()
+        if pygame.mouse.get_pressed()[0]:
+            cursor_img = self.pointer_select_img
+        else:
+            cursor_img = self.pointer_img
+        
+        # Offset cursor slightly so tip is at mouse position
+        screen.blit(cursor_img, mouse_pos)
+
+        # 8. Draw Stats (Info Zone - Bottom Right)
         self._draw_stats(screen)
 
     def _draw_stats(self, screen):

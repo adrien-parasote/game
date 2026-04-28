@@ -140,7 +140,7 @@ def test_inventory_draw():
 
 # NEW: Hover detection
 def test_inventory_hover_detection():
-    """Verify that hovered_slot updates correctly based on mouse position (grid only)."""
+    """Verify that hovered_slot updates correctly based on mouse position."""
     from src.ui.inventory import InventoryUI
     player = Player((0, 0))
     inv = InventoryUI(player)
@@ -150,10 +150,10 @@ def test_inventory_hover_detection():
     assert hasattr(inv, 'hovered_slot')
     assert inv.hovered_slot is None
     
-    # 1. Test Equipment Hover (Should be None now)
+    # 1. Test Equipment Hover (HEAD) - RE-ENABLED
     head_pos = inv.equipment_slots["HEAD"]
     inv.update_hover(head_pos)
-    assert inv.hovered_slot is None
+    assert inv.hovered_slot == ("equipment", "HEAD")
     
     # 2. Test Grid Hover (Slot 0)
     grid_pos = inv.grid_start
@@ -172,3 +172,12 @@ def test_inventory_equipment_hit_area():
     inv = InventoryUI(player)
     assert hasattr(inv, 'equip_rect_side')
     assert inv.equip_rect_side > inv.slot_img.get_width()
+
+# NEW: Cursor assets
+def test_inventory_cursor_assets():
+    """Verify cursor images are loaded."""
+    from src.ui.inventory import InventoryUI
+    player = Player((0, 0))
+    inv = InventoryUI(player)
+    assert hasattr(inv, 'pointer_img')
+    assert hasattr(inv, 'pointer_select_img')
