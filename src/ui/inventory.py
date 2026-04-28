@@ -57,7 +57,7 @@ class InventoryUI:
         ]
         
         # Equipment Slots (MAGENTA zone - Left)
-        self.equip_rect_side = int(100 * s)
+        self.equip_rect_side = int(78 * s)
         self.equipment_slots = {
             "HEAD": (self.bg_rect.x + int(354 * s), self.bg_rect.y + int(160 * s)),
             "BAG": (self.bg_rect.x + int(212 * s), self.bg_rect.y + int(290 * s)),
@@ -202,6 +202,7 @@ class InventoryUI:
         if not self.is_open:
             return
             
+        s = self.scale_factor
         # 1. Draw Background
         screen.blit(self.bg, self.bg_rect)
         
@@ -244,8 +245,8 @@ class InventoryUI:
                 pos = self.equipment_slots[value]
                 rect = pygame.Rect(0, 0, self.equip_rect_side, self.equip_rect_side)
                 rect.center = pos
-                # Gold border (brightening effect)
-                pygame.draw.rect(screen, (255, 215, 0), rect, 3)
+                # Gold border (brightening effect) with rounded corners
+                pygame.draw.rect(screen, (255, 215, 0), rect, 3, border_radius=int(12 * s))
             elif slot_type == "grid":
                 row = value // self.grid_cols
                 col = value % self.grid_cols

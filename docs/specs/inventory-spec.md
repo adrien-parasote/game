@@ -27,7 +27,7 @@
 
 #### Equipment Zones (Interaction Only)
 - **Rendering:** No slot frames drawn (transparent zones).
-- **Hit Area:** Scaled size of 100x100px (approx) to match background visual frames.
+- **Hit Area:** Scaled size of 78x78px to match background visual frames exactly.
 - **Coordinates (Centers):**
     - HEAD: (354, 160) | BAG: (212, 290) | BELT: (211, 405) | LEFT_HAND: (242, 529)
     - UPPER_BODY: (499, 291) | LOWER_BODY: (498, 406) | RIGHT_HAND: (469, 529) | SHOES: (354, 549)
@@ -55,7 +55,7 @@
 | Select Tab | Left Click | Updates `active_tab` index. |
 | Click Slot | Left Click | Logs interaction for grid index or equipment ID. |
 | Hover Grid | Mouse Move | Renders `04-inventory_slot_hover.png` over grid slots. |
-| Hover Equip | Mouse Move | Renders a gold border around the equipment slot. |
+| Hover Equip | Mouse Move | Renders a rounded gold border (78x78) around the equipment slot. |
 | Custom Cursor| Always | Replaces system cursor. Switches to 'select' image on left-click. Size controlled by `Settings.CURSOR_SIZE`. |
 
 ## ❌ Anti-Patterns (DO NOT)
@@ -70,6 +70,7 @@
 1.  **Preserved Aspect Ratio Scaling:** Calculate target dimensions based on a configurable height (Settings) and the asset's native ratio.
 2.  **Absolute Top-Level Layering:** Place the custom cursor at the very end of the main `draw` cycle to overlay HUD, stats, and emotes.
 3.  **Conditional Emote Suppression:** Provide user settings to toggle visual feedback for failed actions ("?") to avoid UX annoyance.
+4.  **Measurement-First UI Alignment:** Always measure dark/interactive zones in background assets pixel-perfectly before defining collision rects or selection frames.
 
 ## 🔍 Verification
 - **TDD:** `tests/test_inventory.py` covers logic states.
