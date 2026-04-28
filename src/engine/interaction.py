@@ -43,8 +43,12 @@ class InteractionManager:
             # 2. Interactive Objects (Proximity & Orientation based)
             if self._check_object_interactions():
                 return
+
+            # 3. Pickup Items
+            if self._check_pickup_interactions():
+                return
                 
-            # 3. Failed Interaction (Question mark)
+            # 4. Failed Interaction (Question mark)
             # Trigger 'question' emote if enabled and we are facing a collision or just pressed Action in thin air
             if Settings.ENABLE_FAILED_INTERACTION_EMOTE:
                 self.game.player.playerEmote('question')
@@ -81,6 +85,15 @@ class InteractionManager:
                         self._last_proximity_target = obj
                     return
                 
+        # Check Pickups
+        for pickup in self.game.pickups:
+            if p_pos.distance_to(pickup.pos) < range_dist:
+                if pickup != getattr(self, '_last_proximity_target', None):
+                    self.game.player.playerEmote('question')
+                    self._emote_cooldown = 1.5
+                    self._last_proximity_target = pickup
+                return
+
         # Check NPCs
         for npc in self.game.npcs:
             if p_pos.distance_to(npc.pos) < range_dist:
@@ -147,6 +160,34 @@ class InteractionManager:
                     target = getattr(obj, "target_id", None)
                     if target:
                         self.game.toggle_entity_by_id(target, depth=1)
+                return True
+        return False
+
+    def _check_pickup_interactions(self) -> bool:
+        """Check for nearby pickup items."""
+        p_pos = self.game.player.pos
+        range_dist = 48.0
+        
+        for pickup in self.game.pickups:
+            if p_pos.distance_to(pickup.pos) < range_dist:
+                # Try to add to inventory
+                remaining = self.game.player.inventory.add_item(pickup.item_id, pickup.quantity)
+                
+                # Update pickup quantity based on what was actually added
+                picked_up = pickup.quantity - remaining
+                pickup.quantity = remaining
+                
+                if picked_up > 0:
+                    logging.info(f"Picked up {picked_up}x {pickup.item_id}")
+                
+                if pickup.quantity <= 0:
+                    # Item fully picked up
+                    pickup.kill()
+                else:
+                    # Inventory full or partial pickup
+                    self.game.dialogue_manager.start_dialogue("Inventaire plein.", title="Système")
+                    logging.info(f"Inventory full, {pickup.quantity}x {pickup.item_id} left on ground.")
+                
                 return True
         return False
 

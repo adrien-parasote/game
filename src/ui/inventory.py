@@ -14,6 +14,8 @@ class InventoryUI:
         self.is_open = False
         self.active_tab = 0 # 0: Inventory, 1-3: Other
         self.font = self._load_font()
+        self.item_font = pygame.font.SysFont("arial", 16, bold=True)
+        self.icon_cache = {}
         
         # Load and Scale Assets
         self.bg = self._load_asset("01-inventory.png")
@@ -237,6 +239,25 @@ class InventoryUI:
                     # Center slot image on the calculated grid point
                     slot_rect = self.slot_img.get_rect(center=(x, y))
                     screen.blit(self.slot_img, slot_rect)
+                    
+                    # Draw Item Icon if slot is occupied
+                    index = row * self.grid_cols + col
+                    item = self.player.inventory.get_item_at(index)
+                    if item:
+                        icon = self._get_item_icon(item.id)
+                        if icon:
+                            icon_rect = icon.get_rect(center=(x, y))
+                            screen.blit(icon, icon_rect)
+                        
+                        # Draw Quantity if > 1
+                        if item.quantity > 1:
+                            qty_text = self.item_font.render(str(item.quantity), True, (255, 255, 255))
+                            # Position: bottom right of slot
+                            qty_rect = qty_text.get_rect(bottomright=(slot_rect.right - int(5 * s), slot_rect.bottom - int(5 * s)))
+                            # Draw small background for legibility
+                            bg_rect = qty_rect.inflate(4, 2)
+                            pygame.draw.rect(screen, (30, 30, 30), bg_rect, border_radius=3)
+                            screen.blit(qty_text, qty_rect)
 
         # 6. Draw Hover Highlight
         if self.hovered_slot:
@@ -255,8 +276,8 @@ class InventoryUI:
                 hover_rect = self.hover_img.get_rect(center=pos)
                 screen.blit(self.hover_img, hover_rect)
 
-        # 7. Draw Stats (Info Zone - Bottom Right)
-        self._draw_stats(screen)
+        # 7. Draw Stats or Item Info (Info Zone - Bottom Right)
+        self._draw_info_zone(screen)
 
         # 8. Draw Custom Cursor (Always on top - must be last)
         mouse_pos = pygame.mouse.get_pos()
@@ -268,12 +289,27 @@ class InventoryUI:
         # Offset cursor slightly so tip is at mouse position
         screen.blit(cursor_img, mouse_pos)
 
-    def _draw_stats(self, screen):
+    def _draw_info_zone(self, screen):
+        """Draw either character stats or hovered item info in the green bar."""
         s = self.scale_factor
-        # GREEN zone: avg(929, 551)
         stats_x = self.bg_rect.x + int(695 * s)
         stats_y = self.bg_rect.y + int(551 * s)
         
+        # Check if we should show item info instead of stats
+        if self.hovered_slot:
+            slot_type, value = self.hovered_slot
+            if slot_type == "grid":
+                item = self.player.inventory.get_item_at(value)
+                if item:
+                    # Draw Item Name and Description
+                    name_text = self.font.render(item.name, True, (30, 30, 30))
+                    desc_text = self.item_font.render(item.description, True, (60, 60, 60))
+                    
+                    screen.blit(name_text, (stats_x, stats_y - int(10 * s)))
+                    screen.blit(desc_text, (stats_x, stats_y + int(12 * s)))
+                    return
+
+        # Default: Draw Stats
         # LVL (Left part of green bar)
         lvl_text = self.font.render(f"LVL {self.player.level}", True, (30, 30, 30))
         lvl_rect = lvl_text.get_rect(midleft=(stats_x, stats_y))
@@ -288,3 +324,23 @@ class InventoryUI:
         gold_text = self.font.render(f"GOLD {self.player.gold}", True, (30, 30, 30))
         gold_rect = gold_text.get_rect(midright=(self.bg_rect.x + int(1160 * s), stats_y))
         screen.blit(gold_text, gold_rect)
+
+    def _get_item_icon(self, item_id):
+        """Load and cache item icon."""
+        if item_id in self.icon_cache:
+            return self.icon_cache[item_id]
+        
+        filename = f"{item_id}.png"
+        path = os.path.join("assets", "images", "icons", filename)
+        try:
+            if os.path.exists(path):
+                img = pygame.image.load(path).convert_alpha()
+                # Scale icon to fit slot (approx 48x48 base, scaled by s)
+                target_size = int(48 * self.scale_factor)
+                img = pygame.transform.smoothscale(img, (target_size, target_size))
+                self.icon_cache[item_id] = img
+                return img
+        except Exception as e:
+            logging.error(f"InventoryUI: Could not load icon {filename}: {e}")
+        
+        return None

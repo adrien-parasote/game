@@ -8,6 +8,7 @@ from src.entities.player import Player
 from src.entities.interactive import InteractiveEntity
 from src.entities.npc import NPC
 from src.entities.teleport import Teleport
+from src.entities.pickup import PickupItem
 from src.entities.groups import CameraGroup
 from src.map.manager import MapManager
 from src.map.layout import OrthogonalLayout
@@ -71,6 +72,7 @@ class Game:
         self.obstacles_group = pygame.sprite.Group()
         self.teleports_group = pygame.sprite.Group()
         self.emote_group = pygame.sprite.Group()
+        self.pickups = pygame.sprite.Group()
 
         
         # Local state
@@ -162,6 +164,7 @@ class Game:
         self.npcs.empty()
         self.obstacles_group.empty()
         self.teleports_group.empty()
+        self.pickups.empty()
         
         # Only keep player in visible sprites
         self.visible_sprites.empty()
@@ -285,6 +288,20 @@ class Game:
                 npc.name = _get_property(props, "name", ent.get("name", ""))
                 npc.collision_func = self._is_collidable
                 logging.info(f"Spawned NPC '{npc.element_id}' at {e_pos}")
+            elif entity_type == "object":
+                item_id = _get_property(props, "object_id")
+                sprite = _get_property(props, "sprite_sheet")
+                quantity = int(_get_property(props, "quantity", 1))
+                if item_id and sprite:
+                    PickupItem(
+                        pos=e_pos,
+                        groups=[self.visible_sprites, self.pickups],
+                        item_id=item_id,
+                        sprite_sheet=sprite,
+                        quantity=quantity,
+                        element_id=str(ent.get("id"))
+                    )
+                    logging.info(f"Spawned PickupItem '{item_id}' (x{quantity}) at {e_pos}")
 
     def _is_collidable(self, px_center: float, py_center: float, requester=None) -> bool:
         """Collision checking adapter for Entity target position."""

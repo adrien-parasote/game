@@ -4,6 +4,7 @@ from src.config import Settings
 from src.graphics.spritesheet import SpriteSheet
 import os
 from src.entities.emote import EmoteManager
+from src.engine.inventory_system import Inventory
 
 class Player(BaseEntity):
     """Player entity with keyboard input handling."""
@@ -33,6 +34,7 @@ class Player(BaseEntity):
         self.hp = 100
         self.max_hp = 100
         self.gold = 0
+        self.inventory = Inventory()
 
         # Emote System
         self.audio_manager = None # Set by Game
