@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-24 | Files scanned: 25 | Token estimate: ~500 -->
+<!-- Generated: 2026-04-28 | Files scanned: 25 | Token estimate: ~500 -->
 
 # Engine Logic Flow
 
@@ -7,11 +7,12 @@
 
 ## Interaction Chain
 `INTERACT_KEY` (E) → `InteractionManager.handle_interactions`
-- Distance check (<45px)
-- Orientation check (Facing target)
-- Door Relaxation (Bypass orientation for open doors)
-- `obj.interact()` → Toggle state + SFX + `WorldState.set`
-- `Game.toggle_entity_by_id` (Chaining recursion depth 1)
+- `_check_npc_interactions`: rect projection at 1-tile range
+- `_check_object_interactions`: distance (<45px) + orientation check
+- `_check_pickup_interactions`: distance (<48px) → `Inventory.add_item`
+- Door Relaxation (Bypass orientation for open doors, `is_on=True`)
+- SFX → `audio_manager.play_sfx(obj.sfx)`
+- `Game.toggle_entity_by_id(target_id, depth=1)` (Chaining)
 
 ## Emote Chain
 `InteractionManager.update` → `_check_proximity_emotes`

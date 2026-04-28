@@ -39,9 +39,11 @@
 
 ## 4. Deep Links
 
-- [Interaction Logic](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L52)
-- [Inventory UI](file:///Users/adrien.parasote/Documents/perso/game/src/ui/inventory.py#L231)
-- [Player Entity](file:///Users/adrien.parasote/Documents/perso/game/src/entities/player.py#L31)
+- [Pickup Interaction Logic](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L166)
+- [Proximity Emote Check](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L56)
+- [Inventory UI](file:///Users/adrien.parasote/Documents/perso/game/src/ui/inventory.py#L1)
+- [Inventory System](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L17)
+- [Player Entity](file:///Users/adrien.parasote/Documents/perso/game/src/entities/player.py#L1)
 - [Asset Path Config](file:///Users/adrien.parasote/Documents/perso/game/src/config.py)
 
 ## 5. Implementation Details

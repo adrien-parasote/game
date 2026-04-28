@@ -212,8 +212,8 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | Failed Interact | No target found | Show 'question' emote | Optional via `Settings.ENABLE_FAILED_INTERACTION_EMOTE` |
 
 ## 6. Deep Links
-- **Interactive Spawning**: [game.py - _spawn_entities](src/engine/game.py?#L179)
+- **Interactive Spawning**: [game.py - _spawn_entities](src/engine/game.py#L215)
 - **Base Interaction**: [base.py - interact](src/entities/base.py#L73)
 - **Sprite Slicing**: [spritesheet.py - load_grid_by_size](src/graphics/spritesheet.py)
-- **Collision Check**: [game.py - _is_collidable](src/engine/game.py#L228)
-- **Unified Interaction Handling**: [game.py - _handle_interactions](src/engine/game.py#L293)
+- **Collision Check**: [game.py - _is_collidable](src/engine/game.py#L340)
+- **Unified Interaction Handling**: [interaction.py - handle_interactions](src/engine/interaction.py#L26)

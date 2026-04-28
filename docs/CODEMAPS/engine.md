@@ -1,15 +1,17 @@
-<!-- Generated: 2026-04-24 | Files scanned: 10 | Token estimate: ~350 -->
+<!-- Generated: 2026-04-28 | Files scanned: 10 | Token estimate: ~350 -->
 
 # Engine Logic & Data Flow
 
 ## Map Loading Flow
 Game._load_map(name) → TmjParser.load_map() → TileProperty Resolver → Game._spawn_entities()
-Game._spawn_entities() → WorldState.get_state() → InteractiveEntity Init → Game.interactived.add()
+Game._spawn_entities() → WorldState.get_state() → InteractiveEntity Init → Game.interactives.add()
 
 ## Interaction Chain
-Input (E) → Game._handle_interactions() → Player.get_target_rect() → Entity.interact()
-Entity.interact() → DialogueManager.start_dialogue() OR Toggle State → Target ID Check
-Target ID Check → Game.find_entity(target_id) → Target.interact()
+Input (E) → InteractionManager.handle_interactions()
+  → _check_npc_interactions() → NPC.interact() → DialogueManager.start_dialogue()
+  → _check_object_interactions() → obj.interact() → Toggle State → target_id check
+  → _check_pickup_interactions() → Inventory.add_item() → pickup.kill()
+Chaining → Game.toggle_entity_by_id(target_id, depth=1)
 
 ## Collision Logic
 Entity.move() → Game._is_collidable() → Obstacles Group + Interactives + NPCs

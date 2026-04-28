@@ -4,8 +4,10 @@
 
 ## Input & Interaction Flow
 Keyboard Event → Game.handle_input()
-INTERACT_KEY → InteractionManager.handle_interaction() → Entity.on_interact()
-Entity.on_interact() → DialogueManager / Inventory / WorldState modification
+INTERACT_KEY → InteractionManager.handle_interactions() → NPC/Object/Pickup
+NPC → NPC.interact() → Game._trigger_dialogue()
+Object → InteractiveEntity.interact() → Toggle State + SFX + WorldState
+Pickup → Inventory.add_item() → pickup.kill()
 
 ## Rendering Pipeline
 Game._draw_background() (Pre-rendered Layer Surfaces)
@@ -25,7 +27,8 @@ Game._load_map() → AssetManager.clear()
 - **Night Overlay**: Dynamic alpha calculation for screen tinting based on hour.
 
 ## Key Methods
-- `InteractionManager.get_closest_entity()`: Distance + Orientation check.
+- `InteractionManager._check_proximity_emotes()`: Distance + Orientation check to trigger emotes.
+- `InteractionManager.handle_interactions()`: Unified pickup/NPC/object dispatcher on key press.
 - `MapManager.is_collidable(x, y)`: Bounding box collision query.
 - `TmjParser._parse_tilelayer()`: Convert raw GIDs to 2D matrix.
-- `Inventory.add_item()`: Stackable item logic + WorldState sync.
+- `Inventory.add_item(item_id, quantity) -> int`: Stackable item logic, returns remaining quantity.
