@@ -52,6 +52,7 @@ class Settings:
             "bgm_volume": 0.5,
             "sfx_volume": 0.5
         },
+        "locale": "fr",
         "fonts": {
             "main": "assets/fonts/Inter-Regular.ttf",
             "size_ui": 20,
@@ -176,6 +177,9 @@ class Settings:
         cls.FONT_SIZE_UI: int = font_data.get("size_ui", 20)
         cls.FONT_SIZE_DIALOGUE: int = font_data.get("size_dialogue", 24)
         cls.FONT_SIZE_HUD: int = font_data.get("size_hud", 16)
+
+        # Locale
+        cls.LOCALE: str = data.get("locale", "fr")
 
 # Initialize on import
 Settings.load()

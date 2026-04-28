@@ -25,5 +25,8 @@
   },
   "overlay": {
     "occlusion_alpha": 130
+  },
+  "fonts": {
+    "main": "assets/fonts/Pixel.ttf"
   }
 }

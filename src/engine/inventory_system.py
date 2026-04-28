@@ -3,6 +3,7 @@ import os
 import logging
 from dataclasses import dataclass
 from typing import Dict, List, Optional
+from src.engine.i18n import I18nManager
 
 @dataclass
 class Item:
@@ -21,6 +22,7 @@ class Inventory:
         self.capacity = capacity
         self.slots: List[Optional[Item]] = [None] * capacity
         self.item_data = self._load_item_data()
+        self.i18n = I18nManager()
 
     def _load_item_data(self) -> Dict[str, dict]:
         """Load item properties from JSON."""
@@ -40,12 +42,17 @@ class Inventory:
         Add items to inventory. Returns the remaining quantity that couldn't be added.
         """
         remaining = quantity
-        data = self.item_data.get(item_id, {
-            "name": item_id.replace("_", " ").title(),
-            "description": "Un objet mystérieux.",
-            "stack_max": 1,
-            "icon": f"{item_id}.png"
-        })
+        
+        # Merge technical data (stack_max, icon) with localized strings (name, description)
+        tech_data = self.item_data.get(item_id, {})
+        lang_data = self.i18n.get_item(item_id)
+        
+        data = {
+            "name": lang_data["name"],
+            "description": lang_data["description"],
+            "stack_max": tech_data.get("stack_max", 1),
+            "icon": tech_data.get("icon", f"{item_id}.png")
+        }
         
         stack_max = data.get("stack_max", 1)
 

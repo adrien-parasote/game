@@ -1,42 +1,25 @@
 import pytest
 import pygame
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch, MagicMock
 from src.config import Settings
 
-from src.engine.asset_manager import AssetManager
-
-@pytest.fixture(autouse=True)
-def setup_headless_pygame():
-    """Initialize pygame in headless mode for all tests."""
-    os.environ["SDL_VIDEODRIVER"] = "dummy"
-    if not pygame.get_init():
-        pygame.init()
-    if not pygame.font.get_init():
-        pygame.font.init()
-    if not pygame.display.get_init():
-        pygame.display.init()
-    pygame.display.set_mode((1280, 720))
+@pytest.fixture(scope='session', autouse=True)
+def setup_pygame():
+    """Initialize headless pygame once for the entire session."""
+    os.environ['SDL_VIDEODRIVER'] = 'dummy'
+    os.environ['SDL_AUDIODRIVER'] = 'dummy'
+    pygame.init()
+    # Create a dummy screen for tests requiring a display surface
+    pygame.display.set_mode((1280, 720), pygame.HIDDEN)
     Settings.load()
-    
-    # Clear caches to avoid stale pygame objects (like Fonts) between tests
-    AssetManager().clear_cache()
-    
     yield
+    pygame.quit()
 
 @pytest.fixture
-def mock_font():
-    """Mock pygame font (Font and SysFont) to avoid real loading and allow size asserts."""
-    font_instance = MagicMock()
-    font_instance.size.side_effect = lambda text: (len(text) * 10, 20)
-    font_instance.get_linesize.return_value = 20
-    font_instance.render.return_value = pygame.Surface((10, 10))
-    
-    with patch('pygame.font.Font', return_value=font_instance), \
-         patch('pygame.font.SysFont', return_value=font_instance):
-        yield font_instance
-
-@pytest.fixture
-def mock_screen():
-    """Provide a mock screen surface."""
-    return pygame.Surface((1280, 720))
+def mock_spritesheet():
+    """Global mock for spritesheet loading to prevent missing file errors."""
+    with patch('src.graphics.spritesheet.SpriteSheet.load_grid', return_value=[pygame.Surface((32, 48)) for _ in range(16)]):
+        with patch('src.graphics.spritesheet.SpriteSheet.load_grid_by_size', return_value=[pygame.Surface((32, 32)) for _ in range(16)]):
+            with patch('src.graphics.spritesheet.SpriteSheet.__init__', return_value=None):
+                yield

@@ -28,5 +28,6 @@
   "npc": {
     "speed": 40,
     "animation_speed": 8.0
-  }
+  },
+  "locale": "fr"
 }

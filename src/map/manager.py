@@ -10,11 +10,12 @@ class MapManager:
         self.tiles = map_data.get("tiles", {})
         self.layer_names = map_data.get("layer_names", {})
         
-        # Sort layer_order: force '00-' to be at the bottom (first rendered), then preserve original order
+        # Sort layer_order: prioritize name-based ordering (00-, 01-, etc.)
+        # This ensures '00-layer' is always rendered first (at the bottom)
         raw_order = map_data.get("layer_order", [])
         self.layer_order = sorted(
-            raw_order, 
-            key=lambda lid: (0 if self.layer_names.get(lid, "").startswith("00-") else 1, raw_order.index(lid))
+            raw_order,
+            key=lambda lid: (self.layer_names.get(lid, ""))
         )
         
         self.layout = layout

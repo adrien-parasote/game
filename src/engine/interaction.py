@@ -55,8 +55,8 @@ class InteractionManager:
 
     def _check_proximity_emotes(self):
         """Trigger 'interact' emote when near an interactive object or NPC."""
-        # Only check if no emote is active and cooldown is over to avoid spamming
-        if self._emote_cooldown > 0 or len(self.game.emote_group) > 0:
+        # Only check if cooldown is over to avoid spamming
+        if self._emote_cooldown > 0:
             return
             
         p_pos = self.game.player.pos
@@ -81,7 +81,7 @@ class InteractionManager:
                         
                     if obj != getattr(self, '_last_proximity_target', None):
                         self.game.player.playerEmote('interact')
-                        self._emote_cooldown = 1.5 # 1s animation + 0.5s pause
+                        self._emote_cooldown = 0.8 # 0.6s animation + 0.2s pause
                         self._last_proximity_target = obj
                     return
                 
@@ -90,7 +90,7 @@ class InteractionManager:
             if p_pos.distance_to(pickup.pos) < range_dist:
                 if pickup != getattr(self, '_last_proximity_target', None):
                     self.game.player.playerEmote('question')
-                    self._emote_cooldown = 1.5
+                    self._emote_cooldown = 0.8
                     self._last_proximity_target = pickup
                 return
 
@@ -102,7 +102,7 @@ class InteractionManager:
                 if is_aligned and is_facing:
                     if npc != getattr(self, '_last_proximity_target', None):
                         self.game.player.playerEmote('interact')
-                        self._emote_cooldown = 1.5
+                        self._emote_cooldown = 0.8 # 0.6s animation + 0.2s pause
                         self._last_proximity_target = npc
                     return
                 

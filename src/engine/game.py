@@ -20,6 +20,7 @@ from src.ui.dialogue import DialogueManager
 from src.engine.audio import AudioManager
 from src.engine.interaction import InteractionManager
 from src.ui.inventory import InventoryUI
+from src.engine.i18n import I18nManager
 
 
 def _get_property(props: dict, key: str, default=None):
@@ -48,6 +49,10 @@ class Game:
     """Main game class that manages the core loop and state."""
     
     def __init__(self):
+        # 1. Initialize Localization
+        self.i18n = I18nManager()
+        self.i18n.load(Settings.LOCALE)
+        
         self._setup_logging()
         pygame.init()
         logging.info(f"Initializing Game Engine v{Settings.VERSION}...")
