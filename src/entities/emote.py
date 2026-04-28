@@ -17,7 +17,8 @@ class EmoteManager:
             "love": 0,
             "bored": 1,
             "interact": 2,
-            "question": 3
+            "question": 3,
+            "frustration": 4
         }
         
         # Load spritesheet
@@ -28,8 +29,8 @@ class EmoteManager:
             
         try:
             sheet = SpriteSheet(sheet_path)
-            # 4 columns (one per emote) and 8 rows (animation frames)
-            self.frames_grid = sheet.load_grid(cols=4, rows=8)
+            # 5 columns (one per emote) and 8 rows (animation frames)
+            self.frames_grid = sheet.load_grid(cols=5, rows=8)
         except Exception as e:
             logging.error(f"Failed to load emote spritesheet: {e}")
             self.frames = []
@@ -50,7 +51,7 @@ class EmoteManager:
         self.emote_group.empty()
         
         # Get all frames for this emote (column)
-        emote_frames = [self.frames_grid[index + i * 4] for i in range(8)]
+        emote_frames = [self.frames_grid[index + i * 5] for i in range(8)]
         
         # Create the new emote sprite
         EmoteSprite(emote_frames, self.player, self.emote_group)

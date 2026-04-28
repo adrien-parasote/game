@@ -14,7 +14,7 @@ def test_emote_manager_trigger():
     player.audio_manager = MagicMock()
     group = MagicMock()
     with patch('src.entities.emote.SpriteSheet') as mock_sheet:
-        mock_sheet.return_value.load_grid.return_value = [pygame.Surface((16, 16))] * 32
+        mock_sheet.return_value.load_grid.return_value = [pygame.Surface((16, 16))] * 40
         em = EmoteManager(player)
         em.emote_group = group
         

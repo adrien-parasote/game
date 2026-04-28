@@ -26,6 +26,7 @@
 | Test ID | Flow | Setup | Verification | Teardown |
 |---------|------|-------|--------------|----------|
 | IT-PICK-001 | Pickup Flow | Player near Item | Emote '?' visible, Press E -> Item moved to Inv | Remove item from group |
+| IT-PICK-002 | Pickup Flow | Inventory Full | Emote 'frustration' visible, Item stays | Partial or no pickup |
 | IT-UI-001 | UI Hover | Mouse over slot | Tooltip displays correct name/desc | Move mouse away |
 
 ## 3. Error Handling Matrix
@@ -55,6 +56,7 @@
 3. Try to add to `player.inventory`.
 4. If successful, remove entity from `all_sprites` and `interactives`.
 5. Depth Handling: Use shrunken hitbox (`20x10`) for pickups to ensure Y-sorting places player "in front".
+6. Full Inventory: If `can_add` returns remaining > 0, trigger the `frustration` emote on the player instead of a dialogue.
 
 ### UI Logic
 - Icons: `assets/images/icons/{item_id}.png`.

@@ -162,3 +162,26 @@ The `InventoryUI` class contains a guard clause `if not self.is_open: return`. B
 ### Scope
 - [X] Project-specific (UI Architecture)
 - [ ] Universal
+
+## Learning: Hardcoded Mock Lengths for Data-Driven Assets
+**Date:** 2026-04-28
+**Spec:** docs/specs/engine-core.md
+**Outcome:** Minor Rework
+**Project:** Python Pygame RPG
+
+### What happened
+After updating the emotes spritesheet from 4 columns to 5 columns in the engine logic, `test_emotes.py` failed with `IndexError: list index out of range`.
+
+### Root cause
+The unit test hardcoded the mock grid size to exactly 32 frames (`[pygame.Surface] * 32`), tightly coupling the test to the previous implementation detail of exactly 4 columns.
+
+### Anti-pattern (what to avoid)
+❌ **Don't** hardcode exact sequence lengths in mock returns for data-driven assets (like grid structures) unless the test specifically validates that exact length constraint.
+✅ **Do Instead** either dynamically calculate the mock size based on the tested variables, use an oversized mock (e.g., `* 100`) if the exact length is irrelevant, or remember to explicitly update associated mocks when changing spec constraints (like grid dimensions).
+
+### Evidence
+- `tests/test_emotes.py::test_emote_manager_trigger` failed when the new extraction logic requested `index + i * 5` (which accessed indices > 31) because the mock returned a fixed list of 32 items.
+
+### Scope
+- [ ] Project-specific
+- [X] Universal (Testing practices)

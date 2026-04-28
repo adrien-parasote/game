@@ -201,7 +201,7 @@ The engine uses a multi-pass rendering pipeline to combine layers, entities, and
 - **Rendering**: `pygame.draw.circle` with alpha fading: `alpha = (life / max_life)`.
 
 #### Player Emote System (Visual Indicators)
-- **Asset**: `assets/images/sprites/04-emotes.png` (128x256, mapped as a 4-column x 8-row grid).
+- **Asset**: `assets/images/sprites/04-emotes.png` (mapped as a 5-column x 8-row grid).
 - **Animation**: 
     - The bubble is constructed using all 8 frames of the assigned column to provide visual animation.
     - It appears at `player.rect.top` and linearly interpolates 15px upwards over its 1-second lifetime before self-destructing.
@@ -209,6 +209,7 @@ The engine uses a multi-pass rendering pipeline to combine layers, entities, and
 - **Triggers**:
     - **Proximity (`interact`)**: Triggered when within 48px of any interactive object or NPC. Strictly limited by a **1.5s cooldown** to prevent sprite stacking and frame-by-frame spam when iterating spatial checks.
     - **Fail Feedback (`question`)**: Triggered when an interaction input occurs but no target is found or blocked. Optional via `Settings.ENABLE_FAILED_INTERACTION_EMOTE`.
+    - **Inventory Full (`frustration`)**: Triggered when the player attempts to pick up an item but the inventory is full.
 - **Replacement Policy**: Triggering a new emote immediately `empty()`s the rendering group for that player.
 - **Audio**: Plays `03-emote.ogg` on trigger.
 

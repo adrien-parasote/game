@@ -185,7 +185,7 @@ class InteractionManager:
                     pickup.kill()
                 else:
                     # Inventory full or partial pickup
-                    self.game.dialogue_manager.start_dialogue("Inventaire plein.", title="Système")
+                    self.game.player.playerEmote('frustration')
                     logging.info(f"Inventory full, {pickup.quantity}x {pickup.item_id} left on ground.")
                 
                 return True
