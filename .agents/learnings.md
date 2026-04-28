@@ -87,3 +87,78 @@ Implicit assumption that interaction direction properties describe the actor's s
 
 ### Scope
 - [x] Universal (applies across top-down 2D grid/pixel-based games)
+
+## Learning: Pygame Surface Mocking for Blit Operations
+**Date:** 2026-04-28
+**Spec:** docs/specs/INTERACTIVE_OBJECTS.md (Test Hardening Cycle)
+**Outcome:** Minor Rework
+**Project:** Python Pygame RPG
+
+### What happened
+While writing tests for `InventoryUI` and `DialogueManager`, `TypeError: argument 1 must be pygame.surface.Surface, not MagicMock` occurred during `screen.blit()` calls. The tests mocked `pygame.font.render` and `asset_manager.get_image` with standard `MagicMock` objects.
+
+### Root cause
+Pygame's `blit` function has strict C-level type checking and does not accept Python `MagicMock` objects. It requires an actual `pygame.Surface`.
+
+### Pattern (what to reproduce)
+✅ **Do Instead:** When mocking any Pygame function that returns an image or text to be drawn, explicitly set its return value to a dummy `pygame.Surface`.
+```python
+# Correct Mocking Pattern for Pygame UI Tests
+mock_font = MagicMock()
+mock_font.render.return_value = pygame.Surface((10, 10))
+mock_asset_manager.get_image.return_value = pygame.Surface((32, 32))
+```
+
+### Evidence
+- Fix applied in `test_ui_extended.py` to `ui.font.render.return_value` replacing default MagicMocks with `pygame.Surface((10, 10))`.
+
+### Scope
+- [X] Project-specific (Pygame UI/Testing)
+- [ ] Universal
+
+## Learning: Entity Initialization Signature Verification
+**Date:** 2026-04-28
+**Spec:** Test Hardening Cycle
+**Outcome:** Minor Rework
+**Project:** Python Pygame RPG
+
+### What happened
+Tests for `NPC` and `InteractiveEntity` failed with `TypeError` during instantiation because the tests passed a dictionary instead of a tuple for `pos`, missed required arguments like `sprite_sheet`, and used incorrect kwarg names (`sound_effect` instead of `sfx`).
+
+### Root cause
+Test scaffolding was written based on generalized assumptions of entity data structures rather than inspecting the explicit `__init__` signatures of the target classes.
+
+### Anti-pattern (what to avoid)
+❌ **Don't:** Write test instantiations blindly based on JSON data structures without verifying the target class constructor.
+
+### Pattern (what to reproduce)
+✅ **Do Instead:** Before writing tests for a class, verify its `__init__` signature (e.g. by viewing the file or running a grep) and copy the exact parameter list into the test file as a reference.
+
+### Evidence
+- `InteractiveEntity` in `test_entities_extended.py` required explicit positional and keyword arguments matching its `def __init__(self, pos: tuple, groups: list[pygame.sprite.Group], ...)` signature.
+
+### Scope
+- [ ] Project-specific
+- [X] Universal (Testing practices)
+
+## Learning: Guard Clauses and Hidden UI State in Tests
+**Date:** 2026-04-28
+**Spec:** Test Hardening Cycle
+**Outcome:** Minor Rework
+**Project:** Python Pygame RPG
+
+### What happened
+Initial attempts to test `InventoryUI.draw()` resulted in 0% coverage increase for that method despite calling it in tests.
+
+### Root cause
+The `InventoryUI` class contains a guard clause `if not self.is_open: return`. Because `is_open` defaults to `False`, the test immediately returned without executing any drawing logic.
+
+### Anti-pattern (what to avoid)
+❌ **Don't:** Call update/draw methods in UI tests without explicitly initializing the component's visibility/active state flags.
+
+### Evidence
+- Coverage increased only after setting `ui.is_open = True` before calling `ui.draw(screen)` in `test_ui_extended.py`.
+
+### Scope
+- [X] Project-specific (UI Architecture)
+- [ ] Universal

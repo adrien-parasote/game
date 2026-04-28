@@ -11,6 +11,7 @@ class TileMapData:
     image: pygame.Surface
     depth: int
     collidable: bool
+    occluded_image: Optional[pygame.Surface] = None
 
 class TmjParser:
     """Parser for Tiled (.tmj) map files and their associated external (.tsx) tilesets."""
@@ -132,7 +133,9 @@ class TmjParser:
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"Tileset image not found: {img_path}")
             
-        sheet = pygame.image.load(img_path).convert_alpha()
+        from src.engine.asset_manager import AssetManager
+        am = AssetManager()
+        sheet = am.get_image(img_path)
         
         # Find explicit custom properties for tiles if any
         custom_props = {}
@@ -171,10 +174,18 @@ class TmjParser:
             # Fetch properties or defaults
             props = custom_props.get(i, {"collidable": False, "depth": 0})
             
+            # Pre-cache occluded version for high depth tiles
+            occluded = None
+            if props["depth"] > 0:
+                from src.config import Settings
+                occluded = surface.copy()
+                occluded.set_alpha(Settings.OCCLUSION_ALPHA)
+            
             tile_dict[global_id] = TileMapData(
                 image=surface,
                 depth=props["depth"],
-                collidable=props["collidable"]
+                collidable=props["collidable"],
+                occluded_image=occluded
             )
             
     def _parse_tilelayer(self, layer_data: Dict[str, Any], map_width: int, layers_dict: Dict[int, list]):

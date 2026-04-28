@@ -10,10 +10,9 @@ class LayoutStrategy(ABC):
         """Convert world/tile coordinates to screen pixel coordinates."""
         pass
 
-    @abstractmethod
     def to_world(self, px: float, py: float) -> Tuple[float, float]:
         """Convert screen pixel coordinates to world/tile coordinates."""
-        pass
+        raise NotImplementedError("to_world must be implemented by subclass")
 
 class OrthogonalLayout(LayoutStrategy):
     """Standard top-down or side-view orthogonal layout."""

@@ -15,6 +15,36 @@ class MapManager:
         self.width = len(first_layer[0]) if self.height > 0 else 0
 
         
+        self.cached_surfaces = {}
+        
+    def get_layer_surface(self, layer_id: int, pygame_module) -> "pygame.Surface":
+        """Get or create a pre-rendered surface for a specific layer."""
+        if layer_id in self.cached_surfaces:
+            return self.cached_surfaces[layer_id]
+            
+        tile_size = getattr(self.layout, "tile_size", 32)
+        width_px = self.width * tile_size
+        height_px = self.height * tile_size
+        
+        try:
+            surface = pygame_module.Surface((width_px, height_px), pygame_module.SRCALPHA)
+            layer_data = self.layers[layer_id]
+            
+            for y in range(self.height):
+                for x in range(self.width):
+                    tile_id = layer_data[y][x]
+                    if tile_id != 0 and tile_id in self.tiles:
+                        tile_img = self.tiles[tile_id].image
+                        px, py = self.layout.to_screen(x, y)
+                        surface.blit(tile_img, (px, py))
+            
+            self.cached_surfaces[layer_id] = surface
+            return surface
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to pre-render layer {layer_id}: {e}")
+            return None
+
     def is_collidable(self, x: int, y: int) -> bool:
         """Check if any layer at the given (x,y) coordinates contains a collidable tile."""
         if not (0 <= y < self.height and 0 <= x < self.width):

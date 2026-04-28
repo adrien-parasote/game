@@ -223,17 +223,25 @@ class InteractionManager:
         # DEBUG LOGGING (to trace the exact reason for failure)
         # logging.info(f"[Verify] o_dir={o_dir}, p_state={p_state}, x_aligned={x_aligned}, y_aligned={y_aligned}, p_pos={p_pos}, o_pos={o_pos}")
         
-        # Standard directional check
-        if o_dir == 'up' and p_state == 'down' and p_pos.y < o_pos.y and x_aligned: return True
-        if o_dir == 'down' and p_state == 'up' and p_pos.y > o_pos.y and x_aligned: return True
-        if o_dir == 'left' and p_state == 'right' and p_pos.x < o_pos.x and y_aligned: return True
-        if o_dir == 'right' and p_state == 'left' and p_pos.x > o_pos.x and y_aligned: return True
+        # Standard directional check (player must be at the object's front)
+        if o_dir == 'up' and p_state == 'down' and p_pos.y < o_pos.y and x_aligned:
+            return True
+        if o_dir == 'down' and p_state == 'up' and p_pos.y > o_pos.y and x_aligned:
+            return True
+        if o_dir == 'left' and p_state == 'right' and p_pos.x < o_pos.x and y_aligned:
+            return True
+        if o_dir == 'right' and p_state == 'left' and p_pos.x > o_pos.x and y_aligned:
+            return True
         
         # Relaxation for open doors (allow walking through/closing from the opposite side)
         if obj.sub_type == 'door' and getattr(obj, "is_on", False):
-            if o_dir == 'up' and p_state == 'up' and p_pos.y > o_pos.y and x_aligned: return True
-            if o_dir == 'down' and p_state == 'down' and p_pos.y < o_pos.y and x_aligned: return True
-            if o_dir == 'left' and p_state == 'left' and p_pos.x > o_pos.x and y_aligned: return True
-            if o_dir == 'right' and p_state == 'right' and p_pos.x < o_pos.x and y_aligned: return True
+            if o_dir == 'up' and p_state == 'up' and p_pos.y > o_pos.y and x_aligned:
+                return True
+            if o_dir == 'down' and p_state == 'down' and p_pos.y < o_pos.y and x_aligned:
+                return True
+            if o_dir == 'left' and p_state == 'left' and p_pos.x > o_pos.x and y_aligned:
+                return True
+            if o_dir == 'right' and p_state == 'right' and p_pos.x < o_pos.x and y_aligned:
+                return True
             
         return False

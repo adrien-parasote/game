@@ -15,6 +15,7 @@ class AudioManager:
         
         self.current_bgm: Optional[str] = None
         self.sounds: Dict[str, pygame.mixer.Sound] = {}
+        self.is_muted: bool = False
         
         # Initialize mixer if not already done
         if not pygame.mixer.get_init():
@@ -28,6 +29,17 @@ class AudioManager:
         self.is_enabled = True
         self.preload_sfx()
         logging.info("Audio Manager initialized.")
+
+    def toggle_mute(self):
+        """Toggle mute state for all audio."""
+        self.is_muted = not self.is_muted
+        if self.is_muted:
+            pygame.mixer.music.set_volume(0)
+            for sound in self.sounds.values():
+                sound.set_volume(0)
+        else:
+            self.update_volumes()
+        logging.info(f"Audio mute state: {self.is_muted}")
 
     def preload_sfx(self):
         """Preload all SFX files into memory."""

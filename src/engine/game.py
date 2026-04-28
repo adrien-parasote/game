@@ -330,18 +330,31 @@ class Game:
         return False
 
     def _draw_background(self):
-        """Draw tiles with depth <= player depth (behind player)"""
+        """Draw tiles with depth <= player depth (behind player) using pre-rendered surfaces."""
         cam_offset = self.visible_sprites.offset
-        screen_rect = self.screen.get_rect()
-        viewport_world = pygame.Rect(-cam_offset.x, -cam_offset.y, screen_rect.width, screen_rect.height)
         
-        for px, py, tile_id, depth in self.map_manager.get_visible_chunks(viewport_world):
+        # Get all layers that should be behind the player
+        for layer_id in sorted(self.map_manager.layers.keys()):
+            # We need to know the depth of tiles in this layer. 
+            # In Tiled, layers usually have a uniform depth via properties.
+            # If not, we fall back to checking the first non-zero tile.
+            sample_tile_id = 0
+            for row in self.map_manager.layers[layer_id]:
+                for tid in row:
+                    if tid != 0:
+                        sample_tile_id = tid
+                        break
+                if sample_tile_id != 0: break
+            
+            depth = getattr(self.map_manager.tiles.get(sample_tile_id), "depth", 0) if sample_tile_id else 0
+            
             if depth <= self.player.depth:
-                surface = self.map_manager.tiles[tile_id].image
-                self.screen.blit(surface, (px + cam_offset.x, py + cam_offset.y))
+                surface = self.map_manager.get_layer_surface(layer_id, pygame)
+                if surface:
+                    self.screen.blit(surface, (cam_offset.x, cam_offset.y))
 
     def _draw_foreground(self):
-        """Draw tiles with depth > player depth (in front of player). Apply 40% opacity if colliding."""
+        """Draw tiles with depth > player depth (in front of player). Use cached occluded versions if needed."""
         cam_offset = self.visible_sprites.offset
         screen_rect = self.screen.get_rect()
         viewport_world = pygame.Rect(-cam_offset.x, -cam_offset.y, screen_rect.width, screen_rect.height)
@@ -352,17 +365,15 @@ class Game:
         
         for px, py, tile_id, depth in self.map_manager.get_visible_chunks(viewport_world):
             if depth > self.player.depth:
-                surface = self.map_manager.tiles[tile_id].image
+                tile_data = self.map_manager.tiles[tile_id]
                 screen_pos = (px + cam_offset.x, py + cam_offset.y)
                 dest_rect = pygame.Rect(screen_pos[0], screen_pos[1], self.tile_size, self.tile_size)
                 
                 if player_screen_rect.colliderect(dest_rect):
-                    # Occlusion check: use dynamic alpha from settings
-                    temp_surface = surface.copy()
-                    temp_surface.set_alpha(Settings.OCCLUSION_ALPHA)
-                    self.screen.blit(temp_surface, screen_pos)
+                    # Use pre-cached occluded image
+                    self.screen.blit(tile_data.occluded_image or tile_data.image, screen_pos)
                 else:
-                    self.screen.blit(surface, screen_pos)
+                    self.screen.blit(tile_data.image, screen_pos)
 
     def _draw_hud(self):
         """Draw time and season HUD overlay (top-right, fixed to screen)."""
@@ -491,9 +502,11 @@ class Game:
         
         night_alpha = self.time_system.night_alpha
         if night_alpha > 0:
-            overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, night_alpha))
-            self.screen.blit(overlay, (0, 0))
+            if not hasattr(self, '_night_overlay') or self._night_overlay.get_size() != self.screen.get_size():
+                self._night_overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+            
+            self._night_overlay.fill((0, 0, 0, night_alpha))
+            self.screen.blit(self._night_overlay, (0, 0))
             
         cam_offset = self.visible_sprites.offset
         for obj in self.interactives:

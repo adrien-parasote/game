@@ -10,7 +10,7 @@
   "map": {
     "tile_size": 32,
     "map_size": 32,
-    "initial_hour": 23
+    "initial_hour": 13
   },
   "colors": {
     "background": "#000000"
