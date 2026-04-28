@@ -48,6 +48,7 @@ class InventoryUI:
         ]
         
         # Equipment Slots (MAGENTA zone - Left)
+        self.equip_rect_side = int(100 * s)
         self.equipment_slots = {
             "HEAD": (self.bg_rect.x + int(354 * s), self.bg_rect.y + int(160 * s)),
             "BAG": (self.bg_rect.x + int(212 * s), self.bg_rect.y + int(290 * s)),
@@ -122,7 +123,8 @@ class InventoryUI:
                 
                 # Check Equipment Slots
                 for name, pos in self.equipment_slots.items():
-                    rect = self.slot_img.get_rect(center=pos)
+                    rect = pygame.Rect(0, 0, self.equip_rect_side, self.equip_rect_side)
+                    rect.center = pos
                     if rect.collidepoint(mouse_pos):
                         logging.info(f"Equipment slot clicked: {name}")
                         return
@@ -153,13 +155,6 @@ class InventoryUI:
     def update_hover(self, mouse_pos):
         """Detect which slot is under the mouse."""
         self.hovered_slot = None
-        
-        # Check Equipment Slots
-        for name, pos in self.equipment_slots.items():
-            rect = self.slot_img.get_rect(center=pos)
-            if rect.collidepoint(mouse_pos):
-                self.hovered_slot = ("equipment", name)
-                return
         
         # Check Grid Slots (only if Tab 0)
         if self.active_tab == 0:

@@ -20,6 +20,7 @@
 
 #### Equipment Zones (Interaction Only)
 - **Rendering:** No slot frames drawn (transparent zones).
+- **Hit Area:** Scaled size of 100x100px (approx) to match background visual frames.
 - **Coordinates (Centers):**
     - HEAD: (354, 160) | BAG: (212, 290) | BELT: (211, 405) | LEFT_HAND: (242, 529)
     - UPPER_BODY: (499, 291) | LOWER_BODY: (498, 406) | RIGHT_HAND: (469, 529) | SHOES: (354, 549)
@@ -46,7 +47,7 @@
 | Rotate Preview | Dir Keys | Updates `preview_state` ('up', 'down', 'left', 'right'). |
 | Select Tab | Left Click | Updates `active_tab` index. |
 | Click Slot | Left Click | Logs interaction for grid index or equipment ID. |
-| Hover Slot | Mouse Move | Renders `04-inventory_slot_hover.png` over the slot. |
+| Hover Slot | Mouse Move | Renders `04-inventory_slot_hover.png` over grid slots (Tab 0 only). No hover on equipment. |
 
 ## ❌ Anti-Patterns (DO NOT)
 1.  **Do NOT scale** the character preview sprite; use native resolution.

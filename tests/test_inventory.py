@@ -140,7 +140,7 @@ def test_inventory_draw():
 
 # NEW: Hover detection
 def test_inventory_hover_detection():
-    """Verify that hovered_slot updates correctly based on mouse position."""
+    """Verify that hovered_slot updates correctly based on mouse position (grid only)."""
     from src.ui.inventory import InventoryUI
     player = Player((0, 0))
     inv = InventoryUI(player)
@@ -150,10 +150,10 @@ def test_inventory_hover_detection():
     assert hasattr(inv, 'hovered_slot')
     assert inv.hovered_slot is None
     
-    # 1. Test Equipment Hover (HEAD)
+    # 1. Test Equipment Hover (Should be None now)
     head_pos = inv.equipment_slots["HEAD"]
     inv.update_hover(head_pos)
-    assert inv.hovered_slot == ("equipment", "HEAD")
+    assert inv.hovered_slot is None
     
     # 2. Test Grid Hover (Slot 0)
     grid_pos = inv.grid_start
@@ -163,3 +163,12 @@ def test_inventory_hover_detection():
     # 3. Test No Hover
     inv.update_hover((0, 0))
     assert inv.hovered_slot is None
+
+# NEW: Equipment Hit Area
+def test_inventory_equipment_hit_area():
+    """Verify that equipment hit area matches the larger side size."""
+    from src.ui.inventory import InventoryUI
+    player = Player((0, 0))
+    inv = InventoryUI(player)
+    assert hasattr(inv, 'equip_rect_side')
+    assert inv.equip_rect_side > inv.slot_img.get_width()
