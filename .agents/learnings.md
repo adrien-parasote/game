@@ -106,6 +106,18 @@ This document tracks universal patterns and anti-patterns extracted from the BUI
 **Anti-pattern:** Modifying global configuration objects (like `src.config.Settings`) during a test without restoring the original state.
 **Why:** Causes non-deterministic failures in unrelated test files depending on the execution order (State Leakage).
 
+### 9. Blind File Overwrites and Destructive Edits
+**ID:** A-AGENT-001
+**Anti-pattern:** Replacing the entire contents of a file (or large chunks) using outdated context, or attempting manual patches after accidentally deleting/corrupting logic.
+**Why:** Destroys functional code, removes previously added features (like I18n or UI scaling), and leads to endless loops of fixing resulting `AttributeError` or `NameError` crashes.
+**✅ Do Instead:** Always read the file's current state before modifying. Use targeted chunk replacements (`multi_replace_file_content` with specific lines). If a file is accidentally corrupted, STOP and use `git checkout -- <file>` immediately to restore the known working state before attempting new edits.
+
+### 10. Bypassing Stream Coding Workflow Stages
+**ID:** A-AGENT-002
+**Anti-pattern:** Jumping directly to code generation (`BUILD`) without completing the prerequisite documentation and planning stages (`DISCOVER`, `STRATEGY`, `SPEC`), or skipping the mandatory validation gates (`VERIFY`, `HARDEN`).
+**Why:** Generates code based on AI guesses instead of explicit specifications, causing "vibe coding", regressions, divergence between specs and implementation, and ultimately forcing expensive rework cycles.
+**✅ Do Instead:** Strictly follow the 6-stage Stream Coding pipeline. Never write implementation code without RED tests (TDD Gate). Never commit without passing the Verify Gate (build, test, spec conformance) and running `/learn-eval` + `/doc-update`.
+
 
 ## Learning: Deterministic Semantic Layer Rendering
 **Date:** 2026-04-28
