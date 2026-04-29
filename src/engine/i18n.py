@@ -53,3 +53,6 @@ class I18nManager:
             "name": item_data.get("name", item_id.replace('_', ' ').capitalize()),
             "description": item_data.get("description", "No description available.")
         }
+    def get_translations(self) -> Dict[str, Any]:
+        """Return the current translation dictionary."""
+        return self.data

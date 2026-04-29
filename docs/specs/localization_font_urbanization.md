@@ -1,60 +1,49 @@
-# SPEC: Localization & Font Urbanization
+# SPEC: Font System Tiering & Visual Identity
 
 ## Goal
-Centralize font management and enable localization for item names and descriptions.
+Establish a three-tier font system to enhance visual hierarchy and game identity, separating prestige, narrative, and technical data.
 
 ## Proposed Changes
 
 ### [MODIFY] [config.py](file:///Users/adrien.parasote/Documents/perso/game/src/config.py)
-- Add `FONT_DEFAULT`: `"assets/fonts/alagard.ttf"` (or similar).
-- Add `FONT_SIZE_UI`: `16`, `FONT_SIZE_TITLE`: `24`.
-- Initialize `Settings.UI_FONT` and `Settings.TITLE_FONT`.
-
-### [MODIFY] [inventory_system.py](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py)
-- `Item` dataclass: `name` and `description` will now hold localization keys or default to the ID.
-- `add_item` logic: use the item ID as the translation key.
+- Replace `MAIN_FONT` with tiered constants:
+    - `FONT_NOBLE`: `assets/fonts/metamorphous-regular.ttf` (Prestige)
+    - `FONT_NARRATIVE`: `assets/fonts/vcr_osd_mono.ttf` (Reading)
+    - `FONT_TECH`: `assets/fonts/m5x7.ttf` (Data/Numbers)
+- Centralize sizes: `FONT_SIZE_NOBLE` (24), `FONT_SIZE_NARRATIVE` (22), `FONT_SIZE_TECH` (20).
 
 ### [MODIFY] [inventory.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/inventory.py)
-- Use `Settings.TITLE_FONT` and `Settings.UI_FONT`.
-- Resolve `item.name` and `item.description` using the game's active language dictionary (`hud._lang` or similar).
+- Use `FONT_NOBLE` for Character Name and Item Names.
+- Use `FONT_NARRATIVE` for Item Descriptions.
+- Use `FONT_TECH` for HP, LVL, GOLD, and item quantities (x99).
 
-### [MODIFY] [hud.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/hud.py), [dialogue.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/dialogue.py)
-- Use centralized fonts from `Settings`.
+### [MODIFY] [hud.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/hud.py)
+- Use `FONT_NOBLE` for the clock and time display (prestige).
 
-### [MODIFY] [fr.json](file:///Users/adrien.parasote/Documents/perso/game/assets/langs/fr.json)
-- Add an `items` section:
-```json
-{
-  "items": {
-    "wood": {
-      "name": "Bois",
-      "description": "Un morceau de bois solide."
-    },
-    ...
-  }
-}
-```
+### [MODIFY] [dialogue.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/dialogue.py)
+- Use `FONT_NOBLE` for Speaker Names.
+- Use `FONT_NARRATIVE` for Dialogue text.
 
 ## Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
-| Load fonts in `__init__` | Use `Settings` pre-loaded fonts | Performance and memory efficiency |
-| Hardcode French/English | Use the lang system keys | Maintainability and portability |
-| Duplicate lang data | Inject a reference to the active lang | Single source of truth |
-| Use system fonts for pixel art | Use bundled .ttf pixel fonts | Visual consistency with the game style |
-| Scale fonts with `smoothscale` | Use `pygame.font.Font` with correct size | Text legibility and sharpness |
+| Use a single font for all UI | Use tiered fonts based on role | Improves visual hierarchy |
+| Use `Settings.MAIN_FONT` | Use `Settings.FONT_NOBLE/NARRATIVE/TECH` | Legacy constant removal |
+| Use Noble font for small numbers | Use Tech font | Noble is too wide for small slots |
+| Scale fonts manually | Use appropriate sizes in `Settings` | Crisp rendering of pixel fonts |
 
 ## Test Case Specifications
 
 | Test ID | Component | Input | Expected Output |
 |---------|-----------|-------|-----------------|
-| TC-LOC-01 | InventoryUI | Hover over 'wood' (FR) | Displays "Bois" and description |
-| TC-LOC-02 | Settings | Change FONT_PATH | All UI elements update font |
+| TC-FONT-01 | Settings | Access `FONT_NOBLE` | Returns Metamorphous path |
+| TC-FONT-02 | InventoryUI | Render quantity | Uses `tech_font` |
+| TC-FONT-03 | Dialogue | Render title | Uses `noble_font` |
 
 ## Error Handling Matrix
 
 | Error Type | Detection | Response | Fallback |
 |------------|-----------|----------|----------|
-| Missing Translation | Key not in `items` | Use title-cased ID | "Unknown Item" |
-| Font Not Found | `IOError` on load | Log warning | Use system default font |
+| Missing Font File | `os.path.exists` | Log Error | Fallback to `pygame.font.Font(None, size)` |
+| Invalid Size | `Settings` | Log Warning | Use default size (20) |

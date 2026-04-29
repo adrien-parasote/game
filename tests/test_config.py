@@ -8,7 +8,12 @@ def test_settings_load():
     assert Settings.WINDOW_WIDTH > 0
     assert Settings.TILE_SIZE == 32
 
-def test_font_centralization():
-    """Verify font path is configurable and exists in settings."""
-    assert hasattr(Settings, "MAIN_FONT")
-    assert "Pixel.ttf" in Settings.MAIN_FONT
+def test_font_tiers_exist():
+    """Verify the three font tiers are defined in settings."""
+    assert hasattr(Settings, "FONT_NOBLE")
+    assert hasattr(Settings, "FONT_NARRATIVE")
+    assert hasattr(Settings, "FONT_TECH")
+    
+    assert "metamorphous" in Settings.FONT_NOBLE.lower()
+    assert "vcr_osd" in Settings.FONT_NARRATIVE.lower()
+    assert "m5x7" in Settings.FONT_TECH.lower()

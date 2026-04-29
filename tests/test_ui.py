@@ -10,7 +10,7 @@ from src.engine.i18n import I18nManager
 def test_dialogue_pagination():
     """Verify that long text is paginated."""
     dm = DialogueManager()
-    long_text = "Word " * 100
+    long_text = "Word " * 500
     dm.start_dialogue(long_text)
     assert len(dm._pages) > 1
 

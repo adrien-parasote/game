@@ -54,10 +54,12 @@ class Settings:
         },
         "locale": "fr",
         "fonts": {
-            "main": "assets/fonts/Inter-Regular.ttf",
-            "size_ui": 20,
-            "size_dialogue": 24,
-            "size_hud": 16
+            "noble": "assets/fonts/metamorphous-regular.ttf",
+            "narrative": "assets/fonts/vcr_osd_mono.ttf",
+            "tech": "assets/fonts/m5x7.ttf",
+            "size_noble": 18,
+            "size_narrative": 14,
+            "size_tech": 12
         }
     }
 
@@ -173,10 +175,12 @@ class Settings:
 
         # Fonts
         font_data = data.get("fonts", {})
-        cls.MAIN_FONT: str = font_data.get("main", "assets/fonts/Inter-Regular.ttf")
-        cls.FONT_SIZE_UI: int = font_data.get("size_ui", 20)
-        cls.FONT_SIZE_DIALOGUE: int = font_data.get("size_dialogue", 24)
-        cls.FONT_SIZE_HUD: int = font_data.get("size_hud", 16)
+        cls.FONT_NOBLE: str = font_data.get("noble", "assets/fonts/metamorphous-regular.ttf")
+        cls.FONT_NARRATIVE: str = font_data.get("narrative", "assets/fonts/vcr_osd_mono.ttf")
+        cls.FONT_TECH: str = font_data.get("tech", "assets/fonts/m5x7.ttf")
+        cls.FONT_SIZE_NOBLE: int = font_data.get("size_noble", 18)
+        cls.FONT_SIZE_NARRATIVE: int = font_data.get("size_narrative", 14)
+        cls.FONT_SIZE_TECH: int = font_data.get("size_tech", 12)
 
         # Locale
         cls.LOCALE: str = data.get("locale", "fr")

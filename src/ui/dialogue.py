@@ -33,9 +33,9 @@ class DialogueManager:
         self.scale = 0.5
         
         # Style
-        self._shadow_color = (20, 20, 20)
-        self._shadow_offset = 2
-        self._text_color = (255, 255, 255)
+        self._shadow_color = (180, 170, 150) # Light shadow for parchment
+        self._shadow_offset = 1
+        self._text_color = (40, 30, 20)      # Dark brown for high contrast on parchment
         
         # Fonts
         self.font_title = None
@@ -64,11 +64,8 @@ class DialogueManager:
             
             # 3. Fonts
             am = AssetManager()
-            font_size_msg = Settings.FONT_SIZE_DIALOGUE
-            font_size_title = Settings.FONT_SIZE_DIALOGUE + 4
-            
-            self.font_message = am.get_font(Settings.MAIN_FONT, font_size_msg)
-            self.font_title = am.get_font(Settings.MAIN_FONT, font_size_title)
+            self.font_message = am.get_font(Settings.FONT_NARRATIVE, int(Settings.FONT_SIZE_NARRATIVE * 1.5)) # Larger for dialogue
+            self.font_title = am.get_font(Settings.FONT_NOBLE, int(Settings.FONT_SIZE_NOBLE * 1.5)) # Larger for dialogue
             
         except Exception as e:
             logging.error(f"Failed to load dialogue assets: {e}")

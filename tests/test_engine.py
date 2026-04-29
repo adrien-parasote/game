@@ -178,11 +178,11 @@ def test_game_draw_loop(mock_load):
 def test_game_trigger_dialogue(mock_load):
     game = Game()
     game._current_map_name = "test_map.tmj"
-    game.hud._lang = {"dialogues": {"test_map-sign_1": "Hello from sign!"}}
     game.dialogue_manager = MagicMock()
     
-    game._trigger_dialogue("sign_1", "Test Title")
-    game.dialogue_manager.start_dialogue.assert_called_with("Hello from sign!", title="Test Title")
+    with patch('src.engine.game.I18nManager.get', return_value="Hello from sign!"):
+        game._trigger_dialogue("sign_1", "Test Title")
+        game.dialogue_manager.start_dialogue.assert_called_with("Hello from sign!", title="Test Title")
 
 class DummySprite(pygame.sprite.Sprite):
     def __init__(self, element_id=""):

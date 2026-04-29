@@ -86,7 +86,7 @@ class Game:
         
         # Time System
         self.time_system = TimeSystem(initial_hour=Settings.INITIAL_HOUR)
-        self.hud = GameHUD(self.time_system, lang="fr")
+        self.hud = GameHUD(self.time_system)
         
         # World State
         self.world_state = WorldState()
@@ -398,7 +398,7 @@ class Game:
         map_base = self._current_map_name.split('.')[0]
         full_key = f"{map_base}-{element_id}"
         
-        msg = self.hud._lang.get("dialogues", {}).get(full_key)
+        msg = I18nManager().get(f"dialogues.{full_key}")
         if msg:
             self.dialogue_manager.start_dialogue(msg, title=title)
         else:

@@ -4,6 +4,7 @@ import json
 import logging
 from src.config import Settings
 from src.engine.asset_manager import AssetManager
+from src.engine.i18n import I18nManager
 
 class InventoryUI:
     """
@@ -11,14 +12,16 @@ class InventoryUI:
     Handles rendering of the inventory background, slots, tabs, and character preview.
     """
     
-    def __init__(self, player, lang: str = "fr"):
+    def __init__(self, player):
         self.player = player
         self.is_open = False
         self.active_tab = 0 # 0: Inventory, 1-3: Other
-        self._lang = self._load_lang(lang)
-        self.font = self._load_font()
+        
         am = AssetManager()
-        self.item_font = am.get_font(Settings.MAIN_FONT, 16)
+        self.noble_font = am.get_font(Settings.FONT_NOBLE, Settings.FONT_SIZE_NOBLE)
+        self.narrative_font = am.get_font(Settings.FONT_NARRATIVE, Settings.FONT_SIZE_NARRATIVE)
+        self.tech_font = am.get_font(Settings.FONT_TECH, Settings.FONT_SIZE_TECH)
+        
         self.icon_cache = {}
         
         # Load and Scale Assets
@@ -91,32 +94,15 @@ class InventoryUI:
         self.preview_state = 'down'
         self.hovered_slot = None # None, ('equipment', name), or ('grid', index)
 
-    def _load_lang(self, lang: str) -> dict:
-        """Load the language file for item names and descriptions."""
-        base = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "langs")
-        path = os.path.normpath(os.path.join(base, f"{lang}.json"))
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            logging.warning(f"InventoryUI: Could not load lang '{lang}': {e}. Using defaults.")
-            return {"items": {}}
-
     def _load_asset(self, filename):
         path = os.path.join("assets", "images", "ui", filename)
         try:
             return pygame.image.load(path).convert_alpha()
         except pygame.error as e:
             logging.error(f"InventoryUI: Could not load {filename}: {e}")
-            # Return a colored surface as fallback
             surf = pygame.Surface((32, 32))
             surf.fill((255, 0, 255))
             return surf
-
-    def _load_font(self):
-        """Load the centralized UI font."""
-        am = AssetManager()
-        return am.get_font(Settings.MAIN_FONT, Settings.FONT_SIZE_UI)
 
     def toggle(self):
         self.is_open = not self.is_open
@@ -239,7 +225,7 @@ class InventoryUI:
             logging.error(f"InventoryUI: Character preview failed: {e}")
 
         # Draw Player Name (Bottom of Orange zone)
-        name_text = self.font.render("Player", True, (60, 40, 30)) # Dark brown for parchment style
+        name_text = self.noble_font.render("Player", True, (60, 40, 30)) # Dark brown for parchment style
         name_rect = name_text.get_rect(midbottom=self.char_name_pos)
         screen.blit(name_text, name_rect)
 
@@ -265,12 +251,9 @@ class InventoryUI:
                         
                         # Draw Quantity if > 1
                         if item.quantity > 1:
-                            qty_text = self.item_font.render(str(item.quantity), True, (255, 255, 255))
-                            # Position: bottom right of slot
-                            qty_rect = qty_text.get_rect(bottomright=(slot_rect.right - int(5 * s), slot_rect.bottom - int(5 * s)))
-                            # Draw small background for legibility
-                            bg_rect = qty_rect.inflate(4, 2)
-                            pygame.draw.rect(screen, (30, 30, 30), bg_rect, border_radius=3)
+                            qty_text = self.tech_font.render(f"x{item.quantity}", True, (60, 40, 30))
+                            margin = int(8 * s)
+                            qty_rect = qty_text.get_rect(bottomright=(slot_rect.right - margin, slot_rect.bottom - margin))
                             screen.blit(qty_text, qty_rect)
 
         # 6. Draw Hover Highlight
@@ -315,30 +298,46 @@ class InventoryUI:
             if slot_type == "grid":
                 item = self.player.inventory.get_item_at(value)
                 if item:
-                    # Draw Item Name and Description (Localized)
-                    name = self._lang.get("items", {}).get(item.id, {}).get("name", item.name)
-                    description = self._lang.get("items", {}).get(item.id, {}).get("description", item.description)
+                    # Draw Item Info (Localized)
+                    item_data = I18nManager().get_item(item.id)
+                    name = item_data["name"]
+                    description = item_data["description"]
                     
-                    name_text = self.font.render(name, True, (30, 30, 30))
-                    desc_text = self.item_font.render(description, True, (60, 60, 60))
+                    name_text = self.noble_font.render(name, True, (60, 40, 30))
+                    screen.blit(name_text, (stats_x, stats_y - int(16 * s)))
                     
-                    screen.blit(name_text, (stats_x, stats_y - int(10 * s)))
-                    screen.blit(desc_text, (stats_x, stats_y + int(12 * s)))
+                    # Draw Wrapped Description (More compact)
+                    max_w = self.bg_rect.width - int(780 * s) 
+                    words = description.split(' ')
+                    lines = []
+                    current_line = []
+                    for word in words:
+                        test_line = ' '.join(current_line + [word])
+                        if self.narrative_font.size(test_line)[0] < max_w:
+                            current_line.append(word)
+                        else:
+                            lines.append(' '.join(current_line))
+                            current_line = [word]
+                    lines.append(' '.join(current_line))
+                    
+                    for i, line in enumerate(lines[:3]): # Max 3 lines
+                        desc_surf = self.narrative_font.render(line, True, (60, 40, 30))
+                        screen.blit(desc_surf, (stats_x, stats_y + int(5 * s) + i * int(18 * s)))
                     return
 
         # Default: Draw Stats
         # LVL (Left part of green bar)
-        lvl_text = self.font.render(f"LVL {self.player.level}", True, (30, 30, 30))
+        lvl_text = self.noble_font.render(f"LVL {self.player.level}", True, (60, 40, 30))
         lvl_rect = lvl_text.get_rect(midleft=(stats_x, stats_y))
         screen.blit(lvl_text, lvl_rect)
         
         # HP (Center)
-        hp_text = self.font.render(f"HP {self.player.hp}/{self.player.max_hp}", True, (30, 30, 30))
+        hp_text = self.noble_font.render(f"HP {self.player.hp}/{self.player.max_hp}", True, (60, 40, 30))
         hp_rect = hp_text.get_rect(center=(self.bg_rect.x + int(929 * s), stats_y))
         screen.blit(hp_text, hp_rect)
         
         # GOLD (Right)
-        gold_text = self.font.render(f"GOLD {self.player.gold}", True, (30, 30, 30))
+        gold_text = self.noble_font.render(f"GOLD {self.player.gold}", True, (60, 40, 30))
         gold_rect = gold_text.get_rect(midright=(self.bg_rect.x + int(1160 * s), stats_y))
         screen.blit(gold_text, gold_rect)
 
