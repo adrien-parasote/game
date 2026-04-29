@@ -26,6 +26,10 @@ Game._load_map() → AssetManager.clear()
 - **TimeSystem**: 24h clock logic. Minute → Season transitions.
 - **Night Overlay**: Dynamic alpha calculation for screen tinting based on hour.
 
+## Localization & Assets
+- **I18nManager**: Singleton loading localized text strings (`fr.json`), serving UI components directly.
+- **AssetManager**: Singleton caching fonts (Noble, Narrative, Tech) and image resources.
+
 ## Key Methods
 - `InteractionManager._check_proximity_emotes()`: Distance + Orientation check to trigger emotes.
 - `InteractionManager.handle_interactions()`: Unified pickup/NPC/object dispatcher on key press.

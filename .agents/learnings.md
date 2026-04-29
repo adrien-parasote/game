@@ -181,3 +181,32 @@ High coupling between test files and their specific local mock setups, combined 
 ### Scope
 - [ ] Project-specific
 - [x] Universal (Testing practices)
+
+
+## Learning: UI Font Sizing and Description Wrapping Layout
+**Date:** 2026-04-29
+**Spec:** localization_font_urbanization.md
+**Outcome:** Minor Rework
+**Project:** RPG Tile Engine
+
+### What happened
+The tiered font system was implemented correctly, but the dialogue box rendered text too small, and the inventory item description overflowed the background parchment due to hardcoded Y-offsets.
+
+### Root cause
+The spec mandated specific `Settings.FONT_SIZE_*` constants but didn't account for visual density in large reading areas (like dialogue boxes), nor did it explicitly mention how text wraps inside pre-rendered UI backgrounds.
+
+### Anti-pattern (what to avoid)
+- ❌ **Strict absolute size inheritance for reading zones:** Avoid blindly using `Settings.FONT_SIZE_NARRATIVE` (14) inside large reading areas (dialogue box) if it renders too small compared to the box scale. 
+- ❌ **Arbitrary Y-offsets in UI layouts:** Do not use hardcoded large padding constants (`+ 30*s`) when rendering multi-line wrapped text near the bottom boundaries of a UI element.
+
+### Pattern (what to reproduce)
+- ✅ **Contextual Scaling:** Use `int(Settings.FONT_SIZE_* * 1.5)` for fonts when rendering text inside large dedicated reading zones like dialogue boxes.
+- ✅ **Compact Anchoring:** When rendering wrapped descriptions in inventory slots, anchor the text immediately below the title (`+ 5*s`) and keep line heights tight to prevent overflowing the asset's bounding box.
+
+### Evidence
+- Inventory layout overflowed in screen 2; corrected by shifting `stats_y + 30*s` to `stats_y + 5*s`.
+- Dialogue box text was too small; corrected by applying a `1.5` multiplier to the font size during `AssetManager.get_font()`.
+
+### Scope
+- [x] Project-specific (applies only to this codebase's Pygame rendering)
+- [ ] Universal (applies across projects)

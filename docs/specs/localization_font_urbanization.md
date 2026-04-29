@@ -21,8 +21,12 @@ Establish a three-tier font system to enhance visual hierarchy and game identity
 - Use `FONT_NOBLE` for the clock and time display (prestige).
 
 ### [MODIFY] [dialogue.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/dialogue.py)
-- Use `FONT_NOBLE` for Speaker Names.
-- Use `FONT_NARRATIVE` for Dialogue text.
+- Use `FONT_NOBLE` for Speaker Names, scaled by 1.5x (e.g., `int(Settings.FONT_SIZE_NOBLE * 1.5)`).
+- Use `FONT_NARRATIVE` for Dialogue text, scaled by 1.5x (e.g., `int(Settings.FONT_SIZE_NARRATIVE * 1.5)`).
+
+### [MODIFY] [inventory.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/inventory.py)
+- Implement text wrapping for `FONT_NARRATIVE` in descriptions to prevent text clipping.
+- Start description Y-offset immediately below the item name to ensure fit within the parchment background.
 
 ## Anti-Patterns (DO NOT)
 
