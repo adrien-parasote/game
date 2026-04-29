@@ -65,11 +65,14 @@ class InteractionManager:
         
         # Check Objects
         for obj in self.game.interactives:
-            if p_pos.distance_to(obj.pos) < range_dist:
+                dist = p_pos.distance_to(obj.pos)
+                is_on_top = dist < 16.0 and getattr(obj, "is_passable", False)
                 is_aligned = abs(p_pos.x - obj.pos.x) < 20 or abs(p_pos.y - obj.pos.y) < 20
                 
                 valid_position = False
-                if getattr(obj, "activate_from_anywhere", False):
+                if is_on_top:
+                    valid_position = True
+                elif getattr(obj, "activate_from_anywhere", False):
                     valid_position = is_aligned and self._facing_toward(p_pos, p_state, obj.pos)
                 else:
                     valid_position = is_aligned and self._verify_orientation(obj, p_state, p_pos)
@@ -87,12 +90,16 @@ class InteractionManager:
                 
         # Check Pickups
         for pickup in self.game.pickups:
-            if p_pos.distance_to(pickup.pos) < range_dist:
-                if pickup != getattr(self, '_last_proximity_target', None):
-                    self.game.player.playerEmote('question')
-                    self._emote_cooldown = 0.8
-                    self._last_proximity_target = pickup
-                return
+            dist = p_pos.distance_to(pickup.pos)
+            if dist < range_dist:
+                is_on_top = dist < 16.0
+                is_aligned = abs(p_pos.x - pickup.pos.x) < 20 or abs(p_pos.y - pickup.pos.y) < 20
+                if is_on_top or (is_aligned and self._facing_toward(p_pos, p_state, pickup.pos)):
+                    if pickup != getattr(self, '_last_proximity_target', None):
+                        self.game.player.playerEmote('question')
+                        self._emote_cooldown = 0.8
+                        self._last_proximity_target = pickup
+                    return
 
         # Check NPCs
         for npc in self.game.npcs:
@@ -135,9 +142,14 @@ class InteractionManager:
             dist = p_pos.distance_to(obj.pos)
             valid_orientation = False
             
+            # On top check for passable objects
+            if getattr(obj, "is_passable", False) and dist < 16.0:
+                valid_orientation = True
+
             # Adjacent + directional check for specific objects
-            if getattr(obj, "activate_from_anywhere", False):
-                if dist < 48.0 and self._facing_toward(p_pos, p_state, obj.pos):
+            if not valid_orientation and getattr(obj, "activate_from_anywhere", False):
+                is_aligned = abs(p_pos.x - obj.pos.x) < 20 or abs(p_pos.y - obj.pos.y) < 20
+                if dist < 48.0 and is_aligned and self._facing_toward(p_pos, p_state, obj.pos):
                     valid_orientation = True
                     
             # Standard Directional Logic
@@ -166,29 +178,34 @@ class InteractionManager:
     def _check_pickup_interactions(self) -> bool:
         """Check for nearby pickup items."""
         p_pos = self.game.player.pos
+        p_state = self.game.player.current_state
         range_dist = 48.0
         
         for pickup in self.game.pickups:
-            if p_pos.distance_to(pickup.pos) < range_dist:
-                # Try to add to inventory
-                remaining = self.game.player.inventory.add_item(pickup.item_id, pickup.quantity)
-                
-                # Update pickup quantity based on what was actually added
-                picked_up = pickup.quantity - remaining
-                pickup.quantity = remaining
-                
-                if picked_up > 0:
-                    logging.info(f"Picked up {picked_up}x {pickup.item_id}")
-                
-                if pickup.quantity <= 0:
-                    # Item fully picked up
-                    pickup.kill()
-                else:
-                    # Inventory full or partial pickup
-                    self.game.player.playerEmote('frustration')
-                    logging.info(f"Inventory full, {pickup.quantity}x {pickup.item_id} left on ground.")
-                
-                return True
+            dist = p_pos.distance_to(pickup.pos)
+            if dist < range_dist:
+                is_on_top = dist < 16.0
+                is_aligned = abs(p_pos.x - pickup.pos.x) < 20 or abs(p_pos.y - pickup.pos.y) < 20
+                if is_on_top or (is_aligned and self._facing_toward(p_pos, p_state, pickup.pos)):
+                    # Try to add to inventory
+                    remaining = self.game.player.inventory.add_item(pickup.item_id, pickup.quantity)
+                    
+                    # Update pickup quantity based on what was actually added
+                    picked_up = pickup.quantity - remaining
+                    pickup.quantity = remaining
+                    
+                    if picked_up > 0:
+                        logging.info(f"Picked up {picked_up}x {pickup.item_id}")
+                    
+                    if pickup.quantity <= 0:
+                        # Item fully picked up
+                        pickup.kill()
+                    else:
+                        # Inventory full or partial pickup
+                        self.game.player.playerEmote('frustration')
+                        logging.info(f"Inventory full, {pickup.quantity}x {pickup.item_id} left on ground.")
+                    
+                    return True
         return False
 
     def _get_player_facing_vector(self) -> pygame.math.Vector2:

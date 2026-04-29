@@ -11,6 +11,7 @@
 | Use absolute paths for assets | Use `os.path.join` and relative paths | Portability across OS |
 | Assume `item_id` == `icon_filename` | Allow explicit `icon` property in metadata | Decouples IDs from asset filenames |
 | Use full visual rect for pickup sorting | Use thin/shrunken hitbox for ground items | Ensures player always appears in front |
+| Allow diagonal interactions for pickups | Require orthogonal alignment and facing | Keeps interaction consistent with other objects (`activate_from_anywhere`) |
 
 ## 2. Test Case Specifications
 
@@ -51,6 +52,8 @@
 ### Detection Logic
 - Range: 48 pixels (same as NPCs/Chests).
 - Emote: 'question' (as per `player.playerEmote('question')`).
+- Alignment: Player must be orthogonally aligned (`abs(dx) < 20` or `abs(dy) < 20`) and facing the item.
+- Exception (On Top): If the player is standing on top of a traversable item (distance < 16px), interaction is permitted regardless of alignment or facing. Diagonal interactions remain prohibited for distant items.
 
 ### Pickup Logic
 1. Get `object_id` from Tiled properties.
