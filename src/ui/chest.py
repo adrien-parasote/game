@@ -1,0 +1,182 @@
+# src/ui/chest.py
+"""Chest UI overlay implementation.
+Implements the UI that appears when a chest is opened, showing a background
+image (07-chest.png) with a title zone and a grid of slot placeholders.
+"""
+
+import os
+import logging
+import pygame
+from src.config import Settings
+
+# Asset paths (relative to project root)
+ASSET_CHEST_BG = os.path.join("assets", "images", "HUD", "07-chest.png")
+ASSET_SLOT_IMG = os.path.join("assets", "images", "ui", "03-inventory_slot.png")
+
+# Layout constants (relative fractions of the background image)
+_TITLE_ZONE_REL = (0.29, 0.02, 0.71, 0.23)  # left%, top%, right%, bottom%
+_CONTENT_ZONE_REL = (0.11, 0.27, 0.89, 0.93)
+_SLOT_COLS = 10
+_SLOT_ROWS = 2
+_GRID_OFFSET_Y = -4   # px shift applied to the whole grid (negative = up)
+_TITLE_OFFSET_X = 10   # px shift applied to the title text (negative = left)
+_TITLE_OFFSET_Y = 15  # px shift applied to the title text (negative = up)
+_TARGET_WIDTH = 900   # pixels – scaled width of the background
+
+class ChestUI:
+    """Public interface for the chest overlay.
+
+    The UI is *non‑blocking*: world updates are paused while the UI is open, but
+    the player can still move so that the auto‑close logic can trigger when the
+    player leaves the interaction zone.
+    """
+
+    def __init__(self) -> None:
+        self.is_open: bool = False
+        self._chest_entity = None
+        self._bg: pygame.Surface | None = self._load_background()
+        self._slot_img: pygame.Surface | None = self._load_slot_image()
+        self._layout_computed: bool = False
+        # Cached rects after scaling – filled in _compute_layout()
+        self._bg_rect: pygame.Rect | None = None
+        self._title_rect: pygame.Rect | None = None
+        self._content_rect: pygame.Rect | None = None
+        self._slot_positions: list[pygame.Rect] = []
+
+    # ---------------------------------------------------------------------
+    # Public API
+    # ---------------------------------------------------------------------
+    def open(self, entity) -> None:
+        """Open the UI for *entity* (the interactive chest)."""
+        self.is_open = True
+        self._chest_entity = entity
+        self._compute_layout()
+
+    def close(self) -> None:
+        """Close the UI and reset state."""
+        self.is_open = False
+        self._chest_entity = None
+        self._layout_computed = False
+        self._slot_positions.clear()
+
+    def draw(self, screen: pygame.Surface) -> None:
+        """Render the UI onto *screen* if it is open."""
+        if not self.is_open or self._bg is None:
+            return
+        # Background
+        if self._bg_rect is None:
+            return
+        screen.blit(self._bg, self._bg_rect)
+        # Title – hard‑coded "coffre" for v1
+        self._draw_title(screen)
+        # Slots grid
+        self._draw_slots(screen)
+
+    # ---------------------------------------------------------------------
+    # Private helpers
+    # ---------------------------------------------------------------------
+    def _load_background(self) -> pygame.Surface | None:
+        """Load and scale the chest background image.
+        Returns *None* on error and logs the incident.
+        """
+        try:
+            img = pygame.image.load(ASSET_CHEST_BG).convert_alpha()
+            # Scale proportionally to target width
+            w, h = img.get_size()
+            scale = _TARGET_WIDTH / w
+            new_size = (int(w * scale), int(h * scale))
+            return pygame.transform.smoothscale(img, new_size)
+        except Exception as e:
+            logging.error(f"ChestUI background load failed: {e}")
+            return None
+
+    def _load_slot_image(self) -> pygame.Surface | None:
+        """Load the slot placeholder image used for each chest slot.
+        Returns *None* on error and logs a warning.
+        """
+        try:
+            img = pygame.image.load(ASSET_SLOT_IMG).convert_alpha()
+            return img
+        except Exception as e:
+            logging.warning(f"ChestUI slot image load failed: {e}")
+            return None
+
+    def _compute_layout(self) -> None:
+        """Calculate all derived rectangles and slot positions.
+        Called when the UI is opened. Guarded against repeated calls.
+        """
+        if self._bg is None:
+            return
+        # Position the background centred horizontally, 10 px from top
+        screen_w = Settings.WINDOW_WIDTH
+        bg_w, bg_h = self._bg.get_size()
+        self._bg_rect = self._bg.get_rect(midtop=(screen_w // 2, 10))
+        # Derive title and content zones from relative fractions
+        left, top, right, bottom = _TITLE_ZONE_REL
+        self._title_rect = pygame.Rect(
+            self._bg_rect.left + int(left * bg_w),
+            self._bg_rect.top + int(top * bg_h),
+            int((right - left) * bg_w),
+            int((bottom - top) * bg_h),
+        )
+        left, top, right, bottom = _CONTENT_ZONE_REL
+        self._content_rect = pygame.Rect(
+            self._bg_rect.left + int(left * bg_w),
+            self._bg_rect.top + int(top * bg_h),
+            int((right - left) * bg_w),
+            int((bottom - top) * bg_h),
+        )
+        # Slot size and spacing – mirror InventoryUI exactly
+        # InventoryUI uses scale_factor = 1200/1344 on original px values
+        _INVENTORY_SCALE = 1200 / 1344
+        _SLOT_ORIGINAL_PX = 55   # original slot image width/height in px
+        _SPACING_ORIGINAL_PX = 72  # original centre-to-centre spacing in inventory grid
+        slot_size = int(_SLOT_ORIGINAL_PX * _INVENTORY_SCALE)   # ≈ 49 px
+        step = int(_SPACING_ORIGINAL_PX * _INVENTORY_SCALE)     # ≈ 64 px
+
+        # Scale the slot image once to the exact size
+        if self._slot_img is not None:
+            self._slot_img = pygame.transform.smoothscale(
+                self._load_slot_image(), (slot_size, slot_size)
+            )
+
+        # Total grid dimensions using step (centre-to-centre)
+        grid_w = step * (_SLOT_COLS - 1) + slot_size
+        grid_h = step * (_SLOT_ROWS - 1) + slot_size
+
+        # Centre the grid inside the content rect, with optional vertical offset
+        origin_x = self._content_rect.left + (self._content_rect.width - grid_w) // 2
+        origin_y = self._content_rect.top + (self._content_rect.height - grid_h) // 2 + _GRID_OFFSET_Y
+
+        self._slot_positions.clear()
+        for row in range(_SLOT_ROWS):
+            for col in range(_SLOT_COLS):
+                cx = origin_x + col * step + slot_size // 2
+                cy = origin_y + row * step + slot_size // 2
+                rect = pygame.Rect(0, 0, slot_size, slot_size)
+                rect.center = (cx, cy)
+                self._slot_positions.append(rect)
+        self._layout_computed = True
+
+    def _draw_title(self, screen: pygame.Surface) -> None:
+        """Render the title "coffre" centred in the red zone."""
+        if self._title_rect is None:
+            return
+        font = pygame.font.Font(Settings.FONT_NOBLE, Settings.FONT_SIZE_NOBLE)
+        surf = font.render("Coffre", True, (60, 40, 30))
+        cx = self._title_rect.centerx + _TITLE_OFFSET_X
+        cy = self._title_rect.centery + _TITLE_OFFSET_Y
+        rect = surf.get_rect(center=(cx, cy))
+        screen.blit(surf, rect)
+
+    def _draw_slots(self, screen: pygame.Surface) -> None:
+        """Render each slot placeholder inside the green content zone."""
+        if not self._slot_positions:
+            return
+        for rect in self._slot_positions:
+            if self._slot_img:
+                # slot image is already pre-scaled to the correct size in _compute_layout
+                screen.blit(self._slot_img, rect)
+            else:
+                # Fallback – simple rect outline
+                pygame.draw.rect(screen, (200, 200, 200), rect, 2)
