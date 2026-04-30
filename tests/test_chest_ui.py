@@ -167,3 +167,62 @@ def test_arrow_up_rect_is_left_of_down():
     ui = ChestUI()
     ui.open(object())
     assert ui._arrow_up_rect.left < ui._arrow_down_rect.left
+
+
+def test_update_hover_arrows():
+    """update_hover sets _hovered_arrow correctly when mouse is over buttons."""
+    ui = ChestUI()
+    ui.open(object())
+    
+    # Hit UP rect (RED zone)
+    ui.update_hover(ui._arrow_up_rect.center)
+    assert ui._hovered_arrow == "up"
+    assert ui._hovered_slot is None
+    
+    # Hit DOWN rect (BLUE zone)
+    ui.update_hover(ui._arrow_down_rect.center)
+    assert ui._hovered_arrow == "down"
+    
+    # Hit neither
+    ui.update_hover((0, 0))
+    assert ui._hovered_arrow is None
+
+
+def test_hovered_arrow_reset_on_close():
+    """close() resets _hovered_arrow to None."""
+    ui = ChestUI()
+    ui.open(object())
+    ui._hovered_arrow = "up"
+    ui.close()
+    assert ui._hovered_arrow is None
+
+
+def test_draw_arrow_hover_overlay_rendered(monkeypatch):
+    """draw() blits arrow hover images when hovered."""
+    ui = ChestUI()
+    ui.open(object())
+    
+    # Mock surfaces
+    up_hover = pygame.Surface((30, 30))
+    up_hover.fill((255, 0, 0)) # Red for testing
+    down_hover = pygame.Surface((30, 30))
+    down_hover.fill((0, 0, 255)) # Blue for testing
+    
+    # Note mapping: RED zone (up_rect) uses down_hover image | BLUE zone (down_rect) uses up_hover image
+    ui._arrow_down_hover_img = down_hover
+    ui._arrow_up_hover_img = up_hover
+    
+    screen = make_screen()
+    
+    # Hover UP (RED zone) -> should blit down_hover (blue)
+    ui._hovered_arrow = "up"
+    ui._draw_arrow_hovers(screen)
+    pixel = screen.get_at(ui._arrow_up_rect.center)[:3]
+    assert pixel == (0, 0, 255), f"Expected blue hover overlay in RED zone, got {pixel}"
+    
+    # Clear and Hover DOWN (BLUE zone) -> should blit up_hover (red)
+    screen.fill((0, 0, 0))
+    ui._hovered_arrow = "down"
+    ui._draw_arrow_hovers(screen)
+    pixel = screen.get_at(ui._arrow_down_rect.center)[:3]
+    assert pixel == (255, 0, 0), f"Expected red hover overlay in BLUE zone, got {pixel}"

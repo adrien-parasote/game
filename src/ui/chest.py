@@ -15,6 +15,8 @@ ASSET_SLOT_IMG = os.path.join("assets", "images", "ui", "03-inventory_slot.png")
 ASSET_SLOT_HOVER = os.path.join("assets", "images", "ui", "04-inventory_slot_hover.png")
 ASSET_POINTER = os.path.join("assets", "images", "ui", "05-pointer.png")
 ASSET_POINTER_SELECT = os.path.join("assets", "images", "ui", "06-pointer_select.png")
+ASSET_ARROW_DOWN_HOVER = os.path.join("assets", "images", "HUD", "08-arrow_down.png")
+ASSET_ARROW_UP_HOVER = os.path.join("assets", "images", "HUD", "09-arrow_up.png")
 
 # Layout constants (relative fractions of the background image)
 _TITLE_ZONE_REL = (0.29, 0.02, 0.71, 0.23)  # left%, top%, right%, bottom%
@@ -58,6 +60,10 @@ class ChestUI:
         self._pointer_img: pygame.Surface | None = self._load_cursor(ASSET_POINTER)
         self._pointer_select_img: pygame.Surface | None = self._load_cursor(ASSET_POINTER_SELECT)
         self._hover_img: pygame.Surface | None = None  # scaled in _compute_layout
+        # Arrow hover images
+        self._arrow_up_hover_img: pygame.Surface | None = None
+        self._arrow_down_hover_img: pygame.Surface | None = None
+        self._hovered_arrow: str | None = None  # "up" or "down"
 
     # ---------------------------------------------------------------------
     # Public API
@@ -75,6 +81,7 @@ class ChestUI:
         self._layout_computed = False
         self._slot_positions.clear()
         self._hovered_slot = None
+        self._hovered_arrow = None
 
     def draw(self, screen: pygame.Surface) -> None:
         """Render the UI onto *screen* if it is open."""
@@ -86,6 +93,8 @@ class ChestUI:
         screen.blit(self._bg, self._bg_rect)
         # Update hover from current mouse position
         self.update_hover(pygame.mouse.get_pos())
+        # Arrow hover overlays
+        self._draw_arrow_hovers(screen)
         # Title – hard‑coded "coffre" for v1
         self._draw_title(screen)
         # Slots grid
@@ -93,12 +102,21 @@ class ChestUI:
         # Custom cursor (always on top — drawn last)
         self._draw_cursor(screen)
     def update_hover(self, mouse_pos: tuple[int, int]) -> None:
-        """Detect which slot index is under the mouse cursor."""
+        """Detect which slot or arrow index is under the mouse cursor."""
         self._hovered_slot = None
+        self._hovered_arrow = None
+
+        # Check slots
         for i, rect in enumerate(self._slot_positions):
             if rect.collidepoint(mouse_pos):
                 self._hovered_slot = i
                 return
+
+        # Check arrow buttons
+        if self._arrow_up_rect and self._arrow_up_rect.collidepoint(mouse_pos):
+            self._hovered_arrow = "up"
+        elif self._arrow_down_rect and self._arrow_down_rect.collidepoint(mouse_pos):
+            self._hovered_arrow = "down"
 
 
     def _load_background(self) -> pygame.Surface | None:
@@ -201,6 +219,21 @@ class ChestUI:
             )
         self._arrow_up_rect   = _zone_rect(_ARROW_UP_ZONE_REL)
         self._arrow_down_rect = _zone_rect(_ARROW_DOWN_ZONE_REL)
+
+        # Scale arrow hover images to fit their respective rects
+        def _load_and_scale_arrow(path: str, rect: pygame.Rect) -> pygame.Surface | None:
+            try:
+                img = pygame.image.load(path).convert_alpha()
+                return pygame.transform.smoothscale(img, (rect.width, rect.height))
+            except Exception as e:
+                logging.warning(f"ChestUI arrow hover image load failed ({path}): {e}")
+                return None
+
+        if self._arrow_up_rect and self._arrow_down_rect:
+            # Note: RED zone (up_rect) -> 08-arrow_down | BLUE zone (down_rect) -> 09-arrow_up
+            self._arrow_down_hover_img = _load_and_scale_arrow(ASSET_ARROW_DOWN_HOVER, self._arrow_up_rect)
+            self._arrow_up_hover_img = _load_and_scale_arrow(ASSET_ARROW_UP_HOVER, self._arrow_down_rect)
+
         self._layout_computed = True
 
     def _draw_title(self, screen: pygame.Surface) -> None:
@@ -228,6 +261,17 @@ class ChestUI:
         if self._hovered_slot is not None and self._hover_img:
             hover_rect = self._hover_img.get_rect(center=self._slot_positions[self._hovered_slot].center)
             screen.blit(self._hover_img, hover_rect)
+
+    def _draw_arrow_hovers(self, screen: pygame.Surface) -> None:
+        """Render the arrow hover images if hovering over the red/blue zones.
+        RED zone (up_rect) shows arrow_down, BLUE zone (down_rect) shows arrow_up.
+        """
+        # RED zone (up_rect) -> 08-arrow_down
+        if self._hovered_arrow == "up" and self._arrow_up_rect and self._arrow_down_hover_img:
+            screen.blit(self._arrow_down_hover_img, self._arrow_up_rect)
+        # BLUE zone (down_rect) -> 09-arrow_up
+        elif self._hovered_arrow == "down" and self._arrow_down_rect and self._arrow_up_hover_img:
+            screen.blit(self._arrow_up_hover_img, self._arrow_down_rect)
 
     def _load_cursor(self, path: str) -> pygame.Surface | None:
         """Load and scale a cursor image to Settings.CURSOR_SIZE."""
