@@ -21,13 +21,13 @@ _TITLE_ZONE_REL = (0.29, 0.02, 0.71, 0.23)  # left%, top%, right%, bottom%
 _CONTENT_ZONE_REL = (0.11, 0.27, 0.89, 0.93)
 _SLOT_COLS = 10
 _SLOT_ROWS = 2
-_GRID_OFFSET_Y = -4   # px shift applied to the whole grid (negative = up)
+_GRID_OFFSET_Y = -23   # px shift applied to the whole grid (negative = up)
 _TITLE_OFFSET_X = 10   # px shift applied to the title text (negative = left)
-_TITLE_OFFSET_Y = 12  # px shift applied to the title text (negative = up)
+_TITLE_OFFSET_Y = 8  # px shift applied to the title text (negative = up)
 _TARGET_WIDTH = 900   # pixels – scaled width of the background
 # Arrow button zones (measured from 1200x340 source image, auto-scaled)
-_ARROW_UP_ZONE_REL   = (0.6050, 0.7735, 0.6783, 0.9294)  # red zone → up arrow
-_ARROW_DOWN_ZONE_REL = (0.7383, 0.7735, 0.8117, 0.9294)  # blue zone → down arrow
+_ARROW_UP_ZONE_REL   = (0.7233, 0.8294, 0.7625, 0.9500)  # red zone → up arrow
+_ARROW_DOWN_ZONE_REL = (0.7942, 0.8294, 0.8333, 0.9500)  # blue zone → down arrow
 _ARROW_OFFSET_X = 0  # px fine-tune horizontal (escape hatch)
 _ARROW_OFFSET_Y = 0  # px fine-tune vertical   (escape hatch)
 
