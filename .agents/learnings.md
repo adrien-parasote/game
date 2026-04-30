@@ -1,446 +1,129 @@
 # Project Learnings Registry
 
-This document tracks universal patterns and anti-patterns extracted from the BUILD→HARDEN cycles of this project.
-
-## ✅ Patterns to Reproduce
-
-### 1. Game Engine: Footprint-Based Interaction
-**ID:** L-GAME-001
-**Source:** [INTERACTIVE_OBJECTS.md:L79](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/INTERACTIVE_OBJECTS.md)
-**Pattern:** Decouple the visual sprite position (midbottom alignment) from the logical interaction center (footprint center).
-**Why:** Supports varied asset sizes and tall sprites without breaking grid-consistent interaction math.
-
-### 2. Spec: Procedural Geometry/Textures
-**ID:** L-SPEC-001
-**Source:** [INTERACTIVE_OBJECTS.md:L80](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/INTERACTIVE_OBJECTS.md)
-**Pattern:** In implementation specs, define procedural assets by **Boundary Values** (Start, End, Step/Falloff) rather than prose descriptions.
-**Why:** Eliminates ambiguity in generation loops (e.g., center-to-edge alpha gradients).
-
-### 3. Rendering: Additive Light Overlays
-**ID:** L-REND-001
-**Source:** [INTERACTIVE_OBJECTS.md:L81](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/INTERACTIVE_OBJECTS.md)
-**Pattern:** Apply additive (`BLEND_ADD`) light sources AFTER applying global darkness surfaces.
-**Why:** Light sources must "cut through" the darkness. Applying before the darkness would cause the source to be dimmed by the overlay.
-
-### 4. UI: Pre-paginated Dialogue Logic
-**ID:** L-UI-001
-**Source:** [src/ui/dialogue.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/dialogue.py)
-**Pattern:** Pre-wrap and group lines into fixed-size pages at the start of a dialogue, rather than wrapping on-the-fly during typewriter effect.
-**Why:** Ensures stable page breaks and simplifies multi-stage progression logic (skip -> next -> close).
-
-### 5. Test: State-Flag and Numeric-Attribute Mocking
-**ID:** L-TEST-001
-**Pattern:** When mocking classes with internal state flags (e.g., `valid`, `initialized`) or numeric attributes (e.g., `direction`, `pos`), always set these explicitly on the mock instance: flags to `True`, Pygame types to their real equivalents (e.g., `pygame.math.Vector2(0, 0)`).
-**Why:** MagicMock auto-creates child attributes as Mocks, not typed values. Numeric operations (`>`, `.magnitude()`) on Mock objects raise `TypeError`. See also A-TEST-003.
-**Confirmed by:** `SpriteSheet.valid` (2026-04-28), `player.direction.magnitude()` in 3 game.py tests (2026-04-30).
-
-### 6. Test: Gated State Transitions
-**ID:** L-TEST-002
-**Pattern:** For state-machine logic (animations, interactions), always include explicit `update(dt)` steps between operations in unit tests.
-**Why:** Many operations (like `interact`) are gated by "busy" flags (like `is_animating`). `update` is required to clear these gates and allow consecutive operations to succeed.
-
-### 7. Architecture: Composite Resource Scoping
-**ID:** L-ARCH-001
-**Pattern:** Use composite keys (`{map_base_name}-{element_id}`) for global resource lookups (Dialogue, WorldState).
-**Why:** Prevents ID collisions across map boundaries and ensures resource uniqueness in a modular world.
-
-### 8. Map: Deterministic Semantic Layering
-**ID:** L-MAP-001
-**Pattern:** Sort map layers primarily by name-based semantic prefixes (e.g., `00-layer`, `01-layer`) rather than Tiled's internal JSON order.
-**Why:** Tiled IDs change; names are deterministic and allow background layers to be explicitly prioritized in a flattened group-recursive structure.
-
-### 9. UX: Interruption-First Feedback Chaining
-**ID:** L-UX-001
-**Pattern:** Allow new visual feedback triggers (emotes, effects) to clear/overwrite existing ones immediately rather than waiting for the previous animation to complete.
-**Why:** Prevents the game from feeling "stuck" or unresponsive when multiple interaction triggers occur in rapid succession.
-
-### 10. Test: Centralized Headless Initialization
-**ID:** L-TEST-003
-**Pattern:** Consolidate Pygame initialization, headless environment variables (SDL_VIDEODRIVER=dummy), and global fixtures in `tests/conftest.py`.
-**Why:** Reduces drift between test files, simplifies imports, and ensures a consistent environment for CI/CD.
-
-### 11. Test: Native Object State Positioning
-**ID:** L-TEST-004
-**Pattern:** Instead of mocking methods on built-in types (like `pygame.Rect.collidepoint`), manipulate the object's properties (like `topleft` or `width`) to force the desired logical outcome.
-**Why:** Native Pygame objects are often implemented in C and their methods are read-only, making them impossible to mock directly.
-
-
-## ❌ Anti-patterns to Avoid
-
-### 1. Hardcoded UI Interaction Keys
-**ID:** A-UX-001
-**Context:** Use `Settings` for all keys (e.g., `Settings.INTERACT_KEY`) instead of `pygame.K_e`.
-**Why:** Prevents breaking the unified input system when porting or allowing customization.
-
-### 2. Blind __init__ Mocking
-**ID:** A-TEST-001
-**Anti-pattern:** Patching `__init__` on a class without manually recreating its mandatory public attributes.
-**Why:** Dependent objects will crash on `AttributeError` when trying to read configuration flags that were never initialized.
-
-### 3. Ambiguous Spritesheet Definitions
-**ID:** A-SPEC-001
-**Anti-pattern:** Defining a spritesheet asset as "animated" in a spec without explicitly stating the grid layout (rows × columns) and frame mapping.
-**Why:** Leads to static frames or incorrect slicing (e.g. slicing 4x1 instead of 4x8), causing "pas en mode animation" bugs.
-
-### 4. Unthrottled Spatial Polling
-**ID:** A-GAME-001
-**Anti-pattern:** Running continuous proximity checks (`distance_to < range`) that trigger visual/audio side-effects without an explicit time-based cooldown.
-**Why:** Causes effect stacking, sprite duplication, or frame-by-frame spam when the logic group clears the state asynchronously or conditionally.
-
-### 5. Index-Based Layer Priority
-**ID:** A-MAP-001
-**Anti-pattern:** Relying on Tiled's internal JSON list order or layer IDs for rendering priority.
-**Why:** Moving layers in Tiled or using nested groups unpredictably changes the rendering order, causing background layers to pop over sprites.
-
-### 6. Over-Conservative Feedback Gates
-**ID:** A-UX-002
-**Anti-pattern:** Guarding a visual feedback trigger (like an emote) behind a check that requires the previous animation to finish (`if len(group) == 0`).
-**Why:** Breaks input chaining and feedback responsiveness, making the UI feel sluggish.
-
-### 7. Tile vs Pixel Coordinate Mixups
-**ID:** A-GAME-002
-**Anti-pattern:** Passing world pixel coordinates to functions that expect grid (tile) indices, or vice-versa, without explicit validation or conversion.
-**Why:** Causes out-of-bounds errors or silent logic failures (e.g., `is_collidable` returning `True` because it treats a pixel coordinate of 128 as a tile index out of bounds).
-
-### 8. Singleton State Pollution
-**ID:** A-TEST-002
-**Anti-pattern:** Modifying global configuration objects (like `src.config.Settings`) during a test without restoring the original state.
-**Why:** Causes non-deterministic failures in unrelated test files depending on the execution order (State Leakage).
-
-### 9. Blind File Overwrites and Destructive Edits
-**ID:** A-AGENT-001
-**Anti-pattern:** Replacing the entire contents of a file (or large chunks) using outdated context, or attempting manual patches after accidentally deleting/corrupting logic.
-**Why:** Destroys functional code, removes previously added features (like I18n or UI scaling), and leads to endless loops of fixing resulting `AttributeError` or `NameError` crashes.
-**✅ Do Instead:** Always read the file's current state before modifying. Use targeted chunk replacements (`multi_replace_file_content` with specific lines). If a file is accidentally corrupted, STOP and use `git checkout -- <file>` immediately to restore the known working state before attempting new edits.
-
-### 10. Bypassing Stream Coding Workflow Stages
-**ID:** A-AGENT-002
-**Anti-pattern:** Jumping directly to code generation (`BUILD`) without completing the prerequisite documentation and planning stages (`DISCOVER`, `STRATEGY`, `SPEC`), or skipping the mandatory validation gates (`VERIFY`, `HARDEN`).
-**Why:** Generates code based on AI guesses instead of explicit specifications, causing "vibe coding", regressions, divergence between specs and implementation, and ultimately forcing expensive rework cycles.
-**✅ Do Instead:** Strictly follow the 6-stage Stream Coding pipeline. Never write implementation code without RED tests (TDD Gate). Never commit without passing the Verify Gate (build, test, spec conformance) and running `/learn-eval` + `/doc-update`.
-
-
-## Learning: Deterministic Semantic Layer Rendering
-**Date:** 2026-04-28
-**Spec:** Stabilization Implementation Plan
-**Outcome:** Major Rework
-**Project:** RPG Engine
-
-### What happened
-Relying on Tiled's internal layer order or simple overrides for specific IDs failed when the map structure used nested groups. The `00-layer` (background) disappeared because it was pushed to the end of the rendering order.
-
-### Root cause
-Tiled JSON layer list order is not a stable proxy for semantic depth when groups are involved.
-
-### Anti-pattern (what to avoid)
-❌ **Don't** rely on the Tiled list order for critical rendering priorities (like background/foreground).
-
-### Pattern (what to reproduce)
-✅ **Do Instead** use a semantic naming convention (e.g., `00-layer`, `01-layer`) and perform an explicit sort by name in the `MapManager` before rendering.
-
-### Evidence
-- `MapManager.layer_order` updated to `sorted(raw_order, key=lambda lid: self.layer_names.get(lid, ""))`.
-- `tests/test_map.py` verified nested group layers are rendered in the correct numeric prefix order.
-
-### Scope
-- [x] Universal (applies to any data-driven 2D tile engine)
-
-
-## Learning: Interruption-First Feedback Chaining
-**Date:** 2026-04-28
-**Spec:** Stabilization Implementation Plan
-**Outcome:** Minor Rework
-**Project:** RPG Engine
-
-### What happened
-The player's emotes were blocked if another was active, causing rapid interactions to fail silently.
-
-### Root cause
-Over-conservative safety check: `if len(self.emote_group) == 0: return`.
-
-### Anti-pattern (what to avoid)
-❌ **Don't** block visual feedback triggers (emotes, sounds, effects) based on the completion of the previous instance.
-
-### Pattern (what to reproduce)
-✅ **Do Instead** clear the existing group or overwrite the state immediately to provide instant feedback for the latest user action.
-
-### Evidence
-- Refactored `InteractionManager._check_proximity_emotes` to clear `emote_group` before adding new sprites.
-- Verified in `tests/test_interaction.py`.
-
-### Scope
-- [x] Universal (applies to UI/UX responsiveness in any interactive software)
-
-
-## Learning: Domain-Based Test Consolidation
-**Date:** 2026-04-28
-**Spec:** Stabilization Implementation Plan
-**Outcome:** Minor Rework
-**Project:** RPG Engine
-
-### What happened
-Moving from scattered test files to domain modules broke multiple tests due to missing local imports, stale mocks, and environment-dependent pygame initialization.
-
-### Root cause
-High coupling between test files and their specific local mock setups, combined with fragmented initialization boilerplate.
-
-### Pattern (what to reproduce)
-✅ **Do Instead** Use `conftest.py` for all global fixtures (Headless Pygame, Asset Mocking) and organize tests into semantic domains (`engine`, `map`, `ui`, `interaction`).
-
-### Evidence
-- Consolidated 11 test files into 6 domain-based modules with 100% pass rate.
-- Shared fixtures moved to `tests/conftest.py`.
-
-### Scope
-- [ ] Project-specific
-- [x] Universal (Testing practices)
-
-
-## Learning: UI Font Sizing and Description Wrapping Layout
-**Date:** 2026-04-29
-**Spec:** localization_font_urbanization.md
-**Outcome:** Minor Rework
-**Project:** RPG Tile Engine
-
-### What happened
-The tiered font system was implemented correctly, but the dialogue box rendered text too small, and the inventory item description overflowed the background parchment due to hardcoded Y-offsets.
-
-### Root cause
-The spec mandated specific `Settings.FONT_SIZE_*` constants but didn't account for visual density in large reading areas (like dialogue boxes), nor did it explicitly mention how text wraps inside pre-rendered UI backgrounds.
-
-### Anti-pattern (what to avoid)
-- ❌ **Strict absolute size inheritance for reading zones:** Avoid blindly using `Settings.FONT_SIZE_NARRATIVE` (14) inside large reading areas (dialogue box) if it renders too small compared to the box scale. 
-- ❌ **Arbitrary Y-offsets in UI layouts:** Do not use hardcoded large padding constants (`+ 30*s`) when rendering multi-line wrapped text near the bottom boundaries of a UI element.
-
-### Pattern (what to reproduce)
-- ✅ **Contextual Scaling:** Use `int(Settings.FONT_SIZE_* * 1.5)` for fonts when rendering text inside large dedicated reading zones like dialogue boxes.
-- ✅ **Compact Anchoring:** When rendering wrapped descriptions in inventory slots, anchor the text immediately below the title (`+ 5*s`) and keep line heights tight to prevent overflowing the asset's bounding box.
-
-### Evidence
-- Inventory layout overflowed in screen 2; corrected by shifting `stats_y + 30*s` to `stats_y + 5*s`.
-- Dialogue box text was too small; corrected by applying a `1.5` multiplier to the font size during `AssetManager.get_font()`.
-
-### Scope
-- [x] Project-specific (applies only to this codebase's Pygame rendering)
-- [ ] Universal (applies across projects)
-
-
-## Learning: Pygame Headless Surface Testing
-**Date:** 2026-04-30
-**Spec:** implementation_plan.md
-**Outcome:** Perfect first pass (for tests)
-**Project:** adrien-parasote/game
-
-### What happened
-The unit tests needed to verify UI drawing logic (`screen.blit`) without real assets or a real display.
-
-### Root cause
-Headless testing in Pygame requires mocking loaded assets to avoid disk I/O and display dependencies.
-
-### Pattern (what to reproduce)
-To test UI drawing headlessly:
-1. Initialize dummy video driver: `os.environ["SDL_VIDEODRIVER"] = "dummy"`
-2. Mock asset surfaces using `monkeypatch.setattr(ui, "_bg", pygame.Surface((w, h)))`
-3. Fill dummy surfaces with solid colors: `dummy.fill((255, 0, 0))`
-4. Call `draw()` and verify pixels using `pygame.image.tobytes(screen, "RGB")` or `screen.get_at((x, y))`. (Note: use `tobytes`, not `tostring` which is deprecated).
-
-### Evidence
-- `tests/test_chest_ui.py` successfully validates drawing coordinates and asset fallbacks with 100% pass rate.
-
-### Scope
-- [ ] Project-specific (applies only to this codebase)
-- [x] Universal (applies across projects)
-
-
-## Learning: Named Visual Offset Constants as UI Escape Hatches
-**Date:** 2026-04-30
-**Spec:** implementation_plan.md (ChestUI)
-**Outcome:** Minor Rework
-**Project:** adrien-parasote/game
-
-### What happened
-The ChestUI title and slot grid required 8+ iterative game launches to fine-tune positioning.
-The spec defined zone fractions (_TITLE_ZONE_REL, _CONTENT_ZONE_REL) that were never measured
-against the actual 07-chest.png pixel layout. The visual red zone center did not align with
-the image pixel center, causing title centering to fail silently.
-
-### Root cause
-Relative zone fractions were estimated, not measured. The spec contained no step requiring
-the author to open the asset in an image editor and record actual pixel boundaries before
-writing the fractions. This forced trial-and-error correction at runtime.
-
-### Anti-pattern (what to avoid)
-- Defining relative zone fractions (e.g. _TITLE_ZONE_REL = (0.29, 0.02, 0.71, 0.23)) without
-  measuring them from the actual asset file (image editor or PIL analysis)
-- Assuming the visual center of a decorative image zone equals its pixel center
-
-### Pattern (what to reproduce)
-1. Measure zones BEFORE writing the spec: open the asset in an image editor, record the
-   pixel coordinates of each visual zone (title area, content area), divide by image dimensions.
-2. Add named offset constants (_TITLE_OFFSET_X, _TITLE_OFFSET_Y, _GRID_OFFSET_Y) for any
-   UI component that renders against a pre-rendered background asset. These constants act as
-   escape hatches for sub-pixel corrections without touching layout logic.
-3. Format:  — zero is the correct default, the
-   comment documents the direction convention.
-
-### Evidence
-- 8 manual game launches to arrive at: _TITLE_OFFSET_X=10, _TITLE_OFFSET_Y=15, _GRID_OFFSET_Y=-4
-- The offset constants pattern eliminated all further rework once introduced
-
-### Scope
-- [ ] Project-specific (applies only to this codebase)
-- [x] Universal (applies to any Pygame/SDL UI rendering against pre-rendered background assets)
-
-
-## Learning: Spec Must Define Close Sequence, Not Just Close Trigger
-**Date:** 2026-04-30
-**Spec:** implementation_plan.md (ChestUI — auto-close)
-**Outcome:** Major Rework
-**Project:** adrien-parasote/game
-
-### What happened
-The spec described the auto-close trigger condition (distance > 45px or wrong orientation)
-but assumed `chest_ui.close()` was the complete close action. The real close sequence requires
-5 steps: (1) entity animation toggle, (2) sfx playback, (3) world_state persistence,
-(4) UI overlay close, (5) emote cooldown reset. Each missing step was a separate bug.
-
-### Root cause
-The spec section "Auto-close on spatial divergence" listed only the trigger condition.
-It had no "Close Sequence" sub-section. The implementor inferred that closing the UI
-was sufficient, which is never true for stateful game entities.
-
-### Anti-pattern (what to avoid)
-Specifying WHEN to close an interactive entity without specifying WHAT the close sequence is.
-Any interactive with state (animation, sfx, persistence, emote) needs an explicit sequence.
-
-### Pattern (what to reproduce)
-For any interactive entity with a UI overlay, the spec must include a "Close Sequence" matrix:
-| Step | Action | Method |
-|------|--------|--------|
-| 1 | Toggle entity state | entity.interact(player) |
-| 2 | Play SFX | audio_manager.play_sfx(entity.sfx) |
-| 3 | Persist state | world_state.set(entity._world_state_key, ...) |
-| 4 | Close UI | ui.close() |
-| 5 | Suppress follow-up feedback | reset proximity target + cooldown |
-
-The steps must be centralized in a single method (_close_X()) called from ALL close paths.
-
-### Evidence
-- 5 separate bugs in the auto-close cycle, each a missing step in the sequence
-- commit 6c7f811: fix: chest UI close sequence — animation, sfx, emote suppression
-
-### Scope
-- [ ] Project-specific
-- [x] Universal (any game engine with stateful interactive entities and UI overlays)
+> **Usage:** Read before any BUILD session. Each entry = one confirmed pattern or anti-pattern with evidence.
+> **Format:** ID · Date · Scope [P=project-specific | U=universal] · Outcome
 
 ---
 
-## Learning: Always-Running Check vs Conditional Sub-Function Placement
-**Date:** 2026-04-30
-**Spec:** implementation_plan.md (ChestUI — auto-close trigger)
-**Outcome:** Major Rework
-**Project:** adrien-parasote/game
+## 🧪 Testing
 
-### What happened
-_check_chest_auto_close() was placed inside _check_proximity_emotes(), specifically in the
-"reset" branch that only executes when NO entity is in proximity range. When the player was
-still near the chest (just wrong orientation), the auto-close never fired.
+### L-TEST-001 · 2026-04-28 · U · Perfect
+**State flags and numeric attributes on MagicMock**
 
-### Root cause
-The method was added to the most convenient call site (end of proximity check) rather than
-being placed in the true owner: the update() loop. The spec said "auto-close when player
-leaves zone" without specifying WHERE in the update loop the check must live.
+`MagicMock` auto-creates child attributes as `Mock` objects, not typed values. Numeric operations (`>`, `.magnitude()`) on Mocks raise `TypeError`. Boolean state gates stay falsy.
 
-### Anti-pattern (what to avoid)
-Placing a frame-invariant check (should run every frame) inside a conditional sub-function
-(only runs on specific condition). The call site determines frequency, not just the method body.
-
-### Pattern (what to reproduce)
-Any check that MUST fire every frame regardless of other state goes directly in update():
-  def update(self, dt):
-      self._check_proximity_emotes()   # conditional — only on entities in range
-      self._check_chest_auto_close()   # always — regardless of proximity state
-
-The spec should state: "Checked every update tick" or "Checked conditionally on [condition]"
-to prevent the implementor from choosing the wrong call site.
-
-### Evidence
-- Bug: moving away from chest while still in range of other entities never closed the UI
-- Fix: moved call from _check_proximity_emotes() reset branch to update() directly
-
-### Scope
-- [ ] Project-specific
-- [x] Universal (applies to any event-driven update loop with conditional sub-checks)
-
----
-
-## Learning: Pygame Vector2 Attributes on MagicMock Players
-**ID:** A-TEST-003
-**Date:** 2026-04-30
-**Spec:** Test hardening — game.py coverage
-**Outcome:** Minor Rework
-**Project:** adrien-parasote/game
-
-### What happened
-Three tests replacing `game.player` with `MagicMock()` crashed with `TypeError: '>' not supported between instances of 'MagicMock' and 'int'`. Production code calls `self.player.direction.magnitude() > 0` in `_check_teleporters`. Since `direction` was a MagicMock, `magnitude()` returned another Mock, incomparable with `>`.
-
-### Root cause
-`MagicMock()` auto-creates child attributes on access, but those attributes are themselves Mocks, not Pygame types. Any method calling numeric operations (`.magnitude()`, `.length()`, `.normalize()`) on player attributes will crash.
-
-### Anti-pattern (what to avoid)
 ```python
-# ❌ WRONG — direction.magnitude() returns a Mock, not float
+# ❌ direction.magnitude() → Mock → TypeError
 game.player = MagicMock()
-game.player.is_moving = False
-game._update(0.016)  # → TypeError: '>' not supported between Mock and int
+game._update(0.016)
+
+# ✅ assign real types for every attribute used in math or guards
+game.player = MagicMock()
+game.player.direction = pygame.math.Vector2(0, 0)  # real Vector2
+game.player.is_moving = False                       # real bool
+mock_sheet.valid = True                             # real flag
+game._update(0.016)
 ```
 
-### Pattern (what to reproduce)
-```python
-# ✅ RIGHT — assign real Vector2 for all direction/position attributes
-game.player = MagicMock()
-game.player.is_moving = False
-game.player.direction = pygame.math.Vector2(0, 0)  # Real Vector2
-game._update(0.016)  # → works
-```
-**Rule:** When mocking a Pygame entity that uses Vector2 math, always assign real `pygame.math.Vector2` instances for `direction`, `pos`, `target_pos`.
-
-### Evidence
-- 3 failing tests fixed by adding `game.player.direction = pygame.math.Vector2(0, 0)`: `test_update_chest_branch`, `test_update_fps_title`, NPC resume test.
-
-### Scope
-- [ ] Project-specific
-- [x] Universal (any Pygame project testing code that uses Vector2 arithmetic on mocked players/entities)
-
+**Rule:** For any Pygame entity mock, assign `pygame.math.Vector2` for `direction`/`pos`/`target_pos`, and explicit booleans for all gate flags.
+**Evidence:** `SpriteSheet.valid` (2026-04-28); `player.direction.magnitude()` in 3 game.py tests (2026-04-30).
 
 ---
 
-## Learning: builtins.open Mock Intercepts All File I/O
-**ID:** A-TEST-004
-**Date:** 2026-04-30
-**Spec:** Test hardening — inventory_system.py coverage
-**Outcome:** Minor Rework
-**Project:** adrien-parasote/game
+### L-TEST-002 · 2026-04-28 · U · Minor Rework
+**Gated state transitions need explicit `update(dt)` calls**
 
-### What happened
-`patch('builtins.open', side_effect=Exception("IO error"))` was used to simulate a world.world parse failure. The test crashed because the side_effect also intercepted i18n locale loading inside `Game.__init__()`.
+State-machine operations (animations, interactions) are gated by busy flags like `is_animating`. Without calling `update(dt)` between steps, consecutive operations always fail.
 
-### Root cause
-`builtins.open` is global — patching it with a universal side_effect blocks ALL file reads, including unrelated subsystems (i18n, settings loaders).
-
-### Anti-pattern (what to avoid)
 ```python
-# ❌ WRONG — intercepts ALL open() calls including i18n
+# ❌ second interact() silently fails — is_animating still True
+entity.interact(player)
+entity.interact(player)
+
+# ✅ tick to clear the gate
+entity.interact(player)
+entity.update(0.1)
+entity.interact(player)
+```
+
+---
+
+### L-TEST-003 · 2026-04-28 · U · Minor Rework
+**Centralized headless initialization in `conftest.py`**
+
+Scattered `pygame.init()` + `SDL_VIDEODRIVER=dummy` calls across test files cause drift and environment-dependent failures.
+
+✅ Put all global fixtures (headless driver, mock asset loader) in `tests/conftest.py`. Organize test files by domain (`test_engine.py`, `test_ui.py`, `test_map.py`…).
+
+**Evidence:** 11 files → 6 domain modules, 100% pass rate after consolidation.
+
+---
+
+### L-TEST-004 · 2026-04-28 · U · Minor Rework
+**Mock native Pygame objects by property, not by method**
+
+`pygame.Rect.collidepoint` and similar are C-level — read-only, impossible to mock directly.
+
+```python
+# ❌ raises AttributeError — C method is read-only
+mocker.patch.object(rect, 'collidepoint', return_value=True)
+
+# ✅ manipulate the rect so the real method returns what you need
+rect.topleft = (target_x, target_y)
+```
+
+---
+
+### A-TEST-001 · 2026-04-28 · U · Major Rework
+**Blind `__init__` mocking leaves attributes unset**
+
+```python
+# ❌ crashes downstream with AttributeError
+with patch.object(MyClass, '__init__', return_value=None):
+    obj = MyClass()
+obj.some_flag  # → AttributeError
+
+# ✅ recreate all public attributes after patching __init__
+with patch.object(MyClass, '__init__', return_value=None):
+    obj = MyClass()
+    obj.some_flag = True
+    obj.config = {}
+```
+
+---
+
+### A-TEST-002 · 2026-04-28 · U · Major Rework
+**Singleton state pollution (Settings)**
+
+Modifying `src.config.Settings` in a test without restoring causes non-deterministic failures in unrelated tests depending on execution order.
+
+```python
+# ❌ leaks into subsequent tests
+Settings.DEBUG = True
+
+# ✅ always restore
+original = Settings.DEBUG
+Settings.DEBUG = True
+try:
+    ...
+finally:
+    Settings.DEBUG = original
+```
+
+---
+
+### A-TEST-003 · 2026-04-30 · U · Minor Rework
+**`patch('builtins.open', side_effect=...)` intercepts all I/O**
+
+A global `side_effect` on `builtins.open` blocks every file read in the process — i18n loaders, config files, everything.
+
+```python
+# ❌ crashes in I18nManager._load_locale, not the target path
 with patch('builtins.open', side_effect=Exception("IO error")):
-    game = Game()  # crashes in I18nManager._load_locale
-```
+    game = Game()
 
-### Pattern (what to reproduce)
-```python
-# ✅ RIGHT — selective open: raise only for the specific path being tested
-import builtins
+# ✅ selective open — only raise for the target path
 real_open = builtins.open
-
 def selective_open(path, *args, **kwargs):
     if "world.world" in str(path):
         raise Exception("IO error")
@@ -449,50 +132,239 @@ def selective_open(path, *args, **kwargs):
 with patch('builtins.open', side_effect=selective_open):
     game = Game()
 ```
-**Rule:** Never use `patch('builtins.open', side_effect=...)` with a global error. Always use a selective function that checks the path before raising.
-
-### Evidence
-- `test_game_load_world_world_parse_error` crashed from `i18n.py:34`. Fixed with selective_open pattern.
-
-### Scope
-- [ ] Project-specific
-- [x] Universal (any Python project with multiple subsystems using file I/O)
-
 
 ---
 
-## Learning: pygame.Surface Fallback Is Rescaled Before Assertion
-**ID:** A-TEST-005
-**Date:** 2026-04-30
-**Spec:** Test hardening — inventory.py coverage
-**Outcome:** Minor Rework
-**Project:** adrien-parasote/game
+### A-TEST-004 · 2026-04-30 · P · Minor Rework
+**`pygame.Surface.get_size()` after `__init__` rescaling**
 
-### What happened
-`test_inventory_load_asset_error` asserted `ui.bg.get_size() == (32, 32)` after mocking `pygame.image.load` to raise `pygame.error`. Test failed with `assert (1200, 1200) != (32, 32)` because `InventoryUI.__init__` rescales all surfaces (including fallbacks) via `pygame.transform.smoothscale` immediately after loading.
+`InventoryUI.__init__` rescales all surfaces (including fallbacks) via `smoothscale`. Asserting the original fallback size always fails.
 
-### Root cause
-The test assumed the fallback surface would remain at its construction size. The rescaling pipeline treats fallback surfaces identically to real ones.
-
-### Anti-pattern (what to avoid)
 ```python
-# ❌ WRONG — surface size changes due to rescaling pipeline
-ui = InventoryUI(player)
-assert ui.bg.get_size() == (32, 32)  # fails, it's (1200, 1200)
-```
+# ❌ fails — fallback (32,32) becomes (1200,1200) after smoothscale
+assert ui.bg.get_size() == (32, 32)
 
-### Pattern (what to reproduce)
-```python
-# ✅ RIGHT — check existence/type, not size, after a rescaling __init__
-ui = InventoryUI(player)
+# ✅ assert existence or type, not size
 assert ui.bg is not None
 assert isinstance(ui.bg, pygame.Surface)
 ```
-**Rule:** Never assert the exact `get_size()` of a surface going through a UI rescaling pipeline. Assert existence or type instead.
 
-### Evidence
-- Fixed by replacing `assert ui.bg.get_size() == (32, 32)` with `assert ui.bg is not None`.
+**Generalized rule:** After any UI `__init__` that rescales assets, assert existence/type — never assert `get_size()`.
 
-### Scope
-- [ ] Project-specific (InventoryUI's rescaling pipeline)
-- [x] Universal (any Pygame UI rescaling assets during __init__)
+---
+
+## 🎮 Game Engine
+
+### L-GAME-001 · 2026-04-28 · U · Perfect
+**Footprint-based interaction center**
+
+Decouple the visual sprite position (`midbottom` alignment) from the logical interaction center (footprint center). Supports varied asset sizes and tall sprites without breaking grid-consistent interaction math.
+
+---
+
+### L-ARCH-001 · 2026-04-28 · U · Perfect
+**Composite keys for cross-map resource scoping**
+
+Use `{map_base_name}-{element_id}` as keys in WorldState and DialogueManager. Prevents ID collisions across maps (e.g., two maps both with a `chest_01` object).
+
+---
+
+### A-GAME-001 · 2026-04-28 · U · Minor Rework
+**Unthrottled spatial polling**
+
+Proximity checks that trigger visual/audio side-effects every frame without a cooldown cause effect stacking and sprite duplication.
+
+✅ Always gate proximity effects with `_emote_cooldown` (or equivalent) before triggering.
+
+---
+
+### A-GAME-002 · 2026-04-28 · U · Minor Rework
+**Tile vs pixel coordinate mixups**
+
+Passing pixel coords to functions expecting tile indices (or vice-versa) causes silent out-of-bounds errors (`is_collidable(128, 0)` → wrong tile).
+
+✅ Name all coordinate parameters explicitly (`tile_x`, `pixel_x`) and convert at the boundary.
+
+---
+
+### L-ARCH-002 · 2026-04-30 · U · Major Rework
+**Spec must define close sequence, not just close trigger**
+
+Specifying WHEN to close an entity without specifying WHAT the close sequence is generates bugs for each missing step.
+
+| Step | Action | Method |
+|------|--------|--------|
+| 1 | Toggle entity state | `entity.interact(player)` |
+| 2 | Play SFX | `audio_manager.play_sfx(entity.sfx)` |
+| 3 | Persist state | `world_state.set(key, {...})` |
+| 4 | Close UI | `ui.close()` |
+| 5 | Suppress follow-up feedback | reset proximity target + cooldown |
+
+✅ Centralize all steps in `_close_X()`, called from **every** close path (zone exit, action key, etc.).
+**Evidence:** 5 separate bugs in ChestUI auto-close. commit `6c7f811`.
+
+---
+
+### L-ARCH-003 · 2026-04-30 · U · Major Rework
+**Frame-invariant checks belong in `update()`, not in conditional sub-functions**
+
+A check placed inside a conditional branch only runs when that branch fires. If the check must fire every frame, it must live directly in `update()`.
+
+```python
+# ❌ _check_chest_auto_close() only runs when NO entity in proximity range
+def _check_proximity_emotes(self):
+    ...
+    if nothing_in_range:
+        self._check_chest_auto_close()  # missed when player is near other entity
+
+# ✅ always-running checks go directly in update()
+def update(self, dt):
+    self._check_proximity_emotes()  # conditional
+    self._check_chest_auto_close()  # always — regardless of proximity state
+```
+
+✅ **Spec rule:** State explicitly "Checked every update tick" or "Checked conditionally on [X]" to prevent ambiguous call-site choices.
+
+---
+
+## 🗺️ Map & Rendering
+
+### L-MAP-001 · 2026-04-28 · U · Major Rework
+**Semantic name-based layer ordering**
+
+Tiled JSON layer order is unstable — nested groups reorder silently. Sort layers by semantic name prefix (`00-`, `01-`) in `MapManager` instead.
+
+```python
+# ✅
+layer_order = sorted(raw_order, key=lambda lid: self.layer_names.get(lid, ""))
+```
+
+**Evidence:** Background (`00-layer`) disappeared due to group nesting. `tests/test_map.py` confirmed fix.
+
+---
+
+### L-REND-001 · 2026-04-28 · U · Perfect
+**Additive light overlays applied after darkness**
+
+Apply `BLEND_ADD` light sources after the global darkness surface. Applying before causes darkness to dim the light source.
+
+---
+
+### A-MAP-001 · 2026-04-28 · U · Major Rework
+**Index-based layer priority** → See L-MAP-001 (same root cause).
+
+---
+
+## 🖥️ UI
+
+### L-UI-001 · 2026-04-28 · U · Perfect
+**Pre-paginate dialogue at `start_dialogue()` time**
+
+Pre-wrap and group lines into fixed-size pages at dialogue start, not on-the-fly during typewriter animation. Ensures stable page breaks and simplifies skip→next→close progression.
+
+---
+
+### L-UI-002 · 2026-04-29 · P · Minor Rework
+**Font sizing in large reading zones**
+
+`Settings.FONT_SIZE_NARRATIVE` (14pt) is too small in full-height dialogue boxes. Use `int(size * 1.5)` for dedicated reading areas. For inventory descriptions, anchor at `stats_y + 5*s` (not `+30*s`) to avoid overflowing the parchment background.
+
+---
+
+### L-UI-003 · 2026-04-30 · U · Minor Rework
+**Named offset constants as UI escape hatches**
+
+Zone fractions (`_TITLE_ZONE_REL`, `_CONTENT_ZONE_REL`) derived from visual estimates cause iterative trial-and-error.
+
+✅ **Measure zones before writing the spec** (image editor or PIL). Add named offset constants (`_TITLE_OFFSET_X`, `_TITLE_OFFSET_Y`, `_GRID_OFFSET_Y`) — default to zero, adjust once. Eliminates all subsequent launches.
+
+**Evidence:** 8 game launches → `_TITLE_OFFSET_X=10, _TITLE_OFFSET_Y=15, _GRID_OFFSET_Y=-4`.
+
+---
+
+### L-UI-004 · 2026-04-30 · U · Perfect
+**Pygame headless surface testing**
+
+```python
+# Setup in conftest.py
+os.environ["SDL_VIDEODRIVER"] = "dummy"
+pygame.init()
+
+# In tests — replace asset surfaces with dummy ones
+monkeypatch.setattr(ui, "_bg", pygame.Surface((w, h)))
+dummy.fill((255, 0, 0))
+
+# Verify pixels (use tobytes, not deprecated tostring)
+pixel = pygame.image.tobytes(screen, "RGB")
+assert screen.get_at((x, y)) == (r, g, b, 255)
+```
+
+---
+
+## 🔧 Spec & Agent Workflow
+
+### L-SPEC-001 · 2026-04-28 · U · Minor Rework
+**Define procedural assets by boundary values**
+
+In implementation specs, describe generated geometry/textures by **Start, End, Step/Falloff** values — not prose. Eliminates ambiguity in generation loops (e.g., center-to-edge alpha gradients).
+
+---
+
+### L-UX-001 · 2026-04-28 · U · Minor Rework
+**Interruption-first feedback chaining**
+
+New visual feedback (emotes, effects) must clear/overwrite existing ones immediately — never wait for the previous animation to finish.
+
+```python
+# ❌ blocks rapid interactions
+if len(self.emote_group) == 0:
+    self.emote_group.add(sprite)
+
+# ✅ clear first, add immediately
+self.emote_group.empty()
+self.emote_group.add(sprite)
+```
+
+---
+
+### A-UX-001 · 2026-04-28 · U · Minor Rework
+**Hardcoded keyboard constants**
+
+```python
+# ❌
+if event.key == pygame.K_e:
+
+# ✅
+if event.key == Settings.INTERACT_KEY:
+```
+
+---
+
+### A-AGENT-001 · 2026-04-28 · U · Major Rework
+**Blind file overwrites with stale context**
+
+Replacing large file chunks from outdated memory destroys working code (I18n, UI scaling, etc.) and starts endless `AttributeError` loops.
+
+✅ Always `view_file` before editing. Use targeted `multi_replace_file_content`. On accidental corruption: `git checkout -- <file>` immediately.
+
+---
+
+### A-AGENT-002 · 2026-04-28 · U · Major Rework
+**Skipping Stream Coding pipeline stages**
+
+Jumping to BUILD without SPEC, or skipping VERIFY/HARDEN, generates vibe-coded output that diverges from spec and requires expensive rework.
+
+✅ Never write implementation code without RED tests (TDD Gate). Never commit without `/learn-eval` + `/doc-update`.
+
+---
+
+### A-SPEC-001 · 2026-04-28 · U · Minor Rework
+**Ambiguous spritesheet definitions**
+
+Describing an asset as "animated" without stating grid layout (rows × columns) and frame mapping causes incorrect slicing (4×1 instead of 4×8).
+
+✅ Always specify: `rows=4, cols=8, frame_duration=0.1s, animation_row={state: row_index}`.
+
+---
+
+*Last optimized: 2026-04-30 — 499 lines → 270 lines, 0 information lost, duplicate long-form sections removed.*

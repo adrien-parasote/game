@@ -106,8 +106,6 @@ class InventoryUI:
 
     def toggle(self):
         self.is_open = not self.is_open
-        # Custom pointer replaces system cursor
-        pygame.mouse.set_visible(not self.is_open)
         logging.info(f"Inventory {'opened' if self.is_open else 'closed'}")
 
     def set_tab(self, index):

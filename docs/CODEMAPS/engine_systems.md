@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-28 | Files scanned: ~15 | Token estimate: ~400 -->
+<!-- Generated: 2026-04-30 | Files scanned: ~15 | Token estimate: ~400 -->
 
 # Engine Systems Map
 
@@ -32,6 +32,8 @@ Game._load_map() → AssetManager.clear()
 
 ## Key Methods
 - `InteractionManager._check_proximity_emotes()`: Distance + Orientation check to trigger emotes.
+- `InteractionManager._check_chest_auto_close()`: Called every tick from `update()` — auto-closes ChestUI when player exits zone.
+- `InteractionManager._close_chest(chest, chest_ui)`: Centralized chest close sequence (animation + sfx + world_state + UI close + emote suppression).
 - `InteractionManager.handle_interactions()`: Unified pickup/NPC/object dispatcher on key press.
 - `MapManager.is_collidable(x, y)`: Bounding box collision query.
 - `TmjParser._parse_tilelayer()`: Convert raw GIDs to 2D matrix.

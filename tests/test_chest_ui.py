@@ -83,3 +83,68 @@ def test_load_slot_image_missing_file(monkeypatch, caplog):
     result = ui._load_slot_image()
     assert result is None
     assert any("failed" in rec.message.lower() for rec in caplog.records)
+
+
+def test_update_hover_hit():
+    """update_hover sets _hovered_slot when mouse is over a slot."""
+    ui = ChestUI()
+    ui.open(object())
+    # _slot_positions are populated after open()
+    assert ui._slot_positions, "No slot positions computed"
+    first_rect = ui._slot_positions[0]
+    ui.update_hover(first_rect.center)
+    assert ui._hovered_slot == 0
+
+
+def test_update_hover_miss():
+    """update_hover clears _hovered_slot when mouse is outside all slots."""
+    ui = ChestUI()
+    ui.open(object())
+    ui.update_hover(first_rect.center if False else (0, 0))
+    assert ui._hovered_slot is None
+
+
+def test_hovered_slot_reset_on_close():
+    """close() resets _hovered_slot to None."""
+    ui = ChestUI()
+    ui.open(object())
+    ui._hovered_slot = 3
+    ui.close()
+    assert ui._hovered_slot is None
+
+
+def test_load_cursor_missing_file(monkeypatch, caplog):
+    """_load_cursor returns None and logs a warning when file is missing."""
+    ui = ChestUI()
+    result = ui._load_cursor("nonexistent_cursor.png")
+    assert result is None
+    assert any("failed" in rec.message.lower() for rec in caplog.records)
+
+
+def test_draw_hover_overlay_rendered(monkeypatch):
+    """When _hovered_slot is set and hover image exists, hover is drawn on screen."""
+    ui = ChestUI()
+    dummy_bg = pygame.Surface((900, 300))
+    dummy_bg.fill((20, 20, 20))
+    dummy_slot = pygame.Surface((49, 49))
+    dummy_slot.fill((0, 200, 0))
+    dummy_hover = pygame.Surface((49, 49))
+    dummy_hover.fill((255, 255, 0))  # Yellow = hover overlay
+
+    monkeypatch.setattr(ui, "_bg", dummy_bg)
+    monkeypatch.setattr(ui, "_slot_img", dummy_slot)
+
+    ui.open(object())
+    # Set hover image and hovered slot AFTER open() so _compute_layout doesn't overwrite them
+    ui._hover_img = dummy_hover
+    ui._hovered_slot = 0
+
+    screen = make_screen()
+    # Suppress cursor draw side-effects
+    monkeypatch.setattr(ui, "_draw_cursor", lambda s: None)
+    ui._draw_slots(screen)
+
+    # The hover colour (yellow) must appear at the first slot center
+    center = ui._slot_positions[0].center
+    pixel = screen.get_at(center)[:3]
+    assert pixel == (255, 255, 0), f"Expected yellow hover pixel, got {pixel}"

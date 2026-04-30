@@ -12,6 +12,9 @@ from src.config import Settings
 # Asset paths (relative to project root)
 ASSET_CHEST_BG = os.path.join("assets", "images", "HUD", "07-chest.png")
 ASSET_SLOT_IMG = os.path.join("assets", "images", "ui", "03-inventory_slot.png")
+ASSET_SLOT_HOVER = os.path.join("assets", "images", "ui", "04-inventory_slot_hover.png")
+ASSET_POINTER = os.path.join("assets", "images", "ui", "05-pointer.png")
+ASSET_POINTER_SELECT = os.path.join("assets", "images", "ui", "06-pointer_select.png")
 
 # Layout constants (relative fractions of the background image)
 _TITLE_ZONE_REL = (0.29, 0.02, 0.71, 0.23)  # left%, top%, right%, bottom%
@@ -20,7 +23,7 @@ _SLOT_COLS = 10
 _SLOT_ROWS = 2
 _GRID_OFFSET_Y = -4   # px shift applied to the whole grid (negative = up)
 _TITLE_OFFSET_X = 10   # px shift applied to the title text (negative = left)
-_TITLE_OFFSET_Y = 15  # px shift applied to the title text (negative = up)
+_TITLE_OFFSET_Y = 12  # px shift applied to the title text (negative = up)
 _TARGET_WIDTH = 900   # pixels – scaled width of the background
 
 class ChestUI:
@@ -42,6 +45,11 @@ class ChestUI:
         self._title_rect: pygame.Rect | None = None
         self._content_rect: pygame.Rect | None = None
         self._slot_positions: list[pygame.Rect] = []
+        self._hovered_slot: int | None = None   # index into _slot_positions
+        # Custom pointer — same assets as InventoryUI
+        self._pointer_img: pygame.Surface | None = self._load_cursor(ASSET_POINTER)
+        self._pointer_select_img: pygame.Surface | None = self._load_cursor(ASSET_POINTER_SELECT)
+        self._hover_img: pygame.Surface | None = None  # scaled in _compute_layout
 
     # ---------------------------------------------------------------------
     # Public API
@@ -58,6 +66,7 @@ class ChestUI:
         self._chest_entity = None
         self._layout_computed = False
         self._slot_positions.clear()
+        self._hovered_slot = None
 
     def draw(self, screen: pygame.Surface) -> None:
         """Render the UI onto *screen* if it is open."""
@@ -67,14 +76,23 @@ class ChestUI:
         if self._bg_rect is None:
             return
         screen.blit(self._bg, self._bg_rect)
+        # Update hover from current mouse position
+        self.update_hover(pygame.mouse.get_pos())
         # Title – hard‑coded "coffre" for v1
         self._draw_title(screen)
         # Slots grid
         self._draw_slots(screen)
+        # Custom cursor (always on top — drawn last)
+        self._draw_cursor(screen)
+    def update_hover(self, mouse_pos: tuple[int, int]) -> None:
+        """Detect which slot index is under the mouse cursor."""
+        self._hovered_slot = None
+        for i, rect in enumerate(self._slot_positions):
+            if rect.collidepoint(mouse_pos):
+                self._hovered_slot = i
+                return
 
-    # ---------------------------------------------------------------------
-    # Private helpers
-    # ---------------------------------------------------------------------
+
     def _load_background(self) -> pygame.Surface | None:
         """Load and scale the chest background image.
         Returns *None* on error and logs the incident.
@@ -139,6 +157,13 @@ class ChestUI:
             self._slot_img = pygame.transform.smoothscale(
                 self._load_slot_image(), (slot_size, slot_size)
             )
+        # Scale hover image to same size
+        try:
+            raw_hover = pygame.image.load(ASSET_SLOT_HOVER).convert_alpha()
+            self._hover_img = pygame.transform.smoothscale(raw_hover, (slot_size, slot_size))
+        except Exception as e:
+            logging.warning(f"ChestUI hover image load failed: {e}")
+            self._hover_img = None
 
         # Total grid dimensions using step (centre-to-centre)
         grid_w = step * (_SLOT_COLS - 1) + slot_size
@@ -173,10 +198,37 @@ class ChestUI:
         """Render each slot placeholder inside the green content zone."""
         if not self._slot_positions:
             return
-        for rect in self._slot_positions:
+        for i, rect in enumerate(self._slot_positions):
             if self._slot_img:
-                # slot image is already pre-scaled to the correct size in _compute_layout
                 screen.blit(self._slot_img, rect)
             else:
-                # Fallback – simple rect outline
                 pygame.draw.rect(screen, (200, 200, 200), rect, 2)
+
+        # Hover overlay — drawn after all slots so it appears on top
+        if self._hovered_slot is not None and self._hover_img:
+            hover_rect = self._hover_img.get_rect(center=self._slot_positions[self._hovered_slot].center)
+            screen.blit(self._hover_img, hover_rect)
+
+    def _load_cursor(self, path: str) -> pygame.Surface | None:
+        """Load and scale a cursor image to Settings.CURSOR_SIZE."""
+        try:
+            img = pygame.image.load(path).convert_alpha()
+            size = Settings.CURSOR_SIZE
+            w, h = img.get_size()
+            # Preserve aspect ratio
+            ratio = min(size / w, size / h)
+            scaled = pygame.transform.smoothscale(img, (int(w * ratio), int(h * ratio)))
+            return scaled
+        except Exception as e:
+            logging.warning(f"ChestUI cursor load failed ({path}): {e}")
+            return None
+
+    def _draw_cursor(self, screen: pygame.Surface) -> None:
+        """Draw the glove cursor at mouse position (always on top)."""
+        mouse_pos = pygame.mouse.get_pos()
+        if pygame.mouse.get_pressed()[0]:
+            img = self._pointer_select_img
+        else:
+            img = self._pointer_img
+        if img:
+            screen.blit(img, mouse_pos)

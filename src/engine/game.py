@@ -64,6 +64,7 @@ class Game:
             display_flags
         )
         pygame.display.set_caption(f"{Settings.GAME_TITLE} (v{Settings.VERSION})")
+        pygame.mouse.set_visible(False)  # Hidden globally; glove drawn by UI when open
         self.clock = pygame.time.Clock()
         
         # Load Constants from Settings
