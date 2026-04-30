@@ -12,6 +12,7 @@
 | Assume `item_id` == `icon_filename` | Allow explicit `icon` property in metadata | Decouples IDs from asset filenames |
 | Use full visual rect for pickup sorting | Use thin/shrunken hitbox for ground items | Ensures player always appears in front |
 | Allow diagonal interactions for pickups | Require orthogonal alignment and facing | Keeps interaction consistent with other objects (`activate_from_anywhere`) |
+| Call `pickup.kill()` without persisting state | Always call `world_state.set(key, {collected: True})` before `kill()` | Without persistence, item respawns on map reload |
 
 ## 2. Test Case Specifications
 
@@ -59,9 +60,23 @@
 1. Get `object_id` from Tiled properties.
 2. Lookup in `propertytypes.json`.
 3. Try to add to `player.inventory`.
-4. If successful, remove entity from `all_sprites` and `interactives`.
+4. If successful, persist collection state and remove entity from groups.
 5. Depth Handling: Use shrunken hitbox (`20x10`) for pickups to ensure Y-sorting places player "in front".
 6. Full Inventory: If `can_add` returns remaining > 0, trigger the `frustration` emote on the player instead of a dialogue.
+
+### Session Persistence (WorldState)
+Pickup items use the same `{map_basename}_{tiled_id}` key as interactive objects.
+
+**On collection:**
+- Full pickup → `world_state.set(key, {"collected": True})` → `pickup.kill()`
+- Partial pickup (inventory full) → `world_state.set(key, {"quantity": remaining})`
+
+**On map spawn (`_spawn_pickup`):**
+- `world_state.get(key)["collected"] is True` → skip spawn entirely
+- `world_state.get(key)["quantity"]` exists → spawn with restored quantity
+- No saved state → spawn with original Tiled quantity
+
+**Key source:** Native Tiled `obj["id"]` (always present, no manual config required).
 
 ### UI Logic
 - Icons: `assets/images/icons/{item_id}.png`.

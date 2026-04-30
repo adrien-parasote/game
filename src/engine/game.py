@@ -308,20 +308,35 @@ class Game:
         logging.info(f"Spawned NPC '{npc.element_id}' at {e_pos}")
 
     def _spawn_pickup(self, ent: dict, props: dict, e_pos: tuple):
-        """Instantiate a PickupItem from map data."""
+        """Instantiate a PickupItem from map data, skipping already-collected ones."""
         item_id = _get_property(props, "object_id")
         sprite = _get_property(props, "sprite_sheet")
         quantity = int(_get_property(props, "quantity", 1))
-        if item_id and sprite:
-            PickupItem(
-                pos=e_pos,
-                groups=[self.visible_sprites, self.pickups],
-                item_id=item_id,
-                sprite_sheet=sprite,
-                quantity=quantity,
-                element_id=str(ent.get("id"))
-            )
-            logging.info(f"Spawned PickupItem '{item_id}' (x{quantity}) at {e_pos}")
+        if not (item_id and sprite):
+            return
+
+        # Check persisted pickup state
+        tiled_id = ent.get("id")
+        state_key = WorldState.make_key(self._current_map_name, tiled_id) if tiled_id else None
+        if state_key:
+            saved = self.world_state.get(state_key)
+            if saved and saved.get("collected"):
+                return  # Already fully picked up — skip spawn
+            if saved and "quantity" in saved:
+                quantity = saved["quantity"]  # Restore partial quantity
+
+        item = PickupItem(
+            pos=e_pos,
+            groups=[self.visible_sprites, self.pickups],
+            item_id=item_id,
+            sprite_sheet=sprite,
+            quantity=quantity,
+            element_id=str(tiled_id)
+        )
+        if state_key:
+            item._world_state_key = state_key  # Attach key for persistence on pickup
+        logging.info(f"Spawned PickupItem '{item_id}' (x{quantity}) at {e_pos}")
+
 
 
     def _is_collidable(self, px_center: float, py_center: float, requester=None) -> bool:

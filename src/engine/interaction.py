@@ -220,30 +220,36 @@ class InteractionManager:
         
         for pickup in self.game.pickups:
             dist = p_pos.distance_to(pickup.pos)
-            if dist < range_dist:
-                is_on_top = dist < 16.0
-                is_aligned = abs(p_pos.x - pickup.pos.x) < 20 or abs(p_pos.y - pickup.pos.y) < 20
-                if is_on_top or (is_aligned and self._facing_toward(p_pos, p_state, pickup.pos)):
-                    # Try to add to inventory
-                    remaining = self.game.player.inventory.add_item(pickup.item_id, pickup.quantity)
-                    
-                    # Update pickup quantity based on what was actually added
-                    picked_up = pickup.quantity - remaining
-                    pickup.quantity = remaining
-                    
-                    if picked_up > 0:
-                        logging.info(f"Picked up {picked_up}x {pickup.item_id}")
-                    
-                    if pickup.quantity <= 0:
-                        # Item fully picked up
-                        pickup.kill()
-                    else:
-                        # Inventory full or partial pickup
-                        self.game.player.playerEmote('frustration')
-                        logging.info(f"Inventory full, {pickup.quantity}x {pickup.item_id} left on ground.")
-                    
-                    return True
+            if dist >= range_dist:
+                continue
+            is_on_top = dist < 16.0
+            is_aligned = abs(p_pos.x - pickup.pos.x) < 20 or abs(p_pos.y - pickup.pos.y) < 20
+            if not (is_on_top or (is_aligned and self._facing_toward(p_pos, p_state, pickup.pos))):
+                continue
+
+            remaining = self.game.player.inventory.add_item(pickup.item_id, pickup.quantity)
+            picked_up = pickup.quantity - remaining
+            pickup.quantity = remaining
+
+            if picked_up > 0:
+                logging.info(f"Picked up {picked_up}x {pickup.item_id}")
+
+            # Persist state so the item doesn't respawn on map reload
+            state_key = getattr(pickup, "_world_state_key", None)
+            if pickup.quantity <= 0:
+                if state_key:
+                    self.game.world_state.set(state_key, {"collected": True})
+                pickup.kill()
+            else:
+                # Partial pickup — persist remaining quantity
+                if state_key:
+                    self.game.world_state.set(state_key, {"quantity": pickup.quantity})
+                self.game.player.playerEmote('frustration')
+                logging.info(f"Inventory full, {pickup.quantity}x {pickup.item_id} left on ground.")
+
+            return True
         return False
+
 
     def _get_player_facing_vector(self) -> pygame.math.Vector2:
         """Get unit vector based on player facing direction."""

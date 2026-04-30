@@ -64,9 +64,21 @@ Every interactive object is assigned a unique persistence key based on its map a
 `{map_basename}_{tiled_id}`
 Example: The lever with ID 58 in `01-castel.tmj` will have the key `01-castel_58`.
 
-### 5.3 Behavior
+### 5.3 Behavior — Interactive Objects
 - **Spawn Registration**: When a map loads, the engine constructs the `InteractiveEntity`. Before generating its visual layout, the engine queries the `WorldState` dictionary using the persistence key. If a state exists (e.g., `{'is_on': True}`), the object's `is_on` status is overridden, and its visual frame is snapped immediately.
 - **State Mutation**: When an interaction resolves (by the player hitting the interact key, or via an interaction chain), the updated `is_on` state is written to the `WorldState` dictionary via its key.
+
+### 5.4 Behavior — Pickup Items
+Pickups use the same `{map_basename}_{tiled_id}` key format.
+
+| Event | WorldState write | Spawn behavior |
+|-------|-----------------|----------------|
+| Full pickup (`remaining == 0`) | `{"collected": True}` | **Skip spawn** — item never appears again this session |
+| Partial pickup (`remaining > 0`) | `{"quantity": remaining}` | Spawn with restored quantity |
+| No event (never touched) | No entry | Spawn with original Tiled quantity |
+
+**Key source:** Native Tiled `obj["id"]` integer (guaranteed unique per map, requires zero manual config).
+**Key attachment:** `_world_state_key` is set on the `PickupItem` instance at spawn time, mirroring the interactive object pattern.
 
 ## 6. Anti-Patterns
 
@@ -80,6 +92,8 @@ Example: The lever with ID 58 in `01-castel.tmj` will have the key `01-castel_58
 | Target `element_id` as persistence primary key | Target Native Tiled `obj['id']` | The Tiled ID is always present and guaranteed unique per TMJ file. `element_id` relies on manual configuration and could be missing. |
 | Persist position of objects | Persist only `is_on` | Current engine objects are static. Persisting state changes covers all interactive logic needs without inflating the footprint. |
 | Save WorldState per-frame | Save only in `interact()` or toggles | Avoiding excessive state writes preserves 60FPS target. |
+| Call `pickup.kill()` without a WorldState write | Always `world_state.set(key, {"collected": True})` before `kill()` | Without persistence, item respawns at full quantity on next map load. |
+| Omit `_world_state_key` from spawned `PickupItem` | Always attach `item._world_state_key = state_key` in `_spawn_pickup` | Key must be on the entity to be accessible at collection time in `InteractionManager`. |
 
 ## 7. Test Case Specifications
 
@@ -103,6 +117,10 @@ Example: The lever with ID 58 in `01-castel.tmj` will have the key `01-castel_58
 | WS-006 | Standard interact saves state | `world_state.get()` reflects ON state |
 | WS-007 | Map reload maintains state | Full simulation of `A -> B -> A` loads the correct toggled state |
 | WS-008 | Interaction chaining saves state | State correctly updated via `toggle_entity_by_id` |
+| WS-009 | Full pickup persists `collected: True` | `world_state.set(key, {"collected": True})` called before `kill()` |
+| WS-010 | Partial pickup persists remaining quantity | `world_state.set(key, {"quantity": N})` written when inventory full |
+| WS-011 | Spawn skips collected item | No `PickupItem` spawned when `world_state` has `collected: True` |
+| WS-012 | Spawn restores partial quantity | `PickupItem` spawned with `quantity=N` from `world_state` |
 
 ## 8. Error Handling Matrix
 
