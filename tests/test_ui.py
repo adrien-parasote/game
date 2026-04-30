@@ -232,3 +232,257 @@ def test_dialogue_manager_draw():
     screen = pygame.Surface((800, 600))
     dm.draw(screen)
     assert dm.is_active
+
+def test_dialogue_pagination():
+    """Verify that long text is paginated."""
+    dm = DialogueManager()
+    long_text = "Word " * 500
+    dm.start_dialogue(long_text)
+    assert len(dm._pages) > 1
+
+
+# --- InventoryUI additional coverage ---
+
+def test_inventory_load_asset_error():
+    """_load_asset returns magenta fallback surface on pygame.error."""
+    player = MagicMock()
+    with patch('pygame.image.load', side_effect=pygame.error("bad")), \
+         patch('os.path.exists', return_value=False):
+        ui = InventoryUI(player)
+    # bg goes through rescaling after fallback — just verify it didn't raise
+    assert ui.bg is not None
+
+
+def test_inventory_set_tab_valid():
+    """set_tab changes active_tab for valid indices."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    ui.set_tab(2)
+    assert ui.active_tab == 2
+
+
+def test_inventory_set_tab_invalid():
+    """set_tab resets to 0 for invalid indices."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    ui.set_tab(99)
+    assert ui.active_tab == 0
+
+
+def test_inventory_handle_input_closed():
+    """handle_input returns early when inventory is closed."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    ui.is_open = False
+    event = MagicMock()
+    event.type = pygame.MOUSEBUTTONDOWN
+    ui.handle_input(event)
+
+
+def test_inventory_handle_input_tab_click():
+    """handle_input switches tab on click over tab rect."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    ui.is_open = True
+    tab_center = ui.tab_rects[1].center
+    event = MagicMock()
+    event.type = pygame.MOUSEBUTTONDOWN
+    event.button = 1
+    event.pos = tab_center
+    ui.handle_input(event)
+    assert ui.active_tab == 1
+
+
+def test_inventory_handle_input_equipment_click():
+    """handle_input logs equipment click."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    ui.is_open = True
+    head_pos = ui.equipment_slots["HEAD"]
+    event = MagicMock()
+    event.type = pygame.MOUSEBUTTONDOWN
+    event.button = 1
+    event.pos = head_pos
+    ui.handle_input(event)
+
+
+def test_inventory_handle_input_grid_click():
+    """handle_input logs grid slot click when tab 0 active."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    ui.is_open = True
+    ui.active_tab = 0
+    gx, gy = ui.grid_start
+    event = MagicMock()
+    event.type = pygame.MOUSEBUTTONDOWN
+    event.button = 1
+    event.pos = (gx, gy)
+    ui.handle_input(event)
+
+
+def test_inventory_handle_input_move_left_right():
+    """handle_input sets preview_state for left and right keys."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    ui.is_open = True
+
+    event = MagicMock()
+    event.type = pygame.KEYDOWN
+    event.key = Settings.MOVE_LEFT
+    ui.handle_input(event)
+    assert ui.preview_state == 'left'
+
+    event.key = Settings.MOVE_RIGHT
+    ui.handle_input(event)
+    assert ui.preview_state == 'right'
+
+
+def test_inventory_update_hover_grid():
+    """update_hover detects grid slot."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    ui.active_tab = 0
+    gx, gy = ui.grid_start
+    ui.update_hover((gx, gy))
+    assert ui.hovered_slot is not None
+    assert ui.hovered_slot[0] == "grid"
+
+
+def test_inventory_update_closed():
+    """update() returns early when inventory is closed."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    ui.is_open = False
+    ui.anim_timer = 0.0
+    ui.update(1.0)
+    assert ui.anim_timer == 0.0
+
+
+def test_inventory_draw_closed():
+    """draw() returns early when inventory is closed."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    ui.is_open = False
+    screen = pygame.Surface((800, 600))
+    ui.draw(screen)
+
+
+def test_inventory_draw_item_quantity_gt1():
+    """draw() renders quantity label when item.quantity > 1."""
+    player = MagicMock()
+    item = MagicMock()
+    item.id = "potion_red"
+    item.icon = "potion_red.png"
+    item.quantity = 5
+    player.inventory.get_item_at.side_effect = lambda idx: item if idx == 0 else None
+    ui = InventoryUI(player)
+    ui.is_open = True
+    surf = pygame.Surface((32, 32))
+    ui.icon_cache["potion_red.png"] = surf
+    screen = pygame.Surface((800, 600))
+    ui.draw(screen)
+
+
+def test_inventory_draw_hover_equipment():
+    """draw() draws gold border for hovered equipment slot."""
+    player = MagicMock()
+    player.inventory.get_item_at.return_value = None
+    ui = InventoryUI(player)
+    ui.is_open = True
+    ui.hovered_slot = ("equipment", "HEAD")
+    screen = pygame.Surface((800, 600))
+    ui.draw(screen)
+
+
+def test_inventory_draw_hover_grid():
+    """draw() draws hover image for hovered grid slot."""
+    player = MagicMock()
+    player.inventory.get_item_at.return_value = None
+    ui = InventoryUI(player)
+    ui.is_open = True
+    ui.active_tab = 0
+    ui.hovered_slot = ("grid", 0)
+    screen = pygame.Surface((800, 600))
+    ui.draw(screen)
+
+
+def test_inventory_draw_stats_default():
+    """_draw_info_zone draws stats when no item is hovered."""
+    player = MagicMock()
+    player.level = 5
+    player.hp = 80
+    player.max_hp = 100
+    player.gold = 42
+    ui = InventoryUI(player)
+    ui.hovered_slot = None
+    screen = pygame.Surface((800, 600))
+    ui._draw_info_zone(screen)
+
+
+def test_inventory_draw_info_zone_description_wrap():
+    """_draw_info_zone wraps long item descriptions."""
+    player = MagicMock()
+    item = MagicMock()
+    item.id = "potion_red"
+    long_desc = "This is a very long description that should wrap across multiple lines."
+    player.inventory.get_item_at.return_value = item
+    with patch('src.engine.i18n.I18nManager.get_item', return_value={"name": "Potion", "description": long_desc}):
+        ui = InventoryUI(player)
+        ui.hovered_slot = ("grid", 0)
+        screen = pygame.Surface((800, 600))
+        ui._draw_info_zone(screen)
+
+
+def test_inventory_get_item_icon_cache_hit():
+    """_get_item_icon returns cached icon on second call."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    cached = pygame.Surface((32, 32))
+    ui.icon_cache["sword.png"] = cached
+    result = ui._get_item_icon("sword.png")
+    assert result is cached
+
+
+def test_inventory_get_item_icon_load_from_disk():
+    """_get_item_icon loads and caches icon from disk."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    mock_img = pygame.Surface((48, 48))
+    with patch('os.path.exists', return_value=True), \
+         patch('pygame.image.load') as mock_load:
+        mock_load.return_value.convert_alpha.return_value = mock_img
+        result = ui._get_item_icon("sword.png")
+    assert result is not None
+    assert "sword.png" in ui.icon_cache
+
+
+def test_inventory_get_item_icon_load_error():
+    """_get_item_icon returns None on load error."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    with patch('os.path.exists', return_value=True), \
+         patch('pygame.image.load', side_effect=Exception("corrupt")):
+        result = ui._get_item_icon("broken.png")
+    assert result is None
+
+
+def test_inventory_get_item_icon_file_not_found():
+    """_get_item_icon returns None when file doesn't exist."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    with patch('os.path.exists', return_value=False):
+        result = ui._get_item_icon("missing.png")
+    assert result is None
+
+
+def test_inventory_get_item_icon_adds_extension():
+    """_get_item_icon adds .png extension when missing."""
+    player = MagicMock()
+    ui = InventoryUI(player)
+    mock_img = pygame.Surface((48, 48))
+    with patch('os.path.exists', return_value=True), \
+         patch('pygame.image.load') as mock_load:
+        mock_load.return_value.convert_alpha.return_value = mock_img
+        result = ui._get_item_icon("sword")
+    assert result is not None
+    assert "sword.png" in ui.icon_cache

@@ -308,6 +308,50 @@ def test_emote_manager_initialization():
         assert 'interact' in em.emote_map
         assert 'frustration' in em.emote_map
 
+
+def test_emote_manager_fallback_path():
+    """EmoteManager tries fallback path when primary doesn't exist."""
+    player = MagicMock()
+    def exists_side_effect(path):
+        return "sprites" in path and "04-emotes" in path  # fallback path only
+    with patch('os.path.exists', side_effect=exists_side_effect), \
+         patch('src.entities.emote.SpriteSheet') as mock_sheet:
+        mock_sheet.return_value.load_grid.return_value = [pygame.Surface((16, 16))] * 40
+        em = EmoteManager(player)
+    assert hasattr(em, 'frames_grid')
+
+
+def test_emote_manager_spritesheet_error():
+    """EmoteManager handles SpriteSheet load error gracefully."""
+    player = MagicMock()
+    with patch('os.path.exists', return_value=True), \
+         patch('src.entities.emote.SpriteSheet', side_effect=Exception("bad sheet")):
+        em = EmoteManager(player)
+    assert em.frames == []
+
+
+def test_emote_trigger_no_group():
+    """trigger() returns early and logs warning when emote_group is None."""
+    player = MagicMock()
+    with patch('src.entities.emote.SpriteSheet') as mock_sheet:
+        mock_sheet.return_value.load_grid.return_value = [pygame.Surface((16, 16))] * 40
+        em = EmoteManager(player)
+    em.emote_group = None
+    em.trigger('love')  # should not raise
+
+
+def test_emote_trigger_unknown_name():
+    """trigger() returns early when emote name is unknown."""
+    player = MagicMock()
+    group = MagicMock()
+    with patch('src.entities.emote.SpriteSheet') as mock_sheet:
+        mock_sheet.return_value.load_grid.return_value = [pygame.Surface((16, 16))] * 40
+        em = EmoteManager(player)
+    em.emote_group = group
+    em.trigger('nonexistent')  # should not raise
+    group.empty.assert_not_called()
+
+
 def test_emote_manager_chaining():
     """Triggering a new emote should clear the previous one (TC-EM-01)."""
     player = MagicMock()
