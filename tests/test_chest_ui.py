@@ -229,23 +229,23 @@ def test_open_with_player_stores_player():
     assert ui._player is player
 
 
-def test_open_resets_inv_page():
-    """open() always resets the inventory page to 0."""
+def test_open_resets_inv_offset():
+    """open() always resets the inventory offset to 0."""
     ui = ChestUI()
-    ui._inv_page = 1
+    ui._inv_offset = 5
     ui.open(object(), make_player())
-    assert ui._inv_page == 0
+    assert ui._inv_offset == 0
 
 
 def test_close_resets_inv_state():
     """close() resets all inventory panel state."""
     ui = ChestUI()
     ui.open(object(), make_player())
-    ui._inv_page = 1
+    ui._inv_offset = 3
     ui._hovered_inv_slot = 5
     ui._hovered_inv_arrow = "right"
     ui.close()
-    assert ui._inv_page == 0
+    assert ui._inv_offset == 0
     assert ui._hovered_inv_slot is None
     assert ui._hovered_inv_arrow is None
     assert ui._player is None
@@ -261,11 +261,11 @@ def test_inv_bg_rect_computed_after_open():
 
 
 def test_inv_slot_positions_computed_after_open():
-    """open() must populate _inv_slot_positions with exactly _INV_SLOTS_PER_PAGE entries."""
-    from src.ui.chest import _INV_SLOTS_PER_PAGE
+    """open() must populate _inv_slot_positions with exactly _INV_SLOTS_VISIBLE entries."""
+    from src.ui.chest import _INV_SLOTS_VISIBLE
     ui = ChestUI()
     ui.open(object(), make_player())
-    assert len(ui._inv_slot_positions) == _INV_SLOTS_PER_PAGE
+    assert len(ui._inv_slot_positions) == _INV_SLOTS_VISIBLE
 
 
 def test_update_hover_inv_slot():
@@ -289,49 +289,48 @@ def test_update_hover_chest_slot_when_mouse_in_chest():
     assert ui._hovered_inv_slot is None
 
 
-def test_inv_page_advance_on_right_click():
-    """handle_event advances _inv_page when right arrow zone is clicked."""
+def test_inv_offset_advance_on_right_click():
+    """handle_event jumps _inv_offset by a full page when right arrow is clicked."""
+    from src.ui.chest import _INV_SLOTS_VISIBLE
     ui = ChestUI()
     player = make_player(capacity=28)
     ui.open(object(), player)
-    initial_page = ui._inv_page
-    # Simulate a click on the right arrow zone
     event = MagicMock()
     event.type = pygame.MOUSEBUTTONDOWN
     event.button = 1
     event.pos = ui._inv_arrow_right_rect.center
     ui.handle_event(event)
-    assert ui._inv_page == initial_page + 1
+    # Full page jump: offset = 0 + 18 = 18, clamped to capacity-1 = 27 → 18
+    assert ui._inv_offset == _INV_SLOTS_VISIBLE
 
 
-def test_inv_page_no_overflow():
-    """handle_event does not advance _inv_page beyond the last page."""
-    from src.ui.chest import _INV_SLOTS_PER_PAGE
-    import math
+def test_inv_offset_no_overflow():
+    """handle_event does not advance _inv_offset beyond max_offset (right arrow at max)."""
+    from src.ui.chest import _INV_SLOTS_VISIBLE
     ui = ChestUI()
     player = make_player(capacity=28)
     ui.open(object(), player)
-    max_page = math.ceil(28 / _INV_SLOTS_PER_PAGE) - 1
-    ui._inv_page = max_page
+    max_offset = 28 - _INV_SLOTS_VISIBLE
+    ui._inv_offset = max_offset
     event = MagicMock()
     event.type = pygame.MOUSEBUTTONDOWN
     event.button = 1
     event.pos = ui._inv_arrow_right_rect.center
     ui.handle_event(event)
-    assert ui._inv_page == max_page
+    assert ui._inv_offset == max_offset  # already at limit — no change
 
 
-def test_inv_page_no_underflow():
-    """handle_event does not go below page 0 when clicking left arrow."""
+def test_inv_offset_no_underflow():
+    """handle_event does not go below 0 when clicking left arrow."""
     ui = ChestUI()
     ui.open(object(), make_player())
-    ui._inv_page = 0
+    ui._inv_offset = 0
     event = MagicMock()
     event.type = pygame.MOUSEBUTTONDOWN
     event.button = 1
     event.pos = ui._inv_arrow_left_rect.center
     ui.handle_event(event)
-    assert ui._inv_page == 0
+    assert ui._inv_offset == 0
 
 
 def test_inv_bg_full_screen_width():

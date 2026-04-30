@@ -47,13 +47,14 @@ _ARROW_OFFSET_Y = 1
 # Player inventory panel layout constants
 # ---------------------------------------------------------------------------
 _INV_TARGET_WIDTH     = 1280          # Full screen width
-_INV_SLOT_COLS        = 10
-_INV_SLOT_ROWS        = 2
-_INV_SLOTS_PER_PAGE   = _INV_SLOT_COLS * _INV_SLOT_ROWS   # 20
-_INV_CONTENT_ZONE_REL = (0.05, 0.08, 0.95, 0.92)
+_INV_SLOT_COLS        = 18            # Slots visible at once
+_INV_SLOT_ROWS        = 1
+_INV_SLOTS_VISIBLE    = _INV_SLOT_COLS * _INV_SLOT_ROWS   # 18
+_INV_CONTENT_ZONE_REL = (0.05, 0.05, 0.95, 0.95)
 _INV_GRID_OFFSET_X    = 0             # Fine-tune escape hatch
-_INV_GRID_OFFSET_Y    = 0             # Fine-tune escape hatch
-_INV_ARROW_ZONE_W     = 40            # px — hit zone width for left/right arrows
+_INV_GRID_OFFSET_Y    = 15            # Fine-tune escape hatch
+_INV_ARROW_ZONE_W     = 60            # px — hit zone size for left/right arrows
+_INV_ARROW_EDGE_OFFSET = 20           # px — inset from the panel edge
 
 
 class ChestUI:
@@ -90,6 +91,11 @@ class ChestUI:
         self._pointer_img: pygame.Surface | None = self._load_cursor(ASSET_POINTER)
         self._pointer_select_img: pygame.Surface | None = self._load_cursor(ASSET_POINTER_SELECT)
 
+        # Item icon cache (shared across frames)
+        self._icon_cache: dict[str, pygame.Surface | None] = {}
+        # Quantity badge font (tech font, lazy-init to match InventoryUI)
+        self._qty_font: pygame.font.Font | None = None
+
         # --- Computed layout (filled in _compute_layout) ---
         self._bg_rect: pygame.Rect | None = None
         self._title_rect: pygame.Rect | None = None
@@ -109,8 +115,8 @@ class ChestUI:
         self._hovered_inv_slot: int | None = None
         self._hovered_inv_arrow: str | None = None     # "left" | "right"
 
-        # --- Pagination ---
-        self._inv_page: int = 0
+        # --- Scroll offset (index of first visible inv slot) ---
+        self._inv_offset: int = 0
 
         self._layout_computed: bool = False
 
@@ -123,7 +129,7 @@ class ChestUI:
         self.is_open = True
         self._chest_entity = entity
         self._player = player
-        self._inv_page = 0
+        self._inv_offset = 0
         self._compute_layout()
 
     def close(self) -> None:
@@ -138,7 +144,7 @@ class ChestUI:
         self._hovered_chest_arrow = None
         self._hovered_inv_slot = None
         self._hovered_inv_arrow = None
-        self._inv_page = 0
+        self._inv_offset = 0
 
     def draw(self, screen: pygame.Surface) -> None:
         """Render both panels onto *screen* if the UI is open."""
@@ -186,17 +192,20 @@ class ChestUI:
             self._hovered_chest_arrow = "down"
             return
 
-        # 3. Player inventory slots
-        for i, rect in enumerate(self._inv_slot_positions):
+        # 3. Player inventory slots (only hit-test slots that are currently rendered)
+        visible_count = min(_INV_SLOTS_VISIBLE, max(0, self._capacity() - self._inv_offset))
+        for i, rect in enumerate(self._inv_slot_positions[:visible_count]):
             if rect.collidepoint(mouse_pos):
                 self._hovered_inv_slot = i
                 return
 
-        # 4. Inventory arrow buttons
-        if self._inv_arrow_left_rect and self._inv_arrow_left_rect.collidepoint(mouse_pos):
+        # 4. Inventory arrow buttons (only if visible)
+        # Left arrow: rewinds window — visible when there are items behind (offset > 0)
+        if self._can_scroll_left() and self._inv_arrow_left_rect and self._inv_arrow_left_rect.collidepoint(mouse_pos):
             self._hovered_inv_arrow = "left"
             return
-        if self._inv_arrow_right_rect and self._inv_arrow_right_rect.collidepoint(mouse_pos):
+        # Right arrow: advances window — visible when more items exist ahead
+        if self._can_scroll_right() and self._inv_arrow_right_rect and self._inv_arrow_right_rect.collidepoint(mouse_pos):
             self._hovered_inv_arrow = "right"
 
     def handle_event(self, event: pygame.event.Event) -> None:
@@ -208,11 +217,11 @@ class ChestUI:
 
         pos = event.pos
 
-        # Inventory pagination
-        if self._inv_arrow_right_rect and self._inv_arrow_right_rect.collidepoint(pos):
-            self._page_forward()
-        elif self._inv_arrow_left_rect and self._inv_arrow_left_rect.collidepoint(pos):
-            self._page_back()
+        # Inventory scroll (page-based jumps)
+        if self._can_scroll_right() and self._inv_arrow_right_rect and self._inv_arrow_right_rect.collidepoint(pos):
+            self._scroll_right()
+        elif self._can_scroll_left() and self._inv_arrow_left_rect and self._inv_arrow_left_rect.collidepoint(pos):
+            self._scroll_left()
 
     # -----------------------------------------------------------------------
     # Private: asset loading
@@ -270,6 +279,30 @@ class ChestUI:
             logging.warning(f"ChestUI arrow hover load failed ({path}): {e}")
             return None
 
+    def _get_item_icon(
+        self, icon_filename: str, slot_size: int
+    ) -> pygame.Surface | None:
+        """Load, scale, and cache an item icon to *slot_size* px."""
+        cache_key = f"{icon_filename}@{slot_size}"
+        if cache_key in self._icon_cache:
+            return self._icon_cache[cache_key]
+
+        path = os.path.join("assets", "images", "icons", icon_filename)
+        if not path.endswith(".png"):
+            path += ".png"
+
+        try:
+            if os.path.exists(path):
+                img = pygame.image.load(path).convert_alpha()
+                img = pygame.transform.smoothscale(img, (slot_size, slot_size))
+                self._icon_cache[cache_key] = img
+                return img
+        except Exception as e:
+            logging.warning(f"ChestUI: Could not load icon {icon_filename}: {e}")
+
+        self._icon_cache[cache_key] = None
+        return None
+
     # -----------------------------------------------------------------------
     # Private: layout computation
     # -----------------------------------------------------------------------
@@ -281,8 +314,9 @@ class ChestUI:
         if self._bg is None:
             return
 
-        screen_w = Settings.WINDOW_WIDTH
-        screen_h = Settings.WINDOW_HEIGHT
+        _surf = pygame.display.get_surface()
+        screen_w = _surf.get_width()  if _surf else Settings.WINDOW_WIDTH
+        screen_h = _surf.get_height() if _surf else Settings.WINDOW_HEIGHT
 
         # --- Chest panel ---
         bg_w, bg_h = self._bg.get_size()
@@ -397,17 +431,18 @@ class ChestUI:
                 rect.center = (cx, cy)
                 self._inv_slot_positions.append(rect)
 
-        # Arrow zones — left and right sides of the inv panel
-        mid_y = self._inv_bg_rect.centery
+        # Arrow zones — aligned to the vertical centre of the slot row
+        # Use actual slot grid centre so arrows follow _INV_GRID_OFFSET_Y
+        slot_center_y = origin_y + slot_size // 2
         self._inv_arrow_left_rect = pygame.Rect(
-            self._inv_bg_rect.left,
-            mid_y - _INV_ARROW_ZONE_W // 2,
+            self._inv_bg_rect.left + _INV_ARROW_EDGE_OFFSET,
+            slot_center_y - _INV_ARROW_ZONE_W // 2,
             _INV_ARROW_ZONE_W,
             _INV_ARROW_ZONE_W,
         )
         self._inv_arrow_right_rect = pygame.Rect(
-            self._inv_bg_rect.right - _INV_ARROW_ZONE_W,
-            mid_y - _INV_ARROW_ZONE_W // 2,
+            self._inv_bg_rect.right - _INV_ARROW_EDGE_OFFSET - _INV_ARROW_ZONE_W,
+            slot_center_y - _INV_ARROW_ZONE_W // 2,
             _INV_ARROW_ZONE_W,
             _INV_ARROW_ZONE_W,
         )
@@ -417,28 +452,39 @@ class ChestUI:
         self._arrow_right_hover_img = self._load_and_scale_arrow(ASSET_ARROW_RIGHT_HOVER, arrow_scale)
 
     # -----------------------------------------------------------------------
-    # Private: pagination
+    # Private: scroll logic
     # -----------------------------------------------------------------------
 
-    def _max_page(self) -> int:
+    def _capacity(self) -> int:
         if self._player is None:
             return 0
-        return max(0, math.ceil(self._player.inventory.capacity / _INV_SLOTS_PER_PAGE) - 1)
+        return self._player.inventory.capacity
 
-    def _page_forward(self) -> None:
-        if self._inv_page < self._max_page():
-            self._inv_page += 1
+    def _can_scroll_left(self) -> bool:
+        return self._inv_offset > 0
 
-    def _page_back(self) -> None:
-        if self._inv_page > 0:
-            self._inv_page -= 1
+    def _can_scroll_right(self) -> bool:
+        return self._inv_offset + _INV_SLOTS_VISIBLE < self._capacity()
+
+    def _scroll_right(self) -> None:
+        if self._can_scroll_right():
+            # Advance by a full page; clamp so we show at least 1 real slot
+            self._inv_offset = min(
+                self._inv_offset + _INV_SLOTS_VISIBLE,
+                self._capacity() - 1,
+            )
+
+
+    def _scroll_left(self) -> None:
+        if self._can_scroll_left():
+            self._inv_offset = max(0, self._inv_offset - _INV_SLOTS_VISIBLE)
 
     def _current_page_slots(self) -> list:
-        """Return the slice of player inventory slots for the current page."""
+        """Return the 18 visible player inventory slots starting at _inv_offset."""
         if self._player is None:
             return []
-        start = self._inv_page * _INV_SLOTS_PER_PAGE
-        end   = start + _INV_SLOTS_PER_PAGE
+        start = self._inv_offset
+        end   = start + _INV_SLOTS_VISIBLE
         return self._player.inventory.slots[start:end]
 
     # -----------------------------------------------------------------------
@@ -479,34 +525,65 @@ class ChestUI:
             screen.blit(self._arrow_up_hover_img, rect)
 
     def _draw_inv_slots(self, screen: pygame.Surface) -> None:
-        """Render player inventory slot frames, icons and hover overlay."""
-        page_items = self._current_page_slots()
+        """Render player inventory slot frames, item icons, quantities and hover overlay."""
+        if self._qty_font is None:
+            self._qty_font = pygame.font.Font(Settings.FONT_TECH, Settings.FONT_SIZE_TECH)
 
-        for i, rect in enumerate(self._inv_slot_positions):
+        page_items = self._current_page_slots()
+        slot_size = self._slot_img.get_width() if self._slot_img else 49
+        icon_size = max(1, slot_size - 8)
+        scale_factor = slot_size / 55
+        margin = int(8 * scale_factor)
+
+        # Only draw as many frames as there are real slots at this offset
+        visible_count = min(_INV_SLOTS_VISIBLE, max(0, self._capacity() - self._inv_offset))
+
+        for i, rect in enumerate(self._inv_slot_positions[:visible_count]):
+            # Slot background
             if self._slot_img:
                 screen.blit(self._slot_img, rect)
             else:
                 pygame.draw.rect(screen, (180, 180, 180), rect, 2)
 
-            # Draw item icon if slot has an item (v1: placeholder)
-            if i < len(page_items) and page_items[i] is not None:
-                pass  # TODO v2: render item icon
+            # Item icon + quantity
+            if i >= len(page_items) or page_items[i] is None:
+                continue
 
-        if self._hovered_inv_slot is not None and self._hover_img:
+            item = page_items[i]
+            icon_name = item.icon if hasattr(item, "icon") and item.icon else f"{item.id}.png"
+            icon = self._get_item_icon(icon_name, icon_size)
+            if icon:
+                icon_rect = icon.get_rect(center=rect.center)
+                screen.blit(icon, icon_rect)
+
+            qty = getattr(item, "quantity", 1)
+            if qty > 1:
+                qty_surf = self._qty_font.render(f"x{qty}", True, (60, 40, 30))
+                qty_rect = qty_surf.get_rect(bottomright=(rect.right - margin, rect.bottom - margin))
+                screen.blit(qty_surf, qty_rect)
+
+        # Hover overlay (guard against hovering a now-hidden slot)
+        hov = self._hovered_inv_slot
+        if hov is not None and hov < visible_count and self._hover_img:
             hover_rect = self._hover_img.get_rect(
-                center=self._inv_slot_positions[self._hovered_inv_slot].center
+                center=self._inv_slot_positions[hov].center
             )
             screen.blit(self._hover_img, hover_rect)
 
     def _draw_inv_arrows(self, screen: pygame.Surface) -> None:
-        """Render left/right arrow hover overlays for inventory pagination."""
-        if (self._hovered_inv_arrow == "left"
+        """Render left/right arrow hover overlays.
+        Left arrow: rewinds window — visible when there are items behind (offset > 0).
+        Right arrow: advances window — visible when more items exist ahead.
+        """
+        if (self._can_scroll_left()
+                and self._hovered_inv_arrow == "left"
                 and self._inv_arrow_left_rect
                 and self._arrow_left_hover_img):
             rect = self._arrow_left_hover_img.get_rect(center=self._inv_arrow_left_rect.center)
             screen.blit(self._arrow_left_hover_img, rect)
 
-        if (self._hovered_inv_arrow == "right"
+        if (self._can_scroll_right()
+                and self._hovered_inv_arrow == "right"
                 and self._inv_arrow_right_rect
                 and self._arrow_right_hover_img):
             rect = self._arrow_right_hover_img.get_rect(center=self._inv_arrow_right_rect.center)

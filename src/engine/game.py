@@ -590,6 +590,10 @@ class Game:
             if self.inventory_ui.is_open:
                 self.inventory_ui.handle_input(event)
 
+            # Chest UI Input
+            if self.chest_ui.is_open:
+                self.chest_ui.handle_event(event)
+
     def _update(self, dt: float):
         """Update game state by dt."""
         # --- Logical Pause for Dialogue/Inventory ---
