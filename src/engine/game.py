@@ -21,6 +21,7 @@ from src.engine.audio import AudioManager
 from src.engine.interaction import InteractionManager
 from src.ui.chest import ChestUI
 from src.engine.i18n import I18nManager
+from src.ui.inventory import InventoryUI
 
 
 def _get_property(props: dict, key: str, default=None):
@@ -110,7 +111,6 @@ class Game:
         self.player.collision_func = self._is_collidable
         
         # Inventory System
-        from src.ui.inventory import InventoryUI
         self.inventory_ui = InventoryUI(self.player)
         self.chest_ui = ChestUI()
 
@@ -222,94 +222,107 @@ class Game:
             props = ent.get("properties", {})
             entity_type = _get_property(props, "entity_type", default="unknown")
             e_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
-            
-            # Filter out spawn points
+
             if _get_property(props, "is_initial_spawn") is True:
                 continue
-                
-            logging.debug(f"Processing map entity ID {ent.get('id')} ({ent.get('name')}) type={entity_type} at {e_pos}")
-            
+
+            logging.debug(f"Processing entity ID {ent.get('id')} type={entity_type} at {e_pos}")
+
             if entity_type == "interactive":
-                # Extract and resolve IDs
-                element_id = _get_property(props, "element_id")
-                if not element_id:
-                    element_id = str(ent.get("id"))
-                
-                if _get_property(props, "sub_type") == "sign":
-                    logging.info(f"Sign detected with ID: {element_id}")
-
-                target_id = _get_property(props, "target_id") or _get_property(props, "target")
-
-                entity = InteractiveEntity(
-                    pos=(ent["x"], ent["y"]),
-                    groups=[self.visible_sprites, self.interactives],
-                    sub_type=_get_property(props, "sub_type", "unknown"),
-                    sprite_sheet=_get_property(props, "sprite_sheet", ""),
-                    position=int(_get_property(props, "position", 0)),
-                    depth=int(_get_property(props, "depth", 1)),
-                    start_row=int(_get_property(props, "start_frame", 0)),
-                    end_row=int(_get_property(props, "end_frame", 3)),
-                    width=int(_get_property(props, "width", ent.get("width", 32))),
-                    height=int(_get_property(props, "height", ent.get("height", 32))),
-                    tiled_width=ent.get("width", 32),
-                    tiled_height=ent.get("height", 32),
-                    obstacles_group=self.obstacles_group,
-                    is_passable=_get_property(props, "is_passable", False),
-                    is_animated=_get_property(props, "is_animated", False),
-                    is_on=_get_property(props, "is_on"),
-                    halo_size=int(_get_property(props, "halo_size", 0)),
-                    halo_color=_get_property(props, "halo_color", "[255, 255, 255]"),
-                    halo_alpha=int(_get_property(props, "halo_alpha", 130)),
-                    particles=_get_property(props, "particles", False),
-                    particle_count=int(_get_property(props, "particle_count", 0)),
-                    element_id=element_id,
-                    target_id=target_id,
-                    activate_from_anywhere=_get_property(props, "activate_from_anywhere", False),
-                    facing_direction=_get_property(props, "facing_direction"),
-                    sfx=_get_property(props, "sfx", "")
-                )
-                
-                # Persist State Integration
-                tiled_id = ent.get("id")
-                if tiled_id is not None and map_name:
-                    key = WorldState.make_key(map_name, tiled_id)
-                    entity._world_state_key = key
-                    saved_state = self.world_state.get(key)
-                    if saved_state is not None:
-                        entity.restore_state(saved_state)
+                self._spawn_interactive(ent, props, map_name)
             elif _get_property(props, "type") == "teleport":
-                t_rect = pygame.Rect(ent["x"], ent["y"], ent.get("width", 32), ent.get("height", 32))
-                t_map = _get_property(props, "target_map", "")
-                t_spawn_id = _get_property(props, "target_spawn_id", "")
-                t_trans = _get_property(props, "transition_type", "instant")
-                t_req_dir = _get_property(props, "required_direction", "any")
-                tp = Teleport(t_rect, [self.teleports_group], t_map, t_spawn_id, t_trans, t_req_dir)
-                tp.sfx = _get_property(props, "sfx", "")
+                self._spawn_teleport(ent, props)
             elif entity_type == "npc":
-                npc = NPC(
-                    pos=e_pos,
-                    groups=[self.visible_sprites, self.npcs],
-                    wander_radius=int(_get_property(props, "wander_radius", 1)),
-                    sheet_name=_get_property(props, "sprite_sheet", "01-character.png"),
-                    element_id=_get_property(props, "element_id") or str(ent.get("id"))
-                )
-                npc.name = _get_property(props, "name", ent.get("name", ""))
-                npc.collision_func = self._is_collidable
-                logging.info(f"Spawned NPC '{npc.element_id}' at {e_pos}")
+                self._spawn_npc(ent, props, e_pos)
             elif entity_type == "object":
-                item_id = _get_property(props, "object_id")
-                sprite = _get_property(props, "sprite_sheet")
-                quantity = int(_get_property(props, "quantity", 1))
-                if item_id and sprite:
-                    PickupItem(
-                        pos=e_pos,
-                        groups=[self.visible_sprites, self.pickups],
-                        item_id=item_id,
-                        sprite_sheet=sprite,
-                        quantity=quantity,
-                        element_id=str(ent.get("id"))
-                    )
-                    logging.info(f"Spawned PickupItem '{item_id}' (x{quantity}) at {e_pos}")
+                self._spawn_pickup(ent, props, e_pos)
+
+    def _spawn_interactive(self, ent: dict, props: dict, map_name: str):
+        """Instantiate a single InteractiveEntity and restore persisted state."""
+        element_id = _get_property(props, "element_id") or str(ent.get("id"))
+        if _get_property(props, "sub_type") == "sign":
+            logging.info(f"Sign detected with ID: {element_id}")
+        target_id = _get_property(props, "target_id") or _get_property(props, "target")
+
+        entity = InteractiveEntity(
+            pos=(ent["x"], ent["y"]),
+            groups=[self.visible_sprites, self.interactives],
+            sub_type=_get_property(props, "sub_type", "unknown"),
+            sprite_sheet=_get_property(props, "sprite_sheet", ""),
+            position=int(_get_property(props, "position", 0)),
+            depth=int(_get_property(props, "depth", 1)),
+            start_row=int(_get_property(props, "start_frame", 0)),
+            end_row=int(_get_property(props, "end_frame", 3)),
+            width=int(_get_property(props, "width", ent.get("width", 32))),
+            height=int(_get_property(props, "height", ent.get("height", 32))),
+            tiled_width=ent.get("width", 32),
+            tiled_height=ent.get("height", 32),
+            obstacles_group=self.obstacles_group,
+            is_passable=_get_property(props, "is_passable", False),
+            is_animated=_get_property(props, "is_animated", False),
+            is_on=_get_property(props, "is_on"),
+            halo_size=int(_get_property(props, "halo_size", 0)),
+            halo_color=_get_property(props, "halo_color", "[255, 255, 255]"),
+            halo_alpha=int(_get_property(props, "halo_alpha", 130)),
+            particles=_get_property(props, "particles", False),
+            particle_count=int(_get_property(props, "particle_count", 0)),
+            element_id=element_id,
+            target_id=target_id,
+            activate_from_anywhere=_get_property(props, "activate_from_anywhere", False),
+            facing_direction=_get_property(props, "facing_direction"),
+            sfx=_get_property(props, "sfx", "")
+        )
+
+        tiled_id = ent.get("id")
+        if tiled_id is not None and map_name:
+            key = WorldState.make_key(map_name, tiled_id)
+            entity._world_state_key = key
+            saved_state = self.world_state.get(key)
+            if saved_state is not None:
+                entity.restore_state(saved_state)
+
+    def _spawn_teleport(self, ent: dict, props: dict):
+        """Instantiate a Teleport trigger from map data."""
+        t_rect = pygame.Rect(ent["x"], ent["y"], ent.get("width", 32), ent.get("height", 32))
+        tp = Teleport(
+            t_rect,
+            [self.teleports_group],
+            _get_property(props, "target_map", ""),
+            _get_property(props, "target_spawn_id", ""),
+            _get_property(props, "transition_type", "instant"),
+            _get_property(props, "required_direction", "any")
+        )
+        tp.sfx = _get_property(props, "sfx", "")
+
+    def _spawn_npc(self, ent: dict, props: dict, e_pos: tuple):
+        """Instantiate an NPC from map data."""
+        npc = NPC(
+            pos=e_pos,
+            groups=[self.visible_sprites, self.npcs],
+            wander_radius=int(_get_property(props, "wander_radius", 1)),
+            sheet_name=_get_property(props, "sprite_sheet", "01-character.png"),
+            element_id=_get_property(props, "element_id") or str(ent.get("id"))
+        )
+        npc.name = _get_property(props, "name", ent.get("name", ""))
+        npc.collision_func = self._is_collidable
+        logging.info(f"Spawned NPC '{npc.element_id}' at {e_pos}")
+
+    def _spawn_pickup(self, ent: dict, props: dict, e_pos: tuple):
+        """Instantiate a PickupItem from map data."""
+        item_id = _get_property(props, "object_id")
+        sprite = _get_property(props, "sprite_sheet")
+        quantity = int(_get_property(props, "quantity", 1))
+        if item_id and sprite:
+            PickupItem(
+                pos=e_pos,
+                groups=[self.visible_sprites, self.pickups],
+                item_id=item_id,
+                sprite_sheet=sprite,
+                quantity=quantity,
+                element_id=str(ent.get("id"))
+            )
+            logging.info(f"Spawned PickupItem '{item_id}' (x{quantity}) at {e_pos}")
+
 
     def _is_collidable(self, px_center: float, py_center: float, requester=None) -> bool:
         """Collision checking adapter for Entity target position."""
@@ -401,7 +414,7 @@ class Game:
         map_base = self._current_map_name.split('.')[0]
         full_key = f"{map_base}-{element_id}"
         
-        msg = I18nManager().get(f"dialogues.{full_key}")
+        msg = self.i18n.get(f"dialogues.{full_key}")
         if msg:
             self.dialogue_manager.start_dialogue(msg, title=title)
         else:
@@ -534,7 +547,6 @@ class Game:
             self._draw_hud()
         
         # Draw Emotes (after HUD, with camera offset)
-        cam_offset = self.visible_sprites.offset
         for sprite in self.emote_group:
             screen_pos = (sprite.rect.x + cam_offset.x, sprite.rect.y + cam_offset.y)
             self.screen.blit(sprite.image, screen_pos)

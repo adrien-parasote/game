@@ -56,74 +56,87 @@ class InteractionManager:
                 self.game.player.playerEmote('question')
 
     def _check_proximity_emotes(self):
-        """Trigger 'interact' emote when near an interactive object or NPC."""
-        # Only check if cooldown is over to avoid spamming
+        """Trigger proximity emotes when near interactive objects, pickups or NPCs."""
         if self._emote_cooldown > 0:
             return
-            
+        if self._check_interactive_emote():
+            return
+        if self._check_pickup_emote():
+            return
+        self._check_npc_emote()
+
+    def _check_interactive_emote(self) -> bool:
+        """Trigger 'interact' emote near a valid interactive object. Returns True if triggered."""
         p_pos = self.game.player.pos
         p_state = self.game.player.current_state
-        range_dist = 48.0 # 48 pixels
-        
-        # Check Objects
+        range_dist = 48.0
+
         for obj in self.game.interactives:
-                dist = p_pos.distance_to(obj.pos)
-                if dist >= range_dist:   # distance guard — mirrors NPC/pickup loops
-                    continue
+            dist = p_pos.distance_to(obj.pos)
+            if dist >= range_dist:
+                continue
 
-                is_on_top = dist < 16.0 and getattr(obj, "is_passable", False)
-                is_aligned = abs(p_pos.x - obj.pos.x) < 20 or abs(p_pos.y - obj.pos.y) < 20
-                
-                valid_position = False
-                if is_on_top:
-                    valid_position = True
-                elif getattr(obj, "activate_from_anywhere", False):
-                    valid_position = is_aligned and self._facing_toward(p_pos, p_state, obj.pos)
-                else:
-                    valid_position = is_aligned and self._verify_orientation(obj, p_state, p_pos)
-                    
-                if valid_position:
-                    # Suppress emote if the object is open/activated and is a container/barrier type
-                    if obj.is_on and getattr(obj, "sub_type", "") == "chest":
-                        continue
-                    if obj.is_on and getattr(obj, "sub_type", "") == "door":
-                        continue
-                        
-                    if obj != getattr(self, '_last_proximity_target', None):
-                        self.game.player.playerEmote('interact')
-                        self._emote_cooldown = 0.8 # 0.6s animation + 0.2s pause
-                        self._last_proximity_target = obj
-                    return
+            is_on_top = dist < 16.0 and getattr(obj, "is_passable", False)
+            is_aligned = abs(p_pos.x - obj.pos.x) < 20 or abs(p_pos.y - obj.pos.y) < 20
 
-                
-        # Check Pickups
+            if is_on_top:
+                valid_position = True
+            elif getattr(obj, "activate_from_anywhere", False):
+                valid_position = is_aligned and self._facing_toward(p_pos, p_state, obj.pos)
+            else:
+                valid_position = is_aligned and self._verify_orientation(obj, p_state, p_pos)
+
+            if not valid_position:
+                continue
+            if obj.is_on and getattr(obj, "sub_type", "") in ("chest", "door"):
+                continue
+            if obj != getattr(self, '_last_proximity_target', None):
+                self.game.player.playerEmote('interact')
+                self._emote_cooldown = 0.8
+                self._last_proximity_target = obj
+            return True
+
+        return False
+
+    def _check_pickup_emote(self) -> bool:
+        """Trigger 'question' emote near a pickup. Returns True if triggered."""
+        p_pos = self.game.player.pos
+        p_state = self.game.player.current_state
+        range_dist = 48.0
+
         for pickup in self.game.pickups:
             dist = p_pos.distance_to(pickup.pos)
-            if dist < range_dist:
-                is_on_top = dist < 16.0
-                is_aligned = abs(p_pos.x - pickup.pos.x) < 20 or abs(p_pos.y - pickup.pos.y) < 20
-                if is_on_top or (is_aligned and self._facing_toward(p_pos, p_state, pickup.pos)):
-                    if pickup != getattr(self, '_last_proximity_target', None):
-                        self.game.player.playerEmote('question')
-                        self._emote_cooldown = 0.8
-                        self._last_proximity_target = pickup
-                    return
+            if dist >= range_dist:
+                continue
+            is_on_top = dist < 16.0
+            is_aligned = abs(p_pos.x - pickup.pos.x) < 20 or abs(p_pos.y - pickup.pos.y) < 20
+            if is_on_top or (is_aligned and self._facing_toward(p_pos, p_state, pickup.pos)):
+                if pickup != getattr(self, '_last_proximity_target', None):
+                    self.game.player.playerEmote('question')
+                    self._emote_cooldown = 0.8
+                    self._last_proximity_target = pickup
+                return True
 
-        # Check NPCs
+        return False
+
+    def _check_npc_emote(self):
+        """Trigger 'interact' emote near an NPC. Resets target if nothing in range."""
+        p_pos = self.game.player.pos
+        p_state = self.game.player.current_state
+        range_dist = 48.0
+
         for npc in self.game.npcs:
-            if p_pos.distance_to(npc.pos) < range_dist:
-                is_aligned = abs(p_pos.x - npc.pos.x) < 20 or abs(p_pos.y - npc.pos.y) < 20
-                is_facing = self._facing_toward(p_pos, p_state, npc.pos)
-                if is_aligned and is_facing:
-                    if npc != getattr(self, '_last_proximity_target', None):
-                        self.game.player.playerEmote('interact')
-                        self._emote_cooldown = 0.8 # 0.6s animation + 0.2s pause
-                        self._last_proximity_target = npc
-                    return
-                
-        # Reset if nothing is in range
-        self._last_proximity_target = None
+            if p_pos.distance_to(npc.pos) >= range_dist:
+                continue
+            is_aligned = abs(p_pos.x - npc.pos.x) < 20 or abs(p_pos.y - npc.pos.y) < 20
+            if is_aligned and self._facing_toward(p_pos, p_state, npc.pos):
+                if npc != getattr(self, '_last_proximity_target', None):
+                    self.game.player.playerEmote('interact')
+                    self._emote_cooldown = 0.8
+                    self._last_proximity_target = npc
+                return
 
+        self._last_proximity_target = None
 
 
     def _check_npc_interactions(self) -> bool:
@@ -260,9 +273,6 @@ class InteractionManager:
         # Enforce orthogonal alignment
         x_aligned = abs(p_pos.x - o_pos.x) < 20
         y_aligned = abs(p_pos.y - o_pos.y) < 20
-        
-        # DEBUG LOGGING (to trace the exact reason for failure)
-        # logging.info(f"[Verify] o_dir={o_dir}, p_state={p_state}, x_aligned={x_aligned}, y_aligned={y_aligned}, p_pos={p_pos}, o_pos={o_pos}")
         
         # Standard directional check (player must be at the object's front)
         if o_dir == 'up' and p_state == 'down' and p_pos.y < o_pos.y and x_aligned:

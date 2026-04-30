@@ -180,10 +180,10 @@ The engine uses a multi-pass rendering pipeline to combine layers, entities, and
 
 1.  **Pass 1: Background**: Draw map layers with `depth=0`.
 2.  **Pass 2: Sorted Entities**: Draw `visible_sprites` using Y-Sorting.
-3.  **Pass 4: Environmental Overlay**:
+3.  **Pass 3: Foreground**: Draw map layers with `depth=1` (Occlusion).
+4.  **Pass 4: Environmental Overlay**:
     *   **Night Surface**: If `night_alpha > 0`, blit a full-screen black overlay with `SRCALPHA`.
     *   **Light Halos**: Blit pre-calculated light masks using `BLEND_RGB_ADD` **after** the night overlay to "cut through" the darkness.
-4.  **Pass 3: Foreground**: Draw map layers with `depth=1` (Occlusion).
 5.  **Pass 5: UI/HUD**: Draw clock, season, and active dialogue boxes.
 6.  **Pass 6: Player Emotes**: Rendered manually from `emote_group` with camera offset after the HUD to ensure top-level visibility.
 7.  **Pass 7: Custom Cursor**: The absolute last rendering step. Size is configurable via `Settings.CURSOR_SIZE`.

@@ -201,88 +201,75 @@ class InventoryUI:
     def draw(self, screen):
         if not self.is_open:
             return
-            
+
         s = self.scale_factor
-        # 1. Draw Background
         screen.blit(self.bg, self.bg_rect)
-        
-        # 2. Draw Active Tab Highlight
         screen.blit(self.active_tab_img, self.tab_rects[self.active_tab])
-        
-        # 3. Draw Character Preview
-        # Selecting row based on preview state (down: 0, left: 4, right: 8, up: 12)
+
+        # Character preview
         row_offsets = {'down': 0, 'left': 4, 'right': 8, 'up': 12}
         offset = row_offsets.get(self.preview_state, 0)
-        
         try:
             char_image = self.player.frames[offset + self.anim_frame]
-            # Base size preview (no scaling)
-            preview_rect = char_image.get_rect(center=self.char_preview_pos)
-            screen.blit(char_image, preview_rect)
+            screen.blit(char_image, char_image.get_rect(center=self.char_preview_pos))
         except Exception as e:
             logging.error(f"InventoryUI: Character preview failed: {e}")
 
-        # Draw Player Name (Bottom of Orange zone)
-        name_text = self.noble_font.render("Player", True, (60, 40, 30)) # Dark brown for parchment style
-        name_rect = name_text.get_rect(midbottom=self.char_name_pos)
-        screen.blit(name_text, name_rect)
+        name_text = self.noble_font.render("Player", True, (60, 40, 30))
+        screen.blit(name_text, name_text.get_rect(midbottom=self.char_name_pos))
 
-        # 4. Equipment Zones (Interaction only, no image as per request)
-        # 5. Draw Inventory Grid (only if tab 0 is active)
         if self.active_tab == 0:
-            for row in range(self.grid_rows):
-                for col in range(self.grid_cols):
-                    x = self.grid_start[0] + (col * self.grid_spacing_x)
-                    y = self.grid_start[1] + (row * self.grid_spacing_y)
-                    # Center slot image on the calculated grid point
-                    slot_rect = self.slot_img.get_rect(center=(x, y))
-                    screen.blit(self.slot_img, slot_rect)
-                    
-                    # Draw Item Icon if slot is occupied
-                    index = row * self.grid_cols + col
-                    item = self.player.inventory.get_item_at(index)
-                    if item:
-                        icon = self._get_item_icon(item.icon if item.icon else f"{item.id}.png")
-                        if icon:
-                            icon_rect = icon.get_rect(center=(x, y))
-                            screen.blit(icon, icon_rect)
-                        
-                        # Draw Quantity if > 1
-                        if item.quantity > 1:
-                            qty_text = self.tech_font.render(f"x{item.quantity}", True, (60, 40, 30))
-                            margin = int(8 * s)
-                            qty_rect = qty_text.get_rect(bottomright=(slot_rect.right - margin, slot_rect.bottom - margin))
-                            screen.blit(qty_text, qty_rect)
+            self._draw_grid(screen, s)
 
-        # 6. Draw Hover Highlight
-        if self.hovered_slot:
-            slot_type, value = self.hovered_slot
-            if slot_type == "equipment":
-                pos = self.equipment_slots[value]
-                rect = pygame.Rect(0, 0, self.equip_rect_side, self.equip_rect_side)
-                rect.center = pos
-                # Gold border (brightening effect) with rounded corners
-                pygame.draw.rect(screen, (255, 215, 0), rect, 3, border_radius=int(12 * s))
-            elif slot_type == "grid":
-                row = value // self.grid_cols
-                col = value % self.grid_cols
-                pos = (self.grid_start[0] + (col * self.grid_spacing_x),
-                       self.grid_start[1] + (row * self.grid_spacing_y))
-                hover_rect = self.hover_img.get_rect(center=pos)
-                screen.blit(self.hover_img, hover_rect)
-
-        # 7. Draw Stats or Item Info (Info Zone - Bottom Right)
+        self._draw_equipment_slots(screen, s)
         self._draw_info_zone(screen)
+        self._draw_cursor(screen)
 
-        # 8. Draw Custom Cursor (Always on top - must be last)
+    def _draw_grid(self, screen, s):
+        """Draw inventory grid slots and item icons for the active tab."""
+        for row in range(self.grid_rows):
+            for col in range(self.grid_cols):
+                x = self.grid_start[0] + (col * self.grid_spacing_x)
+                y = self.grid_start[1] + (row * self.grid_spacing_y)
+                slot_rect = self.slot_img.get_rect(center=(x, y))
+                screen.blit(self.slot_img, slot_rect)
+
+                index = row * self.grid_cols + col
+                item = self.player.inventory.get_item_at(index)
+                if not item:
+                    continue
+                icon = self._get_item_icon(item.icon if item.icon else f"{item.id}.png")
+                if icon:
+                    screen.blit(icon, icon.get_rect(center=(x, y)))
+                if item.quantity > 1:
+                    qty_text = self.tech_font.render(f"x{item.quantity}", True, (60, 40, 30))
+                    margin = int(8 * s)
+                    screen.blit(qty_text, qty_text.get_rect(bottomright=(slot_rect.right - margin, slot_rect.bottom - margin)))
+
+        if self.hovered_slot and self.hovered_slot[0] == "grid":
+            _, value = self.hovered_slot
+            col, row = value % self.grid_cols, value // self.grid_cols
+            pos = (self.grid_start[0] + col * self.grid_spacing_x,
+                   self.grid_start[1] + row * self.grid_spacing_y)
+            screen.blit(self.hover_img, self.hover_img.get_rect(center=pos))
+
+    def _draw_equipment_slots(self, screen, s):
+        """Draw gold border on hovered equipment slot."""
+        if not self.hovered_slot or self.hovered_slot[0] != "equipment":
+            return
+        _, name = self.hovered_slot
+        pos = self.equipment_slots[name]
+        rect = pygame.Rect(0, 0, self.equip_rect_side, self.equip_rect_side)
+        rect.center = pos
+        pygame.draw.rect(screen, (255, 215, 0), rect, 3, border_radius=int(12 * s))
+
+    def _draw_cursor(self, screen):
+        """Draw custom cursor on top of all UI elements."""
         mouse_pos = pygame.mouse.get_pos()
-        if pygame.mouse.get_pressed()[0]:
-            cursor_img = self.pointer_select_img
-        else:
-            cursor_img = self.pointer_img
-        
-        # Offset cursor slightly so tip is at mouse position
+        cursor_img = self.pointer_select_img if pygame.mouse.get_pressed()[0] else self.pointer_img
         screen.blit(cursor_img, mouse_pos)
+
+
 
     def _draw_info_zone(self, screen):
         """Draw either character stats or hovered item info in the green bar."""

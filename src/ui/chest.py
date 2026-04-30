@@ -345,11 +345,9 @@ class ChestUI:
         slot_size = int(_SLOT_ORIG_PX * _INV_SCALE)
         step      = int(_STEP_ORIG_PX * _INV_SCALE)
 
-        # Scale slot & hover images
+        # Scale slot & hover images (use already-loaded attribute — no disk I/O)
         if self._slot_img is not None:
-            self._slot_img = pygame.transform.smoothscale(
-                self._load_slot_image(), (slot_size, slot_size)
-            )
+            self._slot_img = pygame.transform.smoothscale(self._slot_img, (slot_size, slot_size))
         try:
             raw = pygame.image.load(ASSET_SLOT_HOVER).convert_alpha()
             self._hover_img = pygame.transform.smoothscale(raw, (slot_size, slot_size))

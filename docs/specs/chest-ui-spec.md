@@ -58,7 +58,7 @@ Named constants in `src/ui/chest.py`:
 ```python
 _TITLE_ZONE_REL   = (0.29, 0.02, 0.71, 0.23)
 _CONTENT_ZONE_REL = (0.11, 0.27, 0.89, 0.93)
-_SLOT_COLS = 7
+_SLOT_COLS = 10
 _SLOT_ROWS = 2
 ```
 
@@ -69,9 +69,10 @@ _SLOT_ROWS = 2
 
 ### 4.3 Slot Grid
 
-- **Layout:** 7 columns x 2 rows = 14 slots.
-- **Size per slot:** `slot_size = min(content_rect.width // _SLOT_COLS, content_rect.height // _SLOT_ROWS)`.
-- **Centering:** Equal padding computed as `padding_x = (content_rect.width - COLS * slot_size) // 2`, same for y.
+- **Layout:** 10 columns x 2 rows = 20 slots (validated visually — Assumption A-04 resolved).
+- **Size per slot:** Mirrors `InventoryUI` scale: `slot_size = int(55 * (1200 / 1344))`.
+- **Step:** `step = int(72 * (1200 / 1344))` — consistent spacing.
+- **Centering:** `origin = content_rect.center - (grid_w // 2, grid_h // 2) + (0, _GRID_OFFSET_Y)`.
 - **Rendering:** Each slot: `screen.blit(slot_img, slot_img.get_rect(center=(cx, cy)))`.
 
 ### 4.4 Title Zone
@@ -93,7 +94,7 @@ Player presses E near closed chest (is_on=False)
     → obj.sfx played
     → obj._world_state_key saved
     → if obj.sub_type == 'chest' and obj.is_on == True:
-        game.chest_ui.open(obj)
+        game.chest_ui.open(obj, game.player)   # ← 2 args: entity + player
         self._open_chest_entity = obj
   → return True
 ```
@@ -172,26 +173,44 @@ if obj.is_on and obj.sub_type == "door":
 class ChestUI:
     is_open: bool
     _chest_entity: Any
+    _player: Any
 
     def __init__(self) -> None
-    def open(entity) -> None
+    def open(entity, player) -> None        # 2 args: chest entity + player
     def close() -> None
     def draw(screen: pygame.Surface) -> None
+    def update_hover(mouse_pos: tuple[int, int]) -> None
+    def handle_event(event: pygame.event.Event) -> None
 ```
 
 **Private methods:**
 ```python
     def _load_background(self) -> pygame.Surface | None
+    def _load_inv_background(self) -> pygame.Surface | None
     def _load_slot_image(self) -> pygame.Surface | None
+    def _load_cursor(self, path: str) -> pygame.Surface | None
+    def _load_and_scale_arrow(self, path: str, scale: float) -> pygame.Surface | None
+    def _get_item_icon(self, icon_filename: str, slot_size: int) -> pygame.Surface | None
     def _compute_layout(self) -> None
+    def _compute_inv_layout(self, slot_size, step, screen_w, screen_h, arrow_scale) -> None
+    def _capacity(self) -> int
+    def _can_scroll_left(self) -> bool
+    def _can_scroll_right(self) -> bool
+    def _scroll_right(self) -> None
+    def _scroll_left(self) -> None
+    def _current_page_slots(self) -> list
     def _draw_title(self, screen: pygame.Surface) -> None
     def _draw_slots(self, screen: pygame.Surface) -> None
+    def _draw_arrow_hovers(self, screen: pygame.Surface) -> None
+    def _draw_inv_slots(self, screen: pygame.Surface) -> None
+    def _draw_inv_arrows(self, screen: pygame.Surface) -> None
+    def _draw_cursor(self, screen: pygame.Surface) -> None
 ```
 
 **Constraints:**
-- File < 200 lines.
+- File < 700 lines (dual-panel implementation, v1.1+).
 - All methods < 50 lines.
-- No state mutation after `_compute_layout()` except `is_open` and `_chest_entity`.
+- No state mutation after `_compute_layout()` except `is_open`, `_chest_entity`, `_player`, hover state, and `_inv_offset`.
 - No assets loaded in `draw()`.
 
 ---

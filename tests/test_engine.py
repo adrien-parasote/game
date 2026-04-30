@@ -258,7 +258,7 @@ def test_game_is_collidable(mock_load):
     
     # 1. Map boundary collision
     game.map_manager.check_collision.return_value = True
-    assert game._is_collidable(pygame.math.Vector2(0, 0), MagicMock()) is True
+    assert game._is_collidable(0.0, 0.0) is True
     game.map_manager.check_collision.return_value = False
     
     # 2. Obstacles collision
@@ -267,20 +267,20 @@ def test_game_is_collidable(mock_load):
     game.obstacles_group.add(mock_obs)
     
     requester = MagicMock()
-    assert game._is_collidable(pygame.math.Vector2(0, 0), requester) is True
+    assert game._is_collidable(0.0, 0.0, requester) is True
     
     # 3. NPC collision
-    mock_obs.rect = pygame.Rect(100, 100, 20, 20) # Move obstacle out
+    mock_obs.rect = pygame.Rect(100, 100, 20, 20)  # Move obstacle out
     mock_npc = DummySprite()
     mock_npc.rect = pygame.Rect(-10, -10, 20, 20)
     game.npcs.add(mock_npc)
-    assert game._is_collidable(pygame.math.Vector2(0, 0), requester) is True
+    assert game._is_collidable(0.0, 0.0, requester) is True
     
     # 4. Player collision
-    mock_npc.rect = pygame.Rect(100, 100, 20, 20) # Move NPC out
+    mock_npc.rect = pygame.Rect(100, 100, 20, 20)  # Move NPC out
     game.player = MagicMock()
     game.player.rect = pygame.Rect(-10, -10, 20, 20)
-    assert game._is_collidable(pygame.math.Vector2(0, 0), requester) is True
+    assert game._is_collidable(0.0, 0.0, requester) is True
 
 @patch('src.engine.game.Game._load_map')
 def test_game_draw_layers(mock_load):
