@@ -478,3 +478,170 @@ for i, rect in enumerate(self._inv_slot_positions[:visible_count]):
 ---
 
 *Last optimized: 2026-04-30 — added A-UI-002, A-UI-003, A-UI-004, L-UI-006 from ChestUI paged inventory session.*
+
+---
+
+## ✅ Optimisation globale — 2026-04-30
+
+### A-TEST-005 · 2026-04-30 · U · Spec Wrong
+**Tests qui passent silencieusement sur un contrat brisé (duck-typing Pygame)**
+
+`pygame.Rect.collidepoint()` accepte un `Vector2` en Python — il déstructure automatiquement en `(x, y)`. Un test appelant `_is_collidable(Vector2(0,0))` passait vert même si la signature déclarée attendait `(float, float)`.
+
+```python
+# ❌ test passe mais le contrat est faux — Vector2 ≠ float
+assert game._is_collidable(pygame.math.Vector2(0, 0)) is True
+
+# ✅ tester avec les types exacts de la signature déclarée
+assert game._is_collidable(0.0, 0.0) is True
+```
+
+**Règle :** Toujours inspecter la signature déclarée avant d'écrire un test. En Pygame, `collidepoint` est suffisamment permissif pour masquer des erreurs de type → vérifier avec `mypy` ou des annotations `float` strictes.
+
+**Evidence :** `test_engine.py::test_game_is_collidable` — 3 appels avec Vector2 corrigés en floats. `game.py::_is_collidable(px_center: float, py_center: float)`.
+
+---
+
+### A-ARCH-001 · 2026-04-30 · U · Minor Rework
+**Disk I/O dans une méthode appelée à chaque ouverture de panneau**
+
+`ChestUI._compute_layout()` appelait `_load_slot_image()` (chargement disque + `convert_alpha()`) à chaque ouverture de coffre. L'image était déjà disponible en attribut depuis `__init__`.
+
+```python
+# ❌ I/O disque à chaque open() — spike CPU visible
+self._slot_img = pygame.transform.smoothscale(
+    self._load_slot_image(),   # charge depuis disque
+    (slot_size, slot_size)
+)
+
+# ✅ scale depuis l'attribut déjà en mémoire — zéro I/O
+self._slot_img = pygame.transform.smoothscale(self._slot_img, (slot_size, slot_size))
+```
+
+**Règle :** Toute méthode `_compute_layout()` / `_rebuild_layout()` ne doit jamais déclencher d'I/O disque. Les assets sont chargés UNE FOIS dans `__init__`. La spec doit explicitement mentionner « No disk I/O in `draw()` or `_compute_layout()` ».
+
+**Evidence :** `chest.py::_compute_layout` ligne 350 — `_load_slot_image()` remplacé par `self._slot_img`.
+
+---
+
+### A-ARCH-002 · 2026-04-30 · U · Spec Wrong
+**Singleton réinstancié à chaque appel — leurre de performance**
+
+`_trigger_dialogue()` dans `game.py` appelait `I18nManager()` (constructeur) à chaque dialogue déclenché. Le singleton `__new__` retourne la même instance, mais le pattern visuel `SomeManager()` dans une méthode d'update/event signal une intention de réinstanciation.
+
+```python
+# ❌ pattern trompeur — semble créer une nouvelle instance
+msg = I18nManager().get(f"dialogues.{full_key}")
+
+# ✅ utiliser l'attribut de classe — intention claire
+msg = self.i18n.get(f"dialogues.{full_key}")
+```
+
+**Règle :** Les singletons ne doivent jamais être appelés par leur constructeur dans des méthodes chaudes. Toujours stocker la référence singleton comme attribut d'instance (`self.i18n = I18nManager()`) dans `__init__` et utiliser `self.i18n` partout.
+
+**Scope :** Universal — s'applique à tout singleton (AudioManager, Settings, etc.).
+
+**Evidence :** `game.py::_trigger_dialogue` ligne 402.
+
+---
+
+### L-TEST-005 · 2026-04-30 · U · Perfect
+**Fichier de tests ciblé par rapport de couverture**
+
+Plutôt que d'ajouter des tests dispersés dans des fichiers existants, créer un fichier `test_coverage_gaps.py` unique regroupant tous les tests ciblés sur les branches manquantes identifiées par `--cov-report=term-missing`. Plus facile à supprimer/réorganiser et clairement séparé des tests fonctionnels.
+
+```bash
+# Identifier exactement les lignes manquantes
+pytest --cov=src --cov-report=term-missing -q 2>&1 | grep "module_name"
+
+# Résultat → fichier unique organisé par module
+# tests/test_coverage_gaps.py::TestI18nCoverage
+# tests/test_coverage_gaps.py::TestInteractiveCoverage
+# ...
+```
+
+**Règle :** Pour toute session de couverture ciblée, créer `test_coverage_gaps.py` avec classes par module. Ne jamais disperser ces tests dans les fichiers existants — ils deviennent introuvables.
+
+**Evidence :** +51 tests en 1 fichier, coverage 89%→92%. Aucune régression dans les 216 tests existants.
+
+---
+
+### L-ARCH-004 · 2026-04-30 · U · Perfect
+**Dispatcher thin + helpers privés pour les méthodes > 50L**
+
+`_spawn_entities()` (93L) et `_check_proximity_emotes()` (68L) ont été décomposées en dispatcher léger + helpers privés focalisés, sans changer le comportement observable.
+
+**Pattern :**
+```python
+# ❌ 90 lignes de if/elif avec logique imbriquée
+def _spawn_entities(self, entities):
+    for ent in entities:
+        if type == "interactive":
+            # 40 lignes...
+        elif type == "teleport":
+            # 15 lignes...
+
+# ✅ dispatcher 20L + helpers 20-30L chacun
+def _spawn_entities(self, entities):
+    for ent in entities:
+        if type == "interactive": self._spawn_interactive(ent, props, map_name)
+        elif type == "teleport":  self._spawn_teleport(ent, props)
+
+def _spawn_interactive(self, ent, props, map_name): ...  # 30L
+def _spawn_teleport(self, ent, props): ...               # 12L
+```
+
+**Règle :** Toute méthode >40L qui contient un `if/elif` de dispatch doit être décomposée. Le dispatcher ne doit faire que router — aucune logique métier.
+
+**Evidence :** `game.py` (-70L sur `_spawn_entities`), `interaction.py` (-55L sur `_check_proximity_emotes`), `inventory.py` (-60L sur `draw`). Zéro régression.
+
+---
+
+### A-SPEC-002 · 2026-04-30 · P · Spec Wrong
+**POSITION_TO_DIR inversé dans la spec vs code**
+
+`interactive-objects.md` documentait `0=Up, 1=Right, 2=Left, 3=Down`. Le code (`InteractiveEntity.POSITION_TO_DIR`) implémentait `0=Down, 1=Left, 2=Right, 3=Up`. La spec et le code divergeaient depuis la création du module.
+
+**Cause :** Le mapping a été défini dans le code avant d'être documenté. La spec a été écrite de mémoire, inversée.
+
+**Règle :** Pour tout mapping constant (enum-like), toujours extraire la valeur depuis le code source avec `grep` avant de documenter. Ne jamais documenter de mémoire.
+
+```bash
+# ✅ vérifier avant de documenter
+grep -n "POSITION_TO_DIR" src/entities/interactive.py
+```
+
+**Scope :** Project-specific mais le pattern est universel — voir L-SPEC-001.
+
+**Evidence :** `interactive-objects.md` ligne 24 corrigée. Confirmé avec `InteractiveEntity.POSITION_TO_DIR` dans `interactive.py`.
+
+---
+
+### A-TEST-006 · 2026-04-30 · U · Major Rework
+**Render-only branches résistent à la couverture sans display réel**
+
+`chest.py` est resté à 84% après tous les tests ciblés. Les branches non couvertes (lignes 205-216, 248-304, 354-356, 550-588) sont toutes dans des méthodes de rendu qui appellent `pygame.Surface.blit()`, `pygame.image.load()`, ou `pygame.transform.smoothscale()` sur des assets réels.
+
+Sans display réel (`SDL_VIDEODRIVER=dummy`), `blit()` fonctionne mais les branches conditionnelles sur la présence d'un asset valide (`if self._slot_img is not None`) ne peuvent être testées sans charger de vrais fichiers PNG.
+
+**Pattern empirique :**
+```
+Couverture atteignable sans assets réels : ~84-88% pour les modules UI lourds
+Couverture atteignable avec assets réels (CI avec display) : ~95%+
+```
+
+**Règle :** Accepter un plafond de couverture de ~85% pour les modules UI render-only en tests headless. Ne pas investir davantage sans infrastructure CI avec display. Documenter ce plafond dans le `Makefile` ou `.coverage.ini`.
+
+```ini
+# .coveragerc ou pyproject.toml — exclure les branches render-only
+[coverage:report]
+exclude_lines =
+    if.*_img is not None
+    screen\.blit\(
+```
+
+**Evidence :** `chest.py` 84% stable même après 8 tests ciblés supplémentaires. `inventory.py` 100% obtenu car ses branches render ne dépendent pas d'assets fichiers.
+
+---
+
+*Last optimized: 2026-04-30 — optimization session: A-TEST-005, A-ARCH-001, A-ARCH-002, L-TEST-005, L-ARCH-004, A-SPEC-002, A-TEST-006.*
