@@ -83,6 +83,155 @@ def test_npc_ai_state_machine(mock_spritesheet):
     assert npc.state == 'wander'
     assert npc.is_moving is True
 
+
+def test_npc_interact_faces_initiator_horizontal(mock_spritesheet):
+    """NPC faces initiator when horizontal delta is dominant."""
+    npc = NPC((48, 48), wander_radius=5)
+    initiator = MagicMock()
+    # Initiator is to the right of NPC
+    initiator.pos = pygame.math.Vector2(200, 48)
+    result = npc.interact(initiator)
+    assert npc.state == 'interact'
+    assert npc.current_facing == 'right'
+    assert result == npc.element_id
+
+
+def test_npc_interact_faces_initiator_left(mock_spritesheet):
+    """NPC faces left when initiator is to the left."""
+    npc = NPC((48, 48), wander_radius=5)
+    initiator = MagicMock()
+    initiator.pos = pygame.math.Vector2(0, 48)  # left
+    npc.interact(initiator)
+    assert npc.current_facing == 'left'
+
+
+def test_npc_interact_faces_initiator_down(mock_spritesheet):
+    """NPC faces down when initiator is below."""
+    npc = NPC((48, 48), wander_radius=5)
+    initiator = MagicMock()
+    initiator.pos = pygame.math.Vector2(48, 200)  # below
+    npc.interact(initiator)
+    assert npc.current_facing == 'down'
+
+
+def test_npc_interact_faces_initiator_up(mock_spritesheet):
+    """NPC faces up when initiator is above."""
+    npc = NPC((48, 48), wander_radius=5)
+    initiator = MagicMock()
+    initiator.pos = pygame.math.Vector2(48, 0)  # above
+    npc.interact(initiator)
+    assert npc.current_facing == 'up'
+
+
+def test_npc_interact_freezes_ai(mock_spritesheet):
+    """NPC in interact state skips process_ai."""
+    npc = NPC((48, 48), wander_radius=5)
+    npc.state = 'interact'
+    npc._action_timer = 100.0  # would normally trigger
+    npc._action_cooldown = 0
+    npc.process_ai(0.1)  # should do nothing
+    # Timer is NOT incremented by process_ai (it returns early)
+    assert npc._action_timer == 100.0
+
+
+def test_npc_start_move_zero_direction(mock_spritesheet):
+    """start_move returns early when direction is zero vector."""
+    npc = NPC((48, 48), wander_radius=5)
+    npc.direction = pygame.math.Vector2(0, 0)
+    npc.start_move()  # should not raise, is_moving stays False
+    assert npc.is_moving is False
+
+
+def test_npc_start_move_radius_exceeded(mock_spritesheet):
+    """start_move blocks move when target exceeds wander_radius."""
+    npc = NPC((48, 48), wander_radius=0)  # radius = 0 tiles
+    npc.state = 'wander'
+    npc.direction = pygame.math.Vector2(1, 0)
+    npc.start_move()
+    assert npc.state == 'idle'
+    assert npc.direction == pygame.math.Vector2(0, 0)
+
+
+def test_npc_start_move_blocked_by_collision_reverts_idle(mock_spritesheet):
+    """start_move reverts to idle when move is blocked by collision (line 75)."""
+    npc = NPC((48, 48), wander_radius=10)
+    npc.state = 'wander'
+    npc.direction = pygame.math.Vector2(1, 0)
+    # Patch super().start_move() so is_moving stays False (simulates collision)
+    with patch.object(type(npc).__bases__[0], 'start_move', lambda self: None):
+        npc.start_move()
+    assert npc.state == 'idle'
+
+
+def test_npc_process_ai_outside_radius_stays_idle(mock_spritesheet):
+    """process_ai keeps NPC idle when chosen direction exceeds radius."""
+    npc = NPC((48, 48), wander_radius=0)
+    npc._action_timer = 10.0
+    npc._action_cooldown = 0
+    # Force a direction that would exceed radius
+    with patch('random.choice', return_value=pygame.math.Vector2(1, 0)):
+        npc.process_ai(0.01)
+    assert npc.state == 'idle'
+
+
+def test_npc_process_ai_directions_left(mock_spritesheet):
+    """process_ai sets facing to left."""
+    npc = NPC((200, 200), wander_radius=10)
+    npc._action_timer = 10.0
+    npc._action_cooldown = 0
+    with patch('random.choice', return_value=pygame.math.Vector2(-1, 0)):
+        npc.process_ai(0.01)
+    assert npc.current_facing == 'left'
+
+
+def test_npc_process_ai_directions_up(mock_spritesheet):
+    """process_ai sets facing to up."""
+    npc = NPC((200, 200), wander_radius=10)
+    npc._action_timer = 10.0
+    npc._action_cooldown = 0
+    with patch('random.choice', return_value=pygame.math.Vector2(0, -1)):
+        npc.process_ai(0.01)
+    assert npc.current_facing == 'up'
+
+
+def test_npc_process_ai_stay_idle_choice(mock_spritesheet):
+    """process_ai keeps NPC idle when zero vector is chosen."""
+    npc = NPC((48, 48), wander_radius=5)
+    npc._action_timer = 10.0
+    npc._action_cooldown = 0
+    with patch('random.choice', return_value=pygame.math.Vector2(0, 0)):
+        npc.process_ai(0.01)
+    assert npc.state == 'idle'
+
+
+def test_npc_animation_idle_frame(mock_spritesheet):
+    """Animation frame stays at 0 when not moving."""
+    npc = NPC((48, 48), wander_radius=5)
+    npc.is_moving = False
+    npc.frame_index = 2.5
+    npc._update_animation(0.1)
+    assert npc.frame_index == 0.0
+
+
+def test_npc_update_invisible_skips(mock_spritesheet):
+    """update() returns early when is_visible is False."""
+    npc = NPC((48, 48), wander_radius=5)
+    npc.is_visible = False
+    npc._action_timer = 100.0
+    npc.update(1.0)  # should not raise or process AI
+    # Timer stays unchanged (no update ran)
+    assert npc._action_timer == 100.0
+
+
+def test_npc_interact_timer_reverts_to_idle(mock_spritesheet):
+    """NPC reverts from interact to idle when interact timer expires."""
+    npc = NPC((48, 48), wander_radius=5)
+    npc.state = 'interact'
+    npc._action_timer = 0.0
+    npc._action_cooldown = 0.1
+    npc.update(0.5)  # timer (0.5) >= cooldown (0.1)
+    assert npc.state == 'idle'
+
 # --- InteractiveEntity Tests ---
 
 def test_interactive_entity_states():
