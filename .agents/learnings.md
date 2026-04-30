@@ -299,6 +299,26 @@ pixel = pygame.image.tobytes(screen, "RGB")
 assert screen.get_at((x, y)) == (r, g, b, 255)
 ```
 
+### L-UI-005 · 2026-04-30 · U · Perfect
+**Pillow-driven layout analysis for background assets**
+
+Measuring relative zones (fractions) for UI elements by eye is slow and error-prone. 
+
+✅ **Use Pillow for automated zone detection.** Draw high-contrast marker pixels (e.g., Pure Red, Pure Blue) on the background asset. Run a script to extract the bounding box of these colors. Convert to relative fractions (`x/width`) to ensure scaling stability across resolutions.
+
+**Evidence:** `07-chest.png` red/blue zones scanned via PIL. commit `a960147`.
+
+---
+
+### A-UI-001 · 2026-04-30 · U · Minor Rework
+**Stretching small UI icons to fill interactive zones**
+
+Scaling small assets (e.g., 26x26 icons) to fill larger interactive button zones causes visual distortion and "pixel bloat."
+
+✅ **Scale by global factor and center.** Scale icons by the same global factor as the background (preserving native proportions), then blit them centered within the interactive zone rect instead of stretching to fill it. 
+
+**Evidence:** Chest UI arrow hover distortion fixed by centering. commit `a4c98cb`.
+
 ---
 
 ## 🔧 Spec & Agent Workflow
