@@ -187,7 +187,7 @@ class InteractionManager:
                         self._open_chest_entity = obj
                         # Open chest UI overlay
                         if hasattr(self.game, 'chest_ui'):
-                            self.game.chest_ui.open(obj)
+                            self.game.chest_ui.open(obj, self.game.player)
                     else:
                         # Chest closed via action key — hide UI and suppress emote
                         chest_ui = getattr(self.game, "chest_ui", None)

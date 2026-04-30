@@ -212,7 +212,7 @@ def test_handle_interaction_chest_opens_ui():
         
         im.handle_interactions()
         assert chest.interact.called
-        game.chest_ui.open.assert_called_with(chest)
+        game.chest_ui.open.assert_called_with(chest, game.player)
 
 def test_handle_interaction_chest_closes_ui_on_action_key():
     game = MagicMock()
