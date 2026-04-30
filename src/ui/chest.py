@@ -30,8 +30,8 @@ _TARGET_WIDTH = 900   # pixels – scaled width of the background
 # Arrow button zones (measured from 1200x340 source image, auto-scaled)
 _ARROW_UP_ZONE_REL   = (0.7233, 0.8294, 0.7625, 0.9500)  # red zone → up arrow
 _ARROW_DOWN_ZONE_REL = (0.7942, 0.8294, 0.8333, 0.9500)  # blue zone → down arrow
-_ARROW_OFFSET_X = 0  # px fine-tune horizontal (escape hatch)
-_ARROW_OFFSET_Y = 0  # px fine-tune vertical   (escape hatch)
+_ARROW_OFFSET_X = 1  # px fine-tune horizontal (escape hatch)
+_ARROW_OFFSET_Y = 1  # px fine-tune vertical   (escape hatch)
 
 class ChestUI:
     """Public interface for the chest overlay.
