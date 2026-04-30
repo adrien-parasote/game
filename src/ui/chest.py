@@ -90,8 +90,6 @@ class ChestUI:
         self._draw_title(screen)
         # Slots grid
         self._draw_slots(screen)
-        # Arrow buttons (up/down)
-        self._draw_arrows(screen)
         # Custom cursor (always on top — drawn last)
         self._draw_cursor(screen)
     def update_hover(self, mouse_pos: tuple[int, int]) -> None:
@@ -230,45 +228,6 @@ class ChestUI:
         if self._hovered_slot is not None and self._hover_img:
             hover_rect = self._hover_img.get_rect(center=self._slot_positions[self._hovered_slot].center)
             screen.blit(self._hover_img, hover_rect)
-
-    def _draw_arrows(self, screen: pygame.Surface) -> None:
-        """Draw up-arrow in the red zone and down-arrow in the blue zone."""
-        _ARROW_COLOR = (255, 255, 255)  # white, visible on any background
-        _ARROW_ALPHA = 220              # slight transparency for polish
-        for rect, direction in (
-            (self._arrow_up_rect,   "up"),
-            (self._arrow_down_rect, "down"),
-        ):
-            if rect is None:
-                continue
-            self._draw_triangle(screen, rect, direction, _ARROW_COLOR, _ARROW_ALPHA)
-
-    def _draw_triangle(
-        self,
-        screen: pygame.Surface,
-        zone: pygame.Rect,
-        direction: str,
-        color: tuple[int, int, int],
-        alpha: int,
-    ) -> None:
-        """Render a filled triangle centred in *zone*.
-        *direction* is 'up' or 'down'.
-        """
-        cx, cy = zone.centerx, zone.centery
-        # Arrow sized to ~55% of zone dimensions
-        hw = max(6, int(zone.width  * 0.55 // 2))   # half-base width
-        hh = max(5, int(zone.height * 0.55 // 2))   # half-height
-
-        if direction == "up":
-            pts = [(cx, cy - hh), (cx - hw, cy + hh), (cx + hw, cy + hh)]
-        else:
-            pts = [(cx, cy + hh), (cx - hw, cy - hh), (cx + hw, cy - hh)]
-
-        # Draw onto a temporary surface to apply alpha
-        surf = pygame.Surface((zone.width, zone.height), pygame.SRCALPHA)
-        local_pts = [(p[0] - zone.left, p[1] - zone.top) for p in pts]
-        pygame.draw.polygon(surf, (*color, alpha), local_pts)
-        screen.blit(surf, zone.topleft)
 
     def _load_cursor(self, path: str) -> pygame.Surface | None:
         """Load and scale a cursor image to Settings.CURSOR_SIZE."""
