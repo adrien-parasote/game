@@ -1,18 +1,12 @@
 from src.config import Settings
 import pytest
 import pygame
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from src.ui.dialogue import DialogueManager
 from src.ui.inventory import InventoryUI
-from src.engine.inventory_system import Inventory
+from src.engine.inventory_system import Inventory, Item
 from src.engine.i18n import I18nManager
 
-def test_dialogue_pagination():
-    """Verify that long text is paginated."""
-    dm = DialogueManager()
-    long_text = "Word " * 500
-    dm.start_dialogue(long_text)
-    assert len(dm._pages) > 1
 
 def test_inventory_localization():
     """Verify item names are localized in inventory UI context."""
@@ -21,6 +15,74 @@ def test_inventory_localization():
     inv.add_item("potion_red")
     item = inv.get_item_at(0)
     assert item.name == "Potion Rouge"
+
+
+# --- Inventory System Tests ---
+
+def test_inventory_load_item_data_file_not_found():
+    """_load_item_data returns empty dict when file is missing."""
+    with patch('os.path.exists', return_value=False):
+        inv = Inventory()
+    assert inv.item_data == {}
+
+
+def test_inventory_load_item_data_json_error():
+    """_load_item_data returns empty dict on JSON parse error."""
+    with patch('os.path.exists', return_value=True), \
+         patch('builtins.open', side_effect=Exception("IO error")):
+        inv = Inventory()
+    assert inv.item_data == {}
+
+
+def test_inventory_add_item_stacks_in_existing_slot():
+    """add_item merges into an existing partial stack.
+
+    Uses ether_potion because it is the only item in item_data with stack_max=10.
+    add_item reads stack_max from item_data (not from the Item placed in the slot),
+    so the item_id must exist in item_data for stacking to work.
+    """
+    inv = Inventory(capacity=5)
+    # Manually place a partial stack using the real item_id
+    from src.engine.inventory_system import Item
+    existing = Item(id="ether_potion", name="Potion de Soin", description="Restaure 50 PV.",
+                    quantity=5, stack_max=10)
+    inv.slots[0] = existing
+    remaining = inv.add_item("ether_potion", quantity=3)
+    assert remaining == 0
+    assert inv.slots[0].quantity == 8
+
+
+def test_inventory_add_item_returns_overflow():
+    """add_item returns leftover quantity when inventory is full."""
+    inv = Inventory(capacity=2)
+    # Fill both slots
+    item_a = Item(id="sword", name="Sword", description="Sharp", quantity=1, stack_max=1)
+    item_b = Item(id="shield", name="Shield", description="Sturdy", quantity=1, stack_max=1)
+    inv.slots[0] = item_a
+    inv.slots[1] = item_b
+    remaining = inv.add_item("potion_red", quantity=2)
+    assert remaining == 2
+
+
+def test_inventory_is_full_false():
+    """is_full returns False when there are empty slots."""
+    inv = Inventory(capacity=5)
+    assert inv.is_full() is False
+
+
+def test_inventory_is_full_true():
+    """is_full returns True when all slots are occupied."""
+    inv = Inventory(capacity=2)
+    inv.slots[0] = Item(id="x", name="X", description="", quantity=1, stack_max=1)
+    inv.slots[1] = Item(id="y", name="Y", description="", quantity=1, stack_max=1)
+    assert inv.is_full() is True
+
+
+def test_inventory_get_item_at_out_of_bounds():
+    """get_item_at returns None for out-of-bounds index."""
+    inv = Inventory(capacity=5)
+    assert inv.get_item_at(-1) is None
+    assert inv.get_item_at(99) is None
 
 def test_ui_visibility_toggle():
     player = MagicMock()

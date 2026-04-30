@@ -214,6 +214,34 @@ def test_handle_interaction_chest_opens_ui():
         assert chest.interact.called
         game.chest_ui.open.assert_called_with(chest)
 
+def test_handle_interaction_chest_closes_ui_on_action_key():
+    game = MagicMock()
+    im = InteractionManager(game)
+    im._interaction_cooldown = 0
+
+    game.player.pos = pygame.math.Vector2(100, 100)
+    game.player.current_state = 'down'
+    game.player.is_moving = False
+
+    # Chest is already open — pressing E should close it
+    game.chest_ui.is_open = True
+
+    with patch('pygame.key.get_pressed', return_value={Settings.INTERACT_KEY: True}):
+        chest = MagicMock()
+        chest.pos = pygame.math.Vector2(100, 120)
+        chest.direction_str = 'up'
+        chest.sub_type = 'chest'
+        chest.is_on = False  # interact() already toggled it to OFF
+        chest.interact.return_value = None
+
+        game.interactives = [chest]
+        im._open_chest_entity = chest
+
+        im.handle_interactions()
+        assert chest.interact.called
+        game.chest_ui.close.assert_called()
+        assert im._open_chest_entity is None
+
 def test_chest_auto_close_out_of_range():
     game = MagicMock()
     im = InteractionManager(game)
@@ -229,6 +257,7 @@ def test_chest_auto_close_out_of_range():
     game.player.pos = pygame.math.Vector2(500, 500)
     
     im._check_chest_auto_close()
+    assert chest.interact.called          # triggers closing animation
     assert game.chest_ui.close.called
     assert im._open_chest_entity is None
 
@@ -248,6 +277,7 @@ def test_chest_auto_close_wrong_orientation():
     game.player.current_state = 'up' # Facing AWAY from chest (chest is at y=120)
     
     im._check_chest_auto_close()
+    assert chest.interact.called          # triggers closing animation
     assert game.chest_ui.close.called
     assert im._open_chest_entity is None
 

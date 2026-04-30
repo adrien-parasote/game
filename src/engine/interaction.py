@@ -23,6 +23,7 @@ class InteractionManager:
             self._emote_cooldown = max(0, self._emote_cooldown - dt)
             
         self._check_proximity_emotes()
+        self._check_chest_auto_close()
 
     def handle_interactions(self):
         """Main entry point for checking interactions based on player input."""
@@ -117,7 +118,6 @@ class InteractionManager:
                     return
                 
         # Reset if nothing is in range
-        self._check_chest_auto_close()
         self._last_proximity_target = None
 
 
@@ -185,7 +185,13 @@ class InteractionManager:
                         if hasattr(self.game, 'chest_ui'):
                             self.game.chest_ui.open(obj)
                     else:
+                        # Chest closed via action key — hide UI and suppress emote
+                        chest_ui = getattr(self.game, "chest_ui", None)
+                        if chest_ui is not None and chest_ui.is_open:
+                            chest_ui.close()
                         self._open_chest_entity = None
+                        self._last_proximity_target = obj
+                        self._emote_cooldown = 1.0
                 return True
         return False
 
@@ -278,22 +284,37 @@ class InteractionManager:
         return False
 
     def _check_chest_auto_close(self) -> None:
-        """Auto-close chest UI when player leaves interaction zone."""
+        """Auto-close chest UI when player leaves interaction zone.
+
+        Mirrors the full close sequence: triggers the entity closing animation,
+        persists state in world_state, and hides the UI overlay.
+        """
         if getattr(self, "_open_chest_entity", None) is None:
             return
         chest_ui = getattr(self.game, "chest_ui", None)
-        if chest_ui is None:
+        if chest_ui is None or not chest_ui.is_open:
             return
-        if not chest_ui.is_open:
-            return
+
         player_pos = self.game.player.pos
         chest = self._open_chest_entity
         dist = player_pos.distance_to(chest.pos)
-        if dist > 45:
-            chest_ui.close()
-            self._open_chest_entity = None
-            return
-        if not self._verify_orientation(chest, self.game.player.current_state, player_pos):
-            chest_ui.close()
-            self._open_chest_entity = None
-            return
+        out_of_range = dist > 45
+        wrong_orientation = not self._verify_orientation(
+            chest, self.game.player.current_state, player_pos
+        )
+
+        if out_of_range or wrong_orientation:
+            self._close_chest(chest, chest_ui)
+
+    def _close_chest(self, chest, chest_ui) -> None:
+        """Trigger chest closing animation, play sfx, persist state, and hide UI."""
+        chest.interact(self.game.player)   # toggles is_on=False + starts animation
+        if getattr(chest, "sfx", None):
+            self.game.audio_manager.play_sfx(chest.sfx, getattr(chest, "element_id", None))
+        if hasattr(chest, '_world_state_key'):
+            self.game.world_state.set(chest._world_state_key, {'is_on': chest.is_on})
+        chest_ui.close()
+        self._open_chest_entity = None
+        # Suppress ! emote from firing immediately while player is still in proximity
+        self._last_proximity_target = chest
+        self._emote_cooldown = 1.0
