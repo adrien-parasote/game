@@ -148,3 +148,52 @@ def test_draw_hover_overlay_rendered(monkeypatch):
     center = ui._slot_positions[0].center
     pixel = screen.get_at(center)[:3]
     assert pixel == (255, 255, 0), f"Expected yellow hover pixel, got {pixel}"
+
+
+# --- Arrow button tests ---
+
+def test_arrow_rects_computed_after_open():
+    """open() must populate both arrow rects."""
+    ui = ChestUI()
+    assert ui._arrow_up_rect is None
+    assert ui._arrow_down_rect is None
+    ui.open(object())
+    assert ui._arrow_up_rect is not None
+    assert ui._arrow_down_rect is not None
+
+
+def test_arrow_up_rect_is_left_of_down():
+    """Up-arrow zone (red) is to the left of down-arrow zone (blue)."""
+    ui = ChestUI()
+    ui.open(object())
+    assert ui._arrow_up_rect.left < ui._arrow_down_rect.left
+
+
+def test_draw_triangle_up_draws_white_pixel():
+    """_draw_triangle 'up' places white pixels inside the triangle area."""
+    ui = ChestUI()
+    screen = make_screen()
+    zone = pygame.Rect(100, 100, 60, 40)
+    ui._draw_triangle(screen, zone, "up", (255, 255, 255), 255)
+    # Zone centre is always inside the triangle body
+    tip_x, tip_y = zone.centerx, zone.centery
+    r, g, b, _ = screen.get_at((tip_x, tip_y))
+    assert r > 200 and g > 200 and b > 200, f"Expected white pixel inside triangle, got ({r},{g},{b})"
+
+
+def test_draw_triangle_down_draws_white_pixel():
+    """_draw_triangle 'down' places white pixels inside the triangle area."""
+    ui = ChestUI()
+    screen = make_screen()
+    zone = pygame.Rect(200, 100, 60, 40)
+    ui._draw_triangle(screen, zone, "down", (255, 255, 255), 255)
+    tip_x, tip_y = zone.centerx, zone.centery
+    r, g, b, _ = screen.get_at((tip_x, tip_y))
+    assert r > 200 and g > 200 and b > 200, f"Expected white pixel inside triangle, got ({r},{g},{b})"
+
+
+def test_draw_arrows_no_crash_when_rects_none():
+    """_draw_arrows must not crash when arrow rects are None (before open)."""
+    ui = ChestUI()
+    screen = make_screen()
+    ui._draw_arrows(screen)  # must not raise

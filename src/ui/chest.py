@@ -25,6 +25,11 @@ _GRID_OFFSET_Y = -4   # px shift applied to the whole grid (negative = up)
 _TITLE_OFFSET_X = 10   # px shift applied to the title text (negative = left)
 _TITLE_OFFSET_Y = 12  # px shift applied to the title text (negative = up)
 _TARGET_WIDTH = 900   # pixels – scaled width of the background
+# Arrow button zones (measured from 1200x340 source image, auto-scaled)
+_ARROW_UP_ZONE_REL   = (0.6050, 0.7735, 0.6783, 0.9294)  # red zone → up arrow
+_ARROW_DOWN_ZONE_REL = (0.7383, 0.7735, 0.8117, 0.9294)  # blue zone → down arrow
+_ARROW_OFFSET_X = 0  # px fine-tune horizontal (escape hatch)
+_ARROW_OFFSET_Y = 0  # px fine-tune vertical   (escape hatch)
 
 class ChestUI:
     """Public interface for the chest overlay.
@@ -46,6 +51,9 @@ class ChestUI:
         self._content_rect: pygame.Rect | None = None
         self._slot_positions: list[pygame.Rect] = []
         self._hovered_slot: int | None = None   # index into _slot_positions
+        # Arrow button rects (absolute screen coordinates, filled in _compute_layout)
+        self._arrow_up_rect: pygame.Rect | None = None
+        self._arrow_down_rect: pygame.Rect | None = None
         # Custom pointer — same assets as InventoryUI
         self._pointer_img: pygame.Surface | None = self._load_cursor(ASSET_POINTER)
         self._pointer_select_img: pygame.Surface | None = self._load_cursor(ASSET_POINTER_SELECT)
@@ -82,6 +90,8 @@ class ChestUI:
         self._draw_title(screen)
         # Slots grid
         self._draw_slots(screen)
+        # Arrow buttons (up/down)
+        self._draw_arrows(screen)
         # Custom cursor (always on top — drawn last)
         self._draw_cursor(screen)
     def update_hover(self, mouse_pos: tuple[int, int]) -> None:
@@ -181,6 +191,18 @@ class ChestUI:
                 rect = pygame.Rect(0, 0, slot_size, slot_size)
                 rect.center = (cx, cy)
                 self._slot_positions.append(rect)
+
+        # Compute arrow button rects (zones measured from source image)
+        def _zone_rect(rel: tuple[float, float, float, float]) -> pygame.Rect:
+            l, t, r, b = rel
+            return pygame.Rect(
+                self._bg_rect.left + int(l * bg_w) + _ARROW_OFFSET_X,
+                self._bg_rect.top  + int(t * bg_h) + _ARROW_OFFSET_Y,
+                int((r - l) * bg_w),
+                int((b - t) * bg_h),
+            )
+        self._arrow_up_rect   = _zone_rect(_ARROW_UP_ZONE_REL)
+        self._arrow_down_rect = _zone_rect(_ARROW_DOWN_ZONE_REL)
         self._layout_computed = True
 
     def _draw_title(self, screen: pygame.Surface) -> None:
@@ -208,6 +230,45 @@ class ChestUI:
         if self._hovered_slot is not None and self._hover_img:
             hover_rect = self._hover_img.get_rect(center=self._slot_positions[self._hovered_slot].center)
             screen.blit(self._hover_img, hover_rect)
+
+    def _draw_arrows(self, screen: pygame.Surface) -> None:
+        """Draw up-arrow in the red zone and down-arrow in the blue zone."""
+        _ARROW_COLOR = (255, 255, 255)  # white, visible on any background
+        _ARROW_ALPHA = 220              # slight transparency for polish
+        for rect, direction in (
+            (self._arrow_up_rect,   "up"),
+            (self._arrow_down_rect, "down"),
+        ):
+            if rect is None:
+                continue
+            self._draw_triangle(screen, rect, direction, _ARROW_COLOR, _ARROW_ALPHA)
+
+    def _draw_triangle(
+        self,
+        screen: pygame.Surface,
+        zone: pygame.Rect,
+        direction: str,
+        color: tuple[int, int, int],
+        alpha: int,
+    ) -> None:
+        """Render a filled triangle centred in *zone*.
+        *direction* is 'up' or 'down'.
+        """
+        cx, cy = zone.centerx, zone.centery
+        # Arrow sized to ~55% of zone dimensions
+        hw = max(6, int(zone.width  * 0.55 // 2))   # half-base width
+        hh = max(5, int(zone.height * 0.55 // 2))   # half-height
+
+        if direction == "up":
+            pts = [(cx, cy - hh), (cx - hw, cy + hh), (cx + hw, cy + hh)]
+        else:
+            pts = [(cx, cy + hh), (cx - hw, cy - hh), (cx + hw, cy - hh)]
+
+        # Draw onto a temporary surface to apply alpha
+        surf = pygame.Surface((zone.width, zone.height), pygame.SRCALPHA)
+        local_pts = [(p[0] - zone.left, p[1] - zone.top) for p in pts]
+        pygame.draw.polygon(surf, (*color, alpha), local_pts)
+        screen.blit(surf, zone.topleft)
 
     def _load_cursor(self, path: str) -> pygame.Surface | None:
         """Load and scale a cursor image to Settings.CURSOR_SIZE."""
