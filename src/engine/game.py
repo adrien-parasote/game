@@ -19,7 +19,7 @@ from src.ui.hud import GameHUD
 from src.ui.dialogue import DialogueManager
 from src.engine.audio import AudioManager
 from src.engine.interaction import InteractionManager
-from src.ui.inventory import InventoryUI
+from src.ui.chest import ChestUI
 from src.engine.i18n import I18nManager
 
 
@@ -109,7 +109,9 @@ class Game:
         self.player.collision_func = self._is_collidable
         
         # Inventory System
+        from src.ui.inventory import InventoryUI
         self.inventory_ui = InventoryUI(self.player)
+        self.chest_ui = ChestUI()
 
         
         # First load reads the default map from world.world
@@ -542,6 +544,8 @@ class Game:
             
         if self.inventory_ui.is_open:
             self.inventory_ui.draw(self.screen)
+        if self.chest_ui.is_open:
+            self.chest_ui.draw(self.screen)
 
     def run(self):
         """Main game loop optimized for 60 FPS."""
@@ -593,6 +597,16 @@ class Game:
             self.dialogue_manager.update(dt)
         elif self.inventory_ui.is_open:
             self.inventory_ui.update(dt)
+        elif self.chest_ui.is_open:
+            # Allow player movement and interactions while chest UI open
+            self.interaction_manager.update(dt)
+            self.player.input()
+            self.interaction_manager.handle_interactions()
+            
+            was_moving = self.player.is_moving
+            self.visible_sprites.update(dt)
+            self._check_teleporters(was_moving)
+            # No time_system update or other world updates
         else:
             # Update Time
             self.time_system.update(dt)

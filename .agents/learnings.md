@@ -222,3 +222,31 @@ The spec mandated specific `Settings.FONT_SIZE_*` constants but didn't account f
 ### Scope
 - [x] Project-specific (applies only to this codebase's Pygame rendering)
 - [ ] Universal (applies across projects)
+
+
+## Learning: Pygame Headless Surface Testing
+**Date:** 2026-04-30
+**Spec:** implementation_plan.md
+**Outcome:** Perfect first pass (for tests)
+**Project:** adrien-parasote/game
+
+### What happened
+The unit tests needed to verify UI drawing logic (`screen.blit`) without real assets or a real display.
+
+### Root cause
+Headless testing in Pygame requires mocking loaded assets to avoid disk I/O and display dependencies.
+
+### Pattern (what to reproduce)
+To test UI drawing headlessly:
+1. Initialize dummy video driver: `os.environ["SDL_VIDEODRIVER"] = "dummy"`
+2. Mock asset surfaces using `monkeypatch.setattr(ui, "_bg", pygame.Surface((w, h)))`
+3. Fill dummy surfaces with solid colors: `dummy.fill((255, 0, 0))`
+4. Call `draw()` and verify pixels using `pygame.image.tobytes(screen, "RGB")` or `screen.get_at((x, y))`. (Note: use `tobytes`, not `tostring` which is deprecated).
+
+### Evidence
+- `tests/test_chest_ui.py` successfully validates drawing coordinates and asset fallbacks with 100% pass rate.
+
+### Scope
+- [ ] Project-specific (applies only to this codebase)
+- [x] Universal (applies across projects)
+

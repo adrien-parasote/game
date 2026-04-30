@@ -13,6 +13,7 @@ class InteractionManager:
         self._interaction_cooldown = 0
         self._emote_cooldown = 0 # Cooldown between proximity emote triggers
         self._last_proximity_target = None # Tracks the last entity we emoted for
+        self._open_chest_entity = None  # Tracks currently opened chest entity
         
     def update(self, dt: float):
         """Update timers and check for nearby interactives to trigger indicators."""
@@ -79,7 +80,9 @@ class InteractionManager:
                     
                 if valid_position:
                     # Suppress emote if the object is open/activated and is a container/barrier type
-                    if obj.is_on and getattr(obj, "sub_type", "") in ["chest", "door"]:
+                    if obj.is_on and getattr(obj, "sub_type", "") == "chest":
+                        continue
+                    if obj.is_on and getattr(obj, "sub_type", "") == "door":
                         continue
                         
                     if obj != getattr(self, '_last_proximity_target', None):
@@ -114,6 +117,7 @@ class InteractionManager:
                     return
                 
         # Reset if nothing is in range
+        self._check_chest_auto_close()
         self._last_proximity_target = None
 
 
@@ -172,6 +176,16 @@ class InteractionManager:
                     target = getattr(obj, "target_id", None)
                     if target:
                         self.game.toggle_entity_by_id(target, depth=1)
+                
+                # Handle chest persistence
+                if getattr(obj, "sub_type", "") == "chest":
+                    if obj.is_on:
+                        self._open_chest_entity = obj
+                        # Open chest UI overlay
+                        if hasattr(self.game, 'chest_ui'):
+                            self.game.chest_ui.open(obj)
+                    else:
+                        self._open_chest_entity = None
                 return True
         return False
 
@@ -262,3 +276,24 @@ class InteractionManager:
                 return True
             
         return False
+
+    def _check_chest_auto_close(self) -> None:
+        """Auto-close chest UI when player leaves interaction zone."""
+        if getattr(self, "_open_chest_entity", None) is None:
+            return
+        chest_ui = getattr(self.game, "chest_ui", None)
+        if chest_ui is None:
+            return
+        if not chest_ui.is_open:
+            return
+        player_pos = self.game.player.pos
+        chest = self._open_chest_entity
+        dist = player_pos.distance_to(chest.pos)
+        if dist > 45:
+            chest_ui.close()
+            self._open_chest_entity = None
+            return
+        if not self._verify_orientation(chest, self.game.player.current_state, player_pos):
+            chest_ui.close()
+            self._open_chest_entity = None
+            return

@@ -190,3 +190,92 @@ def test_verify_orientation_door_relaxed():
     # Normally a down-facing object must be approached from BELOW (y > 100), facing UP
     # But because it is an OPEN door, it can be approached from ABOVE, facing DOWN
     assert im._verify_orientation(door, 'down', p_pos) is True
+
+def test_handle_interaction_chest_opens_ui():
+    game = MagicMock()
+    im = InteractionManager(game)
+    im._interaction_cooldown = 0
+    
+    game.player.pos = pygame.math.Vector2(100, 100)
+    game.player.current_state = 'down'
+    game.player.is_moving = False
+    
+    with patch('pygame.key.get_pressed', return_value={Settings.INTERACT_KEY: True}):
+        chest = MagicMock()
+        chest.pos = pygame.math.Vector2(100, 120)
+        chest.direction_str = 'up'
+        chest.sub_type = 'chest'
+        chest.is_on = True # Becomes on after interact
+        chest.interact.return_value = None
+        
+        game.interactives = [chest]
+        
+        im.handle_interactions()
+        assert chest.interact.called
+        game.chest_ui.open.assert_called_with(chest)
+
+def test_chest_auto_close_out_of_range():
+    game = MagicMock()
+    im = InteractionManager(game)
+    chest = MagicMock()
+    chest.pos = pygame.math.Vector2(100, 100)
+    chest.direction_str = 'up'
+    chest.sub_type = 'chest'
+    
+    im._open_chest_entity = chest
+    game.chest_ui.is_open = True
+    
+    # Player moves far away
+    game.player.pos = pygame.math.Vector2(500, 500)
+    
+    im._check_chest_auto_close()
+    assert game.chest_ui.close.called
+    assert im._open_chest_entity is None
+
+def test_chest_auto_close_wrong_orientation():
+    game = MagicMock()
+    im = InteractionManager(game)
+    chest = MagicMock()
+    chest.pos = pygame.math.Vector2(100, 120)
+    chest.direction_str = 'up'
+    chest.sub_type = 'chest'
+    
+    im._open_chest_entity = chest
+    game.chest_ui.is_open = True
+    
+    # Player is close but turns back
+    game.player.pos = pygame.math.Vector2(100, 100)
+    game.player.current_state = 'up' # Facing AWAY from chest (chest is at y=120)
+    
+    im._check_chest_auto_close()
+    assert game.chest_ui.close.called
+    assert im._open_chest_entity is None
+
+def test_chest_proximity_emote_logic():
+    game = MagicMock()
+    im = InteractionManager(game)
+    im._emote_cooldown = 0
+    
+    chest = MagicMock()
+    chest.pos = pygame.math.Vector2(100, 120)
+    chest.direction_str = 'up'
+    chest.sub_type = 'chest'
+    game.interactives = [chest]
+    
+    game.player.pos = pygame.math.Vector2(100, 100)
+    game.player.current_state = 'down' # Facing chest
+    
+    # Case 1: Chest closed -> Emote should show
+    chest.is_on = False
+    im._check_proximity_emotes()
+    assert game.player.playerEmote.called
+    
+    game.player.playerEmote.reset_mock()
+    im._emote_cooldown = 0
+    im._last_proximity_target = None
+    
+    # Case 2: Chest open -> Emote should be suppressed
+    chest.is_on = True
+    im._check_proximity_emotes()
+    assert not game.player.playerEmote.called
+
