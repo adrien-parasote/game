@@ -220,19 +220,20 @@ class ChestUI:
         self._arrow_up_rect   = _zone_rect(_ARROW_UP_ZONE_REL)
         self._arrow_down_rect = _zone_rect(_ARROW_DOWN_ZONE_REL)
 
-        # Scale arrow hover images to fit their respective rects
-        def _load_and_scale_arrow(path: str, rect: pygame.Rect) -> pygame.Surface | None:
+        # Scale arrow hover images (preserve aspect ratio, scale by global factor)
+        def _load_and_scale_arrow(path: str) -> pygame.Surface | None:
             try:
                 img = pygame.image.load(path).convert_alpha()
-                return pygame.transform.smoothscale(img, (rect.width, rect.height))
+                w, h = img.get_size()
+                # Use same scale as background (900/1200)
+                scale = _TARGET_WIDTH / 1200
+                return pygame.transform.smoothscale(img, (int(w * scale), int(h * scale)))
             except Exception as e:
                 logging.warning(f"ChestUI arrow hover image load failed ({path}): {e}")
                 return None
 
-        if self._arrow_up_rect and self._arrow_down_rect:
-            # Note: RED zone (up_rect) -> 08-arrow_down | BLUE zone (down_rect) -> 09-arrow_up
-            self._arrow_down_hover_img = _load_and_scale_arrow(ASSET_ARROW_DOWN_HOVER, self._arrow_up_rect)
-            self._arrow_up_hover_img = _load_and_scale_arrow(ASSET_ARROW_UP_HOVER, self._arrow_down_rect)
+        self._arrow_down_hover_img = _load_and_scale_arrow(ASSET_ARROW_DOWN_HOVER)
+        self._arrow_up_hover_img = _load_and_scale_arrow(ASSET_ARROW_UP_HOVER)
 
         self._layout_computed = True
 
@@ -268,10 +269,12 @@ class ChestUI:
         """
         # RED zone (up_rect) -> 08-arrow_down
         if self._hovered_arrow == "up" and self._arrow_up_rect and self._arrow_down_hover_img:
-            screen.blit(self._arrow_down_hover_img, self._arrow_up_rect)
+            rect = self._arrow_down_hover_img.get_rect(center=self._arrow_up_rect.center)
+            screen.blit(self._arrow_down_hover_img, rect)
         # BLUE zone (down_rect) -> 09-arrow_up
         elif self._hovered_arrow == "down" and self._arrow_down_rect and self._arrow_up_hover_img:
-            screen.blit(self._arrow_up_hover_img, self._arrow_down_rect)
+            rect = self._arrow_up_hover_img.get_rect(center=self._arrow_down_rect.center)
+            screen.blit(self._arrow_up_hover_img, rect)
 
     def _load_cursor(self, path: str) -> pygame.Surface | None:
         """Load and scale a cursor image to Settings.CURSOR_SIZE."""
