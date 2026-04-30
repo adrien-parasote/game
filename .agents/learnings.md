@@ -387,4 +387,94 @@ Describing an asset as "animated" without stating grid layout (rows × columns) 
 
 ---
 
-*Last optimized: 2026-04-30 — 499 lines → 270 lines, 0 information lost, duplicate long-form sections removed.*
+
+---
+
+### A-UI-002 · 2026-04-30 · U · Major Rework
+**Missing event dispatch for new UI components in game loop**
+
+Adding `handle_event()` to a UI class does nothing unless the game loop explicitly calls it. The absence is silent — clicks register in pygame but reach no handler.
+
+```python
+# ❌ chest_ui.handle_event never called → all arrow clicks silently swallowed
+def _handle_events(self):
+    for event in pygame.event.get():
+        if self.inventory_ui.is_open:
+            self.inventory_ui.handle_input(event)
+        # chest_ui missing entirely
+
+# ✅ every UI component with handle_event must be wired
+def _handle_events(self):
+    for event in pygame.event.get():
+        if self.inventory_ui.is_open:
+            self.inventory_ui.handle_input(event)
+        if self.chest_ui.is_open:
+            self.chest_ui.handle_event(event)
+```
+
+**Rule:** When adding any new UI component with interactive state, immediately add its dispatch to `_handle_events()`. Write a test that calls `handle_event()` via a simulated click and asserts a state change.
+**Evidence:** Chest UI arrows did nothing for entire session until `handle_event` wired. commit `ff92747`.
+
+---
+
+### A-UI-003 · 2026-04-30 · U · Major Rework
+**Page-based vs window-based offset clamping are different formulas**
+
+For **window-based** scrolling (slide 1 slot at a time), max_offset = `capacity - visible`. For **page-based** scrolling (jump a full page at a time), max_offset = `capacity - 1`.
+
+```python
+# ❌ window-based clamp applied to page-based jump
+# capacity=24, visible=18 → max_offset=6 → offset=min(18,6)=6 → shows [6:24]=18 slots (wrong)
+max_offset = capacity - visible
+self._inv_offset = min(self._inv_offset + visible, max_offset)
+
+# ✅ page-based: clamp to capacity-1 so partial last page is reachable
+# capacity=24, visible=18 → offset=min(18, 23)=18 → shows [18:24]=6 slots (correct)
+self._inv_offset = min(self._inv_offset + _INV_SLOTS_VISIBLE, self._capacity() - 1)
+```
+
+**Rule:** In spec, declare navigation mode explicitly: `WINDOW` (1-slot slide) or `PAGE` (full-page jump). Apply the correct clamp formula for each.
+**Evidence:** Took 3 correction rounds; `visible_count` exposé the wrong formula. commit `ff92747`.
+
+---
+
+### A-UI-004 · 2026-04-30 · U · Minor Rework
+**Left/right arrow semantic direction must be explicit in spec**
+
+"Left arrow" and "right arrow" are physical; "advance" and "rewind" are semantic. Without a clear mapping, implementations diverge and require swap iterations.
+
+```markdown
+# ✅ Spec must state this explicitly:
+# ▶ Right arrow → advance window (higher indices) — visible when more items ahead
+# ◀ Left arrow  → rewind window (lower indices)  — visible when offset > 0
+```
+
+**Rule:** For any scrollable UI, the spec must include a table: `Physical Arrow | Data Direction | Visibility Condition`.
+**Evidence:** 2 direction swaps in one session (left↔right wiring). commit `ff92747`.
+
+---
+
+### L-UI-006 · 2026-04-30 · U · Minor Rework
+**visible_count must guard both rendering AND hover hit-testing**
+
+After fixing rendering to only draw N slots, the hover zone loop still iterates all 18 `_inv_slot_positions`, making invisible slots hoverable and triggering out-of-bounds states.
+
+```python
+# ❌ hover registers on invisible slots 6–17 even when only 6 are drawn
+for i, rect in enumerate(self._inv_slot_positions):
+    if rect.collidepoint(mouse_pos):
+        self._hovered_inv_slot = i
+
+# ✅ same visible_count used in both draw and hover
+visible_count = min(_INV_SLOTS_VISIBLE, max(0, self._capacity() - self._inv_offset))
+for i, rect in enumerate(self._inv_slot_positions[:visible_count]):
+    if rect.collidepoint(mouse_pos):
+        self._hovered_inv_slot = i
+```
+
+**Rule:** Any `visible_count` guard introduced for rendering must immediately be applied to all hit-test loops over the same positions list.
+**Evidence:** Hover on ghost slots after page 2 scroll. Fixed in same commit `ff92747`.
+
+---
+
+*Last optimized: 2026-04-30 — added A-UI-002, A-UI-003, A-UI-004, L-UI-006 from ChestUI paged inventory session.*
