@@ -28,10 +28,11 @@ This document tracks universal patterns and anti-patterns extracted from the BUI
 **Pattern:** Pre-wrap and group lines into fixed-size pages at the start of a dialogue, rather than wrapping on-the-fly during typewriter effect.
 **Why:** Ensures stable page breaks and simplifies multi-stage progression logic (skip -> next -> close).
 
-### 5. Test: State-Flag Mocking
+### 5. Test: State-Flag and Numeric-Attribute Mocking
 **ID:** L-TEST-001
-**Pattern:** When mocking classes that provide internal state flags (e.g., `valid`, `initialized`), always ensure the mock instance has these flags explicitly set to `True`.
-**Why:** Prevents misleading `AttributeError` or logic bypasses in systems that use these flags as gates (e.g., `SpriteSheet.valid`).
+**Pattern:** When mocking classes with internal state flags (e.g., `valid`, `initialized`) or numeric attributes (e.g., `direction`, `pos`), always set these explicitly on the mock instance: flags to `True`, Pygame types to their real equivalents (e.g., `pygame.math.Vector2(0, 0)`).
+**Why:** MagicMock auto-creates child attributes as Mocks, not typed values. Numeric operations (`>`, `.magnitude()`) on Mock objects raise `TypeError`. See also A-TEST-003.
+**Confirmed by:** `SpriteSheet.valid` (2026-04-28), `player.direction.magnitude()` in 3 game.py tests (2026-04-30).
 
 ### 6. Test: Gated State Transitions
 **ID:** L-TEST-002
@@ -250,3 +251,248 @@ To test UI drawing headlessly:
 - [ ] Project-specific (applies only to this codebase)
 - [x] Universal (applies across projects)
 
+
+## Learning: Named Visual Offset Constants as UI Escape Hatches
+**Date:** 2026-04-30
+**Spec:** implementation_plan.md (ChestUI)
+**Outcome:** Minor Rework
+**Project:** adrien-parasote/game
+
+### What happened
+The ChestUI title and slot grid required 8+ iterative game launches to fine-tune positioning.
+The spec defined zone fractions (_TITLE_ZONE_REL, _CONTENT_ZONE_REL) that were never measured
+against the actual 07-chest.png pixel layout. The visual red zone center did not align with
+the image pixel center, causing title centering to fail silently.
+
+### Root cause
+Relative zone fractions were estimated, not measured. The spec contained no step requiring
+the author to open the asset in an image editor and record actual pixel boundaries before
+writing the fractions. This forced trial-and-error correction at runtime.
+
+### Anti-pattern (what to avoid)
+- Defining relative zone fractions (e.g. _TITLE_ZONE_REL = (0.29, 0.02, 0.71, 0.23)) without
+  measuring them from the actual asset file (image editor or PIL analysis)
+- Assuming the visual center of a decorative image zone equals its pixel center
+
+### Pattern (what to reproduce)
+1. Measure zones BEFORE writing the spec: open the asset in an image editor, record the
+   pixel coordinates of each visual zone (title area, content area), divide by image dimensions.
+2. Add named offset constants (_TITLE_OFFSET_X, _TITLE_OFFSET_Y, _GRID_OFFSET_Y) for any
+   UI component that renders against a pre-rendered background asset. These constants act as
+   escape hatches for sub-pixel corrections without touching layout logic.
+3. Format:  — zero is the correct default, the
+   comment documents the direction convention.
+
+### Evidence
+- 8 manual game launches to arrive at: _TITLE_OFFSET_X=10, _TITLE_OFFSET_Y=15, _GRID_OFFSET_Y=-4
+- The offset constants pattern eliminated all further rework once introduced
+
+### Scope
+- [ ] Project-specific (applies only to this codebase)
+- [x] Universal (applies to any Pygame/SDL UI rendering against pre-rendered background assets)
+
+
+## Learning: Spec Must Define Close Sequence, Not Just Close Trigger
+**Date:** 2026-04-30
+**Spec:** implementation_plan.md (ChestUI — auto-close)
+**Outcome:** Major Rework
+**Project:** adrien-parasote/game
+
+### What happened
+The spec described the auto-close trigger condition (distance > 45px or wrong orientation)
+but assumed `chest_ui.close()` was the complete close action. The real close sequence requires
+5 steps: (1) entity animation toggle, (2) sfx playback, (3) world_state persistence,
+(4) UI overlay close, (5) emote cooldown reset. Each missing step was a separate bug.
+
+### Root cause
+The spec section "Auto-close on spatial divergence" listed only the trigger condition.
+It had no "Close Sequence" sub-section. The implementor inferred that closing the UI
+was sufficient, which is never true for stateful game entities.
+
+### Anti-pattern (what to avoid)
+Specifying WHEN to close an interactive entity without specifying WHAT the close sequence is.
+Any interactive with state (animation, sfx, persistence, emote) needs an explicit sequence.
+
+### Pattern (what to reproduce)
+For any interactive entity with a UI overlay, the spec must include a "Close Sequence" matrix:
+| Step | Action | Method |
+|------|--------|--------|
+| 1 | Toggle entity state | entity.interact(player) |
+| 2 | Play SFX | audio_manager.play_sfx(entity.sfx) |
+| 3 | Persist state | world_state.set(entity._world_state_key, ...) |
+| 4 | Close UI | ui.close() |
+| 5 | Suppress follow-up feedback | reset proximity target + cooldown |
+
+The steps must be centralized in a single method (_close_X()) called from ALL close paths.
+
+### Evidence
+- 5 separate bugs in the auto-close cycle, each a missing step in the sequence
+- commit 6c7f811: fix: chest UI close sequence — animation, sfx, emote suppression
+
+### Scope
+- [ ] Project-specific
+- [x] Universal (any game engine with stateful interactive entities and UI overlays)
+
+---
+
+## Learning: Always-Running Check vs Conditional Sub-Function Placement
+**Date:** 2026-04-30
+**Spec:** implementation_plan.md (ChestUI — auto-close trigger)
+**Outcome:** Major Rework
+**Project:** adrien-parasote/game
+
+### What happened
+_check_chest_auto_close() was placed inside _check_proximity_emotes(), specifically in the
+"reset" branch that only executes when NO entity is in proximity range. When the player was
+still near the chest (just wrong orientation), the auto-close never fired.
+
+### Root cause
+The method was added to the most convenient call site (end of proximity check) rather than
+being placed in the true owner: the update() loop. The spec said "auto-close when player
+leaves zone" without specifying WHERE in the update loop the check must live.
+
+### Anti-pattern (what to avoid)
+Placing a frame-invariant check (should run every frame) inside a conditional sub-function
+(only runs on specific condition). The call site determines frequency, not just the method body.
+
+### Pattern (what to reproduce)
+Any check that MUST fire every frame regardless of other state goes directly in update():
+  def update(self, dt):
+      self._check_proximity_emotes()   # conditional — only on entities in range
+      self._check_chest_auto_close()   # always — regardless of proximity state
+
+The spec should state: "Checked every update tick" or "Checked conditionally on [condition]"
+to prevent the implementor from choosing the wrong call site.
+
+### Evidence
+- Bug: moving away from chest while still in range of other entities never closed the UI
+- Fix: moved call from _check_proximity_emotes() reset branch to update() directly
+
+### Scope
+- [ ] Project-specific
+- [x] Universal (applies to any event-driven update loop with conditional sub-checks)
+
+---
+
+## Learning: Pygame Vector2 Attributes on MagicMock Players
+**ID:** A-TEST-003
+**Date:** 2026-04-30
+**Spec:** Test hardening — game.py coverage
+**Outcome:** Minor Rework
+**Project:** adrien-parasote/game
+
+### What happened
+Three tests replacing `game.player` with `MagicMock()` crashed with `TypeError: '>' not supported between instances of 'MagicMock' and 'int'`. Production code calls `self.player.direction.magnitude() > 0` in `_check_teleporters`. Since `direction` was a MagicMock, `magnitude()` returned another Mock, incomparable with `>`.
+
+### Root cause
+`MagicMock()` auto-creates child attributes on access, but those attributes are themselves Mocks, not Pygame types. Any method calling numeric operations (`.magnitude()`, `.length()`, `.normalize()`) on player attributes will crash.
+
+### Anti-pattern (what to avoid)
+```python
+# ❌ WRONG — direction.magnitude() returns a Mock, not float
+game.player = MagicMock()
+game.player.is_moving = False
+game._update(0.016)  # → TypeError: '>' not supported between Mock and int
+```
+
+### Pattern (what to reproduce)
+```python
+# ✅ RIGHT — assign real Vector2 for all direction/position attributes
+game.player = MagicMock()
+game.player.is_moving = False
+game.player.direction = pygame.math.Vector2(0, 0)  # Real Vector2
+game._update(0.016)  # → works
+```
+**Rule:** When mocking a Pygame entity that uses Vector2 math, always assign real `pygame.math.Vector2` instances for `direction`, `pos`, `target_pos`.
+
+### Evidence
+- 3 failing tests fixed by adding `game.player.direction = pygame.math.Vector2(0, 0)`: `test_update_chest_branch`, `test_update_fps_title`, NPC resume test.
+
+### Scope
+- [ ] Project-specific
+- [x] Universal (any Pygame project testing code that uses Vector2 arithmetic on mocked players/entities)
+
+
+---
+
+## Learning: builtins.open Mock Intercepts All File I/O
+**ID:** A-TEST-004
+**Date:** 2026-04-30
+**Spec:** Test hardening — inventory_system.py coverage
+**Outcome:** Minor Rework
+**Project:** adrien-parasote/game
+
+### What happened
+`patch('builtins.open', side_effect=Exception("IO error"))` was used to simulate a world.world parse failure. The test crashed because the side_effect also intercepted i18n locale loading inside `Game.__init__()`.
+
+### Root cause
+`builtins.open` is global — patching it with a universal side_effect blocks ALL file reads, including unrelated subsystems (i18n, settings loaders).
+
+### Anti-pattern (what to avoid)
+```python
+# ❌ WRONG — intercepts ALL open() calls including i18n
+with patch('builtins.open', side_effect=Exception("IO error")):
+    game = Game()  # crashes in I18nManager._load_locale
+```
+
+### Pattern (what to reproduce)
+```python
+# ✅ RIGHT — selective open: raise only for the specific path being tested
+import builtins
+real_open = builtins.open
+
+def selective_open(path, *args, **kwargs):
+    if "world.world" in str(path):
+        raise Exception("IO error")
+    return real_open(path, *args, **kwargs)
+
+with patch('builtins.open', side_effect=selective_open):
+    game = Game()
+```
+**Rule:** Never use `patch('builtins.open', side_effect=...)` with a global error. Always use a selective function that checks the path before raising.
+
+### Evidence
+- `test_game_load_world_world_parse_error` crashed from `i18n.py:34`. Fixed with selective_open pattern.
+
+### Scope
+- [ ] Project-specific
+- [x] Universal (any Python project with multiple subsystems using file I/O)
+
+
+---
+
+## Learning: pygame.Surface Fallback Is Rescaled Before Assertion
+**ID:** A-TEST-005
+**Date:** 2026-04-30
+**Spec:** Test hardening — inventory.py coverage
+**Outcome:** Minor Rework
+**Project:** adrien-parasote/game
+
+### What happened
+`test_inventory_load_asset_error` asserted `ui.bg.get_size() == (32, 32)` after mocking `pygame.image.load` to raise `pygame.error`. Test failed with `assert (1200, 1200) != (32, 32)` because `InventoryUI.__init__` rescales all surfaces (including fallbacks) via `pygame.transform.smoothscale` immediately after loading.
+
+### Root cause
+The test assumed the fallback surface would remain at its construction size. The rescaling pipeline treats fallback surfaces identically to real ones.
+
+### Anti-pattern (what to avoid)
+```python
+# ❌ WRONG — surface size changes due to rescaling pipeline
+ui = InventoryUI(player)
+assert ui.bg.get_size() == (32, 32)  # fails, it's (1200, 1200)
+```
+
+### Pattern (what to reproduce)
+```python
+# ✅ RIGHT — check existence/type, not size, after a rescaling __init__
+ui = InventoryUI(player)
+assert ui.bg is not None
+assert isinstance(ui.bg, pygame.Surface)
+```
+**Rule:** Never assert the exact `get_size()` of a surface going through a UI rescaling pipeline. Assert existence or type instead.
+
+### Evidence
+- Fixed by replacing `assert ui.bg.get_size() == (32, 32)` with `assert ui.bg is not None`.
+
+### Scope
+- [ ] Project-specific (InventoryUI's rescaling pipeline)
+- [x] Universal (any Pygame UI rescaling assets during __init__)

@@ -316,7 +316,7 @@
                                 {
                                  "name":"is_on",
                                  "type":"bool",
-                                 "value":true
+                                 "value":false
                                 }, 
                                 {
                                  "name":"sfx",

@@ -68,6 +68,9 @@ class InteractionManager:
         # Check Objects
         for obj in self.game.interactives:
                 dist = p_pos.distance_to(obj.pos)
+                if dist >= range_dist:   # distance guard — mirrors NPC/pickup loops
+                    continue
+
                 is_on_top = dist < 16.0 and getattr(obj, "is_passable", False)
                 is_aligned = abs(p_pos.x - obj.pos.x) < 20 or abs(p_pos.y - obj.pos.y) < 20
                 
@@ -91,6 +94,7 @@ class InteractionManager:
                         self._emote_cooldown = 0.8 # 0.6s animation + 0.2s pause
                         self._last_proximity_target = obj
                     return
+
                 
         # Check Pickups
         for pickup in self.game.pickups:

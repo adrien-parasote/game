@@ -1,8 +1,8 @@
 # Technical Spec — Chest UI System [Implementation]
 
 **Type:** Implementation Document  
-**Version:** 1.0  
-**Status:** Draft → Spec Gate Pending
+**Version:** 1.1  
+**Status:** Implemented — 2026-04-30 (doc-update sync)
 
 ---
 
@@ -27,7 +27,7 @@ The RPG engine has a fully functional `InteractiveEntity` with `sub_type='chest'
 | A-03 | Chest contents are not yet data-driven (slots are visual only, no items in v1) | LOW |
 | A-04 | The slot grid for the chest is 7 columns x 2 rows (14 slots), matching the green zone aspect ratio | MEDIUM — to validate visually |
 | A-05 | `ChestUI` is a non-blocking overlay: world physics, NPCs, and teleports are paused while it is open (same as `InventoryUI`) | LOW |
-| A-06 | Chest closing is triggered **only** by the player exiting the interaction zone (not by pressing the action key again) | LOW — confirmed by user |
+| A-06 | Chest closing is triggered by: (a) player exiting interaction zone (auto-close), or (b) player pressing E again on open chest (action key close). Both paths go through `_close_chest()`. | LOW — revised 2026-04-30 |
 | A-07 | The existing emote suppression in `_check_proximity_emotes` silences `!` for both open and closed chests — this must change: suppress only for **open** chests | LOW |
 
 ---
@@ -98,20 +98,32 @@ Player presses E near closed chest (is_on=False)
   → return True
 ```
 
-### 5.2 Close Sequence (Auto, zone-exit only)
+### 5.2 Close Sequence (Auto, zone-exit or action key)
 
 ```
 InteractionManager.update(dt)
   → _check_proximity_emotes() runs normally
-  → at end of _check_proximity_emotes(), before resetting _last_proximity_target:
-      _check_chest_auto_close()
+  → _check_chest_auto_close()      ← called EVERY tick from update(), NOT inside _check_proximity_emotes
         if _open_chest_entity is None → return
         if game has no chest_ui attr → return
-        if not game.chest_ui.is_open → clear ref, return
+        if not game.chest_ui.is_open → return
         recompute: is player still in valid interaction zone?
-          YES → do nothing
-          NO  → game.chest_ui.close()
-                self._open_chest_entity = None
+          YES (in range AND correct orientation) → do nothing
+          NO  → _close_chest(chest, chest_ui)
+                  chest.interact(player)               # toggle animation is_on=False
+                  audio_manager.play_sfx(chest.sfx)   # if sfx set
+                  world_state.set(key, {is_on: False}) # persist
+                  chest_ui.close()                     # hide overlay
+                  _open_chest_entity = None
+                  _last_proximity_target = chest        # suppress ! emote
+                  _emote_cooldown = 1.0
+
+Action key (E) on open chest:
+  → _check_object_interactions()
+    → obj.is_on == True → interact() (toggle to False)
+    → chest_ui.close() if open
+    → _open_chest_entity = None
+    → _last_proximity_target = obj, _emote_cooldown = 1.0
 ```
 
 ### 5.3 Emote Logic Change
@@ -194,7 +206,9 @@ class ChestUI:
 | Split suppress conditions | `_check_proximity_emotes` | Separate `chest` and `door` conditions (see §5.3) |
 | Add chest_ui.open call | `_check_object_interactions` | After interact(), if chest + is_on=True → open ChestUI |
 | Add method | New: `_check_chest_auto_close` | Zone-exit detection (see §5.2) |
-| Call auto-close | `_check_proximity_emotes` (end) | Call `_check_chest_auto_close()` before resetting `_last_proximity_target` |
+| Add method | New: `_close_chest(chest, chest_ui)` | Centralized close sequence: interact + sfx + world_state + UI close + emote suppression |
+| Call auto-close | `update()` directly | `_check_chest_auto_close()` is called every tick from `update()`, NOT from `_check_proximity_emotes` |
+| Close on action key | `_check_object_interactions` (chest toggle OFF branch) | `chest_ui.close()` + `_emote_cooldown = 1.0` when player re-presses E on open chest |
 
 **Estimated file size after:** ~305 lines (target: <400). ✅
 
@@ -216,7 +230,7 @@ class ChestUI:
 | Inline zone fractions as `(0.29, 0.02, ...)` in method | Named module constants `_TITLE_ZONE_REL` | One change point if asset changes |
 | Scale `slot_img` inside `draw()` | Scale once in `_compute_layout()` | Per-frame scale = frame drops |
 | Call `pygame.image.load()` in `draw()` | Load in `__init__`, cache as attribute | Disk I/O per frame is unacceptable |
-| Close chest on second E press | Auto-close on zone exit only | Per user spec requirement |
+| Close chest only on zone exit | Also support E key on open chest via `_close_chest()` | Both paths must share the same full close sequence — never close with only `chest_ui.close()` |
 | Inventory and chest open simultaneously | `elif chest_ui.is_open` after inventory check | Two overlapping UIs break Z-order |
 | Render item names in slots | Visual-only slots in v1 | Item system not yet designed |
 | Suppress `!` emote for closed chests | Suppress only for `is_on=True` | Player must see emote to know chest is interactable |

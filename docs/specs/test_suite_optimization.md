@@ -36,7 +36,7 @@ Consolidate and optimize the 23 test files into a smaller, more maintainable set
 
 ## Test Case Specifications
 - All existing tests MUST pass after consolidation.
-- Coverage should remain at or above current levels (80%+).
+- Coverage must remain at or above **90%** overall (current: 90%, 2026-04-30). Core modules (`inventory_system.py`, `npc.py`, `audio.py`, `map/manager.py`) must maintain 100%.
 
 ## Error Handling Matrix
 | Error Type | Detection | Response | Fallback |

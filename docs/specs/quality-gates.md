@@ -21,7 +21,8 @@ To maintain a 10-20x velocity multiplier, all contributions must pass through th
     - **Linting**: Zero errors in logic or formatting.
     - **Static Analysis**: Zero high-risk findings (`bandit`).
     - **Tests**: 100% pass rate in the full test suite.
-    - **Coverage**: >= 90% line coverage for core engine modules.
+    - **Coverage**: >= 90% line coverage overall; 100% on `inventory_system.py`, `npc.py`, `audio.py`, `map/manager.py`, `spritesheet.py`, `emote_sprite.py`, `teleport.py`.
+    - **Current status (2026-04-30):** 90% global, 195 tests passing.
 
 ## 2. Technical Standards
 
