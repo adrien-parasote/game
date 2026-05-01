@@ -144,15 +144,15 @@ class InteractionManager:
         dir_vector = self._get_player_facing_vector()
         target_pos = self.game.player.pos + dir_vector * Settings.TILE_SIZE
         target_rect = pygame.Rect(target_pos.x - 16, target_pos.y - 16, 32, 32)
-        
+
         for npc in self.game.npcs:
             if npc.rect.colliderect(target_rect):
                 res = npc.interact(self.game.player)
                 if res:
-                    title = getattr(npc, 'name', '')
-                    self.game._trigger_dialogue(res, title=title)
+                    self.game._trigger_npc_bubble(npc, res)
                 return True
         return False
+
 
     def _check_object_interactions(self):
         """Check for nearby interactive objects based on proximity and orientation."""

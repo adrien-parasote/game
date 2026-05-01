@@ -17,7 +17,9 @@ from src.engine.world_state import WorldState
 from src.config import Settings
 from src.ui.hud import GameHUD
 from src.ui.dialogue import DialogueManager
+from src.ui.speech_bubble import SpeechBubble
 from src.engine.audio import AudioManager
+from src.engine.asset_manager import AssetManager
 from src.engine.interaction import InteractionManager
 from src.engine.loot_table import LootTable
 from src.ui.chest import ChestUI
@@ -102,8 +104,17 @@ class Game:
             property_types
         )
         
-        # Dialogue System
+        # Dialogue System (signs / interactive objects)
         self.dialogue_manager = DialogueManager()
+
+        # Speech bubble (NPC PNG dialogues)
+        self.speech_bubble = SpeechBubble(max_width_px=224, padding=8, tail_gap=4)
+        am = AssetManager()
+        self.speech_bubble.set_font(
+            am.get_font(Settings.FONT_NARRATIVE, Settings.FONT_SIZE_NARRATIVE)
+        )
+        # Active NPC bubble state: {npc, text, page} or None
+        self._npc_bubble: dict | None = None
         
         # Audio System
         self.audio_manager = AudioManager()
@@ -438,15 +449,42 @@ class Game:
         self.hud.draw(self.screen)
 
     def _trigger_dialogue(self, element_id: str, title: str = ""):
-        """Fetch localized message and start dialogue."""
+        """Fetch localized message and start dialogue (signs / objects → bottom box)."""
         map_base = self._current_map_name.split('.')[0]
         full_key = f"{map_base}-{element_id}"
-        
         msg = self.i18n.get(f"dialogues.{full_key}")
         if msg:
             self.dialogue_manager.start_dialogue(msg, title=title)
         else:
             logging.warning(f"Dialogue key not found: {full_key}")
+
+    def _trigger_npc_bubble(self, npc, element_id: str) -> None:
+        """Fetch localized message and attach a speech bubble to *npc*."""
+        map_base = self._current_map_name.split('.')[0]
+        full_key = f"{map_base}-{element_id}"
+        msg = self.i18n.get(f"dialogues.{full_key}")
+        if not msg:
+            logging.warning(f"NPC bubble key not found: {full_key}")
+            return
+        self._npc_bubble = {"npc": npc, "text": msg, "page": 0}
+        logging.info(f"NPC bubble started for '{element_id}': {msg[:40]}...")
+
+    def _advance_npc_bubble(self) -> None:
+        """Advance NPC bubble page or close it on last page."""
+        if self._npc_bubble is None:
+            return
+        # Compute total pages the same way SpeechBubble.draw() does
+        lines = self.speech_bubble._wrap_text(self._npc_bubble["text"])
+        line_height = self.speech_bubble.font.get_linesize()
+        max_lines = max(1, self.speech_bubble.max_width_px // line_height)
+        total_pages = max(1, (len(lines) + max_lines - 1) // max_lines)
+        if self._npc_bubble["page"] < total_pages - 1:
+            self._npc_bubble["page"] += 1
+        else:
+            self._npc_bubble = None
+            for npc in self.npcs:
+                if npc.state == 'interact':
+                    npc.state = 'idle'
 
     def toggle_entity_by_id(self, target_id: str, depth: int = 0):
         """Toggle the state of any entity matching element_id == target_id."""
@@ -582,6 +620,19 @@ class Game:
         
         if self.dialogue_manager.is_active:
             self.dialogue_manager.draw(self.screen)
+
+        # NPC speech bubble — drawn above NPC in screen-space
+        if self._npc_bubble is not None:
+            npc = self._npc_bubble["npc"]
+            cam = self.visible_sprites.offset
+            # Build a screen-space rect from the NPC world rect
+            npc_screen_rect = npc.rect.move(cam.x, cam.y)
+            self.speech_bubble.draw(
+                self.screen,
+                npc_screen_rect,
+                self._npc_bubble["text"],
+                page=self._npc_bubble["page"],
+            )
             
         if self.inventory_ui.is_open:
             self.inventory_ui.draw(self.screen)
@@ -613,8 +664,12 @@ class Game:
                 if event.key == Settings.TOGGLE_FULLSCREEN_KEY:
                     self.toggle_fullscreen()
                 
-                # Dialogue advance
-                if event.key == Settings.INTERACT_KEY and self.dialogue_manager.is_active:
+                # NPC bubble advance (takes priority over box dialogue)
+                if event.key == Settings.INTERACT_KEY and self._npc_bubble is not None:
+                    self._advance_npc_bubble()
+
+                # Box dialogue advance (signs, objects)
+                elif event.key == Settings.INTERACT_KEY and self.dialogue_manager.is_active:
                     self.dialogue_manager.advance()
                     if not self.dialogue_manager.is_active:
                         # Resume NPCs
@@ -623,7 +678,7 @@ class Game:
                                 npc.state = 'idle'
                                 
                 # Inventory Toggle
-                if event.key == Settings.INVENTORY_KEY and not self.dialogue_manager.is_active and not self.chest_ui.is_open:
+                if event.key == Settings.INVENTORY_KEY and not self.dialogue_manager.is_active and self._npc_bubble is None and not self.chest_ui.is_open:
                     self.inventory_ui.toggle()
                     
             # Inventory Input (Outside KEYDOWN, inside event loop)
@@ -638,8 +693,9 @@ class Game:
         """Update game state by dt."""
         # --- Logical Pause for Dialogue/Inventory ---
         self.emote_group.update(dt)
-        if self.dialogue_manager.is_active:
-            self.dialogue_manager.update(dt)
+        if self._npc_bubble is not None or self.dialogue_manager.is_active:
+            if self.dialogue_manager.is_active:
+                self.dialogue_manager.update(dt)
         elif self.inventory_ui.is_open:
             self.inventory_ui.update(dt)
         elif self.chest_ui.is_open:

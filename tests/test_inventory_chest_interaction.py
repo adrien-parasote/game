@@ -13,12 +13,13 @@ def mock_game_setup():
         game.inventory_ui = MagicMock()
         game.chest_ui = MagicMock()
         game.dialogue_manager = MagicMock()
-        
+        game._npc_bubble = None  # required by _handle_events guard
+
         # Default states
         game.inventory_ui.is_open = False
         game.chest_ui.is_open = False
         game.dialogue_manager.is_active = False
-        
+
         return game
 
 def test_inventory_wont_open_when_chest_is_open(mock_game_setup):

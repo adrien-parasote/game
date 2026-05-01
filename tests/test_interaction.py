@@ -97,7 +97,7 @@ def test_handle_interaction_npc():
         game.npcs = [npc]
         
         im.handle_interactions()
-        assert game._trigger_dialogue.called
+        assert game._trigger_npc_bubble.called
         assert npc.state == "interact"
 
 def test_handle_interaction_pickup_partial():
