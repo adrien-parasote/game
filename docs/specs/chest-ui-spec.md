@@ -24,7 +24,7 @@ The RPG engine has a fully functional `InteractiveEntity` with `sub_type='chest'
 |----|-----------|------|
 | A-01 | `07-chest.png` is in `assets/images/HUD/` (confirmed by find command) | LOW |
 | A-02 | `03-inventory_slot.png` (55x58) is reused for chest slots | LOW |
-| A-03 | Chest contents are not yet data-driven (slots are visual only, no items in v1) | LOW |
+| A-03 | Chest contents are data-driven via `data/loot_table.json` and `LootTable` class | LOW |
 | A-04 | The slot grid for the chest is 7 columns x 2 rows (14 slots), matching the green zone aspect ratio | MEDIUM — to validate visually |
 | A-05 | `ChestUI` is a non-blocking overlay: world physics, NPCs, and teleports are paused while it is open (same as `InventoryUI`) | LOW |
 | A-06 | Chest closing is triggered by: (a) player exiting interaction zone (auto-close), or (b) player pressing E again on open chest (action key close). Both paths go through `_close_chest()`. | LOW — revised 2026-04-30 |
@@ -39,7 +39,9 @@ The RPG engine has a fully functional `InteractiveEntity` with `sub_type='chest'
 | Chest background | `assets/images/HUD/07-chest.png` | ~1200x325px (estimated) | Main overlay frame |
 | Slot frame | `assets/images/ui/03-inventory_slot.png` | 55x58px | Repeated for each content slot |
 | Noble font | `Settings.FONT_NOBLE` / `Settings.FONT_SIZE_NOBLE` | 18pt | Chest name label |
-| Tech font | `Settings.FONT_TECH` / `Settings.FONT_SIZE_TECH` | 12pt | Reserved for quantities in v2 |
+| Tech font | `Settings.FONT_TECH` / `Settings.FONT_SIZE_TECH` | 12pt | Quantity labels in slots |
+| Loot Table | `assets/data/loot_table.json` | JSON | Source of truth for chest contents |
+| Property Types | `assets/data/propertytypes.json` | JSON | Metadata for item validation |
 
 ---
 
@@ -161,6 +163,11 @@ if obj.is_on and obj.sub_type == "door":
 7. Dialogue
 8. InventoryUI (if open)
 9. **ChestUI (if open) ← NEW**
+
+### 5.5 Input Restrictions
+
+- **Inventory Toggle Block:** Pressing the inventory key (default 'I') while `ChestUI.is_open` is `True` results in NO action. The inventory cannot be opened while a chest is active.
+- **Auto-closing:** The inventory UI closes automatically if a chest is opened (handled by `elif` priority in `_update`).
 
 ---
 

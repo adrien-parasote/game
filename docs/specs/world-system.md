@@ -135,4 +135,5 @@ Pickups use the same `{map_basename}_{tiled_id}` key format.
 - **Interaction Logic**: [game.py:L281](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L281)
 - **Teleport Check**: [game.py:L415](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L415)
 - **Teleport Entity**: [teleport.py](file:///Users/adrien.parasote/Documents/perso/game/src/entities/teleport.py)
+- **Loot Table Initialization**: [loot-table-spec.md](./loot-table-spec.md)
 

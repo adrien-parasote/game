@@ -10,7 +10,7 @@ This document consolidates all rendering, logic, and optimization specifications
 | **Map** | Data, Culling, Layout | `MapManager`, `LayoutStrategy` |
 | **Entity** | Sprites, Sorting, Movement | `BaseEntity`, `Player`, `CameraGroup`, `Teleport` |
 | **Logic** | Interaction gating, Proximity | `InteractionManager` |
-| **System** | Persistence, State | `WorldState` |
+| **System** | Persistence, State, Loot | `WorldState`, `LootTable` |
 
 ## 2. Context Stack (AI Prompting Guide)
 
@@ -21,6 +21,7 @@ Before performing any code changes, an AI agent MUST load the following "Context
 3.  **Core Logic**: `src/engine/game.py` - The main coordination loop.
 4.  **Spatial Logic**: `src/engine/interaction.py` - How entities see each other.
 5.  **Global State**: `src/config.py` - All thresholds and constants.
+6.  **Data Driven**: `LOOT_TABLE_SPEC.md` - For chest content management.
 
 ## 3. Implementation Details
 
@@ -188,6 +189,20 @@ The engine uses a multi-pass rendering pipeline to combine layers, entities, and
 6.  **Pass 6: Player Emotes**: Rendered manually from `emote_group` with camera offset after the HUD to ensure top-level visibility.
 7.  **Pass 7: Custom Cursor**: The absolute last rendering step. Size is configurable via `Settings.CURSOR_SIZE`.
 
+### T. UI Hierarchy & Input Blocking
+
+The engine enforces a strict UI priority to prevent overlapping interfaces and input conflicts.
+
+| Component | Priority | Input Block |
+|-----------|----------|-------------|
+| **Dialogue** | 1 (Highest) | Blocks Inventory, Chest, and Player movement. |
+| **Inventory** | 2 | Blocks Player movement. |
+| **Chest** | 3 | Blocks Inventory toggle. Allows limited Player movement/interaction for auto-closing. |
+
+**Logic**:
+- If `ChestUI` is open, pressing the `INVENTORY_KEY` is ignored.
+- If `InventoryUI` is open, interaction with chests is ignored as `interaction_manager.handle_interactions()` is bypassed in the main loop.
+
 ### S. Dynamic Effect Specifications
 
 #### Light Halos (Premium Glow)
@@ -270,3 +285,4 @@ The engine uses a multi-pass rendering pipeline to combine layers, entities, and
 - **Teleport Logic**: [game.py - _check_teleporters](src/engine/game.py#L517)
 - **SFX Overlap Guard**: [audio.py - play_sfx](src/engine/audio.py#L111)
 - **Hitbox Debugging**: [groups.py - custom_draw](src/entities/groups.py#L65)
+- **Loot Table Integration**: [loot-table-spec.md](./loot-table-spec.md)

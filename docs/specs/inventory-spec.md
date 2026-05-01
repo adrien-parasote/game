@@ -50,7 +50,7 @@
 
 | Action | Input | Result |
 |--------|-------|--------|
-| Toggle | Key 'I' | Toggles `is_open`, pauses `TimeSystem`, manages `mouse_visible`. |
+| Toggle | Key 'I' | Toggles `is_open`, pauses `TimeSystem`, manages `mouse_visible`. **Blocked if `ChestUI.is_open` is True.** |
 | Rotate Preview | Dir Keys | Updates `preview_state` ('up', 'down', 'left', 'right'). |
 | Select Tab | Left Click | Updates `active_tab` index. |
 | Click Slot | Left Click | Logs interaction for grid index or equipment ID. |

@@ -17,6 +17,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `facing_direction` | string | Optional. Overrides the `position`-based `direction_str`. Useful for signs. |
 | `is_on` | bool | The initial state of the object. Persisted in `WorldState` using `{map}-{element_id}` as key. |
 | `sfx` | string | Optional. Name of the `.ogg` file in `assets/audio/sfx/` to play on interaction. |
+| `contents` | list[Item] | Dynamically populated list of `Item` objects (for chests), loaded from `LootTable`. |
 
 ### Animation Logic
 - **Column Mapping**: 
