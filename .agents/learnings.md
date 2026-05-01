@@ -747,3 +747,58 @@ grep -n "def world_time\|world_time = " src/engine/time_system.py
 ---
 
 *Last optimized: 2026-05-01 — added L-REND-002, L-REND-003, A-AGENT-003 from window lighting beam session.*
+
+---
+
+### L-TEST-006 · 2026-05-01 · U · Perfect
+**Domain-based test directory structure**
+
+Organiser les tests par domaine métier (mirroring `src/`) produit un ratio signal/bruit maximal : la prochaine IA sait immédiatement où chercher sans lire tous les fichiers.
+
+```
+tests/
+├── conftest.py          # Global SDL init, shared fixtures
+├── engine/              # mirrors src/engine/
+├── entities/            # mirrors src/entities/
+├── map/                 # mirrors src/map/
+├── ui/                  # mirrors src/ui/
+└── graphics/            # mirrors src/graphics/
+```
+
+**Règle :** Chaque nouveau module `src/<domain>/foo.py` → créer `tests/<domain>/test_foo.py`. Jamais de test à la racine `tests/` sauf `conftest.py`.
+
+**Evidence :** 23 fichiers plats → 16 fichiers dans 5 domaines. 436/436, 0 régression. commit `484ccfa`.
+
+---
+
+### A-TEST-007 · 2026-05-01 · P · Minor Rework
+**Slice `lines[start:end]` sans validation syntaxique → `IndentationError`**
+
+Extraire un bloc de code par slicing de lignes sans valider que `start` pointe sur la première ligne non-indentée du bloc (def/class) produit un fichier syntaxiquement invalide.
+
+```python
+# ❌ start peut pointer sur une ligne DANS le corps du bloc précédent
+lines = source.splitlines()
+start = next(i for i, l in enumerate(lines) if 'class TestX' in l)
+helper_lines = lines[32:77]  # estimation empirique → fragile
+with open("out.py", "w") as f:
+    f.write("\n".join(helper_lines))  # → IndentationError si mal calé
+
+# ✅ valider avec ast.parse avant d'écrire
+import ast
+candidate = "\n".join(lines[start:end])
+try:
+    ast.parse(candidate)
+    with open("out.py", "w") as f:
+        f.write(candidate)
+except SyntaxError as e:
+    raise RuntimeError(f"Slice invalide [L{start}:L{end}]: {e}")
+```
+
+**Règle générale :** Pour les migrations 1:1, utiliser `shutil.copy()`. Réserver les scripts de slicing aux extractions de classes isolées, toujours validées avec `ast.parse()` avant écriture.
+
+**Evidence :** `tests/entities/test_interactive.py` — `IndentationError` à la ligne 13 corrigé en 30s après refactoring du script. commit `484ccfa`.
+
+---
+
+*Last optimized: 2026-05-01 — added L-TEST-006, A-TEST-007 from test suite urbanization session.*

@@ -17,6 +17,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `facing_direction` | string | Optional. Overrides the `position`-based `direction_str`. Useful for signs. |
 | `is_on` | bool | The initial state of the object. Persisted in `WorldState` using `{map}-{element_id}` as key. |
 | `sfx` | string | Optional. Name of the `.ogg` file in `assets/audio/sfx/` to play on interaction. |
+| `off_position` | int | Column index for OFF state (`-1` = no switch, backward-compat default). When ≥ 0, `interact()` switches `col_index` between `on_position` (col 0) and `off_position`. Used by `animated_decor` (e.g. torch ON col 0 / OFF col 1). |
 | `contents` | list[Item] | Dynamically populated list of `Item` objects (for chests), loaded from `LootTable`. |
 
 ### Animation Logic
@@ -24,6 +25,11 @@ This document defines the requirements for fixed interactive objects (chests, sw
   - The object property `position` (int, 0-3) determines the sprite-sheet column index directly (0-indexed).
   - Mapping: `0=Down, 1=Left, 2=Right, 3=Up` (matches `InteractiveEntity.POSITION_TO_DIR` in code).
   - The engine uses this index to slice the correct vertical strip from the spritesheet.
+- **`off_position` Column Switch** (for `animated_decor`):
+  - If `off_position == -1` (default): single-column spritesheet, no switch on toggle (backward compat).
+  - If `off_position >= 0`: spritesheet has ≥2 columns. `interact()` calls `_update_col_index()` — `col_index = on_position` (0) when `is_on=True`, `col_index = off_position` when `is_on=False`.
+  - `restore_state({'is_on': bool})` also calls `_update_col_index()` to restore visual state across map reloads.
+  - **Tiled setup**: Set `off_position=1` on the tileset custom property of the `animated_decor` object; ensure spritesheet has col 0 = ON animation, col 1 = OFF animation.
 - **Behavior**: On interaction, state toggles between ON and OFF. Default state is OFF, unless `is_animated` is true, or `sub_type` is a light source (`lamp`, `lantern`, `torch`, `fire`), in which case the default state is ON.
   - **Initialization**: If `is_on` is explicitly set to `true` at spawn, the object immediately enters its ON state. For non-animated objects (e.g., doors), `frame_index` is set to `end_row` and dynamic collision is updated accordingly during physics setup.
 

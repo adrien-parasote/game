@@ -22,7 +22,7 @@ To maintain a 10-20x velocity multiplier, all contributions must pass through th
     - **Static Analysis**: Zero high-risk findings (`bandit`).
     - **Tests**: 100% pass rate in the full test suite.
     - **Coverage**: >= 90% line coverage overall; 100% on `inventory_system.py`, `npc.py`, `audio.py`, `map/manager.py`, `spritesheet.py`, `emote_sprite.py`, `teleport.py`.
-    - **Current status (2026-04-30):** 90% global, 195 tests passing.
+    - **Current status (2026-05-01):** 92% global, **436 tests passing** — domain-based layout: `tests/{engine,entities,map,ui,graphics}/`.
 
 ## 2. Technical Standards
 
@@ -39,5 +39,4 @@ To maintain a 10-20x velocity multiplier, all contributions must pass through th
 - **Portability**: Use `Settings` for all keys/constants; never access raw JSON in logic.
 - **Stability**: Always apply `MAX_DT_CLAMP` (default: 10.0) in `update()` to prevent physics explosion after long pauses or debugging.
 - **Cross-Platform**: Use `os.path` for all file path operations.
-- [STRATEGIC_BLUEPRINT.md](../STRATEGIC_BLUEPRINT.md)
-- [ENGINE_CORE.md](ENGINE_CORE.md)
+- [engine-core.md](engine-core.md)

@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-01 | Files scanned: 33 | Token estimate: ~380 -->
+<!-- Generated: 2026-05-01 | Files scanned: 34 | Token estimate: ~380 -->
 
 # Data & Dependencies Architecture
 
@@ -6,7 +6,7 @@
 - **Settings** (`settings.json`): Screen size, debug flags, colors, cursor sizes. Parsed by `src/config.py` (89 lines, 93% cov).
 - **Localization** (`assets/langs/fr.json`): Nested JSON `"npc.farmer.dialogue"` → string. Loaded by `I18nManager`.
 - **Loot Tables** (`assets/data/loot_table.json`): Per-chest entries: `{item_id, min_qty, max_qty, chance}`. Max 20 stacks per chest; overflow trimmed with WARNING log.
-- **Gameplay Data** (`gameplay.json`): Item registry — `item_id → {name, description, icon, type, slot, stackable}`.
+- **Gameplay Data** (`gameplay.json`): Item registry — `item_id → {name, description, icon, type, equip_slot, stack_max}`.
 - **Property Types** (`assets/data/propertytypes.json`): Enum metadata for Tiled object properties validation.
 - **Maps** (`assets/tiled/maps/*.tmj`): Tilemap JSON — layers, objects, properties.
 - **Tilesets** (`assets/tiled/tilesets/*.tsx`): Spritesheet grid definitions (XML).
@@ -16,8 +16,9 @@
 ### Player Inventory (`Inventory`, `src/engine/inventory_system.py`)
 ```
 slots: list[Item | None]   # Fixed size = capacity (28), padded with None
-equipment: dict            # {"head": Item|None, "chest": Item|None, "legs": Item|None,
-                           #  "feet": Item|None, "weapon": Item|None, "shield": Item|None}
+equipment: dict            # {"HEAD": Item|None, "BAG": Item|None, "BELT": Item|None,
+                           #  "LEFT_HAND": Item|None, "UPPER_BODY": Item|None,
+                           #  "LOWER_BODY": Item|None, "RIGHT_HAND": Item|None, "SHOES": Item|None}
 ```
 
 ### Item
