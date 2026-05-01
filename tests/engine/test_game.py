@@ -1,8 +1,10 @@
+"""Tests for Game engine: init, loading, events, drawing, transitions + config."""
 import pytest
 import pygame
 from unittest.mock import MagicMock, patch
 from src.engine.game import Game
 from src.engine.asset_manager import AssetManager
+from src.config import Settings
 
 @patch('src.engine.game.Game._load_map')
 def test_game_initialization(mock_load):
@@ -740,3 +742,24 @@ def test_update_fps_title(mock_load):
 
 
 import unittest.mock
+
+
+# --- Config / Settings ---
+
+
+def test_settings_load():
+    """Verify settings load defaults and handles missing files."""
+    Settings.load()
+    assert Settings.VERSION != ""
+    assert Settings.WINDOW_WIDTH > 0
+    assert Settings.TILE_SIZE == 32
+
+def test_font_tiers_exist():
+    """Verify the three font tiers are defined in settings."""
+    assert hasattr(Settings, "FONT_NOBLE")
+    assert hasattr(Settings, "FONT_NARRATIVE")
+    assert hasattr(Settings, "FONT_TECH")
+    
+    assert Settings.FONT_NOBLE.endswith(".ttf")
+    assert Settings.FONT_NARRATIVE.endswith(".ttf")
+    assert Settings.FONT_TECH.endswith(".ttf")

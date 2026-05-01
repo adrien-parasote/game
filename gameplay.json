@@ -18,7 +18,7 @@
     "sfx_volume": 0.5
   },
   "time": {
-    "minute_duration": 1.5,
+    "minute_duration": 0.01,
     "days_per_season": 30,
     "initial_season": 0
   },
