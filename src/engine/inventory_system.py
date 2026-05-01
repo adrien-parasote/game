@@ -21,6 +21,10 @@ class Inventory:
     def __init__(self, capacity: int = 28):
         self.capacity = capacity
         self.slots: List[Optional[Item]] = [None] * capacity
+        self.equipment: Dict[str, Optional[Item]] = {
+            "HEAD": None, "BAG": None, "BELT": None, "LEFT_HAND": None,
+            "UPPER_BODY": None, "LOWER_BODY": None, "RIGHT_HAND": None, "SHOES": None
+        }
         self.item_data = self._load_item_data()
         self.i18n = I18nManager()
 
@@ -95,5 +99,35 @@ class Inventory:
         if 0 <= index < self.capacity:
             item = self.slots[index]
             self.slots[index] = None
+            return item
+        return None
+
+    def equip_item(self, slot_name: str, item: Item) -> Optional[Item]:
+        """
+        Equips the given item into the specified slot.
+        Returns the previously equipped item if one was swapped out.
+        If the item is not valid for this slot based on propertytypes.json, 
+        returns the passed item untouched and does not equip it.
+        """
+        if slot_name not in self.equipment:
+            return item
+            
+        tech_data = self.item_data.get(item.id, {})
+        valid_slot = tech_data.get("equip_slot")
+        
+        if valid_slot != slot_name:
+            return item
+            
+        swapped = self.equipment[slot_name]
+        self.equipment[slot_name] = item
+        return swapped
+
+    def unequip_item(self, slot_name: str) -> Optional[Item]:
+        """
+        Removes and returns the equipped item from the specified slot.
+        """
+        if slot_name in self.equipment:
+            item = self.equipment[slot_name]
+            self.equipment[slot_name] = None
             return item
         return None

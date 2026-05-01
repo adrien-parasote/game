@@ -53,7 +53,9 @@
 | Toggle | Key 'I' | Toggles `is_open`, pauses `TimeSystem`, manages `mouse_visible`. **Blocked if `ChestUI.is_open` is True.** |
 | Rotate Preview | Dir Keys | Updates `preview_state` ('up', 'down', 'left', 'right'). |
 | Select Tab | Left Click | Updates `active_tab` index. |
-| Click Slot | Left Click | Logs interaction for grid index or equipment ID. |
+| Click Slot | Mouse Down | Sets `_dragging_item` if clicking an occupied grid or equipment slot. |
+| Drag Item | Mouse Move | Updates `_drag_pos` for the item icon to follow the cursor. |
+| Drop Item | Mouse Up | Transfers the item to the new slot (grid or equipment). Swaps if target is occupied. |
 | Hover Grid | Mouse Move | Renders `04-inventory_slot_hover.png` over grid slots. |
 | Hover Equip | Mouse Move | Renders a rounded gold border (78x78) around the equipment slot. |
 | Custom Cursor| Always | Replaces system cursor. Switches to 'select' image on left-click. Size controlled by `Settings.CURSOR_SIZE`. |
@@ -65,6 +67,7 @@
 4.  **Do NOT hardcode** offsets; always relate to `bg_rect.topleft`.
 5.  **Do NOT scale** cursors without preserving aspect ratio.
 6.  **Do NOT draw** the cursor before any other UI element (must be absolute last).
+7.  **Do NOT draw** the dragged item's icon in its original slot while dragging.
 
 ## ✅ Patterns to Reproduce
 1.  **Preserved Aspect Ratio Scaling:** Calculate target dimensions based on a configurable height (Settings) and the asset's native ratio.
@@ -80,10 +83,13 @@
 | `add_item` | `(item_id: str, quantity: int) -> int` | Remaining quantity | Adds items, merges stacks. Returns 0 if all added. |
 | `get_item_at` | `(index: int) -> Optional[Item]` | `Item \| None` | Returns item at slot index without removing it. |
 | `remove_item` | `(index: int) -> Optional[Item]` | `Item \| None` | Removes and returns item at slot index, sets slot to `None`. Returns `None` if out of bounds or empty. **Added v1.1** |
+| `equip_item` | `(slot_name: str, item: Item) -> Optional[Item]` | `Item \| None` | Equips item in `slot_name` if `propertytypes.json` allows it. Returns swapped item if occupied, else `None`. |
+| `unequip_item` | `(slot_name: str) -> Optional[Item]` | `Item \| None` | Removes and returns the equipped item from `slot_name`. |
 
 **Boundary invariants:**
 - `remove_item` on an empty slot returns `None` without raising.
 - `remove_item` with `index < 0` or `index >= capacity` returns `None`.
+- `equip_item` enforces `equip_slot` from `propertytypes.json` matching `slot_name`. Returns the passed item untouched if invalid.
 
 ## 🔍 Verification
 - **TDD:** `tests/test_inventory.py` covers logic states.
