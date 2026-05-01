@@ -623,7 +623,7 @@ class Game:
                                 npc.state = 'idle'
                                 
                 # Inventory Toggle
-                if event.key == Settings.INVENTORY_KEY and not self.dialogue_manager.is_active:
+                if event.key == Settings.INVENTORY_KEY and not self.dialogue_manager.is_active and not self.chest_ui.is_open:
                     self.inventory_ui.toggle()
                     
             # Inventory Input (Outside KEYDOWN, inside event loop)
