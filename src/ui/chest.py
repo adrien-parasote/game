@@ -237,6 +237,8 @@ class ChestUI:
                     contents = self._get_chest_contents()
                     if i < len(contents):
                         entry = contents[i]
+                        if entry is None:
+                            continue
                         self._dragging_item = {
                             "item_id": entry["item_id"],
                             "quantity": entry["quantity"],

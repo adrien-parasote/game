@@ -23,7 +23,7 @@ def test_transfer_chest_to_inventory_success(chest_ui):
     chest_ui._transfer_chest_to_inventory()
     
     # Verify
-    assert len(chest_ui._chest_entity.contents) == 0
+    assert sum(1 for e in chest_ui._chest_entity.contents if e is not None) == 0
     assert chest_ui._player.inventory.slots[0].id == "sword"
 
 def test_transfer_chest_to_inventory_stacking(chest_ui):
@@ -38,7 +38,7 @@ def test_transfer_chest_to_inventory_stacking(chest_ui):
     chest_ui._transfer_chest_to_inventory()
     
     # Verify
-    assert len(chest_ui._chest_entity.contents) == 0
+    assert sum(1 for e in chest_ui._chest_entity.contents if e is not None) == 0
     assert inv.slots[0].quantity == 7
 
 def test_transfer_chest_to_inventory_full(chest_ui):
@@ -54,7 +54,7 @@ def test_transfer_chest_to_inventory_full(chest_ui):
     chest_ui._transfer_chest_to_inventory()
     
     # Verify nothing moved
-    assert len(chest_ui._chest_entity.contents) == 1
+    assert sum(1 for e in chest_ui._chest_entity.contents if e is not None) == 1
     assert chest_ui._chest_entity.contents[0]["quantity"] == 10
 
 def test_transfer_inventory_to_chest_success(chest_ui):
@@ -67,7 +67,7 @@ def test_transfer_inventory_to_chest_success(chest_ui):
     
     # Verify
     assert inv.slots[0] is None
-    assert len(chest_ui._chest_entity.contents) == 1
+    assert sum(1 for e in chest_ui._chest_entity.contents if e is not None) == 1
     assert chest_ui._chest_entity.contents[0]["item_id"] == "coin"
     assert chest_ui._chest_entity.contents[0]["quantity"] == 10
 
@@ -85,7 +85,7 @@ def test_transfer_inventory_to_chest_full(chest_ui):
     
     # Verify nothing moved
     assert inv.slots[0] is not None
-    assert len(chest_ui._chest_entity.contents) == CHEST_MAX_SLOTS
+    assert sum(1 for e in chest_ui._chest_entity.contents if e is not None) == CHEST_MAX_SLOTS
 
 # -----------------------------------------------------------------------
 # Manual Drag & Drop tests
@@ -97,6 +97,7 @@ def test_manual_drag_chest_to_inventory(chest_ui):
     chest_ui._layout_computed = True
     # Mock slot position
     chest_ui._slot_positions = [pygame.Rect(10, 10, 50, 50)]
+    chest_ui._inv_slot_positions = [pygame.Rect(100, 100, 50, 50)]
     chest_ui._inv_bg_rect = pygame.Rect(100, 100, 200, 200)
     
     # 1. Mouse down on slot 0
@@ -106,17 +107,17 @@ def test_manual_drag_chest_to_inventory(chest_ui):
     assert chest_ui._dragging_item["item_id"] == "sword"
     
     # 2. Mouse motion
-    event_move = MagicMock(type=pygame.MOUSEMOTION, pos=(150, 150))
+    event_move = MagicMock(type=pygame.MOUSEMOTION, pos=(125, 125))
     chest_ui.handle_event(event_move)
-    assert chest_ui._drag_pos == (150, 150)
+    assert chest_ui._drag_pos == (125, 125)
     
     # 3. Mouse up on inventory panel
-    event_up = MagicMock(type=pygame.MOUSEBUTTONUP, button=1, pos=(150, 150))
+    event_up = MagicMock(type=pygame.MOUSEBUTTONUP, button=1, pos=(125, 125))
     chest_ui.handle_event(event_up)
     
     # Verify
     assert chest_ui._dragging_item is None
-    assert len(chest_ui._chest_entity.contents) == 0
+    assert sum(1 for e in chest_ui._chest_entity.contents if e is not None) == 0
     assert chest_ui._player.inventory.slots[0].id == "sword"
 
 def test_manual_drag_inventory_to_chest_stacking(chest_ui):
@@ -126,6 +127,7 @@ def test_manual_drag_inventory_to_chest_stacking(chest_ui):
     chest_ui._chest_entity.contents = [{"item_id": "potion", "quantity": 2}]
     
     chest_ui._layout_computed = True
+    chest_ui._slot_positions = [pygame.Rect(10, 10, 50, 50)]
     chest_ui._inv_slot_positions = [pygame.Rect(100, 100, 50, 50)]
     chest_ui._bg_rect = pygame.Rect(10, 10, 80, 80)
     
@@ -168,7 +170,7 @@ def test_manual_drag_cancel_drop(chest_ui):
     
     # Verify item remains in chest
     assert chest_ui._dragging_item is None
-    assert len(chest_ui._chest_entity.contents) == 1
+    assert sum(1 for e in chest_ui._chest_entity.contents if e is not None) == 1
     assert chest_ui._chest_entity.contents[0]["item_id"] == "sword"
 
 def test_auto_transfer_buttons(chest_ui):
