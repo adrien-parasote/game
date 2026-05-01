@@ -1,8 +1,8 @@
 # Technical Spec — Chest UI System [Implementation]
 
 **Type:** Implementation Document  
-**Version:** 1.1  
-**Status:** Implemented — 2026-04-30 (doc-update sync)
+**Version:** 1.2  
+**Status:** Implemented — 2026-05-01 (doc-update sync: chest-inventory transfer system)
 
 ---
 
@@ -169,6 +169,45 @@ if obj.is_on and obj.sub_type == "door":
 - **Inventory Toggle Block:** Pressing the inventory key (default 'I') while `ChestUI.is_open` is `True` results in NO action. The inventory cannot be opened while a chest is active.
 - **Auto-closing:** The inventory UI closes automatically if a chest is opened (handled by `elif` priority in `_update`).
 
+### 5.6 Item Transfer System
+
+#### Auto-Transfer (Arrow Buttons)
+
+Two arrow buttons are rendered below the chest panel (between the two panels):
+
+| Button | Icon | Action |
+|--------|------|--------|
+| Left (up_rect) | Down arrow (↓) | Moves all chest items → player inventory |
+| Right (down_rect) | Up arrow (↑) | Moves all inventory items → chest |
+
+**Left Arrow (Chest → Inventory) rules:**
+1. For each item in chest (in order): try to stack into existing inventory slot.
+2. If no stackable slot, add to first empty slot.
+3. Stop when inventory is full (remaining items stay in chest).
+
+**Right Arrow (Inventory → Chest) rules:**
+1. For each item in inventory (in order): try to stack into existing chest slot.
+2. If no stackable slot, add to first empty chest slot.
+3. Stop when chest is full (remaining items stay in inventory).
+
+#### Manual Drag & Drop
+
+State machine managed by `_dragging_item: dict | None`:
+
+| Event | Action |
+|-------|--------|
+| `MOUSEBUTTONDOWN` (left) | Capture item into `_dragging_item`, initialize `_drag_pos` to click position |
+| `MOUSEMOTION` | Update `_drag_pos` |
+| `MOUSEBUTTONUP` (left) on chest panel | `_transfer_dragged_to_chest()` |
+| `MOUSEBUTTONUP` (left) on inventory panel | `_transfer_dragged_to_inventory()` |
+| `MOUSEBUTTONUP` elsewhere | Cancel: `_dragging_item = None`, item stays in source |
+
+**Constraints:**
+- Full stack is transferred (no split).
+- During drag, item is hidden from its source slot.
+- Item icon is drawn at `_drag_pos`, **below** the cursor layer.
+- `_dragging_item` fields: `{item_id, quantity, source: "chest"|"inv", index, icon}`.
+
 ---
 
 ## 6. Module: `src/ui/chest.py`
@@ -192,12 +231,15 @@ class ChestUI:
 
 **Private methods:**
 ```python
+    # Asset loading
     def _load_background(self) -> pygame.Surface | None
     def _load_inv_background(self) -> pygame.Surface | None
     def _load_slot_image(self) -> pygame.Surface | None
     def _load_cursor(self, path: str) -> pygame.Surface | None
     def _load_and_scale_arrow(self, path: str, scale: float) -> pygame.Surface | None
     def _get_item_icon(self, icon_filename: str, slot_size: int) -> pygame.Surface | None
+
+    # Layout
     def _compute_layout(self) -> None
     def _compute_inv_layout(self, slot_size, step, screen_w, screen_h, arrow_scale) -> None
     def _capacity(self) -> int
@@ -206,18 +248,32 @@ class ChestUI:
     def _scroll_right(self) -> None
     def _scroll_left(self) -> None
     def _current_page_slots(self) -> list
+
+    # Drawing
     def _draw_title(self, screen: pygame.Surface) -> None
     def _draw_slots(self, screen: pygame.Surface) -> None
     def _draw_arrow_hovers(self, screen: pygame.Surface) -> None
     def _draw_inv_slots(self, screen: pygame.Surface) -> None
     def _draw_inv_arrows(self, screen: pygame.Surface) -> None
     def _draw_cursor(self, screen: pygame.Surface) -> None
+    def _draw_dragged_item(self, screen: pygame.Surface) -> None   # NEW v1.2
+
+    # Event handling
+    def _handle_mouse_down(self, event: pygame.event.Event) -> None   # NEW v1.2
+    def _handle_mouse_motion(self, event: pygame.event.Event) -> None  # NEW v1.2
+    def _handle_mouse_up(self, event: pygame.event.Event) -> None      # NEW v1.2
+
+    # Transfer logic
+    def _transfer_chest_to_inventory(self) -> None    # NEW v1.2
+    def _transfer_inventory_to_chest(self) -> None    # NEW v1.2
+    def _transfer_dragged_to_chest(self) -> None      # NEW v1.2
+    def _transfer_dragged_to_inventory(self) -> None  # NEW v1.2
 ```
 
 **Constraints:**
-- File < 700 lines (dual-panel implementation, v1.1+).
+- File < 900 lines (dual-panel + transfer system, v1.2).
 - All methods < 50 lines.
-- No state mutation after `_compute_layout()` except `is_open`, `_chest_entity`, `_player`, hover state, and `_inv_offset`.
+- No state mutation after `_compute_layout()` except `is_open`, `_chest_entity`, `_player`, hover state, `_inv_offset`, and `_dragging_item` / `_drag_pos`.
 - No assets loaded in `draw()`.
 
 ---
@@ -263,6 +319,11 @@ class ChestUI:
 | Crash on missing asset | Guard `draw()` with `if self._bg is None: return` | Headless tests must not crash |
 | Direct `game.chest_ui` access in `_check_chest_auto_close` | `getattr(self.game, 'chest_ui', None)` | MagicMock with `spec=[]` raises `AttributeError` |
 | Draw chest UI before inventory | Draw last (after inventory) | Z-order: chest behind inventory |
+| Draw cursor before dragged item | Draw item first, cursor last | Cursor must always be visible on top |
+| Split drag transfers in D&D | Full stack only | No partial split — `_dragging_item["quantity"]` is the entire stack |
+| Set `_drag_pos` only on MOUSEMOTION | Also set on MOUSEBUTTONDOWN | Item must appear at cursor immediately on click |
+| Show item quantity during drag | Hide quantity in `_draw_dragged_item` | As per UX spec: no quantity on drag icon |
+| Left arrow (up_rect) = Inv→Chest | Left arrow = Chest→Inv | Layout: left pushes DOWN (to inventory below) |
 
 ---
 
@@ -283,6 +344,23 @@ class ChestUI:
 | TC-U-09 | `ChestUI._draw_slots` | `slot_img=None` | Falls back to `pygame.draw.rect` | Missing asset |
 | TC-U-10 | `_load_background` | `pygame.error` raised | Returns `None` | File not found |
 | TC-U-11 | `_load_slot_image` | `FileNotFoundError` raised | Returns `None` | Headless / missing |
+
+### Transfer Tests — `tests/test_transfer_logic.py` (NEW v1.2)
+
+| Test ID | Flow | Setup | Expected |
+|---------|------|-------|----------|
+| TC-T-01 | Auto: Chest → Inv | 1 item in chest | Item moved to inv slot 0, chest empty |
+| TC-T-02 | Auto: Chest → Inv stacking | 1 item in inv, same in chest | Quantities merged, chest empty |
+| TC-T-03 | Auto: Chest → Inv, inv full | 5 items in full inv | Chest unchanged |
+| TC-T-04 | Auto: Inv → Chest | 1 item in inv | Item moved to chest, inv slot cleared |
+| TC-T-05 | Auto: Inv → Chest, chest full | Chest at max capacity | Inv unchanged |
+| TC-T-06 | D&D: Chest slot → Inv panel | Drag item, drop on inv_bg_rect | Chest empty, inv has item |
+| TC-T-07 | D&D: Inv slot → Chest panel, stacking | Same item in chest + inv | Quantities merged |
+| TC-T-08 | D&D: Click empty slot | No item at position | `_dragging_item` stays None |
+| TC-T-09 | D&D: Cancel (drop outside) | Drop at (0,0) outside panels | Item stays in source |
+| TC-T-10 | Auto buttons: click up_rect | Arrow up clicked | `_transfer_chest_to_inventory` called |
+| TC-T-11 | Auto buttons: click down_rect | Arrow down clicked | `_transfer_inventory_to_chest` called |
+| TC-T-12 | Hover updates | Mouse over slot/arrow | Correct hover state set |
 
 ### Integration Tests — `tests/test_interaction.py`
 

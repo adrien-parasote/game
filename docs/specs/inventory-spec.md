@@ -72,6 +72,21 @@
 3.  **Conditional Emote Suppression:** Provide user settings to toggle visual feedback for failed actions ("?") to avoid UX annoyance.
 4.  **Measurement-First UI Alignment:** Always measure dark/interactive zones in background assets pixel-perfectly before defining collision rects or selection frames.
 
+## 🔧 `Inventory` API — `src/engine/inventory_system.py`
+
+| Method | Signature | Returns | Description |
+|--------|-----------|---------|-------------|
+| `add_item` | `(item_id: str, quantity: int) -> int` | Remaining quantity | Adds items, merges stacks. Returns 0 if all added. |
+| `get_item_at` | `(index: int) -> Optional[Item]` | `Item \| None` | Returns item at slot index without removing it. |
+| `remove_item` | `(index: int) -> Optional[Item]` | `Item \| None` | Removes and returns item at slot index, sets slot to `None`. Returns `None` if out of bounds or empty. **Added v1.1 for chest transfer system.** |
+
+**Boundary invariants:**
+- `remove_item` on an empty slot returns `None` without raising.
+- `remove_item` with `index < 0` or `index >= capacity` returns `None`.
+
 ## 🔍 Verification
 - **TDD:** `tests/test_inventory.py` covers logic states.
+- **Transfer tests:** `tests/test_inventory_removal.py` covers `remove_item` edge cases.
 - **Coords:** Verified via `detect_clusters_fuzzy.py` on the legacy asset.
+
+**Last updated:** 2026-05-01
