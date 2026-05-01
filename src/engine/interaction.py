@@ -149,7 +149,10 @@ class InteractionManager:
             if npc.rect.colliderect(target_rect):
                 res = npc.interact(self.game.player)
                 if res:
-                    self.game._trigger_npc_bubble(npc, res)
+                    if npc.is_moving:
+                        self.game._pending_npc_dialogue = (npc, res)
+                    else:
+                        self.game._trigger_npc_bubble(npc, res)
                 return True
         return False
 

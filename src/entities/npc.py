@@ -48,9 +48,9 @@ class NPC(BaseEntity):
         else:
             self.current_facing = 'down' if diff.y > 0 else 'up'
             
-        # Reset movement
+        # Reset movement direction to prevent chaining, but do NOT set is_moving = False
+        # so that the NPC finishes its current grid tile transition smoothly.
         self.direction = pygame.math.Vector2(0, 0)
-        self.is_moving = False
         
         return self.element_id
 

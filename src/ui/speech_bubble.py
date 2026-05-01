@@ -4,16 +4,6 @@
 The bubble is built from 32×32 tiles located in `assets/images/HUD/`:
 13-21 (bottom/right/top/… corners) and 22 for pagination arrow.
 The tail (queue) is tile 21-bubble_queue.png.
-
-The `SpeechBubble` class provides a `draw` method that composes the bubble,
-fills the interior with white, renders text, draws the tail above the
-character, and shows a pagination arrow when needed.
-
-Testability
------------
-`draw()` accepts an optional ``blit_func`` callable (dependency injection).
-Pass a ``unittest.mock.MagicMock()`` in tests to intercept blit calls
-without touching the read-only C-level ``pygame.Surface.blit`` attribute.
 """
 
 import os
@@ -25,7 +15,13 @@ import pygame
 # Constants
 # ---------------------------------------------------------------------------
 TILE_SIZE: int = 32
+MIN_BUBBLE_SIZE: int = 2 * TILE_SIZE  # Minimum size to fit corners (64x64)
 ASSET_DIR: str = os.path.join("assets", "images", "HUD")
+
+_ARROW_OFFSET_X = 15
+_ARROW_OFFSET_Y = -5
+_BUBBLE_PADDING = 12
+_TAIL_GAP = 20
 
 TILES: dict = {
     "bottom_right": "13-bubble_bottom_right.png",
@@ -61,21 +57,16 @@ class SpeechBubble:
 
     def __init__(
         self,
-        max_width_px: int = 224,
-        padding: int = 8,
-        tail_gap: int = 4,
+        max_width_px: int = 288,
         arrow_inset: int = 4,
     ) -> None:
-        self.max_width_px = max_width_px
-        self.padding = padding
-        self.tail_gap = tail_gap
+        self.max_width_px = max(max_width_px, MIN_BUBBLE_SIZE)
+        self.padding = _BUBBLE_PADDING
+        self.tail_gap = _TAIL_GAP
         self.arrow_inset = arrow_inset
         self.font: Optional[pygame.font.Font] = None
         self._load_tiles()
 
-    # ------------------------------------------------------------------
-    # Asset loading
-    # ------------------------------------------------------------------
     def _load_tiles(self) -> None:
         """Load all PNG tiles and cache them as pygame.Surface objects."""
         self.tiles: dict = {}
@@ -84,35 +75,33 @@ class SpeechBubble:
             if not os.path.exists(path):
                 raise FileNotFoundError(f"Bubble asset not found: {path}")
             img = pygame.image.load(path).convert_alpha()
-            self.tiles[key] = pygame.transform.smoothscale(img, (TILE_SIZE, TILE_SIZE))
+            
+            # Use default size for arrow as requested; scale others to TILE_SIZE
+            if key == "arrow":
+                self.tiles[key] = img
+            else:
+                self.tiles[key] = pygame.transform.smoothscale(img, (TILE_SIZE, TILE_SIZE))
 
-    # ------------------------------------------------------------------
-    # Font handling
-    # ------------------------------------------------------------------
     def set_font(self, font: pygame.font.Font) -> None:
-        """Assign the pygame font used for rendering text inside the bubble."""
+        """Assign the pygame font used for rendering text."""
         self.font = font
 
-    # ------------------------------------------------------------------
-    # Text processing
-    # ------------------------------------------------------------------
     def _wrap_text(self, text: str) -> List[str]:
-        """Wrap *text* to fit within the inner text area width.
-
-        Returns a list of wrapped lines using word boundaries.
-        Raises ``RuntimeError`` if no font has been assigned.
-        """
+        """Wrap *text* to fit within bubble width minus padding on each side."""
         if not self.font:
             raise RuntimeError("Font not set on SpeechBubble before drawing.")
 
-        inner_width = self.max_width_px - 2 * self.padding
+        inner_max_width = self.max_width_px - (2 * self.padding)
+        if inner_max_width <= 0:
+            return [text]
+
         words = text.split(" ")
         lines: List[str] = []
         current: List[str] = []
 
         for word in words:
             candidate = " ".join(current + [word]) if current else word
-            if self.font.size(candidate)[0] <= inner_width:
+            if self.font.size(candidate)[0] <= inner_max_width:
                 current.append(word)
             else:
                 if current:
@@ -124,42 +113,59 @@ class SpeechBubble:
 
         return lines
 
-    # ------------------------------------------------------------------
-    # Nine-patch background assembly
-    # ------------------------------------------------------------------
     def _build_background(self, bubble_w: int, bubble_h: int) -> pygame.Surface:
-        """Assemble the nine-patch background surface and fill its interior white."""
+        """Assemble the nine-patch background. Fills carefully to avoid covering transparent corners."""
         bg = pygame.Surface((bubble_w, bubble_h), pygame.SRCALPHA)
 
-        # Corners
-        bg.blit(self.tiles["top_left"],     (0,                   0))
+        edge_w = bubble_w - 2 * TILE_SIZE
+        edge_h = bubble_h - 2 * TILE_SIZE
+
+        # Center fill
+        if edge_w > 0 and edge_h > 0:
+            bg.fill((255, 255, 255), pygame.Rect(TILE_SIZE, TILE_SIZE, edge_w, edge_h))
+
+        # Top edge
+        if edge_w > 0:
+            top_edge = pygame.transform.scale(self.tiles["top"], (edge_w, TILE_SIZE))
+            bg.blit(top_edge, (TILE_SIZE, 0))
+
+        # Left edge
+        if edge_h > 0:
+            left_edge = pygame.transform.scale(self.tiles["left"], (TILE_SIZE, edge_h))
+            bg.blit(left_edge, (0, TILE_SIZE))
+
+        # Right edge
+        if edge_h > 0:
+            right_edge = pygame.transform.scale(self.tiles["right"], (TILE_SIZE, edge_h))
+            bg.blit(right_edge, (bubble_w - TILE_SIZE, TILE_SIZE))
+
+        # Bottom row (queue and gaps)
+        queue = self.tiles["queue"]
+        queue_x = (bubble_w - TILE_SIZE) // 2
+        queue_y = bubble_h - TILE_SIZE
+        
+        left_gap_w = queue_x - TILE_SIZE
+        if left_gap_w > 0:
+            left_bot = pygame.transform.scale(self.tiles["bottom"], (left_gap_w, TILE_SIZE))
+            bg.blit(left_bot, (TILE_SIZE, queue_y))
+            
+        right_gap_x = queue_x + TILE_SIZE
+        right_gap_w = (bubble_w - TILE_SIZE) - right_gap_x
+        if right_gap_w > 0:
+            right_bot = pygame.transform.scale(self.tiles["bottom"], (right_gap_w, TILE_SIZE))
+            bg.blit(right_bot, (right_gap_x, queue_y))
+            
+        # Queue doesn't get a white background fill because it's transparent around the tail
+        bg.blit(queue, (queue_x, queue_y))
+
+        # Corners (drawn last)
+        bg.blit(self.tiles["top_left"],     (0, 0))
         bg.blit(self.tiles["top_right"],    (bubble_w - TILE_SIZE, 0))
-        bg.blit(self.tiles["bottom_left"],  (0,                   bubble_h - TILE_SIZE))
-        bg.blit(self.tiles["bottom_right"], (bubble_w - TILE_SIZE, bubble_h - TILE_SIZE))
-
-        # Top / bottom edges
-        h_tiles = max(1, (bubble_w - 2 * TILE_SIZE) // TILE_SIZE)
-        for i in range(h_tiles):
-            x = TILE_SIZE + i * TILE_SIZE
-            bg.blit(self.tiles["top"],    (x, 0))
-            bg.blit(self.tiles["bottom"], (x, bubble_h - TILE_SIZE))
-
-        # Left / right edges
-        v_tiles = max(1, (bubble_h - 2 * TILE_SIZE) // TILE_SIZE)
-        for j in range(v_tiles):
-            y = TILE_SIZE + j * TILE_SIZE
-            bg.blit(self.tiles["left"],  (0,                   y))
-            bg.blit(self.tiles["right"], (bubble_w - TILE_SIZE, y))
-
-        # White interior
-        inner = pygame.Rect(TILE_SIZE, TILE_SIZE, bubble_w - 2 * TILE_SIZE, bubble_h - 2 * TILE_SIZE)
-        bg.fill((255, 255, 255), inner)
+        bg.blit(self.tiles["bottom_left"],  (0, queue_y))
+        bg.blit(self.tiles["bottom_right"], (bubble_w - TILE_SIZE, queue_y))
 
         return bg
 
-    # ------------------------------------------------------------------
-    # Core drawing routine
-    # ------------------------------------------------------------------
     def draw(
         self,
         surface: pygame.Surface,
@@ -168,75 +174,55 @@ class SpeechBubble:
         page: int = 0,
         blit_func: Optional[BlitFunc] = None,
     ) -> None:
-        """Draw the speech bubble onto *surface*.
-
-        Parameters
-        ----------
-        surface:
-            Destination surface (the game screen).
-        char_rect:
-            Rectangle of the speaking character (used to position the tail).
-        text:
-            Full dialogue text — wrapped and paginated automatically.
-        page:
-            Zero-based page index for long dialogues (default 0).
-        blit_func:
-            Optional callable with the same signature as ``pygame.Surface.blit``.
-            Defaults to ``surface.blit``.  Pass a ``MagicMock`` in unit tests
-            to intercept blit calls without touching read-only C attributes.
-        """
-        # Use injected function or fall back to the surface's own blit
+        """Draw the speech bubble anchored to char_rect."""
         blit: BlitFunc = blit_func if blit_func is not None else surface.blit
 
-        # ----------------------------------------------------------
-        # 1. Wrap text and paginate
-        # ----------------------------------------------------------
-        lines = self._wrap_text(text)
+        # 1. Wrap and paginate
+        all_lines = self._wrap_text(text)
         line_height = self.font.get_linesize()
-        max_lines = max(1, self.max_width_px // line_height)
-        total_pages = max(1, (len(lines) + max_lines - 1) // max_lines)
-        page = min(page, total_pages - 1)
-        page_lines = lines[page * max_lines: (page + 1) * max_lines]
+        
+        # Limit to 4 lines per page for typical speech bubble size
+        lines_per_page = 4
+        total_pages = max(1, (len(all_lines) + lines_per_page - 1) // lines_per_page)
+        page = max(0, min(page, total_pages - 1))
+        page_lines = all_lines[page * lines_per_page : (page + 1) * lines_per_page]
 
-        # ----------------------------------------------------------
-        # 2. Compute bubble dimensions
-        # ----------------------------------------------------------
-        text_width = max((self.font.size(l)[0] for l in page_lines), default=0)
-        bubble_w = min(self.max_width_px, text_width + 2 * self.padding)
-        bubble_h = len(page_lines) * line_height + 2 * self.padding
+        # 2. Dimensions: text_w + 2*padding for width; +TILE_SIZE for bottom border row
+        text_w = max((self.font.size(line)[0] for line in page_lines), default=0)
+        text_h = len(page_lines) * line_height
 
-        # ----------------------------------------------------------
-        # 3. Build nine-patch background
-        # ----------------------------------------------------------
+        bubble_w = max(MIN_BUBBLE_SIZE, text_w + 2 * self.padding)
+        bubble_w = min(self.max_width_px, bubble_w)
+        bubble_h = max(MIN_BUBBLE_SIZE + TILE_SIZE, text_h + 2 * self.padding + TILE_SIZE)
+
+        # 3. Background
         bg = self._build_background(bubble_w, bubble_h)
 
-        # ----------------------------------------------------------
-        # 4. Render text
-        # ----------------------------------------------------------
-        y_offset = self.padding
+        # 4. Text rendered at (padding, padding) — full bubble width minus padding
+        inner_y = self.padding
         for line in page_lines:
             txt_surf = self.font.render(line, True, (0, 0, 0))
-            bg.blit(txt_surf, (self.padding, y_offset))
-            y_offset += line_height
+            bg.blit(txt_surf, (self.padding, inner_y))
+            inner_y += line_height
 
-        # ----------------------------------------------------------
-        # 5. Pagination arrow
-        # ----------------------------------------------------------
+        # 5. Pagination arrow: INSIDE the top-left corner of the bottom-right tile, with manual offset
         if total_pages > 1:
             arrow = self.tiles["arrow"]
-            arrow_x = bubble_w - self.arrow_inset - arrow.get_width()
-            arrow_y = bubble_h - self.arrow_inset - arrow.get_height()
+            arrow_x = bubble_w - TILE_SIZE + _ARROW_OFFSET_X
+            arrow_y = bubble_h - TILE_SIZE + _ARROW_OFFSET_Y
             bg.blit(arrow, (arrow_x, arrow_y))
 
-        # ----------------------------------------------------------
-        # 6. Position and blit tail + bubble onto destination surface
-        # ----------------------------------------------------------
-        tail = self.tiles["queue"]
-        tail_x = char_rect.centerx - tail.get_width() // 2
-        tail_y = char_rect.top - self.tail_gap - tail.get_height()
-
-        blit(tail, (tail_x, tail_y))
-
+        # 6. Final blit: single draw of the fully composed bubble
+        # Position bubble so its bottom edge (with tail) is above the character head
         bubble_x = char_rect.centerx - bubble_w // 2
-        bubble_y = tail_y - bubble_h
+        bubble_y = char_rect.top - self.tail_gap - bubble_h
+        
         blit(bg, (bubble_x, bubble_y))
+
+    def get_total_pages(self, text: str) -> int:
+        """Calculate the total number of pages for the given text."""
+        if not self.font:
+            return 1
+        all_lines = self._wrap_text(text)
+        lines_per_page = 4
+        return max(1, (len(all_lines) + lines_per_page - 1) // lines_per_page)

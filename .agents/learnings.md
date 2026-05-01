@@ -644,4 +644,31 @@ exclude_lines =
 
 ---
 
-*Last optimized: 2026-04-30 — optimization session: A-TEST-005, A-ARCH-001, A-ARCH-002, L-TEST-005, L-ARCH-004, A-SPEC-002, A-TEST-006.*
+### A-UI-005 · 2026-05-01 · U · Minor Rework
+**UI Decoupling from Temporal Animations**
+
+**What happened:** Halting an NPC mid-tile causes visual sliding and snapping issues. The code was then updated to let the NPC finish its tile movement, but the UI bubble appeared instantly, causing the bubble to slide along with the NPC. We then implemented a `pending_npc_dialogue` queue.
+
+**Root cause:** Temporal coupling. Assuming that the logical trigger (pressing 'Interact') and the visual response (opening the UI) must happen on the same frame. For animated entities in a grid-based game, actions often need to be queued until the current animation/movement cycle finishes.
+
+```python
+# ❌ Triggering synchronous UI events (like dialogue bubbles) instantly on entities that have asynchronous or continuous state transitions (like grid movement).
+res = npc.interact(self.game.player)
+if res:
+    self.game._trigger_npc_bubble(npc, res)
+
+# ✅ Implement an event queue or a `pending_action` state in the main update loop.
+res = npc.interact(self.game.player)
+if res:
+    if npc.is_moving:
+        self.game._pending_npc_dialogue = (npc, res)
+    else:
+        self.game._trigger_npc_bubble(npc, res)
+```
+
+**Rule:** When an interaction occurs on a moving entity, store the intent, let the entity resolve its current interpolation (e.g., finish walking to the next tile), and only trigger the UI callback when `entity.is_moving == False`.
+**Evidence:** `src/engine/interaction.py` queueing logic: `if npc.is_moving: self.game._pending_npc_dialogue = (npc, res)`. Tests failed initially because Mock objects have properties that evaluate to True in python, requiring explicit `npc.is_moving = False` in `tests/test_interaction.py`.
+
+---
+
+*Last optimized: 2026-05-01 — optimization session: A-UI-005.*

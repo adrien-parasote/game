@@ -83,11 +83,11 @@ def test_handle_interaction_npc():
     
     # Mock keyboard
     with patch('pygame.key.get_pressed', return_value={Settings.INTERACT_KEY: True}):
-        # Mock NPC (exactly in front: 100, 132)
         npc = MagicMock()
         npc.pos = pygame.math.Vector2(100, 132)
         npc.rect = pygame.Rect(100-16, 132-16, 32, 32)
         npc.element_id = "npc_1"
+        npc.is_moving = False
         
         def mock_interact(initiator):
             npc.state = "interact"

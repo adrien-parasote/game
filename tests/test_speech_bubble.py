@@ -90,36 +90,33 @@ class TestSpeechBubbleMaxWidth(unittest.TestCase):
         self.assertLessEqual(bubble.max_width_px, 224)
         self.assertTrue(blit.called)
 
+    def test_wrap_uses_padding_not_tile_size(self):
+        """_wrap_text inner width = max_width_px - 2*padding."""
+        bubble = _make_bubble(max_width_px=100)
+        bubble.padding = 10
+        lines = bubble._wrap_text("word " * 20)
+        # Each word is 7*5=35px wide; inner_max_width = 100 - 20 = 80
+        # So at most floor(80/36) words per line
+        for line in lines:
+            self.assertLessEqual(bubble.font.size(line)[0], 80)
 
-class TestSpeechBubbleTailPosition(unittest.TestCase):
-    def test_tail_gap_above_character(self):
-        """Tail y-coordinate respects tail_gap above char_rect.top."""
-        bubble = _make_bubble(tail_gap=4)
+
+class TestSpeechBubblePosition(unittest.TestCase):
+    def test_bubble_bottom_anchored_above_character(self):
+        """Bubble bottom edge respects tail_gap above char_rect.top."""
+        bubble = _make_bubble()
+        bubble.tail_gap = 4
         blit = MagicMock()
         rect = _char_rect()
 
         bubble.draw(_make_surface(), rect, "Hello", blit_func=blit)
 
-        # First blit call is always the tail
-        first_call_args = blit.call_args_list[0][0]
-        _, (_, tail_y) = first_call_args
-        expected_y = rect.top - bubble.tail_gap - TILE_SIZE
-        self.assertEqual(tail_y, expected_y)
-
-    def test_bubble_positioned_above_tail(self):
-        """Bubble is blitted directly above the tail."""
-        bubble = _make_bubble(tail_gap=4)
-        blit = MagicMock()
-        rect = _char_rect()
-
-        bubble.draw(_make_surface(), rect, "Hello", blit_func=blit)
-
-        # Two final blit calls: tail (index -2) and bg (index -1)
-        tail_y = blit.call_args_list[-2][0][1][1]
-        bg_surf = blit.call_args_list[-1][0][0]
-        bg_y = blit.call_args_list[-1][0][1][1]
-
-        self.assertEqual(bg_y + bg_surf.get_height(), tail_y)
+        # Single blit call for the entire bubble (including integrated tail)
+        self.assertEqual(blit.call_count, 1)
+        bg_surf, (bx, by) = blit.call_args_list[0][0]
+        
+        expected_y = rect.top - bubble.tail_gap - bg_surf.get_height()
+        self.assertEqual(by, expected_y)
 
 
 class TestSpeechBubblePagination(unittest.TestCase):
@@ -129,10 +126,7 @@ class TestSpeechBubblePagination(unittest.TestCase):
     def test_multiple_pages_exist_for_long_text(self):
         """Long text produces more than one page of wrapped lines."""
         bubble = _make_bubble()
-        lines = bubble._wrap_text(self._long_text())
-        line_height = bubble.font.get_linesize()
-        max_lines = max(1, bubble.max_width_px // line_height)
-        total_pages = max(1, (len(lines) + max_lines - 1) // max_lines)
+        total_pages = bubble.get_total_pages(self._long_text())
         self.assertGreater(total_pages, 1)
 
     def test_arrow_drawn_for_multi_page_text(self):
@@ -141,7 +135,7 @@ class TestSpeechBubblePagination(unittest.TestCase):
         blit = MagicMock()
         # Should not raise; arrow is composited inside bg (not via blit_func)
         bubble.draw(_make_surface(), _char_rect(), self._long_text(), blit_func=blit)
-        self.assertEqual(blit.call_count, 2)  # tail + bg always exactly 2
+        self.assertEqual(blit.call_count, 1)  # Integrated bubble is one blit
 
     def test_page_index_clamped(self):
         """Passing a page index beyond the last page is clamped silently."""

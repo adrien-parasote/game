@@ -108,7 +108,7 @@ class Game:
         self.dialogue_manager = DialogueManager()
 
         # Speech bubble (NPC PNG dialogues)
-        self.speech_bubble = SpeechBubble(max_width_px=224, padding=8, tail_gap=4)
+        self.speech_bubble = SpeechBubble(max_width_px=288)
         am = AssetManager()
         self.speech_bubble.set_font(
             am.get_font(Settings.FONT_NARRATIVE, Settings.FONT_SIZE_NARRATIVE)
@@ -187,6 +187,14 @@ class Game:
         world_height_px = self.map_manager.height * self.tile_size
         self.visible_sprites.set_world_size(world_width_px, world_height_px)
         
+        # Save NPC states before leaving the map
+        for npc in self.npcs:
+            if getattr(npc, '_world_state_key', None):
+                self.world_state.set(npc._world_state_key, {
+                    'pos': (npc.pos.x, npc.pos.y),
+                    'facing': npc.current_facing
+                })
+
         # Clean entities for new map (excluding player)
         self.interactives.empty()
         self.npcs.empty()
@@ -331,7 +339,23 @@ class Game:
         )
         npc.name = _get_property(props, "name", ent.get("name", ""))
         npc.collision_func = self._is_collidable
-        logging.info(f"Spawned NPC '{npc.element_id}' at {e_pos}")
+        
+        tiled_id = ent.get("id")
+        if tiled_id is not None and self._current_map_name:
+            key = WorldState.make_key(self._current_map_name, tiled_id)
+            npc._world_state_key = key
+            saved_state = self.world_state.get(key)
+            if saved_state:
+                saved_pos = saved_state.get('pos')
+                if saved_pos:
+                    npc.pos = pygame.math.Vector2(saved_pos)
+                    npc.target_pos = pygame.math.Vector2(saved_pos)
+                    npc.rect.center = (round(npc.pos.x), round(npc.pos.y))
+                saved_facing = saved_state.get('facing')
+                if saved_facing:
+                    npc.current_facing = saved_facing
+
+        logging.info(f"Spawned NPC '{npc.element_id}' at {npc.pos}")
 
     def _spawn_pickup(self, ent: dict, props: dict, e_pos: tuple):
         """Instantiate a PickupItem from map data, skipping already-collected ones."""
@@ -475,11 +499,8 @@ class Game:
         """Advance NPC bubble page or close it on last page."""
         if self._npc_bubble is None or not self.speech_bubble.font:
             return
-        # Compute total pages the same way SpeechBubble.draw() does
-        lines = self.speech_bubble._wrap_text(self._npc_bubble["text"])
-        line_height = self.speech_bubble.font.get_linesize()
-        max_lines = max(1, self.speech_bubble.max_width_px // line_height)
-        total_pages = max(1, (len(lines) + max_lines - 1) // max_lines)
+        # Compute total pages using SpeechBubble logic
+        total_pages = self.speech_bubble.get_total_pages(self._npc_bubble["text"])
         if self._npc_bubble["page"] < total_pages - 1:
             self._npc_bubble["page"] += 1
         else:
@@ -695,6 +716,16 @@ class Game:
         """Update game state by dt."""
         # --- Logical Pause for Dialogue/Inventory ---
         self.emote_group.update(dt)
+        
+        pending_npc = getattr(self, "_pending_npc_dialogue", None)
+        if pending_npc is not None:
+            npc, res = pending_npc
+            npc.update(dt)
+            if not npc.is_moving:
+                self._trigger_npc_bubble(npc, res)
+                self._pending_npc_dialogue = None
+            return
+            
         if self._npc_bubble is not None or self.dialogue_manager.is_active:
             if self.dialogue_manager.is_active:
                 self.dialogue_manager.update(dt)
