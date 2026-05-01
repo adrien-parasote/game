@@ -37,24 +37,28 @@ class Inventory:
             logging.error(f"Inventory: Failed to load properties: {e}")
             return {}
 
+    def create_item(self, item_id: str, quantity: int) -> Item:
+        """Create a new Item object populated with tech and lang data."""
+        tech_data = self.item_data.get(item_id, {})
+        lang_data = self.i18n.get_item(item_id)
+        
+        return Item(
+            id=item_id,
+            name=lang_data["name"],
+            description=lang_data["description"],
+            icon=tech_data.get("icon", f"{item_id}.png"),
+            quantity=quantity,
+            stack_max=tech_data.get("stack_max", 1)
+        )
+
     def add_item(self, item_id: str, quantity: int = 1) -> int:
         """
         Add items to inventory. Returns the remaining quantity that couldn't be added.
         """
         remaining = quantity
         
-        # Merge technical data (stack_max, icon) with localized strings (name, description)
-        tech_data = self.item_data.get(item_id, {})
-        lang_data = self.i18n.get_item(item_id)
-        
-        data = {
-            "name": lang_data["name"],
-            "description": lang_data["description"],
-            "stack_max": tech_data.get("stack_max", 1),
-            "icon": tech_data.get("icon", f"{item_id}.png")
-        }
-        
-        stack_max = data.get("stack_max", 1)
+        temp_item = self.create_item(item_id, 1)
+        stack_max = temp_item.stack_max
 
         # 1. Try to stack in existing slots
         for i in range(self.capacity):
@@ -70,14 +74,7 @@ class Inventory:
         for i in range(self.capacity):
             if self.slots[i] is None:
                 can_add = min(remaining, stack_max)
-                self.slots[i] = Item(
-                    id=item_id,
-                    name=data["name"],
-                    description=data["description"],
-                    icon=data.get("icon", f"{item_id}.png"),
-                    quantity=can_add,
-                    stack_max=stack_max
-                )
+                self.slots[i] = self.create_item(item_id, can_add)
                 remaining -= can_add
                 if remaining <= 0:
                     return 0

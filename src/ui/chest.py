@@ -275,13 +275,17 @@ class ChestUI:
             return
         
         pos = event.pos
+        self.update_hover(pos) # Ensure accurate drop location
+        
         # Determine destination
-        if self._bg_rect and self._bg_rect.collidepoint(pos):
-            # Dropped in Chest panel
-            self._transfer_dragged_to_chest()
-        elif self._inv_bg_rect and self._inv_bg_rect.collidepoint(pos):
-            # Dropped in Inventory panel
-            self._transfer_dragged_to_inventory()
+        if self._hovered_chest_slot is not None:
+            self._transfer_dragged_to_chest(self._hovered_chest_slot)
+        elif self._hovered_inv_slot is not None:
+            actual_inv_idx = self._inv_offset + self._hovered_inv_slot
+            self._transfer_dragged_to_inventory(actual_inv_idx)
+        else:
+            # Dropped outside any valid slot, item stays at its source
+            pass
         
         self._dragging_item = None
 
@@ -569,17 +573,17 @@ class ChestUI:
             return
         
         contents = self._get_chest_contents()
-        i = 0
-        while i < len(contents):
+        for i in range(len(contents)):
             entry = contents[i]
+            if entry is None:
+                continue
+                
             remaining = self._player.inventory.add_item(entry["item_id"], entry["quantity"])
             
             if remaining == 0:
-                contents.pop(i)
-                # Don't increment i, as next item shifted into current i
+                contents[i] = None
             else:
                 entry["quantity"] = remaining
-                # Inventory must be full if remaining > 0
                 break
 
     def _transfer_inventory_to_chest(self) -> None:
@@ -600,6 +604,7 @@ class ChestUI:
             # 1. Try to stack in chest
             stacked = False
             for entry in contents:
+                if entry is None: continue
                 if entry["item_id"] == item.id and entry["quantity"] < item.stack_max:
                     can_add = min(item.quantity, item.stack_max - entry["quantity"])
                     entry["quantity"] += can_add
@@ -613,82 +618,130 @@ class ChestUI:
                 continue
 
             # 2. Add to new slot if chest not full
-            if len(contents) < CHEST_MAX_SLOTS:
-                contents.append({"item_id": item.id, "quantity": item.quantity})
-                inv.slots[i] = None
+            for j in range(len(contents)):
+                if contents[j] is None:
+                    contents[j] = {"item_id": item.id, "quantity": item.quantity}
+                    inv.slots[i] = None
+                    break
             else:
                 # Chest is full
                 break
 
-    def _transfer_dragged_to_chest(self) -> None:
-        """Move the currently dragged item to the chest."""
+    def _transfer_dragged_to_chest(self, target_idx: int) -> None:
+        """Move the currently dragged item to the chest at target_idx."""
         if not self._dragging_item or not self._chest_entity:
             return
-        
-        from src.engine.loot_table import CHEST_MAX_SLOTS
         
         item_id = self._dragging_item["item_id"]
         qty = self._dragging_item["quantity"]
         source = self._dragging_item["source"]
-        idx = self._dragging_item["index"]
+        src_idx = self._dragging_item["index"]
+        
+        contents = self._get_chest_contents()
+        target_entry = contents[target_idx]
         
         if source == "chest":
-            # Dragged from chest to chest panel (reordering or same place)
-            # Reordering not requested, so we just do nothing (item remains)
+            if src_idx == target_idx:
+                return
+            if target_entry is None:
+                contents[target_idx] = contents[src_idx]
+                contents[src_idx] = None
+            elif target_entry["item_id"] == item_id:
+                item_data = self._player.inventory.item_data.get(item_id, {})
+                stack_max = item_data.get("stack_max", 1)
+                can_add = min(qty, stack_max - target_entry["quantity"])
+                target_entry["quantity"] += can_add
+                contents[src_idx]["quantity"] -= can_add
+                if contents[src_idx]["quantity"] <= 0:
+                    contents[src_idx] = None
+            else:
+                contents[target_idx], contents[src_idx] = contents[src_idx], contents[target_idx]
             return
-        
+            
         # Source is inventory
-        contents = self._get_chest_contents()
+        inv = self._player.inventory
         
-        # Stacking
-        for entry in contents:
-            item_data = self._player.inventory.item_data.get(item_id, {})
+        if target_entry is None:
+            contents[target_idx] = {"item_id": item_id, "quantity": qty}
+            inv.slots[src_idx] = None
+        elif target_entry["item_id"] == item_id:
+            item_data = inv.item_data.get(item_id, {})
             stack_max = item_data.get("stack_max", 1)
-            if entry["item_id"] == item_id and entry["quantity"] < stack_max:
-                can_add = min(qty, stack_max - entry["quantity"])
-                entry["quantity"] += can_add
-                qty -= can_add
-                if qty <= 0:
-                    self._player.inventory.remove_item(idx)
-                    return
-        
-        # New slot
-        if len(contents) < CHEST_MAX_SLOTS:
-            contents.append({"item_id": item_id, "quantity": qty})
-            self._player.inventory.remove_item(idx)
+            can_add = min(qty, stack_max - target_entry["quantity"])
+            target_entry["quantity"] += can_add
+            inv.slots[src_idx].quantity -= can_add
+            if inv.slots[src_idx].quantity <= 0:
+                inv.slots[src_idx] = None
+        else:
+            swapped_id = target_entry["item_id"]
+            swapped_qty = target_entry["quantity"]
+            
+            contents[target_idx] = {"item_id": item_id, "quantity": qty}
+            inv.slots[src_idx] = inv.create_item(swapped_id, swapped_qty)
 
-    def _transfer_dragged_to_inventory(self) -> None:
-        """Move the currently dragged item to the player inventory."""
+    def _transfer_dragged_to_inventory(self, target_idx: int) -> None:
+        """Move the currently dragged item to the player inventory at target_idx."""
         if not self._dragging_item or not self._player:
             return
         
         item_id = self._dragging_item["item_id"]
         qty = self._dragging_item["quantity"]
         source = self._dragging_item["source"]
-        idx = self._dragging_item["index"]
+        src_idx = self._dragging_item["index"]
+        
+        inv = self._player.inventory
+        target_slot = inv.slots[target_idx]
         
         if source == "inv":
-            # Dragged from inv to inv panel
+            if src_idx == target_idx:
+                return
+            if target_slot is None:
+                inv.slots[target_idx] = inv.slots[src_idx]
+                inv.slots[src_idx] = None
+            elif target_slot.id == item_id:
+                can_add = min(qty, target_slot.stack_max - target_slot.quantity)
+                target_slot.quantity += can_add
+                inv.slots[src_idx].quantity -= can_add
+                if inv.slots[src_idx].quantity <= 0:
+                    inv.slots[src_idx] = None
+            else:
+                inv.slots[target_idx], inv.slots[src_idx] = inv.slots[src_idx], inv.slots[target_idx]
             return
             
         # Source is chest
-        remaining = self._player.inventory.add_item(item_id, qty)
-        
         contents = self._get_chest_contents()
-        if remaining == 0:
-            contents.pop(idx)
+        
+        if target_slot is None:
+            inv.slots[target_idx] = inv.create_item(item_id, qty)
+            contents[src_idx] = None
+        elif target_slot.id == item_id:
+            can_add = min(qty, target_slot.stack_max - target_slot.quantity)
+            target_slot.quantity += can_add
+            contents[src_idx]["quantity"] -= can_add
+            if contents[src_idx]["quantity"] <= 0:
+                contents[src_idx] = None
         else:
-            contents[idx]["quantity"] = remaining
+            swapped_id = target_slot.id
+            swapped_qty = target_slot.quantity
+            
+            inv.slots[target_idx] = inv.create_item(item_id, qty)
+            contents[src_idx] = {"item_id": swapped_id, "quantity": swapped_qty}
 
     # -----------------------------------------------------------------------
     # Private: chest content helpers
     # -----------------------------------------------------------------------
 
     def _get_chest_contents(self) -> list[dict]:
-        """Return the contents list from the chest entity, or empty list."""
+        """Return the contents list from the chest entity, padded to CHEST_MAX_SLOTS."""
         if self._chest_entity is None:
             return []
-        return getattr(self._chest_entity, "contents", [])
+        contents = getattr(self._chest_entity, "contents", [])
+        
+        from src.engine.loot_table import CHEST_MAX_SLOTS
+        while len(contents) < CHEST_MAX_SLOTS:
+            contents.append(None)
+            
+        return contents
 
     def _resolve_icon_name(self, item_id: str) -> str:
         """Resolve the icon filename for an item_id via propertytypes."""
@@ -737,6 +790,9 @@ class ChestUI:
                 continue
 
             entry = contents[i]
+            if entry is None:
+                continue
+                
             item_id = entry.get("item_id", "")
 
             # Skip drawing if this item is being dragged
