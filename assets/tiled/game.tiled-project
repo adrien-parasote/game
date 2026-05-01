@@ -24,6 +24,11 @@
                     "name": "depth",
                     "type": "int",
                     "value": 0
+                },
+                {
+                    "name": "type",
+                    "type": "string",
+                    "value": ""
                 }
             ],
             "name": "00-tilset",
@@ -402,6 +407,24 @@
             "type": "class",
             "useAs": [
                 "property",
+                "object",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffffffff",
+            "drawFill": true,
+            "id": 20,
+            "members": [
+                {
+                    "name": "beam_source",
+                    "type": "bool",
+                    "value": true
+                }
+            ],
+            "name": "18-light",
+            "type": "class",
+            "useAs": [
                 "object",
                 "project"
             ]

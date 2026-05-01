@@ -14,6 +14,7 @@ from src.map.manager import MapManager
 from src.map.layout import OrthogonalLayout
 from src.engine.time_system import TimeSystem
 from src.engine.world_state import WorldState
+from src.engine.lighting import LightingManager
 from src.config import Settings
 from src.ui.hud import GameHUD
 from src.ui.dialogue import DialogueManager
@@ -92,6 +93,7 @@ class Game:
         # Time System
         self.time_system = TimeSystem(initial_hour=Settings.INITIAL_HOUR)
         self.hud = GameHUD(self.time_system)
+        self.lighting_manager = LightingManager(self.time_system, (Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT))
         
         # World State
         self.world_state = WorldState()
@@ -623,12 +625,21 @@ class Game:
         self._draw_foreground()
         
         night_alpha = self.time_system.night_alpha
+        window_positions = self.map_manager.get_window_positions()
+        
+        # Render additive window beams (always visible during day and night)
+        self.lighting_manager.draw_additive_window_beams(self.screen, window_positions, self.visible_sprites.offset)
+        
+        # Render dynamic lighting on darkness overlay
         if night_alpha > 0:
-            if not hasattr(self, '_night_overlay') or self._night_overlay.get_size() != self.screen.get_size():
-                self._night_overlay = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+            active_torches = [obj for obj in self.interactives if getattr(obj, 'is_on', False) and getattr(obj, 'halo_size', 0) > 0]
             
-            self._night_overlay.fill((0, 0, 0, night_alpha))
-            self.screen.blit(self._night_overlay, (0, 0))
+            overlay = self.lighting_manager.create_overlay(
+                window_positions, 
+                active_torches, 
+                self.visible_sprites.offset
+            )
+            self.screen.blit(overlay, (0, 0))
             
         cam_offset = self.visible_sprites.offset
         for obj in self.interactives:
@@ -796,6 +807,7 @@ class Game:
                 (Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT), 
                 display_flags
             )
+            self.lighting_manager.resize((Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT))
         logging.info(f"Fullscreen toggled: {self.is_fullscreen}")
 
     def _load_property_types(self) -> dict:

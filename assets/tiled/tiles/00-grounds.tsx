@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.10" tiledversion="1.12.1" name="00-grounds" class="00-tilset" tilewidth="32" tileheight="32" tilecount="64" columns="8">
+ <properties>
+  <property name="type" value="ground"/>
+ </properties>
  <image source="../../images/tilesets/00-grounds.png" width="256" height="256"/>
  <tile id="0">
   <properties>

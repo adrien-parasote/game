@@ -9,6 +9,7 @@ class MapManager:
         self.layers = map_data.get("layers", {})
         self.tiles = map_data.get("tiles", {})
         self.layer_names = map_data.get("layer_names", {})
+        self._entities = map_data.get("entities", [])
         
         # Sort layer_order: prioritize name-based ordering (00-, 01-, etc.)
         # This ensures '00-layer' is always rendered first (at the bottom)
@@ -26,6 +27,8 @@ class MapManager:
 
         
         self.cached_surfaces = {}
+        self._window_cache = None
+
         
     def get_layer_surface(self, layer_id: int, pygame_module) -> "pygame.Surface":
         """Get or create a pre-rendered surface for a specific layer."""
@@ -89,3 +92,45 @@ class MapManager:
                         depth = getattr(self.tiles.get(tile_id), "depth", 0)
                         px, py = self.layout.to_screen(x, y)
                         yield (int(px), int(py), tile_id, depth)
+
+    def get_window_positions(self) -> List[Tuple[int, int, int]]:
+        """
+        Return beam-emitter specs for window light effects as (cx, y, width) tuples:
+          - cx    : horizontal center of the beam origin (pixels)
+          - y     : vertical start of the beam (pixels)
+          - width : width of the beam top (pixels), matching the window width
+
+        Priority:
+        1. Tiled rectangle objects with type='18-light' — pixel-precise.
+        2. Fallback: tiles with property type='window' (tile-grid aligned).
+        """
+        if self._window_cache is not None:
+            return self._window_cache
+
+        # --- Priority 1: explicit 18-light rectangle objects ---
+        object_specs = [
+            (int(e["x"] + e["width"] / 2), int(e["y"]), int(e["width"]))
+            for e in self._entities
+            if e.get("type") == "18-light"
+        ]
+        if object_specs:
+            self._window_cache = object_specs
+            return self._window_cache
+
+        # --- Priority 2: tile property fallback ---
+        tile_size = getattr(self.layout, "tile_size", 32)
+        tile_positions = []
+        for layer_id in self.layer_order:
+            layer_data = self.layers[layer_id]
+            for y in range(self.height):
+                for x in range(self.width):
+                    tile_id = layer_data[y][x]
+                    if tile_id == 0 or tile_id not in self.tiles:
+                        continue
+                    props = getattr(self.tiles[tile_id], "properties", {}) or {}
+                    if props.get("type") == "window":
+                        px, py = self.layout.to_screen(x, y)
+                        tile_positions.append((int(px + tile_size // 2), int(py + tile_size), tile_size))
+
+        self._window_cache = tile_positions
+        return self._window_cache

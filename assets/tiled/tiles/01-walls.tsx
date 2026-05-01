@@ -2,6 +2,7 @@
 <tileset version="1.10" tiledversion="1.12.1" name="01-walls" class="00-tilset" tilewidth="32" tileheight="32" tilecount="64" columns="8">
  <properties>
   <property name="collidable" type="bool" value="true"/>
+  <property name="type" value="wall"/>
  </properties>
  <image source="../../images/tilesets/01-walls.png" width="256" height="256"/>
  <tile id="0">

@@ -2,6 +2,7 @@
 <tileset version="1.10" tiledversion="1.12.1" name="03-windows" class="tilset" tilewidth="32" tileheight="32" tilecount="64" columns="8">
  <properties>
   <property name="collidable" type="bool" value="true"/>
+  <property name="type" value="window"/>
  </properties>
  <image source="../../images/tilesets/03-windows.png" width="256" height="256"/>
  <tile id="0">
@@ -36,6 +37,7 @@
  </tile>
  <tile id="5">
   <properties>
+   <property name="beam_source" type="bool" value="false"/>
    <property name="collidable" type="bool" value="true"/>
    <property name="depth" type="int" value="0"/>
   </properties>
@@ -84,6 +86,7 @@
  </tile>
  <tile id="13">
   <properties>
+   <property name="beam_source" type="bool" value="false"/>
    <property name="collidable" type="bool" value="true"/>
    <property name="depth" type="int" value="0"/>
   </properties>
@@ -132,6 +135,7 @@
  </tile>
  <tile id="21">
   <properties>
+   <property name="beam_source" type="bool" value="false"/>
    <property name="collidable" type="bool" value="true"/>
    <property name="depth" type="int" value="0"/>
   </properties>
@@ -180,6 +184,7 @@
  </tile>
  <tile id="29">
   <properties>
+   <property name="beam_source" type="bool" value="false"/>
    <property name="collidable" type="bool" value="true"/>
    <property name="depth" type="int" value="0"/>
   </properties>
@@ -228,6 +233,7 @@
  </tile>
  <tile id="37">
   <properties>
+   <property name="beam_source" type="bool" value="false"/>
    <property name="collidable" type="bool" value="true"/>
    <property name="depth" type="int" value="0"/>
   </properties>
@@ -276,6 +282,7 @@
  </tile>
  <tile id="45">
   <properties>
+   <property name="beam_source" type="bool" value="false"/>
    <property name="collidable" type="bool" value="true"/>
    <property name="depth" type="int" value="0"/>
   </properties>
@@ -324,6 +331,7 @@
  </tile>
  <tile id="53">
   <properties>
+   <property name="beam_source" type="bool" value="false"/>
    <property name="collidable" type="bool" value="true"/>
    <property name="depth" type="int" value="0"/>
   </properties>
@@ -372,6 +380,7 @@
  </tile>
  <tile id="61">
   <properties>
+   <property name="beam_source" type="bool" value="false"/>
    <property name="collidable" type="bool" value="true"/>
    <property name="depth" type="int" value="0"/>
   </properties>

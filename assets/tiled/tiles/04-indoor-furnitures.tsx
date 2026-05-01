@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.12.1" name="04-indoor-furnitures" class="tilset" tilewidth="32" tileheight="32" tilecount="104" columns="8">
+<tileset version="1.10" tiledversion="1.12.1" name="04-indoor-furnitures" class="00-tilset" tilewidth="32" tileheight="32" tilecount="104" columns="8">
+ <properties>
+  <property name="type" value="furnitures"/>
+ </properties>
  <image source="../../images/tilesets/04-indoor-furnitures.png" width="256" height="416"/>
  <tile id="0">
   <properties>
