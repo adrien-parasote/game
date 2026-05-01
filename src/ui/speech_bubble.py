@@ -18,9 +18,9 @@ TILE_SIZE: int = 32
 MIN_BUBBLE_SIZE: int = 2 * TILE_SIZE  # Minimum size to fit corners (64x64)
 ASSET_DIR: str = os.path.join("assets", "images", "HUD")
 
-_ARROW_OFFSET_X = 15
-_ARROW_OFFSET_Y = -5
-_BUBBLE_PADDING = 12
+_ARROW_OFFSET_X = 8
+_ARROW_OFFSET_Y = -13
+_BUBBLE_PADDING = 18
 _TAIL_GAP = 20
 
 TILES: dict = {
@@ -57,7 +57,7 @@ class SpeechBubble:
 
     def __init__(
         self,
-        max_width_px: int = 288,
+        max_width_px: int = 352,
         arrow_inset: int = 4,
     ) -> None:
         self.max_width_px = max(max_width_px, MIN_BUBBLE_SIZE)
