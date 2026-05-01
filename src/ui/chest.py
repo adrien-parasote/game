@@ -486,6 +486,26 @@ class ChestUI:
         return self._player.inventory.slots[start:end]
 
     # -----------------------------------------------------------------------
+    # Private: chest content helpers
+    # -----------------------------------------------------------------------
+
+    def _get_chest_contents(self) -> list[dict]:
+        """Return the contents list from the chest entity, or empty list."""
+        if self._chest_entity is None:
+            return []
+        return getattr(self._chest_entity, "contents", [])
+
+    def _resolve_icon_name(self, item_id: str) -> str:
+        """Resolve the icon filename for an item_id via propertytypes."""
+        if self._player is None:
+            return f"{item_id}.png"
+        item_data = getattr(self._player, "inventory", None)
+        if item_data is None:
+            return f"{item_id}.png"
+        tech_data = item_data.item_data.get(item_id, {})
+        return tech_data.get("icon", f"{item_id}.png")
+
+    # -----------------------------------------------------------------------
     # Private: drawing
     # -----------------------------------------------------------------------
 
@@ -500,12 +520,42 @@ class ChestUI:
         screen.blit(surf, surf.get_rect(center=(cx, cy)))
 
     def _draw_slots(self, screen: pygame.Surface) -> None:
-        """Render chest slot frames and hover overlay."""
-        for rect in self._slot_positions:
+        """Render chest slot frames, item icons, quantities, and hover overlay."""
+        if self._qty_font is None:
+            self._qty_font = pygame.font.Font(Settings.FONT_TECH, Settings.FONT_SIZE_TECH)
+
+        contents = self._get_chest_contents()
+        slot_size = self._slot_img.get_width() if self._slot_img else 49
+        icon_size = max(1, slot_size - 8)
+        scale_factor = slot_size / 55
+        margin = int(8 * scale_factor)
+
+        for i, rect in enumerate(self._slot_positions):
+            # Slot background
             if self._slot_img:
                 screen.blit(self._slot_img, rect)
             else:
                 pygame.draw.rect(screen, (200, 200, 200), rect, 2)
+
+            # Item icon + quantity
+            if i >= len(contents):
+                continue
+
+            entry = contents[i]
+            item_id = entry.get("item_id", "")
+            icon_name = self._resolve_icon_name(item_id)
+            icon = self._get_item_icon(icon_name, icon_size)
+            if icon:
+                icon_rect = icon.get_rect(center=rect.center)
+                screen.blit(icon, icon_rect)
+
+            qty = entry.get("quantity", 1)
+            if qty > 1:
+                qty_surf = self._qty_font.render(f"x{qty}", True, (60, 40, 30))
+                qty_rect = qty_surf.get_rect(
+                    bottomright=(rect.right - margin, rect.bottom - margin)
+                )
+                screen.blit(qty_surf, qty_rect)
 
         if self._hovered_chest_slot is not None and self._hover_img:
             hover_rect = self._hover_img.get_rect(

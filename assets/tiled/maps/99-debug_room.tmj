@@ -223,6 +223,7 @@
                                  "type":"class",
                                  "value":
                                     {
+                                     "element_id":"",
                                      "end_frame":1,
                                      "entity_type":"interactive",
                                      "position":0,
@@ -264,6 +265,7 @@
                                  "type":"class",
                                  "value":
                                     {
+                                     "element_id":"chest_debug_1",
                                      "entity_type":"interactive",
                                      "position":1,
                                      "sprite_sheet":"01-iron-chests.png",
@@ -294,6 +296,7 @@
                                  "type":"class",
                                  "value":
                                     {
+                                     "element_id":"chest_debug_3",
                                      "entity_type":"interactive",
                                      "position":2,
                                      "sprite_sheet":"01-iron-chests.png",
@@ -329,6 +332,7 @@
                                  "type":"class",
                                  "value":
                                     {
+                                     "element_id":"chest_debug_4",
                                      "entity_type":"interactive",
                                      "position":3,
                                      "sprite_sheet":"01-iron-chests.png",
@@ -429,6 +433,7 @@
                                  "type":"class",
                                  "value":
                                     {
+                                     "element_id":"chest_debug_2",
                                      "entity_type":"interactive",
                                      "sprite_sheet":"01-iron-chests.png",
                                      "sub_type":"chest"

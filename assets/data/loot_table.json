@@ -1,0 +1,32 @@
+{
+    "chest_debug_1": [
+        {
+            "item_id": "ether_potion",
+            "quantity": 100
+        },
+        {
+            "item_id": "potion_red",
+            "quantity": 110
+        }
+    ],
+    "chest_debug_2": [
+        {
+            "item_id": "potion_big_red",
+            "quantity": 2
+        }
+    ],
+    "chest_debug_3": [
+        {
+            "item_id": "potion_purple",
+            "quantity": 2
+        },
+        {
+            "item_id": "potion_yellow",
+            "quantity": 4
+        },
+        {
+            "item_id": "potion_green",
+            "quantity": 2
+        }
+    ]
+}

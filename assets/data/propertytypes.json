@@ -1,8 +1,38 @@
-{ 
-    "ether_potion": { 
-        "name": "Potion de Soin", 
-        "description": "Une potion rouge qui restaure 50 PV.", 
+{
+    "ether_potion": {
+        "name": "Potion d'ether",
+        "description": "Une potion transparante qui restaure 50 Ethers.",
         "stack_max": 10,
         "icon": "05-potion.png"
-    } 
+    },
+    "potion_red": {
+        "name": "Potion Rouge",
+        "description": "Une potion simple pour les soins de base.",
+        "stack_max": 10,
+        "icon": "00-potion.png"
+    },
+    "potion_big_red": {
+        "name": "Grande potion Rouge",
+        "description": "Une grande potion pour les soins avancées.",
+        "stack_max": 10,
+        "icon": "01-potion.png"
+    },
+    "potion_purple": {
+        "name": "Potion Violette",
+        "description": "Une potion de vision nocturne.",
+        "stack_max": 10,
+        "icon": "02-potion.png"
+    },
+    "potion_yellow": {
+        "name": "Potion Jaune",
+        "description": "Une potion qui augmente la chance.",
+        "stack_max": 10,
+        "icon": "03-potion.png"
+    },
+    "potion_green": {
+        "name": "Potion Verte",
+        "description": "Une potion de résistance au poison.",
+        "stack_max": 10,
+        "icon": "04-potion.png"
+    }
 }

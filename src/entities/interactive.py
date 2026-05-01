@@ -58,6 +58,9 @@ class InteractiveEntity(BaseEntity):
         if self.halo_size > 0:
             self._setup_lighting()
             
+        # Chest contents (populated externally by LootTable for sub_type='chest')
+        self.contents: list[dict] = []
+
         self.image = self._get_frame(int(self.frame_index))
         logging.info(f"Spawned InteractiveEntity '{sub_type}' at {pos} (is_on={self.is_on})")
 

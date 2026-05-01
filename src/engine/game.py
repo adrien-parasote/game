@@ -19,6 +19,7 @@ from src.ui.hud import GameHUD
 from src.ui.dialogue import DialogueManager
 from src.engine.audio import AudioManager
 from src.engine.interaction import InteractionManager
+from src.engine.loot_table import LootTable
 from src.ui.chest import ChestUI
 from src.engine.i18n import I18nManager
 from src.ui.inventory import InventoryUI
@@ -92,6 +93,14 @@ class Game:
         
         # World State
         self.world_state = WorldState()
+        
+        # Loot Table (chest contents)
+        self.loot_table = LootTable()
+        property_types = self._load_property_types()
+        self.loot_table.load(
+            os.path.join("assets", "data", "loot_table.json"),
+            property_types
+        )
         
         # Dialogue System
         self.dialogue_manager = DialogueManager()
@@ -272,6 +281,10 @@ class Game:
             facing_direction=_get_property(props, "facing_direction"),
             sfx=_get_property(props, "sfx", "")
         )
+
+        # Populate chest contents from loot table
+        if _get_property(props, "sub_type", "unknown") == "chest":
+            entity.contents = self.loot_table.get_contents(element_id)
 
         tiled_id = ent.get("id")
         if tiled_id is not None and map_name:
@@ -691,6 +704,19 @@ class Game:
                 display_flags
             )
         logging.info(f"Fullscreen toggled: {self.is_fullscreen}")
+
+    def _load_property_types(self) -> dict:
+        """Load item property types from JSON for loot table validation."""
+        path = os.path.join("assets", "data", "propertytypes.json")
+        if not os.path.exists(path):
+            logging.error(f"Game: Property types file not found at {path}")
+            return {}
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logging.error(f"Game: Failed to load property types: {e}")
+            return {}
 
     def _setup_logging(self):
         """Configure rotating file logging and console output."""
