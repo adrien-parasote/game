@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-01 | Files scanned: 33 | Token estimate: ~380 -->
+<!-- Generated: 2026-05-01 | Files scanned: 34 | Token estimate: ~390 -->
 
 # Game Engine Architecture
 
@@ -48,5 +48,5 @@
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables)
-- **Test Suite**: Pytest 9.0.3, 436 tests, 92% coverage
+- **Test Suite**: Pytest 9.0.3, 436 tests, 92% coverage — domain-based layout: `tests/{engine,entities,map,ui,graphics}/`
 - **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop

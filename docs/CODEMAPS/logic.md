@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-01 | Files scanned: 33 | Token estimate: ~420 -->
+<!-- Generated: 2026-05-01 | Files scanned: 34 | Token estimate: ~430 -->
 
 # Engine Logic Flow
 
@@ -41,7 +41,10 @@ is_on=False → interact() → is_on=True  → animation plays (start_row..end_r
 is_on=True  → interact() → is_on=False → animation resets to frame 0
 sub_types: chest | lever | door | sign | animated_decor
 ```
-- Animated decor: always plays animation when `is_animated=True`, regardless of `is_on`.
+- Animated decor `off_position`: spritesheet column switch on toggle.
+  - `off_position=-1` (default) → single-column, no switch (backward compat).
+  - `off_position=N` → `col_index=N` when `is_on=False`, `col_index=on_position` when `True`.
+  - `restore_state({'is_on': bool})` also updates `col_index` via `_update_col_index()`.
 - Linked entities (levers→doors): toggled via `Game.toggle_entity_by_id(target_id)`.
 
 ## Emote Chain
