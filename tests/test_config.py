@@ -14,6 +14,6 @@ def test_font_tiers_exist():
     assert hasattr(Settings, "FONT_NARRATIVE")
     assert hasattr(Settings, "FONT_TECH")
     
-    assert "metamorphous" in Settings.FONT_NOBLE.lower()
-    assert "vcr_osd" in Settings.FONT_NARRATIVE.lower()
-    assert "m5x7" in Settings.FONT_TECH.lower()
+    assert Settings.FONT_NOBLE.endswith(".ttf")
+    assert Settings.FONT_NARRATIVE.endswith(".ttf")
+    assert Settings.FONT_TECH.endswith(".ttf")

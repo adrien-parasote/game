@@ -113,6 +113,9 @@ class Game:
         self.speech_bubble.set_font(
             am.get_font(Settings.FONT_NARRATIVE, Settings.FONT_SIZE_NARRATIVE)
         )
+        self.speech_bubble.set_name_font(
+            am.get_font(Settings.FONT_NOBLE, Settings.FONT_SIZE_NARRATIVE)
+        )
         # Active NPC bubble state: {npc, text, page} or None
         self._npc_bubble: dict | None = None
         
@@ -655,6 +658,7 @@ class Game:
                 npc_screen_rect,
                 self._npc_bubble["text"],
                 page=self._npc_bubble["page"],
+                speaker_name=getattr(npc, 'name', '') or npc.element_id.capitalize()
             )
             
         if self.inventory_ui.is_open:

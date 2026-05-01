@@ -20,8 +20,12 @@ ASSET_DIR: str = os.path.join("assets", "images", "HUD")
 
 _ARROW_OFFSET_X = 8
 _ARROW_OFFSET_Y = -13
-_BUBBLE_PADDING = 18
+_PADDING_TOP = 20
+_PADDING_BOTTOM = 0
+_PADDING_X = 30
 _TAIL_GAP = 20
+_NAME_PLATE_OFFSET_X = 18
+_NAME_PLATE_OFFSET_Y = -15
 
 TILES: dict = {
     "bottom_right": "13-bubble_bottom_right.png",
@@ -34,6 +38,7 @@ TILES: dict = {
     "top_left":     "20-bubble_top_left.png",
     "queue":        "21-bubble_queue.png",
     "arrow":        "22-bubble_arrow.png",
+    "name_plate":   "23-bubble_name.png",
 }
 
 # Type alias for the blit callable signature used by pygame.Surface.blit
@@ -61,10 +66,13 @@ class SpeechBubble:
         arrow_inset: int = 4,
     ) -> None:
         self.max_width_px = max(max_width_px, MIN_BUBBLE_SIZE)
-        self.padding = _BUBBLE_PADDING
+        self.pad_top = _PADDING_TOP
+        self.pad_bottom = _PADDING_BOTTOM
+        self.pad_x = _PADDING_X
         self.tail_gap = _TAIL_GAP
         self.arrow_inset = arrow_inset
         self.font: Optional[pygame.font.Font] = None
+        self.name_font: Optional[pygame.font.Font] = None
         self._load_tiles()
 
     def _load_tiles(self) -> None:
@@ -79,6 +87,10 @@ class SpeechBubble:
             # Use default size for arrow as requested; scale others to TILE_SIZE
             if key == "arrow":
                 self.tiles[key] = img
+            elif key == "name_plate":
+                self.tiles["name_plate_left"] = img.subsurface(pygame.Rect(0, 0, 32, 64))
+                self.tiles["name_plate_center"] = img.subsurface(pygame.Rect(32, 0, 32, 64))
+                self.tiles["name_plate_right"] = img.subsurface(pygame.Rect(64, 0, 32, 64))
             else:
                 self.tiles[key] = pygame.transform.smoothscale(img, (TILE_SIZE, TILE_SIZE))
 
@@ -86,12 +98,16 @@ class SpeechBubble:
         """Assign the pygame font used for rendering text."""
         self.font = font
 
+    def set_name_font(self, font: pygame.font.Font) -> None:
+        """Assign the pygame font used for rendering the speaker name."""
+        self.name_font = font
+
     def _wrap_text(self, text: str) -> List[str]:
         """Wrap *text* to fit within bubble width minus padding on each side."""
         if not self.font:
             raise RuntimeError("Font not set on SpeechBubble before drawing.")
 
-        inner_max_width = self.max_width_px - (2 * self.padding)
+        inner_max_width = self.max_width_px - (2 * self.pad_x)
         if inner_max_width <= 0:
             return [text]
 
@@ -172,6 +188,7 @@ class SpeechBubble:
         char_rect: pygame.Rect,
         text: str,
         page: int = 0,
+        speaker_name: Optional[str] = None,
         blit_func: Optional[BlitFunc] = None,
     ) -> None:
         """Draw the speech bubble anchored to char_rect."""
@@ -187,22 +204,22 @@ class SpeechBubble:
         page = max(0, min(page, total_pages - 1))
         page_lines = all_lines[page * lines_per_page : (page + 1) * lines_per_page]
 
-        # 2. Dimensions: text_w + 2*padding for width; +TILE_SIZE for bottom border row
+        # 2. Dimensions: text_w + 2*pad_x for width; +TILE_SIZE for bottom border row
         text_w = max((self.font.size(line)[0] for line in page_lines), default=0)
         text_h = len(page_lines) * line_height
 
-        bubble_w = max(MIN_BUBBLE_SIZE, text_w + 2 * self.padding)
+        bubble_w = max(MIN_BUBBLE_SIZE, text_w + 2 * self.pad_x)
         bubble_w = min(self.max_width_px, bubble_w)
-        bubble_h = max(MIN_BUBBLE_SIZE + TILE_SIZE, text_h + 2 * self.padding + TILE_SIZE)
+        bubble_h = max(MIN_BUBBLE_SIZE + TILE_SIZE, text_h + self.pad_top + self.pad_bottom + TILE_SIZE)
 
         # 3. Background
         bg = self._build_background(bubble_w, bubble_h)
 
-        # 4. Text rendered at (padding, padding) — full bubble width minus padding
-        inner_y = self.padding
+        # 4. Text rendered at (pad_x, pad_top) — full bubble width minus padding
+        inner_y = self.pad_top
         for line in page_lines:
-            txt_surf = self.font.render(line, True, (0, 0, 0))
-            bg.blit(txt_surf, (self.padding, inner_y))
+            txt_surf = self.font.render(line, True, (60, 40, 30))
+            bg.blit(txt_surf, (self.pad_x, inner_y))
             inner_y += line_height
 
         # 5. Pagination arrow: INSIDE the top-left corner of the bottom-right tile, with manual offset
@@ -212,12 +229,53 @@ class SpeechBubble:
             arrow_y = bubble_h - TILE_SIZE + _ARROW_OFFSET_Y
             bg.blit(arrow, (arrow_x, arrow_y))
 
-        # 6. Final blit: single draw of the fully composed bubble
+        # 6. Build the name plate if speaker_name is provided
+        name_plate_bg = None
+        name_plate_offset = (_NAME_PLATE_OFFSET_X, _NAME_PLATE_OFFSET_Y)
+        
+        if speaker_name and "name_plate_left" in self.tiles:
+            # Use name_font if available, else fallback to standard font
+            font_to_use = self.name_font if self.name_font else self.font
+            name_surf = font_to_use.render(speaker_name, True, (255, 255, 255))
+            
+            name_w = name_surf.get_width()
+            plate_padding_x = 16
+            target_w = name_w + plate_padding_x * 2
+            
+            # Scale down the plate to be less massive (32px high instead of 64px)
+            plate_h = 32
+            edge_w = 16
+            
+            left_tile = pygame.transform.smoothscale(self.tiles["name_plate_left"], (edge_w, plate_h))
+            center_tile = pygame.transform.smoothscale(self.tiles["name_plate_center"], (edge_w, plate_h))
+            right_tile = pygame.transform.smoothscale(self.tiles["name_plate_right"], (edge_w, plate_h))
+            
+            # Minimum width is left + right
+            target_w = max(edge_w * 2, target_w)
+            
+            name_plate_bg = pygame.Surface((target_w, plate_h), pygame.SRCALPHA)
+            name_plate_bg.blit(left_tile, (0, 0))
+            
+            center_w = target_w - (edge_w * 2)
+            if center_w > 0:
+                scaled_center = pygame.transform.scale(center_tile, (center_w, plate_h))
+                name_plate_bg.blit(scaled_center, (edge_w, 0))
+            
+            name_plate_bg.blit(right_tile, (target_w - edge_w, 0))
+            
+            # Center the text inside the plate (adjusted slightly upwards if the bottom has a drop shadow)
+            text_rect = name_surf.get_rect(center=(target_w // 2, plate_h // 2))
+            name_plate_bg.blit(name_surf, text_rect)
+
+        # 7. Final blit: single draw of the fully composed bubble
         # Position bubble so its bottom edge (with tail) is above the character head
         bubble_x = char_rect.centerx - bubble_w // 2
         bubble_y = char_rect.top - self.tail_gap - bubble_h
         
         blit(bg, (bubble_x, bubble_y))
+        
+        if name_plate_bg:
+            blit(name_plate_bg, (bubble_x + name_plate_offset[0], bubble_y + name_plate_offset[1]))
 
     def get_total_pages(self, text: str) -> int:
         """Calculate the total number of pages for the given text."""

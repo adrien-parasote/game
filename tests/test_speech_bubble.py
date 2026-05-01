@@ -150,7 +150,11 @@ class TestSpeechBubbleFontGuard(unittest.TestCase):
     def test_raises_when_font_not_set(self):
         """draw() raises RuntimeError when no font is assigned."""
         with mock.patch("pygame.image.load") as ml:
-            ml.return_value = pygame.Surface((32, 32))
+            def mock_load(path):
+                if "23-bubble_name" in path:
+                    return pygame.Surface((96, 64))
+                return pygame.Surface((32, 32))
+            ml.side_effect = mock_load
             bubble = SpeechBubble()
         # font deliberately NOT set
         with self.assertRaises(RuntimeError):

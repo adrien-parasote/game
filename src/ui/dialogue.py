@@ -35,7 +35,7 @@ class DialogueManager:
         # Style
         self._shadow_color = (180, 170, 150) # Light shadow for parchment
         self._shadow_offset = 1
-        self._text_color = (40, 30, 20)      # Dark brown for high contrast on parchment
+        self._text_color = (60, 40, 30)      # Dark brown for high contrast on parchment
         
         # Fonts
         self.font_title = None

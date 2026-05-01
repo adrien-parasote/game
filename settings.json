@@ -29,7 +29,7 @@
   },
   "fonts": {
     "noble": "assets/fonts/metamorphous-regular.ttf",
-    "narrative": "assets/fonts/vcr_osd_mono.ttf",
+    "narrative": "assets/fonts/quicksand-regular.ttf",
     "tech": "assets/fonts/m5x7.ttf",
     "size_noble": 18,
     "size_narrative": 14,
