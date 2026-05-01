@@ -12,6 +12,7 @@ class TileMapData:
     depth: int
     collidable: bool
     occluded_image: Optional[pygame.Surface] = None
+    properties: Dict[str, Any] = None
 
 class TmjParser:
     """Parser for Tiled (.tmj) map files and their associated external (.tsx) tilesets."""
@@ -143,11 +144,26 @@ class TmjParser:
         am = AssetManager()
         sheet = am.get_image(img_path)
         
+        # Parse tileset-level properties
+        tileset_props = {}
+        ts_properties_node = root.find("properties")
+        if ts_properties_node is not None:
+            for p in ts_properties_node.findall("property"):
+                name = p.get("name")
+                val = p.get("value")
+                type_str = p.get("type", "string")
+                if type_str == "bool":
+                    tileset_props[name] = val.lower() == "true"
+                elif type_str == "int":
+                    tileset_props[name] = int(val)
+                else:
+                    tileset_props[name] = val
+        
         # Find explicit custom properties for tiles if any
         custom_props = {}
         for tile in root.findall("tile"):
             local_id = int(tile.get("id"))
-            props = {"collidable": False, "depth": 0}
+            props = {"collidable": tileset_props.get("collidable", False), "depth": tileset_props.get("depth", 0)}
             
             properties_node = tile.find("properties")
             if properties_node is not None:
@@ -178,7 +194,14 @@ class TmjParser:
             surface = sheet.subsurface(rect).copy() # isolated copy
             
             # Fetch properties or defaults
-            props = custom_props.get(i, {"collidable": False, "depth": 0})
+            props = tileset_props.copy()
+            props.update(custom_props.get(i, {}))
+            
+            # Ensure required keys exist
+            if "collidable" not in props:
+                props["collidable"] = False
+            if "depth" not in props:
+                props["depth"] = 0
             
             # Pre-cache occluded version for high depth tiles
             occluded = None
@@ -191,7 +214,8 @@ class TmjParser:
                 image=surface,
                 depth=props["depth"],
                 collidable=props["collidable"],
-                occluded_image=occluded
+                occluded_image=occluded,
+                properties=props
             )
             
     def _parse_tilelayer(self, layer_data: Dict[str, Any], map_width: int, layers_dict: Dict[int, list]):

@@ -138,6 +138,7 @@ def test_inventory_full_render():
     item.quantity = 1
     
     player.inventory.get_item_at.side_effect = lambda idx: item if idx == 0 else None
+    player.inventory.equipment.get.return_value = None
     ui = InventoryUI(player)
     ui.is_open = True
     
@@ -375,6 +376,7 @@ def test_inventory_draw_item_quantity_gt1():
     item.icon = "potion_red.png"
     item.quantity = 5
     player.inventory.get_item_at.side_effect = lambda idx: item if idx == 0 else None
+    player.inventory.equipment.get.return_value = None
     ui = InventoryUI(player)
     ui.is_open = True
     surf = pygame.Surface((32, 32))
@@ -387,6 +389,7 @@ def test_inventory_draw_hover_equipment():
     """draw() draws gold border for hovered equipment slot."""
     player = MagicMock()
     player.inventory.get_item_at.return_value = None
+    player.inventory.equipment.get.return_value = None
     ui = InventoryUI(player)
     ui.is_open = True
     ui.hovered_slot = ("equipment", "HEAD")
@@ -398,6 +401,7 @@ def test_inventory_draw_hover_grid():
     """draw() draws hover image for hovered grid slot."""
     player = MagicMock()
     player.inventory.get_item_at.return_value = None
+    player.inventory.equipment.get.return_value = None
     ui = InventoryUI(player)
     ui.is_open = True
     ui.active_tab = 0

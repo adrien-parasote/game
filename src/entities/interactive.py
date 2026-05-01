@@ -334,7 +334,7 @@ class InteractiveEntity(BaseEntity):
             self.particles_list = alive
 
     def draw_effects(self, surface: pygame.Surface, cam_offset: pygame.math.Vector2, global_darkness: int):
-        """Draw particles and light halo."""
+        """Draw particles (light halo is handled by LightingManager)."""
         if not self.is_on: return
 
         if self.particles_list:
@@ -345,6 +345,7 @@ class InteractiveEntity(BaseEntity):
                 surface.blit(pygame.Surface((p['size']*2, p['size']*2)), (int(p['x'] + cam_offset.x), int(p['y'] + cam_offset.y)), special_flags=pygame.BLEND_RGB_ADD)
                 pygame.draw.circle(surface, color, (int(p['x'] + cam_offset.x), int(p['y'] + cam_offset.y)), p['size'])
 
+        # Additive colored glow (works with LightingManager's subtractive mask)
         if not self.light_mask_cache or self.halo_size <= 0: return
 
         dark_factor = global_darkness / 180.0 
@@ -355,3 +356,4 @@ class InteractiveEntity(BaseEntity):
         if m < 255: render_surf.fill((m, m, m), special_flags=pygame.BLEND_RGB_MULT)
         halo_pos = (self.rect.centerx + cam_offset.x - render_surf.get_width() // 2, self.rect.centery + cam_offset.y - render_surf.get_height() // 2)
         surface.blit(render_surf, halo_pos, special_flags=pygame.BLEND_RGB_ADD)
+
