@@ -161,6 +161,11 @@
                     "value": false
                 },
                 {
+                    "name": "off_position",
+                    "type": "int",
+                    "value": -1
+                },
+                {
                     "name": "sfx",
                     "type": "string",
                     "value": ""

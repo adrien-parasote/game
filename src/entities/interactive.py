@@ -29,7 +29,7 @@ class InteractiveEntity(BaseEntity):
                  width: int = 32, height: int = 32, obstacles_group: pygame.sprite.Group = None,
                  tiled_width: int = None, tiled_height: int = None,
                  is_passable: bool = False, is_animated: bool = False,
-                 is_on: bool = None,
+                 is_on: bool = None, off_position: int = -1,
                  halo_size: int = 0, halo_color: str = "[255, 255, 255]",
                  halo_alpha: int = 130, particles: bool = False, particle_count: int = 0,
                  element_id: str = None, target_id: str = None,
@@ -41,7 +41,7 @@ class InteractiveEntity(BaseEntity):
         self.target_id = target_id
         
         self._parse_properties(sub_type, start_row, end_row, is_on, is_animated, 
-                             depth, position, halo_size, halo_color, halo_alpha,
+                             depth, position, off_position, halo_size, halo_color, halo_alpha,
                              particles, particle_count, activate_from_anywhere,
                              sprite_sheet, facing_direction, sfx)
         
@@ -65,7 +65,7 @@ class InteractiveEntity(BaseEntity):
         logging.info(f"Spawned InteractiveEntity '{sub_type}' at {pos} (is_on={self.is_on})")
 
     def _parse_properties(self, sub_type, start_row, end_row, is_on, is_animated, 
-                           depth, position, halo_size, halo_color, halo_alpha,
+                           depth, position, off_position, halo_size, halo_color, halo_alpha,
                            particles, particle_count, activate_from_anywhere,
                            sprite_sheet, facing_direction, sfx):
         """Parse raw properties and initialize basic state."""
@@ -74,6 +74,8 @@ class InteractiveEntity(BaseEntity):
         self.end_row = end_row
         self.is_animated = is_animated
         self.depth = depth
+        self.on_position = position
+        self.off_position = off_position
         self.col_index = position
         
         # Determine direction_str (Priority: facing_direction > POSITION_TO_DIR)
@@ -97,6 +99,8 @@ class InteractiveEntity(BaseEntity):
             self.is_on = is_on
         else:
             self.is_on = self.is_animated or self.is_light_source
+            
+        self._update_col_index()
             
         # Selective Animation Speed
         if self.is_light_source:
@@ -227,6 +231,13 @@ class InteractiveEntity(BaseEntity):
             return self.frames[idx]
         return self.frames[0] if self.frames else pygame.Surface((32, 32))
 
+    def _update_col_index(self):
+        """Sync col_index with current is_on state and off_position."""
+        if not self.is_on and self.off_position >= 0:
+            self.col_index = self.off_position
+        else:
+            self.col_index = self.on_position
+
     def interact(self, initiator) -> str:
         """Toggle state or return dialogue key."""
         if self.sub_type == 'sign':
@@ -234,6 +245,7 @@ class InteractiveEntity(BaseEntity):
             
         if not self.is_animating or self.is_animated:
             self.is_on = not self.is_on
+            self._update_col_index()
             self.is_animating = True
             if not self.is_animated:
                 self.is_closing = not self.is_on
@@ -246,6 +258,7 @@ class InteractiveEntity(BaseEntity):
         if 'is_on' in state:
             is_on = state['is_on']
             self.is_on = is_on
+            self._update_col_index()
             if is_on and not self.is_animated:
                 self.frame_index = float(self.end_row)
             elif not is_on:

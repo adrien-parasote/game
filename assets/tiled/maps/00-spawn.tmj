@@ -178,6 +178,7 @@
                                     {
                                      "is_animated":true,
                                      "is_on":true,
+                                     "off_position":1,
                                      "sprite":
                                         {
                                          "entity_type":"interactive",
@@ -222,6 +223,7 @@
                                     {
                                      "is_animated":true,
                                      "is_on":true,
+                                     "off_position":1,
                                      "sprite":
                                         {
                                          "element_id":"actionnable_torche",

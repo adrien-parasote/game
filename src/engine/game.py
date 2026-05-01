@@ -296,6 +296,7 @@ class Game:
             is_passable=_get_property(props, "is_passable", False),
             is_animated=_get_property(props, "is_animated", False),
             is_on=_get_property(props, "is_on"),
+            off_position=int(_get_property(props, "off_position", -1)),
             halo_size=int(_get_property(props, "halo_size", 0)),
             halo_color=_get_property(props, "halo_color", "[255, 255, 255]"),
             halo_alpha=int(_get_property(props, "halo_alpha", 130)),

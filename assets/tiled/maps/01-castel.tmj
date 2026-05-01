@@ -203,6 +203,30 @@
                          "width":22,
                          "x":85,
                          "y":70
+                        }, 
+                        {
+                         "height":2,
+                         "id":55,
+                         "name":"",
+                         "opacity":1,
+                         "rotation":0,
+                         "type":"18-light",
+                         "visible":true,
+                         "width":22,
+                         "x":677,
+                         "y":76
+                        }, 
+                        {
+                         "height":2,
+                         "id":56,
+                         "name":"",
+                         "opacity":1,
+                         "rotation":0,
+                         "type":"18-light",
+                         "visible":true,
+                         "width":22,
+                         "x":869,
+                         "y":76
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -309,6 +333,7 @@
                                     {
                                      "is_animated":true,
                                      "is_on":true,
+                                     "off_position":1,
                                      "sprite":
                                         {
                                          "entity_type":"interactive",
@@ -353,6 +378,7 @@
                                     {
                                      "is_animated":true,
                                      "is_on":true,
+                                     "off_position":1,
                                      "sprite":
                                         {
                                          "element_id":"",
@@ -398,6 +424,7 @@
                                     {
                                      "is_animated":true,
                                      "is_on":true,
+                                     "off_position":1,
                                      "sprite":
                                         {
                                          "entity_type":"interactive",
@@ -442,6 +469,7 @@
                                     {
                                      "is_animated":true,
                                      "is_on":true,
+                                     "off_position":1,
                                      "sprite":
                                         {
                                          "entity_type":"interactive",
@@ -486,6 +514,7 @@
                                     {
                                      "is_animated":true,
                                      "is_on":true,
+                                     "off_position":1,
                                      "sprite":
                                         {
                                          "entity_type":"interactive",
@@ -530,6 +559,7 @@
                                     {
                                      "is_animated":true,
                                      "is_on":true,
+                                     "off_position":1,
                                      "sprite":
                                         {
                                          "entity_type":"interactive",
@@ -648,7 +678,7 @@
          "y":0
         }],
  "nextlayerid":9,
- "nextobjectid":55,
+ "nextobjectid":57,
  "orientation":"orthogonal",
  "properties":[
         {

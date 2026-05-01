@@ -189,6 +189,7 @@
                                     {
                                      "is_animated":true,
                                      "is_on":true,
+                                     "off_position":1,
                                      "sprite":
                                         {
                                          "element_id":"actionnable_torche",
@@ -234,6 +235,7 @@
                                     {
                                      "is_animated":true,
                                      "is_on":true,
+                                     "off_position":1,
                                      "sprite":
                                         {
                                          "element_id":"actionnable_torche",
@@ -714,6 +716,7 @@
                                     {
                                      "is_animated":true,
                                      "is_on":true,
+                                     "off_position":1,
                                      "sprite":
                                         {
                                          "element_id":"actionnable_torche",
