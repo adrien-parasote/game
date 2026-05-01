@@ -1,50 +1,35 @@
-<!-- Generated: 2026-04-28 | Files scanned: 25 | Token estimate: ~500 -->
+<!-- Generated: 2026-05-01 | Files scanned: 32 | Token estimate: ~350 -->
 
 # Engine Logic Flow
 
 ## Movement Chain
-`Player.input` (Keys) → `BaseEntity.move` (Calculation) → `Game._is_collidable` (Validation) → `rect` update
+`Player.input` (Keys) → `BaseEntity.move` (Calculation) → `Game._is_collidable` (Validation via MapManager & Groups) → `rect` update
 
 ## Interaction Chain
 `INTERACT_KEY` (E) → `InteractionManager.handle_interactions`
-- `_check_npc_interactions`: rect projection at 1-tile range
-- `_check_object_interactions`: distance (<45px) + orientation check
-- `_check_pickup_interactions`: distance (<48px) → `Inventory.add_item`
-- Door Relaxation (Bypass orientation for open doors, `is_on=True`)
-- SFX → `audio_manager.play_sfx(obj.sfx)`
-- `Game.toggle_entity_by_id(target_id, depth=1)` (Chaining)
+- `_check_npc_interactions`: 1-tile distance check → `NPC.interact()` → `Game._trigger_npc_bubble()`
+- `_check_object_interactions`: Orthogonal distance/facing check (<45px) → `InteractiveEntity.interact()` → Toggle State + SFX → `Game._trigger_dialogue` / `chest_ui.open()`
+- `_check_pickup_interactions`: Orthogonal distance check (<48px) → `Inventory.add_item()` → `pickup.kill()`
+`Game.toggle_entity_by_id(target_id)` (Chains switches to doors/events)
+
+## Chest & Inventory UI
+`CHEST_UI / INVENTORY_UI` open blocks player input and pauses `TimeSystem`.
+- **Drag & Drop**: Retains absolute slot indexing. Padding with `None` matches `CHEST_MAX_SLOTS`.
+- `add_item(id, qty)` / `create_item(id, qty)` → Updates slot data → UI redraw.
+- `remove_item(index)` → `None`.
 
 ## Emote Chain
 `InteractionManager.update` → `_check_proximity_emotes`
-- Check proximity to interactives/NPCs (<48px)
-- `Player.playerEmote('interact')` → `EmoteManager.trigger` → `EmoteSprite` spawn
+- Check proximity to interactives/NPCs (<48px).
+- `Player.playerEmote('interact')` → Spawns `EmoteSprite` (!).
 `InteractionManager.handle_interactions` (Failed check)
-- `Player.playerEmote('question')` (Optional via `Settings.ENABLE_FAILED_INTERACTION_EMOTE`)
-`EmoteSprite.update`
-- Follow player + Rise 15px
-- Self-destruct after 1s
+- `Player.playerEmote('question')` (?).
 
-## Dialogue Chain
-`Game._trigger_dialogue` → `DialogueManager.start_dialogue`
-- Pre-calculates wrapping via `_paginate`
-- `update()` handles character-by-character typewriter animation
-- `advance()` handles page skipping and closing
+## Dialogue & Speech Bubbles
+- **Speech Bubble (NPCs)**: Nine-patch bubble rendered above NPC. Auto-wraps 224px. Paginated text. Includes Name Plate (`23-bubble_name.png`).
+- **Dialogue (Signs)**: `DialogueManager.start_dialogue` → `_paginate` → Typewriter text animation on HUD overlay.
 
-## Inventory Chain
-`INVENTORY_KEY` (I) → `InventoryUI.toggle`
-- Sets `is_open = !is_open`
-- Toggles `pygame.mouse.set_visible()`
-- Pauses/Unpauses `TimeSystem` (via `Game` loop)
-- Custom cursor rendering takes over when open
-
-## Teleport Chain
-`Game._check_teleporters` (Arrival/Intent)
-- `TransitionType` (Fade/Instant)
-- `transition_map` → `_load_map`
-- Full group cleanup + Player repositioning
-
-## Time & Environment
-`TimeSystem.update(dt)`
-- `minutes` → `hours` → `days` → `seasons`
-- `night_alpha` modulation (Sinusoidal)
-- `InteractiveEntity.draw_effects` (Halo intensity scaling)
+## Map Loading & Teleportation
+`Game._check_teleporters` (Arrival / Intent) → `transition_map()` (Fade)
+`_load_map()` → `AssetManager.clear()` → `TmjParser.load_map()` → `MapManager` → `_spawn_entities()`
+Entities spawned load their state from `WorldState` via `_world_state_key`.
