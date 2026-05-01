@@ -197,6 +197,7 @@ def test_dialogue_manager_update_and_advance():
     dm.font_message = MagicMock()
     dm.font_message.get_linesize.return_value = 20
     dm.font_message.size.return_value = (10, 20)
+    dm.font_message.render.return_value = pygame.Surface((10, 20))
     dm.dialogue_box = MagicMock()
     dm.dialogue_box.get_width.return_value = 400
     dm.dialogue_box.get_height.return_value = 200

@@ -824,3 +824,35 @@ except SyntaxError as e:
 ---
 
 *Last optimized: 2026-05-01 — added L-TEST-006, A-TEST-007 from test suite urbanization session.*
+
+---
+
+### L-ARCH-005 · 2026-05-01 · U · Perfect
+**Decoupling Engine God Objects**
+
+`game.py` accumulated rendering loops, collision mathematics, state updates, and interactions, making test maintenance highly coupled and increasing CPU overhead per frame with excessive class lookups.
+
+**Pattern :**
+```python
+# ❌ Logic bundled in the main loop class
+class Game:
+    def _is_collidable(self, x, y): ...
+    def _draw_scene(self): ...
+    def _update(self): 
+        # mixing spatial, rendering, input
+```
+
+```python
+# ✅ Extract logic into highly focused Manager classes
+class Game:
+    def __init__(self):
+        self.render_manager = RenderManager(self)
+        self.interaction_manager = InteractionManager(self)
+        
+    def _draw(self):
+        self.render_manager.draw_scene()
+```
+
+**Règle :** Main engine loops should act exclusively as Event Dispatchers and Timers. Complex spatial queries, collision checks, and layered rendering MUST be decoupled into dedicated `Manager` classes that are passed a reference to the main state.
+
+**Evidence :** `InteractionManager` and `RenderManager` extracted, eliminating >200 lines from `game.py`. 100% test coverage maintained without architectural breakage.

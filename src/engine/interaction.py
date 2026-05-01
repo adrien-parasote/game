@@ -195,7 +195,7 @@ class InteractionManager:
                     
                     target = getattr(obj, "target_id", None)
                     if target:
-                        self.game.toggle_entity_by_id(target, depth=1)
+                        self.toggle_entity_by_id(target, depth=1)
                 
                 # Handle chest persistence
                 if getattr(obj, "sub_type", "") == "chest":
@@ -341,3 +341,93 @@ class InteractionManager:
         # Suppress ! emote from firing immediately while player is still in proximity
         self._last_proximity_target = chest
         self._emote_cooldown = 1.0
+
+    def is_collidable(self, px_center: float, py_center: float, requester=None) -> bool:
+        """Collision checking adapter for Entity target position."""
+        # 1. Check Map Tiles
+        wx, wy = self.game.layout.to_world(px_center, py_center)
+        if self.game.map_manager.is_collidable(int(wx), int(wy)):
+            return True
+            
+        # 2. Check Dynamic Obstacles (Doors, etc.)
+        for obj in self.game.obstacles_group:
+            if obj == requester: continue
+            if obj.rect.collidepoint(px_center, py_center):
+                return True
+        
+        # 3. Check NPCs
+        for npc in self.game.npcs:
+            if npc == requester: continue
+            if npc.rect.collidepoint(px_center, py_center):
+                return True
+        
+        # 4. Check Player (if requester is an NPC)
+        if self.game.player != requester:
+            if self.game.player.rect.collidepoint(px_center, py_center):
+                return True
+                
+        return False
+
+    def check_teleporters(self, was_moving: bool):
+        """Active spatial check testing if interaction just resolved over teleport rect."""
+        just_arrived = was_moving and not self.game.player.is_moving
+        intent_active = not was_moving and not self.game.player.is_moving and self.game.player.direction.magnitude() > 0
+        
+        if not just_arrived and not intent_active:
+            return 
+            
+        for tp in self.game.teleports_group:
+            # Player hits teleport zone via strict collision rect
+            if not self.game.player.rect.colliderect(tp.rect):
+                continue
+            
+            req = getattr(tp, 'required_direction', 'any')
+            
+            if just_arrived:
+                # Direction guard: on arrival, must match required direction (unless 'any')
+                if req != 'any' and self.game.player.current_state != req:
+                    logging.debug(f"Teleport skipped (Arrival) — required '{req}', player facing '{self.game.player.current_state}'")
+                    continue
+            elif intent_active:
+                # Intent guard: do not trigger intent for 'any' portals to avoid trapping the player
+                if req == 'any':
+                    continue
+                if self.game.player.current_state != req:
+                    logging.debug(f"Teleport skipped (Intent) — required '{req}', player faced '{self.game.player.current_state}'")
+                    continue
+                
+            logging.info(f"Teleport triggered -> {tp.target_map} / {tp.target_spawn_id}")
+            if getattr(tp, 'sfx', None):
+                self.game.audio_manager.play_sfx(tp.sfx, str(id(tp)))
+                
+            self.game.transition_map(tp.target_map, tp.target_spawn_id, tp.transition_type)
+            break
+
+    def toggle_entity_by_id(self, target_id: str, depth: int = 0):
+        """Toggle the state of any entity matching element_id == target_id."""
+        if not target_id:
+            return
+            
+        if depth > 1:
+            logging.warning(f"Interaction chaining loop detected for target_id={target_id}. Breaking chain.")
+            return
+
+        for group in (self.game.interactives, self.game.npcs):
+            for entity in group:
+                if getattr(entity, 'element_id', None) == target_id:
+                    if hasattr(entity, 'interact'):
+                        entity.interact(self.game.player)
+                        
+                        if getattr(entity, "sfx", None):
+                            self.game.audio_manager.play_sfx(entity.sfx, getattr(entity, "element_id", None))
+                        
+                        # Save state
+                        if hasattr(entity, '_world_state_key'):
+                            self.game.world_state.set(entity._world_state_key, {
+                                'is_on': entity.is_on,
+                                'light_control': getattr(entity, 'light_control', 'auto')
+                            })
+                        
+                        next_target = getattr(entity, 'target_id', None)
+                        if next_target:
+                            self.toggle_entity_by_id(next_target, depth + 1)

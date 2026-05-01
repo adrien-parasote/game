@@ -26,6 +26,7 @@ from src.engine.loot_table import LootTable
 from src.ui.chest import ChestUI
 from src.engine.i18n import I18nManager
 from src.ui.inventory import InventoryUI
+from src.engine.render_manager import RenderManager
 
 
 def _get_property(props: dict, key: str, default=None):
@@ -127,13 +128,16 @@ class Game:
         # Interaction System
         self.interaction_manager = InteractionManager(self)
         
+        # Render System
+        self.render_manager = RenderManager(self)
+        
         logging.info(f"Screen setup: {Settings.WINDOW_WIDTH}x{Settings.WINDOW_HEIGHT} (Fullscreen: {self.is_fullscreen})")
         
         # Player is persisted across maps
         self.player = Player((0, 0), self.visible_sprites, speed=Settings.PLAYER_SPEED, element_id="player")
         self.player.audio_manager = self.audio_manager
         self.player.emote_manager.emote_group = self.emote_group
-        self.player.collision_func = self._is_collidable
+        self.player.collision_func = self.interaction_manager.is_collidable
         
         # Inventory System
         self.inventory_ui = InventoryUI(self.player)
@@ -346,7 +350,7 @@ class Game:
             element_id=_get_property(props, "element_id") or str(ent.get("id"))
         )
         npc.name = _get_property(props, "name", ent.get("name", ""))
-        npc.collision_func = self._is_collidable
+        npc.collision_func = self.interaction_manager.is_collidable
         
         tiled_id = ent.get("id")
         if tiled_id is not None and self._current_map_name:
@@ -396,32 +400,6 @@ class Game:
         logging.info(f"Spawned PickupItem '{item_id}' (x{quantity}) at {e_pos}")
 
 
-
-    def _is_collidable(self, px_center: float, py_center: float, requester=None) -> bool:
-        """Collision checking adapter for Entity target position."""
-        # 1. Check Map Tiles
-        wx, wy = self.layout.to_world(px_center, py_center)
-        if self.map_manager.is_collidable(int(wx), int(wy)):
-            return True
-            
-        # 2. Check Dynamic Obstacles (Doors, etc.)
-        for obj in self.obstacles_group:
-            if obj == requester: continue
-            if obj.rect.collidepoint(px_center, py_center):
-                return True
-        
-        # 3. Check NPCs
-        for npc in self.npcs:
-            if npc == requester: continue
-            if npc.rect.collidepoint(px_center, py_center):
-                return True
-        
-        # 4. Check Player (if requester is an NPC)
-        if self.player != requester:
-            if self.player.rect.collidepoint(px_center, py_center):
-                return True
-                
-        return False
 
     def _draw_background(self):
         """Draw tiles with depth <= player depth (behind player) using pre-rendered surfaces."""
@@ -517,34 +495,7 @@ class Game:
                 if npc.state == 'interact':
                     npc.state = 'idle'
 
-    def toggle_entity_by_id(self, target_id: str, depth: int = 0):
-        """Toggle the state of any entity matching element_id == target_id."""
-        if not target_id:
-            return
-            
-        if depth > 1:
-            logging.warning(f"Interaction chaining loop detected for target_id={target_id}. Breaking chain.")
-            return
 
-        for group in (self.interactives, self.npcs):
-            for entity in group:
-                if getattr(entity, 'element_id', None) == target_id:
-                    if hasattr(entity, 'interact'):
-                        entity.interact(self.player)
-                        
-                        if getattr(entity, "sfx", None):
-                            self.audio_manager.play_sfx(entity.sfx, getattr(entity, "element_id", None))
-                        
-                        # Save state
-                        if hasattr(entity, '_world_state_key'):
-                            self.world_state.set(entity._world_state_key, {
-                                'is_on': entity.is_on,
-                                'light_control': getattr(entity, 'light_control', 'auto')
-                            })
-                        
-                        next_target = getattr(entity, 'target_id', None)
-                        if next_target:
-                            self.toggle_entity_by_id(next_target, depth + 1)
 
     def transition_map(self, target_map: str, target_spawn_id: str, transition_type: str):
         """Handle screen fading and triggering map load cleanly."""
@@ -565,7 +516,7 @@ class Game:
                 dt = self.clock.tick(Settings.FPS) / 1000.0
                 self.time_system.update(dt) # Flow of time continues
                 
-                self._draw_scene()
+                self.render_manager.draw_scene()
                 fade_surf.set_alpha(alpha)
                 self.screen.blit(fade_surf, (0, 0))
                 pygame.display.update()
@@ -579,109 +530,15 @@ class Game:
                 dt = self.clock.tick(Settings.FPS) / 1000.0
                 self.time_system.update(dt)
                 
-                self._draw_scene()
+                self.render_manager.draw_scene()
                 fade_surf.set_alpha(alpha)
                 self.screen.blit(fade_surf, (0, 0))
                 pygame.display.update()
                 
         self.clock.tick(Settings.FPS) # Reset dt so next frame logic doesn't jump
 
-    def _check_teleporters(self, was_moving: bool):
-        """Active spatial check testing if interaction just resolved over teleport rect."""
-        just_arrived = was_moving and not self.player.is_moving
-        intent_active = not was_moving and not self.player.is_moving and self.player.direction.magnitude() > 0
-        
-        if not just_arrived and not intent_active:
-            return 
-            
-        for tp in self.teleports_group:
-            # Player hits teleport zone via strict collision rect
-            if not self.player.rect.colliderect(tp.rect):
-                continue
-            
-            req = getattr(tp, 'required_direction', 'any')
-            
-            if just_arrived:
-                # Direction guard: on arrival, must match required direction (unless 'any')
-                if req != 'any' and self.player.current_state != req:
-                    logging.debug(f"Teleport skipped (Arrival) — required '{req}', player facing '{self.player.current_state}'")
-                    continue
-            elif intent_active:
-                # Intent guard: do not trigger intent for 'any' portals to avoid trapping the player
-                # when they try to turn around.
-                if req == 'any':
-                    continue
-                if self.player.current_state != req:
-                    logging.debug(f"Teleport skipped (Intent) — required '{req}', player faced '{self.player.current_state}'")
-                    continue
-                
-            logging.info(f"Teleport triggered -> {tp.target_map} / {tp.target_spawn_id}")
-            if getattr(tp, 'sfx', None):
-                self.audio_manager.play_sfx(tp.sfx, str(id(tp)))
-                
-            self.transition_map(tp.target_map, tp.target_spawn_id, tp.transition_type)
-            break
 
-    def _draw_scene(self):
-        """A helper representing the entire scene rendering logic."""
-        self.screen.fill(Settings.COLOR_BG)
-        self.visible_sprites.calculate_offset(self.player)
-        self._draw_background()
-        self.visible_sprites.custom_draw(self.screen)
-        self._draw_foreground()
-        
-        night_alpha = self.time_system.night_alpha
-        window_positions = self.map_manager.get_window_positions()
-        
-        # Render additive window beams (always visible during day and night)
-        self.lighting_manager.draw_additive_window_beams(self.screen, window_positions, self.visible_sprites.offset)
-        
-        # Render dynamic lighting on darkness overlay
-        if night_alpha > 0:
-            active_torches = [obj for obj in self.interactives if getattr(obj, 'is_on', False) and getattr(obj, 'halo_size', 0) > 0]
-            
-            overlay = self.lighting_manager.create_overlay(
-                window_positions, 
-                active_torches, 
-                self.visible_sprites.offset
-            )
-            self.screen.blit(overlay, (0, 0))
-            
-        cam_offset = self.visible_sprites.offset
-        for obj in self.interactives:
-            if hasattr(obj, 'draw_effects'):
-                obj.draw_effects(self.screen, cam_offset, night_alpha)
-            
-        if not self.inventory_ui.is_open:
-            self._draw_hud()
-        
-        # Draw Emotes (after HUD, with camera offset)
-        for sprite in self.emote_group:
-            screen_pos = (sprite.rect.x + cam_offset.x, sprite.rect.y + cam_offset.y)
-            self.screen.blit(sprite.image, screen_pos)
 
-        
-        if self.dialogue_manager.is_active:
-            self.dialogue_manager.draw(self.screen)
-
-        # NPC speech bubble — drawn above NPC in screen-space
-        if self._npc_bubble is not None:
-            npc = self._npc_bubble["npc"]
-            cam = self.visible_sprites.offset
-            # Build a screen-space rect from the NPC world rect
-            npc_screen_rect = npc.rect.move(cam.x, cam.y)
-            self.speech_bubble.draw(
-                self.screen,
-                npc_screen_rect,
-                self._npc_bubble["text"],
-                page=self._npc_bubble["page"],
-                speaker_name=getattr(npc, 'name', '') or npc.element_id.capitalize()
-            )
-            
-        if self.inventory_ui.is_open:
-            self.inventory_ui.draw(self.screen)
-        if self.chest_ui.is_open:
-            self.chest_ui.draw(self.screen)
 
     def run(self):
         """Main game loop optimized for 60 FPS."""
@@ -760,7 +617,7 @@ class Game:
             
             was_moving = self.player.is_moving
             self.visible_sprites.update(dt)
-            self._check_teleporters(was_moving)
+            self.interaction_manager.check_teleporters(was_moving)
             # No time_system update or other world updates
         else:
             # Update Time
@@ -774,7 +631,7 @@ class Game:
             
             was_moving = self.player.is_moving
             self.visible_sprites.update(dt)
-            self._check_teleporters(was_moving)
+            self.interaction_manager.check_teleporters(was_moving)
             
             # CPU Freeze optimization for NPCs -> freeze if outside enlarged viewport
             screen_rect = self.screen.get_rect()
@@ -797,7 +654,7 @@ class Game:
 
     def _draw(self):
         """Draw complete scene and update display."""
-        self._draw_scene()
+        self.render_manager.draw_scene()
         pygame.display.update()
 
     def toggle_fullscreen(self):

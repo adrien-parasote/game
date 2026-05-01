@@ -198,43 +198,7 @@ class DummySprite(pygame.sprite.Sprite):
     def interact(self, player):
         self.interact_called = True
 
-@patch('src.engine.game.Game._load_map')
-def test_game_toggle_entity(mock_load):
-    game = Game()
-    game.audio_manager = MagicMock()
-    game.world_state = MagicMock()
-    
-    mock_entity = DummySprite("door_1")
-    mock_entity.target_id = "switch_1"
-    mock_entity.is_on = True
-    
-    mock_entity2 = DummySprite("switch_1")
-    
-    game.interactives.add(mock_entity, mock_entity2)
-    
-    # Test toggling
-    game.toggle_entity_by_id("door_1")
-    assert mock_entity.interact_called
-    assert mock_entity2.interact_called # Because door_1 targets switch_1
 
-@patch('src.engine.game.Game._load_map')
-def test_game_check_teleporters(mock_load):
-    game = Game()
-    game.player = MagicMock()
-    game.player.rect = pygame.Rect(0, 0, 32, 32)
-    game.player.is_moving = False
-    game.player.current_state = 'any'
-    
-    mock_teleport = DummySprite()
-    mock_teleport.target_map = "next_map.tmj"
-    mock_teleport.target_spawn_id = "spawn_2"
-    mock_teleport.transition_type = "fade"
-    
-    game.teleports_group.add(mock_teleport)
-    
-    with patch.object(game, 'transition_map') as mock_transition:
-        game._check_teleporters(was_moving=True)
-        mock_transition.assert_called_with("next_map.tmj", "spawn_2", "fade")
 
 @patch('src.engine.game.Game._load_map')
 def test_game_transition_map_fade(mock_load):
@@ -251,79 +215,9 @@ def test_game_transition_map_fade(mock_load):
         game.transition_map("next_map.tmj", "spawn_2", "fade")
         assert mock_load.called
 
-@patch('src.engine.game.Game._load_map')
-def test_game_is_collidable(mock_load):
-    game = Game()
-    game.map_manager = MagicMock()
-    game.layout = MagicMock()
-    game.layout.to_world.return_value = (0, 0)
-    
-    # 1. Map boundary collision
-    game.map_manager.check_collision.return_value = True
-    assert game._is_collidable(0.0, 0.0) is True
-    game.map_manager.check_collision.return_value = False
-    
-    # 2. Obstacles collision
-    mock_obs = DummySprite()
-    mock_obs.rect = pygame.Rect(-10, -10, 20, 20)
-    game.obstacles_group.add(mock_obs)
-    
-    requester = MagicMock()
-    assert game._is_collidable(0.0, 0.0, requester) is True
-    
-    # 3. NPC collision
-    mock_obs.rect = pygame.Rect(100, 100, 20, 20)  # Move obstacle out
-    mock_npc = DummySprite()
-    mock_npc.rect = pygame.Rect(-10, -10, 20, 20)
-    game.npcs.add(mock_npc)
-    assert game._is_collidable(0.0, 0.0, requester) is True
-    
-    # 4. Player collision
-    mock_npc.rect = pygame.Rect(100, 100, 20, 20)  # Move NPC out
-    game.player = MagicMock()
-    game.player.rect = pygame.Rect(-10, -10, 20, 20)
-    assert game._is_collidable(0.0, 0.0, requester) is True
 
-@patch('src.engine.game.Game._load_map')
-def test_game_draw_layers(mock_load):
-    game = Game()
-    game.map_manager = MagicMock()
-    game.map_manager.layer_order = ["layer_0", "layer_1"]
-    
-    # Mock pre-rendered surfaces
-    surf = pygame.Surface((32, 32))
-    game.map_manager.get_layer_surface.return_value = surf
-    game.map_manager.is_foreground_layer.side_effect = lambda layer, limit: layer == "layer_1"
-    game.map_manager.get_visible_chunks.return_value = [pygame.Rect(0, 0, 32, 32)]
-    
-    game.visible_sprites = MagicMock()
-    game.visible_sprites.offset = pygame.math.Vector2(0, 0)
-    game.screen = pygame.Surface((800, 600))
-    game.player = MagicMock()
-    game.player.rect = pygame.Rect(0, 0, 32, 32)
-    game.player.depth = 1
-    
-    # Background (should hit layer_0)
-    game._draw_background()
-    assert game.map_manager.get_layer_surface.called
-    
-    # Foreground (should hit layer_1 and interactives)
-    game.map_manager.tiles = {
-        1: MagicMock(image=pygame.Surface((32, 32)), occluded_image=pygame.Surface((32, 32)))
-    }
-    game.map_manager.get_visible_chunks.return_value = [(0, 0, 1, 2)] # px, py, tile_id, depth
-    
-    mock_interactive = DummySprite()
-    mock_interactive.is_light_source = True
-    mock_interactive.draw_effects = MagicMock()
-    game.interactives.add(mock_interactive)
-    game.time_system = MagicMock()
-    game.time_system.night_alpha = 100
-    game.player.image = pygame.Surface((32, 32))
-    game.inventory_ui = MagicMock()
-    
-    game._draw_scene()
-    assert mock_interactive.draw_effects.called
+
+
 
 
 
@@ -426,47 +320,7 @@ def test_spawn_entities_sign_logged(mock_load):
     assert any("Sign detected" in str(c) for c in mock_log.call_args_list)
 
 
-@patch('src.engine.game.Game._load_map')
-def test_is_collidable_map_tile(mock_load):
-    """_is_collidable returns True for collidable map tile."""
-    game = Game()
-    game.map_manager = MagicMock()
-    game.layout = MagicMock()
-    game.layout.to_world.return_value = (1, 1)
-    game.map_manager.is_collidable.return_value = True
-    assert game._is_collidable(32, 32) is True
 
-
-@patch('src.engine.game.Game._load_map')
-def test_toggle_entity_empty_id(mock_load):
-    """toggle_entity_by_id returns early for empty target_id."""
-    game = Game()
-    game.toggle_entity_by_id("")  # should not raise
-
-
-@patch('src.engine.game.Game._load_map')
-def test_toggle_entity_depth_limit(mock_load):
-    """toggle_entity_by_id returns early when depth > 1 (loop guard)."""
-    game = Game()
-    game.toggle_entity_by_id("some_id", depth=2)  # should not raise
-
-
-@patch('src.engine.game.Game._load_map')
-def test_toggle_entity_with_sfx_and_world_state(mock_load):
-    """toggle_entity_by_id plays sfx and saves world_state."""
-    game = Game()
-    game.audio_manager = MagicMock()
-    game.world_state = MagicMock()
-
-    entity = DummySprite("lever_1")
-    entity.sfx = "click"
-    entity._world_state_key = "map_01:lever_1"
-    entity.is_on = True
-    game.interactives.add(entity)
-
-    game.toggle_entity_by_id("lever_1")
-    game.audio_manager.play_sfx.assert_called_with("click", "lever_1")
-    game.world_state.set.assert_called()
 
 
 @patch('src.engine.game.Game._load_map')
@@ -478,36 +332,7 @@ def test_transition_map_missing_file(mock_load):
     # Should not raise
 
 
-@patch('src.engine.game.Game._load_map')
-def test_check_teleporters_not_triggered(mock_load):
-    """_check_teleporters does nothing when player not on teleport."""
-    game = Game()
-    game.player = MagicMock()
-    game.player.is_moving = False
-    game.player.direction = pygame.math.Vector2(0, 0)
-    game._check_teleporters(was_moving=False)  # should not raise
 
-
-@patch('src.engine.game.Game._load_map')
-def test_check_teleporters_directional_guard(mock_load):
-    """_check_teleporters skips teleport when direction doesn't match."""
-    game = Game()
-    game.player = MagicMock()
-    game.player.rect = pygame.Rect(0, 0, 32, 32)
-    game.player.is_moving = False
-    game.player.current_state = 'up'
-
-    tp = DummySprite()
-    tp.rect = pygame.Rect(0, 0, 32, 32)
-    tp.required_direction = 'down'
-    tp.target_map = "next.tmj"
-    tp.target_spawn_id = "s1"
-    tp.transition_type = "instant"
-    game.teleports_group.add(tp)
-
-    with patch.object(game, 'transition_map') as mock_tr:
-        game._check_teleporters(was_moving=True)
-    mock_tr.assert_not_called()
 
 
 @patch('src.engine.game.Game._load_map')
@@ -623,62 +448,7 @@ def test_handle_events_npc_resume_after_dialogue(mock_load):
     assert npc.state == 'idle'
 
 
-@patch('src.engine.game.Game._load_map')
-def test_update_emote_draw(mock_load):
-    """_draw_scene renders emote sprites with camera offset."""
-    game = Game()
-    game.map_manager = MagicMock()
-    game.map_manager.get_visible_chunks.return_value = []
-    game.map_manager.layer_order = []
-    game.player = MagicMock()
-    game.player.rect = pygame.Rect(0, 0, 32, 32)
-    game.player.image = pygame.Surface((32, 32))
-    game.player.depth = 0
-    game.inventory_ui = MagicMock()
-    game.inventory_ui.is_open = False
-    game.dialogue_manager = MagicMock()
-    game.dialogue_manager.is_active = False
-    game.chest_ui = MagicMock()
-    game.chest_ui.is_open = False
-    game.time_system = MagicMock()
-    game.time_system.night_alpha = 0
-    game.screen = pygame.Surface((800, 600))
 
-    emote_sprite = MagicMock()
-    emote_sprite.rect = pygame.Rect(0, 0, 16, 16)
-    emote_sprite.image = pygame.Surface((16, 16))
-    game.emote_group.add(emote_sprite)
-    game.visible_sprites = MagicMock()
-    game.visible_sprites.offset = pygame.math.Vector2(0, 0)
-
-    game._draw_scene()  # should not raise
-
-
-@patch('src.engine.game.Game._load_map')
-def test_draw_scene_chest_ui(mock_load):
-    """_draw_scene draws chest_ui when it is open."""
-    game = Game()
-    game.map_manager = MagicMock()
-    game.map_manager.get_visible_chunks.return_value = []
-    game.map_manager.layer_order = []
-    game.player = MagicMock()
-    game.player.rect = pygame.Rect(0, 0, 32, 32)
-    game.player.image = pygame.Surface((32, 32))
-    game.player.depth = 0
-    game.inventory_ui = MagicMock()
-    game.inventory_ui.is_open = False
-    game.dialogue_manager = MagicMock()
-    game.dialogue_manager.is_active = False
-    game.chest_ui = MagicMock()
-    game.chest_ui.is_open = True
-    game.time_system = MagicMock()
-    game.time_system.night_alpha = 0
-    game.screen = pygame.Surface((800, 600))
-    game.visible_sprites = MagicMock()
-    game.visible_sprites.offset = pygame.math.Vector2(0, 0)
-
-    game._draw_scene()
-    game.chest_ui.draw.assert_called()
 
 
 @patch('src.engine.game.Game._load_map')

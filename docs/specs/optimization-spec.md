@@ -41,6 +41,13 @@ This document specifies the technical implementation of performance and structur
 | IT-INT-01 | Spatial Interaction | Spawn NPC at (X,Y) | Player at (X,Y-32) facing DOWN triggers | Clear groups |
 | IT-INT-02 | Chain Interaction | Object A triggers Object B | Object B state toggles | Clear WorldState |
 
+## Component: RenderManager Extraction
+
+### Logic: Scene Rendering Decoupling
+- Extract all rendering hooks (`_draw_background`, `_draw_foreground`, `_draw_hud`, `_draw_scene`) from `game.py` into a new `RenderManager` class.
+- The `RenderManager` initializes with a reference to `Game` to access the `map_manager`, `visible_sprites`, `lighting_manager`, etc.
+- In `game.py`, replace the `_draw_scene()` definition with `self.render_manager.draw_scene()`.
+
 ## Error Handling Matrix
 
 | Error Type | Detection | Response | Fallback | Logging |

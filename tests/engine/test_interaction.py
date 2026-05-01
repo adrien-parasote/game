@@ -220,11 +220,13 @@ def test_handle_interaction_object():
         obj.interact.return_value = None
         game.interactives = [obj]
 
+        im.toggle_entity_by_id = MagicMock()
+        
         im.handle_interactions()
         assert obj.interact.called
         game.audio_manager.play_sfx.assert_called_with('click', 'switch_1')
         game.world_state.set.assert_called_with('switch_1_key', {'is_on': True})
-        game.toggle_entity_by_id.assert_called_with('door_1', depth=1)
+        im.toggle_entity_by_id.assert_called_with('door_1', depth=1)
 
 
 # ---------------------------------------------------------------------------
@@ -454,3 +456,70 @@ def test_passable_object_on_top_acceptance(interaction_setup):
 
         im.handle_interactions()
         assert obj.interact.called
+
+# ---------------------------------------------------------------------------
+# Decoupled Game Logic Tests
+# ---------------------------------------------------------------------------
+
+class DummySprite(pygame.sprite.Sprite):
+    def __init__(self, element_id=""):
+        super().__init__()
+        self.element_id = element_id
+        self.target_id = None
+        self.is_on = False
+        self.sfx = None
+        self.rect = pygame.Rect(0, 0, 32, 32)
+        self.interact_called = False
+    def interact(self, player=None):
+        self.interact_called = True
+
+
+def test_interaction_is_collidable():
+    game = MagicMock()
+    im = InteractionManager(game)
+    game.map_manager.check_collision.return_value = True
+    game.layout.to_world.return_value = (0, 0)
+    
+    assert im.is_collidable(0.0, 0.0) is True
+    game.map_manager.check_collision.return_value = False
+    
+    # Obstacles
+    mock_obs = DummySprite()
+    mock_obs.rect = pygame.Rect(-10, -10, 20, 20)
+    game.obstacles_group = [mock_obs]
+    assert im.is_collidable(0.0, 0.0) is True
+
+def test_interaction_check_teleporters():
+    game = MagicMock()
+    im = InteractionManager(game)
+    game.player.rect = pygame.Rect(0, 0, 32, 32)
+    game.player.is_moving = False
+    game.player.current_state = 'any'
+    
+    mock_teleport = DummySprite()
+    mock_teleport.target_map = "next_map.tmj"
+    mock_teleport.target_spawn_id = "spawn_2"
+    mock_teleport.transition_type = "fade"
+    
+    game.teleports_group = [mock_teleport]
+    
+    im.check_teleporters(was_moving=True)
+    game.transition_map.assert_called_with("next_map.tmj", "spawn_2", "fade")
+
+def test_interaction_toggle_entity_by_id():
+    game = MagicMock()
+    im = InteractionManager(game)
+    
+    mock_entity = DummySprite("door_1")
+    mock_entity.target_id = "switch_1"
+    mock_entity.is_on = True
+    
+    mock_entity2 = DummySprite("switch_1")
+    
+    game.interactives = pygame.sprite.Group()
+    game.interactives.add(mock_entity, mock_entity2)
+    
+    im.toggle_entity_by_id("door_1")
+    assert mock_entity.interact_called
+    assert mock_entity2.interact_called
+
