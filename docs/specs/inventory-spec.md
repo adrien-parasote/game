@@ -76,9 +76,10 @@
 
 | Method | Signature | Returns | Description |
 |--------|-----------|---------|-------------|
+| `create_item` | `(item_id: str, quantity: int) -> Item` | `Item` | Creates a new Item populated with lang/tech data. **Added v1.2** |
 | `add_item` | `(item_id: str, quantity: int) -> int` | Remaining quantity | Adds items, merges stacks. Returns 0 if all added. |
 | `get_item_at` | `(index: int) -> Optional[Item]` | `Item \| None` | Returns item at slot index without removing it. |
-| `remove_item` | `(index: int) -> Optional[Item]` | `Item \| None` | Removes and returns item at slot index, sets slot to `None`. Returns `None` if out of bounds or empty. **Added v1.1 for chest transfer system.** |
+| `remove_item` | `(index: int) -> Optional[Item]` | `Item \| None` | Removes and returns item at slot index, sets slot to `None`. Returns `None` if out of bounds or empty. **Added v1.1** |
 
 **Boundary invariants:**
 - `remove_item` on an empty slot returns `None` without raising.

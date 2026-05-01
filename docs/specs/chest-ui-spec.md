@@ -204,6 +204,7 @@ State machine managed by `_dragging_item: dict | None`:
 
 **Constraints:**
 - Full stack is transferred (no split).
+- **Absolute Positioning (NEW v1.3):** Items dropped on specific slots in the chest or inventory will retain that exact slot index. The `Inventory` array and the Chest `contents` list both maintain strict positional sizing (padded with `None` for empty slots).
 - During drag, item is hidden from its source slot.
 - Item icon is drawn at `_drag_pos`, **below** the cursor layer.
 - `_dragging_item` fields: `{item_id, quantity, source: "chest"|"inv", index, icon}`.
@@ -324,6 +325,7 @@ class ChestUI:
 | Set `_drag_pos` only on MOUSEMOTION | Also set on MOUSEBUTTONDOWN | Item must appear at cursor immediately on click |
 | Show item quantity during drag | Hide quantity in `_draw_dragged_item` | As per UX spec: no quantity on drag icon |
 | Left arrow (up_rect) = Inv→Chest | Left arrow = Chest→Inv | Layout: left pushes DOWN (to inventory below) |
+| Assume chest contents is dense | Support `None` entries in `contents` list | Chest slots are absolutely positioned via `CHEST_MAX_SLOTS` padding |
 
 ---
 

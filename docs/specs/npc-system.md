@@ -12,6 +12,8 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 - **Visuals**: Uses `SpriteSheet` for 4x4 grid animations.
 - **States**: `idle`, `wander`, `interact`.
 - **Wander Radius**: AI logic enforces a distance check (in tiles) from the original `spawn_pos`.
+- **Position Persistence**: Subscribes to `world_state`. NPC coordinates `[x, y]` and `facing` are saved using their `_world_state_key` (if present) upon unspawning or map unloading.
+- **Name**: Mapped from the `name` property in Tiled, used for the UI name plate.
 
 ### [IMPLEMENTED] `src/entities/base.py`
 - Provided `interact(initiator)` method stub for subclass overrides.
@@ -25,7 +27,9 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 ### [IMPLEMENTED] `src/ui/speech_bubble.py`
 - Nine-patch bubble rendered **above** the NPC's sprite using nine-patch 32×32 tiles from `assets/images/HUD/`.
 - Tail (`21-bubble_queue.png`) anchored to `npc.rect.top` with configurable `tail_gap`.
+- **Name Plate**: Renders NPC name at top-left using `23-bubble_name.png` (using subsurface slicing for variable width).
 - Text auto-wrapped to `max_width_px=224` (7 tiles) using narrative font.
+- Layout governed by constants: `_PADDING_TOP = 20`, `_PADDING_BOTTOM = 0`, `_PADDING_X = 30`. Max 4 lines per page.
 - Pagination via `page` index stored in `Game._npc_bubble`; `22-bubble_arrow.png` shown on multi-page.
 
 ### [IMPLEMENTED] `src/engine/game.py`
