@@ -193,6 +193,8 @@ class Game:
         self.obstacles_group.empty()
         self.teleports_group.empty()
         self.pickups.empty()
+        # Close any active NPC bubble to prevent dangling NPC reference
+        self._npc_bubble = None
         
         # Only keep player in visible sprites
         self.visible_sprites.empty()
@@ -471,7 +473,7 @@ class Game:
 
     def _advance_npc_bubble(self) -> None:
         """Advance NPC bubble page or close it on last page."""
-        if self._npc_bubble is None:
+        if self._npc_bubble is None or not self.speech_bubble.font:
             return
         # Compute total pages the same way SpeechBubble.draw() does
         lines = self.speech_bubble._wrap_text(self._npc_bubble["text"])

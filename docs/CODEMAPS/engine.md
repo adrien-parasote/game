@@ -8,8 +8,8 @@ Game._spawn_entities() → WorldState.get_state() → InteractiveEntity Init →
 
 ## Interaction Chain
 Input (E) → InteractionManager.handle_interactions()
-  → _check_npc_interactions() → NPC.interact() → DialogueManager.start_dialogue()
-  → _check_object_interactions() → obj.interact() → Toggle State → target_id check
+  → _check_npc_interactions() → NPC.interact() → Game._trigger_npc_bubble(npc, id) → SpeechBubble
+  → _check_object_interactions() → obj.interact() → Toggle State → target_id check → Game._trigger_dialogue(id) → DialogueManager
   → _check_pickup_interactions() → Inventory.add_item() → pickup.kill()
 Chaining → Game.toggle_entity_by_id(target_id, depth=1)
 
@@ -17,7 +17,15 @@ Chaining → Game.toggle_entity_by_id(target_id, depth=1)
 Entity.move() → Game._is_collidable() → Obstacles Group + Interactives + NPCs
 If collide → move cancelled → move_timer reset
 
-## UI & Dialogue State Machine
+## UI, Dialogue & Speech Bubble State Machine
+
+### NPC Speech Bubble (PNG NPCs)
+1. **Trigger**: `Game._trigger_npc_bubble(npc, id)` → `i18n.get(key)` → `Game._npc_bubble = {npc, text, page}`
+2. **Render**: `_draw_scene()` → `SpeechBubble.draw(screen, npc_screen_rect, text, page)` (nine-patch above NPC)
+3. **Pagination**: `_advance_npc_bubble()` increments `page` or sets `_npc_bubble = None` on last page.
+4. **Map change**: `_load_map()` resets `_npc_bubble = None` to avoid dangling NPC reference.
+
+### Dialogue Box (Signs / Interactive Objects)
 1. **Trigger**: `Game._trigger_dialogue(id)` → `HUD._lang.get(key)` → `DialogueManager.start_dialogue(msg)`
 2. **Paging**: `_paginate()` wraps text into `_pages` (max 3-5 lines per page).
 3. **Animation**: `update()` advances typewriter char index. `_is_page_complete` set when full page revealed.

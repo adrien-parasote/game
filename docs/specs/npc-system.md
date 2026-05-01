@@ -17,15 +17,25 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 - Provided `interact(initiator)` method stub for subclass overrides.
 - Shared movement and boundary logic.
 
-### [DELEGATED] `src/engine/interaction.py`
+### [IMPLEMENTED] `src/engine/interaction.py`
 - **[IMPLEMENTED]** Handles all spatial proximity and orientation checks for NPCs.
 - **[IMPLEMENTED]** Triggers the **interact** emote (!) above the player when in proximity (<48px).
-- **[IMPLEMENTED]** Triggers `npc.interact()` and updates NPC state to `interact`.
+- **[IMPLEMENTED]** Triggers `npc.interact()` → `Game._trigger_npc_bubble(npc, element_id)` → `SpeechBubble`.
+
+### [IMPLEMENTED] `src/ui/speech_bubble.py`
+- Nine-patch bubble rendered **above** the NPC's sprite using nine-patch 32×32 tiles from `assets/images/HUD/`.
+- Tail (`21-bubble_queue.png`) anchored to `npc.rect.top` with configurable `tail_gap`.
+- Text auto-wrapped to `max_width_px=224` (7 tiles) using narrative font.
+- Pagination via `page` index stored in `Game._npc_bubble`; `22-bubble_arrow.png` shown on multi-page.
 
 ### [IMPLEMENTED] `src/engine/game.py`
 - **[IMPLEMENTED]** Manages `npcs` sprite group.
 - **[IMPLEMENTED]** Manage NPC spawning in `_spawn_entities`.
 - **[IMPLEMENTED]** Integrated NPCs into `_is_collidable` logic (NPCs act as dynamic obstacles).
+- **[IMPLEMENTED]** `_npc_bubble` state dict `{npc, text, page}` for active speech bubble.
+- **[IMPLEMENTED]** `_trigger_npc_bubble()` — resolves i18n key and opens bubble.
+- **[IMPLEMENTED]** `_advance_npc_bubble()` — pages forward or closes, resets NPC to `idle`.
+- **[IMPLEMENTED]** `_load_map()` resets `_npc_bubble = None` on map change.
 
 ---
 
@@ -74,7 +84,7 @@ This section defines the behavior and failure modes for autonomous entities.
 |------------|-----------|----------|----------|
 | Missing Spritesheet | `FileNotFoundError` | Use generic blue rectangle (via existing logic) | `is_moving` set false to prevent visual artifacts |
 | Invalid Path/Wander | Wall collision returned | Cancel current wander vector | Re-eval after 2s cooldown |
-| Missing Dialogue Key | `KeyError` on interaction | Show `...` bubble | Log warning |
+| Missing Dialogue Key | i18n lookup returns `None` | Log warning, no bubble shown | NPC stays in `interact` state until player moves away |
 | Missing Map Properties | `props.get()` returns `None` | Use engine defaults (NPC speed, etc.) | Log Warning |
 
 ## 4. Deep Links
