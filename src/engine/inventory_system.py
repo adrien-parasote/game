@@ -92,3 +92,11 @@ class Inventory:
         if 0 <= index < self.capacity:
             return self.slots[index]
         return None
+
+    def remove_item(self, index: int) -> Optional[Item]:
+        """Remove and return the item at *index*. Return None if empty or out of bounds."""
+        if 0 <= index < self.capacity:
+            item = self.slots[index]
+            self.slots[index] = None
+            return item
+        return None

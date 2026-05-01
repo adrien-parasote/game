@@ -117,8 +117,11 @@ class ChestUI:
 
         # --- Scroll offset (index of first visible inv slot) ---
         self._inv_offset: int = 0
-
         self._layout_computed: bool = False
+
+        # --- Drag & Drop state ---
+        self._dragging_item: dict | None = None   # {"item_id": str, "quantity": int, "source": str, "index": int, "icon": str}
+        self._drag_pos: tuple[int, int] = (0, 0)
 
     # -----------------------------------------------------------------------
     # Public API
@@ -168,6 +171,9 @@ class ChestUI:
         # Update hover (after drawing so cursor is on top)
         self.update_hover(pygame.mouse.get_pos())
 
+        # Draw dragged item icon
+        self._draw_dragged_item(screen)
+
         # Custom cursor always on top
         self._draw_cursor(screen)
 
@@ -208,13 +214,7 @@ class ChestUI:
         if self._can_scroll_right() and self._inv_arrow_right_rect and self._inv_arrow_right_rect.collidepoint(mouse_pos):
             self._hovered_inv_arrow = "right"
 
-    def handle_event(self, event: pygame.event.Event) -> None:
-        """Process a single pygame event for the chest UI."""
-        if not self.is_open:
-            return
-        if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
-            return
-
+    def _handle_mouse_down(self, event: pygame.event.Event) -> None:
         pos = event.pos
 
         # Inventory scroll (page-based jumps)
@@ -222,6 +222,80 @@ class ChestUI:
             self._scroll_right()
         elif self._can_scroll_left() and self._inv_arrow_left_rect and self._inv_arrow_left_rect.collidepoint(pos):
             self._scroll_left()
+
+        # Auto-transfer arrows
+        elif self._arrow_up_rect and self._arrow_up_rect.collidepoint(pos):
+            self._transfer_chest_to_inventory()
+        elif self._arrow_down_rect and self._arrow_down_rect.collidepoint(pos):
+            self._transfer_inventory_to_chest()
+
+        # Manual Drag: start
+        else:
+            # Check Chest slots
+            for i, rect in enumerate(self._slot_positions):
+                if rect.collidepoint(pos):
+                    contents = self._get_chest_contents()
+                    if i < len(contents):
+                        entry = contents[i]
+                        self._dragging_item = {
+                            "item_id": entry["item_id"],
+                            "quantity": entry["quantity"],
+                            "source": "chest",
+                            "index": i,
+                            "icon": self._resolve_icon_name(entry["item_id"])
+                        }
+                        self._drag_pos = pos
+                        return
+
+            # Check Inventory slots
+            visible_count = min(_INV_SLOTS_VISIBLE, max(0, self._capacity() - self._inv_offset))
+            for i, rect in enumerate(self._inv_slot_positions[:visible_count]):
+                if rect.collidepoint(pos):
+                    actual_index = self._inv_offset + i
+                    item = self._player.inventory.get_item_at(actual_index)
+                    if item:
+                        self._dragging_item = {
+                            "item_id": item.id,
+                            "quantity": item.quantity,
+                            "source": "inv",
+                            "index": actual_index,
+                            "icon": item.icon if item.icon else f"{item.id}.png"
+                        }
+                        self._drag_pos = pos
+                        return
+
+    def _handle_mouse_motion(self, event: pygame.event.Event) -> None:
+        """Update drag position."""
+        if self._dragging_item:
+            self._drag_pos = event.pos
+
+    def _handle_mouse_up(self, event: pygame.event.Event) -> None:
+        """Handle item drop."""
+        if not self._dragging_item:
+            return
+        
+        pos = event.pos
+        # Determine destination
+        if self._bg_rect and self._bg_rect.collidepoint(pos):
+            # Dropped in Chest panel
+            self._transfer_dragged_to_chest()
+        elif self._inv_bg_rect and self._inv_bg_rect.collidepoint(pos):
+            # Dropped in Inventory panel
+            self._transfer_dragged_to_inventory()
+        
+        self._dragging_item = None
+
+    def handle_event(self, event: pygame.event.Event) -> None:
+        """Process a single pygame event for the chest UI."""
+        if not self.is_open:
+            return
+
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            self._handle_mouse_down(event)
+        elif event.type == pygame.MOUSEMOTION:
+            self._handle_mouse_motion(event)
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            self._handle_mouse_up(event)
 
     # -----------------------------------------------------------------------
     # Private: asset loading
@@ -486,6 +560,127 @@ class ChestUI:
         return self._player.inventory.slots[start:end]
 
     # -----------------------------------------------------------------------
+    # Private: transfer logic
+    # -----------------------------------------------------------------------
+
+    def _transfer_chest_to_inventory(self) -> None:
+        """Auto-transfer from chest to player inventory."""
+        if not self._chest_entity or not self._player:
+            return
+        
+        contents = self._get_chest_contents()
+        i = 0
+        while i < len(contents):
+            entry = contents[i]
+            remaining = self._player.inventory.add_item(entry["item_id"], entry["quantity"])
+            
+            if remaining == 0:
+                contents.pop(i)
+                # Don't increment i, as next item shifted into current i
+            else:
+                entry["quantity"] = remaining
+                # Inventory must be full if remaining > 0
+                break
+
+    def _transfer_inventory_to_chest(self) -> None:
+        """Auto-transfer from player inventory to chest."""
+        if not self._chest_entity or not self._player:
+            return
+        
+        from src.engine.loot_table import CHEST_MAX_SLOTS
+        
+        contents = self._get_chest_contents()
+        inv = self._player.inventory
+        
+        for i in range(inv.capacity):
+            item = inv.slots[i]
+            if item is None:
+                continue
+            
+            # 1. Try to stack in chest
+            stacked = False
+            for entry in contents:
+                if entry["item_id"] == item.id and entry["quantity"] < item.stack_max:
+                    can_add = min(item.quantity, item.stack_max - entry["quantity"])
+                    entry["quantity"] += can_add
+                    item.quantity -= can_add
+                    if item.quantity <= 0:
+                        inv.slots[i] = None
+                        stacked = True
+                        break
+            
+            if stacked:
+                continue
+
+            # 2. Add to new slot if chest not full
+            if len(contents) < CHEST_MAX_SLOTS:
+                contents.append({"item_id": item.id, "quantity": item.quantity})
+                inv.slots[i] = None
+            else:
+                # Chest is full
+                break
+
+    def _transfer_dragged_to_chest(self) -> None:
+        """Move the currently dragged item to the chest."""
+        if not self._dragging_item or not self._chest_entity:
+            return
+        
+        from src.engine.loot_table import CHEST_MAX_SLOTS
+        
+        item_id = self._dragging_item["item_id"]
+        qty = self._dragging_item["quantity"]
+        source = self._dragging_item["source"]
+        idx = self._dragging_item["index"]
+        
+        if source == "chest":
+            # Dragged from chest to chest panel (reordering or same place)
+            # Reordering not requested, so we just do nothing (item remains)
+            return
+        
+        # Source is inventory
+        contents = self._get_chest_contents()
+        
+        # Stacking
+        for entry in contents:
+            item_data = self._player.inventory.item_data.get(item_id, {})
+            stack_max = item_data.get("stack_max", 1)
+            if entry["item_id"] == item_id and entry["quantity"] < stack_max:
+                can_add = min(qty, stack_max - entry["quantity"])
+                entry["quantity"] += can_add
+                qty -= can_add
+                if qty <= 0:
+                    self._player.inventory.remove_item(idx)
+                    return
+        
+        # New slot
+        if len(contents) < CHEST_MAX_SLOTS:
+            contents.append({"item_id": item_id, "quantity": qty})
+            self._player.inventory.remove_item(idx)
+
+    def _transfer_dragged_to_inventory(self) -> None:
+        """Move the currently dragged item to the player inventory."""
+        if not self._dragging_item or not self._player:
+            return
+        
+        item_id = self._dragging_item["item_id"]
+        qty = self._dragging_item["quantity"]
+        source = self._dragging_item["source"]
+        idx = self._dragging_item["index"]
+        
+        if source == "inv":
+            # Dragged from inv to inv panel
+            return
+            
+        # Source is chest
+        remaining = self._player.inventory.add_item(item_id, qty)
+        
+        contents = self._get_chest_contents()
+        if remaining == 0:
+            contents.pop(idx)
+        else:
+            contents[idx]["quantity"] = remaining
+
+    # -----------------------------------------------------------------------
     # Private: chest content helpers
     # -----------------------------------------------------------------------
 
@@ -543,6 +738,11 @@ class ChestUI:
 
             entry = contents[i]
             item_id = entry.get("item_id", "")
+
+            # Skip drawing if this item is being dragged
+            if self._dragging_item and self._dragging_item["source"] == "chest" and self._dragging_item["index"] == i:
+                continue
+
             icon_name = self._resolve_icon_name(item_id)
             icon = self._get_item_icon(icon_name, icon_size)
             if icon:
@@ -564,10 +764,12 @@ class ChestUI:
             screen.blit(self._hover_img, hover_rect)
 
     def _draw_arrow_hovers(self, screen: pygame.Surface) -> None:
-        """Render chest arrow hover overlays (RED→down, BLUE→up)."""
+        """Render chest arrow hover overlays."""
+        # Left button (up_rect) should show DOWN arrow (to inventory)
         if self._hovered_chest_arrow == "up" and self._arrow_up_rect and self._arrow_down_hover_img:
             rect = self._arrow_down_hover_img.get_rect(center=self._arrow_up_rect.center)
             screen.blit(self._arrow_down_hover_img, rect)
+        # Right button (down_rect) should show UP arrow (to chest)
         elif self._hovered_chest_arrow == "down" and self._arrow_down_rect and self._arrow_up_hover_img:
             rect = self._arrow_up_hover_img.get_rect(center=self._arrow_down_rect.center)
             screen.blit(self._arrow_up_hover_img, rect)
@@ -595,6 +797,11 @@ class ChestUI:
 
             # Item icon + quantity
             if i >= len(page_items) or page_items[i] is None:
+                continue
+
+            # Skip drawing if this item is being dragged
+            actual_index = self._inv_offset + i
+            if self._dragging_item and self._dragging_item["source"] == "inv" and self._dragging_item["index"] == actual_index:
                 continue
 
             item = page_items[i]
@@ -643,3 +850,15 @@ class ChestUI:
         img = self._pointer_select_img if pygame.mouse.get_pressed()[0] else self._pointer_img
         if img:
             screen.blit(img, mouse_pos)
+
+    def _draw_dragged_item(self, screen: pygame.Surface) -> None:
+        """Render the icon of the item currently being dragged."""
+        if not self._dragging_item:
+            return
+        
+        slot_size = self._slot_img.get_width() if self._slot_img else 49
+        icon_size = max(1, slot_size - 8)
+        icon = self._get_item_icon(self._dragging_item["icon"], icon_size)
+        if icon:
+            icon_rect = icon.get_rect(center=self._drag_pos)
+            screen.blit(icon, icon_rect)
