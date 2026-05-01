@@ -227,6 +227,28 @@ def update(self, dt):
 
 ---
 
+### A-ARCH-003 · 2026-05-01 · U · Minor Rework
+**Rendering loop disconnected from dynamic properties**
+
+When an object's state (e.g., `is_on`) transitions from an event-driven boolean to a dynamically computed property (e.g., based on `TimeSystem.brightness`), the rendering state (e.g., sprite index) must be actively synchronized in the `update()` loop.
+
+```python
+# ❌ Rendering sprite column only updates on explicit interaction
+def interact(self):
+    self.is_on = not self.is_on
+    self._update_col_index()  # OK for manual, but misses auto-toggles
+
+# ✅ Polling dynamic state in the update loop
+def update(self, dt):
+    if getattr(self, 'day_night_driven', False):
+        self._update_col_index()  # Sync visual state with computed property
+```
+
+**Rule:** When replacing static state variables with dynamically computed properties, ensure the `update()` loop polls and synchronizes any visual or layout properties that depend on them.
+**Evidence:** Day/night torches computed `is_on=False` correctly at dawn, but rendered the "ON" sprite because `col_index` was only updated during `interact()`.
+
+---
+
 ## 🗺️ Map & Rendering
 
 ### L-MAP-001 · 2026-04-28 · U · Major Rework

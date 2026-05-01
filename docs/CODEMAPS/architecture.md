@@ -32,7 +32,7 @@
 - **SpeechBubble** (`src/ui/speech_bubble.py`, 286 lines): NPC nine-patch bubble above entity, name plate, paginated text, auto-wrap 224px.
 
 ### Entities
-- **InteractiveEntity** (`src/entities/interactive.py`, 372 lines): Chests, levers, doors, signs, animated decor. Animated state machine (`is_on`), halo lighting, `restore_state` from WorldState.
+- **InteractiveEntity** (`src/entities/interactive.py`, 406 lines): Chests, levers, doors, signs, animated decor. Animated state machine (`is_on`), `day_night_driven` auto-lighting cycle, halo lighting, `restore_state` from WorldState.
 - **NPC** (`src/entities/npc.py`, 183 lines): Random AI patrol, interact trigger, speech bubble integration.
 - **Player** (`src/entities/player.py`, 104 lines): Input, directional animation, emote trigger.
 - **PickupItem** (`src/entities/pickup.py`, 55 lines): Static collectible, looted state synced to WorldState.
@@ -48,5 +48,5 @@
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables)
-- **Test Suite**: Pytest 9.0.3, 436 tests, 92% coverage — domain-based layout: `tests/{engine,entities,map,ui,graphics}/`
+- **Test Suite**: Pytest 9.0.3, 444 tests, 92% coverage — domain-based layout: `tests/{engine,entities,map,ui,graphics}/`
 - **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop

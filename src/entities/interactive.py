@@ -35,7 +35,8 @@ class InteractiveEntity(BaseEntity):
                  element_id: str = None, target_id: str = None,
                  activate_from_anywhere: bool = False,
                  facing_direction: str = None,
-                 sfx: str = ""):
+                 sfx: str = "",
+                 day_night_driven: bool = False):
         
         # 1. Properties & State Initialization
         self.target_id = target_id
@@ -43,7 +44,7 @@ class InteractiveEntity(BaseEntity):
         self._parse_properties(sub_type, start_row, end_row, is_on, is_animated, 
                              depth, position, off_position, halo_size, halo_color, halo_alpha,
                              particles, particle_count, activate_from_anywhere,
-                             sprite_sheet, facing_direction, sfx)
+                             sprite_sheet, facing_direction, sfx, day_night_driven)
         
         # 2. Asset Loading
         self._load_assets(sprite_sheet, width, height)
@@ -64,10 +65,27 @@ class InteractiveEntity(BaseEntity):
         self.image = self._get_frame(int(self.frame_index))
         logging.info(f"Spawned InteractiveEntity '{sub_type}' at {pos} (is_on={self.is_on})")
 
+    @property
+    def is_on(self) -> bool:
+        if not self.day_night_driven:
+            return getattr(self, '_static_is_on', False)
+        if self.light_control == "forced_on":
+            return True
+        if self.light_control == "forced_off":
+            return False
+        # "auto" : suit la nuit
+        if getattr(self, '_time_system', None) is None:
+            return getattr(self, '_static_is_on', False)
+        return self._time_system.brightness < 0.4
+
+    @is_on.setter
+    def is_on(self, value: bool) -> None:
+        self._static_is_on = value
+
     def _parse_properties(self, sub_type, start_row, end_row, is_on, is_animated, 
                            depth, position, off_position, halo_size, halo_color, halo_alpha,
                            particles, particle_count, activate_from_anywhere,
-                           sprite_sheet, facing_direction, sfx):
+                           sprite_sheet, facing_direction, sfx, day_night_driven):
         """Parse raw properties and initialize basic state."""
         self.sub_type = sub_type
         self.start_row = start_row
@@ -77,6 +95,11 @@ class InteractiveEntity(BaseEntity):
         self.on_position = position
         self.off_position = off_position
         self.col_index = position
+        
+        # Day/Night Automation
+        self.day_night_driven = day_night_driven
+        self._time_system = None
+        self.light_control = "auto" if day_night_driven else "none"
         
         # Determine direction_str (Priority: facing_direction > POSITION_TO_DIR)
         if facing_direction:
@@ -92,13 +115,12 @@ class InteractiveEntity(BaseEntity):
             self.frame_index = float(self.start_row)
             
         # Determine is_on and specific behaviors
-        self.light_sources = ['lamp', 'lantern', 'torch', 'fire', 'candle']
-        self.is_light_source = (self.sub_type in self.light_sources) or (halo_size > 0)
+        self.is_light_source = halo_size > 0
         
         if is_on is not None:
-            self.is_on = is_on
+            self._static_is_on = is_on
         else:
-            self.is_on = self.is_animated or self.is_light_source
+            self._static_is_on = self.is_animated or self.is_light_source
             
         self._update_col_index()
             
@@ -243,13 +265,21 @@ class InteractiveEntity(BaseEntity):
         if self.sub_type == 'sign':
             return self.element_id
             
-        if not self.is_animating or self.is_animated:
-            self.is_on = not self.is_on
+        if getattr(self, 'day_night_driven', False):
+            if getattr(self, 'light_control', 'auto') == "auto":
+                self.light_control = "forced_off" if self.is_on else "forced_on"
+            else:
+                self.light_control = "auto"
             self._update_col_index()
-            self.is_animating = True
-            if not self.is_animated:
-                self.is_closing = not self.is_on
-            logging.info(f"Object {self.sub_type} toggled to {'ON' if self.is_on else 'OFF'}")
+            logging.info(f"Light '{self.sub_type}' control -> {self.light_control}")
+        else:
+            if not getattr(self, 'is_animating', False) or getattr(self, 'is_animated', False):
+                self.is_on = not self.is_on
+                self._update_col_index()
+                self.is_animating = True
+                if not getattr(self, 'is_animated', False):
+                    self.is_closing = not self.is_on
+                logging.info(f"Object {self.sub_type} toggled to {'ON' if self.is_on else 'OFF'}")
         
         return None
 
@@ -259,19 +289,25 @@ class InteractiveEntity(BaseEntity):
             is_on = state['is_on']
             self.is_on = is_on
             self._update_col_index()
-            if is_on and not self.is_animated:
+            if is_on and not getattr(self, 'is_animated', False):
                 self.frame_index = float(self.end_row)
             elif not is_on:
                 self.frame_index = float(self.start_row)
-            if self.sub_type == 'door' and self.obstacles_group is not None:
-                if is_on and self.is_passable:
+            if self.sub_type == 'door' and getattr(self, 'obstacles_group', None) is not None:
+                if is_on and getattr(self, 'is_passable', False):
                     self.obstacles_group.remove(self)
                 else:
                     self.obstacles_group.add(self)
-            self.image = self._get_frame(int(self.frame_index))
+        if 'light_control' in state:
+            self.light_control = state['light_control']
+            self._update_col_index()
+        self.image = self._get_frame(int(self.frame_index))
 
     def update(self, dt: float):
         """Update animation and flicker."""
+        if getattr(self, 'day_night_driven', False):
+            self._update_col_index()
+            
         if self.is_on and self.halo_size > 0:
             if self.is_light_source and self.is_animated:
                 num_frames = max(1, self.end_row - self.start_row + 1)

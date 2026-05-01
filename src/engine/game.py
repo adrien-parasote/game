@@ -306,8 +306,10 @@ class Game:
             target_id=target_id,
             activate_from_anywhere=_get_property(props, "activate_from_anywhere", False),
             facing_direction=_get_property(props, "facing_direction"),
-            sfx=_get_property(props, "sfx", "")
+            sfx=_get_property(props, "sfx", ""),
+            day_night_driven=_get_property(props, "day_night_driven", False)
         )
+        entity._time_system = self.time_system
 
         # Populate chest contents from loot table
         if _get_property(props, "sub_type", "unknown") == "chest":
@@ -535,7 +537,10 @@ class Game:
                         
                         # Save state
                         if hasattr(entity, '_world_state_key'):
-                            self.world_state.set(entity._world_state_key, {'is_on': entity.is_on})
+                            self.world_state.set(entity._world_state_key, {
+                                'is_on': entity.is_on,
+                                'light_control': getattr(entity, 'light_control', 'auto')
+                            })
                         
                         next_target = getattr(entity, 'target_id', None)
                         if next_target:

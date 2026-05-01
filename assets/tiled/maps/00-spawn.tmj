@@ -156,6 +156,11 @@
                          "opacity":1,
                          "properties":[
                                 {
+                                 "name":"day_night_driven",
+                                 "type":"bool",
+                                 "value":true
+                                }, 
+                                {
                                  "name":"halo_alpha",
                                  "type":"int",
                                  "value":120
@@ -200,6 +205,11 @@
                          "name":"torch",
                          "opacity":1,
                          "properties":[
+                                {
+                                 "name":"day_night_driven",
+                                 "type":"bool",
+                                 "value":true
+                                }, 
                                 {
                                  "name":"halo_alpha",
                                  "type":"int",

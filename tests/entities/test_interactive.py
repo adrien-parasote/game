@@ -20,6 +20,7 @@ def _make_interactive(
     is_passable=False,
     facing_direction=None,
     position=0,
+    day_night_driven=False,
 ):
     """Build a minimal InteractiveEntity without disk assets."""
     group = pygame.sprite.Group()
@@ -53,6 +54,7 @@ def _make_interactive(
             activate_from_anywhere=False,
             facing_direction=facing_direction,
             sfx="",
+            day_night_driven=day_night_driven,
         )
     return entity, obstacles
 
@@ -65,7 +67,7 @@ class TestInteractiveCoverage:
 
     def test_is_on_defaults_to_true_for_light_source(self):
         """L96: light source defaults to is_on=True when is_on arg is None."""
-        entity, _ = _make_interactive(sub_type="torch", is_on=None)
+        entity, _ = _make_interactive(halo_size=50, is_on=None)
         assert entity.is_on is True
 
     def test_is_on_defaults_to_true_for_animated(self):
@@ -160,6 +162,69 @@ class TestInteractiveCoverage:
         entity.update(0.016)
         assert entity.f_alpha == 1.0
         assert entity.f_scale == 1.0
+
+
+class TestInteractiveDayNight:
+    def test_tc01_night_auto_on(self):
+        """TC-01: day_night_driven=True, brightness=0.4 (nuit) -> is_on == True"""
+        entity, _ = _make_interactive(halo_size=50, day_night_driven=True)
+        time_sys = MagicMock()
+        time_sys.brightness = 0.3
+        entity._time_system = time_sys
+        assert entity.is_on is True
+
+    def test_tc02_day_auto_off(self):
+        """TC-02: day_night_driven=True, brightness=0.8 (jour) -> is_on == False"""
+        entity, _ = _make_interactive(halo_size=50, day_night_driven=True)
+        time_sys = MagicMock()
+        time_sys.brightness = 0.8
+        entity._time_system = time_sys
+        assert entity.is_on is False
+
+    def test_tc03_ignore_brightness_if_not_driven(self):
+        """TC-03: day_night_driven=False, _time_system injecté -> ignore brightness, suit _static_is_on"""
+        entity, _ = _make_interactive(halo_size=50, day_night_driven=False, is_on=True)
+        time_sys = MagicMock()
+        time_sys.brightness = 0.8 # jour
+        entity._time_system = time_sys
+        assert entity.is_on is True
+
+    def test_tc04_interact_auto_night_forces_off(self):
+        """TC-04: interact() en mode auto de nuit -> light_control == 'forced_off'"""
+        entity, _ = _make_interactive(halo_size=50, day_night_driven=True)
+        time_sys = MagicMock()
+        time_sys.brightness = 0.3 # nuit -> allumé auto
+        entity._time_system = time_sys
+        entity.interact(MagicMock())
+        assert entity.light_control == "forced_off"
+
+    def test_tc05_interact_auto_day_forces_on(self):
+        """TC-05: interact() en mode auto de jour -> light_control == 'forced_on'"""
+        entity, _ = _make_interactive(halo_size=50, day_night_driven=True)
+        time_sys = MagicMock()
+        time_sys.brightness = 0.8 # jour -> éteint auto
+        entity._time_system = time_sys
+        entity.interact(MagicMock())
+        assert entity.light_control == "forced_on"
+
+    def test_tc06_second_interact_returns_to_auto(self):
+        """TC-06: 2e interact() (forced -> auto) -> light_control == 'auto'"""
+        entity, _ = _make_interactive(halo_size=50, day_night_driven=True)
+        entity.light_control = "forced_on"
+        entity.interact(MagicMock())
+        assert entity.light_control == "auto"
+
+    def test_tc07_restore_state_preserves_control(self):
+        """TC-07: restore_state({'light_control': 'forced_on'}) -> light_control == 'forced_on'"""
+        entity, _ = _make_interactive(halo_size=50, day_night_driven=True)
+        entity.restore_state({'light_control': 'forced_on'})
+        assert entity.light_control == "forced_on"
+
+    def test_tc08_fallback_without_timesystem(self):
+        """TC-08: _time_system=None, day_night_driven=True -> fallback _static_is_on"""
+        entity, _ = _make_interactive(halo_size=50, day_night_driven=True, is_on=True)
+        assert getattr(entity, '_time_system', None) is None
+        assert entity.is_on is True
 
 
 # ---------------------------------------------------------------------------
