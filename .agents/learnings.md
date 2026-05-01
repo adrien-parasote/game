@@ -5,6 +5,46 @@
 
 ---
 
+## 🎧 Audio & Engine Setup
+
+### L-AUDIO-001 · 2026-05-01 · U · Minor Rework
+**Pygame Audio Channel Exhaustion**
+
+Pygame defaults to 8 audio channels. Using `play(loops=-1)` for spatial ambient audio quickly exhausts these channels if multiple emitters exist, silently dropping transient sounds (footsteps, interactions).
+
+```python
+# ❌ default channels
+pygame.mixer.init()
+
+# ✅ explicitly increase channels for ambient systems
+pygame.mixer.init()
+pygame.mixer.set_num_channels(32)
+```
+
+**Evidence:** Ambient torches silenced player footsteps because all 8 channels were held by continuous loops (2026-05-01).
+
+---
+
+### L-AUDIO-002 · 2026-05-01 · P · Minor Rework
+**Dynamic Audio File Fallbacks**
+
+Calling `play_sfx` with a dynamically generated file name (e.g. `04-footstep_{material}.ogg`) causes total silence and log spam if the specific variant file doesn't exist.
+
+```python
+# ❌ blindly hoping the variant exists
+audio_manager.play_sfx(f"footstep_{material}")
+
+# ✅ check success and fallback
+success = audio_manager.play_sfx(f"footstep_{material}")
+if not success and material:
+    audio_manager.play_sfx("footstep_base")
+```
+
+**Rule:** Always make `play_sfx` return a boolean indicating success, and implement a fallback to a generic base sound when using dynamic suffixes.
+**Evidence:** Missing `04-footstep_stone.ogg` caused "SFX file not found" errors and silent footsteps (2026-05-01).
+
+---
+
 ## 🧪 Testing
 
 ### L-TEST-001 · 2026-04-28 · U · Perfect

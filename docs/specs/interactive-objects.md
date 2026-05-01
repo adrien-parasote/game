@@ -17,6 +17,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `facing_direction` | string | Optional. Overrides the `position`-based `direction_str`. Useful for signs. |
 | `is_on` | bool | The initial state of the object. Persisted in `WorldState` using `{map}-{element_id}` as key. |
 | `sfx` | string | Optional. Name of the `.ogg` file in `assets/audio/sfx/` to play on interaction. |
+| `sfx_ambient` | string | Optional. Name of the looping `.ogg` file in `assets/audio/sfx/` to play while `is_on` is True. |
 | `off_position` | int | Column index for OFF state (`-1` = no switch, backward-compat default). When ≥ 0, `interact()` switches `col_index` between `on_position` (col 0) and `off_position`. Used by `animated_decor` (e.g. torch ON col 0 / OFF col 1). |
 | `contents` | list[Item] | Dynamically populated list of `Item` objects (for chests), loaded from `LootTable`. |
 
@@ -134,7 +135,13 @@ If `halo_size > 0`, a dynamic radial gradient halo is generated and rendered.
   - Drawn onto the main surface in the `draw_effects` method.
   - Method: `BLEND_RGB_ADD` on top of the final rendered frame.
 
-### 2.4. Particle System
+### 2.4. Ambient Audio Logic
+If `sfx_ambient` is defined, the object acts as a spatial audio emitter.
+- **Trigger**: Plays looping audio when `is_on=True` and stops when `False`.
+- **Spatial Attenuation**: Uses linear falloff based on distance from the player, up to `max_distance` (400px).
+- **Minimum Volume**: Maintains a floor volume (e.g. 20% of base `SFX_VOLUME`) so the ambient sound remains slightly audible across the map.
+
+### 2.5. Particle System
 If `particles` is true, the object acts as a lightweight particle emitter when `is_on` is True.
 
 - **Initialization & Cycle**:

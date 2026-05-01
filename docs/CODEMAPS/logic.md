@@ -4,6 +4,7 @@
 
 ## Movement Chain
 `Player.input()` (WASD/Arrows) → `BaseEntity.move(dt)` → `Game._is_collidable()` (MapManager tile check + obstacle group) → `rect` update + animation frame
+- **Footsteps**: Triggered on frames 1 and 3. `MapManager.get_terrain_material_at()` resolves surface. `AudioManager.play_sfx(footstep_{material})` falls back to base footstep if specific file is missing.
 
 ## Interaction Chain
 `INTERACT_KEY (E)` → `InteractionManager.handle_interactions()`
@@ -45,6 +46,7 @@ sub_types: chest | lever | door | sign | animated_decor
   - `off_position=-1` (default) → single-column, no switch (backward compat).
   - `off_position=N` → `col_index=N` when `is_on=False`, `col_index=on_position` when `True`.
   - `restore_state({'is_on': bool})` also updates `col_index` via `_update_col_index()`.
+- **Ambient Audio**: `sfx_ambient` triggers looping spatial audio when `is_on=True`. Volume scales via distance (`update_ambient`) with a 20% floor volume.
 - Linked entities (levers→doors): toggled via `Game.toggle_entity_by_id(target_id)`.
 
 ## Emote Chain

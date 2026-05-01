@@ -136,6 +136,7 @@ class Game:
         # Player is persisted across maps
         self.player = Player((0, 0), self.visible_sprites, speed=Settings.PLAYER_SPEED, element_id="player")
         self.player.audio_manager = self.audio_manager
+        self.player.game = self
         self.player.emote_manager.emote_group = self.emote_group
         self.player.collision_func = self.interaction_manager.is_collidable
         
@@ -311,9 +312,11 @@ class Game:
             activate_from_anywhere=_get_property(props, "activate_from_anywhere", False),
             facing_direction=_get_property(props, "facing_direction"),
             sfx=_get_property(props, "sfx", ""),
+            sfx_ambient=_get_property(props, "sfx_ambient", ""),
             day_night_driven=_get_property(props, "day_night_driven", False)
         )
         entity._time_system = self.time_system
+        entity.game = self
 
         # Populate chest contents from loot table
         if _get_property(props, "sub_type", "unknown") == "chest":

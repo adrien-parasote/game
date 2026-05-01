@@ -31,9 +31,10 @@
                     "value": ""
                 }
             ],
-            "name": "00-tilset",
+            "name": "00-tileset",
             "type": "class",
             "useAs": [
+                "property",
                 "tile",
                 "tileset",
                 "project"
@@ -66,6 +67,33 @@
             "type": "class",
             "useAs": [
                 "map",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 21,
+            "members": [
+                {
+                    "name": "material",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "tileset",
+                    "propertyType": "00-tileset",
+                    "type": "class",
+                    "value": {
+                    }
+                }
+            ],
+            "name": "03-tileset_ground",
+            "type": "class",
+            "useAs": [
+                "property",
+                "tile",
+                "tileset",
                 "project"
             ]
         },
@@ -167,6 +195,11 @@
                 },
                 {
                     "name": "sfx",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "sfx_ambient",
                     "type": "string",
                     "value": ""
                 },

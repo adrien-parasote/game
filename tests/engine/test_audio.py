@@ -192,3 +192,45 @@ def test_update_volumes_disabled():
          patch('pygame.mixer.init', side_effect=pygame.error("no audio")):
         am = AudioManager()
     am.update_volumes()  # should not raise
+
+
+# --- play_ambient ---
+
+def test_play_ambient(audio_manager):
+    """play_ambient stores and plays looping sound."""
+    with patch('os.path.exists', return_value=True), \
+         patch('pygame.mixer.Sound') as mock_sound_cls:
+        
+        mock_sound = MagicMock()
+        mock_sound_cls.return_value = mock_sound
+        
+        audio_manager.play_ambient("fire", "torch_1")
+        assert "torch_1" in audio_manager.ambient_sounds
+        mock_sound.play.assert_called_once_with(loops=-1)
+
+def test_stop_ambient(audio_manager):
+    """stop_ambient stops the sound and removes it."""
+    mock_sound = MagicMock()
+    audio_manager.ambient_sounds = {"torch_1": mock_sound}
+    
+    audio_manager.stop_ambient("torch_1")
+    mock_sound.stop.assert_called_once()
+    assert "torch_1" not in audio_manager.ambient_sounds
+
+def test_update_ambient(audio_manager):
+    """update_ambient calculates distance based volume."""
+    mock_sound = MagicMock()
+    audio_manager.ambient_sounds = {"torch_1": mock_sound}
+    
+    # distance = max_distance -> volume = min_falloff (0.2) * 0.5 = 0.1
+    audio_manager.update_ambient("torch_1", 400, max_distance=400)
+    mock_sound.set_volume.assert_called_with(0.1)
+    
+    # distance = 0 -> volume = Settings.SFX_VOLUME
+    from src.config import Settings
+    audio_manager.update_ambient("torch_1", 0, max_distance=400)
+    mock_sound.set_volume.assert_called_with(Settings.SFX_VOLUME)
+    
+    # distance = 200 -> volume = half of SFX_VOLUME
+    audio_manager.update_ambient("torch_1", 200, max_distance=400)
+    mock_sound.set_volume.assert_called_with(Settings.SFX_VOLUME * 0.5)

@@ -15,12 +15,14 @@ class AudioManager:
         
         self.current_bgm: Optional[str] = None
         self.sounds: Dict[str, pygame.mixer.Sound] = {}
+        self.ambient_sounds: Dict[str, pygame.mixer.Sound] = {}
         self.is_muted: bool = False
         
         # Initialize mixer if not already done
         if not pygame.mixer.get_init():
             try:
                 pygame.mixer.init()
+                pygame.mixer.set_num_channels(32)
             except pygame.error as e:
                 logging.warning(f"Audio system failed to initialize: {e}")
                 self.is_enabled = False
@@ -36,6 +38,8 @@ class AudioManager:
         if self.is_muted:
             pygame.mixer.music.set_volume(0)
             for sound in self.sounds.values():
+                sound.set_volume(0)
+            for sound in self.ambient_sounds.values():
                 sound.set_volume(0)
         else:
             self.update_volumes()
@@ -93,7 +97,7 @@ class AudioManager:
             self.current_bgm = None
             logging.info("Stopping BGM")
 
-    def play_sfx(self, name: str, source_id: str = None):
+    def play_sfx(self, name: str, source_id: str = None, volume_multiplier: float = 1.0) -> bool:
         """
         Play a sound effect.
         Note: The source_id is provided to identify the emitter, preventing overlapping issues.
@@ -101,7 +105,7 @@ class AudioManager:
         tracking specific object channels in the future if needed.
         """
         if not self.is_enabled or not name:
-            return
+            return False
             
         sound = self.sounds.get(name)
         if not sound:
@@ -111,21 +115,22 @@ class AudioManager:
             if os.path.exists(path):
                 try:
                     sound = pygame.mixer.Sound(path)
-                    sound.set_volume(Settings.SFX_VOLUME)
+                    sound.set_volume(Settings.SFX_VOLUME * volume_multiplier)
                     self.sounds[name] = sound
                 except pygame.error as e:
                     logging.error(f"Failed to load SFX {name}: {e}")
-                    return
+                    return False
             else:
-                logging.error(f"SFX file not found: {path}")
-                return
+                logging.warning(f"SFX file not found: {path}")
+                return False
         
         # Stop the sound if it's currently playing to prevent flanging / overlapping from rapid triggers
         # By default, a Sound play() uses an available channel, but we can stop it first.
         sound.stop()
-        sound.set_volume(Settings.SFX_VOLUME)
+        sound.set_volume(Settings.SFX_VOLUME * volume_multiplier)
         sound.play()
         logging.debug(f"Playing SFX: {name} (source: {source_id})")
+        return True
 
     def update_volumes(self):
         """Update volumes dynamically if Settings change."""
@@ -135,3 +140,42 @@ class AudioManager:
         pygame.mixer.music.set_volume(Settings.BGM_VOLUME)
         for sound in self.sounds.values():
             sound.set_volume(Settings.SFX_VOLUME)
+
+    def play_ambient(self, name: str, source_id: str):
+        """Play a looping ambient sound tracked by source_id."""
+        if not self.is_enabled or not name or self.is_muted:
+            return
+            
+        if source_id in self.ambient_sounds:
+            return # Already playing
+            
+        filename = f"{name}.ogg"
+        path = os.path.join(self.sfx_dir, filename)
+        if os.path.exists(path):
+            try:
+                sound = pygame.mixer.Sound(path)
+                sound.set_volume(Settings.SFX_VOLUME)
+                sound.play(loops=-1)
+                self.ambient_sounds[source_id] = sound
+                logging.debug(f"Playing ambient: {name} for {source_id}")
+            except pygame.error as e:
+                logging.error(f"Failed to play ambient {name}: {e}")
+
+    def stop_ambient(self, source_id: str):
+        """Stop an ambient sound."""
+        if source_id in self.ambient_sounds:
+            self.ambient_sounds[source_id].stop()
+            del self.ambient_sounds[source_id]
+            logging.debug(f"Stopped ambient for {source_id}")
+
+    def update_ambient(self, source_id: str, distance: float, max_distance: float = 400.0, min_falloff: float = 0.2):
+        """Adjust ambient volume based on distance."""
+        if self.is_muted or not self.is_enabled:
+            return
+            
+        sound = self.ambient_sounds.get(source_id)
+        if sound:
+            # Linear falloff with a minimum volume threshold
+            falloff = max(min_falloff, 1.0 - (distance / max_distance))
+            volume = Settings.SFX_VOLUME * falloff
+            sound.set_volume(volume)

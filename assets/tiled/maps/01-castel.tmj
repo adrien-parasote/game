@@ -339,6 +339,7 @@
                                      "is_animated":true,
                                      "is_on":true,
                                      "off_position":1,
+                                     "sfx_ambient":"05-fire_crackle",
                                      "sprite":
                                         {
                                          "entity_type":"interactive",
@@ -389,6 +390,7 @@
                                      "is_animated":true,
                                      "is_on":true,
                                      "off_position":1,
+                                     "sfx_ambient":"05-fire_crackle",
                                      "sprite":
                                         {
                                          "element_id":"",
@@ -440,6 +442,7 @@
                                      "is_animated":true,
                                      "is_on":true,
                                      "off_position":1,
+                                     "sfx_ambient":"05-fire_crackle",
                                      "sprite":
                                         {
                                          "entity_type":"interactive",
@@ -490,6 +493,7 @@
                                      "is_animated":true,
                                      "is_on":true,
                                      "off_position":1,
+                                     "sfx_ambient":"05-fire_crackle",
                                      "sprite":
                                         {
                                          "entity_type":"interactive",
@@ -540,6 +544,7 @@
                                      "is_animated":true,
                                      "is_on":true,
                                      "off_position":1,
+                                     "sfx_ambient":"05-fire_crackle",
                                      "sprite":
                                         {
                                          "entity_type":"interactive",
@@ -590,6 +595,7 @@
                                      "is_animated":true,
                                      "is_on":true,
                                      "off_position":1,
+                                     "sfx_ambient":"05-fire_crackle",
                                      "sprite":
                                         {
                                          "entity_type":"interactive",

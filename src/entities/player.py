@@ -78,11 +78,29 @@ class Player(BaseEntity):
         }
         offset = row_offsets.get(self.current_state, 0)
         
+        prev_int_frame = int(self.frame_index)
+        
         if self.is_moving:
             self.frame_index += self.animation_speed * dt
             self.frame_index %= 4
         else:
             self.frame_index = 0.0
+            
+        current_int_frame = int(self.frame_index)
+        
+        # Trigger footstep on frames 1 and 3
+        if self.is_moving and current_int_frame != prev_int_frame and current_int_frame in (1, 3):
+            # Resolve material from map
+            material = None
+            if hasattr(self, 'game') and hasattr(self.game, 'map_manager') and self.game.map_manager:
+                material = self.game.map_manager.get_terrain_material_at(int(self.pos.x), int(self.pos.y))
+            
+            sfx_name = f"04-footstep_{material}" if material else "04-footstep"
+            
+            if self.audio_manager:
+                success = self.audio_manager.play_sfx(sfx_name, source_id="player", volume_multiplier=2.5)
+                if not success and material:
+                    self.audio_manager.play_sfx("04-footstep", source_id="player", volume_multiplier=2.5)
             
         # Get integer index to select frame (0 to 3) + offset
         current_frame = int(self.frame_index) % 4

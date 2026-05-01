@@ -71,7 +71,46 @@ def test_player_input_priority(mock_spritesheet):
         player.input()
         player.update(0.01)
     assert player.direction.y == -1
+    assert player.direction.y == -1
     assert player.direction.x == 0
+
+def test_player_footstep_audio(mock_spritesheet):
+    """Player plays footstep sound based on terrain material when animation frame hits 1 or 3."""
+    player = Player((16, 16))
+    player.audio_manager = MagicMock()
+    mock_game = MagicMock()
+    # Provide a mock map manager that returns "stone"
+    mock_game.map_manager.get_terrain_material_at.return_value = "stone"
+    player._game = mock_game  # We'll inject this during interaction or update
+    
+    player.is_moving = True
+    player.frame_index = 0.9  # about to cross 1.0
+    
+    with patch('src.engine.game.Game', return_value=mock_game):
+        player.game = mock_game
+        # Fast animation speed -> 1.0/0.15 = 6.66 fps
+        # With dt=0.02, frame_index += 0.133, so 0.9 + 0.133 = 1.033 -> triggers frame 1
+        player._update_animation(0.02)
+        
+    player.audio_manager.play_sfx.assert_called_with("04-footstep_stone", source_id="player", volume_multiplier=2.5)
+    
+    # Passing frame 2 shouldn't trigger
+    player.audio_manager.play_sfx.reset_mock()
+    player.frame_index = 1.9
+    player._update_animation(0.02)
+    player.audio_manager.play_sfx.assert_not_called()
+    
+    # Passing frame 3 should trigger
+    player.frame_index = 2.9
+    player._update_animation(0.02)
+    player.audio_manager.play_sfx.assert_called_with("04-footstep_stone", source_id="player", volume_multiplier=2.5)
+
+    # If no material found, fallback to "04-footstep"
+    player.audio_manager.play_sfx.reset_mock()
+    mock_game.map_manager.get_terrain_material_at.return_value = None
+    player.frame_index = 0.9
+    player._update_animation(0.02)
+    player.audio_manager.play_sfx.assert_called_with("04-footstep", source_id="player", volume_multiplier=2.5)
 
 def test_npc_ai_state_machine(mock_spritesheet):
     """NPC transitions between idle and wandering."""

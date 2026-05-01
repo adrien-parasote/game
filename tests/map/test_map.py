@@ -30,6 +30,7 @@ def map_manager(map_data):
     layout = MagicMock()
     layout.tile_size = 32
     layout.to_screen.side_effect = lambda x, y: (x * 32, y * 32)
+    layout.to_world.side_effect = lambda x, y: (x // 32, y // 32)
     return MapManager(map_data, layout)
 
 
@@ -211,3 +212,24 @@ def test_tiled_project_resolution():
         assert res["speed"] == 200
         assert res["name"] == "Unknown"
         assert res["ad_hoc"] == "test"
+
+# ---------------------------------------------------------------------------
+# MapManager: get_terrain_material_at
+# ---------------------------------------------------------------------------
+
+def test_get_terrain_material_at(map_manager):
+    """get_terrain_material_at returns the material property of the topmost tile."""
+    # map_data fixture has tile 1 at layer 1, which has collidable=True and depth=1
+    # We will patch its properties to have material
+    tile = map_manager.tiles[1]
+    tile.properties = {"material": "wood"}
+    
+    # Grid coordinates are x=0, y=0. Screen coordinates for this are 0..31
+    material = map_manager.get_terrain_material_at(15, 15)
+    assert material == "wood"
+    
+    # Outside map returns None
+    assert map_manager.get_terrain_material_at(-10, -10) is None
+    
+    # Empty tile returns None
+    assert map_manager.get_terrain_material_at(32, 0) is None # x=1, y=0 is 0 in the mock map_data

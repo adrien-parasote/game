@@ -226,6 +226,39 @@ class TestInteractiveDayNight:
         assert getattr(entity, '_time_system', None) is None
         assert entity.is_on is True
 
+class TestInteractiveAmbientAudio:
+    def test_ambient_starts_on_initialization_if_on(self):
+        """If sfx_ambient is set and entity is_on initially, it triggers play_ambient on update."""
+        entity, _ = _make_interactive(is_on=True)
+        entity.sfx_ambient = "05-fire_crackle"
+        
+        mock_game = MagicMock()
+        mock_game.player.pos = pygame.math.Vector2(100, 100)
+        entity.game = mock_game
+        
+        with patch('src.engine.game.Game', return_value=mock_game):
+            # The first update should trigger play_ambient
+            entity.update(0.1)
+            
+        mock_game.audio_manager.play_ambient.assert_called_once_with("05-fire_crackle", "ent_1")
+        mock_game.audio_manager.update_ambient.assert_called()
+
+    def test_ambient_stops_when_toggled_off(self):
+        """When an entity turns off, it should call stop_ambient."""
+        entity, _ = _make_interactive(is_on=True)
+        entity.sfx_ambient = "05-fire_crackle"
+        mock_game = MagicMock()
+        mock_game.player.pos = pygame.math.Vector2(100, 100)
+        entity.game = mock_game
+        
+        # Turn off via interaction
+        entity.interact(MagicMock())
+        
+        with patch('src.engine.game.Game', return_value=mock_game):
+            entity.update(0.1)
+            
+        mock_game.audio_manager.stop_ambient.assert_called_with("ent_1")
+
 
 # ---------------------------------------------------------------------------
 # InteractionManager — lines 23, 38, 56, 61, 77, 87, 90, 110, 129-137, 255

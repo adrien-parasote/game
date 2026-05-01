@@ -12,7 +12,7 @@ venv/
 .env
 
 # Google Antigravity / Agents
-.agents/
+.agents/*/**
 
 # Système Mac
 .DS_Store

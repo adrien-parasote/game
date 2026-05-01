@@ -41,7 +41,7 @@
 ### Engine Support
 - **LightingManager** (`src/engine/lighting.py`, 261 lines): Night overlay, additive torch masks, window beam shafts (slanted per time-of-day).
 - **TimeSystem** (`src/engine/time_system.py`, ~130 lines): In-game clock, seasons, `night_alpha`, `brightness`.
-- **AudioManager** (`src/engine/audio.py`, 166 lines): BGM/SFX via pygame mixer, mute toggle, per-channel volume.
+- **AudioManager** (`src/engine/audio.py`, 182 lines): BGM/SFX via pygame mixer (32 channels), mute toggle, spatial ambient audio with minimum volume falloff, missing file fallback for dynamic sounds.
 - **LootTable** (`src/engine/loot_table.py`, ~130 lines): JSON-driven chest contents, stack splitting, slot overflow trimming.
 - **WorldState** (`src/engine/world_state.py`, 22 lines): `{map_name}_{tiled_id}` keyed dict for cross-map persistence.
 

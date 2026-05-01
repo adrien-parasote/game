@@ -36,6 +36,7 @@ class InteractiveEntity(BaseEntity):
                  activate_from_anywhere: bool = False,
                  facing_direction: str = None,
                  sfx: str = "",
+                 sfx_ambient: str = "",
                  day_night_driven: bool = False):
         
         # 1. Properties & State Initialization
@@ -44,7 +45,7 @@ class InteractiveEntity(BaseEntity):
         self._parse_properties(sub_type, start_row, end_row, is_on, is_animated, 
                              depth, position, off_position, halo_size, halo_color, halo_alpha,
                              particles, particle_count, activate_from_anywhere,
-                             sprite_sheet, facing_direction, sfx, day_night_driven)
+                             sprite_sheet, facing_direction, sfx, sfx_ambient, day_night_driven)
         
         # 2. Asset Loading
         self._load_assets(sprite_sheet, width, height)
@@ -85,7 +86,7 @@ class InteractiveEntity(BaseEntity):
     def _parse_properties(self, sub_type, start_row, end_row, is_on, is_animated, 
                            depth, position, off_position, halo_size, halo_color, halo_alpha,
                            particles, particle_count, activate_from_anywhere,
-                           sprite_sheet, facing_direction, sfx, day_night_driven):
+                           sprite_sheet, facing_direction, sfx, sfx_ambient, day_night_driven):
         """Parse raw properties and initialize basic state."""
         self.sub_type = sub_type
         self.start_row = start_row
@@ -157,6 +158,7 @@ class InteractiveEntity(BaseEntity):
         # Interaction
         self.activate_from_anywhere = activate_from_anywhere
         self.sfx = sfx
+        self.sfx_ambient = sfx_ambient
 
     def _load_assets(self, sprite_sheet, width, height):
         """Load spritesheet and compute frame dimensions."""
@@ -307,6 +309,18 @@ class InteractiveEntity(BaseEntity):
         """Update animation and flicker."""
         if getattr(self, 'day_night_driven', False):
             self._update_col_index()
+            
+        # Ambient Audio Logic
+        has_ambient = bool(self.sfx_ambient) if hasattr(self, 'sfx_ambient') else False
+        if has_ambient and hasattr(self, 'game') and hasattr(self.game, 'audio_manager') and self.game.audio_manager:
+            if self.is_on:
+                self.game.audio_manager.play_ambient(self.sfx_ambient, self.element_id)
+                if hasattr(self.game, 'player') and self.game.player:
+                    dist = self.pos.distance_to(self.game.player.pos)
+                    self.game.audio_manager.update_ambient(self.element_id, dist)
+            else:
+                self.game.audio_manager.stop_ambient(self.element_id)
+                
             
         if self.is_on and self.halo_size > 0:
             if self.is_light_source and self.is_animated:
