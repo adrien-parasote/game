@@ -88,9 +88,8 @@ class TitleScreen:
         bg_raw = self._load_asset("01-menu_background.png")
         self._bg = pygame.transform.smoothscale(bg_raw, (self._sw, self._sh))
 
-        # Logo (colorkey for black background)
+        # Logo (PNG with transparent alpha background)
         logo_raw = self._load_asset("00-title_logo.png")
-        logo_raw.set_colorkey((0, 0, 0))
         lw, lh = logo_raw.get_size()
         scale = LOGO_W_DST / lw
         logo_h_dst = int(lh * scale)
@@ -120,9 +119,10 @@ class TitleScreen:
             )
         self._slot_states = slot_states
 
-        # Panel overlay
-        panel_raw = self._load_asset("03-panel_background.png")
-        self._panel = pygame.transform.smoothscale(panel_raw, (900, 480))
+        # Panel overlay (raw surface — will be rescaled in _compute_layout)
+        self._panel_raw = self._load_asset("03-panel_background.png")
+        self._panel = self._panel_raw  # placeholder, resized in _compute_layout
+        self._panel_load = pygame.transform.smoothscale(self._panel_raw, (900, 480))
 
         # Overlay surface (semi-transparent black)
         self._overlay = pygame.Surface((self._sw, self._sh))
@@ -157,12 +157,20 @@ class TitleScreen:
                 pygame.Rect(x, y_start + i * BTN_SPACING, BTN_W_DST, BTN_H_DST)
             )
 
-        # Save slot rects (3 slots inside panel overlay)
-        panel_rect = self._panel.get_rect(center=(self._sw // 2, self._sh // 2))
+        # Panel rect wrapping buttons (40px padding each side)
+        padding = 40
+        panel_w = BTN_W_DST + padding * 2
+        panel_h = zone_h + padding * 2
+        self._panel_rect = pygame.Rect(x - padding, y_start - padding, panel_w, panel_h)
+        self._panel = pygame.transform.smoothscale(self._panel_raw, (panel_w, panel_h))
+
+        # Save slot rects (inside the load overlay panel, 900x480 centered)
+        ov_x = self._sw // 2 - 450
+        ov_y = self._sh // 2 - 240
         self.slot_rects: list[pygame.Rect] = []
         for i in range(3):
-            sx = panel_rect.centerx - SLOT_W_DST // 2
-            sy = panel_rect.top + SLOT_PANEL_Y_START + i * SLOT_SPACING
+            sx = ov_x + 450 - SLOT_W_DST // 2
+            sy = ov_y + SLOT_PANEL_Y_START + i * SLOT_SPACING
             self.slot_rects.append(pygame.Rect(sx, sy, SLOT_W_DST, SLOT_H_DST))
 
     # ── Public API ────────────────────────────────────────────────────────────
@@ -189,8 +197,11 @@ class TitleScreen:
 
     def draw(self) -> None:
         self._screen.blit(self._bg, (0, 0))
-        logo_x = (self._sw - LOGO_W_DST) // 2
+        logo_x = (self._sw - self._logo.get_width()) // 2
         self._screen.blit(self._logo, (logo_x, LOGO_Y))
+
+        # Panel behind buttons (always shown)
+        self._screen.blit(self._panel, self._panel_rect)
 
         self._draw_buttons()
 
@@ -220,8 +231,8 @@ class TitleScreen:
 
     def _draw_load_overlay(self) -> None:
         self._screen.blit(self._overlay, (0, 0))
-        panel_rect = self._panel.get_rect(center=(self._sw // 2, self._sh // 2))
-        self._screen.blit(self._panel, panel_rect)
+        panel_rect = self._panel_load.get_rect(center=(self._sw // 2, self._sh // 2))
+        self._screen.blit(self._panel_load, panel_rect)
 
         title = self._font.render("Charger une partie", True, (220, 200, 150))
         self._screen.blit(

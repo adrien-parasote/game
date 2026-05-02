@@ -52,6 +52,8 @@ def title_screen(mock_screen, mock_save_manager):
     mock_surf = MagicMock()
     mock_surf.get_rect.return_value = pygame.Rect(0, 0, 400, 86)
     mock_surf.get_size.return_value = (1024, 182)
+    mock_surf.get_width.return_value = 1024
+    mock_surf.get_height.return_value = 182
 
     ts = TitleScreen.__new__(TitleScreen)
     ts._screen = mock_screen
@@ -62,11 +64,14 @@ def title_screen(mock_screen, mock_save_manager):
     ts._hovered_slot = None
     ts._sw = 1280
     ts._sh = 720
-    # Stub panel needed by _compute_layout
-    ts._panel = MagicMock()
-    ts._panel.get_rect.return_value = pygame.Rect(190, 120, 900, 480)
-    # Compute real layout (pure math, no pygame drawing calls)
-    TitleScreen._compute_layout(ts)
+    # Stub assets needed by _compute_layout
+    ts._panel_raw = mock_surf
+    ts._panel = mock_surf
+    ts._panel_load = mock_surf
+
+    # Patch smoothscale so _compute_layout doesn't call real pygame
+    with patch("pygame.transform.smoothscale", return_value=mock_surf):
+        TitleScreen._compute_layout(ts)
     return ts
 
 
