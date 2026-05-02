@@ -11,6 +11,7 @@ from src.engine.save_manager import SaveManager, SlotInfo
 
 # ── Asset constants ────────────────────────────────────────────────────────────
 _MENU_DIR = os.path.join("assets", "images", "menu")
+_UI_DIR = os.path.join("assets", "images", "ui")
 
 # Button spritesheet layout (measured from 02-menu_buttons.png 1024x182)
 BTN_W_SRC = 341
@@ -67,6 +68,21 @@ class TitleScreen:
             surf.fill((255, 0, 255))
             return surf
 
+    def _load_cursor(self, filename: str) -> pygame.Surface:
+        """Load cursor from UI assets directory, scaled to CURSOR_SIZE."""
+        path = os.path.join(_UI_DIR, filename)
+        try:
+            raw = pygame.image.load(path).convert_alpha()
+        except pygame.error as e:
+            logging.error(f"TitleScreen: Could not load cursor {filename}: {e}")
+            surf = pygame.Surface((32, 32))
+            surf.fill((255, 0, 255))
+            return surf
+        target_h = Settings.CURSOR_SIZE
+        ratio = target_h / 535  # 535 is original pointer height
+        target_w = int(309 * ratio)
+        return pygame.transform.smoothscale(raw, (target_w, target_h))
+
     def _load_assets(self) -> None:
         # Background (scaled to full screen)
         bg_raw = self._load_asset("01-menu_background.png")
@@ -122,6 +138,11 @@ class TitleScreen:
             self._font = pygame.font.SysFont(None, 32)
             self._font_small = pygame.font.SysFont(None, 24)
 
+        # Custom cursor (same assets as InventoryUI)
+        self._pointer_img = self._load_cursor("05-pointer.png")
+        self._pointer_select_img = self._load_cursor("06-pointer_select.png")
+        pygame.mouse.set_visible(False)
+
     # ── Layout ────────────────────────────────────────────────────────────────
 
     def _compute_layout(self) -> None:
@@ -176,9 +197,17 @@ class TitleScreen:
         if self.state == "LOAD_MENU":
             self._draw_load_overlay()
 
+        self._draw_cursor()
+
     def _refresh_slots(self) -> None:
         """Reload slot data from SaveManager (call when entering LOAD_MENU)."""
         self._slots = self._save_manager.list_slots()
+
+    def _draw_cursor(self) -> None:
+        """Draw custom cursor on top of everything."""
+        mouse_pos = pygame.mouse.get_pos()
+        img = self._pointer_select_img if pygame.mouse.get_pressed()[0] else self._pointer_img
+        self._screen.blit(img, mouse_pos)
 
     # ── Private rendering ─────────────────────────────────────────────────────
 

@@ -10,6 +10,7 @@ from src.engine.game_events import GameEvent, GameEventType
 from src.engine.save_manager import SaveManager
 
 _MENU_DIR = os.path.join("assets", "images", "menu")
+_UI_DIR = os.path.join("assets", "images", "ui")
 
 BTN_W_SRC = 341
 BTN_H_SRC = 182
@@ -48,6 +49,21 @@ class PauseScreen:
             surf.fill((255, 0, 255))
             return surf
 
+    def _load_cursor(self, filename: str) -> pygame.Surface:
+        """Load cursor from UI assets, scaled to CURSOR_SIZE."""
+        path = os.path.join(_UI_DIR, filename)
+        try:
+            raw = pygame.image.load(path).convert_alpha()
+        except pygame.error as e:
+            logging.error(f"PauseScreen: Could not load cursor {filename}: {e}")
+            surf = pygame.Surface((32, 32))
+            surf.fill((255, 0, 255))
+            return surf
+        target_h = Settings.CURSOR_SIZE
+        ratio = target_h / 535
+        target_w = int(309 * ratio)
+        return pygame.transform.smoothscale(raw, (target_w, target_h))
+
     def _load_assets(self) -> None:
         # Semi-transparent overlay
         self._overlay = pygame.Surface((self._sw, self._sh))
@@ -80,6 +96,10 @@ class PauseScreen:
         except Exception:
             self._font = pygame.font.SysFont(None, 32)
             self._font_small = pygame.font.SysFont(None, 24)
+
+        # Custom cursor
+        self._pointer_img = self._load_cursor("05-pointer.png")
+        self._pointer_select_img = self._load_cursor("06-pointer_select.png")
 
     def _compute_layout(self) -> None:
         n = len(_BUTTON_LABELS)
@@ -135,10 +155,18 @@ class PauseScreen:
             msg = self._font_small.render("Partie sauvegardée !", True, (180, 220, 150))
             self._screen.blit(msg, msg.get_rect(midbottom=(self._sw // 2, panel_rect.bottom - 20)))
 
+        self._draw_cursor()
+
     def notify_save_result(self, success: bool) -> None:
         """Call after a save attempt to show confirmation for 2 seconds."""
         if success:
             self._confirm_timer = 2.0
+
+    def _draw_cursor(self) -> None:
+        """Draw custom cursor on top of everything."""
+        mouse_pos = pygame.mouse.get_pos()
+        img = self._pointer_select_img if pygame.mouse.get_pressed()[0] else self._pointer_img
+        self._screen.blit(img, mouse_pos)
 
     # ── Button actions ────────────────────────────────────────────────────────
 

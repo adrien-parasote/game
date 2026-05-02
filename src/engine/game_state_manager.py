@@ -136,6 +136,7 @@ class GameStateManager:
         - slot_id=N               → load save slot N
         - slot_id=None + resume=True → resume from pause (no map load)
         """
+        pygame.mouse.set_visible(True)   # restore system cursor during gameplay
         if resume:
             self.state = GameState.PLAYING
             return
@@ -154,9 +155,11 @@ class GameStateManager:
         self.state = GameState.PLAYING
 
     def _transition_to_paused(self) -> None:
+        pygame.mouse.set_visible(False)  # custom cursor takes over
         self.state = GameState.PAUSED
 
     def _transition_to_title(self) -> None:
+        pygame.mouse.set_visible(False)  # custom cursor takes over
         self.state = GameState.TITLE
 
     # ── Save / Load helpers ───────────────────────────────────────────────────
