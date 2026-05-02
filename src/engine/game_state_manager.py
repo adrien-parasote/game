@@ -59,7 +59,7 @@ class GameStateManager:
     # ── Global event processing ───────────────────────────────────────────────
 
     def _process_global_events(self, events: list) -> None:
-        """Handle cross-state events: window close and ESC."""
+        """Handle cross-state events: window close, ESC, and fullscreen toggle."""
         for event in events:
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -68,6 +68,8 @@ class GameStateManager:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self._on_escape()
+                elif event.key == Settings.TOGGLE_FULLSCREEN_KEY:
+                    self._game.toggle_fullscreen()
 
     def _on_escape(self) -> None:
         if self.state == GameState.PLAYING:
