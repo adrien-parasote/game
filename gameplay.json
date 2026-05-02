@@ -8,7 +8,6 @@
     "move_down": "K_DOWN",
     "move_left": "K_LEFT",
     "move_right": "K_RIGHT",
-    "quit_key": "K_ESCAPE",
     "interact_key": "K_e",
     "inventory_key": "K_i",
     "toggle_fullscreen_key": "K_p"

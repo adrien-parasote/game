@@ -27,7 +27,6 @@ class Settings:
             "move_down": "K_DOWN", 
             "move_left": "K_LEFT", 
             "move_right": "K_RIGHT",
-            "quit_key": "K_ESCAPE", 
             "interact_key": "K_e",
             "inventory_key": "K_i",
             "toggle_fullscreen_key": "K_F11"
@@ -138,7 +137,6 @@ class Settings:
         cls.MOVE_DOWN = cls._map_key(controls.get("move_down", "K_DOWN"))
         cls.MOVE_LEFT = cls._map_key(controls.get("move_left", "K_LEFT"))
         cls.MOVE_RIGHT = cls._map_key(controls.get("move_right", "K_RIGHT"))
-        cls.QUIT_KEY = cls._map_key(controls.get("quit_key", "K_ESCAPE"))
         cls.INTERACT_KEY = cls._map_key(controls.get("interact_key", "K_e"))
         cls.INVENTORY_KEY = cls._map_key(controls.get("inventory_key", "K_i"))
         cls.TOGGLE_FULLSCREEN_KEY = cls._map_key(controls.get("toggle_fullscreen_key", "K_F11"))

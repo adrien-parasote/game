@@ -54,7 +54,7 @@ def _get_property(props: dict, key: str, default=None):
 class Game:
     """Main game class that manages the core loop and state."""
     
-    def __init__(self):
+    def __init__(self, skip_map_load: bool = False):
         # 1. Initialize Localization
         self.i18n = I18nManager()
         self.i18n.load(Settings.LOCALE)
@@ -164,7 +164,8 @@ class Game:
                 except Exception as e:
                     logging.error(f"Failed to read world.world: {e}")
                 
-        self._load_map(default_map)
+        if not skip_map_load:
+            self._load_map(default_map)
 
     def _load_map(self, map_name: str, target_spawn_id: str = None, transition_type: str = "instant"):
         """Unload current elements and load a new map from Tiled."""
@@ -555,6 +556,31 @@ class Game:
             # Draw complete sequence
             self._draw()
 
+    def run_frame(self, dt: float) -> "GameEvent":
+        """Single-frame tick for use by GameStateManager (tick-by-tick mode)."""
+        from src.engine.game_events import GameEvent
+        self._handle_events()
+        self._update(dt)
+        self._draw()
+        return GameEvent.none()
+
+    def get_state(self) -> dict:
+        """Return full game state dict for serialization by SaveManager."""
+        inv = self.player.inventory
+        return {
+            "map_name": getattr(self, "_current_map_name", ""),
+            "player_pos": (self.player.pos.x, self.player.pos.y),
+            "player_facing": self.player.current_state,
+            "player_level": self.player.level,
+            "player_hp": self.player.hp,
+            "player_max_hp": self.player.max_hp,
+            "player_gold": self.player.gold,
+            "time_total_minutes": self.time_system._total_minutes,
+            "inventory_slots": inv.slots,
+            "inventory_equipment": inv.equipment,
+            "world_state": self.world_state._state,
+        }
+
     def _handle_events(self):
         """Handle all pygame events."""
         for event in pygame.event.get():
@@ -562,9 +588,6 @@ class Game:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == Settings.QUIT_KEY:
-                    pygame.quit()
-                    sys.exit()
                 if event.key == Settings.TOGGLE_FULLSCREEN_KEY:
                     self.toggle_fullscreen()
                 

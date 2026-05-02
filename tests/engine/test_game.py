@@ -395,19 +395,8 @@ def test_handle_events_quit(mock_load):
     mock_exit.assert_called()
 
 
-@patch('src.engine.game.Game._load_map')
-def test_handle_events_quit_key(mock_load):
-    """_handle_events calls sys.exit on QUIT_KEY press."""
-    from src.config import Settings
-    game = Game()
-    event = MagicMock()
-    event.type = pygame.KEYDOWN
-    event.key = Settings.QUIT_KEY
-    with patch('pygame.event.get', return_value=[event]), \
-         patch('sys.exit') as mock_exit, \
-         patch('pygame.quit'):
-        game._handle_events()
-    mock_exit.assert_called()
+
+
 
 
 @patch('src.engine.game.Game._load_map')
