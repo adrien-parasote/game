@@ -4,9 +4,9 @@ import logging
 from typing import Dict, Optional
 from src.config import Settings
 
-# Ambients play at most 30 % of SFX_VOLUME — they should be background atmosphere,
-# not competing with footsteps and interaction cues.
-AMBIENT_VOLUME_SCALE = 0.3
+# Ambients play at most 55 % of SFX_VOLUME — audible atmospheric background
+# without competing with footsteps and interaction cues.
+AMBIENT_VOLUME_SCALE = 0.55
 
 class AudioManager:
     """

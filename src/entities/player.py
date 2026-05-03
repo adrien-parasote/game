@@ -98,9 +98,9 @@ class Player(BaseEntity):
             sfx_name = f"04-footstep_{material}" if material else "04-footstep"
             
             if self.audio_manager:
-                success = self.audio_manager.play_sfx(sfx_name, source_id="player", volume_multiplier=2.5)
+                success = self.audio_manager.play_sfx(sfx_name, source_id="player", volume_multiplier=0.8)
                 if not success and material:
-                    self.audio_manager.play_sfx("04-footstep", source_id="player", volume_multiplier=2.5)
+                    self.audio_manager.play_sfx("04-footstep", source_id="player", volume_multiplier=0.8)
             
         # Get integer index to select frame (0 to 3) + offset
         current_frame = int(self.frame_index) % 4
