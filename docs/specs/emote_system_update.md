@@ -49,6 +49,6 @@ Improve emote responsiveness, and ensure chaining works correctly.
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-EMO-01 | `test_emote_interruption` | `tests/engine/test_interaction.py:L41` |
-| TC-EMO-02 | `test_emote_interruption` | `tests/engine/test_interaction.py:L41` |
-| TC-EMO-03 | `test_handle_interaction_pickup_partial` | `tests/engine/test_interaction.py:L141` |
+| TC-EMO-01 | `test_emote_manager_spritesheet_error` | `../../tests/entities/test_entities.py:L363` |
+| TC-EMO-02 | `test_emote_manager_chaining` | `../../tests/entities/test_entities.py:L394` |
+| TC-EMO-03 | `test_handle_interaction_pickup_partial` | `../../tests/engine/test_interaction.py:L141` |

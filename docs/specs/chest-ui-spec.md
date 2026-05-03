@@ -438,3 +438,43 @@ class ChestUI:
 
 **AI Coder Score: 9/10**  
 Residual ambiguity: exact pixel fractions for the image zones (Assumption A-04). These are visual estimates requiring one calibration pass after first render.
+
+### Linked Test Functions
+
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-U-01 | `test_initial_state` | `../../tests/ui/test_chest.py:L38` |
+| TC-U-02 | `test_open_sets_state` | `../../tests/ui/test_chest.py:L44` |
+| TC-U-03 | `test_close_resets_state` | `../../tests/ui/test_chest.py:L53` |
+| TC-U-04 | `test_draw_noop_when_closed` | `../../tests/ui/test_chest.py:L67` |
+| TC-U-05 | `test_draw_when_open_and_assets_present` | `../../tests/ui/test_chest.py:L75` |
+| TC-U-06 | `test_draw_noop_when_closed` | `../../tests/ui/test_chest.py:L67` |
+| TC-U-07 | `test_draw_when_open_and_assets_present` | `../../tests/ui/test_chest.py:L75` |
+| TC-U-08 | `test_draw_chest_slots_with_items` | `../../tests/ui/test_chest.py:L623` |
+| TC-U-09 | `test_draw_chest_slots_with_items` | `../../tests/ui/test_chest.py:L623` |
+| TC-U-10 | `test_load_background_missing_file` | `../../tests/ui/test_chest.py:L91` |
+| TC-U-11 | `test_load_slot_image_missing_file` | `../../tests/ui/test_chest.py:L99` |
+| TC-T-01 | `test_transfer_chest_to_inventory_success` | `../../tests/ui/test_chest.py:L891` |
+| TC-T-02 | `test_transfer_chest_to_inventory_stacking` | `../../tests/ui/test_chest.py:L902` |
+| TC-T-03 | `test_transfer_chest_to_inventory_full` | `../../tests/ui/test_chest.py:L917` |
+| TC-T-04 | `test_transfer_inventory_to_chest_success` | `../../tests/ui/test_chest.py:L933` |
+| TC-T-05 | `test_transfer_inventory_to_chest_full` | `../../tests/ui/test_chest.py:L947` |
+| TC-T-06 | `test_manual_drag_chest_to_inventory` | `../../tests/ui/test_chest.py:L967` |
+| TC-T-07 | `test_manual_drag_inventory_to_chest_stacking` | `../../tests/ui/test_chest.py:L996` |
+| TC-T-08 | `test_no_dragging_noop` | `../../tests/ui/test_chest.py:L521` |
+| TC-T-09 | `test_manual_drag_chest_to_inventory` | `../../tests/ui/test_chest.py:L967` |
+| TC-T-10 | `test_update_hover_chest_arrows` | `../../tests/ui/test_chest.py:L180` |
+| TC-T-11 | `test_update_hover_chest_arrows` | `../../tests/ui/test_chest.py:L180` |
+| TC-T-12 | `test_update_hover_hit` | `../../tests/ui/test_chest.py:L107` |
+| TC-I-01 | `test_handle_interaction_chest_opens_ui` | `../../tests/engine/test_interaction.py:L240` |
+| TC-I-02 | `test_chest_auto_close_no_entity` | `../../tests/engine/test_interaction_coverage.py:L216` |
+| TC-I-03 | `test_chest_auto_close_no_entity` | `../../tests/engine/test_interaction_coverage.py:L216` |
+| TC-I-04 | `test_chest_auto_close_no_entity` | `../../tests/engine/test_interaction_coverage.py:L216` |
+| TC-I-05 | `test_chest_auto_close_no_chest_ui` | `../../tests/engine/test_interaction_coverage.py:L223` |
+| TC-I-06 | `test_chest_auto_close_already_closed_ui` | `../../tests/engine/test_interaction_coverage.py:L230` |
+| TC-I-07 | `test_chest_proximity_emote_logic` | `../../tests/engine/test_interaction.py:L324` |
+| TC-I-08 | `test_chest_proximity_emote_logic` | `../../tests/engine/test_interaction.py:L324` |
+| TC-I-09 | `test_pickup_proximity_emote_orthogonal_acceptance` | `../../tests/engine/test_interaction.py:L424` |
+| TC-I-10 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
+| TC-I-11 | `test_interaction_cooldown` | `../../tests/engine/test_interaction.py:L33` |
+| TC-I-12 | `test_interaction_cooldown` | `../../tests/engine/test_interaction.py:L33` |

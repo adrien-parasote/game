@@ -467,3 +467,25 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 - ADR-002 → [ADR-002](docs/ADRs/ADR-002-save-format.md#structure-du-fichier-savesslot_njson)
 - ADR-003 → [ADR-003](docs/ADRs/ADR-003-key-mapping.md#décision)
 
+### Linked Test Functions
+
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-001 | `test_save_creates_file` | `../../tests/engine/test_save_manager.py:L68` |
+| TC-002 | `test_load_existing_slot` | `../../tests/engine/test_save_manager.py:L87` |
+| TC-003 | `test_load_empty_slot_returns_none` | `../../tests/engine/test_save_manager.py:L102` |
+| TC-004 | `test_load_corrupted_json_returns_none` | `../../tests/engine/test_save_manager.py:L110` |
+| TC-005 | `test_delete_slot` | `../../tests/engine/test_save_manager.py:L128` |
+| TC-006 | `test_slot_id_out_of_range_raises` | `../../tests/engine/test_save_manager.py:L177` |
+| TC-007 | `test_list_slots_empty` | `../../tests/engine/test_save_manager.py:L60` |
+| TC-008 | `test_list_slots_reflects_saved` | `../../tests/engine/test_save_manager.py:L186` |
+| TC-009 | `test_inventory_roundtrip` | `../../tests/engine/test_save_manager.py:L141` |
+| TC-010 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py:L162` |
+| TC-011 | `test_save_io_error_does_not_crash` | `../../tests/engine/test_save_manager.py:L200` |
+| TC-012 | `test_game_ui_toggles` | `../../tests/engine/test_game.py:L61` |
+| TC-013 | `test_game_update_loop` | `../../tests/engine/test_game.py:L147` |
+| TC-014 | `test_update_dialogue_branch` | `../../tests/engine/test_game.py:L339` |
+| TC-015 | `test_update_inventory_branch` | `../../tests/engine/test_game.py:L353` |
+| TC-016 | `test_update_chest_branch` | `../../tests/engine/test_game.py:L367` |
+| TC-017 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py:L403` |
+| TC-018 | `test_game_transition_map_fade` | `../../tests/engine/test_game.py:L204` |

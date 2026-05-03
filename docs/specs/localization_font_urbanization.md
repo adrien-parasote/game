@@ -61,3 +61,11 @@ Establish a three-tier font system to enhance visual hierarchy and game identity
 - **`HUD` font usage**: [hud.py L1](../../src/ui/hud.py#L1)
 - **`DialogueManager`**: [dialogue.py L1](../../src/ui/dialogue.py#L1)
 - **`i18n` module**: [i18n.py L1](../../src/engine/i18n.py#L1)
+
+### Linked Test Functions
+
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-FONT-01 | `test_settings_load` | `../../tests/engine/test_game.py:L509` |
+| TC-FONT-02 | `test_font_tiers_exist` | `../../tests/engine/test_game.py:L516` |
+| TC-FONT-03 | `test_font_tiers_exist` | `../../tests/engine/test_game.py:L516` |

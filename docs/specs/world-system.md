@@ -139,3 +139,13 @@ Pickups use the same `{map_basename}_{tiled_id}` key format.
 - **Teleport Check**: [game.py:L415](../../src/engine/game.py#L415)
 - **Teleport Entity**: [teleport.py L1](../../src/entities/teleport.py#L1)
 - **Loot Table Initialization**: [loot-table-spec.md](./loot-table-spec.md#loot-table)
+
+### Linked Test Functions
+
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-006 | `test_game_entity_spawning` | `../../tests/engine/test_game.py:L80` |
+| TC-007 | `test_interaction_orientation` | `../../tests/engine/test_interaction.py:L68` |
+| TC-008 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+| TC-009 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+| TC-010 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |

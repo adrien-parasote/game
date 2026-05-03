@@ -49,3 +49,10 @@ Ensure that the `00-layer` (typically the base background) is always visible and
 - **`Game._draw_background`**: [game.py L1](../../src/engine/game.py#L1)
 - **Map tests**: [test_map.py L1](../../tests/map/test_map.py#L1)
 - **Parser tests**: [test_parser.py L1](../../tests/map/test_parser.py#L1)
+
+### Linked Test Functions
+
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-MAP-01 | `test_layer_recursive_order` | `../../tests/map/test_map.py:L41` |
+| TC-MAP-02 | `test_map_manager_render_layer` | `../../tests/map/test_map.py:L128` |

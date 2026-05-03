@@ -119,3 +119,18 @@ In `Game._spawn_interactive()`:
 | TC-LT-08 | `test_known_element_id` | `LootTable.get_contents` | Returns correct item list |
 | TC-LT-09 | `test_unknown_element_id` | `LootTable.get_contents` | Returns `[]` |
 | TC-LT-10 | `test_get_contents_before_load` | `LootTable.get_contents` | Returns `[]` safely |
+
+### Linked Test Functions
+
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-LT-01 | `test_load_valid_json` | `../../tests/engine/test_loot_table.py:L56` |
+| TC-LT-02 | `test_load_unknown_item_id_skipped_and_warned` | `../../tests/engine/test_loot_table.py:L70` |
+| TC-LT-03 | `test_load_missing_file` | `../../tests/engine/test_loot_table.py:L91` |
+| TC-LT-04 | `test_load_malformed_json` | `../../tests/engine/test_loot_table.py:L99` |
+| TC-LT-05 | `test_quantity_within_stack_max` | `../../tests/engine/test_loot_table.py:L198` |
+| TC-LT-06 | `test_quantity_exceeds_stack_max` | `../../tests/engine/test_loot_table.py:L209` |
+| TC-LT-07 | `test_overflow_trimmed_with_warning` | `../../tests/engine/test_loot_table.py:L235` |
+| TC-LT-08 | `test_known_element_id` | `../../tests/engine/test_loot_table.py:L168` |
+| TC-LT-09 | `test_unknown_element_id` | `../../tests/engine/test_loot_table.py:L178` |
+| TC-LT-10 | `test_get_contents_before_load` | `../../tests/engine/test_loot_table.py:L186` |

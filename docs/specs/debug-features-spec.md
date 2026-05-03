@@ -44,3 +44,10 @@ Detailed implementation specification for the debug room and visual hitbox debug
 - **Engine Loop**: [src/engine/game.py](../../src/engine/game.py)
 - **Drawing Logic**: [src/entities/groups.py](../../src/entities/groups.py)
 
+### Linked Test Functions
+
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-CONF | `test_settings_load` | `../../tests/engine/test_game.py:L509` |
+| TC-MAP | `test_game_actual_load_map` | `../../tests/engine/test_game.py:L18` |
+| TC-SPAWN | `test_spawn_entities_initial_spawn_skipped` | `../../tests/engine/test_game.py:L293` |

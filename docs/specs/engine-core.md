@@ -290,3 +290,16 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 - **Hitbox Debugging**: [groups.py - custom_draw](src/entities/groups.py#L65)
 - **Loot Table Integration**: [loot-table-spec.md](./loot-table-spec.md)
 
+### Linked Test Functions
+
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-R-01 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
+| TC-R-02 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
+| TC-R-03 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
+| TC-C-01 | `test_game_initialization` | `../../tests/engine/test_game.py:L10` |
+| TC-H-01 | `test_update_dialogue_branch` | `../../tests/engine/test_game.py:L339` |
+| TC-H-02 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py:L403` |
+| TC-W-01 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py:L162` |
+| TC-T-01 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+| TC-T-02 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
