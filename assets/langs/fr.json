@@ -39,6 +39,10 @@
         }
     },
     "menu": {
-        "title": "Menu"
+        "title": "Menu",
+        "new_game": "Nouvelle Partie",
+        "load": "Charger",
+        "options": "Options",
+        "quit": "Quitter"
     }
 }

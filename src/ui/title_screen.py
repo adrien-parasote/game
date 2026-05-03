@@ -43,12 +43,27 @@ OVERLAY_ALPHA = 180
 # Right panel scroll banner — position of text centre inside the parchment
 # Adjust offsets to reposition without touching draw logic
 SCROLL_TITLE_X = 1000      # centre-x of the scroll text zone (pixels)
-SCROLL_TITLE_Y = 75       # centre-y of the scroll text zone (pixels)
+SCROLL_TITLE_Y = 80       # centre-y of the scroll text zone (pixels)
 SCROLL_TITLE_OFFSET_X = 0  # fine-tune x  (>0 right, <0 left)
 SCROLL_TITLE_OFFSET_Y = 0  # fine-tune y  (>0 down,  <0 up)
 SCROLL_TITLE_FONT_SIZE = 50  # taille de la police du titre menu (px)
 SCROLL_TITLE_FONT_PATH = "assets/fonts/cormorant-garamond-regular.ttf"  # police du scroll titre
-SCROLL_TITLE_COLOR = (72, 40, 12)  # encre sépia — accordé au parchemin RGB(211,186,145)
+SCROLL_TITLE_COLOR = (72, 40, 12)   # encre sépia — accordé au parchemin RGB(211,186,145)
+
+# Right panel — menu items (Pillow analysis of 01-menu_background.png)
+# Panel bounds: x=786-1225, y=250-680  |  fond RGB(37,54,58) sombre bleu
+# Zone texte (hors bordure 40px): x=826-1185, y=290-650
+MENU_ITEM_X = 1005          # centre-x des items (centre zone texte)
+MENU_ITEM_Y_START = 310     # y du premier item
+MENU_ITEM_SPACING = 80      # espacement vertical entre items
+MENU_ITEM_FONT_SIZE = 38    # taille police items (px)
+MENU_ITEM_COLOR = (220, 195, 140)   # doré chaud — accordé aux gears, lisible sur RGB(37,54,58)
+MENU_ITEM_HOVER_COLOR = (255, 235, 180)  # doré plus lumineux au hover
+MENU_ITEM_OFFSET_X = 0      # décalage fin x
+MENU_ITEM_OFFSET_Y = 0      # décalage fin y
+
+_MENU_ITEM_KEYS = ["menu.new_game", "menu.load", "menu.options", "menu.quit"]
+_MENU_ITEM_DEFAULTS = ["Nouvelle Partie", "Charger", "Options", "Quitter"]
 
 
 class TitleScreen:
@@ -60,6 +75,7 @@ class TitleScreen:
         self.state = "MAIN_MENU"          # "MAIN_MENU" | "LOAD_MENU"
         self._slots: list[SlotInfo | None] = [None, None, None]
         self._hovered_slot: int | None = None
+        self._hovered_item: int | None = None
         self._i18n = I18nManager()
 
         sw, sh = screen.get_size()
@@ -159,9 +175,10 @@ class TitleScreen:
             slot_states[state] = pygame.transform.smoothscale(raw, (SLOT_W_DST, SLOT_H_DST))
         self._slot_states = slot_states
 
-        # Load overlay panel
-        panel_raw = self._load_asset("03-panel_background.png")
-        self._panel_load = pygame.transform.smoothscale(panel_raw, (900, 480))
+        # Load overlay panel (semi-transparent black, pas de spritesheet)
+        self._panel_load = pygame.Surface((900, 480))
+        self._panel_load.set_alpha(200)
+        self._panel_load.fill((10, 18, 22))
 
         # Semi-transparent overlay
         self._overlay = pygame.Surface((self._sw, self._sh))
@@ -182,15 +199,28 @@ class TitleScreen:
         self._pointer_select_img = self._load_cursor("06-pointer_select.png")
         pygame.mouse.set_visible(False)
 
-        # Scroll title font — Cormorant Garamond, cached to avoid per-frame loading
+        # Scroll title + menu item fonts — Cormorant Garamond, cached at init
         try:
             self._scroll_title_font = pygame.font.Font(SCROLL_TITLE_FONT_PATH, SCROLL_TITLE_FONT_SIZE)
+            self._menu_item_font = pygame.font.Font(SCROLL_TITLE_FONT_PATH, MENU_ITEM_FONT_SIZE)
         except OSError:
             logging.warning("TitleScreen: Cormorant Garamond not found, falling back to Noble font")
             self._scroll_title_font = self._font
+            self._menu_item_font = self._font
 
     def _compute_layout(self) -> None:
-        """Compute save slot rects for the load overlay."""
+        """Compute menu item rects and save slot rects."""
+        # Menu item click zones (centred on MENU_ITEM_X)
+        item_w = 280
+        item_h = 48
+        self.menu_item_rects: list[pygame.Rect] = []
+        for i in range(len(_MENU_ITEM_KEYS)):
+            cx = MENU_ITEM_X + MENU_ITEM_OFFSET_X
+            cy = MENU_ITEM_Y_START + MENU_ITEM_OFFSET_Y + i * MENU_ITEM_SPACING
+            self.menu_item_rects.append(
+                pygame.Rect(cx - item_w // 2, cy - item_h // 2, item_w, item_h)
+            )
+        # Save slot rects (inside the load overlay panel, 900x480 centered)
         ov_x = self._sw // 2 - 450
         ov_y = self._sh // 2 - 240
         self.slot_rects: list[pygame.Rect] = []
@@ -207,8 +237,14 @@ class TitleScreen:
         return self._handle_main_menu(event)
 
     def update(self, dt: float) -> None:
-        if self.state == "LOAD_MENU":
-            mouse_pos = pygame.mouse.get_pos()
+        mouse_pos = pygame.mouse.get_pos()
+        if self.state == "MAIN_MENU":
+            self._hovered_item: int | None = None
+            for i, rect in enumerate(self.menu_item_rects):
+                if rect.collidepoint(mouse_pos):
+                    self._hovered_item = i
+                    break
+        elif self.state == "LOAD_MENU":
             self._hovered_slot = None
             for i, rect in enumerate(self.slot_rects):
                 if rect.collidepoint(mouse_pos):
@@ -223,10 +259,22 @@ class TitleScreen:
 
         self._draw_scroll_title()
 
-        if self.state == "LOAD_MENU":
+        if self.state == "MAIN_MENU":
+            self._draw_menu_items()
+        elif self.state == "LOAD_MENU":
             self._draw_load_overlay()
 
         self._draw_cursor()
+
+    def _draw_menu_items(self) -> None:
+        """Render menu items as text on the right panel."""
+        for i, (key, default) in enumerate(zip(_MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS)):
+            label = self._i18n.get(key, default=default)
+            color = MENU_ITEM_HOVER_COLOR if self._hovered_item == i else MENU_ITEM_COLOR
+            surf = self._menu_item_font.render(label, True, color)
+            cx = MENU_ITEM_X + MENU_ITEM_OFFSET_X
+            cy = MENU_ITEM_Y_START + MENU_ITEM_OFFSET_Y + i * MENU_ITEM_SPACING
+            self._screen.blit(surf, surf.get_rect(center=(cx, cy)))
 
     # ── Load overlay ───────────────────────────────────────────────────────────
 
@@ -276,7 +324,18 @@ class TitleScreen:
     # ── Event handlers ─────────────────────────────────────────────────────────
 
     def _handle_main_menu(self, event: pygame.Event) -> GameEvent | None:
-        """Stub — new menu interactions to be added here."""
+        if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
+            return None
+        for i, rect in enumerate(self.menu_item_rects):
+            if not rect.collidepoint(event.pos):
+                continue
+            actions = [
+                GameEvent.new_game,     # 0 — Nouvelle Partie
+                self._enter_load_menu, # 1 — Charger
+                self._enter_options,   # 2 — Options
+                GameEvent.quit,        # 3 — Quitter
+            ]
+            return actions[i]()
         return None
 
     def _enter_load_menu(self) -> None:
