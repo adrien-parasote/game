@@ -588,9 +588,6 @@ class Game:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == Settings.TOGGLE_FULLSCREEN_KEY:
-                    self.toggle_fullscreen()
-                
                 # NPC bubble advance (takes priority over box dialogue)
                 if event.key == Settings.INTERACT_KEY and self._npc_bubble is not None:
                     self._advance_npc_bubble()
