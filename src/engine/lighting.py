@@ -109,6 +109,13 @@ class LightingManager:
         slant = self._compute_slant()
 
         # Quantise so we don't rebuild every single frame
+        # Round color channels to nearest multiple of 8
+        color = (
+            (color[0] // 8) * 8,
+            (color[1] // 8) * 8,
+            (color[2] // 8) * 8,
+        )
+        
         # Round slant to nearest 2px to reduce cache churn
         key = (color, master_alpha >> 3, top_w, round(slant / 2) * 2)
         if key not in self._beam_surf_cache:

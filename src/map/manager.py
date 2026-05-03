@@ -26,6 +26,28 @@ class MapManager:
         self.width = len(first_layer[0]) if self.height > 0 else 0
 
         
+        self.layer_depths = {}
+        for layer_id in self.layer_order:
+            layer_name = self.layer_names.get(layer_id, "")
+            name_depth = None
+            if len(layer_name) >= 3 and layer_name[:2].isdigit() and layer_name[2] == "-":
+                name_depth = int(layer_name[:2])
+            
+            if name_depth is not None:
+                self.layer_depths[layer_id] = name_depth
+            else:
+                sample_tile_id = 0
+                for row in self.layers.get(layer_id, []):
+                    for tid in row:
+                        if tid != 0:
+                            sample_tile_id = tid
+                            break
+                    if sample_tile_id != 0: break
+                
+                self.layer_depths[layer_id] = getattr(
+                    self.tiles.get(sample_tile_id), "depth", 0
+                ) if sample_tile_id else 0
+
         self.cached_surfaces = {}
         self._window_cache = None
 
@@ -69,7 +91,7 @@ class MapManager:
                 return True
         return False
 
-    def get_visible_chunks(self, viewport_rect: "pygame.Rect") -> Iterator[Tuple[int, int, int, int]]:
+    def get_visible_chunks(self, viewport_rect: "pygame.Rect", min_depth: Optional[int] = None) -> Iterator[Tuple[int, int, int, int]]:
         """
         Calculate and return an iterator of (x_px, y_px, tile_id, depth) 
         that are currently visible within the viewport_rect (world pixels).
@@ -84,6 +106,9 @@ class MapManager:
         end_row = min(self.height, int(math.ceil(viewport_rect.bottom / tile_size)))
         
         for layer_id in self.layer_order:
+            if min_depth is not None and self.layer_depths.get(layer_id, 0) <= min_depth:
+                continue
+
             layer_data = self.layers[layer_id]
             for y in range(start_row, end_row):
                 for x in range(start_col, end_col):

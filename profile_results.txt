@@ -1,0 +1,58 @@
+         984448 function calls (976363 primitive calls) in 11.598 seconds
+
+   Ordered by: internal time
+   List reduced from 823 to 50 due to restriction <50>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      600    6.462    0.011    6.462    0.011 {method 'tick' of 'pygame.time.Clock' objects}
+    35749    2.445    0.000    2.445    0.000 {method 'blit' of 'pygame.surface.Surface' objects}
+        2    0.378    0.189    0.380    0.190 {built-in method pygame.display.toggle_fullscreen}
+      600    0.367    0.001    0.367    0.001 {built-in method pygame.display.update}
+     2408    0.367    0.000    0.367    0.000 {method 'fill' of 'pygame.surface.Surface' objects}
+        1    0.329    0.329    0.342    0.342 {built-in method pygame.display.set_mode}
+     1200    0.250    0.000    0.250    0.000 {built-in method pygame.event.get}
+        2    0.210    0.105    0.212    0.106 {built-in method pygame.base.init}
+        1    0.174    0.174    0.174    0.174 {built-in method pygame.base.quit}
+       65    0.125    0.002    0.125    0.002 {built-in method pygame.image.load}
+    10770    0.030    0.000    0.075    0.000 /Users/adrien.parasote/Documents/perso/game/src/entities/interactive.py:308(update)
+       10    0.028    0.003    0.045    0.004 /Users/adrien.parasote/Documents/perso/game/src/engine/lighting.py:157(_create_beam_surface)
+     2449    0.022    0.000    0.022    0.000 {method 'render' of 'pygame.font.Font' objects}
+     6000    0.021    0.000    0.064    0.000 /Users/adrien.parasote/Documents/perso/game/src/entities/interactive.py:396(draw_effects)
+     1200    0.018    0.000    0.020    0.000 /Users/adrien.parasote/Documents/perso/game/src/map/manager.py:94(get_visible_chunks)
+    38847    0.017    0.000    0.020    0.000 /Users/adrien.parasote/Documents/perso/game/src/engine/time_system.py:79(world_time)
+      600    0.015    0.000    0.055    0.000 /Users/adrien.parasote/Documents/perso/game/src/entities/groups.py:55(custom_draw)
+    32358    0.013    0.000    0.033    0.000 /Users/adrien.parasote/Documents/perso/game/src/engine/time_system.py:89(brightness)
+     2241    0.012    0.000    0.012    0.000 {method 'copy' of 'pygame.surface.Surface' objects}
+       49    0.012    0.000    0.021    0.000 /Users/adrien.parasote/Documents/perso/game/src/ui/chest.py:762(_draw_title)
+    37593    0.010    0.000    0.036    0.000 /Users/adrien.parasote/Documents/perso/game/src/entities/interactive.py:69(is_on)
+        4    0.010    0.003    0.010    0.003 {built-in method _imp.create_dynamic}
+      600    0.009    0.000    3.067    0.005 /Users/adrien.parasote/Documents/perso/game/src/engine/render_manager.py:50(draw_scene)
+       47    0.009    0.000    0.009    0.000 {built-in method pygame.transform.smoothscale}
+    12193    0.008    0.000    0.008    0.000 {built-in method pygame.draw.circle}
+      248    0.008    0.000    0.008    0.000 {method 'convert_alpha' of 'pygame.surface.Surface' objects}
+65853/58053    0.008    0.000    0.013    0.000 {built-in method builtins.getattr}
+      600    0.007    0.000    0.122    0.000 /Users/adrien.parasote/Documents/perso/game/src/engine/game.py:637(_update)
+        1    0.007    0.007    0.008    0.008 /Users/adrien.parasote/Documents/perso/game/src/engine/audio.py:68(preload_sfx)
+      600    0.006    0.000    0.223    0.000 /Users/adrien.parasote/Documents/perso/game/src/engine/lighting.py:55(create_overlay)
+     4800    0.006    0.000    0.069    0.000 /Users/adrien.parasote/Documents/perso/game/src/engine/lighting.py:96(_get_beam_surface_for_time)
+        1    0.006    0.006   11.601   11.601 /Users/adrien.parasote/Documents/perso/game/scripts/profile_game.py:14(run_profile)
+      564    0.005    0.000    0.006    0.000 /Users/adrien.parasote/Documents/perso/game/src/engine/audio.py:178(flush_ambient)
+       14    0.005    0.000    0.005    0.000 {built-in method marshal.loads}
+   112656    0.005    0.000    0.005    0.000 {built-in method builtins.abs}
+    32057    0.004    0.000    0.004    0.000 {method 'set_at' of 'pygame.surface.Surface' objects}
+    54255    0.004    0.000    0.004    0.000 {built-in method math.sin}
+      457    0.004    0.000    0.006    0.000 /Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py:68(_check_interactive_emote)
+    10780    0.004    0.000    0.006    0.000 /Users/adrien.parasote/Documents/perso/game/src/entities/interactive.py:249(_get_frame)
+     4800    0.004    0.000    0.011    0.000 /Users/adrien.parasote/Documents/perso/game/src/engine/lighting.py:131(_compute_slant)
+    81830    0.004    0.000    0.004    0.000 {built-in method math.exp}
+     1163    0.004    0.000    0.057    0.000 /Users/adrien.parasote/Library/Python/3.13/lib/python/site-packages/pygame/sprite.py:545(update)
+    53829    0.004    0.000    0.004    0.000 {built-in method builtins.min}
+        1    0.004    0.004    0.044    0.044 /Users/adrien.parasote/Documents/perso/game/src/ui/title_screen.py:180(_load_assets)
+      600    0.004    0.000    3.303    0.006 /Users/adrien.parasote/Documents/perso/game/src/engine/game.py:580(run_frame)
+    34402    0.004    0.000    0.004    0.000 /Users/adrien.parasote/Library/Python/3.13/lib/python/site-packages/pygame/sprite.py:126(rect)
+      563    0.003    0.000    0.050    0.000 /Users/adrien.parasote/Documents/perso/game/src/ui/hud.py:93(draw)
+    43935    0.003    0.000    0.003    0.000 {built-in method builtins.max}
+     1126    0.003    0.000    0.003    0.000 {built-in method pygame.key.get_pressed}
+     7800    0.003    0.000    0.003    0.000 {built-in method pygame.draw.rect}
+
+

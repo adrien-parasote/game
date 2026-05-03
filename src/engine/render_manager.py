@@ -14,27 +14,7 @@ class RenderManager:
         
         # Get all layers that should be behind the player
         for layer_id in self.game.map_manager.layer_order:
-            # We need to know the depth of tiles in this layer. 
-            # In Tiled, layers usually have a uniform depth via properties.
-            # If not, we fall back to checking the first non-zero tile.
-            sample_tile_id = 0
-            for row in self.game.map_manager.layers[layer_id]:
-                for tid in row:
-                    if tid != 0:
-                        sample_tile_id = tid
-                        break
-                if sample_tile_id != 0: break
-            
-            # Use name-based hint if available (e.g. "01-layer" -> depth 1)
-            layer_name = self.game.map_manager.layer_names.get(layer_id, "")
-            name_depth = None
-            if len(layer_name) >= 3 and layer_name[:2].isdigit() and layer_name[2] == "-":
-                name_depth = int(layer_name[:2])
-            
-            if name_depth is not None:
-                depth = name_depth
-            else:
-                depth = getattr(self.game.map_manager.tiles.get(sample_tile_id), "depth", 0) if sample_tile_id else 0
+            depth = self.game.map_manager.layer_depths.get(layer_id, 0)
             
             if depth <= self.game.player.depth:
                 surface = self.game.map_manager.get_layer_surface(layer_id, pygame)
@@ -51,7 +31,7 @@ class RenderManager:
         visual_rect = self.game.player.image.get_rect(bottomright=self.game.player.rect.bottomright)
         player_screen_rect = visual_rect.move(cam_offset.x, cam_offset.y)
         
-        for px, py, tile_id, depth in self.game.map_manager.get_visible_chunks(viewport_world):
+        for px, py, tile_id, depth in self.game.map_manager.get_visible_chunks(viewport_world, min_depth=self.game.player.depth):
             if depth > self.game.player.depth:
                 tile_data = self.game.map_manager.tiles[tile_id]
                 screen_pos = (px + cam_offset.x, py + cam_offset.y)

@@ -12,6 +12,7 @@ def test_render_manager_init():
 def test_render_manager_draw_background():
     game = MagicMock()
     game.map_manager.layer_order = ["layer_0", "layer_1"]
+    game.map_manager.layer_depths = {"layer_0": 0, "layer_1": 2}
     
     # Mock pre-rendered surfaces
     surf = pygame.Surface((32, 32))
@@ -55,6 +56,7 @@ def test_render_manager_draw_foreground():
 def test_render_manager_draw_scene():
     game = MagicMock()
     game.map_manager.layer_order = []
+    game.map_manager.layer_depths = {}
     game.map_manager.get_visible_chunks.return_value = []
     
     game.visible_sprites.offset = pygame.math.Vector2(0, 0)

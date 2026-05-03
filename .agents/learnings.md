@@ -1146,3 +1146,28 @@ def _blit_engraved(
 
 **Scope :** Project-specific
 
+
+
+## Learning: Mock Dependency Drift
+
+**Date:** 2026-05-03
+**Spec:** Performance Optimization Plan
+**Outcome:** Minor Rework
+**Project:** Python Pygame Engine
+
+### What happened
+Added `layer_depths` caching to `MapManager` and used it in `RenderManager`. The implementation code was perfect, but the unit tests for `RenderManager` failed because `game.map_manager` was a `MagicMock` and `layer_depths` evaluated to a mock object instead of a dict, causing a `TypeError` on comparison.
+
+### Root cause
+Adding a new property to a core dependency (`MapManager`) without simultaneously updating the test mocks in dependent classes (`test_render_manager.py`).
+
+### Anti-pattern (what to avoid)
+❌ **Don't**: Add properties to a class without updating the `MagicMock` setups in the test files of other classes that depend on it.
+
+✅ **Do Instead**: When adding a property to Class A, search the test suite for `MagicMock()` setups of Class A and explicitly assign the new property to the mock.
+
+### Evidence
+- Test failure in `test_render_manager_draw_background`: `TypeError: \'<=\' not supported between instances of \'MagicMock\' and \'int\'`
+
+### Scope
+- [x] Universal (applies across projects)
