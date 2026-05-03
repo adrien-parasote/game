@@ -54,13 +54,18 @@ SCROLL_TITLE_COLOR = (72, 40, 12)   # encre sépia — accordé au parchemin RGB
 # Panel bounds: x=786-1225, y=250-680  |  fond RGB(37,54,58) sombre bleu
 # Zone texte (hors bordure 40px): x=826-1185, y=290-650
 MENU_ITEM_X = 1005          # centre-x des items (centre zone texte)
-MENU_ITEM_Y_START = 310     # y du premier item
+MENU_ITEM_Y_START = 360     # y du premier item
 MENU_ITEM_SPACING = 80      # espacement vertical entre items
 MENU_ITEM_FONT_SIZE = 38    # taille police items (px)
-MENU_ITEM_COLOR = (220, 195, 140)   # doré chaud — accordé aux gears, lisible sur RGB(37,54,58)
-MENU_ITEM_HOVER_COLOR = (255, 235, 180)  # doré plus lumineux au hover
+MENU_ITEM_COLOR = (220, 195, 140)        # doré chaud au hover
+MENU_ITEM_HOVER_COLOR = (255, 235, 180)  # doré lumineux au hover (inchangé)
 MENU_ITEM_OFFSET_X = 0      # décalage fin x
 MENU_ITEM_OFFSET_Y = 0      # décalage fin y
+# Effet "gravé dans la roche" pour l'état idle
+# Fond pierre RGB(37,54,58) — 3 passes : ombre | reflet | texte
+MENU_ENGRAVE_TEXT   = (58, 85, 92)   # texte : légèrement plus clair que pierre
+MENU_ENGRAVE_SHADOW = (12, 20, 23)   # ombre (bas-droite +1,+2) : fond de la gravure
+MENU_ENGRAVE_LIGHT  = (75, 105, 112) # reflet (haut-gauche -1,-1) : bord éclairé
 
 _MENU_ITEM_KEYS = ["menu.new_game", "menu.load", "menu.options", "menu.quit"]
 _MENU_ITEM_DEFAULTS = ["Nouvelle Partie", "Charger", "Options", "Quitter"]
@@ -267,14 +272,31 @@ class TitleScreen:
         self._draw_cursor()
 
     def _draw_menu_items(self) -> None:
-        """Render menu items as text on the right panel."""
+        """Render menu items: engraved stone effect idle, golden on hover."""
         for i, (key, default) in enumerate(zip(_MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS)):
             label = self._i18n.get(key, default=default)
-            color = MENU_ITEM_HOVER_COLOR if self._hovered_item == i else MENU_ITEM_COLOR
-            surf = self._menu_item_font.render(label, True, color)
             cx = MENU_ITEM_X + MENU_ITEM_OFFSET_X
             cy = MENU_ITEM_Y_START + MENU_ITEM_OFFSET_Y + i * MENU_ITEM_SPACING
-            self._screen.blit(surf, surf.get_rect(center=(cx, cy)))
+            if self._hovered_item == i:
+                surf = self._menu_item_font.render(label, True, MENU_ITEM_HOVER_COLOR)
+                self._screen.blit(surf, surf.get_rect(center=(cx, cy)))
+            else:
+                self._blit_engraved(label, cx, cy)
+
+    def _blit_engraved(self, label: str, cx: int, cy: int) -> None:
+        """3-pass engraved-in-stone text effect.
+
+        Pass 1 — ombre (bas-droite) : simule le fond sombre de la gravure.
+        Pass 2 — reflet (haut-gauche) : simule la luz sur le bord supérieur.
+        Pass 3 — texte principal : légèrement plus clair que la pierre.
+        """
+        shadow = self._menu_item_font.render(label, True, MENU_ENGRAVE_SHADOW)
+        light  = self._menu_item_font.render(label, True, MENU_ENGRAVE_LIGHT)
+        text   = self._menu_item_font.render(label, True, MENU_ENGRAVE_TEXT)
+        r = text.get_rect(center=(cx, cy))
+        self._screen.blit(shadow, r.move(1, 2))
+        self._screen.blit(light,  r.move(-1, -1))
+        self._screen.blit(text,   r)
 
     # ── Load overlay ───────────────────────────────────────────────────────────
 
