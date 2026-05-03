@@ -676,9 +676,8 @@ class Game:
             self.last_fps_update = now
 
     def _draw(self):
-        """Draw complete scene and update display."""
+        """Render complete scene. Display update is owned by the main loop."""
         self.render_manager.draw_scene()
-        pygame.display.update()
 
     def toggle_fullscreen(self):
         """Toggle between fullscreen and windowed mode."""

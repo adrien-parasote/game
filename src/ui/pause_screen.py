@@ -70,10 +70,15 @@ class PauseScreen:
         self._overlay.set_alpha(OVERLAY_ALPHA)
         self._overlay.fill((0, 0, 0))
 
-        # Panel background — generated surface (no external asset needed)
-        self._panel = pygame.Surface((680, 480), pygame.SRCALPHA)
-        self._panel.fill((10, 18, 22, 210))
-        pygame.draw.rect(self._panel, (60, 80, 85), self._panel.get_rect(), 2)
+        # Panel background — 02-panel_background.png (600x600 RGBA → scaled)
+        panel_raw = self._load_asset("02-panel_background.png")
+        if panel_raw.get_size() != (32, 32):  # not the error fallback
+            self._panel = pygame.transform.smoothscale(panel_raw, (480, 480))
+        else:
+            # Fallback: programmatic surface
+            self._panel = pygame.Surface((480, 480), pygame.SRCALPHA)
+            self._panel.fill((10, 18, 22, 210))
+            pygame.draw.rect(self._panel, (60, 80, 85), self._panel.get_rect(), 2)
 
         # Fonts
         try:
