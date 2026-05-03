@@ -92,7 +92,7 @@ def test_player_footstep_audio(mock_spritesheet):
         # With dt=0.02, frame_index += 0.133, so 0.9 + 0.133 = 1.033 -> triggers frame 1
         player._update_animation(0.02)
         
-    player.audio_manager.play_sfx.assert_called_with("04-footstep_stone", source_id="player", volume_multiplier=2.5)
+    player.audio_manager.play_sfx.assert_called_with("04-footstep_stone", source_id="player", volume_multiplier=0.8)
     
     # Passing frame 2 shouldn't trigger
     player.audio_manager.play_sfx.reset_mock()
@@ -103,14 +103,14 @@ def test_player_footstep_audio(mock_spritesheet):
     # Passing frame 3 should trigger
     player.frame_index = 2.9
     player._update_animation(0.02)
-    player.audio_manager.play_sfx.assert_called_with("04-footstep_stone", source_id="player", volume_multiplier=2.5)
+    player.audio_manager.play_sfx.assert_called_with("04-footstep_stone", source_id="player", volume_multiplier=0.8)
 
     # If no material found, fallback to "04-footstep"
     player.audio_manager.play_sfx.reset_mock()
     mock_game.map_manager.get_terrain_material_at.return_value = None
     player.frame_index = 0.9
     player._update_animation(0.02)
-    player.audio_manager.play_sfx.assert_called_with("04-footstep", source_id="player", volume_multiplier=2.5)
+    player.audio_manager.play_sfx.assert_called_with("04-footstep", source_id="player", volume_multiplier=0.8)
 
 def test_npc_ai_state_machine(mock_spritesheet):
     """NPC transitions between idle and wandering."""
