@@ -1,5 +1,8 @@
 # Quality Gates and Standards [Reference]
 
+> Document Type: Implementation
+
+
 This document defines the technical standards and verification criteria for the RPG Tile Engine.
 
 ## 1. The Quality Gates
@@ -40,3 +43,30 @@ To maintain a 10-20x velocity multiplier, all contributions must pass through th
 - **Stability**: Always apply `MAX_DT_CLAMP` (default: 10.0) in `update()` to prevent physics explosion after long pauses or debugging.
 - **Cross-Platform**: Use `os.path` for all file path operations.
 - [engine-core.md](engine-core.md)
+
+## Anti-Patterns (DO NOT)
+
+| ❌ Don't | ✅ Do Instead | Why |
+|----------|---------------|-----|
+| [Fill me] | [Fill me] | [Fill me] |
+
+## Test Case Specifications
+
+### Unit Tests Required
+| Test ID | Component | Input | Expected Output | Edge Cases |
+|---------|-----------|-------|-----------------|------------|
+| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
+
+### Integration Tests Required
+| Test ID | Flow | Setup | Verification | Teardown |
+|---------|------|-------|--------------|----------|
+| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
+
+## Error Handling Matrix
+
+| Error Type | Detection | Response | Fallback | Logging | Alert |
+|------------|-----------|----------|----------|---------|-------|
+| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
+
+## Deep Links
+- [Link description](file:///path/to/file#anchor)

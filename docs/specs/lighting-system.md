@@ -1,5 +1,8 @@
 # Lighting System Specification
 
+> Document Type: Implementation
+
+
 This document serves as the Technical Specification for the Dynamic Lighting System, adhering to the Stream Coding v6.0 methodology.
 
 ## 1. System Overview
@@ -95,3 +98,24 @@ Tied to `TimeSystem.brightness`:
 - **Time/Brightness Logic**: [time_system.py#L90](file:///Users/adrien.parasote/Documents/perso/game/src/engine/time_system.py#L90)
 - **Night Overlay Usage**: [game.py](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py)
 - **Lighting Tests**: [test_lighting.py](file:///Users/adrien.parasote/Documents/perso/game/tests/test_lighting.py)
+
+## Test Case Specifications
+
+### Unit Tests Required
+| Test ID | Component | Input | Expected Output | Edge Cases |
+|---------|-----------|-------|-----------------|------------|
+| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
+
+### Integration Tests Required
+| Test ID | Flow | Setup | Verification | Teardown |
+|---------|------|-------|--------------|----------|
+| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
+
+## Error Handling Matrix
+
+| Error Type | Detection | Response | Fallback | Logging | Alert |
+|------------|-----------|----------|----------|---------|-------|
+| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
+
+## Deep Links
+- [Link description](file:///path/to/file#anchor)

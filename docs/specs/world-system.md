@@ -1,5 +1,8 @@
 # Technical Specification: World & Interaction System
 
+> Document Type: Implementation
+
+
 This document defines the behavior of map transitions (teleports) and the refined interaction model for world objects.
 
 ## 1. System Overview
@@ -137,3 +140,24 @@ Pickups use the same `{map_basename}_{tiled_id}` key format.
 - **Teleport Entity**: [teleport.py](file:///Users/adrien.parasote/Documents/perso/game/src/entities/teleport.py)
 - **Loot Table Initialization**: [loot-table-spec.md](./loot-table-spec.md)
 
+
+## Test Case Specifications
+
+### Unit Tests Required
+| Test ID | Component | Input | Expected Output | Edge Cases |
+|---------|-----------|-------|-----------------|------------|
+| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
+
+### Integration Tests Required
+| Test ID | Flow | Setup | Verification | Teardown |
+|---------|------|-------|--------------|----------|
+| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
+
+## Error Handling Matrix
+
+| Error Type | Detection | Response | Fallback | Logging | Alert |
+|------------|-----------|----------|----------|---------|-------|
+| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
+
+## Deep Links
+- [Link description](file:///path/to/file#anchor)

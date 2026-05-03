@@ -29,3 +29,4 @@ logs/
 
 # Player saves (local only — never commit)
 saves/
+!.agents/learnings/

@@ -1,5 +1,8 @@
 # Technical Spec: Engine & Test Optimization
 
+> Document Type: Implementation
+
+
 This document specifies the technical implementation of performance and structural optimizations.
 
 ## Anti-Patterns (DO NOT)
@@ -60,3 +63,15 @@ This document specifies the technical implementation of performance and structur
 - [ENGINE_CORE.md](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/ENGINE_CORE.md)
 - [game.py](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py)
 - [dialogue.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/dialogue.py)
+
+## Test Case Specifications
+
+### Unit Tests Required
+| Test ID | Component | Input | Expected Output | Edge Cases |
+|---------|-----------|-------|-----------------|------------|
+| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
+
+### Integration Tests Required
+| Test ID | Flow | Setup | Verification | Teardown |
+|---------|------|-------|--------------|----------|
+| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |

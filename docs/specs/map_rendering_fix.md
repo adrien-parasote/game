@@ -1,5 +1,8 @@
 # SPEC: Map Rendering Fix (00-layer)
 
+> Document Type: Implementation
+
+
 ## Goal
 Ensure that the `00-layer` (typically the base background) is always visible and rendered first, regardless of its internal Tiled ID.
 
@@ -39,3 +42,6 @@ Ensure that the `00-layer` (typically the base background) is always visible and
 | Error Type | Detection | Response | Fallback |
 |------------|-----------|----------|----------|
 | Missing Layer | `00-layer` not found | Log warning | Draw existing layers in ID order |
+
+## Deep Links
+- [Link description](file:///path/to/file#anchor)

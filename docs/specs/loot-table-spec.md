@@ -1,5 +1,8 @@
 # Technical Spec — Loot Table Initialization [Implementation]
 
+> Document Type: Implementation
+
+
 **Type:** Implementation Document  
 **Version:** 1.0  
 **Status:** Implemented — 2026-05-01
@@ -96,3 +99,24 @@ In `Game._spawn_interactive()`:
 - **LootTable Module**: [loot_table.py](../src/engine/loot_table.py)
 - **Game Initialization**: [game.py L98](../src/engine/game.py#L98)
 - **Interactive Spawning**: [game.py L715](../src/engine/game.py#L715)
+
+## Test Case Specifications
+
+### Unit Tests Required
+| Test ID | Component | Input | Expected Output | Edge Cases |
+|---------|-----------|-------|-----------------|------------|
+| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
+
+### Integration Tests Required
+| Test ID | Flow | Setup | Verification | Teardown |
+|---------|------|-------|--------------|----------|
+| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
+
+## Error Handling Matrix
+
+| Error Type | Detection | Response | Fallback | Logging | Alert |
+|------------|-----------|----------|----------|---------|-------|
+| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
+
+## Deep Links
+- [Link description](file:///path/to/file#anchor)

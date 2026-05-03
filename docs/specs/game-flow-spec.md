@@ -466,3 +466,4 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 - ADR-001 → [ADR-001](docs/ADRs/ADR-001-gamestate-architecture.md#décision)
 - ADR-002 → [ADR-002](docs/ADRs/ADR-002-save-format.md#structure-du-fichier-savesslot_njson)
 - ADR-003 → [ADR-003](docs/ADRs/ADR-003-key-mapping.md#décision)
+

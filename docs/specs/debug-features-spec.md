@@ -1,5 +1,8 @@
 # Technical Spec: Debug Features
 
+> Document Type: Implementation
+
+
 Detailed implementation specification for the debug room and visual hitbox debugging.
 
 ## 1. Anti-Patterns (DO NOT)
@@ -40,3 +43,24 @@ Detailed implementation specification for the debug room and visual hitbox debug
 - **Config System**: [src/config.py](file:///Users/adrien.parasote/Documents/perso/game/src/config.py)
 - **Engine Loop**: [src/engine/game.py](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py)
 - **Drawing Logic**: [src/entities/groups.py](file:///Users/adrien.parasote/Documents/perso/game/src/entities/groups.py)
+
+## Test Case Specifications
+
+### Unit Tests Required
+| Test ID | Component | Input | Expected Output | Edge Cases |
+|---------|-----------|-------|-----------------|------------|
+| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
+
+### Integration Tests Required
+| Test ID | Flow | Setup | Verification | Teardown |
+|---------|------|-------|--------------|----------|
+| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
+
+## Error Handling Matrix
+
+| Error Type | Detection | Response | Fallback | Logging | Alert |
+|------------|-----------|----------|----------|---------|-------|
+| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
+
+## Deep Links
+- [Link description](file:///path/to/file#anchor)

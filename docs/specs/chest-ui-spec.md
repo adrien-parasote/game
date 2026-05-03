@@ -1,5 +1,8 @@
 # Technical Spec — Chest UI System [Implementation]
 
+> Document Type: Implementation
+
+
 **Type:** Implementation Document  
 **Version:** 1.2  
 **Status:** Implemented — 2026-05-01 (doc-update sync: chest-inventory transfer system)
@@ -433,3 +436,24 @@ class ChestUI:
 
 **AI Coder Score: 9/10**  
 Residual ambiguity: exact pixel fractions for the image zones (Assumption A-04). These are visual estimates requiring one calibration pass after first render.
+
+## Test Case Specifications
+
+### Unit Tests Required
+| Test ID | Component | Input | Expected Output | Edge Cases |
+|---------|-----------|-------|-----------------|------------|
+| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
+
+### Integration Tests Required
+| Test ID | Flow | Setup | Verification | Teardown |
+|---------|------|-------|--------------|----------|
+| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
+
+## Error Handling Matrix
+
+| Error Type | Detection | Response | Fallback | Logging | Alert |
+|------------|-----------|----------|----------|---------|-------|
+| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
+
+## Deep Links
+- [Link description](file:///path/to/file#anchor)

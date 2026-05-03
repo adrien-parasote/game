@@ -1,5 +1,8 @@
 # SPEC: Emote System Update
 
+> Document Type: Implementation
+
+
 ## Goal
 Improve emote responsiveness, and ensure chaining works correctly.
 
@@ -36,3 +39,6 @@ Improve emote responsiveness, and ensure chaining works correctly.
 | Error Type | Detection | Response | Fallback |
 |------------|-----------|----------|----------|
 | Missing Sprite | Sprite index out of range | Log error | Skip emote trigger |
+
+## Deep Links
+- [Link description](file:///path/to/file#anchor)

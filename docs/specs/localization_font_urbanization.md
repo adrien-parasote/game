@@ -1,5 +1,8 @@
 # SPEC: Font System Tiering & Visual Identity
 
+> Document Type: Implementation
+
+
 ## Goal
 Establish a three-tier font system to enhance visual hierarchy and game identity, separating prestige, narrative, and technical data.
 
@@ -51,3 +54,6 @@ Establish a three-tier font system to enhance visual hierarchy and game identity
 |------------|-----------|----------|----------|
 | Missing Font File | `os.path.exists` | Log Error | Fallback to `pygame.font.Font(None, size)` |
 | Invalid Size | `Settings` | Log Warning | Use default size (20) |
+
+## Deep Links
+- [Link description](file:///path/to/file#anchor)

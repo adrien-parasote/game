@@ -1,5 +1,8 @@
 # Technical Specification - Engine Core [Implementation]
 
+> Document Type: Implementation
+
+
 This document consolidates all rendering, logic, and optimization specifications for the RPG Tile Engine.
 
 ## 1. Core Modules
@@ -286,3 +289,24 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 - **SFX Overlap Guard**: [audio.py - play_sfx](src/engine/audio.py#L111)
 - **Hitbox Debugging**: [groups.py - custom_draw](src/entities/groups.py#L65)
 - **Loot Table Integration**: [loot-table-spec.md](./loot-table-spec.md)
+
+## Test Case Specifications
+
+### Unit Tests Required
+| Test ID | Component | Input | Expected Output | Edge Cases |
+|---------|-----------|-------|-----------------|------------|
+| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
+
+### Integration Tests Required
+| Test ID | Flow | Setup | Verification | Teardown |
+|---------|------|-------|--------------|----------|
+| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
+
+## Error Handling Matrix
+
+| Error Type | Detection | Response | Fallback | Logging | Alert |
+|------------|-----------|----------|----------|---------|-------|
+| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
+
+## Deep Links
+- [Link description](file:///path/to/file#anchor)
