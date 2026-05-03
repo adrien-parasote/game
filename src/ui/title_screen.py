@@ -76,8 +76,12 @@ BACK_BTN_W = 28           # largeur de rendu (1/2 native)
 BACK_BTN_H = 25           # hauteur de rendu (1/2 native)
 BACK_BTN_X = 1005         # centre-x (même axe que les items)
 BACK_BTN_Y = 620          # centre-y (bas du panel)
-BACK_BTN_OFFSET_X = 0     # décalage fin x
+BACK_BTN_OFFSET_X = 80    # décalage fin x (centré sur texte+icône)
 BACK_BTN_OFFSET_Y = 0     # décalage fin y
+BACK_BTN_GAP = 6          # espace entre le texte et l'icône
+BACK_BTN_FONT_SIZE = 22   # taille du label (Cormorant Garamond)
+BACK_BTN_LABEL_KEY = "menu.back"   # clé i18n
+BACK_BTN_LABEL_DEFAULT = "Retour"  # valeur par défaut
 
 
 class TitleScreen:
@@ -228,6 +232,13 @@ class TitleScreen:
         self._back_btn_hover = pygame.transform.smoothscale(
             back_raw, (BACK_BTN_W + 4, BACK_BTN_H + 4)
         )
+        # Label font (Cormorant Garamond, small — cached at init)
+        try:
+            self._back_label_font = pygame.font.Font(
+                SCROLL_TITLE_FONT_PATH, BACK_BTN_FONT_SIZE
+            )
+        except OSError:
+            self._back_label_font = self._font_small
 
     def _compute_layout(self) -> None:
         """Compute menu item rects, save slot rects, and back button rect."""
@@ -241,11 +252,15 @@ class TitleScreen:
             self.menu_item_rects.append(
                 pygame.Rect(cx - item_w // 2, cy - item_h // 2, item_w, item_h)
             )
-        # Back button rect (OPTIONS state)
+        # Back button rect (OPTIONS state) — covers text + icon
+        # Layout: [text] <gap> [icon]  all centred on (bcx, bcy)
+        # We don't know text width at layout time, so we use a generous fixed width
         bcx = BACK_BTN_X + BACK_BTN_OFFSET_X
         bcy = BACK_BTN_Y + BACK_BTN_OFFSET_Y
+        back_total_w = 120   # conservative estimate: text (~70px) + gap + icon (28px)
         self.back_btn_rect = pygame.Rect(
-            bcx - BACK_BTN_W // 2, bcy - BACK_BTN_H // 2, BACK_BTN_W, BACK_BTN_H
+            bcx - back_total_w // 2, bcy - BACK_BTN_H // 2,
+            back_total_w, max(BACK_BTN_H, 28)
         )
         self._back_hovered: bool = False
         # Save slot rects (inside the load overlay panel, 900x480 centered)
@@ -407,13 +422,30 @@ class TitleScreen:
         return None
 
     def _draw_options_overlay(self) -> None:
-        """Draw options panel with back button. Options content is a stub."""
+        """Draw options panel: 'Retour' label + back icon side by side."""
+        label = self._i18n.get(BACK_BTN_LABEL_KEY, default=BACK_BTN_LABEL_DEFAULT)
+        cx = BACK_BTN_X + BACK_BTN_OFFSET_X
+        cy = BACK_BTN_Y + BACK_BTN_OFFSET_Y
+
+        # Render icon (hover = slightly larger)
         btn = self._back_btn_hover if self._back_hovered else self._back_btn
-        r = btn.get_rect(center=(
-            BACK_BTN_X + BACK_BTN_OFFSET_X,
-            BACK_BTN_Y + BACK_BTN_OFFSET_Y,
-        ))
-        self._screen.blit(btn, r)
+        icon_w = btn.get_width()
+
+        # Render label
+        color = MENU_ITEM_HOVER_COLOR if self._back_hovered else MENU_ITEM_COLOR
+        label_surf = self._back_label_font.render(label, True, color)
+        label_w = label_surf.get_width()
+        label_h = label_surf.get_height()
+
+        # Total width: label + gap + icon
+        total_w = label_w + BACK_BTN_GAP + icon_w
+        left_x = cx - total_w // 2
+
+        # Blit label left, icon right
+        label_y = cy - label_h // 2
+        self._screen.blit(label_surf, (left_x, label_y))
+        icon_r = btn.get_rect(midleft=(left_x + label_w + BACK_BTN_GAP, cy))
+        self._screen.blit(btn, icon_r)
 
     def _handle_load_menu(self, event: pygame.Event) -> GameEvent | None:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:

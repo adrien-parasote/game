@@ -43,6 +43,7 @@
         "new_game": "Nouvelle Partie",
         "load": "Charger",
         "options": "Options",
-        "quit": "Quitter"
+        "quit": "Quitter",
+        "back": "Retour"
     }
 }
