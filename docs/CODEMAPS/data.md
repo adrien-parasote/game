@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-01 | Files scanned: 34 | Token estimate: ~380 -->
+<!-- Generated: 2026-05-03 | Files scanned: 46 | Token estimate: ~420 -->
 
 # Data & Dependencies Architecture
 
@@ -38,6 +38,22 @@ Item.stackable: bool
 chest_contents[element_id] = [{"item_id": str, "quantity": int}, ...]  # ≤20 stacks
 ```
 Stored on `InteractiveEntity` as `entity.loot_items: list[dict | None]` — fixed-size list, `None` = empty slot.
+
+
+## Save Data Model (`SaveManager`, `src/engine/save_manager.py`)
+- **Slots**: 3 slots → `saves/slot_N.json`
+- **Format**:
+```json
+{
+  "timestamp": "YYYY-MM-DDTHH:MM:SS",
+  "map": "map_name",
+  "player": {"x": int, "y": int, "facing": "down"},
+  "inventory": [{"item_id": str, "quantity": int} | null, ...],
+  "equipment": {"HEAD": {..} | null, ...},
+  "world_state": {"map_id": {"is_on": bool, "loot_items": [...]} }
+}
+```
+- **Operations**: `save(slot_id, game)`, `load(slot_id)→dict|None`, `delete(slot_id)`, `list_slots()→list`
 
 ## World State Persistence (`WorldState`, `src/engine/world_state.py`)
 - **Key format**: `f"{map_name}_{tiled_id}"` via `WorldState.make_key(map_name, tiled_id)`

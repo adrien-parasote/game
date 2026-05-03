@@ -514,3 +514,87 @@ class Game:
 
 ---
 
+
+---
+
+## 📚 Documentation Urbanization — 2026-05-03
+
+### L-DOC-001 · 2026-05-03 · U · Perfect
+**Relative paths in spec deep links for portability**
+
+Absolute `file:///Users/username/...` paths in spec deep links break on every machine change or team handoff. Relative paths from the spec's directory work universally.
+
+```markdown
+# ❌ Machine-specific — breaks on any other system
+[inventory.py L21](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L21)
+
+# ✅ Relative from docs/specs/ — portable
+[inventory.py L21](../../src/engine/inventory_system.py#L21)
+```
+
+**Convention from docs/specs/:**
+- `../../src/` → source files
+- `../../tests/` → test files
+- `./` → other spec files in docs/specs/
+- `../` → other docs/ files
+
+**Evidence:** 87 links converted in 13 spec files. Script: `re.sub(r'file:///Users/[^/]+/Documents/perso/game/', '../../', content)`. commit `a7be023`.
+
+---
+
+### L-DOC-002 · 2026-05-03 · U · Minor Rework
+**Two-pass cleaning required for specs: placeholder removal then deep link fix**
+
+Spec generation often creates a full "Linked Test Functions" table stub AND retains the generic placeholder at the bottom. A single-pass cleanup missed the bare `tests/` paths inside backticks (which are not Markdown links and thus not caught by link-specific regex).
+
+**Two-pass strategy:**
+1. Remove generic placeholder blocks (`| TC-001 | [Component] |...`)
+2. Separately fix bare paths in backticks inside tables: `` `tests/foo` `` → `` `../../tests/foo` ``
+
+```python
+# Pass 1 — structural placeholders
+content = content.replace(PLACEHOLDER_BLOCK, '')
+
+# Pass 2 — bare paths in backticks (Linked Test Functions tables)
+content = re.sub(r'`(tests/)', r'`../../\1', content)
+```
+
+**Evidence:** 54 additional paths corrected across 11 files after pass 1 was believed complete. commit `fb4b039`.
+
+---
+
+### L-DOC-003 · 2026-05-03 · U · Perfect
+**Automated spec audit script catches 100% of formatting violations**
+
+A Python audit script checking (1) absolute paths, (2) bare `tests/` in backticks, (3) missing linked-file existence, (4) function name existence, (5) line number accuracy — caught every issue in one run. Zero false negatives when function names verified via `grep -n def func tests/file.py`.
+
+**Pattern to reproduce:**
+```python
+# For each spec, in the Linked Test Functions table:
+for tc_id, func_name, file_ref in re.findall(
+    r'\|\s*([\w-]+)\s*\|\s*`(test_[^`]+)`\s*\|\s*`(\.\./\.\./[^`]+)`',
+    content
+):
+    # verify file exists, verify function exists, verify line number
+```
+
+**Evidence:** 0 errors, 0 warnings final audit run. All 492 test functions validated. commit `fb4b039`.
+
+---
+
+### A-DOC-001 · 2026-05-03 · U · Minor Rework
+**"Linked Test Functions" added in multiple passes creates inconsistent path formats**
+
+When "Linked Test Functions" sections are added iteratively (some in session N, some in session N+1), the first batch uses one path convention (`tests/`) and the second uses another (`../../tests/`). The audit script cannot catch this until both conventions co-exist in the same file.
+
+**Rule:** When adding "Linked Test Functions" to any spec, immediately run the audit script:
+```bash
+python3 audit_spec_links.py  # verifies all paths are ../../ relative
+```
+Never add linked test tables without running the audit immediately after.
+
+**Evidence:** 5 spec files had inconsistent path formats discovered only in a second pass. 54 paths corrected.
+
+---
+
+*Last optimized: 2026-05-03 — documentation urbanization session: L-DOC-001, L-DOC-002, L-DOC-003, A-DOC-001.*
