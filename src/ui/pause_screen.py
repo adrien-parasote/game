@@ -25,7 +25,7 @@ INNER_TOP = 60        # px from panel top to inner stone area
 INNER_BOTTOM = 60     # px from panel bottom to inner stone area
 
 # Layout offsets from panel top
-PAUSE_TITLE_OFFSET = 52    # y du titre depuis le haut du panel
+PAUSE_TITLE_OFFSET = 90    # y du titre depuis le haut du panel
 ITEM_Y_START_OFFSET = 145  # y du 1er item depuis le haut du panel
 ITEM_SPACING = 70          # espacement vertical entre items
 
@@ -40,7 +40,8 @@ ENGRAVE_LIGHT  = (75, 105, 112)
 HOVER_COLOR    = (255, 235, 180)
 TITLE_COLOR    = (220, 195, 140)
 
-_BUTTON_LABELS = ["Reprendre", "Sauvegarder", "Menu Principal"]
+_BUTTON_LABELS = ["Menu Principal", "Reprendre", "Sauvegarder"]
+
 
 
 class PauseScreen:
@@ -224,9 +225,9 @@ class PauseScreen:
 
     def _on_button_click(self, index: int) -> GameEvent | None:
         if index == 0:
-            return GameEvent.resume()
-        if index == 1:
-            return GameEvent(type=GameEventType.PAUSE_REQUESTED)  # signal save
-        if index == 2:
             return GameEvent.goto_title()
+        if index == 1:
+            return GameEvent.resume()
+        if index == 2:
+            return GameEvent(type=GameEventType.PAUSE_REQUESTED)  # signal save
         return None
