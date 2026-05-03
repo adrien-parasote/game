@@ -23,6 +23,7 @@ class Player(BaseEntity):
         self.frame_index = 0.0
         self.animation_speed = 1.0 / 0.15  # frames per second (150ms per frame)
         self.current_state = 'down' # default facing
+        self._was_moving = False   # tracks previous frame's movement to avoid per-tile reset
         
         self.image = self.frames[0]
         # Ensure physical hitbox remains exactly 32x32 regardless of image size
@@ -83,9 +84,13 @@ class Player(BaseEntity):
         if self.is_moving:
             self.frame_index += self.animation_speed * dt
             self.frame_index %= 4
-        else:
+        elif not self._was_moving:
+            # Only reset to idle frame after 2+ consecutive stopped frames.
+            # Absorbs the single is_moving=False tile-arrival frame during continuous movement.
             self.frame_index = 0.0
-            
+
+        self._was_moving = self.is_moving
+
         current_int_frame = int(self.frame_index)
         
         # Trigger footstep on frames 1 and 3
@@ -100,7 +105,7 @@ class Player(BaseEntity):
             if self.audio_manager:
                 success = self.audio_manager.play_sfx(sfx_name, source_id="player", volume_multiplier=0.8)
                 if not success and material:
-                    self.audio_manager.play_sfx("04-footstep", source_id="player", volume_multiplier=0.8)
+                    self.audio_manager.play_sfx("04-footstep", source_id="player", volume_multiplier=0.6)
             
         # Get integer index to select frame (0 to 3) + offset
         current_frame = int(self.frame_index) % 4

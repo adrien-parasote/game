@@ -25,6 +25,7 @@ class NPC(BaseEntity):
         self.frame_index = 0.0
         self.animation_speed = getattr(Settings, "NPC_ANIMATION_SPEED", 8.0)
         self.current_facing = 'down'
+        self._was_moving = False   # tracks previous frame's movement to avoid per-tile reset
         
         self.image = self.frames[0]
         # Strict physical hitbox
@@ -119,8 +120,11 @@ class NPC(BaseEntity):
         if self.is_moving:
             self.frame_index += self.animation_speed * dt
             self.frame_index %= 4
-        else:
+        elif not self._was_moving:
+            # Only reset to idle after 2+ consecutive stopped frames (absorbs tile-arrival frame).
             self.frame_index = 0.0
+
+        self._was_moving = self.is_moving
             
         current_frame = int(self.frame_index) % 4
         self.image = self.frames[offset + current_frame]
