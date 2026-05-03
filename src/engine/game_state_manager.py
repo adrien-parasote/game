@@ -243,9 +243,17 @@ class GameStateManager:
                     logging.warning(f"GSM: Could not restore equipment {slot_name}: {e}")
 
     def _resolve_default_map(self) -> str:
-        """Return the default map name (same logic as Game.__init__)."""
+        """Return the initial map: debug room if Settings.DEBUG, else world.world first entry."""
         import json
         import os
+        from src.config import Settings
+
+        # Debug room takes priority over world.world
+        debug_room = "99-debug_room.tmj"
+        debug_path = os.path.join("assets", "tiled", "maps", debug_room)
+        if Settings.DEBUG and os.path.exists(debug_path):
+            return debug_room
+
         world_path = os.path.join("assets", "tiled", "maps", "world.world")
         if os.path.exists(world_path):
             try:
