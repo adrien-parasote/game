@@ -30,6 +30,11 @@ LOGO_SEP_W = 380           # separator width
 LOGO_SUB_W = 380           # subtitle width
 LOGO_Y = 30               # top of logo block on screen
 LOGO_GAP = 6              # vertical gap between elements
+# Fine-tune moon/gear position (px, relative to default centred placement)
+MOON_OFFSET_X = 25        # >0 → right,  <0 → left
+MOON_OFFSET_Y = 55        # >0 → down,   <0 → up
+GEAR_OFFSET_X = -25       # >0 → right,  <0 → left
+GEAR_OFFSET_Y = 55        # >0 → down,   <0 → up
 
 # Save slot spritesheet (04-save_slot.png 1024x1024, 2 states stacked)
 SLOT_H_SRC = 512
@@ -95,6 +100,17 @@ class TitleScreen:
         target_h = int(sh * target_w / sw)
         return pygame.transform.smoothscale(surf, (target_w, target_h))
 
+    def _scale_cover(self, surf: pygame.Surface, target_w: int, target_h: int) -> pygame.Surface:
+        """Scale + center-crop to fill target dimensions without distortion."""
+        src_w, src_h = surf.get_size()
+        scale = max(target_w / src_w, target_h / src_h)
+        scaled_w = int(src_w * scale)
+        scaled_h = int(src_h * scale)
+        scaled = pygame.transform.smoothscale(surf, (scaled_w, scaled_h))
+        crop_x = (scaled_w - target_w) // 2
+        crop_y = (scaled_h - target_h) // 2
+        return scaled.subsurface(pygame.Rect(crop_x, crop_y, target_w, target_h)).copy()
+
     def _build_logo_composite(self) -> pygame.Surface:
         """Assemble 5 alpha-transparent logo parts into one surface."""
         # Load and scale each part
@@ -124,12 +140,12 @@ class TitleScreen:
         comp = pygame.Surface((comp_w, comp_h), pygame.SRCALPHA)
 
         # Row 1: moon | main_title | gear  — vertically centered on main_title
-        moon_y = (main_h - moon_h) // 2
-        gear_y = (main_h - moon_h) // 2
+        moon_base_y = (main_h - moon_h) // 2
+        gear_base_y = (main_h - moon_h) // 2
         main_x = moon_w + 4
-        comp.blit(moon, (0, moon_y))
+        comp.blit(moon, (0 + MOON_OFFSET_X, moon_base_y + MOON_OFFSET_Y))
         comp.blit(main, (main_x, 0))
-        comp.blit(gear, (main_x + main_w + 4, gear_y))
+        comp.blit(gear, (main_x + main_w + 4 + GEAR_OFFSET_X, gear_base_y + GEAR_OFFSET_Y))
 
         # Row 2: separator  — centered
         sep_x = (comp_w - LOGO_SEP_W) // 2
@@ -144,9 +160,9 @@ class TitleScreen:
         return comp
 
     def _load_assets(self) -> None:
-        # Background (scaled to full screen)
+        # Background — scale-to-cover to preserve aspect ratio (src is 1024x1024)
         bg_raw = self._load_asset("01-menu_background.png")
-        self._bg = pygame.transform.smoothscale(bg_raw, (self._sw, self._sh))
+        self._bg = self._scale_cover(bg_raw, self._sw, self._sh)
 
         # Logo — composed from 5 alpha-transparent PNGs
         self._logo_surf = self._build_logo_composite()
