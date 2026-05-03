@@ -251,15 +251,15 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 
 | ID | Topic | Input | Expected Output |
 |----|-------|-------|-----------------|
-| TC-R-01 | Y-Sorting | [Y=100, Y=50] | Rendered [50, 100] |
-| TC-R-02 | Culling | Viewport at (0,0) | Only first tiles rendered |
-| TC-C-01 | Cam Clamp | Player at (0,0) | Offset = 0 |
-| TC-R-03 | Visual Anchor | Image 32x48 | Topleft extends 16px up |
-| TC-H-01 | HUD | Dialogue started | Text paginated and typing initiated |
-| TC-H-02 | HUD | Skip request | `displayed_text` immediately filled |
-| TC-W-01 | WorldState | Toggle lever + Reload | Lever remains in toggled state |
-| TC-T-01 | Teleport | Overlap + Intent (DIR) | `transition_map` triggered |
-| TC-T-02 | Teleport | Overlap + 'Any' Portal | Intent ignored, triggers on Arrival |
+| CORE-R-01 | Y-Sorting | [Y=100, Y=50] | Rendered [50, 100] |
+| CORE-R-02 | Culling | Viewport at (0,0) | Only first tiles rendered |
+| CORE-C-01 | Cam Clamp | Player at (0,0) | Offset = 0 |
+| CORE-R-03 | Visual Anchor | Image 32x48 | Topleft extends 16px up |
+| CORE-H-01 | HUD | Dialogue started | Text paginated and typing initiated |
+| CORE-H-02 | HUD | Skip request | `displayed_text` immediately filled |
+| CORE-W-01 | WorldState | Toggle lever + Reload | Lever remains in toggled state |
+| CORE-T-01 | Teleport | Overlap + Intent (DIR) | `transition_map` triggered |
+| CORE-T-02 | Teleport | Overlap + 'Any' Portal | Intent ignored, triggers on Arrival |
 
 ## 5. Error Handling Matrix (Aggregated)
 
@@ -294,12 +294,12 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-R-01 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
-| TC-R-02 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
-| TC-R-03 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
-| TC-C-01 | `test_game_initialization` | `../../tests/engine/test_game.py:L10` |
-| TC-H-01 | `test_update_dialogue_branch` | `../../tests/engine/test_game.py:L339` |
-| TC-H-02 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py:L403` |
-| TC-W-01 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py:L162` |
-| TC-T-01 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
-| TC-T-02 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+| CORE-R-01 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
+| CORE-R-02 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
+| CORE-R-03 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
+| CORE-C-01 | `test_game_initialization` | `../../tests/engine/test_game.py:L10` |
+| CORE-H-01 | `test_update_dialogue_branch` | `../../tests/engine/test_game.py:L339` |
+| CORE-H-02 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py:L403` |
+| CORE-W-01 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py:L162` |
+| CORE-T-01 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+| CORE-T-02 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |

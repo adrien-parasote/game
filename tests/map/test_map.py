@@ -38,6 +38,7 @@ def map_manager(map_data):
 # Layer parsing & ordering (TmjParser)
 # ---------------------------------------------------------------------------
 
+@pytest.mark.tc("TC-MAP-01")
 def test_layer_recursive_order():
     """Nested group layers are found and sorted by name prefix."""
     parser = TmjParser()
@@ -125,6 +126,7 @@ def test_map_manager_empty_layers():
 # MapManager: get_layer_surface
 # ---------------------------------------------------------------------------
 
+@pytest.mark.tc("TC-MAP-02")
 def test_map_manager_render_layer(map_manager):
     """First render creates surface of correct size."""
     surface = map_manager.get_layer_surface(1, pygame)

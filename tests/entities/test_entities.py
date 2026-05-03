@@ -23,6 +23,7 @@ def mock_spritesheet():
 
 # --- BaseEntity Tests ---
 
+@pytest.mark.tc("TC-N-01")
 def test_entity_initialization():
     """Entity should start at correct position with fixed size."""
     ent = BaseEntity((16, 16))
@@ -112,6 +113,7 @@ def test_player_footstep_audio(mock_spritesheet):
     player._update_animation(0.02)
     player.audio_manager.play_sfx.assert_called_with("04-footstep", source_id="player", volume_multiplier=0.3)
 
+@pytest.mark.tc("TC-N-02")
 def test_npc_ai_state_machine(mock_spritesheet):
     """NPC transitions between idle and wandering."""
     npc = NPC((48, 48), wander_radius=5)
@@ -123,6 +125,7 @@ def test_npc_ai_state_machine(mock_spritesheet):
     assert npc.is_moving is True
 
 
+@pytest.mark.tc("TC-N-04")
 def test_npc_interact_faces_initiator_horizontal(mock_spritesheet):
     """NPC faces initiator when horizontal delta is dominant."""
     npc = NPC((48, 48), wander_radius=5)
@@ -162,6 +165,7 @@ def test_npc_interact_faces_initiator_up(mock_spritesheet):
     assert npc.current_facing == 'up'
 
 
+@pytest.mark.tc("IT-N-02")
 def test_npc_interact_freezes_ai(mock_spritesheet):
     """NPC in interact state skips process_ai."""
     npc = NPC((48, 48), wander_radius=5)
@@ -252,6 +256,7 @@ def test_npc_animation_idle_frame(mock_spritesheet):
     assert npc.frame_index == 0.0
 
 
+@pytest.mark.tc("TC-N-03")
 def test_npc_update_invisible_skips(mock_spritesheet):
     """update() returns early when is_visible is False."""
     npc = NPC((48, 48), wander_radius=5)
@@ -360,6 +365,7 @@ def test_emote_manager_fallback_path():
     assert hasattr(em, 'frames_grid')
 
 
+@pytest.mark.tc("TC-EMO-01")
 def test_emote_manager_spritesheet_error():
     """EmoteManager handles SpriteSheet load error gracefully."""
     player = MagicMock()
@@ -391,6 +397,7 @@ def test_emote_trigger_unknown_name():
     group.empty.assert_not_called()
 
 
+@pytest.mark.tc("TC-EMO-02")
 def test_emote_manager_chaining():
     """Triggering a new emote should clear the previous one (TC-EM-01)."""
     player = MagicMock()

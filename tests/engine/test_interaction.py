@@ -30,6 +30,8 @@ def interaction_setup():
 # Cooldown & basic state
 # ---------------------------------------------------------------------------
 
+@pytest.mark.tc("CHEST-I-11")
+@pytest.mark.tc("CHEST-I-12")
 def test_interaction_cooldown():
     game = MagicMock()
     im = InteractionManager(game)
@@ -65,6 +67,8 @@ def test_emote_interruption():
 # Orientation & facing helpers
 # ---------------------------------------------------------------------------
 
+@pytest.mark.tc("INT-I-01")
+@pytest.mark.tc("WS-007")
 def test_interaction_orientation():
     """_verify_orientation respects object front/back."""
     im = InteractionManager(MagicMock())
@@ -99,6 +103,7 @@ def test_facing_toward():
     assert im._facing_toward(p_pos, 'up', pygame.math.Vector2(100, 150)) is False
 
 
+@pytest.mark.tc("INT-I-03")
 def test_verify_orientation_door_relaxed():
     """Open door allows approach from any side."""
     im = InteractionManager(MagicMock())
@@ -116,6 +121,7 @@ def test_verify_orientation_door_relaxed():
 # Interaction: pickups
 # ---------------------------------------------------------------------------
 
+@pytest.mark.tc("IT-PICK-001")
 def test_handle_interaction_pickup():
     game = MagicMock()
     im = InteractionManager(game)
@@ -138,6 +144,8 @@ def test_handle_interaction_pickup():
         assert pickup.kill.called
 
 
+@pytest.mark.tc("TC-EMO-03")
+@pytest.mark.tc("IT-PICK-002")
 def test_handle_interaction_pickup_partial():
     """Partial pickup updates quantity and triggers frustration emote."""
     game = MagicMock()
@@ -166,6 +174,9 @@ def test_handle_interaction_pickup_partial():
 # Interaction: NPC
 # ---------------------------------------------------------------------------
 
+@pytest.mark.tc("CHEST-I-10")
+@pytest.mark.tc("IT-N-01")
+@pytest.mark.tc("IT-INT-01")
 def test_handle_interaction_npc():
     game = MagicMock()
     im = InteractionManager(game)
@@ -237,6 +248,7 @@ def test_handle_interaction_object():
 # Interaction: chest
 # ---------------------------------------------------------------------------
 
+@pytest.mark.tc("CHEST-I-01")
 def test_handle_interaction_chest_opens_ui():
     game = MagicMock()
     im = InteractionManager(game)
@@ -321,6 +333,8 @@ def test_chest_auto_close_wrong_orientation():
     assert im._open_chest_entity is None
 
 
+@pytest.mark.tc("CHEST-I-07")
+@pytest.mark.tc("CHEST-I-08")
 def test_chest_proximity_emote_logic():
     game = MagicMock()
     im = InteractionManager(game)
@@ -351,6 +365,7 @@ def test_chest_proximity_emote_logic():
 # Diagonal rejection / orthogonal acceptance
 # ---------------------------------------------------------------------------
 
+@pytest.mark.tc("INT-I-02")
 def test_pickup_diagonal_rejection(interaction_setup):
     game, im = interaction_setup
     with patch('pygame.key.get_pressed', return_value={Settings.INTERACT_KEY: True}):
@@ -381,6 +396,7 @@ def test_pickup_orthogonal_acceptance(interaction_setup):
         assert pickup.kill.called
 
 
+@pytest.mark.tc("INT-I-04")
 def test_anywhere_object_diagonal_rejection(interaction_setup):
     game, im = interaction_setup
     with patch('pygame.key.get_pressed', return_value={Settings.INTERACT_KEY: True}):
@@ -421,6 +437,7 @@ def test_pickup_proximity_emote_diagonal_rejection(interaction_setup):
     assert not game.player.playerEmote.called
 
 
+@pytest.mark.tc("CHEST-I-09")
 def test_pickup_proximity_emote_orthogonal_acceptance(interaction_setup):
     game, im = interaction_setup
     pickup = MagicMock()
@@ -493,6 +510,11 @@ def test_interaction_is_collidable():
     game.obstacles_group = [mock_obs]
     assert im.is_collidable(0.0, 0.0) is True
 
+@pytest.mark.tc("CORE-T-01")
+@pytest.mark.tc("CORE-T-02")
+@pytest.mark.tc("WS-008")
+@pytest.mark.tc("WS-009")
+@pytest.mark.tc("WS-010")
 def test_interaction_check_teleporters():
     game = MagicMock()
     im = InteractionManager(game)
@@ -510,6 +532,8 @@ def test_interaction_check_teleporters():
     im.check_teleporters(was_moving=True)
     game.transition_map.assert_called_with("next_map.tmj", "spawn_2", "fade")
 
+@pytest.mark.tc("INT-I-05")
+@pytest.mark.tc("IT-INT-02")
 def test_interaction_toggle_entity_by_id():
     game = MagicMock()
     im = InteractionManager(game)

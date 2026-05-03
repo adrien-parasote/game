@@ -398,34 +398,34 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 
 | ID | Composant | Input | Expected Output |
 |---|---|---|---|
-| TC-001 | `list_slots()` | Dossier `saves/` vide | `[None, None, None]` |
-| TC-002 | `save(1, game)` | Game avec map + inventory | Fichier `saves/slot_1.json` créé, `version` correct |
-| TC-003 | `load(1)` | Slot 1 existant | `SaveData` avec `player.map_name` correct |
-| TC-004 | `load(2)` | Slot 2 vide | `None` |
-| TC-005 | `load(1)` | JSON corrompu | `None` + log WARNING |
-| TC-006 | `delete(1)` | Slot 1 existant | Fichier supprimé, `slot_exists(1) == False` |
-| TC-007 | Inventory roundtrip | Item dans slot 3, equip LEFT_HAND | Après load, `slots[3].id == "sword_iron"`, `equipment["LEFT_HAND"].id == "sword_iron"` |
-| TC-008 | WorldState roundtrip | `world_state = {"key": {"is_on": True}}` | Après load, `world_state.get("key")["is_on"] == True` |
+| GF-001 | `list_slots()` | Dossier `saves/` vide | `[None, None, None]` |
+| GF-002 | `save(1, game)` | Game avec map + inventory | Fichier `saves/slot_1.json` créé, `version` correct |
+| GF-003 | `load(1)` | Slot 1 existant | `SaveData` avec `player.map_name` correct |
+| GF-004 | `load(2)` | Slot 2 vide | `None` |
+| GF-005 | `load(1)` | JSON corrompu | `None` + log WARNING |
+| GF-006 | `delete(1)` | Slot 1 existant | Fichier supprimé, `slot_exists(1) == False` |
+| GF-007 | Inventory roundtrip | Item dans slot 3, equip LEFT_HAND | Après load, `slots[3].id == "sword_iron"`, `equipment["LEFT_HAND"].id == "sword_iron"` |
+| GF-008 | WorldState roundtrip | `world_state = {"key": {"is_on": True}}` | Après load, `world_state.get("key")["is_on"] == True` |
 
 ### Unit Tests — `TitleScreen`
 
 | ID | Composant | Input | Expected Output |
 |---|---|---|---|
-| TC-009 | `handle_event()` | MOUSEBUTTONDOWN sur bouton "Nouvelle Partie" | `GameEvent.NEW_GAME` |
-| TC-010 | `handle_event()` | MOUSEBUTTONDOWN sur bouton "Charger" | Transition vers `LOAD_MENU` (state interne) |
-| TC-011 | `handle_event()` | MOUSEBUTTONDOWN sur bouton "Quitter" | `GameEvent.QUIT` |
-| TC-012 | `handle_event()` | KEYDOWN K_ESCAPE depuis `LOAD_MENU` | Retour vers `MAIN_MENU` |
-| TC-013 | `handle_event()` | Clic sur slot 2 en `LOAD_MENU` | `GameEvent.LOAD_GAME` avec `slot_id=2` |
+| GF-009 | `handle_event()` | MOUSEBUTTONDOWN sur bouton "Nouvelle Partie" | `GameEvent.NEW_GAME` |
+| GF-010 | `handle_event()` | MOUSEBUTTONDOWN sur bouton "Charger" | Transition vers `LOAD_MENU` (state interne) |
+| GF-011 | `handle_event()` | MOUSEBUTTONDOWN sur bouton "Quitter" | `GameEvent.QUIT` |
+| GF-012 | `handle_event()` | KEYDOWN K_ESCAPE depuis `LOAD_MENU` | Retour vers `MAIN_MENU` |
+| GF-013 | `handle_event()` | Clic sur slot 2 en `LOAD_MENU` | `GameEvent.LOAD_GAME` avec `slot_id=2` |
 
 ### Unit Tests — `GameStateManager`
 
 | ID | Composant | Input | Expected Output |
 |---|---|---|---|
-| TC-014 | `_handle_events()` | `pygame.QUIT` | `pygame.quit()` appelé |
-| TC-015 | ESC en `PLAYING` | `K_ESCAPE` event | `state == GameState.PAUSED` |
-| TC-016 | ESC en `PAUSED` | `K_ESCAPE` event | `state == GameState.PLAYING` |
-| TC-017 | `_transition_to_playing(None)` | New game | `game._load_map()` appelé avec default_map |
-| TC-018 | `_transition_to_playing(1)` | Slot 1 existant | `save_manager.load(1)` appelé, state = PLAYING |
+| GF-014 | `_handle_events()` | `pygame.QUIT` | `pygame.quit()` appelé |
+| GF-015 | ESC en `PLAYING` | `K_ESCAPE` event | `state == GameState.PAUSED` |
+| GF-016 | ESC en `PAUSED` | `K_ESCAPE` event | `state == GameState.PLAYING` |
+| GF-017 | `_transition_to_playing(None)` | New game | `game._load_map()` appelé avec default_map |
+| GF-018 | `_transition_to_playing(1)` | Slot 1 existant | `save_manager.load(1)` appelé, state = PLAYING |
 
 ### Integration Tests
 
@@ -471,21 +471,21 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-001 | `test_save_creates_file` | `../../tests/engine/test_save_manager.py:L68` |
-| TC-002 | `test_load_existing_slot` | `../../tests/engine/test_save_manager.py:L87` |
-| TC-003 | `test_load_empty_slot_returns_none` | `../../tests/engine/test_save_manager.py:L102` |
-| TC-004 | `test_load_corrupted_json_returns_none` | `../../tests/engine/test_save_manager.py:L110` |
-| TC-005 | `test_delete_slot` | `../../tests/engine/test_save_manager.py:L128` |
-| TC-006 | `test_slot_id_out_of_range_raises` | `../../tests/engine/test_save_manager.py:L177` |
-| TC-007 | `test_list_slots_empty` | `../../tests/engine/test_save_manager.py:L60` |
-| TC-008 | `test_list_slots_reflects_saved` | `../../tests/engine/test_save_manager.py:L186` |
-| TC-009 | `test_inventory_roundtrip` | `../../tests/engine/test_save_manager.py:L141` |
-| TC-010 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py:L162` |
-| TC-011 | `test_save_io_error_does_not_crash` | `../../tests/engine/test_save_manager.py:L200` |
-| TC-012 | `test_game_ui_toggles` | `../../tests/engine/test_game.py:L61` |
-| TC-013 | `test_game_update_loop` | `../../tests/engine/test_game.py:L147` |
-| TC-014 | `test_update_dialogue_branch` | `../../tests/engine/test_game.py:L339` |
-| TC-015 | `test_update_inventory_branch` | `../../tests/engine/test_game.py:L353` |
-| TC-016 | `test_update_chest_branch` | `../../tests/engine/test_game.py:L367` |
-| TC-017 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py:L403` |
-| TC-018 | `test_game_transition_map_fade` | `../../tests/engine/test_game.py:L204` |
+| GF-001 | `test_save_creates_file` | `../../tests/engine/test_save_manager.py:L68` |
+| GF-002 | `test_load_existing_slot` | `../../tests/engine/test_save_manager.py:L87` |
+| GF-003 | `test_load_empty_slot_returns_none` | `../../tests/engine/test_save_manager.py:L102` |
+| GF-004 | `test_load_corrupted_json_returns_none` | `../../tests/engine/test_save_manager.py:L110` |
+| GF-005 | `test_delete_slot` | `../../tests/engine/test_save_manager.py:L128` |
+| GF-006 | `test_slot_id_out_of_range_raises` | `../../tests/engine/test_save_manager.py:L177` |
+| GF-007 | `test_list_slots_empty` | `../../tests/engine/test_save_manager.py:L60` |
+| GF-008 | `test_list_slots_reflects_saved` | `../../tests/engine/test_save_manager.py:L186` |
+| GF-009 | `test_inventory_roundtrip` | `../../tests/engine/test_save_manager.py:L141` |
+| GF-010 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py:L162` |
+| GF-011 | `test_save_io_error_does_not_crash` | `../../tests/engine/test_save_manager.py:L200` |
+| GF-012 | `test_game_ui_toggles` | `../../tests/engine/test_game.py:L61` |
+| GF-013 | `test_game_update_loop` | `../../tests/engine/test_game.py:L147` |
+| GF-014 | `test_update_dialogue_branch` | `../../tests/engine/test_game.py:L339` |
+| GF-015 | `test_update_inventory_branch` | `../../tests/engine/test_game.py:L353` |
+| GF-016 | `test_update_chest_branch` | `../../tests/engine/test_game.py:L367` |
+| GF-017 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py:L403` |
+| GF-018 | `test_game_transition_map_fade` | `../../tests/engine/test_game.py:L204` |

@@ -35,12 +35,14 @@ def make_player(capacity=28):
 # Existing tests (unchanged)
 # ---------------------------------------------------------------------------
 
+@pytest.mark.tc("CHEST-U-01")
 def test_initial_state():
     ui = ChestUI()
     assert not ui.is_open
     assert ui._chest_entity is None
 
 
+@pytest.mark.tc("CHEST-U-02")
 def test_open_sets_state():
     ui = ChestUI()
     dummy_entity = object()
@@ -50,6 +52,7 @@ def test_open_sets_state():
     assert ui._chest_entity is dummy_entity
 
 
+@pytest.mark.tc("CHEST-U-03")
 def test_close_resets_state():
     ui = ChestUI()
     ui.open(object(), make_player())
@@ -64,6 +67,8 @@ def test_close_when_already_closed_is_idempotent():
     assert not ui.is_open
 
 
+@pytest.mark.tc("CHEST-U-04")
+@pytest.mark.tc("CHEST-U-06")
 def test_draw_noop_when_closed(monkeypatch):
     ui = ChestUI()
     screen = make_screen()
@@ -72,6 +77,8 @@ def test_draw_noop_when_closed(monkeypatch):
     assert pygame.image.tobytes(screen, "RGB") == pygame.image.tobytes(before, "RGB")
 
 
+@pytest.mark.tc("CHEST-U-05")
+@pytest.mark.tc("CHEST-U-07")
 def test_draw_when_open_and_assets_present(monkeypatch):
     ui = ChestUI()
     dummy_bg = pygame.Surface((900, 300))
@@ -88,6 +95,7 @@ def test_draw_when_open_and_assets_present(monkeypatch):
     assert screen.get_at((midx, midy))[:3] == (255, 0, 0)
 
 
+@pytest.mark.tc("CHEST-U-10")
 def test_load_background_missing_file(monkeypatch, caplog):
     ui = ChestUI()
     monkeypatch.setattr("src.ui.chest.ASSET_CHEST_BG", "nonexistent.png")
@@ -96,6 +104,7 @@ def test_load_background_missing_file(monkeypatch, caplog):
     assert any("failed" in rec.message.lower() for rec in caplog.records)
 
 
+@pytest.mark.tc("CHEST-U-11")
 def test_load_slot_image_missing_file(monkeypatch, caplog):
     ui = ChestUI()
     monkeypatch.setattr("src.ui.chest.ASSET_SLOT_IMG", "nonexistent.png")
@@ -104,6 +113,7 @@ def test_load_slot_image_missing_file(monkeypatch, caplog):
     assert any("failed" in rec.message.lower() for rec in caplog.records)
 
 
+@pytest.mark.tc("CHEST-T-12")
 def test_update_hover_hit():
     """update_hover sets _hovered_chest_slot when mouse is over a chest slot."""
     ui = ChestUI()
@@ -177,6 +187,8 @@ def test_arrow_up_rect_is_left_of_down():
     assert ui._arrow_up_rect.left < ui._arrow_down_rect.left
 
 
+@pytest.mark.tc("CHEST-T-10")
+@pytest.mark.tc("CHEST-T-11")
 def test_update_hover_chest_arrows():
     """update_hover sets _hovered_chest_arrow when mouse is over chest arrow buttons."""
     ui = ChestUI()
@@ -518,6 +530,7 @@ class TestTransferDraggedToChest:
         assert ui._chest_entity.contents[0] == {"item_id": "sword", "quantity": 1}
         assert ui._player.inventory.slots[0].id == "shield"
 
+    @pytest.mark.tc("CHEST-T-08")
     def test_no_dragging_noop(self):
         ui = _chest_ui()
         ui._dragging_item = None
@@ -620,6 +633,8 @@ class TestTransferInventoryToChestStacking:
 # ---------------------------------------------------------------------------
 
 class TestDrawSlotsWithItems:
+    @pytest.mark.tc("CHEST-U-08")
+    @pytest.mark.tc("CHEST-U-09")
     def test_draw_chest_slots_with_items(self):
         """Drawing chest slots with items renders quantity badges."""
         ui = _chest_ui()
@@ -888,6 +903,7 @@ def chest_ui():
     ui.is_open = True
     return ui
 
+@pytest.mark.tc("CHEST-T-01")
 def test_transfer_chest_to_inventory_success(chest_ui):
     # Setup chest contents
     chest_ui._chest_entity.contents = [{"item_id": "sword", "quantity": 1}]
@@ -899,6 +915,7 @@ def test_transfer_chest_to_inventory_success(chest_ui):
     assert sum(1 for e in chest_ui._chest_entity.contents if e is not None) == 0
     assert chest_ui._player.inventory.slots[0].id == "sword"
 
+@pytest.mark.tc("CHEST-T-02")
 def test_transfer_chest_to_inventory_stacking(chest_ui):
     # Setup inventory with some items
     inv = chest_ui._player.inventory
@@ -914,6 +931,7 @@ def test_transfer_chest_to_inventory_stacking(chest_ui):
     assert sum(1 for e in chest_ui._chest_entity.contents if e is not None) == 0
     assert inv.slots[0].quantity == 7
 
+@pytest.mark.tc("CHEST-T-03")
 def test_transfer_chest_to_inventory_full(chest_ui):
     # Fill inventory
     inv = chest_ui._player.inventory
@@ -930,6 +948,7 @@ def test_transfer_chest_to_inventory_full(chest_ui):
     assert sum(1 for e in chest_ui._chest_entity.contents if e is not None) == 1
     assert chest_ui._chest_entity.contents[0]["quantity"] == 10
 
+@pytest.mark.tc("CHEST-T-04")
 def test_transfer_inventory_to_chest_success(chest_ui):
     # Setup inventory
     inv = chest_ui._player.inventory
@@ -944,6 +963,7 @@ def test_transfer_inventory_to_chest_success(chest_ui):
     assert chest_ui._chest_entity.contents[0]["item_id"] == "coin"
     assert chest_ui._chest_entity.contents[0]["quantity"] == 10
 
+@pytest.mark.tc("CHEST-T-05")
 def test_transfer_inventory_to_chest_full(chest_ui):
     # Fill chest
     from src.engine.loot_table import CHEST_MAX_SLOTS
@@ -964,6 +984,8 @@ def test_transfer_inventory_to_chest_full(chest_ui):
 # Manual Drag & Drop tests
 # -----------------------------------------------------------------------
 
+@pytest.mark.tc("CHEST-T-06")
+@pytest.mark.tc("CHEST-T-09")
 def test_manual_drag_chest_to_inventory(chest_ui):
     # Setup
     chest_ui._chest_entity.contents = [{"item_id": "sword", "quantity": 1}]
@@ -993,6 +1015,7 @@ def test_manual_drag_chest_to_inventory(chest_ui):
     assert sum(1 for e in chest_ui._chest_entity.contents if e is not None) == 0
     assert chest_ui._player.inventory.slots[0].id == "sword"
 
+@pytest.mark.tc("CHEST-T-07")
 def test_manual_drag_inventory_to_chest_stacking(chest_ui):
     # Setup
     inv = chest_ui._player.inventory

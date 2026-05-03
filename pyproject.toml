@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+markers = [
+    "tc(id): Spec test case traceability marker — links test to a TC-ID in docs/specs/",
+]

@@ -45,6 +45,7 @@ def _mock_time_system(hour: int, minute: int = 0, brightness: float = 1.0,
 # LT-001: Window position cache
 # ------------------------------------------------------------------
 
+@pytest.mark.tc("LT-001")
 def test_map_manager_window_cache_lt001():
     """LT-001: MapManager caches window positions based on tile type."""
     mock_map_data = {
@@ -69,6 +70,7 @@ def test_map_manager_window_cache_lt001():
 # LT-002: Beam color sync
 # ------------------------------------------------------------------
 
+@pytest.mark.tc("LT-002")
 def test_lighting_beam_color_sync_lt003():
     """LT-002: Beam color syncs with brightness via _lerp_color."""
     cool = (160, 180, 255)
@@ -85,6 +87,7 @@ def test_lighting_beam_color_sync_lt003():
 # LT-004: Night overlay
 # ------------------------------------------------------------------
 
+@pytest.mark.tc("LT-004")
 def test_lighting_night_overlay_lt004():
     """LT-004: Night overlay creates a surface with the correct alpha."""
     time_system = TimeSystem()
@@ -266,6 +269,7 @@ class TestCreateBeamSurface:
 # Beam cache
 # ------------------------------------------------------------------
 
+@pytest.mark.tc("LT-012")
 def test_beam_cache_reuses_surface():
     """Calling _get_beam_surface_for_time twice with same state returns same object."""
     ts = _mock_time_system(hour=12, brightness=1.0, night_alpha=0)

@@ -7,6 +7,7 @@ from src.engine.asset_manager import AssetManager
 from src.config import Settings
 
 @patch('src.engine.game.Game._load_map')
+@pytest.mark.tc("CORE-C-01")
 def test_game_initialization(mock_load):
     game = Game()
     assert game.player is not None
@@ -15,6 +16,7 @@ def test_game_initialization(mock_load):
 
 @patch('os.path.exists', return_value=True)
 @patch('src.map.tmj_parser.TmjParser.load_map')
+@pytest.mark.tc("DBG-MAP")
 def test_game_actual_load_map(mock_load_map, mock_exists):
     mock_load_map.return_value = {
         "width": 10, "height": 10,
@@ -58,6 +60,7 @@ def test_game_actual_load_map(mock_load_map, mock_exists):
         assert game.player.pos.y == 32
 
 @patch('src.engine.game.Game._load_map')
+@pytest.mark.tc("GF-012")
 def test_game_ui_toggles(mock_load):
     game = Game()
     from src.config import Settings
@@ -77,6 +80,7 @@ def test_game_ui_toggles(mock_load):
         assert not game.inventory_ui.is_open
 
 @patch('src.engine.game.Game._load_map')
+@pytest.mark.tc("WS-006")
 def test_game_entity_spawning(mock_load):
     game = Game()
     # Mock a Tiled object
@@ -144,6 +148,7 @@ def test_asset_manager_font_error():
         font = am.get_font('missing.ttf', 12)
         assert font is not None # Returns fallback None font
 @patch('src.engine.game.Game._load_map')
+@pytest.mark.tc("GF-013")
 def test_game_update_loop(mock_load):
     game = Game()
     # Mock subsystems to avoid complex logic
@@ -159,6 +164,9 @@ def test_game_update_loop(mock_load):
     assert game.visible_sprites.update.called
 
 @patch('src.engine.game.Game._load_map')
+@pytest.mark.tc("CORE-R-01")
+@pytest.mark.tc("CORE-R-02")
+@pytest.mark.tc("CORE-R-03")
 def test_game_draw_loop(mock_load):
     game = Game()
     # Mock subsystems
@@ -201,6 +209,7 @@ class DummySprite(pygame.sprite.Sprite):
 
 
 @patch('src.engine.game.Game._load_map')
+@pytest.mark.tc("GF-018")
 def test_game_transition_map_fade(mock_load):
     game = Game()
     game.clock = MagicMock()
@@ -290,6 +299,7 @@ def test_load_map_file_not_found(mock_load):
 
 
 @patch('src.engine.game.Game._load_map')
+@pytest.mark.tc("DBG-SPAWN")
 def test_spawn_entities_initial_spawn_skipped(mock_load):
     """_spawn_entities skips entities with is_initial_spawn=True."""
     game = Game()
@@ -336,6 +346,8 @@ def test_transition_map_missing_file(mock_load):
 
 
 @patch('src.engine.game.Game._load_map')
+@pytest.mark.tc("CORE-H-01")
+@pytest.mark.tc("GF-014")
 def test_update_dialogue_branch(mock_load):
     """_update advances dialogue when dialogue is active."""
     game = Game()
@@ -350,6 +362,7 @@ def test_update_dialogue_branch(mock_load):
 
 
 @patch('src.engine.game.Game._load_map')
+@pytest.mark.tc("GF-015")
 def test_update_inventory_branch(mock_load):
     """_update calls inventory_ui.update when inventory is open."""
     game = Game()
@@ -364,6 +377,7 @@ def test_update_inventory_branch(mock_load):
 
 
 @patch('src.engine.game.Game._load_map')
+@pytest.mark.tc("GF-016")
 def test_update_chest_branch(mock_load):
     """_update handles chest_ui open state (player can still move)."""
     game = Game()
@@ -400,6 +414,8 @@ def test_handle_events_quit(mock_load):
 
 
 @patch('src.engine.game.Game._load_map')
+@pytest.mark.tc("CORE-H-02")
+@pytest.mark.tc("GF-017")
 def test_handle_events_dialogue_advance(mock_load):
     """_handle_events advances dialogue on INTERACT_KEY."""
     from src.config import Settings
@@ -506,6 +522,8 @@ import unittest.mock
 # --- Config / Settings ---
 
 
+@pytest.mark.tc("DBG-CONF")
+@pytest.mark.tc("TC-FONT-01")
 def test_settings_load():
     """Verify settings load defaults and handles missing files."""
     Settings.load()
@@ -513,6 +531,8 @@ def test_settings_load():
     assert Settings.WINDOW_WIDTH > 0
     assert Settings.TILE_SIZE == 32
 
+@pytest.mark.tc("TC-FONT-02")
+@pytest.mark.tc("TC-FONT-03")
 def test_font_tiers_exist():
     """Verify the three font tiers are defined in settings."""
     assert hasattr(Settings, "FONT_NOBLE")

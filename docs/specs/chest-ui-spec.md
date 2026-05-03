@@ -338,51 +338,51 @@ class ChestUI:
 
 | Test ID | Component | Input | Expected Output | Edge Case |
 |---------|-----------|-------|-----------------|-----------|
-| TC-U-01 | `ChestUI.__init__` | Normal init | `is_open=False`, `_chest_entity=None` | — |
-| TC-U-02 | `ChestUI.open` | Valid entity | `is_open=True`, `_chest_entity=entity` | — |
-| TC-U-03 | `ChestUI.close` | After open | `is_open=False`, `_chest_entity=None` | Call on already-closed UI |
-| TC-U-04 | `ChestUI.draw` | `is_open=False` | No `blit` calls | — |
-| TC-U-05 | `ChestUI.draw` | `is_open=True`, valid bg | `screen.blit` called | — |
-| TC-U-06 | `ChestUI.draw` | `is_open=True`, `_bg=None` | No `blit` calls | Asset error path |
-| TC-U-07 | `ChestUI._draw_title` | Called when open | `noble_font.render("coffre", ...)` called | — |
-| TC-U-08 | `ChestUI._draw_slots` | `slot_size=0` | No `blit` calls | Zero div guard |
-| TC-U-09 | `ChestUI._draw_slots` | `slot_img=None` | Falls back to `pygame.draw.rect` | Missing asset |
-| TC-U-10 | `_load_background` | `pygame.error` raised | Returns `None` | File not found |
-| TC-U-11 | `_load_slot_image` | `FileNotFoundError` raised | Returns `None` | Headless / missing |
+| CHEST-U-01 | `ChestUI.__init__` | Normal init | `is_open=False`, `_chest_entity=None` | — |
+| CHEST-U-02 | `ChestUI.open` | Valid entity | `is_open=True`, `_chest_entity=entity` | — |
+| CHEST-U-03 | `ChestUI.close` | After open | `is_open=False`, `_chest_entity=None` | Call on already-closed UI |
+| CHEST-U-04 | `ChestUI.draw` | `is_open=False` | No `blit` calls | — |
+| CHEST-U-05 | `ChestUI.draw` | `is_open=True`, valid bg | `screen.blit` called | — |
+| CHEST-U-06 | `ChestUI.draw` | `is_open=True`, `_bg=None` | No `blit` calls | Asset error path |
+| CHEST-U-07 | `ChestUI._draw_title` | Called when open | `noble_font.render("coffre", ...)` called | — |
+| CHEST-U-08 | `ChestUI._draw_slots` | `slot_size=0` | No `blit` calls | Zero div guard |
+| CHEST-U-09 | `ChestUI._draw_slots` | `slot_img=None` | Falls back to `pygame.draw.rect` | Missing asset |
+| CHEST-U-10 | `_load_background` | `pygame.error` raised | Returns `None` | File not found |
+| CHEST-U-11 | `_load_slot_image` | `FileNotFoundError` raised | Returns `None` | Headless / missing |
 
 ### Transfer Tests — `../../tests/test_transfer_logic.py` (NEW v1.2)
 
 | Test ID | Flow | Setup | Expected |
 |---------|------|-------|----------|
-| TC-T-01 | Auto: Chest → Inv | 1 item in chest | Item moved to inv slot 0, chest empty |
-| TC-T-02 | Auto: Chest → Inv stacking | 1 item in inv, same in chest | Quantities merged, chest empty |
-| TC-T-03 | Auto: Chest → Inv, inv full | 5 items in full inv | Chest unchanged |
-| TC-T-04 | Auto: Inv → Chest | 1 item in inv | Item moved to chest, inv slot cleared |
-| TC-T-05 | Auto: Inv → Chest, chest full | Chest at max capacity | Inv unchanged |
-| TC-T-06 | D&D: Chest slot → Inv panel | Drag item, drop on inv_bg_rect | Chest empty, inv has item |
-| TC-T-07 | D&D: Inv slot → Chest panel, stacking | Same item in chest + inv | Quantities merged |
-| TC-T-08 | D&D: Click empty slot | No item at position | `_dragging_item` stays None |
-| TC-T-09 | D&D: Cancel (drop outside) | Drop at (0,0) outside panels | Item stays in source |
-| TC-T-10 | Auto buttons: click up_rect | Arrow up clicked | `_transfer_chest_to_inventory` called |
-| TC-T-11 | Auto buttons: click down_rect | Arrow down clicked | `_transfer_inventory_to_chest` called |
-| TC-T-12 | Hover updates | Mouse over slot/arrow | Correct hover state set |
+| CHEST-T-01 | Auto: Chest → Inv | 1 item in chest | Item moved to inv slot 0, chest empty |
+| CHEST-T-02 | Auto: Chest → Inv stacking | 1 item in inv, same in chest | Quantities merged, chest empty |
+| CHEST-T-03 | Auto: Chest → Inv, inv full | 5 items in full inv | Chest unchanged |
+| CHEST-T-04 | Auto: Inv → Chest | 1 item in inv | Item moved to chest, inv slot cleared |
+| CHEST-T-05 | Auto: Inv → Chest, chest full | Chest at max capacity | Inv unchanged |
+| CHEST-T-06 | D&D: Chest slot → Inv panel | Drag item, drop on inv_bg_rect | Chest empty, inv has item |
+| CHEST-T-07 | D&D: Inv slot → Chest panel, stacking | Same item in chest + inv | Quantities merged |
+| CHEST-T-08 | D&D: Click empty slot | No item at position | `_dragging_item` stays None |
+| CHEST-T-09 | D&D: Cancel (drop outside) | Drop at (0,0) outside panels | Item stays in source |
+| CHEST-T-10 | Auto buttons: click up_rect | Arrow up clicked | `_transfer_chest_to_inventory` called |
+| CHEST-T-11 | Auto buttons: click down_rect | Arrow down clicked | `_transfer_inventory_to_chest` called |
+| CHEST-T-12 | Hover updates | Mouse over slot/arrow | Correct hover state set |
 
 ### Integration Tests — `../../tests/test_interaction.py`
 
 | Test ID | Flow | Setup | Verification |
 |---------|------|-------|--------------|
-| TC-I-01 | Chest open via E | Player in range, E pressed, chest is_on=True | `game.chest_ui.open` called once with entity |
-| TC-I-02 | Auto-close: out of range | `_open_chest_entity` set, player at (500,500) | `game.chest_ui.close()` called |
-| TC-I-03 | Auto-close: in range | `_open_chest_entity` set, player in valid zone | `close()` NOT called |
-| TC-I-04 | Auto-close: no entity | `_open_chest_entity=None` | No error, no close |
-| TC-I-05 | Auto-close: no chest_ui attr | `game = MagicMock(spec=[])` | No `AttributeError` |
-| TC-I-06 | Auto-close: already closed | `chest_ui.is_open=False` | `_open_chest_entity → None` |
-| TC-I-07 | Emote: closed chest | Chest `is_on=False`, player in range | `playerEmote('interact')` called |
-| TC-I-08 | Emote: open chest | Chest `is_on=True`, player in range | Emote suppressed |
-| TC-I-09 | Pickup proximity emote | Pickup in range, player facing | `playerEmote('question')` called |
-| TC-I-10 | NPC proximity emote | NPC in range, player facing | `playerEmote('interact')` called |
-| TC-I-11 | Skip: player moving | `player.is_moving=True`, E pressed | No interaction triggered |
-| TC-I-12 | Skip: cooldown active | `_interaction_cooldown=0.3`, E pressed | No interaction triggered |
+| CHEST-I-01 | Chest open via E | Player in range, E pressed, chest is_on=True | `game.chest_ui.open` called once with entity |
+| CHEST-I-02 | Auto-close: out of range | `_open_chest_entity` set, player at (500,500) | `game.chest_ui.close()` called |
+| CHEST-I-03 | Auto-close: in range | `_open_chest_entity` set, player in valid zone | `close()` NOT called |
+| CHEST-I-04 | Auto-close: no entity | `_open_chest_entity=None` | No error, no close |
+| CHEST-I-05 | Auto-close: no chest_ui attr | `game = MagicMock(spec=[])` | No `AttributeError` |
+| CHEST-I-06 | Auto-close: already closed | `chest_ui.is_open=False` | `_open_chest_entity → None` |
+| CHEST-I-07 | Emote: closed chest | Chest `is_on=False`, player in range | `playerEmote('interact')` called |
+| CHEST-I-08 | Emote: open chest | Chest `is_on=True`, player in range | Emote suppressed |
+| CHEST-I-09 | Pickup proximity emote | Pickup in range, player facing | `playerEmote('question')` called |
+| CHEST-I-10 | NPC proximity emote | NPC in range, player facing | `playerEmote('interact')` called |
+| CHEST-I-11 | Skip: player moving | `player.is_moving=True`, E pressed | No interaction triggered |
+| CHEST-I-12 | Skip: cooldown active | `_interaction_cooldown=0.3`, E pressed | No interaction triggered |
 
 **Coverage target:** ≥80% per file.
 
@@ -443,38 +443,38 @@ Residual ambiguity: exact pixel fractions for the image zones (Assumption A-04).
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-U-01 | `test_initial_state` | `../../tests/ui/test_chest.py:L38` |
-| TC-U-02 | `test_open_sets_state` | `../../tests/ui/test_chest.py:L44` |
-| TC-U-03 | `test_close_resets_state` | `../../tests/ui/test_chest.py:L53` |
-| TC-U-04 | `test_draw_noop_when_closed` | `../../tests/ui/test_chest.py:L67` |
-| TC-U-05 | `test_draw_when_open_and_assets_present` | `../../tests/ui/test_chest.py:L75` |
-| TC-U-06 | `test_draw_noop_when_closed` | `../../tests/ui/test_chest.py:L67` |
-| TC-U-07 | `test_draw_when_open_and_assets_present` | `../../tests/ui/test_chest.py:L75` |
-| TC-U-08 | `test_draw_chest_slots_with_items` | `../../tests/ui/test_chest.py:L623` |
-| TC-U-09 | `test_draw_chest_slots_with_items` | `../../tests/ui/test_chest.py:L623` |
-| TC-U-10 | `test_load_background_missing_file` | `../../tests/ui/test_chest.py:L91` |
-| TC-U-11 | `test_load_slot_image_missing_file` | `../../tests/ui/test_chest.py:L99` |
-| TC-T-01 | `test_transfer_chest_to_inventory_success` | `../../tests/ui/test_chest.py:L891` |
-| TC-T-02 | `test_transfer_chest_to_inventory_stacking` | `../../tests/ui/test_chest.py:L902` |
-| TC-T-03 | `test_transfer_chest_to_inventory_full` | `../../tests/ui/test_chest.py:L917` |
-| TC-T-04 | `test_transfer_inventory_to_chest_success` | `../../tests/ui/test_chest.py:L933` |
-| TC-T-05 | `test_transfer_inventory_to_chest_full` | `../../tests/ui/test_chest.py:L947` |
-| TC-T-06 | `test_manual_drag_chest_to_inventory` | `../../tests/ui/test_chest.py:L967` |
-| TC-T-07 | `test_manual_drag_inventory_to_chest_stacking` | `../../tests/ui/test_chest.py:L996` |
-| TC-T-08 | `test_no_dragging_noop` | `../../tests/ui/test_chest.py:L521` |
-| TC-T-09 | `test_manual_drag_chest_to_inventory` | `../../tests/ui/test_chest.py:L967` |
-| TC-T-10 | `test_update_hover_chest_arrows` | `../../tests/ui/test_chest.py:L180` |
-| TC-T-11 | `test_update_hover_chest_arrows` | `../../tests/ui/test_chest.py:L180` |
-| TC-T-12 | `test_update_hover_hit` | `../../tests/ui/test_chest.py:L107` |
-| TC-I-01 | `test_handle_interaction_chest_opens_ui` | `../../tests/engine/test_interaction.py:L240` |
-| TC-I-02 | `test_chest_auto_close_no_entity` | `../../tests/engine/test_interaction_coverage.py:L216` |
-| TC-I-03 | `test_chest_auto_close_no_entity` | `../../tests/engine/test_interaction_coverage.py:L216` |
-| TC-I-04 | `test_chest_auto_close_no_entity` | `../../tests/engine/test_interaction_coverage.py:L216` |
-| TC-I-05 | `test_chest_auto_close_no_chest_ui` | `../../tests/engine/test_interaction_coverage.py:L223` |
-| TC-I-06 | `test_chest_auto_close_already_closed_ui` | `../../tests/engine/test_interaction_coverage.py:L230` |
-| TC-I-07 | `test_chest_proximity_emote_logic` | `../../tests/engine/test_interaction.py:L324` |
-| TC-I-08 | `test_chest_proximity_emote_logic` | `../../tests/engine/test_interaction.py:L324` |
-| TC-I-09 | `test_pickup_proximity_emote_orthogonal_acceptance` | `../../tests/engine/test_interaction.py:L424` |
-| TC-I-10 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
-| TC-I-11 | `test_interaction_cooldown` | `../../tests/engine/test_interaction.py:L33` |
-| TC-I-12 | `test_interaction_cooldown` | `../../tests/engine/test_interaction.py:L33` |
+| CHEST-U-01 | `test_initial_state` | `../../tests/ui/test_chest.py:L38` |
+| CHEST-U-02 | `test_open_sets_state` | `../../tests/ui/test_chest.py:L44` |
+| CHEST-U-03 | `test_close_resets_state` | `../../tests/ui/test_chest.py:L53` |
+| CHEST-U-04 | `test_draw_noop_when_closed` | `../../tests/ui/test_chest.py:L67` |
+| CHEST-U-05 | `test_draw_when_open_and_assets_present` | `../../tests/ui/test_chest.py:L75` |
+| CHEST-U-06 | `test_draw_noop_when_closed` | `../../tests/ui/test_chest.py:L67` |
+| CHEST-U-07 | `test_draw_when_open_and_assets_present` | `../../tests/ui/test_chest.py:L75` |
+| CHEST-U-08 | `test_draw_chest_slots_with_items` | `../../tests/ui/test_chest.py:L623` |
+| CHEST-U-09 | `test_draw_chest_slots_with_items` | `../../tests/ui/test_chest.py:L623` |
+| CHEST-U-10 | `test_load_background_missing_file` | `../../tests/ui/test_chest.py:L91` |
+| CHEST-U-11 | `test_load_slot_image_missing_file` | `../../tests/ui/test_chest.py:L99` |
+| CHEST-T-01 | `test_transfer_chest_to_inventory_success` | `../../tests/ui/test_chest.py:L891` |
+| CHEST-T-02 | `test_transfer_chest_to_inventory_stacking` | `../../tests/ui/test_chest.py:L902` |
+| CHEST-T-03 | `test_transfer_chest_to_inventory_full` | `../../tests/ui/test_chest.py:L917` |
+| CHEST-T-04 | `test_transfer_inventory_to_chest_success` | `../../tests/ui/test_chest.py:L933` |
+| CHEST-T-05 | `test_transfer_inventory_to_chest_full` | `../../tests/ui/test_chest.py:L947` |
+| CHEST-T-06 | `test_manual_drag_chest_to_inventory` | `../../tests/ui/test_chest.py:L967` |
+| CHEST-T-07 | `test_manual_drag_inventory_to_chest_stacking` | `../../tests/ui/test_chest.py:L996` |
+| CHEST-T-08 | `test_no_dragging_noop` | `../../tests/ui/test_chest.py:L521` |
+| CHEST-T-09 | `test_manual_drag_chest_to_inventory` | `../../tests/ui/test_chest.py:L967` |
+| CHEST-T-10 | `test_update_hover_chest_arrows` | `../../tests/ui/test_chest.py:L180` |
+| CHEST-T-11 | `test_update_hover_chest_arrows` | `../../tests/ui/test_chest.py:L180` |
+| CHEST-T-12 | `test_update_hover_hit` | `../../tests/ui/test_chest.py:L107` |
+| CHEST-I-01 | `test_handle_interaction_chest_opens_ui` | `../../tests/engine/test_interaction.py:L240` |
+| CHEST-I-02 | `test_chest_auto_close_no_entity` | `../../tests/engine/test_interaction_coverage.py:L216` |
+| CHEST-I-03 | `test_chest_auto_close_no_entity` | `../../tests/engine/test_interaction_coverage.py:L216` |
+| CHEST-I-04 | `test_chest_auto_close_no_entity` | `../../tests/engine/test_interaction_coverage.py:L216` |
+| CHEST-I-05 | `test_chest_auto_close_no_chest_ui` | `../../tests/engine/test_interaction_coverage.py:L223` |
+| CHEST-I-06 | `test_chest_auto_close_already_closed_ui` | `../../tests/engine/test_interaction_coverage.py:L230` |
+| CHEST-I-07 | `test_chest_proximity_emote_logic` | `../../tests/engine/test_interaction.py:L324` |
+| CHEST-I-08 | `test_chest_proximity_emote_logic` | `../../tests/engine/test_interaction.py:L324` |
+| CHEST-I-09 | `test_pickup_proximity_emote_orthogonal_acceptance` | `../../tests/engine/test_interaction.py:L424` |
+| CHEST-I-10 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
+| CHEST-I-11 | `test_interaction_cooldown` | `../../tests/engine/test_interaction.py:L33` |
+| CHEST-I-12 | `test_interaction_cooldown` | `../../tests/engine/test_interaction.py:L33` |

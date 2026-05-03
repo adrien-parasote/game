@@ -34,6 +34,7 @@ def test_inventory_load_item_data_json_error():
     assert inv.item_data == {}
 
 
+@pytest.mark.tc("TC-INV-001")
 def test_inventory_add_item_stacks_in_existing_slot():
     """add_item merges into an existing partial stack.
 
@@ -52,6 +53,7 @@ def test_inventory_add_item_stacks_in_existing_slot():
     assert inv.slots[0].quantity == 8
 
 
+@pytest.mark.tc("TC-INV-002")
 def test_inventory_add_item_returns_overflow():
     """add_item returns leftover quantity when inventory is full."""
     inv = Inventory(capacity=2)
@@ -70,6 +72,7 @@ def test_inventory_is_full_false():
     assert inv.is_full() is False
 
 
+@pytest.mark.tc("TC-INV-003")
 def test_inventory_is_full_true():
     """is_full returns True when all slots are occupied."""
     inv = Inventory(capacity=2)
@@ -235,6 +238,7 @@ def test_dialogue_manager_draw():
     dm.draw(screen)
     assert dm.is_active
 
+@pytest.mark.tc("TC-DLG-01")
 def test_dialogue_pagination():
     """Verify that long text is paginated."""
     dm = DialogueManager()

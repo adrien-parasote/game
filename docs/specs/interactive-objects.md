@@ -200,22 +200,22 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 ### Unit Tests Required
 | Test ID | Component | Input | Expected Output | Edge Cases |
 |---------|-----------|-------|-----------------|------------|
-| TC-U-01 | State Toggle | Call `interact()` on OFF object | Sets `is_on` to True, `is_animating` to True | Object is `is_animated=True` |
-| TC-U-02 | Animation Step | `update(dt)` when `is_animating=True` | `frame_index` increments based on speed and `dt` | Time step > animation duration |
-| TC-U-03 | Animation Loop | `update(dt)` past `end_frame` for looping obj | `frame_index` resets to `start_frame` | High frame rate |
-| TC-U-04 | Animation Reverse | `update(dt)` when closing door | `frame_index` decrements towards `start_row` | None |
-| TC-U-05 | Pre-calculated Cache | `halo_size=50` | `light_mask_cache` has exactly 10 surfaces (0.97 to 1.03) | `halo_size=0` |
-| TC-U-06 | Particle Spawn | `update(dt)` with `particles=True` & `is_on=True` | Active particles list is populated up to `particle_count` | dt=0 |
-| TC-U-07 | Particle Cleanup| particle life expires | Removed from active particles list | Empty list |
+| INT-U-01 | State Toggle | Call `interact()` on OFF object | Sets `is_on` to True, `is_animating` to True | Object is `is_animated=True` |
+| INT-U-02 | Animation Step | `update(dt)` when `is_animating=True` | `frame_index` increments based on speed and `dt` | Time step > animation duration |
+| INT-U-03 | Animation Loop | `update(dt)` past `end_frame` for looping obj | `frame_index` resets to `start_frame` | High frame rate |
+| INT-U-04 | Animation Reverse | `update(dt)` when closing door | `frame_index` decrements towards `start_row` | None |
+| INT-U-05 | Pre-calculated Cache | `halo_size=50` | `light_mask_cache` has exactly 10 surfaces (0.97 to 1.03) | `halo_size=0` |
+| INT-U-06 | Particle Spawn | `update(dt)` with `particles=True` & `is_on=True` | Active particles list is populated up to `particle_count` | dt=0 |
+| INT-U-07 | Particle Cleanup| particle life expires | Removed from active particles list | Empty list |
 
 ### Integration Tests Required
 | Test ID | Flow | Setup | Verification | Teardown |
 |---------|------|-------|--------------|----------|
-| TC-I-01 | Proximity Validation | Spawn player at `dir=(0,1)`, object at distance 40px | Press E triggers state change | None |
-| TC-I-02 | Proximity Rejection | Spawn player at `dir=(0,1)`, object at distance 50px | Press E does NOT trigger state change | None |
-| TC-I-03 | Orientation Validation | Open door from 'wrong' side (Relaxed rule) | Valid orientation identified, state toggles to close | None |
-| TC-I-04 | Omni-directional Interaction | `activate_from_anywhere=True`, player facing away | Interaction REJECTED (requires facing) | Boundary at 48px |
-| TC-I-05 | Interaction Chaining | Lever `target_id` points to Door `element_id` | Pulling lever opens door | Recursion depth limit |
+| INT-I-01 | Proximity Validation | Spawn player at `dir=(0,1)`, object at distance 40px | Press E triggers state change | None |
+| INT-I-02 | Proximity Rejection | Spawn player at `dir=(0,1)`, object at distance 50px | Press E does NOT trigger state change | None |
+| INT-I-03 | Orientation Validation | Open door from 'wrong' side (Relaxed rule) | Valid orientation identified, state toggles to close | None |
+| INT-I-04 | Omni-directional Interaction | `activate_from_anywhere=True`, player facing away | Interaction REJECTED (requires facing) | Boundary at 48px |
+| INT-I-05 | Interaction Chaining | Lever `target_id` points to Door `element_id` | Pulling lever opens door | Recursion depth limit |
 
 ## 5. Error Handling Matrix
 
@@ -244,12 +244,12 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 
 | Spec ID | Test Function | File |
 |---------|---------------|------|
-| TC-U-01 | `test_interact_sign_returns_element_id` | `../../tests/entities/test_interactive.py:L97` |
-| TC-U-02 | `test_update_animated_looping_wraps_frame` | `../../tests/entities/test_interactive.py:L116` |
-| TC-U-03 | `test_update_animated_off_resets_frame` | `../../tests/entities/test_interactive.py:L123` |
-| TC-U-04 | `test_update_closing_door_decrements_frame` | `../../tests/entities/test_interactive.py:L130` |
-| TC-I-01 | `test_interaction_orientation` | `../../tests/engine/test_interaction.py:L68` |
-| TC-I-02 | `test_pickup_diagonal_rejection` | `../../tests/engine/test_interaction.py:L354` |
-| TC-I-03 | `test_verify_orientation_door_relaxed` | `../../tests/engine/test_interaction.py:L102` |
-| TC-I-04 | `test_anywhere_object_diagonal_rejection` | `../../tests/engine/test_interaction.py:L384` |
-| TC-I-05 | `test_interaction_toggle_entity_by_id` | `../../tests/engine/test_interaction.py:L513` |
+| INT-U-01 | `test_interact_sign_returns_element_id` | `../../tests/entities/test_interactive.py:L97` |
+| INT-U-02 | `test_update_animated_looping_wraps_frame` | `../../tests/entities/test_interactive.py:L116` |
+| INT-U-03 | `test_update_animated_off_resets_frame` | `../../tests/entities/test_interactive.py:L123` |
+| INT-U-04 | `test_update_closing_door_decrements_frame` | `../../tests/entities/test_interactive.py:L130` |
+| INT-I-01 | `test_interaction_orientation` | `../../tests/engine/test_interaction.py:L68` |
+| INT-I-02 | `test_pickup_diagonal_rejection` | `../../tests/engine/test_interaction.py:L354` |
+| INT-I-03 | `test_verify_orientation_door_relaxed` | `../../tests/engine/test_interaction.py:L102` |
+| INT-I-04 | `test_anywhere_object_diagonal_rejection` | `../../tests/engine/test_interaction.py:L384` |
+| INT-I-05 | `test_interaction_toggle_entity_by_id` | `../../tests/engine/test_interaction.py:L513` |

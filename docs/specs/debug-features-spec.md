@@ -20,9 +20,9 @@ Detailed implementation specification for the debug room and visual hitbox debug
 ### Unit Tests
 | Test ID | Component | Input | Expected Output | Edge Cases |
 |---------|-----------|-------|-----------------|------------|
-| TC-CONF-01 | Settings | JSON with `debug.enabled: true` | `Settings.DEBUG == True` | Missing section (default to False) |
-| TC-MAP-01 | Game Init | `DEBUG == True` | `default_map == "99-debug_room.tmj"` | Debug map file missing (fallback) |
-| TC-SPAWN-01 | Game Spawn | Object with `is_initial_pawn: True` | Player position == Object position | Multiple spawn points (first one wins) |
+| DBG-CONF-01 | Settings | JSON with `debug.enabled: true` | `Settings.DEBUG == True` | Missing section (default to False) |
+| DBG-MAP-01 | Game Init | `DEBUG == True` | `default_map == "99-debug_room.tmj"` | Debug map file missing (fallback) |
+| DBG-SPAWN-01 | Game Spawn | Object with `is_initial_pawn: True` | Player position == Object position | Multiple spawn points (first one wins) |
 
 ### Integration Tests
 | Test ID | Flow | Setup | Verification | Teardown |
@@ -48,6 +48,6 @@ Detailed implementation specification for the debug room and visual hitbox debug
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-CONF | `test_settings_load` | `../../tests/engine/test_game.py:L509` |
-| TC-MAP | `test_game_actual_load_map` | `../../tests/engine/test_game.py:L18` |
-| TC-SPAWN | `test_spawn_entities_initial_spawn_skipped` | `../../tests/engine/test_game.py:L293` |
+| DBG-CONF | `test_settings_load` | `../../tests/engine/test_game.py:L509` |
+| DBG-MAP | `test_game_actual_load_map` | `../../tests/engine/test_game.py:L18` |
+| DBG-SPAWN | `test_spawn_entities_initial_spawn_skipped` | `../../tests/engine/test_game.py:L293` |

@@ -213,6 +213,9 @@ class TestInteractionManagerCoverage:
         door.is_on = True
         assert im._verify_orientation(door, "right", pygame.math.Vector2(70, 100)) is True
 
+    @pytest.mark.tc("CHEST-I-02")
+    @pytest.mark.tc("CHEST-I-03")
+    @pytest.mark.tc("CHEST-I-04")
     def test_chest_auto_close_no_entity(self):
         """L306-307: _check_chest_auto_close returns early when no open chest."""
         game = _make_game_mock()
@@ -220,6 +223,7 @@ class TestInteractionManagerCoverage:
         im._open_chest_entity = None
         im._check_chest_auto_close()  # Should not raise
 
+    @pytest.mark.tc("CHEST-I-05")
     def test_chest_auto_close_no_chest_ui(self):
         """L308-310: _check_chest_auto_close returns early when game has no chest_ui."""
         game = MagicMock(spec=[])  # No attributes → getattr returns None
@@ -227,6 +231,7 @@ class TestInteractionManagerCoverage:
         im._open_chest_entity = MagicMock()
         im._check_chest_auto_close()  # Should not raise AttributeError
 
+    @pytest.mark.tc("CHEST-I-06")
     def test_chest_auto_close_already_closed_ui(self):
         """L309: _check_chest_auto_close returns early when chest_ui already closed."""
         game = _make_game_mock()

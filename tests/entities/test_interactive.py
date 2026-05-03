@@ -94,6 +94,7 @@ class TestInteractiveCoverage:
         result = entity._get_frame(0)
         assert isinstance(result, pygame.Surface)
 
+    @pytest.mark.tc("INT-U-01")
     def test_interact_sign_returns_element_id(self):
         """L229-230: interact() on sign returns element_id for dialogue."""
         entity, _ = _make_interactive(sub_type="sign")
@@ -113,6 +114,7 @@ class TestInteractiveCoverage:
         entity.restore_state({"is_on": False})
         assert entity in obstacles.sprites()
 
+    @pytest.mark.tc("INT-U-02")
     def test_update_animated_looping_wraps_frame(self):
         """L282-283: animated entity wraps frame_index to start_row when past end."""
         entity, _ = _make_interactive(is_animated=True, is_on=True)
@@ -120,6 +122,7 @@ class TestInteractiveCoverage:
         entity.update(0.1)
         assert entity.frame_index <= entity.end_row + 1
 
+    @pytest.mark.tc("INT-U-03")
     def test_update_animated_off_resets_frame(self):
         """L285-286: animated entity when OFF resets frame_index to start."""
         entity, _ = _make_interactive(is_animated=True, is_on=False)
@@ -127,6 +130,7 @@ class TestInteractiveCoverage:
         entity.update(0.1)
         assert entity.frame_index == float(entity.start_row)
 
+    @pytest.mark.tc("INT-U-04")
     def test_update_closing_door_decrements_frame(self):
         """L288-292: closing (is_closing=True) decrements frame_index."""
         entity, obstacles = _make_interactive(sub_type="door", is_on=False, is_passable=True)

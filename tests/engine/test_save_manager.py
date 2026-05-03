@@ -57,6 +57,7 @@ def _make_mock_game(tmp_saves_dir):
 
 # ── TC-001 : list_slots — dossier vide ───────────────────────────────────────
 
+@pytest.mark.tc("GF-007")
 def test_list_slots_empty(manager):
     """TC-001 : dossier saves/ vide → [None, None, None]"""
     result = manager.list_slots()
@@ -65,6 +66,7 @@ def test_list_slots_empty(manager):
 
 # ── TC-002 : save — création du fichier ───────────────────────────────────────
 
+@pytest.mark.tc("GF-001")
 def test_save_creates_file(manager, tmp_saves_dir):
     """TC-002 : save(1, game) crée saves/slot_1.json avec version correcte."""
     game = _make_mock_game(tmp_saves_dir)
@@ -84,6 +86,7 @@ def test_save_creates_file(manager, tmp_saves_dir):
 
 # ── TC-003 : load — slot existant ─────────────────────────────────────────────
 
+@pytest.mark.tc("GF-002")
 def test_load_existing_slot(manager, tmp_saves_dir):
     """TC-003 : load(1) retourne SaveData avec player.map_name correct."""
     game = _make_mock_game(tmp_saves_dir)
@@ -99,6 +102,7 @@ def test_load_existing_slot(manager, tmp_saves_dir):
 
 # ── TC-004 : load — slot vide ─────────────────────────────────────────────────
 
+@pytest.mark.tc("GF-003")
 def test_load_empty_slot_returns_none(manager):
     """TC-004 : load(2) sur slot vide retourne None."""
     result = manager.load(2)
@@ -107,6 +111,7 @@ def test_load_empty_slot_returns_none(manager):
 
 # ── TC-005 : load — JSON corrompu ─────────────────────────────────────────────
 
+@pytest.mark.tc("GF-004")
 def test_load_corrupted_json_returns_none(manager, tmp_saves_dir, caplog):
     """TC-005 : load(1) avec JSON invalide → None + log WARNING."""
     os.makedirs(tmp_saves_dir, exist_ok=True)
@@ -125,6 +130,7 @@ def test_load_corrupted_json_returns_none(manager, tmp_saves_dir, caplog):
 
 # ── TC-006 : delete ───────────────────────────────────────────────────────────
 
+@pytest.mark.tc("GF-005")
 def test_delete_slot(manager, tmp_saves_dir):
     """TC-006 : delete(1) supprime le fichier, slot_exists(1) == False."""
     game = _make_mock_game(tmp_saves_dir)
@@ -138,6 +144,7 @@ def test_delete_slot(manager, tmp_saves_dir):
 
 # ── TC-007 : Inventory roundtrip ──────────────────────────────────────────────
 
+@pytest.mark.tc("GF-009")
 def test_inventory_roundtrip(manager, tmp_saves_dir):
     """TC-007 : item slot[3] et equipment LEFT_HAND survivent save/load."""
     game = _make_mock_game(tmp_saves_dir)
@@ -159,6 +166,8 @@ def test_inventory_roundtrip(manager, tmp_saves_dir):
 
 # ── TC-008 : WorldState roundtrip ─────────────────────────────────────────────
 
+@pytest.mark.tc("CORE-W-01")
+@pytest.mark.tc("GF-010")
 def test_world_state_roundtrip(manager, tmp_saves_dir):
     """TC-008 : world_state survit save/load sans perte."""
     game = _make_mock_game(tmp_saves_dir)
@@ -174,6 +183,7 @@ def test_world_state_roundtrip(manager, tmp_saves_dir):
 
 # ── Cas limites ───────────────────────────────────────────────────────────────
 
+@pytest.mark.tc("GF-006")
 def test_slot_id_out_of_range_raises(manager):
     """save() avec slot_id hors [1..3] lève ValueError."""
     game = _make_mock_game("/tmp")
@@ -183,6 +193,7 @@ def test_slot_id_out_of_range_raises(manager):
         manager.save(4, game)
 
 
+@pytest.mark.tc("GF-008")
 def test_list_slots_reflects_saved(manager, tmp_saves_dir):
     """list_slots() retourne SlotInfo pour les slots sauvegardés."""
     game = _make_mock_game(tmp_saves_dir)
@@ -197,6 +208,7 @@ def test_list_slots_reflects_saved(manager, tmp_saves_dir):
     assert result[1].map_name == "00-spawn.tmj"
 
 
+@pytest.mark.tc("GF-011")
 def test_save_io_error_does_not_crash(manager, tmp_saves_dir, caplog):
     """save() ne crash pas sur IOError — log ERROR."""
     import logging

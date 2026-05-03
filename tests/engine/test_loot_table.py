@@ -53,6 +53,7 @@ def loot_table():
 class TestLootTableLoad:
     """Tests for LootTable.load()."""
 
+    @pytest.mark.tc("TC-LT-01")
     def test_load_valid_json(self, loot_table, property_types, valid_loot_data, tmp_path):
         """TC-LT-01: Valid JSON + valid property_types → all entries loaded."""
         loot_file = tmp_path / "loot_table.json"
@@ -67,6 +68,7 @@ class TestLootTableLoad:
         assert contents[1]["item_id"] == "ether_potion"
         assert contents[1]["quantity"] == 2
 
+    @pytest.mark.tc("TC-LT-02")
     def test_load_unknown_item_id_skipped_and_warned(
         self, loot_table, property_types, tmp_path, caplog
     ):
@@ -88,6 +90,7 @@ class TestLootTableLoad:
         assert contents[0]["item_id"] == "potion_red"
         assert "unknown_sword" in caplog.text
 
+    @pytest.mark.tc("TC-LT-03")
     def test_load_missing_file(self, loot_table, property_types, caplog):
         """TC-LT-03: Missing file → error logged, empty data."""
         with caplog.at_level(logging.ERROR):
@@ -96,6 +99,7 @@ class TestLootTableLoad:
         assert loot_table.get_contents("anything") == []
         assert "not found" in caplog.text.lower() or "error" in caplog.text.lower()
 
+    @pytest.mark.tc("TC-LT-04")
     def test_load_malformed_json(self, loot_table, property_types, tmp_path, caplog):
         """TC-LT-04: Malformed JSON → error logged, empty data."""
         bad_file = tmp_path / "bad.json"
@@ -165,6 +169,7 @@ class TestLootTableLoad:
 class TestGetContents:
     """Tests for LootTable.get_contents()."""
 
+    @pytest.mark.tc("TC-LT-08")
     def test_known_element_id(self, loot_table, property_types, valid_loot_data, tmp_path):
         """TC-LT-05: Known element_id → returns item list."""
         loot_file = tmp_path / "loot_table.json"
@@ -175,6 +180,7 @@ class TestGetContents:
         assert isinstance(result, list)
         assert len(result) > 0
 
+    @pytest.mark.tc("TC-LT-09")
     def test_unknown_element_id(self, loot_table, property_types, valid_loot_data, tmp_path):
         """TC-LT-06: Unknown element_id → returns empty list."""
         loot_file = tmp_path / "loot_table.json"
@@ -183,6 +189,7 @@ class TestGetContents:
 
         assert loot_table.get_contents("nonexistent_chest") == []
 
+    @pytest.mark.tc("TC-LT-10")
     def test_get_contents_before_load(self, loot_table):
         """get_contents before load() → empty list."""
         assert loot_table.get_contents("anything") == []
@@ -195,6 +202,7 @@ class TestGetContents:
 class TestStackSplitting:
     """Tests for stack_max splitting logic."""
 
+    @pytest.mark.tc("TC-LT-05")
     def test_quantity_within_stack_max(self, loot_table, property_types, tmp_path):
         """Quantity <= stack_max → single entry unchanged."""
         data = {"chest_1": [{"item_id": "potion_red", "quantity": 5}]}
@@ -206,6 +214,7 @@ class TestStackSplitting:
         assert len(contents) == 1
         assert contents[0]["quantity"] == 5
 
+    @pytest.mark.tc("TC-LT-06")
     def test_quantity_exceeds_stack_max(self, loot_table, property_types, tmp_path):
         """Quantity > stack_max → split into multiple stacks."""
         data = {"chest_1": [{"item_id": "potion_red", "quantity": 25}]}
@@ -232,6 +241,7 @@ class TestStackSplitting:
         assert len(contents) == 2
         assert all(c["quantity"] == 10 for c in contents)
 
+    @pytest.mark.tc("TC-LT-07")
     def test_overflow_trimmed_with_warning(self, loot_table, property_types, tmp_path, caplog):
         """More stacks than CHEST_MAX_SLOTS → excess trimmed."""
         # 21 items with stack_max=1 would need 21 slots > 20

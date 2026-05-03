@@ -103,11 +103,11 @@ Pickups use the same `{map_basename}_{tiled_id}` key format.
 ### 7.1 Unit Tests (`../../tests/test_world_teleport.py`)
 | Test ID | Scenario | Input | Expected Result |
 |---------|----------|-------|-----------------|
-| TC-006 | Strict Detection | Property `type=teleport` | Object spawned as `Teleport` |
-| TC-007 | Directional Adjacency | `activate_from_anywhere=True`, Facing away | Interaction fails |
-| TC-008 | Teleport Guard (Invalid) | `req_dir="down"`, Player facing "up" | No transition |
-| TC-009 | Teleport Guard (Valid) | `req_dir="down"`, Player facing "down"| `transition_map` called |
-| TC-010 | Teleport 'Any' | `req_dir="any"`, Player facing any | `transition_map` called |
+| WS-006 | Strict Detection | Property `type=teleport` | Object spawned as `Teleport` |
+| WS-007 | Directional Adjacency | `activate_from_anywhere=True`, Facing away | Interaction fails |
+| WS-008 | Teleport Guard (Invalid) | `req_dir="down"`, Player facing "up" | No transition |
+| WS-009 | Teleport Guard (Valid) | `req_dir="down"`, Player facing "down"| `transition_map` called |
+| WS-010 | Teleport 'Any' | `req_dir="any"`, Player facing any | `transition_map` called |
 
 ### 7.2 Unit Tests (`../../tests/test_world_state.py`)
 | Test ID | Scenario | Expected Result |
@@ -144,8 +144,8 @@ Pickups use the same `{map_basename}_{tiled_id}` key format.
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-006 | `test_game_entity_spawning` | `../../tests/engine/test_game.py:L80` |
-| TC-007 | `test_interaction_orientation` | `../../tests/engine/test_interaction.py:L68` |
-| TC-008 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
-| TC-009 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
-| TC-010 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+| WS-006 | `test_game_entity_spawning` | `../../tests/engine/test_game.py:L80` |
+| WS-007 | `test_interaction_orientation` | `../../tests/engine/test_interaction.py:L68` |
+| WS-008 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+| WS-009 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+| WS-010 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
