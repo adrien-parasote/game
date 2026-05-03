@@ -12,13 +12,33 @@ from src.engine.save_manager import SaveManager
 _MENU_DIR = os.path.join("assets", "images", "menu")
 _UI_DIR = os.path.join("assets", "images", "ui")
 
-BTN_W_SRC = 341
-BTN_H_SRC = 182
-BTN_W_DST = 400
-BTN_H_DST = 86
-BTN_SPACING = 70
+_FONT_PATH = "assets/fonts/cormorant-garamond-regular.ttf"
 
 OVERLAY_ALPHA = 160
+
+# Panel — 02-panel_background.png (600x600 → 480x480)
+PANEL_W = 480
+PANEL_H = 480
+
+# Inner content area offsets from panel edges (gear decorations)
+INNER_TOP = 60        # px from panel top to inner stone area
+INNER_BOTTOM = 60     # px from panel bottom to inner stone area
+
+# Layout offsets from panel top
+PAUSE_TITLE_OFFSET = 52    # y du titre depuis le haut du panel
+ITEM_Y_START_OFFSET = 145  # y du 1er item depuis le haut du panel
+ITEM_SPACING = 70          # espacement vertical entre items
+
+# Font sizes
+PAUSE_TITLE_FONT_SIZE = 42
+PAUSE_ITEM_FONT_SIZE = 32
+
+# Couleurs — identiques au TitleScreen
+ENGRAVE_TEXT   = (58, 85, 92)
+ENGRAVE_SHADOW = (12, 20, 23)
+ENGRAVE_LIGHT  = (75, 105, 112)
+HOVER_COLOR    = (255, 235, 180)
+TITLE_COLOR    = (220, 195, 140)
 
 _BUTTON_LABELS = ["Reprendre", "Sauvegarder", "Menu Principal"]
 
@@ -80,17 +100,21 @@ class PauseScreen:
             self._panel.fill((10, 18, 22, 210))
             pygame.draw.rect(self._panel, (60, 80, 85), self._panel.get_rect(), 2)
 
-        # Fonts
+        # Fonts — Cormorant Garamond (title + items), Noble fallback
+        try:
+            self._title_font = pygame.font.Font(_FONT_PATH, PAUSE_TITLE_FONT_SIZE)
+            self._item_font  = pygame.font.Font(_FONT_PATH, PAUSE_ITEM_FONT_SIZE)
+        except OSError:
+            self._title_font = pygame.font.SysFont(None, 42)
+            self._item_font  = pygame.font.SysFont(None, 32)
         try:
             am = __import__(
                 "src.engine.asset_manager", fromlist=["AssetManager"]
             ).AssetManager()
-            self._font = am.get_font(Settings.FONT_NOBLE, Settings.FONT_SIZE_NOBLE)
             self._font_small = am.get_font(
                 Settings.FONT_NARRATIVE, Settings.FONT_SIZE_NARRATIVE
             )
         except Exception:
-            self._font = pygame.font.SysFont(None, 32)
             self._font_small = pygame.font.SysFont(None, 24)
 
         # Custom cursor
@@ -98,15 +122,22 @@ class PauseScreen:
         self._pointer_select_img = self._load_cursor("06-pointer_select.png")
 
     def _compute_layout(self) -> None:
-        n = len(_BUTTON_LABELS)
-        zone_h = (n - 1) * BTN_SPACING + BTN_H_DST
-        panel_rect = self._panel.get_rect(center=(self._sw // 2, self._sh // 2))
-        y_start = panel_rect.centery - zone_h // 2 + 40
-        x = (self._sw - BTN_W_DST) // 2
-
+        """Button rects aligned to the inner stone area of the panel."""
+        panel_rect = pygame.Rect(
+            self._sw // 2 - PANEL_W // 2,
+            self._sh // 2 - PANEL_H // 2,
+            PANEL_W, PANEL_H,
+        )
+        # Click zones: centred horizontally, spaced vertically from ITEM_Y_START_OFFSET
+        btn_w, btn_h = 280, 50
+        x = panel_rect.centerx - btn_w // 2
         self.button_rects: list[pygame.Rect] = [
-            pygame.Rect(x, y_start + i * BTN_SPACING, BTN_W_DST, BTN_H_DST)
-            for i in range(n)
+            pygame.Rect(
+                x,
+                panel_rect.top + ITEM_Y_START_OFFSET + i * ITEM_SPACING,
+                btn_w, btn_h,
+            )
+            for i in range(len(_BUTTON_LABELS))
         ]
 
     # ── Public API ────────────────────────────────────────────────────────────
@@ -132,25 +163,51 @@ class PauseScreen:
                 break
 
     def draw(self) -> None:
-        self._screen.blit(self._overlay, (0, 0))
-        panel_rect = self._panel.get_rect(center=(self._sw // 2, self._sh // 2))
-        self._screen.blit(self._panel, panel_rect)
-
-        title = self._font.render("PAUSE", True, (220, 200, 150))
-        self._screen.blit(
-            title, title.get_rect(midtop=(panel_rect.centerx, panel_rect.top + 30))
+        panel_rect = pygame.Rect(
+            self._sw // 2 - PANEL_W // 2,
+            self._sh // 2 - PANEL_H // 2,
+            PANEL_W, PANEL_H,
         )
 
+        self._screen.blit(self._overlay, (0, 0))
+        self._screen.blit(self._panel, panel_rect)
+
+        # Title — Cormorant Garamond, doré, centré en haut du panel
+        title = self._title_font.render("PAUSE", True, TITLE_COLOR)
+        self._screen.blit(
+            title,
+            title.get_rect(midtop=(panel_rect.centerx, panel_rect.top + PAUSE_TITLE_OFFSET)),
+        )
+
+        # Menu items — engraved idle, golden hover
         for i, (rect, label) in enumerate(zip(self.button_rects, _BUTTON_LABELS)):
-            color = (255, 235, 180) if self._hovered_btn == i else (220, 200, 150)
-            text = self._font.render(label, True, color)
-            self._screen.blit(text, text.get_rect(center=rect.center))
+            cx = rect.centerx
+            cy = rect.centery
+            if self._hovered_btn == i:
+                surf = self._item_font.render(label, True, HOVER_COLOR)
+                self._screen.blit(surf, surf.get_rect(center=(cx, cy)))
+            else:
+                self._blit_engraved(label, cx, cy)
 
         if self._confirm_timer > 0:
-            msg = self._font_small.render("Partie sauvegardée !", True, (180, 220, 150))
-            self._screen.blit(msg, msg.get_rect(midbottom=(self._sw // 2, panel_rect.bottom - 20)))
+            msg = self._font_small.render(
+                "Partie sauvegardée !", True, (180, 220, 150)
+            )
+            self._screen.blit(
+                msg, msg.get_rect(midbottom=(panel_rect.centerx, panel_rect.bottom - 25))
+            )
 
         self._draw_cursor()
+
+    def _blit_engraved(self, label: str, cx: int, cy: int) -> None:
+        """3-pass stone engraving: shadow | light | text. Matches TitleScreen effect."""
+        shadow = self._item_font.render(label, True, ENGRAVE_SHADOW)
+        light  = self._item_font.render(label, True, ENGRAVE_LIGHT)
+        text   = self._item_font.render(label, True, ENGRAVE_TEXT)
+        r = text.get_rect(center=(cx, cy))
+        self._screen.blit(shadow, r.move(1, 2))
+        self._screen.blit(light,  r.move(-1, -1))
+        self._screen.blit(text,   r)
 
     def notify_save_result(self, success: bool) -> None:
         """Call after a save attempt to show confirmation for 2 seconds."""
