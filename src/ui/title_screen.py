@@ -21,9 +21,15 @@ BTN_H_DST = 86
 BTN_SPACING = 70          # px between button tops
 BTN_Y_OFFSET = 80         # extra push downward to clear the logo
 
-# Logo (00-title_logo.png 903x241)
-LOGO_W_DST = 560
-LOGO_Y = 60
+# Logo composite: 5 separate alpha-transparent PNGs assembled at runtime
+# Source sizes (px): main_title=790x138, moon=69x71, gear=94x95,
+#                   separator=676x11, subtitle=531x55
+LOGO_MAIN_W = 640          # main title scaled width
+LOGO_ACCENT_H = 58         # moon/gear icon height
+LOGO_SEP_W = 380           # separator width
+LOGO_SUB_W = 380           # subtitle width
+LOGO_Y = 30               # top of logo block on screen
+LOGO_GAP = 6              # vertical gap between elements
 
 # Save slot spritesheet (04-save_slot.png 1024x1024, 2 states stacked)
 SLOT_H_SRC = 512
@@ -83,17 +89,67 @@ class TitleScreen:
         target_w = int(309 * ratio)
         return pygame.transform.smoothscale(raw, (target_w, target_h))
 
+    def _scale(self, surf: pygame.Surface, target_w: int) -> pygame.Surface:
+        """Scale a surface proportionally to target_w."""
+        sw, sh = surf.get_size()
+        target_h = int(sh * target_w / sw)
+        return pygame.transform.smoothscale(surf, (target_w, target_h))
+
+    def _build_logo_composite(self) -> pygame.Surface:
+        """Assemble 5 alpha-transparent logo parts into one surface."""
+        # Load and scale each part
+        main = self._scale(self._load_asset("00-title_logo_main_title.png"), LOGO_MAIN_W)
+        # Moon and gear scaled to same height as LOGO_ACCENT_H
+        moon_raw = self._load_asset("00-title_logo_moon.png")
+        mw, mh = moon_raw.get_size()
+        moon = pygame.transform.smoothscale(moon_raw, (int(mw * LOGO_ACCENT_H / mh), LOGO_ACCENT_H))
+
+        gear_raw = self._load_asset("00-title_logo_gear.png")
+        gw, gh = gear_raw.get_size()
+        gear = pygame.transform.smoothscale(gear_raw, (int(gw * LOGO_ACCENT_H / gh), LOGO_ACCENT_H))
+
+        sep = self._scale(self._load_asset("00-title_logo_separator.png"), LOGO_SEP_W)
+        sub = self._scale(self._load_asset("00-title_logo_subtitle.png"), LOGO_SUB_W)
+
+        main_w, main_h = main.get_size()
+        _, sep_h = sep.get_size()
+        _, sub_h = sub.get_size()
+        moon_w, moon_h = moon.get_size()
+        gear_w, _ = gear.get_size()
+
+        # Total composite dimensions
+        comp_w = main_w + moon_w + gear_w + 8   # 8px margin for accent icons
+        comp_h = main_h + LOGO_GAP + sep_h + LOGO_GAP + sub_h
+
+        comp = pygame.Surface((comp_w, comp_h), pygame.SRCALPHA)
+
+        # Row 1: moon | main_title | gear  — vertically centered on main_title
+        moon_y = (main_h - moon_h) // 2
+        gear_y = (main_h - moon_h) // 2
+        main_x = moon_w + 4
+        comp.blit(moon, (0, moon_y))
+        comp.blit(main, (main_x, 0))
+        comp.blit(gear, (main_x + main_w + 4, gear_y))
+
+        # Row 2: separator  — centered
+        sep_x = (comp_w - LOGO_SEP_W) // 2
+        sep_y = main_h + LOGO_GAP
+        comp.blit(sep, (sep_x, sep_y))
+
+        # Row 3: subtitle — centered
+        sub_x = (comp_w - LOGO_SUB_W) // 2
+        sub_y = sep_y + sep_h + LOGO_GAP
+        comp.blit(sub, (sub_x, sub_y))
+
+        return comp
+
     def _load_assets(self) -> None:
         # Background (scaled to full screen)
         bg_raw = self._load_asset("01-menu_background.png")
         self._bg = pygame.transform.smoothscale(bg_raw, (self._sw, self._sh))
 
-        # Logo (PNG with transparent alpha background)
-        logo_raw = self._load_asset("00-title_logo.png")
-        lw, lh = logo_raw.get_size()
-        scale = LOGO_W_DST / lw
-        logo_h_dst = int(lh * scale)
-        self._logo = pygame.transform.smoothscale(logo_raw, (LOGO_W_DST, logo_h_dst))
+        # Logo — composed from 5 alpha-transparent PNGs
+        self._logo_surf = self._build_logo_composite()
 
         # Button spritesheet — 3 states side by side
         btn_sheet = self._load_asset("02-menu_buttons.png")
@@ -197,8 +253,8 @@ class TitleScreen:
 
     def draw(self) -> None:
         self._screen.blit(self._bg, (0, 0))
-        logo_x = (self._sw - self._logo.get_width()) // 2
-        self._screen.blit(self._logo, (logo_x, LOGO_Y))
+        logo_x = (self._sw - self._logo_surf.get_width()) // 2
+        self._screen.blit(self._logo_surf, (logo_x, LOGO_Y))
 
         # Panel behind buttons (always shown)
         self._screen.blit(self._panel, self._panel_rect)
