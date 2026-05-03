@@ -70,6 +70,15 @@ MENU_ENGRAVE_LIGHT  = (75, 105, 112) # reflet (haut-gauche -1,-1) : bord éclair
 _MENU_ITEM_KEYS = ["menu.new_game", "menu.load", "menu.options", "menu.quit"]
 _MENU_ITEM_DEFAULTS = ["Nouvelle Partie", "Charger", "Options", "Quitter"]
 
+# Options back button — 01-menu_back_cursor.png
+# Positioné en bas-centre du panel (x=786-1225, y=250-680)
+BACK_BTN_W = 160          # largeur de rendu du bouton retour
+BACK_BTN_H = 100          # hauteur de rendu du bouton retour
+BACK_BTN_X = 1005         # centre-x (même axe que les items)
+BACK_BTN_Y = 620          # centre-y (bas du panel)
+BACK_BTN_OFFSET_X = 0     # décalage fin x
+BACK_BTN_OFFSET_Y = 0     # décalage fin y
+
 
 class TitleScreen:
     """Main menu screen — background, logo, cursor. Menu to be added."""
@@ -213,8 +222,15 @@ class TitleScreen:
             self._scroll_title_font = self._font
             self._menu_item_font = self._font
 
+        # Options back button — 01-menu_back_cursor.png
+        back_raw = self._load_asset("01-menu_back_cursor.png")
+        self._back_btn = pygame.transform.smoothscale(back_raw, (BACK_BTN_W, BACK_BTN_H))
+        self._back_btn_hover = pygame.transform.smoothscale(
+            back_raw, (BACK_BTN_W + 12, BACK_BTN_H + 8)
+        )
+
     def _compute_layout(self) -> None:
-        """Compute menu item rects and save slot rects."""
+        """Compute menu item rects, save slot rects, and back button rect."""
         # Menu item click zones (centred on MENU_ITEM_X)
         item_w = 280
         item_h = 48
@@ -225,6 +241,13 @@ class TitleScreen:
             self.menu_item_rects.append(
                 pygame.Rect(cx - item_w // 2, cy - item_h // 2, item_w, item_h)
             )
+        # Back button rect (OPTIONS state)
+        bcx = BACK_BTN_X + BACK_BTN_OFFSET_X
+        bcy = BACK_BTN_Y + BACK_BTN_OFFSET_Y
+        self.back_btn_rect = pygame.Rect(
+            bcx - BACK_BTN_W // 2, bcy - BACK_BTN_H // 2, BACK_BTN_W, BACK_BTN_H
+        )
+        self._back_hovered: bool = False
         # Save slot rects (inside the load overlay panel, 900x480 centered)
         ov_x = self._sw // 2 - 450
         ov_y = self._sh // 2 - 240
@@ -239,6 +262,8 @@ class TitleScreen:
     def handle_event(self, event: pygame.Event) -> GameEvent | None:
         if self.state == "LOAD_MENU":
             return self._handle_load_menu(event)
+        if self.state == "OPTIONS":
+            return self._handle_options(event)
         return self._handle_main_menu(event)
 
     def update(self, dt: float) -> None:
@@ -255,6 +280,8 @@ class TitleScreen:
                 if rect.collidepoint(mouse_pos):
                     self._hovered_slot = i
                     break
+        elif self.state == "OPTIONS":
+            self._back_hovered = self.back_btn_rect.collidepoint(mouse_pos)
 
     def draw(self) -> None:
         self._screen.blit(self._bg, (0, 0))
@@ -268,6 +295,8 @@ class TitleScreen:
             self._draw_menu_items()
         elif self.state == "LOAD_MENU":
             self._draw_load_overlay()
+        elif self.state == "OPTIONS":
+            self._draw_options_overlay()
 
         self._draw_cursor()
 
@@ -366,7 +395,25 @@ class TitleScreen:
 
     def _enter_options(self) -> None:
         self.state = "OPTIONS"
-        logging.info("TitleScreen: Options menu (stub)")
+
+    def _handle_options(self, event: pygame.Event) -> GameEvent | None:
+        """ESC ou clic sur le bouton retour → MAIN_MENU."""
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            self.state = "MAIN_MENU"
+            return None
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.back_btn_rect.collidepoint(event.pos):
+                self.state = "MAIN_MENU"
+        return None
+
+    def _draw_options_overlay(self) -> None:
+        """Draw options panel with back button. Options content is a stub."""
+        btn = self._back_btn_hover if self._back_hovered else self._back_btn
+        r = btn.get_rect(center=(
+            BACK_BTN_X + BACK_BTN_OFFSET_X,
+            BACK_BTN_Y + BACK_BTN_OFFSET_Y,
+        ))
+        self._screen.blit(btn, r)
 
     def _handle_load_menu(self, event: pygame.Event) -> GameEvent | None:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
