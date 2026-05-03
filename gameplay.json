@@ -26,5 +26,5 @@
         "animation_speed": 8.0
     },
     "locale": "fr",
-    "toggle_fullscreen_key": "K_F11"
+    "toggle_fullscreen_key": "K_p"
 }
