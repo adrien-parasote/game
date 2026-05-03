@@ -76,7 +76,7 @@ BACK_BTN_W = 28           # largeur de rendu (1/2 native)
 BACK_BTN_H = 25           # hauteur de rendu (1/2 native)
 BACK_BTN_X = 1005         # centre-x (même axe que les items)
 BACK_BTN_Y = 620          # centre-y (bas du panel)
-BACK_BTN_OFFSET_X = 50    # décalage fin x (centré sur texte+icône)
+BACK_BTN_OFFSET_X = -50    # décalage fin x (centré sur texte+icône)
 BACK_BTN_OFFSET_Y = 0     # décalage fin y
 BACK_BTN_GAP = 6          # espace entre le texte et l'icône
 BACK_BTN_FONT_SIZE = 22   # taille du label (Cormorant Garamond)
@@ -440,21 +440,21 @@ class TitleScreen:
         label_surf_measure = self._back_label_font.render(label, True, (0, 0, 0))
         label_w = label_surf_measure.get_width()
 
-        # Total width: label + gap + icon  — centred on (cx, cy)
-        total_w = label_w + BACK_BTN_GAP + icon_w
+        # Total width: icon + gap + label  — centred on (cx, cy)
+        total_w = icon_w + BACK_BTN_GAP + label_w
         left_x = cx - total_w // 2
-        label_cx = left_x + label_w // 2
 
-        # Draw label: engraved at rest, golden on hover
+        # Draw icon left
+        icon_r = btn.get_rect(midleft=(left_x, cy))
+        self._screen.blit(btn, icon_r)
+
+        # Draw label right of icon: engraved at rest, golden on hover
+        label_cx = left_x + icon_w + BACK_BTN_GAP + label_w // 2
         if self._back_hovered:
             surf = self._back_label_font.render(label, True, MENU_ITEM_HOVER_COLOR)
             self._screen.blit(surf, surf.get_rect(center=(label_cx, cy)))
         else:
             self._blit_engraved(label, label_cx, cy, font=self._back_label_font)
-
-        # Draw icon right of label
-        icon_r = btn.get_rect(midleft=(left_x + label_w + BACK_BTN_GAP, cy))
-        self._screen.blit(btn, icon_r)
 
     def _handle_load_menu(self, event: pygame.Event) -> GameEvent | None:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
