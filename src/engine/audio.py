@@ -4,6 +4,10 @@ import logging
 from typing import Dict, Optional
 from src.config import Settings
 
+# Ambients play at most 30 % of SFX_VOLUME — they should be background atmosphere,
+# not competing with footsteps and interaction cues.
+AMBIENT_VOLUME_SCALE = 0.3
+
 class AudioManager:
     """
     Handles playback of BGM and SFX.
@@ -145,16 +149,17 @@ class AudioManager:
         """Play a looping ambient sound tracked by source_id."""
         if not self.is_enabled or not name or self.is_muted:
             return
-            
+
         if source_id in self.ambient_sounds:
-            return # Already playing
-            
+            return  # Already playing
+
         filename = f"{name}.ogg"
         path = os.path.join(self.sfx_dir, filename)
         if os.path.exists(path):
             try:
                 sound = pygame.mixer.Sound(path)
-                sound.set_volume(Settings.SFX_VOLUME)
+                # Initialise at ambient-scaled volume; update_ambient will refine each frame.
+                sound.set_volume(Settings.SFX_VOLUME * AMBIENT_VOLUME_SCALE)
                 sound.play(loops=-1)
                 self.ambient_sounds[source_id] = sound
                 logging.debug(f"Playing ambient: {name} for {source_id}")
@@ -168,14 +173,14 @@ class AudioManager:
             del self.ambient_sounds[source_id]
             logging.debug(f"Stopped ambient for {source_id}")
 
-    def update_ambient(self, source_id: str, distance: float, max_distance: float = 400.0, min_falloff: float = 0.2):
-        """Adjust ambient volume based on distance."""
+    def update_ambient(self, source_id: str, distance: float, max_distance: float = 300.0, min_falloff: float = 0.05):
+        """Adjust ambient volume based on distance (linear falloff, capped by AMBIENT_VOLUME_SCALE)."""
         if self.is_muted or not self.is_enabled:
             return
-            
+
         sound = self.ambient_sounds.get(source_id)
         if sound:
-            # Linear falloff with a minimum volume threshold
+            # Linear falloff from 1.0 at distance=0 to min_falloff at max_distance
             falloff = max(min_falloff, 1.0 - (distance / max_distance))
-            volume = Settings.SFX_VOLUME * falloff
+            volume = Settings.SFX_VOLUME * AMBIENT_VOLUME_SCALE * falloff
             sound.set_volume(volume)

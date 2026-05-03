@@ -184,7 +184,10 @@ class InteractionManager:
                 res = obj.interact(self.game.player)
                 
                 if getattr(obj, "sfx", None):
-                    self.game.audio_manager.play_sfx(obj.sfx, getattr(obj, "element_id", None))
+                    vol_mult = max(0.4, 1.0 - dist / 120.0)
+                    self.game.audio_manager.play_sfx(
+                        obj.sfx, getattr(obj, "element_id", None), volume_multiplier=vol_mult
+                    )
                 
                 if res:
                     self.game._trigger_dialogue(res)
@@ -333,7 +336,11 @@ class InteractionManager:
         """Trigger chest closing animation, play sfx, persist state, and hide UI."""
         chest.interact(self.game.player)   # toggles is_on=False + starts animation
         if getattr(chest, "sfx", None):
-            self.game.audio_manager.play_sfx(chest.sfx, getattr(chest, "element_id", None))
+            dist = self.game.player.pos.distance_to(chest.pos)
+            vol_mult = max(0.4, 1.0 - dist / 120.0)
+            self.game.audio_manager.play_sfx(
+                chest.sfx, getattr(chest, "element_id", None), volume_multiplier=vol_mult
+            )
         if hasattr(chest, '_world_state_key'):
             self.game.world_state.set(chest._world_state_key, {'is_on': chest.is_on})
         chest_ui.close()
