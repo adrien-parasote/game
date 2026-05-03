@@ -1,6 +1,19 @@
-<!-- Generated: 2026-05-01 | Files scanned: 34 | Token estimate: ~430 -->
+<!-- Generated: 2026-05-04 | Files scanned: 49 | Token estimate: ~480 -->
 
 # Engine Logic Flow
+
+## GameStateManager State Machine (`src/engine/game_state_manager.py`)
+```
+TITLE  → GameEvent.new_game()          → _transition_to_playing(None)  → PLAYING
+TITLE  → GameEvent.load_requested(N)   → _transition_to_playing(N)     → PLAYING
+TITLE  → GameEvent.quit()              → sys.exit()
+PLAYING→ ESC (filtered, not re-posted) → _transition_to_paused()       → PAUSED
+PAUSED → GameEvent.resume()            → _transition_to_playing(None, resume=True) → PLAYING
+PAUSED → GameEvent.save_requested(N)   → save_manager.save(N, game) + thumbnail → PAUSED
+PAUSED → GameEvent.goto_title()        → _transition_to_title()        → TITLE
+```
+- `_save_to_first_free_slot()`: scans `list_slots()`, fallback to slot 1 if all full.
+- `_process_global_events()`: `pygame.QUIT` → `sys.exit()`, fullscreen toggle — runs every frame regardless of state.
 
 ## Movement Chain
 `Player.input()` (WASD/Arrows) → `BaseEntity.move(dt)` → `Game._is_collidable()` (MapManager tile check + obstacle group) → `rect` update + animation frame
