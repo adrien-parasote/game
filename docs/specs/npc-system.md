@@ -95,13 +95,13 @@ This section defines the behavior and failure modes for autonomous entities.
 | Missing Map Properties | `props.get()` returns `None` | Use engine defaults (NPC speed, etc.) | Log Warning |
 
 ## 4. Deep Links
-- **`NPC` class**: [npc.py L8](file:///Users/adrien.parasote/Documents/perso/game/src/entities/npc.py#L8)
-- **`BaseEntity`**: [base.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/entities/base.py#L1)
-- **`InteractionManager`**: [interaction.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L1)
-- **`SpeechBubble`**: [speech_bubble.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/speech_bubble.py#L1)
-- **NPC-related game logic**: [game.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L1)
-- **Unit tests (entities)**: [test_entities.py L26](file:///Users/adrien.parasote/Documents/perso/game/tests/entities/test_entities.py#L26)
-- **Integration tests (interaction)**: [test_interaction.py L169](file:///Users/adrien.parasote/Documents/perso/game/tests/engine/test_interaction.py#L169)
+- **`NPC` class**: [npc.py L8](../../src/entities/npc.py#L8)
+- **`BaseEntity`**: [base.py L1](../../src/entities/base.py#L1)
+- **`InteractionManager`**: [interaction.py L1](../../src/engine/interaction.py#L1)
+- **`SpeechBubble`**: [speech_bubble.py L1](../../src/ui/speech_bubble.py#L1)
+- **NPC-related game logic**: [game.py L1](../../src/engine/game.py#L1)
+- **Unit tests (entities)**: [test_entities.py L26](../../tests/entities/test_entities.py#L26)
+- **Integration tests (interaction)**: [test_interaction.py L169](../../tests/engine/test_interaction.py#L169)
 
 ### Linked Test Functions
 

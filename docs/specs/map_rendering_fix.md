@@ -8,15 +8,15 @@ Ensure that the `00-layer` (typically the base background) is always visible and
 
 ## Proposed Changes
 
-### [MODIFY] [tmj_parser.py](file:///Users/adrien.parasote/Documents/perso/game/src/map/tmj_parser.py)
+### [MODIFY] [tmj_parser.py](../../src/map/tmj_parser.py)
 - Update `_parse_tilelayer` to store the layer name in addition to the data.
 - The `layers_dict` should mapping `layer_id` to a dictionary or object containing both name and data.
 
-### [MODIFY] [manager.py](file:///Users/adrien.parasote/Documents/perso/game/src/map/manager.py)
+### [MODIFY] [manager.py](../../src/map/manager.py)
 - Update `MapManager` to handle the new layer data structure.
 - Store a mapping of names to IDs.
 
-### [MODIFY] [game.py](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py)
+### [MODIFY] [game.py](../../src/engine/game.py)
 - In `_draw_background`, prioritize layers named `00-layer` or similar patterns.
 - Ensure the rendering order follows the layer sequence defined in the map file or explicit name-based ordering.
 
@@ -44,8 +44,8 @@ Ensure that the `00-layer` (typically the base background) is always visible and
 | Missing Layer | `00-layer` not found | Log warning | Draw existing layers in ID order |
 
 ## Deep Links
-- **`TmjParser`**: [tmj_parser.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/map/tmj_parser.py#L1)
-- **`MapManager`**: [manager.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/map/manager.py#L1)
-- **`Game._draw_background`**: [game.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L1)
-- **Map tests**: [test_map.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/map/test_map.py#L1)
-- **Parser tests**: [test_parser.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/map/test_parser.py#L1)
+- **`TmjParser`**: [tmj_parser.py L1](../../src/map/tmj_parser.py#L1)
+- **`MapManager`**: [manager.py L1](../../src/map/manager.py#L1)
+- **`Game._draw_background`**: [game.py L1](../../src/engine/game.py#L1)
+- **Map tests**: [test_map.py L1](../../tests/map/test_map.py#L1)
+- **Parser tests**: [test_parser.py L1](../../tests/map/test_parser.py#L1)

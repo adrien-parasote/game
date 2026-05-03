@@ -229,16 +229,16 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | Failed Interact | No target found | Show 'question' emote | Optional via `Settings.ENABLE_FAILED_INTERACTION_EMOTE` |
 
 ## 6. Deep Links
-- **`InteractiveEntity` class**: [interactive.py L11](file:///Users/adrien.parasote/Documents/perso/game/src/entities/interactive.py#L11)
-- **`InteractiveEntity.interact`**: [interactive.py L265](file:///Users/adrien.parasote/Documents/perso/game/src/entities/interactive.py#L265)
-- **`InteractiveEntity.restore_state`**: [interactive.py L288](file:///Users/adrien.parasote/Documents/perso/game/src/entities/interactive.py#L288)
-- **`InteractiveEntity.update`**: [interactive.py L308](file:///Users/adrien.parasote/Documents/perso/game/src/entities/interactive.py#L308)
-- **Interactive Spawning**: [game.py L215](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L215)
-- **Collision Check**: [game.py L340](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L340)
-- **Unified Interaction Handling**: [interaction.py L26](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L26)
-- **Sprite Slicing**: [spritesheet.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/graphics/spritesheet.py#L1)
-- **Unit tests (interactive entity)**: [test_interactive.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/entities/test_interactive.py#L1)
-- **Integration tests (interaction)**: [test_interaction.py L33](file:///Users/adrien.parasote/Documents/perso/game/tests/engine/test_interaction.py#L33)
+- **`InteractiveEntity` class**: [interactive.py L11](../../src/entities/interactive.py#L11)
+- **`InteractiveEntity.interact`**: [interactive.py L265](../../src/entities/interactive.py#L265)
+- **`InteractiveEntity.restore_state`**: [interactive.py L288](../../src/entities/interactive.py#L288)
+- **`InteractiveEntity.update`**: [interactive.py L308](../../src/entities/interactive.py#L308)
+- **Interactive Spawning**: [game.py L215](../../src/engine/game.py#L215)
+- **Collision Check**: [game.py L340](../../src/engine/game.py#L340)
+- **Unified Interaction Handling**: [interaction.py L26](../../src/engine/interaction.py#L26)
+- **Sprite Slicing**: [spritesheet.py L1](../../src/graphics/spritesheet.py#L1)
+- **Unit tests (interactive entity)**: [test_interactive.py L1](../../tests/entities/test_interactive.py#L1)
+- **Integration tests (interaction)**: [test_interaction.py L33](../../tests/engine/test_interaction.py#L33)
 
 ### Linked Test Functions
 

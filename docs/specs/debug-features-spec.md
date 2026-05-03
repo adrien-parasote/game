@@ -40,7 +40,7 @@ Detailed implementation specification for the debug room and visual hitbox debug
 
 ## 4. Deep Links
 
-- **Config System**: [src/config.py](file:///Users/adrien.parasote/Documents/perso/game/src/config.py)
-- **Engine Loop**: [src/engine/game.py](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py)
-- **Drawing Logic**: [src/entities/groups.py](file:///Users/adrien.parasote/Documents/perso/game/src/entities/groups.py)
+- **Config System**: [src/config.py](../../src/config.py)
+- **Engine Loop**: [src/engine/game.py](../../src/engine/game.py)
+- **Drawing Logic**: [src/entities/groups.py](../../src/entities/groups.py)
 

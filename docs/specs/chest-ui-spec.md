@@ -404,13 +404,13 @@ class ChestUI:
 
 | Reference | Location |
 |-----------|----------|
-| `ChestUI` class | [chest.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/chest.py#L1) |
-| `ChestTransfer` logic | [chest_transfer.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/chest_transfer.py#L1) |
-| `InventoryUI` (pattern to follow) | [inventory.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/inventory.py#L1) |
-| `InteractionManager._check_proximity_emotes` | [interaction.py L56](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L56) |
-| `Game._draw_scene` | [game.py L509](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L509) |
-| `Game._update` | [game.py L588](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L588) |
-| Unit tests (ChestUI) | [test_chest.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/ui/test_chest.py#L1) |
+| `ChestUI` class | [chest.py L1](../../src/ui/chest.py#L1) |
+| `ChestTransfer` logic | [chest_transfer.py L1](../../src/ui/chest_transfer.py#L1) |
+| `InventoryUI` (pattern to follow) | [inventory.py L1](../../src/ui/inventory.py#L1) |
+| `InteractionManager._check_proximity_emotes` | [interaction.py L56](../../src/engine/interaction.py#L56) |
+| `Game._draw_scene` | [game.py L509](../../src/engine/game.py#L509) |
+| `Game._update` | [game.py L588](../../src/engine/game.py#L588) |
+| Unit tests (ChestUI) | [test_chest.py L1](../../tests/ui/test_chest.py#L1) |
 | Asset: chest background | `assets/images/HUD/07-chest.png` |
 | Asset: slot frame | `assets/images/ui/03-inventory_slot.png` |
 

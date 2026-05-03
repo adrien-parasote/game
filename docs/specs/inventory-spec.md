@@ -152,13 +152,13 @@
 
 ## Deep Links
 
-- **`Inventory` class**: [inventory_system.py L21](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L21)
-- **`Inventory.add_item`**: [inventory_system.py L58](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L58)
-- **`Inventory.remove_item`**: [inventory_system.py L97](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L97)
-- **`Inventory.equip_item`**: [inventory_system.py L105](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L105)
-- **`InventoryUI` class**: [inventory.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/inventory.py#L1)
-- **Layout constants**: [inventory_constants.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/inventory_constants.py#L1)
-- **Unit tests (logic)**: [test_inventory.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/ui/test_inventory.py#L1)
-- **Unit tests (equipment)**: [test_inventory_equipment.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/ui/test_inventory_equipment.py#L1)
-- **Unit tests (drag-drop coverage)**: [test_inventory_coverage.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/ui/test_inventory_coverage.py#L1)
-- **Integration tests (chest)**: [test_inventory_chest_interaction.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/ui/test_inventory_chest_interaction.py#L1)
+- **`Inventory` class**: [inventory_system.py L21](../../src/engine/inventory_system.py#L21)
+- **`Inventory.add_item`**: [inventory_system.py L58](../../src/engine/inventory_system.py#L58)
+- **`Inventory.remove_item`**: [inventory_system.py L97](../../src/engine/inventory_system.py#L97)
+- **`Inventory.equip_item`**: [inventory_system.py L105](../../src/engine/inventory_system.py#L105)
+- **`InventoryUI` class**: [inventory.py L1](../../src/ui/inventory.py#L1)
+- **Layout constants**: [inventory_constants.py L1](../../src/ui/inventory_constants.py#L1)
+- **Unit tests (logic)**: [test_inventory.py L1](../../tests/ui/test_inventory.py#L1)
+- **Unit tests (equipment)**: [test_inventory_equipment.py L1](../../tests/ui/test_inventory_equipment.py#L1)
+- **Unit tests (drag-drop coverage)**: [test_inventory_coverage.py L1](../../tests/ui/test_inventory_coverage.py#L1)
+- **Integration tests (chest)**: [test_inventory_chest_interaction.py L1](../../tests/ui/test_inventory_chest_interaction.py#L1)

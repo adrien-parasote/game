@@ -60,11 +60,11 @@ This document specifies the technical implementation of performance and structur
 | Invalid Target ID | `find_entity` returns None | Log warning, ignore interaction | No-op | WARN |
 
 ## Deep Links
-- **`engine-core.md`**: [engine-core.md L1](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/engine-core.md#L1)
-- **`RenderManager`**: [render_manager.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/render_manager.py#L1)
-- **`InteractionManager`**: [interaction.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L1)
-- **`DialogueManager`**: [dialogue.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/dialogue.py#L1)
-- **`Game._draw_scene`**: [game.py L509](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L509)
+- **`engine-core.md`**: [engine-core.md L1](./engine-core.md#L1)
+- **`RenderManager`**: [render_manager.py L1](../../src/engine/render_manager.py#L1)
+- **`InteractionManager`**: [interaction.py L1](../../src/engine/interaction.py#L1)
+- **`DialogueManager`**: [dialogue.py L1](../../src/ui/dialogue.py#L1)
+- **`Game._draw_scene`**: [game.py L509](../../src/engine/game.py#L509)
 
 ### Linked Test Functions
 

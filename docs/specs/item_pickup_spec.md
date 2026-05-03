@@ -44,12 +44,12 @@
 
 ## 4. Deep Links
 
-- **Pickup Interaction Logic**: [interaction.py L166](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L166)
-- **Proximity Emote Check**: [interaction.py L56](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L56)
-- **`PickupItem` entity**: [pickup.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/entities/pickup.py#L1)
-- **Inventory System**: [inventory_system.py L17](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L17)
-- **Spawn logic**: [game.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L1)
-- **Integration tests**: [test_interaction.py L119](file:///Users/adrien.parasote/Documents/perso/game/tests/engine/test_interaction.py#L119)
+- **Pickup Interaction Logic**: [interaction.py L166](../../src/engine/interaction.py#L166)
+- **Proximity Emote Check**: [interaction.py L56](../../src/engine/interaction.py#L56)
+- **`PickupItem` entity**: [pickup.py L1](../../src/entities/pickup.py#L1)
+- **Inventory System**: [inventory_system.py L17](../../src/engine/inventory_system.py#L17)
+- **Spawn logic**: [game.py L1](../../src/engine/game.py#L1)
+- **Integration tests**: [test_interaction.py L119](../../tests/engine/test_interaction.py#L119)
 
 ### Linked Test Functions
 

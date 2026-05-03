@@ -96,12 +96,12 @@ In `Game._spawn_interactive()`:
 ---
 
 ## 7. Deep Links
-- **`LootTable` class**: [loot_table.py L15](file:///Users/adrien.parasote/Documents/perso/game/src/engine/loot_table.py#L15)
-- **`LootTable.load`**: [loot_table.py L27](file:///Users/adrien.parasote/Documents/perso/game/src/engine/loot_table.py#L27)
-- **`LootTable.get_contents`**: [loot_table.py L49](file:///Users/adrien.parasote/Documents/perso/game/src/engine/loot_table.py#L49)
-- **Game Initialization**: [game.py L98](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L98)
-- **Interactive Spawning**: [game.py L715](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L715)
-- **Unit tests**: [test_loot_table.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/engine/test_loot_table.py#L1)
+- **`LootTable` class**: [loot_table.py L15](../../src/engine/loot_table.py#L15)
+- **`LootTable.load`**: [loot_table.py L27](../../src/engine/loot_table.py#L27)
+- **`LootTable.get_contents`**: [loot_table.py L49](../../src/engine/loot_table.py#L49)
+- **Game Initialization**: [game.py L98](../../src/engine/game.py#L98)
+- **Interactive Spawning**: [game.py L715](../../src/engine/game.py#L715)
+- **Unit tests**: [test_loot_table.py L1](../../tests/engine/test_loot_table.py#L1)
 
 ## 6. Test Case Specifications (Linked to Test Suite)
 

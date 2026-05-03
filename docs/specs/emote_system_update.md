@@ -10,7 +10,7 @@ Improve emote responsiveness, and ensure chaining works correctly.
 
 - Ensure `trigger` effectively kills existing emotes to prevent overlap.
 
-### [MODIFY] [emote_sprite.py](file:///Users/adrien.parasote/Documents/perso/game/src/entities/emote_sprite.py)
+### [MODIFY] [emote_sprite.py](../../src/entities/emote_sprite.py)
 - Set default `duration` to `0.6` (configurable via `Settings`).
 - Accelerate the `rise_offset` to match the shorter duration.
 
@@ -41,9 +41,9 @@ Improve emote responsiveness, and ensure chaining works correctly.
 | Missing Sprite | Sprite index out of range | Log error | Skip emote trigger |
 
 ## Deep Links
-- **`EmoteSprite` class**: [emote_sprite.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/entities/emote_sprite.py#L1)
-- **Emote trigger**: [emote.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/entities/emote.py#L1)
-- **Interaction (pickup full inv)**: [interaction.py L141](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L141)
+- **`EmoteSprite` class**: [emote_sprite.py L1](../../src/entities/emote_sprite.py#L1)
+- **Emote trigger**: [emote.py L1](../../src/entities/emote.py#L1)
+- **Interaction (pickup full inv)**: [interaction.py L141](../../src/engine/interaction.py#L141)
 
 ### Linked Test Functions
 

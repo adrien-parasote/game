@@ -93,12 +93,12 @@ Tied to `TimeSystem.brightness`:
 
 ## 7. Deep Links
 
-- **`LightingManager` class**: [lighting.py L7](file:///Users/adrien.parasote/Documents/perso/game/src/engine/lighting.py#L7)
-- **`_compute_slant`**: [lighting.py L131](file:///Users/adrien.parasote/Documents/perso/game/src/engine/lighting.py#L131)
-- **`create_overlay`**: [lighting.py L55](file:///Users/adrien.parasote/Documents/perso/game/src/engine/lighting.py#L55)
-- **Window Position Detection**: [manager.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/map/manager.py#L1)
-- **Time/Brightness Logic**: [time_system.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/time_system.py#L1)
-- **Lighting Tests**: [test_lighting.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/engine/test_lighting.py#L1)
+- **`LightingManager` class**: [lighting.py L7](../../src/engine/lighting.py#L7)
+- **`_compute_slant`**: [lighting.py L131](../../src/engine/lighting.py#L131)
+- **`create_overlay`**: [lighting.py L55](../../src/engine/lighting.py#L55)
+- **Window Position Detection**: [manager.py L1](../../src/map/manager.py#L1)
+- **Time/Brightness Logic**: [time_system.py L1](../../src/engine/time_system.py#L1)
+- **Lighting Tests**: [test_lighting.py L1](../../tests/engine/test_lighting.py#L1)
 
 ### Linked Test Functions
 

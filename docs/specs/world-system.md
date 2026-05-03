@@ -134,8 +134,8 @@ Pickups use the same `{map_basename}_{tiled_id}` key format.
 | Invalid Config | `required_direction` value typo | Default to "any" behavior | Teleport remains functional |
 
 ## 9. Deep Links
-- **Spawning Logic**: [game.py:L168](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L168)
-- **Interaction Logic**: [game.py:L281](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L281)
-- **Teleport Check**: [game.py:L415](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L415)
-- **Teleport Entity**: [teleport.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/entities/teleport.py#L1)
-- **Loot Table Initialization**: [loot-table-spec.md](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/loot-table-spec.md#loot-table)
+- **Spawning Logic**: [game.py:L168](../../src/engine/game.py#L168)
+- **Interaction Logic**: [game.py:L281](../../src/engine/game.py#L281)
+- **Teleport Check**: [game.py:L415](../../src/engine/game.py#L415)
+- **Teleport Entity**: [teleport.py L1](../../src/entities/teleport.py#L1)
+- **Loot Table Initialization**: [loot-table-spec.md](./loot-table-spec.md#loot-table)
