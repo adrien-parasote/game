@@ -61,38 +61,43 @@ def title_screen(mock_screen, mock_save_manager):
     ts.state = "MAIN_MENU"
     ts._slots = [None, None, None]
     ts._hovered_slot = None
+    ts._hovered_item = None
     ts._sw = 1280
     ts._sh = 720
     ts._logo_surf = mock_surf
     ts._panel_load = mock_surf
+
+    from unittest.mock import MagicMock as _MM
+    ts._i18n = _MM()
+    ts._i18n.get.side_effect = lambda key, default="": default
 
     with patch("pygame.transform.smoothscale", return_value=mock_surf):
         TitleScreen._compute_layout(ts)
     return ts
 
 
-# ── TC-009 à TC-011 : Boutons (xfail — menu en cours de refonte) ───────────────
+# ── TC-009 à TC-011 : Items texte du menu ────────────────────────────────────
 
-@pytest.mark.xfail(reason="Boutons supprimés, menu en cours de refonte")
 def test_title_click_new_game_returns_event(title_screen):
-    """TC-009 : clic sur bouton Nouvelle Partie → GameEvent NEW_GAME."""
-    event = _make_mouse_event((640, 360))
+    """TC-009 : clic centre de l'item 'Nouvelle Partie' (index 0) → GameEvent NEW_GAME."""
+    rect = title_screen.menu_item_rects[0]  # Nouvelle Partie
+    event = _make_mouse_event(rect.center)
     result = title_screen.handle_event(event)
     assert result is not None and result.type == GameEventType.NEW_GAME
 
 
-@pytest.mark.xfail(reason="Boutons supprimés, menu en cours de refonte")
 def test_title_click_charger_transitions_to_load_menu(title_screen):
-    """TC-010 : clic Charger → state interne == LOAD_MENU."""
-    event = _make_mouse_event((640, 360))
+    """TC-010 : clic item 'Charger' (index 1) → state == LOAD_MENU."""
+    rect = title_screen.menu_item_rects[1]  # Charger
+    event = _make_mouse_event(rect.center)
     title_screen.handle_event(event)
     assert title_screen.state == "LOAD_MENU"
 
 
-@pytest.mark.xfail(reason="Boutons supprimés, menu en cours de refonte")
 def test_title_click_quitter_returns_quit_event(title_screen):
-    """TC-011 : clic Quitter → GameEvent QUIT."""
-    event = _make_mouse_event((640, 360))
+    """TC-011 : clic item 'Quitter' (index 3) → GameEvent QUIT."""
+    rect = title_screen.menu_item_rects[3]  # Quitter
+    event = _make_mouse_event(rect.center)
     result = title_screen.handle_event(event)
     assert result is not None and result.type == GameEventType.QUIT
 
