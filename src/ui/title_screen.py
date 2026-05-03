@@ -72,8 +72,8 @@ _MENU_ITEM_DEFAULTS = ["Nouvelle Partie", "Charger", "Options", "Quitter"]
 
 # Options back button — 01-menu_back_cursor.png (asset: 57x51, ratio 1.12)
 # Positioné en bas-centre du panel (x=786-1225, y=250-680)
-BACK_BTN_W = 114          # largeur de rendu (2× native 57px)
-BACK_BTN_H = 102          # hauteur de rendu (2× native 51px)
+BACK_BTN_W = 57           # largeur de rendu (native 57px)
+BACK_BTN_H = 51           # hauteur de rendu (native 51px)
 BACK_BTN_X = 1005         # centre-x (même axe que les items)
 BACK_BTN_Y = 620          # centre-y (bas du panel)
 BACK_BTN_OFFSET_X = 0     # décalage fin x
@@ -226,7 +226,7 @@ class TitleScreen:
         back_raw = self._load_asset("01-menu_back_cursor.png")
         self._back_btn = pygame.transform.smoothscale(back_raw, (BACK_BTN_W, BACK_BTN_H))
         self._back_btn_hover = pygame.transform.smoothscale(
-            back_raw, (BACK_BTN_W + 8, BACK_BTN_H + 7)
+            back_raw, (BACK_BTN_W + 4, BACK_BTN_H + 4)
         )
 
     def _compute_layout(self) -> None:
