@@ -12,8 +12,6 @@ import argparse
 import glob
 import os
 import re
-import subprocess
-import sys
 from collections import defaultdict
 
 
@@ -40,25 +38,6 @@ def extract_spec_tc_ids(specs_dir: str) -> dict[str, list[str]]:
     return tc_to_spec, spec_tcs
 
 
-def extract_pytest_tc_markers() -> dict[str, list[str]]:
-    """Run pytest --collect-only to extract tc markers from tests."""
-    result = subprocess.run(
-        [sys.executable, "-m", "pytest", "--collect-only", "-q", "--no-header"],
-        capture_output=True,
-        text=True,
-        cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    )
-
-    # Parse test node IDs to find tc markers — we need verbose output
-    result_verbose = subprocess.run(
-        [sys.executable, "-m", "pytest", "--collect-only", "-q", "-m", "tc"],
-        capture_output=True,
-        text=True,
-        cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    )
-
-    # Fall back to source scanning for tc markers
-    return _scan_source_for_markers()
 
 
 def _scan_source_for_markers() -> dict[str, list[str]]:

@@ -223,3 +223,57 @@ Always run `profile_game.py` or equivalent profiling tools as the absolute first
 - Executed `@[/performance-optimization]`.
 - `profile_results.txt` showed `6.355s` spent idling in `Clock.tick()` out of `10.828s` total for 600 frames. Active frame time was 7.45ms.
 - Exited the workflow without touching code, saving time and preventing divergence.
+
+---
+
+### L-TRACE-001 · 2026-05-04 · U · Perfect
+**Marker-based spec↔test traceability with `@pytest.mark.tc`**
+
+Decorating test functions with `@pytest.mark.tc("TC-ID")` enables automated traceability between specs and tests. Combined with a source-scanning report script (no subprocess needed — just regex over test files), this produces a coverage matrix with zero runtime overhead.
+
+**Pattern to reproduce:**
+```python
+# 1. Register marker in pyproject.toml
+[tool.pytest.ini_options]
+markers = ["tc(id): Spec traceability"]
+
+# 2. Decorate tests
+@pytest.mark.tc("TC-LT-01")
+def test_load_valid_json(self): ...
+
+# 3. Report script scans source for decorators + specs for TC tables
+# Cross-references → covered/missing/orphan
+```
+
+**Key design decisions:**
+- Source scanning (`grep @pytest.mark.tc`) over `pytest --collect-only` — faster, no subprocess, no SDL init required.
+- Domain-prefixed TC IDs (`CHEST-U-01`, `INT-I-03`) — prevents cross-spec collisions without verbose namespacing.
+- Multiple markers on one function allowed when one test covers multiple TCs.
+
+**Evidence:** 115 TC IDs across 14 specs, 90 functions decorated, 100% alignment. `scripts/tc_report.py` — 179 lines. commit `0916c6d`.
+
+---
+
+### A-TRACE-001 · 2026-05-04 · U · Minor Rework
+**TC IDs must be globally unique from the start**
+
+Generic prefixes like `TC-U-01`, `TC-I-01`, `TC-T-01` collided across 3 specs (chest-ui, interactive-objects, engine-core). Required renaming 161 IDs in 6 files.
+
+**Rule:** When creating a new spec with Test Case Specifications, always use a domain-specific prefix:
+
+| Spec domain | Prefix |
+|-------------|--------|
+| Chest UI | `CHEST-` |
+| Interactive objects | `INT-` |
+| Engine core | `CORE-` |
+| Game flow | `GF-` |
+| World system | `WS-` |
+| Lighting | `LT-` |
+| Loot table | `TC-LT-` |
+| NPC | `TC-N-` |
+
+**Evidence:** 16 collisions found, 161 IDs renamed. commit `0916c6d`.
+
+---
+
+*Last optimized: 2026-05-04 — L-TRACE-001, A-TRACE-001 from spec↔test traceability session.*

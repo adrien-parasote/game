@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-03 | Files scanned: 46 | Token estimate: ~420 -->
+<!-- Generated: 2026-05-04 | Files scanned: 48 | Token estimate: ~450 -->
 
 # Game Engine Architecture
 
@@ -53,20 +53,24 @@
 - **WorldState** (`src/engine/world_state.py`, 13L): `{map_name}_{tiled_id}` keyed dict for cross-map persistence.
 - **GameEvents** (`src/engine/game_events.py`): Custom pygame event constants.
 
-## Documentation Structure
+## Documentation & Tooling
 ```
 docs/
-  specs/          17 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
-  CODEMAPS/       Architecture maps (this directory)
-  strategic/      MASTER_ROADMAP.md, game_vision.md, blueprint.md
-  ADRs/           3 Architecture Decision Records
+  specs/            17 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
+  traceability.md   Auto-generated spec↔test coverage matrix (scripts/tc_report.py)
+  CODEMAPS/         Architecture maps (this directory)
+  strategic/        MASTER_ROADMAP.md, game_vision.md, blueprint.md
+  ADRs/             3 Architecture Decision Records
+scripts/
+  tc_report.py      Spec↔Test traceability report (CLI + markdown export)
 .agents/
-  learnings/      5 domain learning files (workflow_optimization, game_engine, audio_engine, ui, testing)
-  rules/          coding-standards.md + language rules
+  learnings/        5 domain learning files (workflow_optimization, game_engine, audio_engine, ui, testing)
+  rules/            coding-standards.md + language rules
 ```
 
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
 - **Test Suite**: Pytest 9.0.3, **492 tests**, **90% coverage** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (32 files across 5 domains)
+- **Traceability**: `@pytest.mark.tc("TC-ID")` markers on 90 functions (115 TC IDs, 100% spec coverage). Registered in `pyproject.toml`.
 - **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction, ChestUI mixin decomposition
