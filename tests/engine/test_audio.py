@@ -194,48 +194,86 @@ def test_update_volumes_disabled():
     am.update_volumes()  # should not raise
 
 
-# --- play_ambient ---
+# --- propose_ambient / flush_ambient ---
 
-def test_play_ambient(audio_manager):
-    """play_ambient stores and plays looping sound."""
+def test_propose_ambient_stores_minimum_distance(audio_manager):
+    """propose_ambient keeps the minimum of all proposed distances per sound name."""
+    audio_manager.propose_ambient("fire", 200.0)
+    audio_manager.propose_ambient("fire", 50.0)   # closer
+    audio_manager.propose_ambient("fire", 300.0)  # farther
+    assert audio_manager._ambient_proposals["fire"] == pytest.approx(50.0)
+
+
+def test_flush_ambient_starts_new_sound(audio_manager):
+    """flush_ambient creates and plays a looping Sound for each proposed name."""
+    audio_manager._ambient_proposals = {"fire": 0.0}
     with patch('os.path.exists', return_value=True), \
          patch('pygame.mixer.Sound') as mock_sound_cls:
-        
         mock_sound = MagicMock()
         mock_sound_cls.return_value = mock_sound
-        
-        audio_manager.play_ambient("fire", "torch_1")
-        assert "torch_1" in audio_manager.ambient_sounds
-        mock_sound.play.assert_called_once_with(loops=-1)
+        audio_manager.flush_ambient()
 
-def test_stop_ambient(audio_manager):
-    """stop_ambient stops the sound and removes it."""
-    mock_sound = MagicMock()
-    audio_manager.ambient_sounds = {"torch_1": mock_sound}
-    
-    audio_manager.stop_ambient("torch_1")
-    mock_sound.stop.assert_called_once()
-    assert "torch_1" not in audio_manager.ambient_sounds
+    assert "fire" in audio_manager.ambient_sounds
+    mock_sound.play.assert_called_once_with(loops=-1)
 
-def test_update_ambient(audio_manager):
-    """update_ambient applies AMBIENT_VOLUME_SCALE * falloff to the sound volume."""
-    from src.engine.audio import AMBIENT_VOLUME_SCALE
+
+def test_flush_ambient_sets_volume_from_distance(audio_manager):
+    """flush_ambient sets volume using AMBIENT_VOLUME_SCALE * falloff at given distance."""
+    from src.engine.audio import AMBIENT_VOLUME_SCALE, AMBIENT_MAX_DISTANCE, AMBIENT_MIN_FALLOFF
     from src.config import Settings
 
     mock_sound = MagicMock()
-    audio_manager.ambient_sounds = {"torch_1": mock_sound}
+    audio_manager.ambient_sounds = {"fire": mock_sound}
+    audio_manager._ambient_proposals = {"fire": 0.0}  # distance=0 → falloff=1.0
 
-    # distance = max_distance (300) -> falloff = min_falloff (0.05)
-    audio_manager.update_ambient("torch_1", 300, max_distance=300)
-    expected_min = pytest.approx(Settings.SFX_VOLUME * AMBIENT_VOLUME_SCALE * 0.05)
-    mock_sound.set_volume.assert_called_with(expected_min)
+    with patch('os.path.exists', return_value=True):
+        audio_manager.flush_ambient()
 
-    # distance = 0 -> falloff = 1.0
-    audio_manager.update_ambient("torch_1", 0, max_distance=300)
-    expected_max = pytest.approx(Settings.SFX_VOLUME * AMBIENT_VOLUME_SCALE * 1.0)
-    mock_sound.set_volume.assert_called_with(expected_max)
+    expected = pytest.approx(Settings.SFX_VOLUME * AMBIENT_VOLUME_SCALE * 1.0)
+    mock_sound.set_volume.assert_called_with(expected)
 
-    # distance = 150 (half of 300) -> falloff = 0.5
-    audio_manager.update_ambient("torch_1", 150, max_distance=300)
-    expected_half = pytest.approx(Settings.SFX_VOLUME * AMBIENT_VOLUME_SCALE * 0.5)
-    mock_sound.set_volume.assert_called_with(expected_half)
+
+def test_flush_ambient_stops_stale_sounds(audio_manager):
+    """flush_ambient stops sounds that received no proposals this frame."""
+    mock_sound = MagicMock()
+    audio_manager.ambient_sounds = {"fire": mock_sound}
+    audio_manager._ambient_proposals = {}  # no proposals
+
+    audio_manager.flush_ambient()
+
+    mock_sound.stop.assert_called_once()
+    assert "fire" not in audio_manager.ambient_sounds
+
+
+def test_flush_ambient_clears_proposals(audio_manager):
+    """flush_ambient resets _ambient_proposals after each frame."""
+    audio_manager._ambient_proposals = {"fire": 10.0}
+    with patch('os.path.exists', return_value=False):
+        audio_manager.flush_ambient()
+    assert audio_manager._ambient_proposals == {}
+
+
+def test_stop_ambient_explicit(audio_manager):
+    """stop_ambient explicitly stops and removes a named sound."""
+    mock_sound = MagicMock()
+    audio_manager.ambient_sounds = {"fire": mock_sound}
+
+    audio_manager.stop_ambient("fire")
+
+    mock_sound.stop.assert_called_once()
+    assert "fire" not in audio_manager.ambient_sounds
+
+
+def test_stop_all_ambients(audio_manager):
+    """stop_all_ambients clears all channels and pending proposals."""
+    mock_a = MagicMock()
+    mock_b = MagicMock()
+    audio_manager.ambient_sounds = {"fire": mock_a, "water": mock_b}
+    audio_manager._ambient_proposals = {"fire": 10.0}
+
+    audio_manager.stop_all_ambients()
+
+    mock_a.stop.assert_called_once()
+    mock_b.stop.assert_called_once()
+    assert audio_manager.ambient_sounds == {}
+    assert audio_manager._ambient_proposals == {}

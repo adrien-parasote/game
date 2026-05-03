@@ -310,18 +310,15 @@ class InteractiveEntity(BaseEntity):
         if getattr(self, 'day_night_driven', False):
             self._update_col_index()
             
-        # Ambient Audio Logic
+        # Ambient Audio — propose model: each entity contributes its distance.
+        # flush_ambient() (called from game loop) picks the nearest source.
         has_ambient = bool(self.sfx_ambient) if hasattr(self, 'sfx_ambient') else False
         if has_ambient and hasattr(self, 'game') and hasattr(self.game, 'audio_manager') and self.game.audio_manager:
-            if self.is_on:
-                self.game.audio_manager.play_ambient(self.sfx_ambient, self.element_id)
-                if hasattr(self.game, 'player') and self.game.player:
-                    dist = self.pos.distance_to(self.game.player.pos)
-                    self.game.audio_manager.update_ambient(self.element_id, dist)
-            else:
-                self.game.audio_manager.stop_ambient(self.element_id)
-                
-            
+            if self.is_on and hasattr(self.game, 'player') and self.game.player:
+                dist = self.pos.distance_to(self.game.player.pos)
+                self.game.audio_manager.propose_ambient(self.sfx_ambient, dist)
+            # If is_on=False: no proposal → flush_ambient stops the channel automatically.
+
         if self.is_on and self.halo_size > 0:
             if self.is_light_source and self.is_animated:
                 num_frames = max(1, self.end_row - self.start_row + 1)

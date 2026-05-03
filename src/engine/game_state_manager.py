@@ -163,8 +163,7 @@ class GameStateManager:
     def _transition_to_title(self) -> None:
         # Stop all game audio before returning to title
         self._game.audio_manager.stop_bgm(fade_ms=500)
-        for sid in list(self._game.audio_manager.ambient_sounds.keys()):
-            self._game.audio_manager.stop_ambient(sid)
+        self._game.audio_manager.stop_all_ambients()
         pygame.mixer.stop()  # stop any remaining SFX channels
         pygame.mouse.set_visible(False)  # custom cursor takes over
         self.state = GameState.TITLE

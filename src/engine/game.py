@@ -266,18 +266,16 @@ class Game:
         """Prime ambient sounds for all active interactive entities on map load.
 
         Called once per _load_map, after the player position is resolved.
-        Ensures torch/ambient sounds start on the very first frame instead of
-        waiting for the first update() cycle (which may be delayed by BGM init).
+        Uses the propose/flush model to start ambients at the correct
+        distance-based volume from the very first frame.
         """
         for entity in self.interactives:
             sfx = getattr(entity, 'sfx_ambient', '')
-            if not sfx:
+            if not sfx or not entity.is_on:
                 continue
-            if not entity.is_on:
-                continue
-            self.audio_manager.play_ambient(sfx, entity.element_id)
             dist = entity.pos.distance_to(player_pos)
-            self.audio_manager.update_ambient(entity.element_id, dist)
+            self.audio_manager.propose_ambient(sfx, dist)
+        self.audio_manager.flush_ambient()
 
     def _spawn_entities(self, entities: list, map_name: str = ""):
         """Instantiate NPCs and Interactive objects from map data."""
@@ -665,6 +663,7 @@ class Game:
             self.visible_sprites.update(dt)
             self.interaction_manager.check_teleporters(was_moving)
             # No time_system update or other world updates
+            self.audio_manager.flush_ambient()
         else:
             # Update Time
             self.time_system.update(dt)
@@ -690,8 +689,10 @@ class Game:
                 
             for obj in self.interactives:
                 obj.update(dt)
-                
-        # Dynamic Title Update (Every 1s)
+
+            # Resolve ambient sound volumes from this frame's proposals.
+            self.audio_manager.flush_ambient()
+
         now = pygame.time.get_ticks()
         if now - self.last_fps_update > 1000:
             fps = self.clock.get_fps()

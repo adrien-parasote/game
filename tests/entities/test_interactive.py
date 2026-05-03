@@ -227,37 +227,33 @@ class TestInteractiveDayNight:
         assert entity.is_on is True
 
 class TestInteractiveAmbientAudio:
-    def test_ambient_starts_on_initialization_if_on(self):
-        """If sfx_ambient is set and entity is_on initially, it triggers play_ambient on update."""
+    def test_ambient_proposes_distance_when_on(self):
+        """If sfx_ambient is set and entity is_on, update() calls propose_ambient with distance."""
         entity, _ = _make_interactive(is_on=True)
         entity.sfx_ambient = "05-fire_crackle"
-        
-        mock_game = MagicMock()
-        mock_game.player.pos = pygame.math.Vector2(100, 100)
-        entity.game = mock_game
-        
-        with patch('src.engine.game.Game', return_value=mock_game):
-            # The first update should trigger play_ambient
-            entity.update(0.1)
-            
-        mock_game.audio_manager.play_ambient.assert_called_once_with("05-fire_crackle", "ent_1")
-        mock_game.audio_manager.update_ambient.assert_called()
 
-    def test_ambient_stops_when_toggled_off(self):
-        """When an entity turns off, it should call stop_ambient."""
-        entity, _ = _make_interactive(is_on=True)
+        mock_game = MagicMock()
+        mock_game.player.pos = pygame.math.Vector2(100, 100)
+        entity.pos = pygame.math.Vector2(100, 100)
+        entity.game = mock_game
+
+        entity.update(0.1)
+
+        mock_game.audio_manager.propose_ambient.assert_called_once_with(
+            "05-fire_crackle", pytest.approx(0.0, abs=1e-3)
+        )
+
+    def test_ambient_no_proposal_when_off(self):
+        """When entity is_on=False, propose_ambient must NOT be called."""
+        entity, _ = _make_interactive(is_on=False)
         entity.sfx_ambient = "05-fire_crackle"
         mock_game = MagicMock()
         mock_game.player.pos = pygame.math.Vector2(100, 100)
         entity.game = mock_game
-        
-        # Turn off via interaction
-        entity.interact(MagicMock())
-        
-        with patch('src.engine.game.Game', return_value=mock_game):
-            entity.update(0.1)
-            
-        mock_game.audio_manager.stop_ambient.assert_called_with("ent_1")
+
+        entity.update(0.1)
+
+        mock_game.audio_manager.propose_ambient.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
