@@ -160,9 +160,9 @@ class TitleScreen:
         return comp
 
     def _load_assets(self) -> None:
-        # Background — scale-to-cover (original is 1024x1024, crops top+bottom to fill 16:9)
+        # Background — native 1280x720, smoothscale is exact (no distortion)
         bg_raw = self._load_asset("01-menu_background.png")
-        self._bg = self._scale_cover(bg_raw, self._sw, self._sh)
+        self._bg = pygame.transform.smoothscale(bg_raw, (self._sw, self._sh))
 
         # Logo — composed from 5 alpha-transparent PNGs
         self._logo_surf = self._build_logo_composite()
