@@ -38,9 +38,6 @@ SLOT_PANEL_Y_START = 140   # inside the load panel overlay
 # Semi-transparent overlay for load screen
 OVERLAY_ALPHA = 180
 
-# Scroll edge overlays (295x720 — shown on left/right edges)
-SCROLL_W = 295             # width of scroll image
-SCROLL_ZONE_W = 295        # mouse hover zone width on each side
 
 
 class TitleScreen:
@@ -52,7 +49,6 @@ class TitleScreen:
         self.state = "MAIN_MENU"          # "MAIN_MENU" | "LOAD_MENU"
         self._slots: list[SlotInfo | None] = [None, None, None]
         self._hovered_slot: int | None = None
-        self._hovered_scroll: str | None = None   # None | 'left' | 'right'
 
         sw, sh = screen.get_size()
         self._sw = sw
@@ -174,13 +170,6 @@ class TitleScreen:
         self._pointer_select_img = self._load_cursor("06-pointer_select.png")
         pygame.mouse.set_visible(False)
 
-        # Scroll edge hover overlay (01-menu_scroll_on.png, 295x720)
-        # "off" state is baked into the background — only load hover image
-        self._scroll_on = pygame.transform.smoothscale(
-            self._load_asset("01-menu_scroll_on.png"), (SCROLL_W, self._sh)
-        )
-        self._scroll_on_r = pygame.transform.flip(self._scroll_on, True, False)
-
     def _compute_layout(self) -> None:
         """Compute save slot rects for the load overlay."""
         ov_x = self._sw // 2 - 450
@@ -199,27 +188,16 @@ class TitleScreen:
         return self._handle_main_menu(event)
 
     def update(self, dt: float) -> None:
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        # Track scroll edge hover
-        if mouse_x < SCROLL_ZONE_W:
-            self._hovered_scroll = "left"
-        elif mouse_x > self._sw - SCROLL_ZONE_W:
-            self._hovered_scroll = "right"
-        else:
-            self._hovered_scroll = None
-
         if self.state == "LOAD_MENU":
+            mouse_pos = pygame.mouse.get_pos()
             self._hovered_slot = None
             for i, rect in enumerate(self.slot_rects):
-                if rect.collidepoint((mouse_x, mouse_y)):
+                if rect.collidepoint(mouse_pos):
                     self._hovered_slot = i
                     break
 
     def draw(self) -> None:
         self._screen.blit(self._bg, (0, 0))
-
-        # Scroll edge overlays (behind logo)
-        self._draw_scrolls()
 
         logo_x = (self._sw - self._logo_surf.get_width()) // 2
         self._screen.blit(self._logo_surf, (logo_x, LOGO_Y))
@@ -228,13 +206,6 @@ class TitleScreen:
             self._draw_load_overlay()
 
         self._draw_cursor()
-
-    def _draw_scrolls(self) -> None:
-        """Draw scroll hover overlay on the active edge only."""
-        if self._hovered_scroll == "left":
-            self._screen.blit(self._scroll_on, (0, 0))
-        elif self._hovered_scroll == "right":
-            self._screen.blit(self._scroll_on_r, (self._sw - SCROLL_W, 0))
 
     # ── Load overlay ───────────────────────────────────────────────────────────
 
