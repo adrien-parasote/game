@@ -334,7 +334,7 @@ class ChestUI:
 
 ## 9. Test Case Specifications
 
-### Unit Tests — `tests/test_chest_ui.py`
+### Unit Tests — `../../tests/test_chest_ui.py`
 
 | Test ID | Component | Input | Expected Output | Edge Case |
 |---------|-----------|-------|-----------------|-----------|
@@ -350,7 +350,7 @@ class ChestUI:
 | TC-U-10 | `_load_background` | `pygame.error` raised | Returns `None` | File not found |
 | TC-U-11 | `_load_slot_image` | `FileNotFoundError` raised | Returns `None` | Headless / missing |
 
-### Transfer Tests — `tests/test_transfer_logic.py` (NEW v1.2)
+### Transfer Tests — `../../tests/test_transfer_logic.py` (NEW v1.2)
 
 | Test ID | Flow | Setup | Expected |
 |---------|------|-------|----------|
@@ -367,7 +367,7 @@ class ChestUI:
 | TC-T-11 | Auto buttons: click down_rect | Arrow down clicked | `_transfer_inventory_to_chest` called |
 | TC-T-12 | Hover updates | Mouse over slot/arrow | Correct hover state set |
 
-### Integration Tests — `tests/test_interaction.py`
+### Integration Tests — `../../tests/test_interaction.py`
 
 | Test ID | Flow | Setup | Verification |
 |---------|------|-------|--------------|

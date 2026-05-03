@@ -70,6 +70,6 @@ This document specifies the technical implementation of performance and structur
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-DLG-01 | `test_dialogue_pagination` | `tests/ui/test_inventory.py:L238` |
-| IT-INT-01 | `test_handle_interaction_npc` | `tests/engine/test_interaction.py:L169` |
-| IT-INT-02 | `test_interaction_toggle_entity_by_id` | `tests/engine/test_interaction.py:L513` |
+| TC-DLG-01 | `test_dialogue_pagination` | `../../tests/ui/test_inventory.py:L238` |
+| IT-INT-01 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
+| IT-INT-02 | `test_interaction_toggle_entity_by_id` | `../../tests/engine/test_interaction.py:L513` |

@@ -244,12 +244,12 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 
 | Spec ID | Test Function | File |
 |---------|---------------|------|
-| TC-U-01 | `test_interact_sign_returns_element_id` | `tests/entities/test_interactive.py:L97` |
-| TC-U-02 | `test_update_animated_looping_wraps_frame` | `tests/entities/test_interactive.py:L116` |
-| TC-U-03 | `test_update_animated_off_resets_frame` | `tests/entities/test_interactive.py:L123` |
-| TC-U-04 | `test_update_closing_door_decrements_frame` | `tests/entities/test_interactive.py:L130` |
-| TC-I-01 | `test_interaction_orientation` | `tests/engine/test_interaction.py:L68` |
-| TC-I-02 | `test_pickup_diagonal_rejection` | `tests/engine/test_interaction.py:L354` |
-| TC-I-03 | `test_verify_orientation_door_relaxed` | `tests/engine/test_interaction.py:L102` |
-| TC-I-04 | `test_anywhere_object_diagonal_rejection` | `tests/engine/test_interaction.py:L384` |
-| TC-I-05 | `test_interaction_toggle_entity_by_id` | `tests/engine/test_interaction.py:L513` |
+| TC-U-01 | `test_interact_sign_returns_element_id` | `../../tests/entities/test_interactive.py:L97` |
+| TC-U-02 | `test_update_animated_looping_wraps_frame` | `../../tests/entities/test_interactive.py:L116` |
+| TC-U-03 | `test_update_animated_off_resets_frame` | `../../tests/entities/test_interactive.py:L123` |
+| TC-U-04 | `test_update_closing_door_decrements_frame` | `../../tests/entities/test_interactive.py:L130` |
+| TC-I-01 | `test_interaction_orientation` | `../../tests/engine/test_interaction.py:L68` |
+| TC-I-02 | `test_pickup_diagonal_rejection` | `../../tests/engine/test_interaction.py:L354` |
+| TC-I-03 | `test_verify_orientation_door_relaxed` | `../../tests/engine/test_interaction.py:L102` |
+| TC-I-04 | `test_anywhere_object_diagonal_rejection` | `../../tests/engine/test_interaction.py:L384` |
+| TC-I-05 | `test_interaction_toggle_entity_by_id` | `../../tests/engine/test_interaction.py:L513` |

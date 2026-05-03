@@ -45,9 +45,9 @@ tests/
 
 | Scope | File | Key Fixtures |
 |-------|------|--------------|
-| **Global** | `tests/conftest.py` | `pygame.init()`, `SDL_VIDEODRIVER=dummy`, `mock_spritesheet` |
-| **Engine** | `tests/engine/conftest.py` | `mock_game` — `Game()` with `_load_map` patched |
-| **UI** | `tests/ui/conftest.py` | `chest_ui` — `ChestUI` with mocked `Inventory` + chest data |
+| **Global** | `../../tests/conftest.py` | `pygame.init()`, `SDL_VIDEODRIVER=dummy`, `mock_spritesheet` |
+| **Engine** | `../../tests/engine/conftest.py` | `mock_game` — `Game()` with `_load_map` patched |
+| **UI** | `../../tests/ui/conftest.py` | `chest_ui` — `ChestUI` with mocked `Inventory` + chest data |
 
 ## Coverage Expectations
 
@@ -65,7 +65,7 @@ tests/
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
 | Scatter `pygame.init()` per file | Use global `conftest.py` | Drift, env failures |
-| Test in a flat `tests/` root | Use domain subdirectories | Unfindable on large suites |
+| Test in a flat `../../tests/` root | Use domain subdirectories | Unfindable on large suites |
 | `shutil.copy` + slice extraction in same script | Copy 1:1 separately, slice separately | Slice without `ast.parse()` → `IndentationError` |
 | Add coverage tests to existing functional files | Create `test_*_coverage.py` per module | Stays removable and localized |
 | Assert `surface.get_size()` after UI `__init__` | Assert `is not None` / `isinstance(Surface)` | `smoothscale` changes size at init |
@@ -74,8 +74,8 @@ tests/
 ## Migration Notes (for future urbanizations)
 
 When adding a new domain:
-1. Create `tests/<domain>/` with `__init__.py`
-2. Create `tests/<domain>/conftest.py` if domain-specific fixtures are needed
+1. Create `../../tests/<domain>/` with `__init__.py`
+2. Create `../../tests/<domain>/conftest.py` if domain-specific fixtures are needed
 3. Run `pytest tests/ --co -q` to verify count before deleting old files
 4. Use `shutil.copy()` for 1:1 migrations; Python script with `ast.parse()` validation for splits
 5. Delete old files only after `pytest tests/ -q` shows zero regressions

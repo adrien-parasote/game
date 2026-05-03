@@ -100,7 +100,7 @@ Pickups use the same `{map_basename}_{tiled_id}` key format.
 
 ## 7. Test Case Specifications
 
-### 7.1 Unit Tests (`tests/test_world_teleport.py`)
+### 7.1 Unit Tests (`../../tests/test_world_teleport.py`)
 | Test ID | Scenario | Input | Expected Result |
 |---------|----------|-------|-----------------|
 | TC-006 | Strict Detection | Property `type=teleport` | Object spawned as `Teleport` |
@@ -109,7 +109,7 @@ Pickups use the same `{map_basename}_{tiled_id}` key format.
 | TC-009 | Teleport Guard (Valid) | `req_dir="down"`, Player facing "down"| `transition_map` called |
 | TC-010 | Teleport 'Any' | `req_dir="any"`, Player facing any | `transition_map` called |
 
-### 7.2 Unit Tests (`tests/test_world_state.py`)
+### 7.2 Unit Tests (`../../tests/test_world_state.py`)
 | Test ID | Scenario | Expected Result |
 |---------|----------|-----------------|
 | WS-001 | `make_key("00-spawn.tmj", 58)` | `"00-spawn_58"` |

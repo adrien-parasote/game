@@ -68,7 +68,7 @@ Tied to `TimeSystem.brightness`:
 
 ## 5. Test Case Specifications
 
-### Unit Tests Required (`tests/test_lighting.py`)
+### Unit Tests Required (`../../tests/test_lighting.py`)
 | Test ID | Component | Input | Expected Output | Edge Cases |
 |---------|-----------|-------|-----------------|------------|
 | LT-001 | Window Cache | MapManager with window tiles | `get_window_positions()` returns `List[(cx, y, width)]` | Map with 0 windows |
@@ -104,10 +104,10 @@ Tied to `TimeSystem.brightness`:
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| LT-001 | `test_map_manager_window_cache_lt001` | `tests/engine/test_lighting.py:L48` |
-| LT-002 | `test_lighting_beam_color_sync_lt003` | `tests/engine/test_lighting.py:L72` |
-| LT-003 | (torch compositing — via `draw_additive_window_beams`) | `tests/engine/test_lighting.py` |
-| LT-004 | `test_lighting_night_overlay_lt004` | `tests/engine/test_lighting.py:L88` |
-| LT-005..LT-009 | `TestSlantContinuity.*` | `tests/engine/test_lighting.py:L108` |
-| LT-010..LT-011 | `TestBeamSurface.*` | `tests/engine/test_lighting.py:L201` |
-| LT-012 | `test_beam_cache_reuses_surface` | `tests/engine/test_lighting.py:L269` |
+| LT-001 | `test_map_manager_window_cache_lt001` | `../../tests/engine/test_lighting.py:L48` |
+| LT-002 | `test_lighting_beam_color_sync_lt003` | `../../tests/engine/test_lighting.py:L72` |
+| LT-003 | (torch compositing — via `draw_additive_window_beams`) | `../../tests/engine/test_lighting.py` |
+| LT-004 | `test_lighting_night_overlay_lt004` | `../../tests/engine/test_lighting.py:L88` |
+| LT-005..LT-009 | `TestSlantContinuity.*` | `../../tests/engine/test_lighting.py:L108` |
+| LT-010..LT-011 | `TestBeamSurface.*` | `../../tests/engine/test_lighting.py:L201` |
+| LT-012 | `test_beam_cache_reuses_surface` | `../../tests/engine/test_lighting.py:L269` |

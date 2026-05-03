@@ -55,11 +55,11 @@
 
 | Spec ID | Test Function | File |
 |---------|---------------|------|
-| TC-INV-001 | `test_inventory_add_item_stacks_in_existing_slot` | `tests/ui/test_inventory.py:L37` |
-| TC-INV-002 | `test_inventory_add_item_returns_overflow` | `tests/ui/test_inventory.py:L55` |
-| TC-INV-003 | `test_inventory_is_full_true` | `tests/ui/test_inventory.py:L73` |
-| IT-PICK-001 | `test_handle_interaction_pickup` | `tests/engine/test_interaction.py:L119` |
-| IT-PICK-002 | `test_handle_interaction_pickup_partial` | `tests/engine/test_interaction.py:L141` |
+| TC-INV-001 | `test_inventory_add_item_stacks_in_existing_slot` | `../../tests/ui/test_inventory.py:L37` |
+| TC-INV-002 | `test_inventory_add_item_returns_overflow` | `../../tests/ui/test_inventory.py:L55` |
+| TC-INV-003 | `test_inventory_is_full_true` | `../../tests/ui/test_inventory.py:L73` |
+| IT-PICK-001 | `test_handle_interaction_pickup` | `../../tests/engine/test_interaction.py:L119` |
+| IT-PICK-002 | `test_handle_interaction_pickup_partial` | `../../tests/engine/test_interaction.py:L141` |
 
 
 ## 5. Implementation Details

@@ -71,7 +71,7 @@ This section defines the behavior and failure modes for autonomous entities.
 
 ### 3.2. Test Case Specifications
 
-#### Unit & Behavior Tests (`tests/test_entities_logic.py`)
+#### Unit & Behavior Tests (`../../tests/test_entities_logic.py`)
 | Test ID | Component | Input | Expected Output |
 |---------|-----------|-------|-----------------|
 | TC-N-01 | NPC Init | Spawn at (16,16) | `NPC.rect.size` == (32,32), anchored correctly |
@@ -79,7 +79,7 @@ This section defines the behavior and failure modes for autonomous entities.
 | TC-N-03 | CPU Freeze | `is_visible`=False passed from `Game` | NPC bypasses `move()` logic |
 | TC-N-04 | AI State | Trigger interaction | NPC enters `interact` state and faces player |
 
-#### Integration Tests (`tests/test_interactions.py`)
+#### Integration Tests (`../../tests/test_interactions.py`)
 | Test ID | Flow | Setup | Verification | Teardown |
 |---------|------|-------|--------------|----------|
 | IT-N-01 | Player interacts | Player faces NPC, presses E | `InteractionManager` triggers `npc.interact()` | Clear groups |
@@ -107,9 +107,9 @@ This section defines the behavior and failure modes for autonomous entities.
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-N-01 | `test_entity_initialization` | `tests/entities/test_entities.py:L26` |
-| TC-N-02 | `test_npc_ai_state_machine` | `tests/entities/test_entities.py:L115` |
-| TC-N-03 | `test_npc_update_invisible_skips` | `tests/entities/test_entities.py:L255` |
-| TC-N-04 | `test_npc_interact_faces_initiator_horizontal` | `tests/entities/test_entities.py:L126` |
-| IT-N-01 | `test_handle_interaction_npc` | `tests/engine/test_interaction.py:L169` |
-| IT-N-02 | `test_npc_interact_freezes_ai` | `tests/entities/test_entities.py:L165` |
+| TC-N-01 | `test_entity_initialization` | `../../tests/entities/test_entities.py:L26` |
+| TC-N-02 | `test_npc_ai_state_machine` | `../../tests/entities/test_entities.py:L115` |
+| TC-N-03 | `test_npc_update_invisible_skips` | `../../tests/entities/test_entities.py:L255` |
+| TC-N-04 | `test_npc_interact_faces_initiator_horizontal` | `../../tests/entities/test_entities.py:L126` |
+| IT-N-01 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
+| IT-N-02 | `test_npc_interact_freezes_ai` | `../../tests/entities/test_entities.py:L165` |

@@ -85,7 +85,7 @@ In `Game._spawn_interactive()`:
 
 ## 6. Test Case Specifications
 
-### Unit Tests — `tests/test_loot_table.py`
+### Unit Tests — `../../tests/test_loot_table.py`
 - **TC-LT-01**: Load valid JSON → results in populated table.
 - **TC-LT-02**: Unknown `item_id` → logged as warning, item skipped.
 - **TC-LT-03**: Quantity > `stack_max` → correctly split into multiple stacks.
@@ -105,7 +105,7 @@ In `Game._spawn_interactive()`:
 
 ## 6. Test Case Specifications (Linked to Test Suite)
 
-### Unit Tests — `tests/engine/test_loot_table.py`
+### Unit Tests — `../../tests/engine/test_loot_table.py`
 
 | Test ID | Test Function | Component | Expected Output |
 |---------|---------------|-----------|-----------------|

@@ -95,15 +95,15 @@
 - `equip_item` enforces `equip_slot` from `propertytypes.json` matching `slot_name`. Returns the passed item untouched if invalid.
 
 ## 🔍 Verification
-- **TDD:** `tests/test_inventory.py` covers logic states.
-- **Transfer tests:** `tests/test_inventory_removal.py` covers `remove_item` edge cases.
+- **TDD:** `../../tests/test_inventory.py` covers logic states.
+- **Transfer tests:** `../../tests/test_inventory_removal.py` covers `remove_item` edge cases.
 - **Coords:** Verified via `detect_clusters_fuzzy.py` on the legacy asset.
 
 **Last updated:** 2026-05-01
 
 ## Test Case Specifications
 
-### Unit Tests — `Inventory` Logic (`tests/ui/test_inventory.py`, `tests/ui/test_inventory_removal.py`, `tests/ui/test_inventory_equipment.py`)
+### Unit Tests — `Inventory` Logic (`../../tests/ui/test_inventory.py`, `../../tests/ui/test_inventory_removal.py`, `../../tests/ui/test_inventory_equipment.py`)
 
 | Test ID | Test Function | Component | Expected Output |
 |---------|---------------|-----------|-----------------|
@@ -123,7 +123,7 @@
 | INV-014 | `test_equip_item_swap` | `Inventory.equip_item` | Old item returned, new item equipped |
 | INV-015 | `test_unequip_item` | `Inventory.unequip_item` | Item removed from slot, returned |
 
-### Unit Tests — `InventoryUI` (`tests/ui/test_inventory_coverage.py`)
+### Unit Tests — `InventoryUI` (`../../tests/ui/test_inventory_coverage.py`)
 
 | Test ID | Test Function | Component | Expected Output |
 |---------|---------------|-----------|-----------------|
@@ -133,7 +133,7 @@
 | INVUI-004 | `test_drop_on_grid_slot` | `InventoryUI.handle_input` | Item moved to grid slot |
 | INVUI-005 | `test_grid_to_grid_swap` | `InventoryUI._handle_drop` | Items swapped between grid slots |
 
-### Integration Tests (`tests/ui/test_inventory_chest_interaction.py`)
+### Integration Tests (`../../tests/ui/test_inventory_chest_interaction.py`)
 
 | Test ID | Test Function | Flow | Verification |
 |---------|---------------|------|--------------|
