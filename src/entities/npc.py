@@ -23,7 +23,10 @@ class NPC(BaseEntity):
         self.frames = sheet.load_grid(4, 4)
         
         self.frame_index = 0.0
-        self.animation_speed = getattr(Settings, "NPC_ANIMATION_SPEED", 8.0)
+        # Scale animation to movement speed so frames-per-tile matches the player's ratio:
+        # player uses 1.0/0.15 fps at PLAYER_SPEED → same ratio applied to NPC speed.
+        _player_anim = 1.0 / 0.15
+        self.animation_speed = _player_anim * self.speed / Settings.PLAYER_SPEED
         self.current_facing = 'down'
         self._was_moving = False   # tracks previous frame's movement to avoid per-tile reset
         

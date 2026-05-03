@@ -696,8 +696,8 @@
                          "type":"15-npc",
                          "visible":true,
                          "width":32,
-                         "x":576,
-                         "y":544
+                         "x":158,
+                         "y":446
                         }, 
                         {
                          "height":32,
