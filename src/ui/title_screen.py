@@ -48,6 +48,7 @@ SCROLL_TITLE_OFFSET_X = 0  # fine-tune x  (>0 right, <0 left)
 SCROLL_TITLE_OFFSET_Y = 0  # fine-tune y  (>0 down,  <0 up)
 SCROLL_TITLE_FONT_SIZE = 50  # taille de la police du titre menu (px)
 SCROLL_TITLE_FONT_PATH = "assets/fonts/cormorant-garamond-regular.ttf"  # police du scroll titre
+SCROLL_TITLE_COLOR = (72, 40, 12)  # encre sépia — accordé au parchemin RGB(211,186,145)
 
 
 class TitleScreen:
@@ -267,7 +268,7 @@ class TitleScreen:
     def _draw_scroll_title(self) -> None:
         """Render the menu title on the right panel scroll banner."""
         label = self._i18n.get("menu.title", default="Menu")
-        text_surf = self._scroll_title_font.render(label, True, (60, 35, 15))
+        text_surf = self._scroll_title_font.render(label, True, SCROLL_TITLE_COLOR)
         cx = SCROLL_TITLE_X + SCROLL_TITLE_OFFSET_X
         cy = SCROLL_TITLE_Y + SCROLL_TITLE_OFFSET_Y
         self._screen.blit(text_surf, text_surf.get_rect(center=(cx, cy)))
