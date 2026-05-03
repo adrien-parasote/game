@@ -224,7 +224,11 @@ def test_handle_interaction_object():
         
         im.handle_interactions()
         assert obj.interact.called
-        game.audio_manager.play_sfx.assert_called_with('click', 'switch_1')
+        call_args = game.audio_manager.play_sfx.call_args
+        assert call_args[0][0] == 'click'
+        assert call_args[0][1] == 'switch_1'
+        assert 'volume_multiplier' in call_args[1]
+        assert 0.4 <= call_args[1]['volume_multiplier'] <= 1.0
         game.world_state.set.assert_called_with('switch_1_key', {'is_on': True})
         im.toggle_entity_by_id.assert_called_with('door_1', depth=1)
 

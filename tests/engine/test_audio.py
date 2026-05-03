@@ -218,19 +218,24 @@ def test_stop_ambient(audio_manager):
     assert "torch_1" not in audio_manager.ambient_sounds
 
 def test_update_ambient(audio_manager):
-    """update_ambient calculates distance based volume."""
+    """update_ambient applies AMBIENT_VOLUME_SCALE * falloff to the sound volume."""
+    from src.engine.audio import AMBIENT_VOLUME_SCALE
+    from src.config import Settings
+
     mock_sound = MagicMock()
     audio_manager.ambient_sounds = {"torch_1": mock_sound}
-    
-    # distance = max_distance -> volume = min_falloff (0.2) * 0.5 = 0.1
-    audio_manager.update_ambient("torch_1", 400, max_distance=400)
-    mock_sound.set_volume.assert_called_with(0.1)
-    
-    # distance = 0 -> volume = Settings.SFX_VOLUME
-    from src.config import Settings
-    audio_manager.update_ambient("torch_1", 0, max_distance=400)
-    mock_sound.set_volume.assert_called_with(Settings.SFX_VOLUME)
-    
-    # distance = 200 -> volume = half of SFX_VOLUME
-    audio_manager.update_ambient("torch_1", 200, max_distance=400)
-    mock_sound.set_volume.assert_called_with(Settings.SFX_VOLUME * 0.5)
+
+    # distance = max_distance (300) -> falloff = min_falloff (0.05)
+    audio_manager.update_ambient("torch_1", 300, max_distance=300)
+    expected_min = pytest.approx(Settings.SFX_VOLUME * AMBIENT_VOLUME_SCALE * 0.05)
+    mock_sound.set_volume.assert_called_with(expected_min)
+
+    # distance = 0 -> falloff = 1.0
+    audio_manager.update_ambient("torch_1", 0, max_distance=300)
+    expected_max = pytest.approx(Settings.SFX_VOLUME * AMBIENT_VOLUME_SCALE * 1.0)
+    mock_sound.set_volume.assert_called_with(expected_max)
+
+    # distance = 150 (half of 300) -> falloff = 0.5
+    audio_manager.update_ambient("torch_1", 150, max_distance=300)
+    expected_half = pytest.approx(Settings.SFX_VOLUME * AMBIENT_VOLUME_SCALE * 0.5)
+    mock_sound.set_volume.assert_called_with(expected_half)
