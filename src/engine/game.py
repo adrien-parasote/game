@@ -256,6 +256,29 @@ class Game:
         self.player.direction = pygame.math.Vector2(0, 0)
         logging.info(f"Loaded map {map_name}, player spawned at {spawn_pos}")
 
+        # Explicitly prime ambient sounds for all active entities.
+        # Sound.play() can silently return None on the first frame if the mixer
+        # is busy starting the BGM; calling it here (after player pos is known)
+        # ensures the distance-based volume is correct from the first frame.
+        self._start_initial_ambients(pygame.math.Vector2(spawn_pos))
+
+    def _start_initial_ambients(self, player_pos: pygame.math.Vector2) -> None:
+        """Prime ambient sounds for all active interactive entities on map load.
+
+        Called once per _load_map, after the player position is resolved.
+        Ensures torch/ambient sounds start on the very first frame instead of
+        waiting for the first update() cycle (which may be delayed by BGM init).
+        """
+        for entity in self.interactives:
+            sfx = getattr(entity, 'sfx_ambient', '')
+            if not sfx:
+                continue
+            if not entity.is_on:
+                continue
+            self.audio_manager.play_ambient(sfx, entity.element_id)
+            dist = entity.pos.distance_to(player_pos)
+            self.audio_manager.update_ambient(entity.element_id, dist)
+
     def _spawn_entities(self, entities: list, map_name: str = ""):
         """Instantiate NPCs and Interactive objects from map data."""
         half_tile = self.tile_size // 2
