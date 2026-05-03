@@ -46,42 +46,42 @@ SCROLL_TITLE_X = 1000      # centre-x of the scroll text zone (pixels)
 SCROLL_TITLE_Y = 80       # centre-y of the scroll text zone (pixels)
 SCROLL_TITLE_OFFSET_X = 0  # fine-tune x  (>0 right, <0 left)
 SCROLL_TITLE_OFFSET_Y = 0  # fine-tune y  (>0 down,  <0 up)
-SCROLL_TITLE_FONT_SIZE = 50  # taille de la police du titre menu (px)
-SCROLL_TITLE_FONT_PATH = "assets/fonts/cormorant-garamond-regular.ttf"  # police du scroll titre
-SCROLL_TITLE_COLOR = (72, 40, 12)   # encre sépia — accordé au parchemin RGB(211,186,145)
+SCROLL_TITLE_FONT_SIZE = 50  # menu title font size (px)
+SCROLL_TITLE_FONT_PATH = "assets/fonts/cormorant-garamond-regular.ttf"  # scroll title font
+SCROLL_TITLE_COLOR = (72, 40, 12)   # sepia ink — matches parchment RGB(211,186,145)
 
 # Right panel — menu items (Pillow analysis of 01-menu_background.png)
-# Panel bounds: x=786-1225, y=250-680  |  fond RGB(37,54,58) sombre bleu
-# Zone texte (hors bordure 40px): x=826-1185, y=290-650
-MENU_ITEM_X = 1005          # centre-x des items (centre zone texte)
-MENU_ITEM_Y_START = 360     # y du premier item
-MENU_ITEM_SPACING = 80      # espacement vertical entre items
-MENU_ITEM_FONT_SIZE = 38    # taille police items (px)
-MENU_ITEM_COLOR = (220, 195, 140)        # doré chaud au hover
-MENU_ITEM_HOVER_COLOR = (255, 235, 180)  # doré lumineux au hover (inchangé)
-MENU_ITEM_OFFSET_X = 0      # décalage fin x
-MENU_ITEM_OFFSET_Y = 0      # décalage fin y
-# Effet "gravé dans la roche" pour l'état idle
-# Fond pierre RGB(37,54,58) — 3 passes : ombre | reflet | texte
-MENU_ENGRAVE_TEXT   = (58, 85, 92)   # texte : légèrement plus clair que pierre
-MENU_ENGRAVE_SHADOW = (12, 20, 23)   # ombre (bas-droite +1,+2) : fond de la gravure
-MENU_ENGRAVE_LIGHT  = (75, 105, 112) # reflet (haut-gauche -1,-1) : bord éclairé
+# Panel bounds: x=786-1225, y=250-680  |  background RGB(37,54,58) dark blue
+# Text zone (excluding 40px border): x=826-1185, y=290-650
+MENU_ITEM_X = 1005          # centre-x of items (centre of text zone)
+MENU_ITEM_Y_START = 360     # y of the first item
+MENU_ITEM_SPACING = 80      # vertical spacing between items
+MENU_ITEM_FONT_SIZE = 38    # item font size (px)
+MENU_ITEM_COLOR = (220, 195, 140)        # warm gold on hover
+MENU_ITEM_HOVER_COLOR = (255, 235, 180)  # bright gold on hover (unchanged)
+MENU_ITEM_OFFSET_X = 0      # fine-tune x offset
+MENU_ITEM_OFFSET_Y = 0      # fine-tune y offset
+# "Engraved in stone" effect for idle state
+# Stone background RGB(37,54,58) — 3 passes : shadow | highlight | text
+MENU_ENGRAVE_TEXT   = (58, 85, 92)   # text: slightly lighter than stone
+MENU_ENGRAVE_SHADOW = (12, 20, 23)   # shadow (bottom-right +1,+2): engraving depth
+MENU_ENGRAVE_LIGHT  = (75, 105, 112) # highlight (top-left -1,-1): lit edge
 
 _MENU_ITEM_KEYS = ["menu.new_game", "menu.load", "menu.options", "menu.quit"]
 _MENU_ITEM_DEFAULTS = ["Nouvelle Partie", "Charger", "Options", "Quitter"]
 
 # Options back button — 01-menu_back_cursor.png (asset: 57x51, ratio 1.12)
-# Positioné en bas-centre du panel (x=786-1225, y=250-680)
-BACK_BTN_W = 28           # largeur de rendu (1/2 native)
-BACK_BTN_H = 25           # hauteur de rendu (1/2 native)
-BACK_BTN_X = 1005         # centre-x (même axe que les items)
-BACK_BTN_Y = 620          # centre-y (bas du panel)
-BACK_BTN_OFFSET_X = -50    # décalage fin x (centré sur texte+icône)
-BACK_BTN_OFFSET_Y = 0     # décalage fin y
-BACK_BTN_GAP = 6          # espace entre le texte et l'icône
-BACK_BTN_FONT_SIZE = 22   # taille du label (Cormorant Garamond)
-BACK_BTN_LABEL_KEY = "menu.back"   # clé i18n
-BACK_BTN_LABEL_DEFAULT = "Retour"  # valeur par défaut
+# Positioned at bottom-centre of the panel (x=786-1225, y=250-680)
+BACK_BTN_W = 28           # render width (1/2 native)
+BACK_BTN_H = 25           # render height (1/2 native)
+BACK_BTN_X = 1005         # centre-x (same axis as items)
+BACK_BTN_Y = 620          # centre-y (bottom of the panel)
+BACK_BTN_OFFSET_X = -50    # fine-tune x (centred on text+icon)
+BACK_BTN_OFFSET_Y = 0     # fine-tune y
+BACK_BTN_GAP = 6          # space between the text and the icon
+BACK_BTN_FONT_SIZE = 22   # label size (Cormorant Garamond)
+BACK_BTN_LABEL_KEY = "menu.back"   # i18n key
+BACK_BTN_LABEL_DEFAULT = "Retour"  # default value
 
 
 class TitleScreen:
@@ -333,9 +333,9 @@ class TitleScreen:
     ) -> None:
         """3-pass engraved-in-stone text effect.
 
-        Pass 1 — ombre (bas-droite) : simule le fond sombre de la gravure.
-        Pass 2 — reflet (haut-gauche) : simule la luz sur le bord supérieur.
-        Pass 3 — texte principal : légèrement plus clair que la pierre.
+        Pass 1 — shadow (bottom-right): simulates the dark background of the engraving.
+        Pass 2 — highlight (top-left): simulates light on the upper edge.
+        Pass 3 — main text: slightly lighter than the stone.
         Uses self._menu_item_font by default; pass a custom font to override.
         """
         f = font if font is not None else self._menu_item_font

@@ -814,7 +814,7 @@ class TestComputeLayoutEdge:
     def test_compute_layout_hover_img_fail(self, monkeypatch):
         """When hover image fails to load, _hover_img is set to None."""
         ui = ChestUI()
-        monkeypatch.setattr("src.ui.chest.ASSET_SLOT_HOVER", "nonexistent_hover.png")
+        monkeypatch.setattr("src.ui.chest_layout.ASSET_SLOT_HOVER", "nonexistent_hover.png")
         ui.open(object(), MagicMock(inventory=MagicMock(capacity=5)))
         assert ui._hover_img is None
 

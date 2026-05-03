@@ -25,15 +25,15 @@ INNER_TOP = 60        # px from panel top to inner stone area
 INNER_BOTTOM = 60     # px from panel bottom to inner stone area
 
 # Layout offsets from panel top
-PAUSE_TITLE_OFFSET = 105    # y du titre depuis le haut du panel
-ITEM_Y_START_OFFSET = 170  # y du 1er item depuis le haut du panel
-ITEM_SPACING = 60          # espacement vertical entre items
+PAUSE_TITLE_OFFSET = 105    # y offset of the title from the top of the panel
+ITEM_Y_START_OFFSET = 170  # y offset of the first item from the top of the panel
+ITEM_SPACING = 60          # vertical spacing between items
 
 # Font sizes
 PAUSE_TITLE_FONT_SIZE = 42
 PAUSE_ITEM_FONT_SIZE = 32
 
-# Couleurs — identiques au TitleScreen
+# Colors — identical to TitleScreen
 ENGRAVE_TEXT   = (58, 85, 92)
 ENGRAVE_SHADOW = (12, 20, 23)
 ENGRAVE_LIGHT  = (75, 105, 112)
@@ -173,7 +173,7 @@ class PauseScreen:
         self._screen.blit(self._overlay, (0, 0))
         self._screen.blit(self._panel, panel_rect)
 
-        # Title — Cormorant Garamond, doré, centré en haut du panel
+        # Title — Cormorant Garamond, golden, centered at the top of the panel
         title = self._title_font.render("PAUSE", True, TITLE_COLOR)
         self._screen.blit(
             title,

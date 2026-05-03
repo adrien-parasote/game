@@ -74,7 +74,7 @@ class InteractiveEntity(BaseEntity):
             return True
         if self.light_control == "forced_off":
             return False
-        # "auto" : suit la nuit
+        # "auto" : follows the night
         if getattr(self, '_time_system', None) is None:
             return getattr(self, '_static_is_on', False)
         return self._time_system.brightness < 0.4
