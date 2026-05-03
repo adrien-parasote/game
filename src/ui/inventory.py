@@ -5,6 +5,7 @@ import logging
 from src.config import Settings
 from src.engine.asset_manager import AssetManager
 from src.engine.i18n import I18nManager
+from src.ui.inventory_constants import *
 
 class InventoryUI:
     """
@@ -25,17 +26,16 @@ class InventoryUI:
         self.icon_cache = {}
         
         # Load and Scale Assets
-        self.bg = self._load_asset("01-inventory.png")
-        self.slot_img = self._load_asset("03-inventory_slot.png")
-        self.active_tab_img = self._load_asset("02-active_tab.png")
-        self.hover_img = self._load_asset("04-inventory_slot_hover.png")
-        self.pointer_img = self._load_asset("05-pointer.png")
-        self.pointer_select_img = self._load_asset("06-pointer_select.png")
+        self.bg = self._load_asset(INV_ASSET_BG)
+        self.slot_img = self._load_asset(INV_ASSET_SLOT)
+        self.active_tab_img = self._load_asset(INV_ASSET_TAB)
+        self.hover_img = self._load_asset(INV_ASSET_HOVER)
+        self.pointer_img = self._load_asset(INV_ASSET_POINTER)
+        self.pointer_select_img = self._load_asset(INV_ASSET_POINTER_SELECT)
         
         # Urbanization: Scale down to fit 1280px screen (1344 -> 1200)
-        target_width = 1200
         original_width = self.bg.get_width()
-        self.scale_factor = target_width / original_width
+        self.scale_factor = INV_TARGET_WIDTH / original_width
         
         # Rescale all visual assets
         new_bg_size = (int(self.bg.get_width() * self.scale_factor), int(self.bg.get_height() * self.scale_factor))
@@ -50,44 +50,38 @@ class InventoryUI:
             (int(self.hover_img.get_width() * self.scale_factor), int(self.hover_img.get_height() * self.scale_factor)))
         # Scale cursors while preserving aspect ratio
         target_h = Settings.CURSOR_SIZE
-        ratio = target_h / 535 # 535 is original height
-        target_w = int(309 * ratio) # 309 is original width
+        ratio = target_h / INV_ORIGINAL_CURSOR_HEIGHT
+        target_w = int(INV_ORIGINAL_CURSOR_WIDTH * ratio)
         
         self.pointer_img = pygame.transform.smoothscale(self.pointer_img, (target_w, target_h))
         self.pointer_select_img = pygame.transform.smoothscale(self.pointer_select_img, (target_w, target_h))
         
-        # UI Layout Constants (Scaled from original 1344x704 coordinates)
+        # UI Layout Constants
         s = self.scale_factor
         
         # Tabs positions (RED zone)
         self.tab_rects = [
-            self.active_tab_img.get_rect(center=(self.bg_rect.x + int(x * s), self.bg_rect.y + int(130 * s)))
-            for x in [733, 863, 992, 1121]
+            self.active_tab_img.get_rect(center=(self.bg_rect.x + int(x * s), self.bg_rect.y + int(INV_TAB_Y * s)))
+            for x in INV_TAB_X_POSITIONS
         ]
         
         # Equipment Slots (MAGENTA zone - Left)
-        self.equip_rect_side = int(78 * s)
+        self.equip_rect_side = int(INV_EQUIP_RECT_SIDE * s)
         self.equipment_slots = {
-            "HEAD": (self.bg_rect.x + int(354 * s), self.bg_rect.y + int(160 * s)),
-            "BAG": (self.bg_rect.x + int(212 * s), self.bg_rect.y + int(290 * s)),
-            "BELT": (self.bg_rect.x + int(211 * s), self.bg_rect.y + int(405 * s)),
-            "LEFT_HAND": (self.bg_rect.x + int(242 * s), self.bg_rect.y + int(529 * s)),
-            "UPPER_BODY": (self.bg_rect.x + int(499 * s), self.bg_rect.y + int(291 * s)),
-            "LOWER_BODY": (self.bg_rect.x + int(498 * s), self.bg_rect.y + int(406 * s)),
-            "RIGHT_HAND": (self.bg_rect.x + int(469 * s), self.bg_rect.y + int(529 * s)),
-            "SHOES": (self.bg_rect.x + int(354 * s), self.bg_rect.y + int(549 * s))
+            k: (self.bg_rect.x + int(v[0] * s), self.bg_rect.y + int(v[1] * s))
+            for k, v in INV_EQUIPMENT_SLOTS.items()
         }
         
         # Inventory Grid (BLUE zone - Right)
-        self.grid_start = (self.bg_rect.x + int(713 * s), self.bg_rect.y + int(219 * s))
-        self.grid_cols = 7
-        self.grid_rows = 4
-        self.grid_spacing_x = int(72 * s)
-        self.grid_spacing_y = int(72 * s)
+        self.grid_start = (self.bg_rect.x + int(INV_GRID_START[0] * s), self.bg_rect.y + int(INV_GRID_START[1] * s))
+        self.grid_cols = INV_GRID_COLS
+        self.grid_rows = INV_GRID_ROWS
+        self.grid_spacing_x = int(INV_GRID_SPACING_X * s)
+        self.grid_spacing_y = int(INV_GRID_SPACING_Y * s)
         
         # Character Preview (ORANGE zone - Center Left)
-        self.char_preview_pos = (self.bg_rect.x + int(358 * s), self.bg_rect.y + int(311 * s))
-        self.char_name_pos = (self.bg_rect.x + int(358 * s), self.bg_rect.y + int(410 * s))
+        self.char_preview_pos = (self.bg_rect.x + int(INV_CHAR_PREVIEW_POS[0] * s), self.bg_rect.y + int(INV_CHAR_PREVIEW_POS[1] * s))
+        self.char_name_pos = (self.bg_rect.x + int(INV_CHAR_NAME_POS[0] * s), self.bg_rect.y + int(INV_CHAR_NAME_POS[1] * s))
         
         self.anim_timer = 0
         self.anim_frame = 0
@@ -430,8 +424,8 @@ class InventoryUI:
     def _draw_info_zone(self, screen):
         """Draw either character stats or hovered item info in the green bar."""
         s = self.scale_factor
-        stats_x = self.bg_rect.x + int(695 * s)
-        stats_y = self.bg_rect.y + int(551 * s)
+        stats_x = self.bg_rect.x + int(INV_STATS_X * s)
+        stats_y = self.bg_rect.y + int(INV_STATS_Y * s)
         
         # Check if we should show item info instead of stats
         if self.hovered_slot:
@@ -448,7 +442,7 @@ class InventoryUI:
                     screen.blit(name_text, (stats_x, stats_y - int(16 * s)))
                     
                     # Draw Wrapped Description (More compact)
-                    max_w = self.bg_rect.width - int(780 * s) 
+                    max_w = self.bg_rect.width - int(INV_INFO_MAX_W_OFFSET * s) 
                     words = description.split(' ')
                     lines = []
                     current_line = []
@@ -474,12 +468,12 @@ class InventoryUI:
         
         # HP (Center)
         hp_text = self.noble_font.render(f"HP {self.player.hp}/{self.player.max_hp}", True, (60, 40, 30))
-        hp_rect = hp_text.get_rect(center=(self.bg_rect.x + int(929 * s), stats_y))
+        hp_rect = hp_text.get_rect(center=(self.bg_rect.x + int(INV_HP_X * s), stats_y))
         screen.blit(hp_text, hp_rect)
         
         # GOLD (Right)
         gold_text = self.noble_font.render(f"GOLD {self.player.gold}", True, (60, 40, 30))
-        gold_rect = gold_text.get_rect(midright=(self.bg_rect.x + int(1160 * s), stats_y))
+        gold_rect = gold_text.get_rect(midright=(self.bg_rect.x + int(INV_GOLD_X * s), stats_y))
         screen.blit(gold_text, gold_rect)
 
     def _get_item_icon(self, icon_filename):

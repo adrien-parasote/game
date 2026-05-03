@@ -1188,3 +1188,27 @@ By extracting the logic into Mixin classes (`ChestTransferMixin`, `ChestLayoutMi
 - `src/ui/chest.py` successfully split into 5 domain-specific files (`chest.py`, `chest_layout.py`, `chest_transfer.py`, `chest_draw.py`, `chest_constants.py`).
 - The entire `pytest tests/ui/test_chest.py` suite (87 tests) passed with 0 functional changes to the tests themselves.
 
+---
+
+### L-ARCH-006 · 2026-05-03 · U · Minor Rework
+**Private Constants Exporting with Wildcard Imports**
+
+When extracting UI configuration into a dedicated `_constants.py` file, we encountered 31 `NameError` test failures in the Python test suite. 
+
+**Anti-pattern (what to avoid)**
+Using `from module_constants import *` will **not** import any constants prefixed with an underscore (e.g. `_ASSET_DIR`, `_FONT_PATH`), as Python treats them as private to the module. If these variables are needed in the consumer file, they will be undefined.
+
+**Pattern (what to reproduce)**
+When extracting private constants, you must either:
+1. Rename the constants to remove the underscore (making them public).
+2. Explicitly import the underscored variables alongside the wildcard import:
+   `from module_constants import *`
+   `from module_constants import _PRIVATE_VAR`
+3. Define `__all__` in the constants file.
+
+We chose option 2 to make the usage explicit.
+
+**Evidence:**
+- Extracted constants from 5 UI files into `_constants.py` files.
+- `test_game.py` failed with `NameError: name '_MENU_ITEM_KEYS' is not defined`.
+- Fixed by adding explicit imports for underscored variables, bringing the test suite back to 100% pass rate.
