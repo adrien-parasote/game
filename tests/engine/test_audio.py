@@ -234,14 +234,17 @@ def test_flush_ambient_sets_volume_from_distance(audio_manager):
 
 
 def test_flush_ambient_stops_stale_sounds(audio_manager):
-    """flush_ambient stops sounds that received no proposals this frame."""
+    """flush_ambient stops the Channel (not the Sound) for sounds with no proposals."""
     mock_sound = MagicMock()
+    mock_channel = MagicMock()
     audio_manager.ambient_sounds = {"fire": mock_sound}
+    audio_manager.ambient_channels = {"fire": mock_channel}
     audio_manager._ambient_proposals = {}  # no proposals
 
     audio_manager.flush_ambient()
 
-    mock_sound.stop.assert_called_once()
+    mock_channel.stop.assert_called_once()
+    mock_sound.stop.assert_not_called()  # Sound.stop() must NOT be called
     assert "fire" not in audio_manager.ambient_sounds
 
 
@@ -254,26 +257,35 @@ def test_flush_ambient_clears_proposals(audio_manager):
 
 
 def test_stop_ambient_explicit(audio_manager):
-    """stop_ambient explicitly stops and removes a named sound."""
+    """stop_ambient stops the Channel and removes the sound entry."""
     mock_sound = MagicMock()
+    mock_channel = MagicMock()
     audio_manager.ambient_sounds = {"fire": mock_sound}
+    audio_manager.ambient_channels = {"fire": mock_channel}
 
     audio_manager.stop_ambient("fire")
 
-    mock_sound.stop.assert_called_once()
+    mock_channel.stop.assert_called_once()
+    mock_sound.stop.assert_not_called()
     assert "fire" not in audio_manager.ambient_sounds
 
 
 def test_stop_all_ambients(audio_manager):
-    """stop_all_ambients clears all channels and pending proposals."""
+    """stop_all_ambients stops all Channels and clears all dicts."""
     mock_a = MagicMock()
     mock_b = MagicMock()
+    mock_ch_a = MagicMock()
+    mock_ch_b = MagicMock()
     audio_manager.ambient_sounds = {"fire": mock_a, "water": mock_b}
+    audio_manager.ambient_channels = {"fire": mock_ch_a, "water": mock_ch_b}
     audio_manager._ambient_proposals = {"fire": 10.0}
 
     audio_manager.stop_all_ambients()
 
-    mock_a.stop.assert_called_once()
-    mock_b.stop.assert_called_once()
+    mock_ch_a.stop.assert_called_once()
+    mock_ch_b.stop.assert_called_once()
+    mock_a.stop.assert_not_called()
+    mock_b.stop.assert_not_called()
     assert audio_manager.ambient_sounds == {}
+    assert audio_manager.ambient_channels == {}
     assert audio_manager._ambient_proposals == {}

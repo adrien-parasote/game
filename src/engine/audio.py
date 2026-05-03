@@ -6,7 +6,7 @@ from src.config import Settings
 
 # Ambients play at most 60 % of SFX_VOLUME — audible atmospheric background
 # without competing with footsteps and interaction cues.
-AMBIENT_VOLUME_SCALE = 0.6
+AMBIENT_VOLUME_SCALE = 0.8
 
 # Falloff parameters for distance-based ambient volume.
 AMBIENT_MAX_DISTANCE: float = 300.0
@@ -31,6 +31,9 @@ class AudioManager:
         self.current_bgm: Optional[str] = None
         self.sounds: Dict[str, pygame.mixer.Sound] = {}
         self.ambient_sounds: Dict[str, pygame.mixer.Sound] = {}
+        # Tracks the specific Channel for each ambient sound so we stop only
+        # that channel (not all channels playing a given Sound object).
+        self.ambient_channels: Dict[str, pygame.mixer.Channel] = {}
         # Accumulates (sound_name → min_distance) proposals for the current frame.
         self._ambient_proposals: Dict[str, float] = {}
         self.is_muted: bool = False
@@ -196,8 +199,12 @@ class AudioManager:
                     continue
                 try:
                     sound = pygame.mixer.Sound(path)
-                    sound.play(loops=-1)
+                    channel = sound.play(loops=-1)
+                    if channel is None:
+                        logging.warning(f"No free channel for ambient: {name}")
+                        continue
                     self.ambient_sounds[name] = sound
+                    self.ambient_channels[name] = channel
                     logging.debug(f"Ambient started: {name}")
                 except pygame.error as e:
                     logging.error(f"Failed to start ambient {name}: {e}")
@@ -214,7 +221,10 @@ class AudioManager:
         # Stop channels that had no proposals this frame
         for name in list(self.ambient_sounds.keys()):
             if name not in active_names:
-                self.ambient_sounds[name].stop()
+                # Stop only the specific channel, not all instances of the Sound.
+                channel = self.ambient_channels.pop(name, None)
+                if channel:
+                    channel.stop()
                 del self.ambient_sounds[name]
                 logging.debug(f"Ambient stopped (no proposals): {name}")
 
@@ -222,14 +232,17 @@ class AudioManager:
 
     def stop_ambient(self, source_id: str) -> None:
         """Explicitly stop a named ambient sound (e.g. on state transition)."""
+        channel = self.ambient_channels.pop(source_id, None)
+        if channel:
+            channel.stop()
         if source_id in self.ambient_sounds:
-            self.ambient_sounds[source_id].stop()
             del self.ambient_sounds[source_id]
             logging.debug(f"Ambient stopped: {source_id}")
 
     def stop_all_ambients(self) -> None:
         """Stop every currently playing ambient sound."""
-        for sound in self.ambient_sounds.values():
-            sound.stop()
+        for channel in self.ambient_channels.values():
+            channel.stop()
+        self.ambient_channels.clear()
         self.ambient_sounds.clear()
         self._ambient_proposals.clear()
