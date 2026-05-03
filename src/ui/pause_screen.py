@@ -25,9 +25,9 @@ INNER_TOP = 60        # px from panel top to inner stone area
 INNER_BOTTOM = 60     # px from panel bottom to inner stone area
 
 # Layout offsets from panel top
-PAUSE_TITLE_OFFSET = 90    # y du titre depuis le haut du panel
-ITEM_Y_START_OFFSET = 145  # y du 1er item depuis le haut du panel
-ITEM_SPACING = 70          # espacement vertical entre items
+PAUSE_TITLE_OFFSET = 105    # y du titre depuis le haut du panel
+ITEM_Y_START_OFFSET = 170  # y du 1er item depuis le haut du panel
+ITEM_SPACING = 60          # espacement vertical entre items
 
 # Font sizes
 PAUSE_TITLE_FONT_SIZE = 42
