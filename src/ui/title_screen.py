@@ -76,7 +76,7 @@ BACK_BTN_W = 28           # largeur de rendu (1/2 native)
 BACK_BTN_H = 25           # hauteur de rendu (1/2 native)
 BACK_BTN_X = 1005         # centre-x (même axe que les items)
 BACK_BTN_Y = 620          # centre-y (bas du panel)
-BACK_BTN_OFFSET_X = 80    # décalage fin x (centré sur texte+icône)
+BACK_BTN_OFFSET_X = 50    # décalage fin x (centré sur texte+icône)
 BACK_BTN_OFFSET_Y = 0     # décalage fin y
 BACK_BTN_GAP = 6          # espace entre le texte et l'icône
 BACK_BTN_FONT_SIZE = 22   # taille du label (Cormorant Garamond)
@@ -327,16 +327,21 @@ class TitleScreen:
             else:
                 self._blit_engraved(label, cx, cy)
 
-    def _blit_engraved(self, label: str, cx: int, cy: int) -> None:
+    def _blit_engraved(
+        self, label: str, cx: int, cy: int,
+        font: pygame.font.Font | None = None
+    ) -> None:
         """3-pass engraved-in-stone text effect.
 
         Pass 1 — ombre (bas-droite) : simule le fond sombre de la gravure.
         Pass 2 — reflet (haut-gauche) : simule la luz sur le bord supérieur.
         Pass 3 — texte principal : légèrement plus clair que la pierre.
+        Uses self._menu_item_font by default; pass a custom font to override.
         """
-        shadow = self._menu_item_font.render(label, True, MENU_ENGRAVE_SHADOW)
-        light  = self._menu_item_font.render(label, True, MENU_ENGRAVE_LIGHT)
-        text   = self._menu_item_font.render(label, True, MENU_ENGRAVE_TEXT)
+        f = font if font is not None else self._menu_item_font
+        shadow = f.render(label, True, MENU_ENGRAVE_SHADOW)
+        light  = f.render(label, True, MENU_ENGRAVE_LIGHT)
+        text   = f.render(label, True, MENU_ENGRAVE_TEXT)
         r = text.get_rect(center=(cx, cy))
         self._screen.blit(shadow, r.move(1, 2))
         self._screen.blit(light,  r.move(-1, -1))
@@ -422,7 +427,7 @@ class TitleScreen:
         return None
 
     def _draw_options_overlay(self) -> None:
-        """Draw options panel: 'Retour' label + back icon side by side."""
+        """Draw options panel: 'Retour' label (engraved/golden) + back icon."""
         label = self._i18n.get(BACK_BTN_LABEL_KEY, default=BACK_BTN_LABEL_DEFAULT)
         cx = BACK_BTN_X + BACK_BTN_OFFSET_X
         cy = BACK_BTN_Y + BACK_BTN_OFFSET_Y
@@ -431,19 +436,23 @@ class TitleScreen:
         btn = self._back_btn_hover if self._back_hovered else self._back_btn
         icon_w = btn.get_width()
 
-        # Render label
-        color = MENU_ITEM_HOVER_COLOR if self._back_hovered else MENU_ITEM_COLOR
-        label_surf = self._back_label_font.render(label, True, color)
-        label_w = label_surf.get_width()
-        label_h = label_surf.get_height()
+        # Measure label width for layout (use engraved text surface)
+        label_surf_measure = self._back_label_font.render(label, True, (0, 0, 0))
+        label_w = label_surf_measure.get_width()
 
-        # Total width: label + gap + icon
+        # Total width: label + gap + icon  — centred on (cx, cy)
         total_w = label_w + BACK_BTN_GAP + icon_w
         left_x = cx - total_w // 2
+        label_cx = left_x + label_w // 2
 
-        # Blit label left, icon right
-        label_y = cy - label_h // 2
-        self._screen.blit(label_surf, (left_x, label_y))
+        # Draw label: engraved at rest, golden on hover
+        if self._back_hovered:
+            surf = self._back_label_font.render(label, True, MENU_ITEM_HOVER_COLOR)
+            self._screen.blit(surf, surf.get_rect(center=(label_cx, cy)))
+        else:
+            self._blit_engraved(label, label_cx, cy, font=self._back_label_font)
+
+        # Draw icon right of label
         icon_r = btn.get_rect(midleft=(left_x + label_w + BACK_BTN_GAP, cy))
         self._screen.blit(btn, icon_r)
 
