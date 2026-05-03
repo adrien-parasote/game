@@ -426,6 +426,20 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | GF-016 | ESC en `PAUSED` | `K_ESCAPE` event | `state == GameState.PLAYING` |
 | GF-017 | `_transition_to_playing(None)` | New game | `game._load_map()` appelé avec default_map |
 | GF-018 | `_transition_to_playing(1)` | Slot 1 existant | `save_manager.load(1)` appelé, state = PLAYING |
+| GF-019 | `GameStateManager.__init__` | Appel sans args | `state == GameState.TITLE` |
+| GF-020 | `_handle_title()` | `GameEvent.NEW_GAME` reçu | `state == GameState.PLAYING` |
+| GF-021 | `_handle_title()` | `GameEvent.LOAD_REQUESTED(1)` reçu | `save_manager.load(1)` appelé, `state == PLAYING` |
+| GF-022 | `_handle_title()` | `GameEvent.QUIT` reçu | `sys.exit()` appelé |
+| GF-023 | `_handle_playing()` | `game.run_frame()` retourne `GameEvent.PAUSE_REQUESTED` | `state == GameState.PAUSED` |
+| GF-024 | `_handle_paused()` | `GameEvent.RESUME` reçu | `state == GameState.PLAYING` |
+| GF-025 | `_handle_paused()` | `GameEvent.SAVE_REQUESTED(1)` | `save_manager.save(1)` appelé, résultat notifié |
+| GF-026 | `_handle_paused()` | `GameEvent.GOTO_TITLE` | `state == GameState.TITLE`, title.state reset |
+| GF-027 | `_save_to_first_free_slot()` | Slot 1 occupé, slot 2 libre | `save_manager.save(2, game)` appelé |
+| GF-028 | `_save_to_first_free_slot()` | Tous slots occupés | Fallback → `save_manager.save(1, game)` |
+| GF-029 | `_on_escape()` depuis PLAYING | state = PLAYING | `state == GameState.PAUSED` |
+| GF-030 | `_on_escape()` depuis PAUSED | state = PAUSED | `state == GameState.PLAYING` |
+| GF-031 | `_transition_to_playing(1)` | `save_manager.load(1)` retourne None | `game._load_map()` appelé avec default_map |
+| GF-032 | ESC filtering dans `_handle_playing()` | Liste d'events avec K_ESCAPE | K_ESCAPE non posté dans la queue pygame |
 
 ### Integration Tests
 
@@ -489,3 +503,17 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | GF-016 | `test_update_chest_branch` | `../../tests/engine/test_game.py:L367` |
 | GF-017 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py:L403` |
 | GF-018 | `test_game_transition_map_fade` | `../../tests/engine/test_game.py:L204` |
+| GF-019 | `test_initial_state` | `../../tests/engine/test_game_state_manager.py:L47` |
+| GF-020 | `test_handle_title_new_game` | `../../tests/engine/test_game_state_manager.py:L50` |
+| GF-021 | `test_handle_title_load_game` | `../../tests/engine/test_game_state_manager.py:L55` |
+| GF-022 | `test_handle_title_quit` | `../../tests/engine/test_game_state_manager.py:L67` |
+| GF-023 | `test_handle_playing_pause_requested` | `../../tests/engine/test_game_state_manager.py:L73` |
+| GF-024 | `test_handle_paused_resume` | `../../tests/engine/test_game_state_manager.py:L82` |
+| GF-025 | `test_handle_paused_save_requested` | `../../tests/engine/test_game_state_manager.py:L88` |
+| GF-026 | `test_handle_paused_goto_title` | `../../tests/engine/test_game_state_manager.py:L97` |
+| GF-027 | `test_save_to_first_free_slot` | `../../tests/engine/test_game_state_manager.py:L106` |
+| GF-028 | `test_save_to_first_free_slot_all_full` | `../../tests/engine/test_game_state_manager.py:L112` |
+| GF-029 | `test_on_escape` | `../../tests/engine/test_game_state_manager.py:L119` |
+| GF-030 | `test_on_escape` | `../../tests/engine/test_game_state_manager.py:L119` |
+| GF-031 | `test_transition_to_playing_no_save_data` | `../../tests/engine/test_game_state_manager.py:L127` |
+| GF-032 | `test_handle_events_filtering` | `../../tests/engine/test_game_state_manager.py:L133` |

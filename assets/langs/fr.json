@@ -45,5 +45,19 @@
         "options": "Options",
         "quit": "Quitter",
         "back": "Retour"
+    },
+    "pause_menu": {
+        "title": "PAUSE",
+        "resume": "Reprendre",
+        "save": "Sauvegarder",
+        "main_menu": "Menu Principal",
+        "saved_success": "Partie sauvegardée !"
+    },
+    "save_menu": {
+        "title_load": "Charger une partie",
+        "title_save": "Sauvegarder la partie",
+        "slot_empty": "Emplacement {slot_id} — Vide",
+        "level": "Niveau: {level}",
+        "time": "Temps: {hours:02d}h {minutes:02d}m"
     }
 }

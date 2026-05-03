@@ -22,11 +22,22 @@ def manager(tmp_saves_dir):
     """SaveManager pointant vers un dossier temporaire vide."""
     return SaveManager(saves_dir=tmp_saves_dir)
 
+@pytest.fixture
+def mock_surface():
+    """Returns a simple pygame surface for thumbnail testing."""
+    import pygame
+    pygame.init()
+    surf = pygame.Surface((120, 120))
+    surf.fill((255, 0, 0))
+    return surf
+
+
 
 def _make_mock_game(tmp_saves_dir):
     """Construit un mock Game minimal avec tous les champs requis par save()."""
     game = MagicMock()
     game._current_map_name = "00-spawn.tmj"
+    game.player.name = "Hero"
     game.player.pos.x = 320.0
     game.player.pos.y = 480.0
     game.player.current_state = "down"
@@ -59,14 +70,43 @@ def _make_mock_game(tmp_saves_dir):
 
 @pytest.mark.tc("GF-007")
 def test_list_slots_empty(manager):
-    """TC-001 : dossier saves/ vide → [None, None, None]"""
+    """TC-001 (Old) : dossier saves/ vide → [None, None, None]"""
     result = manager.list_slots()
     assert result == [None, None, None]
+
+# ── TC-001 : save_thumbnail ───────────────────────────────────────────────────
+
+@pytest.mark.tc("TC-001")
+def test_save_thumbnail_creates_file(manager, tmp_saves_dir, mock_surface):
+    """TC-001 : save_thumbnail crée saves/slot_1_thumb.png"""
+    manager.save_thumbnail(1, mock_surface)
+    path = os.path.join(tmp_saves_dir, "slot_1_thumb.png")
+    assert os.path.exists(path)
+
+# ── TC-002 : load_thumbnail ───────────────────────────────────────────────────
+
+@pytest.mark.tc("TC-002")
+def test_load_thumbnail_returns_surface(manager, tmp_saves_dir, mock_surface):
+    """TC-002 : load_thumbnail retourne une Surface si elle existe"""
+    import pygame
+    manager.save_thumbnail(1, mock_surface)
+    
+    surf = manager.load_thumbnail(1)
+    assert surf is not None
+    assert isinstance(surf, pygame.Surface)
+    assert surf.get_size() == (120, 120)
+
+@pytest.mark.tc("TC-002")
+def test_load_thumbnail_returns_none_if_missing(manager):
+    """TC-002 : load_thumbnail retourne None si le fichier n'existe pas"""
+    assert manager.load_thumbnail(1) is None
+
 
 
 # ── TC-002 : save — création du fichier ───────────────────────────────────────
 
 @pytest.mark.tc("GF-001")
+@pytest.mark.tc("IT-001")
 def test_save_creates_file(manager, tmp_saves_dir):
     """TC-002 : save(1, game) crée saves/slot_1.json avec version correcte."""
     game = _make_mock_game(tmp_saves_dir)
@@ -194,8 +234,9 @@ def test_slot_id_out_of_range_raises(manager):
 
 
 @pytest.mark.tc("GF-008")
+@pytest.mark.tc("TC-003")
 def test_list_slots_reflects_saved(manager, tmp_saves_dir):
-    """list_slots() retourne SlotInfo pour les slots sauvegardés."""
+    """TC-003 : list_slots() / _read_slot_info retourne SlotInfo avec level."""
     game = _make_mock_game(tmp_saves_dir)
     manager.save(2, game)
 
@@ -206,6 +247,9 @@ def test_list_slots_reflects_saved(manager, tmp_saves_dir):
     assert result[2] is None   # slot 3 vide
     assert result[1].slot_id == 2
     assert result[1].map_name == "00-spawn.tmj"
+    assert result[1].level == 1
+    assert result[1].player_name == "Hero"
+
 
 
 @pytest.mark.tc("GF-011")

@@ -86,7 +86,7 @@ class GameStateManager:
                 continue
             if result.type == GameEventType.NEW_GAME:
                 self._transition_to_playing(slot_id=None)
-            elif result.type == GameEventType.LOAD_GAME:
+            elif result.type == GameEventType.LOAD_REQUESTED:
                 self._transition_to_playing(slot_id=result.slot_id)
             elif result.type == GameEventType.QUIT:
                 pygame.quit()
@@ -121,6 +121,8 @@ class GameStateManager:
             elif result.type == GameEventType.PAUSE_REQUESTED:
                 # Sauvegarder button — find first free slot
                 self._save_to_first_free_slot()
+            elif result.type == GameEventType.SAVE_REQUESTED:
+                self._handle_save_requested(result.slot_id)
             elif result.type == GameEventType.GOTO_TITLE:
                 self._transition_to_title()
 
@@ -166,6 +168,8 @@ class GameStateManager:
         self._game.audio_manager.stop_all_ambients()
         pygame.mixer.stop()  # stop any remaining SFX channels
         pygame.mouse.set_visible(False)  # custom cursor takes over
+        self._title_screen.state = "MAIN_MENU"
+        self._pause_screen.state = "MAIN"
         self.state = GameState.TITLE
 
     # ── Save / Load helpers ───────────────────────────────────────────────────
@@ -176,14 +180,44 @@ class GameStateManager:
         for i, info in enumerate(slots):
             if info is None:
                 slot_id = i + 1
-                self._save_manager.save(slot_id, self._game)
-                self._pause_screen.notify_save_result(True)
-                logging.info(f"GSM: Game saved to slot {slot_id}")
+                self._handle_save_requested(slot_id)
                 return
         # All slots full — for now save to slot 1 (overwrite logic: Phase 1.5)
         logging.info("GSM: All slots full — overwriting slot 1")
-        self._save_manager.save(1, self._game)
+        self._handle_save_requested(1)
+
+    def _handle_save_requested(self, slot_id: int) -> None:
+        """Execute save sequence and generate thumbnail."""
+        self._save_manager.save(slot_id, self._game)
+        
+        # Draw pure game frame without UI overlays
+        self._game._draw()
+        
+        # Capture 246x246 crop centered on player (for a 3x zoom out effect)
+        crop_size = 246
+        sw, sh = self._game.screen.get_size()
+        cx, cy = sw // 2, sh // 2
+        
+        if self._game.player:
+            # player.rect is world coordinates, camera offset converts to screen
+            px, py = self._game.player.rect.center
+            offset = self._game.visible_sprites.offset
+            cx = int(px + offset.x)
+            cy = int(py + offset.y)
+            
+        # Clamp crop rect to screen boundaries
+        cx = max(crop_size // 2, min(sw - crop_size // 2, cx))
+        cy = max(crop_size // 2, min(sh - crop_size // 2, cy))
+        
+        crop_rect = pygame.Rect(cx - crop_size // 2, cy - crop_size // 2, crop_size, crop_size)
+        thumb_surf = self._game.screen.subsurface(crop_rect).copy()
+        # Scale down to 82x82 to fit the UI slot perfectly while keeping file size small
+        thumb_surf = pygame.transform.smoothscale(thumb_surf, (82, 82))
+        
+        self._save_manager.save_thumbnail(slot_id, thumb_surf)
         self._pause_screen.notify_save_result(True)
+        self._pause_screen._save_menu.refresh()
+        logging.info(f"GSM: Game saved to slot {slot_id} with thumbnail")
 
     def _apply_save_data(self, data) -> None:
         """Restore game state from SaveData."""

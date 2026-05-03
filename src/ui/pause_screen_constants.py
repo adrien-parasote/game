@@ -31,4 +31,5 @@ ENGRAVE_LIGHT  = (75, 105, 112)
 HOVER_COLOR    = (255, 235, 180)
 TITLE_COLOR    = (220, 195, 140)
 
-_BUTTON_LABELS = ["Menu Principal", "Reprendre", "Sauvegarder"]
+_BUTTON_KEYS = ["pause_menu.main_menu", "pause_menu.resume", "pause_menu.save"]
+_BUTTON_DEFAULTS = ["Menu Principal", "Reprendre", "Sauvegarder"]

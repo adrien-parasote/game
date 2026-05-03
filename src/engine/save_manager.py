@@ -20,6 +20,8 @@ class SlotInfo:
     saved_at: str
     playtime_seconds: float
     map_name: str
+    player_name: str
+    level: int
 
 
 @dataclass
@@ -56,12 +58,39 @@ class SaveManager:
 
         data = self._serialize(game)
         path = self._slot_path(slot_id)
+        tmp_path = path + ".tmp"
         try:
-            with open(path, "w", encoding="utf-8") as f:
+            with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
+            os.replace(tmp_path, path)
             logging.info(f"SaveManager: Slot {slot_id} saved to {path}")
         except IOError as e:
             logging.error(f"SaveManager: Failed to write slot {slot_id}: {e}")
+
+    def save_thumbnail(self, slot_id: int, surface) -> None:
+        """Sauvegarde une capture d'écran pour la miniature du slot."""
+        import pygame
+        self._validate_slot_id(slot_id)
+        os.makedirs(self._saves_dir, exist_ok=True)
+        path = os.path.join(self._saves_dir, f"slot_{slot_id}_thumb.png")
+        try:
+            pygame.image.save(surface, path)
+        except pygame.error as e:
+            logging.warning(f"SaveManager: Failed to save thumbnail {slot_id}: {e}")
+
+    def load_thumbnail(self, slot_id: int):
+        """Retourne la miniature en pygame.Surface, ou None si non trouvée."""
+        import pygame
+        self._validate_slot_id(slot_id)
+        path = os.path.join(self._saves_dir, f"slot_{slot_id}_thumb.png")
+        if not os.path.exists(path):
+            return None
+        try:
+            return pygame.image.load(path).convert_alpha()
+        except pygame.error as e:
+            logging.warning(f"SaveManager: Failed to load thumbnail {slot_id}: {e}")
+            return None
+
 
     def load(self, slot_id: int) -> Optional[SaveData]:
         """Deserialize save slot. Returns None if empty or corrupted."""
@@ -127,11 +156,14 @@ class SaveManager:
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
+            player_data = data.get("player", {})
             return SlotInfo(
                 slot_id=slot_id,
                 saved_at=data.get("saved_at", ""),
                 playtime_seconds=data.get("playtime_seconds", 0),
-                map_name=data.get("player", {}).get("map_name", ""),
+                map_name=player_data.get("map_name", ""),
+                player_name=player_data.get("name", "Hero"),
+                level=player_data.get("level", 1)
             )
         except (json.JSONDecodeError, IOError, KeyError) as e:
             logging.warning(f"SaveManager: Could not read slot {slot_id} info: {e}")
@@ -145,6 +177,7 @@ class SaveManager:
             "saved_at": datetime.now().isoformat(timespec="seconds"),
             "playtime_seconds": 0,
             "player": {
+                "name": getattr(game.player, "name", "Hero"),
                 "map_name": game._current_map_name,
                 "x": float(game.player.pos.x),
                 "y": float(game.player.pos.y),

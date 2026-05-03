@@ -2,7 +2,7 @@
 
 # Spec↔Test Traceability Matrix
 
-**Coverage:** 115/115 (100%)
+**Coverage:** 142/142 (100%)
 
 ## chest-ui-spec.md
 
@@ -96,6 +96,20 @@
 | GF-016 | ✅ | `tests/engine/test_game.py::test_update_chest_branch` |
 | GF-017 | ✅ | `tests/engine/test_game.py::test_handle_events_dialogue_advance` |
 | GF-018 | ✅ | `tests/engine/test_game.py::test_game_transition_map_fade` |
+| GF-019 | ✅ | `tests/engine/test_game_state_manager.py::test_initial_state` |
+| GF-020 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_title_new_game` |
+| GF-021 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_title_load_game` |
+| GF-022 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_title_quit` |
+| GF-023 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_playing_pause_requested` |
+| GF-024 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_paused_resume` |
+| GF-025 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_paused_save_requested` |
+| GF-026 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_paused_goto_title` |
+| GF-027 | ✅ | `tests/engine/test_game_state_manager.py::test_save_to_first_free_slot` |
+| GF-028 | ✅ | `tests/engine/test_game_state_manager.py::test_save_to_first_free_slot_all_full` |
+| GF-029 | ✅ | `tests/engine/test_game_state_manager.py::test_on_escape` |
+| GF-030 | ✅ | `tests/engine/test_game_state_manager.py::test_on_escape` |
+| GF-031 | ✅ | `tests/engine/test_game_state_manager.py::test_transition_to_playing_no_save_data` |
+| GF-032 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_events_filtering` |
 
 ## interactive-objects.md
 
@@ -178,6 +192,24 @@
 | TC-DLG-01 | ✅ | `tests/ui/test_inventory.py::test_dialogue_pagination` |
 | IT-INT-01 | ✅ | `tests/engine/test_interaction.py::test_handle_interaction_npc` |
 | IT-INT-02 | ✅ | `tests/engine/test_interaction.py::test_interaction_toggle_entity_by_id` |
+
+## save-system.md
+
+| TC ID | Status | Test |
+|-------|--------|------|
+| TC-001 | ✅ | `tests/engine/test_save_manager.py::test_save_thumbnail_creates_file` |
+| TC-002 | ✅ | `tests/engine/test_save_manager.py::test_load_thumbnail_returns_surface` |
+| TC-003 | ✅ | `tests/engine/test_save_manager.py::test_list_slots_reflects_saved` |
+| TC-004 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_update` |
+| TC-005 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_draw_load_menu` |
+| TC-006 | ✅ | `tests/ui/test_save_menu.py::test_save_slot_ui_draw_empty` |
+| TC-007 | ✅ | `tests/ui/test_save_menu.py::test_save_slot_ui_draw_filled` |
+| TC-008 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_init` |
+| TC-009 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_get_clicked_slot` |
+| TC-010 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_update_and_draw` |
+| IT-001 | ✅ | `tests/engine/test_save_manager.py::test_save_creates_file` |
+| IT-002 | ✅ | `tests/ui/test_pause_screen.py::test_pause_screen_handle_event_click_sauvegarder` |
+| IT-003 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_update` |
 
 ## world-system.md
 

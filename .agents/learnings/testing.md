@@ -277,3 +277,35 @@ Generic prefixes like `TC-U-01`, `TC-I-01`, `TC-T-01` collided across 3 specs (c
 ---
 
 *Last optimized: 2026-05-04 — L-TRACE-001, A-TRACE-001 from spec↔test traceability session.*
+
+---
+
+### L-TRACE-002 · 2026-05-04 · U · Perfect
+**Linked test functions table requires exact backtick-only names**
+
+The `tc_report.py` regex pattern extracts TC IDs from specs using:
+```
+| TC-ID | `test_func_name` | `../../path` |
+```
+
+If the function name column contains extra text after the backtick-delimited name (e.g. `` `test_on_escape` (PLAYING→PAUSED) ``), the regex fails to match and reports the marker as ORPHAN even though the ID exists in the spec.
+
+**Rule:** In `### Linked Test Functions` tables, the function column must contain **only** the function name in backticks, nothing else. Descriptions go in a comment column or separate prose.
+
+**Evidence:** `GF-029` and `GF-030` reported as ORPHAN until the table entry was reduced to just `` `test_on_escape` ``. commit: in-session fix.
+
+---
+
+### A-TRACE-002 · 2026-05-04 · U · Minor Rework
+**`pyproject.toml` marker registration can be silently lost**
+
+The `@pytest.mark.tc` decorator requires `[tool.pytest.ini_options] markers = [...]` registration in `pyproject.toml`. This file can be accidentally emptied (e.g. by an overwrite tool call with empty content), causing all marks to generate `PytestUnknownMarkWarning` silently — tests still pass but markers are no longer registered.
+
+**Rule:** After any HARDEN commit, verify `pyproject.toml` still contains the markers section. Add this to the doc-update drift detection checklist.
+
+**Evidence:** `pyproject.toml` was emptied mid-session. Detected during doc-update drift check. Fixed by restoring the 4-line marker definition.
+
+---
+
+*Last optimized: 2026-05-04 — L-TRACE-002, A-TRACE-002 from traceability HARDEN session.*
+

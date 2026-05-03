@@ -62,10 +62,11 @@ def title_screen(mock_screen, mock_save_manager):
     ts._slots = [None, None, None]
     ts._hovered_slot = None
     ts._hovered_item = None
-    ts._sw = 1280
     ts._sh = 720
     ts._logo_surf = mock_surf
     ts._panel_load = mock_surf
+    ts._load_menu = MagicMock()
+    ts._load_menu.get_clicked_slot.return_value = None
 
     from unittest.mock import MagicMock as _MM
     ts._i18n = _MM()
@@ -76,7 +77,7 @@ def title_screen(mock_screen, mock_save_manager):
     
     # Fonts
     mock_font = _MM()
-    mock_font.render.return_value = mock_surf
+    mock_font.render.return_value = pygame.Surface((10, 10), pygame.SRCALPHA)
     ts._font = mock_font
     ts._font_small = mock_font
     ts._scroll_title_font = mock_font
@@ -138,22 +139,21 @@ def test_title_esc_from_load_menu_returns_to_main(title_screen):
 def test_title_click_slot_in_load_menu_returns_load_event(title_screen, mock_save_manager):
     """TC-013 : clic slot 2 en LOAD_MENU → GameEvent LOAD_GAME slot_id=2."""
     from src.engine.save_manager import SlotInfo
-    mock_save_manager.list_slots.return_value = [
+    title_screen._load_menu._slots_info = [
         None,
         SlotInfo(slot_id=2, saved_at="2026-05-02T14:00:00",
-                 playtime_seconds=3600, map_name="00-spawn.tmj"),
+                 playtime_seconds=3600, map_name="00-spawn.tmj", player_name="Hero", level=1),
         None,
     ]
     title_screen.state = "LOAD_MENU"
-    title_screen._refresh_slots()  # recalcule les slots affichés
+    title_screen._load_menu.get_clicked_slot.return_value = 1  # idx 1
 
-    slot_rect = title_screen.slot_rects[1]  # index 1 = slot_id 2
-    event = _make_mouse_event(slot_rect.center)
+    event = _make_mouse_event((0, 0)) # pos ignored by mock
 
     result = title_screen.handle_event(event)
 
     assert result is not None
-    assert result.type == GameEventType.LOAD_GAME
+    assert result.type == GameEventType.LOAD_REQUESTED
     assert result.slot_id == 2
 
 
@@ -279,18 +279,18 @@ def test_title_screen_load_assets_with_fallbacks(mock_screen, mock_save_manager)
         assert ts._font is not None
         assert ts._bg.get_size() == (1280, 720)
 
+@pytest.mark.tc("TC-004")
+@pytest.mark.tc("IT-003")
 def test_title_screen_update(title_screen):
     # Test hover on MAIN_MENU
     with patch("pygame.mouse.get_pos", return_value=title_screen.menu_item_rects[1].center):
         title_screen.update(0.16)
         assert title_screen._hovered_item == 1
         
-    # Test hover on LOAD_MENU
+    # Test update delegates to _load_menu
     title_screen.state = "LOAD_MENU"
-    title_screen._refresh_slots() # Ensure slots are loaded
-    with patch("pygame.mouse.get_pos", return_value=title_screen.slot_rects[2].center):
-        title_screen.update(0.16)
-        assert title_screen._hovered_slot == 2
+    title_screen.update(0.16)
+    title_screen._load_menu.update.assert_called_once_with(0.16)
 
     # Test hover on OPTIONS
     title_screen.state = "OPTIONS"
@@ -306,14 +306,14 @@ def test_title_screen_draw_main_menu(title_screen):
         title_screen.draw()
     assert title_screen._screen.blit.call_count > 0
 
+@pytest.mark.tc("TC-005")
 def test_title_screen_draw_load_menu(title_screen):
     title_screen.state = "LOAD_MENU"
-    title_screen._hovered_slot = 0
     title_screen._refresh_slots()
     with patch("pygame.mouse.get_pos", return_value=(0,0)), \
          patch("pygame.mouse.get_pressed", return_value=(False, False, False)):
         title_screen.draw()
-    assert title_screen._screen.blit.call_count > 0
+    title_screen._load_menu.draw.assert_called_once()
 
 def test_title_screen_draw_options(title_screen):
     title_screen.state = "OPTIONS"

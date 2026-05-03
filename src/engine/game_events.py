@@ -13,6 +13,8 @@ class GameEventType(Enum):
     PAUSE_REQUESTED = "pause_requested"
     RESUME = "resume"
     GOTO_TITLE = "goto_title"
+    SAVE_REQUESTED = "save_requested"
+    LOAD_REQUESTED = "load_requested"
 
 
 @dataclass
@@ -47,3 +49,11 @@ class GameEvent:
     @staticmethod
     def goto_title() -> "GameEvent":
         return GameEvent(type=GameEventType.GOTO_TITLE)
+
+    @staticmethod
+    def save_requested(slot_id: int) -> "GameEvent":
+        return GameEvent(type=GameEventType.SAVE_REQUESTED, slot_id=slot_id)
+
+    @staticmethod
+    def load_requested(slot_id: int) -> "GameEvent":
+        return GameEvent(type=GameEventType.LOAD_REQUESTED, slot_id=slot_id)

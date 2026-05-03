@@ -7,7 +7,8 @@ import os
 import pygame
 from src.config import Settings
 from src.engine.game_events import GameEvent, GameEventType
-from src.engine.save_manager import SaveManager, SlotInfo
+from src.engine.save_manager import SaveManager
+from src.ui.save_menu import SaveMenuOverlay
 from src.engine.i18n import I18nManager
 from src.ui.title_screen_constants import *
 from src.ui.title_screen_constants import _MENU_DIR, _UI_DIR, _MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS
@@ -19,14 +20,14 @@ class TitleScreen:
         self._screen = screen
         self._save_manager = save_manager
         self.state = "MAIN_MENU"          # "MAIN_MENU" | "LOAD_MENU"
-        self._slots: list[SlotInfo | None] = [None, None, None]
-        self._hovered_slot: int | None = None
         self._hovered_item: int | None = None
         self._i18n = I18nManager()
 
         sw, sh = screen.get_size()
         self._sw = sw
         self._sh = sh
+        
+        self._load_menu = SaveMenuOverlay(screen, save_manager, self._i18n.get("save_menu.title_load", "Charger une partie"))
 
         self._load_assets()
         self._compute_layout()
@@ -113,22 +114,6 @@ class TitleScreen:
         # Logo composite
         self._logo_surf = self._build_logo_composite()
 
-        slot_sheet = self._load_asset("04-save_slot.png")
-        slot_states: dict[str, pygame.Surface] = {}
-        if slot_sheet.get_size() != (32, 32):
-            for i, state in enumerate(["idle", "hover"]):
-                raw = slot_sheet.subsurface(pygame.Rect(0, i * SLOT_H_SRC, 1024, SLOT_H_SRC))
-                slot_states[state] = pygame.transform.smoothscale(raw, (SLOT_W_DST, SLOT_H_DST))
-        else:
-            for state in ["idle", "hover"]:
-                slot_states[state] = pygame.Surface((SLOT_W_DST, SLOT_H_DST))
-        self._slot_states = slot_states
-
-        # Load overlay panel (semi-transparent black, pas de spritesheet)
-        self._panel_load = pygame.Surface((900, 480))
-        self._panel_load.set_alpha(200)
-        self._panel_load.fill((10, 18, 22))
-
         # Semi-transparent overlay
         self._overlay = pygame.Surface((self._sw, self._sh))
         self._overlay.set_alpha(OVERLAY_ALPHA)
@@ -194,14 +179,6 @@ class TitleScreen:
             back_total_w, max(BACK_BTN_H, 28)
         )
         self._back_hovered: bool = False
-        # Save slot rects (inside the load overlay panel, 900x480 centered)
-        ov_x = self._sw // 2 - 450
-        ov_y = self._sh // 2 - 240
-        self.slot_rects: list[pygame.Rect] = []
-        for i in range(3):
-            sx = ov_x + 450 - SLOT_W_DST // 2
-            sy = ov_y + SLOT_PANEL_Y_START + i * SLOT_SPACING
-            self.slot_rects.append(pygame.Rect(sx, sy, SLOT_W_DST, SLOT_H_DST))
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
@@ -221,11 +198,7 @@ class TitleScreen:
                     self._hovered_item = i
                     break
         elif self.state == "LOAD_MENU":
-            self._hovered_slot = None
-            for i, rect in enumerate(self.slot_rects):
-                if rect.collidepoint(mouse_pos):
-                    self._hovered_slot = i
-                    break
+            self._load_menu.update(dt)
         elif self.state == "OPTIONS":
             self._back_hovered = self.back_btn_rect.collidepoint(mouse_pos)
 
@@ -240,7 +213,7 @@ class TitleScreen:
         if self.state == "MAIN_MENU":
             self._draw_menu_items()
         elif self.state == "LOAD_MENU":
-            self._draw_load_overlay()
+            self._load_menu.draw()
         elif self.state == "OPTIONS":
             self._draw_options_overlay()
 
@@ -253,10 +226,45 @@ class TitleScreen:
             cx = MENU_ITEM_X + MENU_ITEM_OFFSET_X
             cy = MENU_ITEM_Y_START + MENU_ITEM_OFFSET_Y + i * MENU_ITEM_SPACING
             if self._hovered_item == i:
-                surf = self._menu_item_font.render(label, True, MENU_ITEM_HOVER_COLOR)
-                self._screen.blit(surf, surf.get_rect(center=(cx, cy)))
+                # Text is light sky blue, Halo is intense bright blue
+                self._blit_halo_text(label, cx, cy, self._menu_item_font, (180, 230, 255), (40, 120, 255))
             else:
                 self._blit_engraved(label, cx, cy)
+
+    def _blit_halo_text(
+        self, label: str, cx: int, cy: int,
+        font: pygame.font.Font,
+        text_color: tuple[int, int, int],
+        halo_color: tuple[int, int, int]
+    ) -> None:
+        """Draw text with a soft, spreading glowing halo effect."""
+        base_surf = font.render(label, True, halo_color)
+        w, h = base_surf.get_size()
+        
+        # Create a padded surface so the blur doesn't clip
+        pad = 24
+        padded = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
+        padded.blit(base_surf, (pad, pad))
+        
+        try:
+            # Use pygame-ce's fast gaussian_blur
+            blurred = pygame.transform.gaussian_blur(padded, 8)
+            blurred.set_alpha(255)
+            
+            # Blit 3 times for a very strong, dense center glow that is highly visible
+            rect = blurred.get_rect(center=(cx, cy))
+            self._screen.blit(blurred, rect)
+            self._screen.blit(blurred, rect)
+            self._screen.blit(blurred, rect)
+        except AttributeError:
+            # Fallback if standard pygame is used
+            base_surf.set_alpha(80)
+            offsets = [(-3, -3), (3, -3), (-3, 3), (3, 3), (0, -4), (0, 4), (-4, 0), (4, 0)]
+            for dx, dy in offsets:
+                self._screen.blit(base_surf, base_surf.get_rect(center=(cx + dx, cy + dy)))
+            
+        main_surf = font.render(label, True, text_color)
+        self._screen.blit(main_surf, main_surf.get_rect(center=(cx, cy)))
 
     def _blit_engraved(
         self, label: str, cx: int, cy: int,
@@ -282,32 +290,7 @@ class TitleScreen:
 
     def _refresh_slots(self) -> None:
         """Reload slot data from SaveManager (call when entering LOAD_MENU)."""
-        self._slots = self._save_manager.list_slots()
-
-    def _draw_load_overlay(self) -> None:
-        self._screen.blit(self._overlay, (0, 0))
-        panel_rect = self._panel_load.get_rect(center=(self._sw // 2, self._sh // 2))
-        self._screen.blit(self._panel_load, panel_rect)
-
-        title = self._font.render("Charger une partie", True, (220, 200, 150))
-        self._screen.blit(title, title.get_rect(midtop=(panel_rect.centerx, panel_rect.top + 50)))
-
-        for i, (slot_rect, slot_info) in enumerate(zip(self.slot_rects, self._slots)):
-            state = "hover" if self._hovered_slot == i else "idle"
-            self._screen.blit(self._slot_states[state], slot_rect)
-            self._draw_slot_content(slot_rect, i + 1, slot_info)
-
-    def _draw_slot_content(
-        self, rect: pygame.Rect, slot_id: int, info: SlotInfo | None
-    ) -> None:
-        if info is None:
-            label = f"Emplacement {slot_id} — Vide"
-            color = (140, 120, 100)
-        else:
-            label = f"Emplacement {slot_id} — {info.map_name}"
-            color = (220, 200, 150)
-        text = self._font_small.render(label, True, color)
-        self._screen.blit(text, text.get_rect(midleft=(rect.x + 20, rect.centery)))
+        self._load_menu.refresh()
 
     def _draw_cursor(self) -> None:
         """Draw custom cursor on top of everything."""
@@ -382,8 +365,7 @@ class TitleScreen:
         # Draw label right of icon: engraved at rest, golden on hover
         label_cx = left_x + icon_w + BACK_BTN_GAP + label_w // 2
         if self._back_hovered:
-            surf = self._back_label_font.render(label, True, MENU_ITEM_HOVER_COLOR)
-            self._screen.blit(surf, surf.get_rect(center=(label_cx, cy)))
+            self._blit_halo_text(label, label_cx, cy, self._back_label_font, (180, 230, 255), (40, 120, 255))
         else:
             self._blit_engraved(label, label_cx, cy, font=self._back_label_font)
 
@@ -392,10 +374,9 @@ class TitleScreen:
             self.state = "MAIN_MENU"
             return None
 
-        if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
-            return None
-
-        for i, rect in enumerate(self.slot_rects):
-            if rect.collidepoint(event.pos):
-                return GameEvent.load_game(i + 1)
+        slot_idx = self._load_menu.get_clicked_slot(event)
+        if slot_idx is not None:
+            # check if there is data
+            if self._load_menu._slots_info[slot_idx] is not None:
+                return GameEvent(type=GameEventType.LOAD_REQUESTED, slot_id=slot_idx + 1)
         return None

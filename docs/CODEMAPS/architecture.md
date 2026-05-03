@@ -30,8 +30,9 @@
 - All UI classes have dedicated `_constants.py` modules for layout/color/size values (`src/ui/*_constants.py`).
 - **InventoryUI** (`src/ui/inventory.py`, 501L): Grid + equipment slots, D&D state machine, tab switching, item info zone.
 - **ChestUI** (`src/ui/chest.py`, 393L) + mixins: `chest_layout.py` (slot geometry), `chest_draw.py` (rendering), `chest_transfer.py` (item movement logic). Chest ↔ Inventory transfer, paged scrolling (18-slot pages), D&D across panels.
-- **TitleScreen** (`src/ui/title_screen.py`, 271L): Main menu state machine, logo composite rendering.
-- **PauseScreen** (`src/ui/pause_screen.py`): In-game pause, save/resume/quit states.
+- **TitleScreen** (`src/ui/title_screen.py`, 382L): Main menu state machine, logo composite rendering, halo glow hover effect.
+- **PauseScreen** (`src/ui/pause_screen.py`, 275L): In-game pause, save/resume/quit states, gaussian blur halo hover.
+- **SaveMenuOverlay** (`src/ui/save_menu.py`, 207L): Reusable save/load slot overlay. Used by both TitleScreen (load) and PauseScreen (save). `SaveSlotUI` renders individual slot with background sprite, thumbnail, and additive halo.
 - **Inventory** (`src/engine/inventory_system.py`, 84L): 28-slot padded list (`None` fill), equipment dict (8 slots), `add/remove/equip/unequip`.
 
 ### Dialogue & Speech

@@ -8,8 +8,10 @@ import pygame
 from src.config import Settings
 from src.engine.game_events import GameEvent, GameEventType
 from src.engine.save_manager import SaveManager
+from src.ui.save_menu import SaveMenuOverlay
+from src.engine.i18n import I18nManager
 from src.ui.pause_screen_constants import *
-from src.ui.pause_screen_constants import _MENU_DIR, _UI_DIR, _FONT_PATH, _BUTTON_LABELS
+from src.ui.pause_screen_constants import _MENU_DIR, _UI_DIR, _FONT_PATH, _BUTTON_KEYS, _BUTTON_DEFAULTS
 
 class PauseScreen:
     """Semi-transparent overlay with 3 pause actions."""
@@ -19,6 +21,9 @@ class PauseScreen:
         self._save_manager = save_manager
         self._hovered_btn: int | None = None
         self._confirm_timer: float = 0.0  # >0 → show "Sauvegardé !" for 2s
+        self.state = "MAIN" # "MAIN" or "SAVE_MENU"
+        self._i18n = I18nManager()
+        self._save_menu = SaveMenuOverlay(screen, save_manager, self._i18n.get("pause_menu.save", "Sauvegarder la partie"))
 
         sw, sh = screen.get_size()
         self._sw = sw
@@ -68,13 +73,14 @@ class PauseScreen:
             self._panel.fill((10, 18, 22, 210))
             pygame.draw.rect(self._panel, (60, 80, 85), self._panel.get_rect(), 2)
 
-        # Fonts — Cormorant Garamond (title + items), Noble fallback
         try:
             self._title_font = pygame.font.Font(_FONT_PATH, PAUSE_TITLE_FONT_SIZE)
             self._item_font  = pygame.font.Font(_FONT_PATH, PAUSE_ITEM_FONT_SIZE)
+            self._success_font = pygame.font.Font(_FONT_PATH, 26)
         except OSError:
             self._title_font = pygame.font.SysFont(None, 42)
             self._item_font  = pygame.font.SysFont(None, 32)
+            self._success_font = pygame.font.SysFont(None, 26)
         try:
             am = __import__(
                 "src.engine.asset_manager", fromlist=["AssetManager"]
@@ -99,18 +105,31 @@ class PauseScreen:
         # Click zones: centred horizontally, spaced vertically from ITEM_Y_START_OFFSET
         btn_w, btn_h = 280, 50
         x = panel_rect.centerx - btn_w // 2
-        self.button_rects: list[pygame.Rect] = [
-            pygame.Rect(
-                x,
-                panel_rect.top + ITEM_Y_START_OFFSET + i * ITEM_SPACING,
-                btn_w, btn_h,
+        self.button_rects = []
+        for i in range(len(_BUTTON_KEYS)):
+            self.button_rects.append(
+                pygame.Rect(
+                    x,
+                    panel_rect.top + ITEM_Y_START_OFFSET + i * ITEM_SPACING,
+                    btn_w, btn_h,
+                )
             )
-            for i in range(len(_BUTTON_LABELS))
-        ]
 
     # ── Public API ────────────────────────────────────────────────────────────
 
     def handle_event(self, event: pygame.Event) -> GameEvent | None:
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            if self.state == "SAVE_MENU":
+                self.state = "MAIN"
+                return None
+            
+        if self.state == "SAVE_MENU":
+            slot_idx = self._save_menu.get_clicked_slot(event)
+            if slot_idx is not None:
+                # Émettre l'événement de demande de sauvegarde pour le slot (1-indexed)
+                return GameEvent(type=GameEventType.SAVE_REQUESTED, slot_id=slot_idx + 1)
+            return None
+
         if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
             return None
 
@@ -123,6 +142,10 @@ class PauseScreen:
         if self._confirm_timer > 0:
             self._confirm_timer -= dt
 
+        if self.state == "SAVE_MENU":
+            self._save_menu.update(dt)
+            return
+
         mouse_pos = pygame.mouse.get_pos()
         self._hovered_btn = None
         for i, rect in enumerate(self.button_rects):
@@ -131,41 +154,89 @@ class PauseScreen:
                 break
 
     def draw(self) -> None:
+        # Background dark overlay
+        self._screen.blit(self._overlay, (0, 0))
+
+        if self.state == "SAVE_MENU":
+            self._save_menu.draw()
+            self._draw_cursor()
+            return
+
         panel_rect = pygame.Rect(
             self._sw // 2 - PANEL_W // 2,
             self._sh // 2 - PANEL_H // 2,
             PANEL_W, PANEL_H,
         )
 
-        self._screen.blit(self._overlay, (0, 0))
         self._screen.blit(self._panel, panel_rect)
 
         # Title — Cormorant Garamond, golden, centered at the top of the panel
-        title = self._title_font.render("PAUSE", True, TITLE_COLOR)
+        title_text = self._i18n.get("pause_menu.title", "PAUSE")
+        title = self._title_font.render(title_text, True, TITLE_COLOR)
         self._screen.blit(
             title,
             title.get_rect(midtop=(panel_rect.centerx, panel_rect.top + PAUSE_TITLE_OFFSET)),
         )
 
         # Menu items — engraved idle, golden hover
-        for i, (rect, label) in enumerate(zip(self.button_rects, _BUTTON_LABELS)):
+        for i, (rect, key, default) in enumerate(zip(self.button_rects, _BUTTON_KEYS, _BUTTON_DEFAULTS)):
+            label = self._i18n.get(key, default)
             cx = rect.centerx
             cy = rect.centery
             if self._hovered_btn == i:
-                surf = self._item_font.render(label, True, HOVER_COLOR)
-                self._screen.blit(surf, surf.get_rect(center=(cx, cy)))
+                # Text is light sky blue, Halo is intense bright blue
+                self._blit_halo_text(label, cx, cy, self._item_font, (180, 230, 255), (40, 120, 255))
             else:
                 self._blit_engraved(label, cx, cy)
 
         if self._confirm_timer > 0:
-            msg = self._font_small.render(
-                "Partie sauvegardée !", True, (180, 220, 150)
+            success_text = self._i18n.get("pause_menu.saved_success", "Partie sauvegardée !")
+            msg = self._success_font.render(
+                success_text, True, (180, 220, 150)
             )
+            # Apply alpha fade out: timer goes from 2.0 to 0.0
+            alpha = int(min(255, (self._confirm_timer / 2.0) * 255))
+            msg.set_alpha(alpha)
             self._screen.blit(
-                msg, msg.get_rect(midbottom=(panel_rect.centerx, panel_rect.bottom - 25))
+                msg, msg.get_rect(midbottom=(self._sw // 2, self._sh - 40))
             )
 
         self._draw_cursor()
+
+    def _blit_halo_text(
+        self, label: str, cx: int, cy: int,
+        font: pygame.font.Font,
+        text_color: tuple[int, int, int],
+        halo_color: tuple[int, int, int]
+    ) -> None:
+        """Draw text with a soft, spreading glowing halo effect."""
+        base_surf = font.render(label, True, halo_color)
+        w, h = base_surf.get_size()
+        
+        # Create a padded surface so the blur doesn't clip
+        pad = 24
+        padded = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
+        padded.blit(base_surf, (pad, pad))
+        
+        try:
+            # Use pygame-ce's fast gaussian_blur
+            blurred = pygame.transform.gaussian_blur(padded, 8)
+            blurred.set_alpha(255)
+            
+            # Blit 3 times for a very strong, dense center glow that is highly visible
+            rect = blurred.get_rect(center=(cx, cy))
+            self._screen.blit(blurred, rect)
+            self._screen.blit(blurred, rect)
+            self._screen.blit(blurred, rect)
+        except AttributeError:
+            # Fallback if standard pygame is used
+            base_surf.set_alpha(80)
+            offsets = [(-3, -3), (3, -3), (-3, 3), (3, 3), (0, -4), (0, 4), (-4, 0), (4, 0)]
+            for dx, dy in offsets:
+                self._screen.blit(base_surf, base_surf.get_rect(center=(cx + dx, cy + dy)))
+            
+        main_surf = font.render(label, True, text_color)
+        self._screen.blit(main_surf, main_surf.get_rect(center=(cx, cy)))
 
     def _blit_engraved(self, label: str, cx: int, cy: int) -> None:
         """3-pass stone engraving: shadow | light | text. Matches TitleScreen effect."""
@@ -181,6 +252,7 @@ class PauseScreen:
         """Call after a save attempt to show confirmation for 2 seconds."""
         if success:
             self._confirm_timer = 2.0
+            self.state = "MAIN"
 
     def _draw_cursor(self) -> None:
         """Draw custom cursor on top of everything."""
@@ -196,5 +268,8 @@ class PauseScreen:
         if index == 1:
             return GameEvent.resume()
         if index == 2:
-            return GameEvent(type=GameEventType.PAUSE_REQUESTED)  # signal save
+            # Switch state to save menu
+            self.state = "SAVE_MENU"
+            self._save_menu.refresh()
+            return None
         return None

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 from src.ui.pause_screen import PauseScreen
 from src.engine.game_events import GameEvent, GameEventType
-from src.ui.pause_screen_constants import PANEL_W, PANEL_H, _BUTTON_LABELS
+from src.ui.pause_screen_constants import PANEL_W, PANEL_H, _BUTTON_DEFAULTS
 
 @pytest.fixture
 def mock_screen():
@@ -31,13 +31,17 @@ def pause_screen(mock_screen, mock_save_manager):
         mock_surf = pygame.Surface((600, 600), pygame.SRCALPHA)
         mock_load.return_value = mock_surf
         
+        real_surf = pygame.Surface((10, 10), pygame.SRCALPHA)
+        mock_font.return_value.render.return_value = real_surf
+        mock_am.return_value.get_font.return_value.render.return_value = real_surf
+        
         ps = PauseScreen(mock_screen, mock_save_manager)
         return ps
 
 def test_pause_screen_init(pause_screen):
     assert pause_screen._sw == 1280
     assert pause_screen._sh == 720
-    assert len(pause_screen.button_rects) == len(_BUTTON_LABELS)
+    assert len(pause_screen.button_rects) == len(_BUTTON_DEFAULTS)
     assert pause_screen._hovered_btn is None
 
 def test_pause_screen_load_asset_fallback(pause_screen):
@@ -59,6 +63,10 @@ def test_pause_screen_load_assets_no_fallback(mock_screen, mock_save_manager):
          
         mock_surf = pygame.Surface((32, 32), pygame.SRCALPHA)
         mock_load.return_value = mock_surf
+        
+        real_surf = pygame.Surface((10, 10), pygame.SRCALPHA)
+        mock_font.return_value.render.return_value = real_surf
+        mock_am.return_value.get_font.return_value.render.return_value = real_surf
         
         ps = PauseScreen(mock_screen, mock_save_manager)
         # Panel devrait être créé de manière algorithmique si l'image fait 32x32
@@ -84,6 +92,7 @@ def test_pause_screen_handle_event_click_reprendre(pause_screen):
     assert result is not None
     assert result.type == GameEventType.RESUME
 
+@pytest.mark.tc("IT-002")
 def test_pause_screen_handle_event_click_sauvegarder(pause_screen):
     event = MagicMock()
     event.type = pygame.MOUSEBUTTONDOWN
@@ -91,8 +100,8 @@ def test_pause_screen_handle_event_click_sauvegarder(pause_screen):
     event.pos = pause_screen.button_rects[2].center
     
     result = pause_screen.handle_event(event)
-    assert result is not None
-    assert result.type == GameEventType.PAUSE_REQUESTED
+    assert result is None
+    assert pause_screen.state == "SAVE_MENU"
 
 def test_pause_screen_handle_event_ignore_wrong_button(pause_screen):
     event = MagicMock()
