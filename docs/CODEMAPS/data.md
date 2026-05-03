@@ -3,7 +3,7 @@
 # Data & Dependencies Architecture
 
 ## Configuration & Data Files
-- **Settings** (`settings.json`): Screen size, debug flags, colors, cursor sizes. Parsed by `src/config.py` (89 lines, 93% cov).
+- **Settings** (`settings.json`): Screen size, debug flags, colors, cursor sizes, font sizes, key bindings. Parsed by `src/config.py`.
 - **Localization** (`assets/langs/fr.json`): Nested JSON `"npc.farmer.dialogue"` → string. Loaded by `I18nManager`.
 - **Loot Tables** (`assets/data/loot_table.json`): Per-chest entries: `{item_id, min_qty, max_qty, chance}`. Max 20 stacks per chest; overflow trimmed with WARNING log.
 - **Gameplay Data** (`gameplay.json`): Item registry — `item_id → {name, description, icon, type, equip_slot, stack_max}`.
