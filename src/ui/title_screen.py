@@ -22,6 +22,7 @@ LOGO_SEP_W = 380           # separator width
 LOGO_SUB_W = 380           # subtitle width
 LOGO_Y = 30                # top of logo block on screen
 LOGO_GAP = 6               # vertical gap between elements
+LOGO_ZONE_W = 720          # left panel width — logo is centered within this zone
 # Fine-tune moon/gear position (px, relative to default centred placement)
 MOON_OFFSET_X = 25         # >0 → right,  <0 → left
 MOON_OFFSET_Y = 55         # >0 → down,   <0 → up
@@ -199,7 +200,7 @@ class TitleScreen:
     def draw(self) -> None:
         self._screen.blit(self._bg, (0, 0))
 
-        logo_x = (self._sw - self._logo_surf.get_width()) // 2
+        logo_x = (LOGO_ZONE_W - self._logo_surf.get_width()) // 2
         self._screen.blit(self._logo_surf, (logo_x, LOGO_Y))
 
         if self.state == "LOAD_MENU":
