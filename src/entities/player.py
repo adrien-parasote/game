@@ -99,14 +99,14 @@ class Player(BaseEntity):
             material = None
             if hasattr(self, 'game') and hasattr(self.game, 'map_manager') and self.game.map_manager:
                 material = self.game.map_manager.get_terrain_material_at(int(self.pos.x), int(self.pos.y))
-            
+
             sfx_name = f"04-footstep_{material}" if material else "04-footstep"
-            
+
             if self.audio_manager:
-                success = self.audio_manager.play_sfx(sfx_name, source_id="player", volume_multiplier=0.8)
+                success = self.audio_manager.play_sfx(sfx_name, source_id="player", volume_multiplier=1.0)
                 if not success and material:
-                    self.audio_manager.play_sfx("04-footstep", source_id="player", volume_multiplier=0.6)
-            
+                    self.audio_manager.play_sfx("04-footstep", source_id="player", volume_multiplier=1.0)
+
         # Get integer index to select frame (0 to 3) + offset
         current_frame = int(self.frame_index) % 4
         self.image = self.frames[offset + current_frame]
@@ -120,4 +120,3 @@ class Player(BaseEntity):
     def playerEmote(self, name: str):
         """Trigger an emote on the player."""
         self.emote_manager.trigger(name)
-
