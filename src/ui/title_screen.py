@@ -8,6 +8,7 @@ import pygame
 from src.config import Settings
 from src.engine.game_events import GameEvent, GameEventType
 from src.engine.save_manager import SaveManager, SlotInfo
+from src.engine.i18n import I18nManager
 from src.ui.title_screen_constants import *
 from src.ui.title_screen_constants import _MENU_DIR, _UI_DIR, _MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS
 
@@ -112,12 +113,15 @@ class TitleScreen:
         # Logo composite
         self._logo_surf = self._build_logo_composite()
 
-        # Save slot spritesheet — 2 states stacked vertically
         slot_sheet = self._load_asset("04-save_slot.png")
         slot_states: dict[str, pygame.Surface] = {}
-        for i, state in enumerate(["idle", "hover"]):
-            raw = slot_sheet.subsurface(pygame.Rect(0, i * SLOT_H_SRC, 1024, SLOT_H_SRC))
-            slot_states[state] = pygame.transform.smoothscale(raw, (SLOT_W_DST, SLOT_H_DST))
+        if slot_sheet.get_size() != (32, 32):
+            for i, state in enumerate(["idle", "hover"]):
+                raw = slot_sheet.subsurface(pygame.Rect(0, i * SLOT_H_SRC, 1024, SLOT_H_SRC))
+                slot_states[state] = pygame.transform.smoothscale(raw, (SLOT_W_DST, SLOT_H_DST))
+        else:
+            for state in ["idle", "hover"]:
+                slot_states[state] = pygame.Surface((SLOT_W_DST, SLOT_H_DST))
         self._slot_states = slot_states
 
         # Load overlay panel (semi-transparent black, pas de spritesheet)

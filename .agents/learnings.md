@@ -1212,3 +1212,16 @@ We chose option 2 to make the usage explicit.
 - Extracted constants from 5 UI files into `_constants.py` files.
 - `test_game.py` failed with `NameError: name '_MENU_ITEM_KEYS' is not defined`.
 - Fixed by adding explicit imports for underscored variables, bringing the test suite back to 100% pass rate.
+
+---
+
+### L-PERF-001 · 2026-05-03 · U · Perfect
+**Profiling-Driven Non-Optimization**
+
+**Pattern (what to reproduce)**
+Always run `profile_game.py` or equivalent profiling tools as the absolute first step of any optimization task. If the active frame time is < 50% of the frame budget (e.g. <8ms for a 16.6ms frame at 60fps), STOP. Declare the system performant and exit the optimization workflow. Do not implement architectural "optimizations" (like caching or pre-rendering) if there is no measurable bottleneck, as this only adds premature complexity.
+
+**Evidence:**
+- Executed `@[/performance-optimization]`.
+- `profile_results.txt` showed `6.355s` spent idling in `Clock.tick()` out of `10.828s` total for 600 frames. Active frame time was 7.45ms.
+- Exited the workflow without touching code, saving time and preventing divergence.

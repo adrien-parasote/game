@@ -33,20 +33,20 @@ def run_profile():
     pygame.quit()
 
 if __name__ == "__main__":
-    print("Starting profiling...")
+    sys.stdout.write("Starting profiling...\n")
     profiler = cProfile.Profile()
     profiler.enable()
     
     try:
         run_profile()
     except Exception as e:
-        print(f"Error: {e}")
+        sys.stderr.write(f"Error: {e}\n")
         
     profiler.disable()
     
-    print("Profiling complete. Saving stats...")
+    sys.stdout.write("Profiling complete. Saving stats...\n")
     stats = pstats.Stats(profiler).sort_stats('tottime')
     with open("profile_results.txt", "w") as f:
         stats.stream = f
         stats.print_stats(50)
-    print("Results saved to profile_results.txt")
+    sys.stdout.write("Results saved to profile_results.txt\n")

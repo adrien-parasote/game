@@ -70,6 +70,24 @@ def title_screen(mock_screen, mock_save_manager):
     from unittest.mock import MagicMock as _MM
     ts._i18n = _MM()
     ts._i18n.get.side_effect = lambda key, default="": default
+    ts._bg = pygame.Surface((1280, 720))
+    ts._overlay = mock_surf
+    ts._slot_states = {"idle": mock_surf, "hover": mock_surf}
+    
+    # Fonts
+    mock_font = _MM()
+    mock_font.render.return_value = mock_surf
+    ts._font = mock_font
+    ts._font_small = mock_font
+    ts._scroll_title_font = mock_font
+    ts._menu_item_font = mock_font
+    ts._back_label_font = mock_font
+    
+    # Icons and Cursors
+    ts._pointer_img = mock_surf
+    ts._pointer_select_img = mock_surf
+    ts._back_btn = mock_surf
+    ts._back_btn_hover = mock_surf
 
     with patch("pygame.transform.smoothscale", return_value=mock_surf):
         TitleScreen._compute_layout(ts)
@@ -248,3 +266,116 @@ def test_gsm_transition_to_playing_load_slot(mock_gsm):
 
     mock_gsm._save_manager.load.assert_called_once_with(1)
     assert mock_gsm.state == GameState.PLAYING
+
+# ── Tests additionnels TitleScreen (Coverage) ────────────────────────────────
+
+def test_title_screen_load_assets_with_fallbacks(mock_screen, mock_save_manager):
+    mock_surf = pygame.Surface((1024, 1024), pygame.SRCALPHA)
+    with patch("pygame.image.load", return_value=mock_surf), \
+         patch("pygame.font.Font", side_effect=OSError), \
+         patch("src.engine.asset_manager.AssetManager", side_effect=Exception):
+         
+        ts = TitleScreen(mock_screen, mock_save_manager)
+        assert ts._font is not None
+        assert ts._bg.get_size() == (1280, 720)
+
+def test_title_screen_update(title_screen):
+    # Test hover on MAIN_MENU
+    with patch("pygame.mouse.get_pos", return_value=title_screen.menu_item_rects[1].center):
+        title_screen.update(0.16)
+        assert title_screen._hovered_item == 1
+        
+    # Test hover on LOAD_MENU
+    title_screen.state = "LOAD_MENU"
+    title_screen._refresh_slots() # Ensure slots are loaded
+    with patch("pygame.mouse.get_pos", return_value=title_screen.slot_rects[2].center):
+        title_screen.update(0.16)
+        assert title_screen._hovered_slot == 2
+
+    # Test hover on OPTIONS
+    title_screen.state = "OPTIONS"
+    with patch("pygame.mouse.get_pos", return_value=title_screen.back_btn_rect.center):
+        title_screen.update(0.16)
+        assert title_screen._back_hovered is True
+
+def test_title_screen_draw_main_menu(title_screen):
+    title_screen.state = "MAIN_MENU"
+    title_screen._hovered_item = 0
+    with patch("pygame.mouse.get_pos", return_value=(0,0)), \
+         patch("pygame.mouse.get_pressed", return_value=(False, False, False)):
+        title_screen.draw()
+    assert title_screen._screen.blit.call_count > 0
+
+def test_title_screen_draw_load_menu(title_screen):
+    title_screen.state = "LOAD_MENU"
+    title_screen._hovered_slot = 0
+    title_screen._refresh_slots()
+    with patch("pygame.mouse.get_pos", return_value=(0,0)), \
+         patch("pygame.mouse.get_pressed", return_value=(False, False, False)):
+        title_screen.draw()
+    assert title_screen._screen.blit.call_count > 0
+
+def test_title_screen_draw_options(title_screen):
+    title_screen.state = "OPTIONS"
+    title_screen._back_hovered = True
+    with patch("pygame.mouse.get_pos", return_value=(0,0)), \
+         patch("pygame.mouse.get_pressed", return_value=(False, False, False)):
+        title_screen.draw()
+    assert title_screen._screen.blit.call_count > 0
+
+def test_title_screen_options_state_transitions(title_screen):
+    # Entre en OPTIONS via clic sur le menu
+    # index 2 is options
+    event = _make_mouse_event(title_screen.menu_item_rects[2].center)
+    title_screen.handle_event(event)
+    assert title_screen.state == "OPTIONS"
+    
+    # Sortie avec ESC
+    title_screen.handle_event(_make_key_event(pygame.K_ESCAPE))
+    assert title_screen.state == "MAIN_MENU"
+    
+    # Rentrée (force state) et Sortie avec le bouton retour
+    title_screen.state = "OPTIONS"
+    title_screen.handle_event(_make_mouse_event(title_screen.back_btn_rect.center))
+    assert title_screen.state == "MAIN_MENU"
+
+def test_title_screen_handle_load_menu_ignore(title_screen):
+    title_screen.state = "LOAD_MENU"
+    # ignore events not mouse down or escape
+    event = MagicMock()
+    event.type = pygame.KEYDOWN
+    event.key = pygame.K_SPACE
+    assert title_screen.handle_event(event) is None
+    
+    event = MagicMock()
+    event.type = pygame.MOUSEBUTTONDOWN
+    event.button = 3
+    assert title_screen.handle_event(event) is None
+    
+    # Not clicking on any slot
+    event = _make_mouse_event((0, 0))
+    assert title_screen.handle_event(event) is None
+
+def test_title_screen_handle_main_menu_ignore(title_screen):
+    title_screen.state = "MAIN_MENU"
+    # ignore events not mouse down
+    event = MagicMock()
+    event.type = pygame.KEYDOWN
+    assert title_screen.handle_event(event) is None
+    
+    # click outside
+    event = _make_mouse_event((0, 0))
+    assert title_screen.handle_event(event) is None
+
+def test_title_screen_handle_options_ignore(title_screen):
+    title_screen.state = "OPTIONS"
+    # ignore events not mouse down or escape
+    event = MagicMock()
+    event.type = pygame.KEYDOWN
+    event.key = pygame.K_SPACE
+    assert title_screen.handle_event(event) is None
+    
+    # click outside back button
+    event = _make_mouse_event((0, 0))
+    title_screen.handle_event(event)
+    assert title_screen.state == "OPTIONS"

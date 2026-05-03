@@ -45,8 +45,8 @@ sub_types: chest | lever | door | sign | animated_decor
 - Animated decor `off_position`: spritesheet column switch on toggle.
   - `off_position=-1` (default) → single-column, no switch (backward compat).
   - `off_position=N` → `col_index=N` when `is_on=False`, `col_index=on_position` when `True`.
-  - `restore_state({'is_on': bool})` also updates `col_index` via `_update_col_index()`.
-- **Ambient Audio**: `sfx_ambient` triggers looping spatial audio when `is_on=True`. Volume scales via distance (`update_ambient`) with a 20% floor volume.
+  - `restore_state({'is_on': bool})` also updates `col_index` via `_update_col_index()`. Auto day/night toggle also respects this.
+- **Ambient Audio**: `sfx_ambient` triggers looping spatial audio when `is_on=True`. Volume scales via distance (`update_ambient`) with a 20% floor volume threshold for consistent background presence.
 - Linked entities (levers→doors): toggled via `Game.toggle_entity_by_id(target_id)`.
 
 ## Emote Chain
