@@ -13,14 +13,6 @@ from src.engine.save_manager import SaveManager, SlotInfo
 _MENU_DIR = os.path.join("assets", "images", "menu")
 _UI_DIR = os.path.join("assets", "images", "ui")
 
-# Button spritesheet layout (measured from 02-menu_buttons.png 1024x182)
-BTN_W_SRC = 341
-BTN_H_SRC = 182
-BTN_W_DST = 400
-BTN_H_DST = 86
-BTN_SPACING = 70          # px between button tops
-BTN_Y_OFFSET = 80         # extra push downward to clear the logo
-
 # Logo composite: 5 separate alpha-transparent PNGs assembled at runtime
 # Source sizes (px): main_title=790x138, moon=69x71, gear=94x95,
 #                   separator=676x11, subtitle=531x55
@@ -28,37 +20,39 @@ LOGO_MAIN_W = 640          # main title scaled width
 LOGO_ACCENT_H = 58         # moon/gear icon height
 LOGO_SEP_W = 380           # separator width
 LOGO_SUB_W = 380           # subtitle width
-LOGO_Y = 30               # top of logo block on screen
-LOGO_GAP = 6              # vertical gap between elements
+LOGO_Y = 30                # top of logo block on screen
+LOGO_GAP = 6               # vertical gap between elements
 # Fine-tune moon/gear position (px, relative to default centred placement)
-MOON_OFFSET_X = 25        # >0 → right,  <0 → left
-MOON_OFFSET_Y = 55        # >0 → down,   <0 → up
-GEAR_OFFSET_X = -25       # >0 → right,  <0 → left
-GEAR_OFFSET_Y = 55        # >0 → down,   <0 → up
+MOON_OFFSET_X = 25         # >0 → right,  <0 → left
+MOON_OFFSET_Y = 55         # >0 → down,   <0 → up
+GEAR_OFFSET_X = -25        # >0 → right,  <0 → left
+GEAR_OFFSET_Y = 55         # >0 → down,   <0 → up
 
 # Save slot spritesheet (04-save_slot.png 1024x1024, 2 states stacked)
 SLOT_H_SRC = 512
 SLOT_W_DST = 800
 SLOT_H_DST = 120
 SLOT_SPACING = 140
-SLOT_PANEL_Y_START = 140  # inside the panel overlay
+SLOT_PANEL_Y_START = 140   # inside the load panel overlay
 
-# Semi-transparent overlay
+# Semi-transparent overlay for load screen
 OVERLAY_ALPHA = 180
 
-_BUTTON_LABELS = ["Nouvelle Partie", "Charger", "Options", "Quitter"]
+# Scroll edge overlays (295x720 — shown on left/right edges)
+SCROLL_W = 295             # width of scroll image
+SCROLL_ZONE_W = 295        # mouse hover zone width on each side
 
 
 class TitleScreen:
-    """Main menu screen with 4 buttons and a load-game overlay."""
+    """Main menu screen — background, logo, cursor. Menu to be added."""
 
     def __init__(self, screen: pygame.Surface, save_manager: SaveManager) -> None:
         self._screen = screen
         self._save_manager = save_manager
-        self.state = "MAIN_MENU"          # "MAIN_MENU" | "LOAD_MENU" | "OPTIONS"
+        self.state = "MAIN_MENU"          # "MAIN_MENU" | "LOAD_MENU"
         self._slots: list[SlotInfo | None] = [None, None, None]
-        self._hovered_btn: int | None = None
         self._hovered_slot: int | None = None
+        self._hovered_scroll: str | None = None   # None | 'left' | 'right'
 
         sw, sh = screen.get_size()
         self._sw = sw
@@ -67,7 +61,7 @@ class TitleScreen:
         self._load_assets()
         self._compute_layout()
 
-    # ── Asset loading ──────────────────────────────────────────────────────────
+    # ── Asset helpers ──────────────────────────────────────────────────────────
 
     def _load_asset(self, filename: str) -> pygame.Surface:
         path = os.path.join(_MENU_DIR, filename)
@@ -90,32 +84,19 @@ class TitleScreen:
             surf.fill((255, 0, 255))
             return surf
         target_h = Settings.CURSOR_SIZE
-        ratio = target_h / 535  # 535 is original pointer height
+        ratio = target_h / 535
         target_w = int(309 * ratio)
         return pygame.transform.smoothscale(raw, (target_w, target_h))
 
     def _scale(self, surf: pygame.Surface, target_w: int) -> pygame.Surface:
-        """Scale a surface proportionally to target_w."""
+        """Scale proportionally to target_w."""
         sw, sh = surf.get_size()
-        target_h = int(sh * target_w / sw)
-        return pygame.transform.smoothscale(surf, (target_w, target_h))
-
-    def _scale_cover(self, surf: pygame.Surface, target_w: int, target_h: int) -> pygame.Surface:
-        """Scale + center-crop to fill target dimensions without distortion."""
-        src_w, src_h = surf.get_size()
-        scale = max(target_w / src_w, target_h / src_h)
-        scaled_w = int(src_w * scale)
-        scaled_h = int(src_h * scale)
-        scaled = pygame.transform.smoothscale(surf, (scaled_w, scaled_h))
-        crop_x = (scaled_w - target_w) // 2
-        crop_y = (scaled_h - target_h) // 2
-        return scaled.subsurface(pygame.Rect(crop_x, crop_y, target_w, target_h)).copy()
+        return pygame.transform.smoothscale(surf, (target_w, int(sh * target_w / sw)))
 
     def _build_logo_composite(self) -> pygame.Surface:
         """Assemble 5 alpha-transparent logo parts into one surface."""
-        # Load and scale each part
         main = self._scale(self._load_asset("00-title_logo_main_title.png"), LOGO_MAIN_W)
-        # Moon and gear scaled to same height as LOGO_ACCENT_H
+
         moon_raw = self._load_asset("00-title_logo_moon.png")
         mw, mh = moon_raw.get_size()
         moon = pygame.transform.smoothscale(moon_raw, (int(mw * LOGO_ACCENT_H / mh), LOGO_ACCENT_H))
@@ -133,70 +114,48 @@ class TitleScreen:
         moon_w, moon_h = moon.get_size()
         gear_w, _ = gear.get_size()
 
-        # Total composite dimensions
-        comp_w = main_w + moon_w + gear_w + 8   # 8px margin for accent icons
+        comp_w = main_w + moon_w + gear_w + 8
         comp_h = main_h + LOGO_GAP + sep_h + LOGO_GAP + sub_h
-
         comp = pygame.Surface((comp_w, comp_h), pygame.SRCALPHA)
 
-        # Row 1: moon | main_title | gear  — vertically centered on main_title
         moon_base_y = (main_h - moon_h) // 2
-        gear_base_y = (main_h - moon_h) // 2
         main_x = moon_w + 4
         comp.blit(moon, (0 + MOON_OFFSET_X, moon_base_y + MOON_OFFSET_Y))
         comp.blit(main, (main_x, 0))
-        comp.blit(gear, (main_x + main_w + 4 + GEAR_OFFSET_X, gear_base_y + GEAR_OFFSET_Y))
+        comp.blit(gear, (main_x + main_w + 4 + GEAR_OFFSET_X, moon_base_y + GEAR_OFFSET_Y))
 
-        # Row 2: separator  — centered
         sep_x = (comp_w - LOGO_SEP_W) // 2
         sep_y = main_h + LOGO_GAP
         comp.blit(sep, (sep_x, sep_y))
 
-        # Row 3: subtitle — centered
         sub_x = (comp_w - LOGO_SUB_W) // 2
-        sub_y = sep_y + sep_h + LOGO_GAP
-        comp.blit(sub, (sub_x, sub_y))
+        comp.blit(sub, (sub_x, sep_y + sep_h + LOGO_GAP))
 
         return comp
 
+    # ── Assets & layout ────────────────────────────────────────────────────────
+
     def _load_assets(self) -> None:
-        # Background — native 1280x720, smoothscale is exact (no distortion)
+        # Background — native 1280x720
         bg_raw = self._load_asset("01-menu_background.png")
         self._bg = pygame.transform.smoothscale(bg_raw, (self._sw, self._sh))
 
-        # Logo — composed from 5 alpha-transparent PNGs
+        # Logo composite
         self._logo_surf = self._build_logo_composite()
-
-        # Button spritesheet — 3 states side by side
-        btn_sheet = self._load_asset("02-menu_buttons.png")
-        btn_states: dict[str, pygame.Surface] = {}
-        for i, state in enumerate(["idle", "hover", "pressed"]):
-            raw = btn_sheet.subsurface(
-                pygame.Rect(i * BTN_W_SRC, 0, BTN_W_SRC, BTN_H_SRC)
-            )
-            btn_states[state] = pygame.transform.smoothscale(
-                raw, (BTN_W_DST, BTN_H_DST)
-            )
-        self._btn_states = btn_states
 
         # Save slot spritesheet — 2 states stacked vertically
         slot_sheet = self._load_asset("04-save_slot.png")
         slot_states: dict[str, pygame.Surface] = {}
         for i, state in enumerate(["idle", "hover"]):
-            raw = slot_sheet.subsurface(
-                pygame.Rect(0, i * SLOT_H_SRC, 1024, SLOT_H_SRC)
-            )
-            slot_states[state] = pygame.transform.smoothscale(
-                raw, (SLOT_W_DST, SLOT_H_DST)
-            )
+            raw = slot_sheet.subsurface(pygame.Rect(0, i * SLOT_H_SRC, 1024, SLOT_H_SRC))
+            slot_states[state] = pygame.transform.smoothscale(raw, (SLOT_W_DST, SLOT_H_DST))
         self._slot_states = slot_states
 
-        # Panel overlay (raw surface — will be rescaled in _compute_layout)
-        self._panel_raw = self._load_asset("03-panel_background.png")
-        self._panel = self._panel_raw  # placeholder, resized in _compute_layout
-        self._panel_load = pygame.transform.smoothscale(self._panel_raw, (900, 480))
+        # Load overlay panel
+        panel_raw = self._load_asset("03-panel_background.png")
+        self._panel_load = pygame.transform.smoothscale(panel_raw, (900, 480))
 
-        # Overlay surface (semi-transparent black)
+        # Semi-transparent overlay
         self._overlay = pygame.Surface((self._sw, self._sh))
         self._overlay.set_alpha(OVERLAY_ALPHA)
         self._overlay.fill((0, 0, 0))
@@ -210,33 +169,24 @@ class TitleScreen:
             self._font = pygame.font.SysFont(None, 32)
             self._font_small = pygame.font.SysFont(None, 24)
 
-        # Custom cursor (same assets as InventoryUI)
+        # Custom cursor
         self._pointer_img = self._load_cursor("05-pointer.png")
         self._pointer_select_img = self._load_cursor("06-pointer_select.png")
         pygame.mouse.set_visible(False)
 
-    # ── Layout ────────────────────────────────────────────────────────────────
+        # Scroll edge overlays
+        self._scroll_off = pygame.transform.smoothscale(
+            self._load_asset("scroll_off.png"), (SCROLL_W, self._sh)
+        )
+        self._scroll_on = pygame.transform.smoothscale(
+            self._load_asset("01-menu_scroll_on.png"), (SCROLL_W, self._sh)
+        )
+        # Pre-flip for right side
+        self._scroll_off_r = pygame.transform.flip(self._scroll_off, True, False)
+        self._scroll_on_r = pygame.transform.flip(self._scroll_on, True, False)
 
     def _compute_layout(self) -> None:
-        n = len(_BUTTON_LABELS)
-        zone_h = (n - 1) * BTN_SPACING + BTN_H_DST
-        y_start = (self._sh - zone_h) // 2 + BTN_Y_OFFSET
-        x = (self._sw - BTN_W_DST) // 2
-
-        self.button_rects: list[pygame.Rect] = []
-        for i in range(n):
-            self.button_rects.append(
-                pygame.Rect(x, y_start + i * BTN_SPACING, BTN_W_DST, BTN_H_DST)
-            )
-
-        # Panel rect wrapping buttons (40px padding each side)
-        padding = 40
-        panel_w = BTN_W_DST + padding * 2
-        panel_h = zone_h + padding * 2
-        self._panel_rect = pygame.Rect(x - padding, y_start - padding, panel_w, panel_h)
-        self._panel = pygame.transform.smoothscale(self._panel_raw, (panel_w, panel_h))
-
-        # Save slot rects (inside the load overlay panel, 900x480 centered)
+        """Compute save slot rects for the load overlay."""
         ov_x = self._sw // 2 - 450
         ov_y = self._sh // 2 - 240
         self.slot_rects: list[pygame.Rect] = []
@@ -245,7 +195,7 @@ class TitleScreen:
             sy = ov_y + SLOT_PANEL_Y_START + i * SLOT_SPACING
             self.slot_rects.append(pygame.Rect(sx, sy, SLOT_W_DST, SLOT_H_DST))
 
-    # ── Public API ────────────────────────────────────────────────────────────
+    # ── Public API ─────────────────────────────────────────────────────────────
 
     def handle_event(self, event: pygame.Event) -> GameEvent | None:
         if self.state == "LOAD_MENU":
@@ -253,53 +203,48 @@ class TitleScreen:
         return self._handle_main_menu(event)
 
     def update(self, dt: float) -> None:
-        mouse_pos = pygame.mouse.get_pos()
-        if self.state == "MAIN_MENU":
-            self._hovered_btn = None
-            for i, rect in enumerate(self.button_rects):
-                if rect.collidepoint(mouse_pos):
-                    self._hovered_btn = i
-                    break
-        elif self.state == "LOAD_MENU":
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        # Track scroll edge hover
+        if mouse_x < SCROLL_ZONE_W:
+            self._hovered_scroll = "left"
+        elif mouse_x > self._sw - SCROLL_ZONE_W:
+            self._hovered_scroll = "right"
+        else:
+            self._hovered_scroll = None
+
+        if self.state == "LOAD_MENU":
             self._hovered_slot = None
             for i, rect in enumerate(self.slot_rects):
-                if rect.collidepoint(mouse_pos):
+                if rect.collidepoint((mouse_x, mouse_y)):
                     self._hovered_slot = i
                     break
 
     def draw(self) -> None:
         self._screen.blit(self._bg, (0, 0))
+
+        # Scroll edge overlays (behind logo)
+        self._draw_scrolls()
+
         logo_x = (self._sw - self._logo_surf.get_width()) // 2
         self._screen.blit(self._logo_surf, (logo_x, LOGO_Y))
-
-        # Panel behind buttons (always shown)
-        self._screen.blit(self._panel, self._panel_rect)
-
-        self._draw_buttons()
 
         if self.state == "LOAD_MENU":
             self._draw_load_overlay()
 
         self._draw_cursor()
 
+    def _draw_scrolls(self) -> None:
+        """Draw left/right scroll edge overlays with hover state."""
+        left_img = self._scroll_on if self._hovered_scroll == "left" else self._scroll_off
+        right_img = self._scroll_on_r if self._hovered_scroll == "right" else self._scroll_off_r
+        self._screen.blit(left_img, (0, 0))
+        self._screen.blit(right_img, (self._sw - SCROLL_W, 0))
+
+    # ── Load overlay ───────────────────────────────────────────────────────────
+
     def _refresh_slots(self) -> None:
         """Reload slot data from SaveManager (call when entering LOAD_MENU)."""
         self._slots = self._save_manager.list_slots()
-
-    def _draw_cursor(self) -> None:
-        """Draw custom cursor on top of everything."""
-        mouse_pos = pygame.mouse.get_pos()
-        img = self._pointer_select_img if pygame.mouse.get_pressed()[0] else self._pointer_img
-        self._screen.blit(img, mouse_pos)
-
-    # ── Private rendering ─────────────────────────────────────────────────────
-
-    def _draw_buttons(self) -> None:
-        for i, (rect, label) in enumerate(zip(self.button_rects, _BUTTON_LABELS)):
-            state = "hover" if self._hovered_btn == i else "idle"
-            self._screen.blit(self._btn_states[state], rect)
-            text = self._font.render(label, True, (220, 200, 150))
-            self._screen.blit(text, text.get_rect(center=rect.center))
 
     def _draw_load_overlay(self) -> None:
         self._screen.blit(self._overlay, (0, 0))
@@ -307,9 +252,7 @@ class TitleScreen:
         self._screen.blit(self._panel_load, panel_rect)
 
         title = self._font.render("Charger une partie", True, (220, 200, 150))
-        self._screen.blit(
-            title, title.get_rect(midtop=(panel_rect.centerx, panel_rect.top + 50))
-        )
+        self._screen.blit(title, title.get_rect(midtop=(panel_rect.centerx, panel_rect.top + 50)))
 
         for i, (slot_rect, slot_info) in enumerate(zip(self.slot_rects, self._slots)):
             state = "hover" if self._hovered_slot == i else "idle"
@@ -328,36 +271,25 @@ class TitleScreen:
         text = self._font_small.render(label, True, color)
         self._screen.blit(text, text.get_rect(midleft=(rect.x + 20, rect.centery)))
 
-    # ── Event handlers ────────────────────────────────────────────────────────
+    def _draw_cursor(self) -> None:
+        """Draw custom cursor on top of everything."""
+        mouse_pos = pygame.mouse.get_pos()
+        img = self._pointer_select_img if pygame.mouse.get_pressed()[0] else self._pointer_img
+        self._screen.blit(img, mouse_pos)
+
+    # ── Event handlers ─────────────────────────────────────────────────────────
 
     def _handle_main_menu(self, event: pygame.Event) -> GameEvent | None:
-        if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
-            return None
-
-        for i, rect in enumerate(self.button_rects):
-            if not rect.collidepoint(event.pos):
-                continue
-            return self._on_button_click(i)
+        """Stub — new menu interactions to be added here."""
         return None
-
-    def _on_button_click(self, index: int) -> GameEvent | None:
-        actions = [
-            GameEvent.new_game,           # 0 — Nouvelle Partie
-            self._enter_load_menu,        # 1 — Charger
-            self._enter_options,          # 2 — Options
-            GameEvent.quit,               # 3 — Quitter
-        ]
-        return actions[index]()
 
     def _enter_load_menu(self) -> None:
         self.state = "LOAD_MENU"
         self._refresh_slots()
-        return None
 
     def _enter_options(self) -> None:
         self.state = "OPTIONS"
         logging.info("TitleScreen: Options menu (stub)")
-        return None
 
     def _handle_load_menu(self, event: pygame.Event) -> GameEvent | None:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -369,6 +301,5 @@ class TitleScreen:
 
         for i, rect in enumerate(self.slot_rects):
             if rect.collidepoint(event.pos):
-                slot_id = i + 1
-                return GameEvent.load_game(slot_id)
+                return GameEvent.load_game(i + 1)
         return None
