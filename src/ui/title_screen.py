@@ -8,6 +8,7 @@ import pygame
 from src.config import Settings
 from src.engine.game_events import GameEvent, GameEventType
 from src.engine.save_manager import SaveManager, SlotInfo
+from src.engine.i18n import I18nManager
 
 # ── Asset constants ────────────────────────────────────────────────────────────
 _MENU_DIR = os.path.join("assets", "images", "menu")
@@ -39,6 +40,12 @@ SLOT_PANEL_Y_START = 140   # inside the load panel overlay
 # Semi-transparent overlay for load screen
 OVERLAY_ALPHA = 180
 
+# Right panel scroll banner — position of text centre inside the parchment
+# Adjust offsets to reposition without touching draw logic
+SCROLL_TITLE_X = 1000      # centre-x of the scroll text zone (pixels)
+SCROLL_TITLE_Y = 60        # centre-y of the scroll text zone (pixels)
+SCROLL_TITLE_OFFSET_X = 0  # fine-tune x  (>0 right, <0 left)
+SCROLL_TITLE_OFFSET_Y = 0  # fine-tune y  (>0 down,  <0 up)
 
 
 class TitleScreen:
@@ -50,6 +57,7 @@ class TitleScreen:
         self.state = "MAIN_MENU"          # "MAIN_MENU" | "LOAD_MENU"
         self._slots: list[SlotInfo | None] = [None, None, None]
         self._hovered_slot: int | None = None
+        self._i18n = I18nManager()
 
         sw, sh = screen.get_size()
         self._sw = sw
@@ -203,6 +211,8 @@ class TitleScreen:
         logo_x = (LOGO_ZONE_W - self._logo_surf.get_width()) // 2
         self._screen.blit(self._logo_surf, (logo_x, LOGO_Y))
 
+        self._draw_scroll_title()
+
         if self.state == "LOAD_MENU":
             self._draw_load_overlay()
 
@@ -244,6 +254,14 @@ class TitleScreen:
         mouse_pos = pygame.mouse.get_pos()
         img = self._pointer_select_img if pygame.mouse.get_pressed()[0] else self._pointer_img
         self._screen.blit(img, mouse_pos)
+
+    def _draw_scroll_title(self) -> None:
+        """Render the menu title on the right panel scroll banner."""
+        label = self._i18n.get("menu.title", default="Menu")
+        text_surf = self._font.render(label, True, (60, 35, 15))  # dark brown ink
+        cx = SCROLL_TITLE_X + SCROLL_TITLE_OFFSET_X
+        cy = SCROLL_TITLE_Y + SCROLL_TITLE_OFFSET_Y
+        self._screen.blit(text_surf, text_surf.get_rect(center=(cx, cy)))
 
     # ── Event handlers ─────────────────────────────────────────────────────────
 
