@@ -174,15 +174,11 @@ class TitleScreen:
         self._pointer_select_img = self._load_cursor("06-pointer_select.png")
         pygame.mouse.set_visible(False)
 
-        # Scroll edge overlays
-        self._scroll_off = pygame.transform.smoothscale(
-            self._load_asset("scroll_off.png"), (SCROLL_W, self._sh)
-        )
+        # Scroll edge hover overlay (01-menu_scroll_on.png, 295x720)
+        # "off" state is baked into the background — only load hover image
         self._scroll_on = pygame.transform.smoothscale(
             self._load_asset("01-menu_scroll_on.png"), (SCROLL_W, self._sh)
         )
-        # Pre-flip for right side
-        self._scroll_off_r = pygame.transform.flip(self._scroll_off, True, False)
         self._scroll_on_r = pygame.transform.flip(self._scroll_on, True, False)
 
     def _compute_layout(self) -> None:
@@ -234,11 +230,11 @@ class TitleScreen:
         self._draw_cursor()
 
     def _draw_scrolls(self) -> None:
-        """Draw left/right scroll edge overlays with hover state."""
-        left_img = self._scroll_on if self._hovered_scroll == "left" else self._scroll_off
-        right_img = self._scroll_on_r if self._hovered_scroll == "right" else self._scroll_off_r
-        self._screen.blit(left_img, (0, 0))
-        self._screen.blit(right_img, (self._sw - SCROLL_W, 0))
+        """Draw scroll hover overlay on the active edge only."""
+        if self._hovered_scroll == "left":
+            self._screen.blit(self._scroll_on, (0, 0))
+        elif self._hovered_scroll == "right":
+            self._screen.blit(self._scroll_on_r, (self._sw - SCROLL_W, 0))
 
     # ── Load overlay ───────────────────────────────────────────────────────────
 
