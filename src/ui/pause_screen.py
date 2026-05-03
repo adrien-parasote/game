@@ -70,19 +70,10 @@ class PauseScreen:
         self._overlay.set_alpha(OVERLAY_ALPHA)
         self._overlay.fill((0, 0, 0))
 
-        # Panel background
-        panel_raw = self._load_asset("03-panel_background.png")
-        self._panel = pygame.transform.smoothscale(panel_raw, (680, 480))
-
-        # Button spritesheet
-        btn_sheet = self._load_asset("02-menu_buttons.png")
-        btn_states: dict[str, pygame.Surface] = {}
-        for i, state in enumerate(["idle", "hover", "pressed"]):
-            raw = btn_sheet.subsurface(
-                pygame.Rect(i * BTN_W_SRC, 0, BTN_W_SRC, BTN_H_SRC)
-            )
-            btn_states[state] = pygame.transform.smoothscale(raw, (BTN_W_DST, BTN_H_DST))
-        self._btn_states = btn_states
+        # Panel background — generated surface (no external asset needed)
+        self._panel = pygame.Surface((680, 480), pygame.SRCALPHA)
+        self._panel.fill((10, 18, 22, 210))
+        pygame.draw.rect(self._panel, (60, 80, 85), self._panel.get_rect(), 2)
 
         # Fonts
         try:
@@ -146,9 +137,8 @@ class PauseScreen:
         )
 
         for i, (rect, label) in enumerate(zip(self.button_rects, _BUTTON_LABELS)):
-            state = "hover" if self._hovered_btn == i else "idle"
-            self._screen.blit(self._btn_states[state], rect)
-            text = self._font.render(label, True, (220, 200, 150))
+            color = (255, 235, 180) if self._hovered_btn == i else (220, 200, 150)
+            text = self._font.render(label, True, color)
             self._screen.blit(text, text.get_rect(center=rect.center))
 
         if self._confirm_timer > 0:
