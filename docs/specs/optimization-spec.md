@@ -60,18 +60,16 @@ This document specifies the technical implementation of performance and structur
 | Invalid Target ID | `find_entity` returns None | Log warning, ignore interaction | No-op | WARN |
 
 ## Deep Links
-- [ENGINE_CORE.md](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/ENGINE_CORE.md)
-- [game.py](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py)
-- [dialogue.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/dialogue.py)
+- **`engine-core.md`**: [engine-core.md L1](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/engine-core.md#L1)
+- **`RenderManager`**: [render_manager.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/render_manager.py#L1)
+- **`InteractionManager`**: [interaction.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L1)
+- **`DialogueManager`**: [dialogue.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/dialogue.py#L1)
+- **`Game._draw_scene`**: [game.py L509](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L509)
 
-## Test Case Specifications
+### Linked Test Functions
 
-### Unit Tests Required
-| Test ID | Component | Input | Expected Output | Edge Cases |
-|---------|-----------|-------|-----------------|------------|
-| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
-
-### Integration Tests Required
-| Test ID | Flow | Setup | Verification | Teardown |
-|---------|------|-------|--------------|----------|
-| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-DLG-01 | `test_dialogue_pagination` | `tests/ui/test_inventory.py:L238` |
+| IT-INT-01 | `test_handle_interaction_npc` | `tests/engine/test_interaction.py:L169` |
+| IT-INT-02 | `test_interaction_toggle_entity_by_id` | `tests/engine/test_interaction.py:L513` |

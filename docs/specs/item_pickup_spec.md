@@ -44,12 +44,23 @@
 
 ## 4. Deep Links
 
-- [Pickup Interaction Logic](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L166)
-- [Proximity Emote Check](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L56)
-- [Inventory UI](file:///Users/adrien.parasote/Documents/perso/game/src/ui/inventory.py#L1)
-- [Inventory System](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L17)
-- [Player Entity](file:///Users/adrien.parasote/Documents/perso/game/src/entities/player.py#L1)
-- [Asset Path Config](file:///Users/adrien.parasote/Documents/perso/game/src/config.py)
+- **Pickup Interaction Logic**: [interaction.py L166](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L166)
+- **Proximity Emote Check**: [interaction.py L56](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L56)
+- **`PickupItem` entity**: [pickup.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/entities/pickup.py#L1)
+- **Inventory System**: [inventory_system.py L17](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L17)
+- **Spawn logic**: [game.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L1)
+- **Integration tests**: [test_interaction.py L119](file:///Users/adrien.parasote/Documents/perso/game/tests/engine/test_interaction.py#L119)
+
+### Linked Test Functions
+
+| Spec ID | Test Function | File |
+|---------|---------------|------|
+| TC-INV-001 | `test_inventory_add_item_stacks_in_existing_slot` | `tests/ui/test_inventory.py:L37` |
+| TC-INV-002 | `test_inventory_add_item_returns_overflow` | `tests/ui/test_inventory.py:L55` |
+| TC-INV-003 | `test_inventory_is_full_true` | `tests/ui/test_inventory.py:L73` |
+| IT-PICK-001 | `test_handle_interaction_pickup` | `tests/engine/test_interaction.py:L119` |
+| IT-PICK-002 | `test_handle_interaction_pickup_partial` | `tests/engine/test_interaction.py:L141` |
+
 
 ## 5. Implementation Details
 
@@ -85,24 +96,3 @@ Pickup items use the same `{map_basename}_{tiled_id}` key as interactive objects
 - Icons: `assets/images/icons/{item_id}.png`.
 - Tooltip: Rendered in the green bar at bottom right of `InventoryUI`.
 - Quantity: Small text at bottom-right of slot if > 1.
-
-## Test Case Specifications
-
-### Unit Tests Required
-| Test ID | Component | Input | Expected Output | Edge Cases |
-|---------|-----------|-------|-----------------|------------|
-| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
-
-### Integration Tests Required
-| Test ID | Flow | Setup | Verification | Teardown |
-|---------|------|-------|--------------|----------|
-| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
-
-## Error Handling Matrix
-
-| Error Type | Detection | Response | Fallback | Logging | Alert |
-|------------|-----------|----------|----------|---------|-------|
-| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
-
-## Deep Links
-- [Link description](file:///path/to/file#anchor)

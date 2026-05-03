@@ -137,27 +137,5 @@ Pickups use the same `{map_basename}_{tiled_id}` key format.
 - **Spawning Logic**: [game.py:L168](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L168)
 - **Interaction Logic**: [game.py:L281](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L281)
 - **Teleport Check**: [game.py:L415](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L415)
-- **Teleport Entity**: [teleport.py](file:///Users/adrien.parasote/Documents/perso/game/src/entities/teleport.py)
-- **Loot Table Initialization**: [loot-table-spec.md](./loot-table-spec.md)
-
-
-## Test Case Specifications
-
-### Unit Tests Required
-| Test ID | Component | Input | Expected Output | Edge Cases |
-|---------|-----------|-------|-----------------|------------|
-| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
-
-### Integration Tests Required
-| Test ID | Flow | Setup | Verification | Teardown |
-|---------|------|-------|--------------|----------|
-| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
-
-## Error Handling Matrix
-
-| Error Type | Detection | Response | Fallback | Logging | Alert |
-|------------|-----------|----------|----------|---------|-------|
-| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
-
-## Deep Links
-- [Link description](file:///path/to/file#anchor)
+- **Teleport Entity**: [teleport.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/entities/teleport.py#L1)
+- **Loot Table Initialization**: [loot-table-spec.md](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/loot-table-spec.md#loot-table)

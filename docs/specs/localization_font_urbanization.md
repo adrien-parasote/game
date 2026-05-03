@@ -56,4 +56,8 @@ Establish a three-tier font system to enhance visual hierarchy and game identity
 | Invalid Size | `Settings` | Log Warning | Use default size (20) |
 
 ## Deep Links
-- [Link description](file:///path/to/file#anchor)
+- **Font config**: [config.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/config.py#L1)
+- **`InventoryUI` font usage**: [inventory.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/inventory.py#L1)
+- **`HUD` font usage**: [hud.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/hud.py#L1)
+- **`DialogueManager`**: [dialogue.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/dialogue.py#L1)
+- **`i18n` module**: [i18n.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/i18n.py#L1)

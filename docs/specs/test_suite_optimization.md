@@ -80,23 +80,3 @@ When adding a new domain:
 4. Use `shutil.copy()` for 1:1 migrations; Python script with `ast.parse()` validation for splits
 5. Delete old files only after `pytest tests/ -q` shows zero regressions
 
-## Test Case Specifications
-
-### Unit Tests Required
-| Test ID | Component | Input | Expected Output | Edge Cases |
-|---------|-----------|-------|-----------------|------------|
-| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
-
-### Integration Tests Required
-| Test ID | Flow | Setup | Verification | Teardown |
-|---------|------|-------|--------------|----------|
-| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
-
-## Error Handling Matrix
-
-| Error Type | Detection | Response | Fallback | Logging | Alert |
-|------------|-----------|----------|----------|---------|-------|
-| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
-
-## Deep Links
-- [Link description](file:///path/to/file#anchor)

@@ -404,11 +404,13 @@ class ChestUI:
 
 | Reference | Location |
 |-----------|----------|
-| InventoryUI (pattern to follow) | [inventory.py](../src/ui/inventory.py) |
-| InteractionManager `_check_proximity_emotes` | [interaction.py L56](../src/engine/interaction.py#L56) |
-| Game `_draw_scene` | [game.py L509](../src/engine/game.py#L509) |
-| Game `_update` | [game.py L588](../src/engine/game.py#L588) |
-| Interactive objects spec — Emote Suppression | [interactive-objects.md §2 L68](./interactive-objects.md#L68) |
+| `ChestUI` class | [chest.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/chest.py#L1) |
+| `ChestTransfer` logic | [chest_transfer.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/chest_transfer.py#L1) |
+| `InventoryUI` (pattern to follow) | [inventory.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/inventory.py#L1) |
+| `InteractionManager._check_proximity_emotes` | [interaction.py L56](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L56) |
+| `Game._draw_scene` | [game.py L509](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L509) |
+| `Game._update` | [game.py L588](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L588) |
+| Unit tests (ChestUI) | [test_chest.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/ui/test_chest.py#L1) |
 | Asset: chest background | `assets/images/HUD/07-chest.png` |
 | Asset: slot frame | `assets/images/ui/03-inventory_slot.png` |
 
@@ -436,24 +438,3 @@ class ChestUI:
 
 **AI Coder Score: 9/10**  
 Residual ambiguity: exact pixel fractions for the image zones (Assumption A-04). These are visual estimates requiring one calibration pass after first render.
-
-## Test Case Specifications
-
-### Unit Tests Required
-| Test ID | Component | Input | Expected Output | Edge Cases |
-|---------|-----------|-------|-----------------|------------|
-| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
-
-### Integration Tests Required
-| Test ID | Flow | Setup | Verification | Teardown |
-|---------|------|-------|--------------|----------|
-| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
-
-## Error Handling Matrix
-
-| Error Type | Detection | Response | Fallback | Logging | Alert |
-|------------|-----------|----------|----------|---------|-------|
-| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
-
-## Deep Links
-- [Link description](file:///path/to/file#anchor)

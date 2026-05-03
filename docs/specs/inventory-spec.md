@@ -103,21 +103,62 @@
 
 ## Test Case Specifications
 
-### Unit Tests Required
-| Test ID | Component | Input | Expected Output | Edge Cases |
-|---------|-----------|-------|-----------------|------------|
-| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
+### Unit Tests — `Inventory` Logic (`tests/ui/test_inventory.py`, `tests/ui/test_inventory_removal.py`, `tests/ui/test_inventory_equipment.py`)
 
-### Integration Tests Required
-| Test ID | Flow | Setup | Verification | Teardown |
-|---------|------|-------|--------------|----------|
-| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
+| Test ID | Test Function | Component | Expected Output |
+|---------|---------------|-----------|-----------------|
+| INV-001 | `test_inventory_localization` | `Inventory.create_item` | Item name localized from i18n |
+| INV-002 | `test_inventory_load_item_data_file_not_found` | `Inventory._load_item_data` | Empty dict, no crash |
+| INV-003 | `test_inventory_load_item_data_json_error` | `Inventory._load_item_data` | Empty dict, no crash |
+| INV-004 | `test_inventory_add_item_stacks_in_existing_slot` | `Inventory.add_item` | Merges into existing stack |
+| INV-005 | `test_inventory_add_item_returns_overflow` | `Inventory.add_item` | Returns remaining quantity |
+| INV-006 | `test_inventory_is_full_false` | `Inventory.is_full` | `False` when slots available |
+| INV-007 | `test_inventory_is_full_true` | `Inventory.is_full` | `True` when all slots occupied |
+| INV-008 | `test_inventory_get_item_at_out_of_bounds` | `Inventory.get_item_at` | Returns `None` |
+| INV-009 | `test_inventory_remove_item` | `Inventory.remove_item` | Item removed, slot is `None` |
+| INV-010 | `test_inventory_remove_item_invalid_index` | `Inventory.remove_item` | Returns `None` (no crash) |
+| INV-011 | `test_inventory_remove_item_empty_slot` | `Inventory.remove_item` | Returns `None` |
+| INV-012 | `test_equip_item_valid` | `Inventory.equip_item` | Item placed in equipment slot |
+| INV-013 | `test_equip_item_invalid_slot` | `Inventory.equip_item` | Item returned, no equip |
+| INV-014 | `test_equip_item_swap` | `Inventory.equip_item` | Old item returned, new item equipped |
+| INV-015 | `test_unequip_item` | `Inventory.unequip_item` | Item removed from slot, returned |
+
+### Unit Tests — `InventoryUI` (`tests/ui/test_inventory_coverage.py`)
+
+| Test ID | Test Function | Component | Expected Output |
+|---------|---------------|-----------|-----------------|
+| INVUI-001 | `test_drag_from_equipment_slot` | `InventoryUI.handle_input` | `_dragging_item` set from equip slot |
+| INVUI-002 | `test_drag_from_grid_slot` | `InventoryUI.handle_input` | `_dragging_item` set from grid slot |
+| INVUI-003 | `test_drop_on_equipment_slot` | `InventoryUI.handle_input` | Item moved to equipment slot |
+| INVUI-004 | `test_drop_on_grid_slot` | `InventoryUI.handle_input` | Item moved to grid slot |
+| INVUI-005 | `test_grid_to_grid_swap` | `InventoryUI._handle_drop` | Items swapped between grid slots |
+
+### Integration Tests (`tests/ui/test_inventory_chest_interaction.py`)
+
+| Test ID | Test Function | Flow | Verification |
+|---------|---------------|------|--------------|
+| IT-INV-001 | `test_inventory_wont_open_when_chest_is_open` | Chest open → press 'I' | `is_open` remains `False` |
+| IT-INV-002 | `test_inventory_toggles_normally_when_no_chest` | No chest → press 'I' | `is_open` becomes `True` |
 
 ## Error Handling Matrix
 
-| Error Type | Detection | Response | Fallback | Logging | Alert |
-|------------|-----------|----------|----------|---------|-------|
-| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
+| Error Type | Detection | Response | Fallback | Logging |
+|------------|-----------|----------|----------|---------|
+| `propertytypes.json` missing | `FileNotFoundError` in `_load_item_data` | Return `{}` | Item has no equip restriction | `WARNING` |
+| `propertytypes.json` malformed | `json.JSONDecodeError` | Return `{}` | Item has no equip restriction | `WARNING` |
+| Asset image missing (slot, cursor) | `pygame.error` | Catch silently | Fallback 32×32 magenta surface | `WARNING` |
+| `get_item_at` out-of-bounds | Index `< 0` or `>= capacity` | Return `None` | — | — |
+| `equip_item` invalid slot | `slot_name` not in `propertytypes` | Return item unchanged | Item stays in grid | — |
 
 ## Deep Links
-- [Link description](file:///path/to/file#anchor)
+
+- **`Inventory` class**: [inventory_system.py L21](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L21)
+- **`Inventory.add_item`**: [inventory_system.py L58](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L58)
+- **`Inventory.remove_item`**: [inventory_system.py L97](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L97)
+- **`Inventory.equip_item`**: [inventory_system.py L105](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L105)
+- **`InventoryUI` class**: [inventory.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/inventory.py#L1)
+- **Layout constants**: [inventory_constants.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/inventory_constants.py#L1)
+- **Unit tests (logic)**: [test_inventory.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/ui/test_inventory.py#L1)
+- **Unit tests (equipment)**: [test_inventory_equipment.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/ui/test_inventory_equipment.py#L1)
+- **Unit tests (drag-drop coverage)**: [test_inventory_coverage.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/ui/test_inventory_coverage.py#L1)
+- **Integration tests (chest)**: [test_inventory_chest_interaction.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/ui/test_inventory_chest_interaction.py#L1)

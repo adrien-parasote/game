@@ -96,27 +96,26 @@ In `Game._spawn_interactive()`:
 ---
 
 ## 7. Deep Links
-- **LootTable Module**: [loot_table.py](../src/engine/loot_table.py)
-- **Game Initialization**: [game.py L98](../src/engine/game.py#L98)
-- **Interactive Spawning**: [game.py L715](../src/engine/game.py#L715)
+- **`LootTable` class**: [loot_table.py L15](file:///Users/adrien.parasote/Documents/perso/game/src/engine/loot_table.py#L15)
+- **`LootTable.load`**: [loot_table.py L27](file:///Users/adrien.parasote/Documents/perso/game/src/engine/loot_table.py#L27)
+- **`LootTable.get_contents`**: [loot_table.py L49](file:///Users/adrien.parasote/Documents/perso/game/src/engine/loot_table.py#L49)
+- **Game Initialization**: [game.py L98](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L98)
+- **Interactive Spawning**: [game.py L715](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L715)
+- **Unit tests**: [test_loot_table.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/engine/test_loot_table.py#L1)
 
-## Test Case Specifications
+## 6. Test Case Specifications (Linked to Test Suite)
 
-### Unit Tests Required
-| Test ID | Component | Input | Expected Output | Edge Cases |
-|---------|-----------|-------|-----------------|------------|
-| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
+### Unit Tests — `tests/engine/test_loot_table.py`
 
-### Integration Tests Required
-| Test ID | Flow | Setup | Verification | Teardown |
-|---------|------|-------|--------------|----------|
-| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
-
-## Error Handling Matrix
-
-| Error Type | Detection | Response | Fallback | Logging | Alert |
-|------------|-----------|----------|----------|---------|-------|
-| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
-
-## Deep Links
-- [Link description](file:///path/to/file#anchor)
+| Test ID | Test Function | Component | Expected Output |
+|---------|---------------|-----------|-----------------|
+| TC-LT-01 | `test_load_valid_json` | `LootTable.load` | Table populated with valid items |
+| TC-LT-02 | `test_load_unknown_item_id_skipped_and_warned` | `LootTable._validate_entries` | Item skipped + `WARNING` logged |
+| TC-LT-03 | `test_load_missing_file` | `LootTable._read_json` | Empty table, no crash |
+| TC-LT-04 | `test_load_malformed_json` | `LootTable._read_json` | Empty table, no crash |
+| TC-LT-05 | `test_quantity_within_stack_max` | `LootTable._split_stacks` | Single stack created |
+| TC-LT-06 | `test_quantity_exceeds_stack_max` | `LootTable._split_stacks` | Multiple stacks created |
+| TC-LT-07 | `test_overflow_trimmed_with_warning` | `LootTable._trim_overflow` | Stacks trimmed to 20 + `WARNING` logged |
+| TC-LT-08 | `test_known_element_id` | `LootTable.get_contents` | Returns correct item list |
+| TC-LT-09 | `test_unknown_element_id` | `LootTable.get_contents` | Returns `[]` |
+| TC-LT-10 | `test_get_contents_before_load` | `LootTable.get_contents` | Returns `[]` safely |

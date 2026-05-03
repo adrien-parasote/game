@@ -93,29 +93,21 @@ Tied to `TimeSystem.brightness`:
 
 ## 7. Deep Links
 
-- **LightingManager**: [lighting.py](file:///Users/adrien.parasote/Documents/perso/game/src/engine/lighting.py)
-- **Window Position Detection**: [manager.py#get_window_positions](file:///Users/adrien.parasote/Documents/perso/game/src/map/manager.py)
-- **Time/Brightness Logic**: [time_system.py#L90](file:///Users/adrien.parasote/Documents/perso/game/src/engine/time_system.py#L90)
-- **Night Overlay Usage**: [game.py](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py)
-- **Lighting Tests**: [test_lighting.py](file:///Users/adrien.parasote/Documents/perso/game/tests/test_lighting.py)
+- **`LightingManager` class**: [lighting.py L7](file:///Users/adrien.parasote/Documents/perso/game/src/engine/lighting.py#L7)
+- **`_compute_slant`**: [lighting.py L131](file:///Users/adrien.parasote/Documents/perso/game/src/engine/lighting.py#L131)
+- **`create_overlay`**: [lighting.py L55](file:///Users/adrien.parasote/Documents/perso/game/src/engine/lighting.py#L55)
+- **Window Position Detection**: [manager.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/map/manager.py#L1)
+- **Time/Brightness Logic**: [time_system.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/time_system.py#L1)
+- **Lighting Tests**: [test_lighting.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/engine/test_lighting.py#L1)
 
-## Test Case Specifications
+### Linked Test Functions
 
-### Unit Tests Required
-| Test ID | Component | Input | Expected Output | Edge Cases |
-|---------|-----------|-------|-----------------|------------|
-| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
-
-### Integration Tests Required
-| Test ID | Flow | Setup | Verification | Teardown |
-|---------|------|-------|--------------|----------|
-| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
-
-## Error Handling Matrix
-
-| Error Type | Detection | Response | Fallback | Logging | Alert |
-|------------|-----------|----------|----------|---------|-------|
-| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
-
-## Deep Links
-- [Link description](file:///path/to/file#anchor)
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| LT-001 | `test_map_manager_window_cache_lt001` | `tests/engine/test_lighting.py:L48` |
+| LT-002 | `test_lighting_beam_color_sync_lt003` | `tests/engine/test_lighting.py:L72` |
+| LT-003 | (torch compositing — via `draw_additive_window_beams`) | `tests/engine/test_lighting.py` |
+| LT-004 | `test_lighting_night_overlay_lt004` | `tests/engine/test_lighting.py:L88` |
+| LT-005..LT-009 | `TestSlantContinuity.*` | `tests/engine/test_lighting.py:L108` |
+| LT-010..LT-011 | `TestBeamSurface.*` | `tests/engine/test_lighting.py:L201` |
+| LT-012 | `test_beam_cache_reuses_surface` | `tests/engine/test_lighting.py:L269` |

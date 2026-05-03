@@ -44,4 +44,8 @@ Ensure that the `00-layer` (typically the base background) is always visible and
 | Missing Layer | `00-layer` not found | Log warning | Draw existing layers in ID order |
 
 ## Deep Links
-- [Link description](file:///path/to/file#anchor)
+- **`TmjParser`**: [tmj_parser.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/map/tmj_parser.py#L1)
+- **`MapManager`**: [manager.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/map/manager.py#L1)
+- **`Game._draw_background`**: [game.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L1)
+- **Map tests**: [test_map.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/map/test_map.py#L1)
+- **Parser tests**: [test_parser.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/map/test_parser.py#L1)

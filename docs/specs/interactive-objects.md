@@ -229,29 +229,27 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | Failed Interact | No target found | Show 'question' emote | Optional via `Settings.ENABLE_FAILED_INTERACTION_EMOTE` |
 
 ## 6. Deep Links
-- **Interactive Spawning**: [game.py - _spawn_entities](src/engine/game.py#L215)
-- **Base Interaction**: [base.py - interact](src/entities/base.py#L73)
-- **Sprite Slicing**: [spritesheet.py - load_grid_by_size](src/graphics/spritesheet.py)
-- **Collision Check**: [game.py - _is_collidable](src/engine/game.py#L340)
-- **Unified Interaction Handling**: [interaction.py - handle_interactions](src/engine/interaction.py#L26)
+- **`InteractiveEntity` class**: [interactive.py L11](file:///Users/adrien.parasote/Documents/perso/game/src/entities/interactive.py#L11)
+- **`InteractiveEntity.interact`**: [interactive.py L265](file:///Users/adrien.parasote/Documents/perso/game/src/entities/interactive.py#L265)
+- **`InteractiveEntity.restore_state`**: [interactive.py L288](file:///Users/adrien.parasote/Documents/perso/game/src/entities/interactive.py#L288)
+- **`InteractiveEntity.update`**: [interactive.py L308](file:///Users/adrien.parasote/Documents/perso/game/src/entities/interactive.py#L308)
+- **Interactive Spawning**: [game.py L215](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L215)
+- **Collision Check**: [game.py L340](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L340)
+- **Unified Interaction Handling**: [interaction.py L26](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L26)
+- **Sprite Slicing**: [spritesheet.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/graphics/spritesheet.py#L1)
+- **Unit tests (interactive entity)**: [test_interactive.py L1](file:///Users/adrien.parasote/Documents/perso/game/tests/entities/test_interactive.py#L1)
+- **Integration tests (interaction)**: [test_interaction.py L33](file:///Users/adrien.parasote/Documents/perso/game/tests/engine/test_interaction.py#L33)
 
-## Test Case Specifications
+### Linked Test Functions
 
-### Unit Tests Required
-| Test ID | Component | Input | Expected Output | Edge Cases |
-|---------|-----------|-------|-----------------|------------|
-| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
-
-### Integration Tests Required
-| Test ID | Flow | Setup | Verification | Teardown |
-|---------|------|-------|--------------|----------|
-| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
-
-## Error Handling Matrix
-
-| Error Type | Detection | Response | Fallback | Logging | Alert |
-|------------|-----------|----------|----------|---------|-------|
-| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
-
-## Deep Links
-- [Link description](file:///path/to/file#anchor)
+| Spec ID | Test Function | File |
+|---------|---------------|------|
+| TC-U-01 | `test_interact_sign_returns_element_id` | `tests/entities/test_interactive.py:L97` |
+| TC-U-02 | `test_update_animated_looping_wraps_frame` | `tests/entities/test_interactive.py:L116` |
+| TC-U-03 | `test_update_animated_off_resets_frame` | `tests/entities/test_interactive.py:L123` |
+| TC-U-04 | `test_update_closing_door_decrements_frame` | `tests/entities/test_interactive.py:L130` |
+| TC-I-01 | `test_interaction_orientation` | `tests/engine/test_interaction.py:L68` |
+| TC-I-02 | `test_pickup_diagonal_rejection` | `tests/engine/test_interaction.py:L354` |
+| TC-I-03 | `test_verify_orientation_door_relaxed` | `tests/engine/test_interaction.py:L102` |
+| TC-I-04 | `test_anywhere_object_diagonal_rejection` | `tests/engine/test_interaction.py:L384` |
+| TC-I-05 | `test_interaction_toggle_entity_by_id` | `tests/engine/test_interaction.py:L513` |

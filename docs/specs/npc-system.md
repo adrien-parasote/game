@@ -95,26 +95,21 @@ This section defines the behavior and failure modes for autonomous entities.
 | Missing Map Properties | `props.get()` returns `None` | Use engine defaults (NPC speed, etc.) | Log Warning |
 
 ## 4. Deep Links
-- Camera and Rendering: [ENGINE_CORE.md - Render Constraints](ENGINE_CORE.md#L15)
-- Grid Movement Core: [ENGINE_CORE.md - Movement](ENGINE_CORE.md#L27)
+- **`NPC` class**: [npc.py L8](file:///Users/adrien.parasote/Documents/perso/game/src/entities/npc.py#L8)
+- **`BaseEntity`**: [base.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/entities/base.py#L1)
+- **`InteractionManager`**: [interaction.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L1)
+- **`SpeechBubble`**: [speech_bubble.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/ui/speech_bubble.py#L1)
+- **NPC-related game logic**: [game.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/engine/game.py#L1)
+- **Unit tests (entities)**: [test_entities.py L26](file:///Users/adrien.parasote/Documents/perso/game/tests/entities/test_entities.py#L26)
+- **Integration tests (interaction)**: [test_interaction.py L169](file:///Users/adrien.parasote/Documents/perso/game/tests/engine/test_interaction.py#L169)
 
-## Test Case Specifications
+### Linked Test Functions
 
-### Unit Tests Required
-| Test ID | Component | Input | Expected Output | Edge Cases |
-|---------|-----------|-------|-----------------|------------|
-| TC-001 | [Component] | [Input] | [Expected Output] | [Edge Cases] |
-
-### Integration Tests Required
-| Test ID | Flow | Setup | Verification | Teardown |
-|---------|------|-------|--------------|----------|
-| IT-001 | [Flow] | [Setup] | [Verification] | [Teardown] |
-
-## Error Handling Matrix
-
-| Error Type | Detection | Response | Fallback | Logging | Alert |
-|------------|-----------|----------|----------|---------|-------|
-| [Error] | [Detection] | [Response] | [Fallback] | [Logging] | [Alert] |
-
-## Deep Links
-- [Link description](file:///path/to/file#anchor)
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-N-01 | `test_entity_initialization` | `tests/entities/test_entities.py:L26` |
+| TC-N-02 | `test_npc_ai_state_machine` | `tests/entities/test_entities.py:L115` |
+| TC-N-03 | `test_npc_update_invisible_skips` | `tests/entities/test_entities.py:L255` |
+| TC-N-04 | `test_npc_interact_faces_initiator_horizontal` | `tests/entities/test_entities.py:L126` |
+| IT-N-01 | `test_handle_interaction_npc` | `tests/engine/test_interaction.py:L169` |
+| IT-N-02 | `test_npc_interact_freezes_ai` | `tests/entities/test_entities.py:L165` |

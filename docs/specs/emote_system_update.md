@@ -41,4 +41,14 @@ Improve emote responsiveness, and ensure chaining works correctly.
 | Missing Sprite | Sprite index out of range | Log error | Skip emote trigger |
 
 ## Deep Links
-- [Link description](file:///path/to/file#anchor)
+- **`EmoteSprite` class**: [emote_sprite.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/entities/emote_sprite.py#L1)
+- **Emote trigger**: [emote.py L1](file:///Users/adrien.parasote/Documents/perso/game/src/entities/emote.py#L1)
+- **Interaction (pickup full inv)**: [interaction.py L141](file:///Users/adrien.parasote/Documents/perso/game/src/engine/interaction.py#L141)
+
+### Linked Test Functions
+
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-EMO-01 | `test_emote_interruption` | `tests/engine/test_interaction.py:L41` |
+| TC-EMO-02 | `test_emote_interruption` | `tests/engine/test_interaction.py:L41` |
+| TC-EMO-03 | `test_handle_interaction_pickup_partial` | `tests/engine/test_interaction.py:L141` |
