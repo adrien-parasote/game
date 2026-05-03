@@ -43,9 +43,10 @@ OVERLAY_ALPHA = 180
 # Right panel scroll banner — position of text centre inside the parchment
 # Adjust offsets to reposition without touching draw logic
 SCROLL_TITLE_X = 1000      # centre-x of the scroll text zone (pixels)
-SCROLL_TITLE_Y = 60        # centre-y of the scroll text zone (pixels)
+SCROLL_TITLE_Y = 100       # centre-y of the scroll text zone (pixels)
 SCROLL_TITLE_OFFSET_X = 0  # fine-tune x  (>0 right, <0 left)
 SCROLL_TITLE_OFFSET_Y = 0  # fine-tune y  (>0 down,  <0 up)
+SCROLL_TITLE_FONT_SIZE = 50 # police du titre menu (px)
 
 
 class TitleScreen:
@@ -258,7 +259,12 @@ class TitleScreen:
     def _draw_scroll_title(self) -> None:
         """Render the menu title on the right panel scroll banner."""
         label = self._i18n.get("menu.title", default="Menu")
-        text_surf = self._font.render(label, True, (60, 35, 15))  # dark brown ink
+        try:
+            am = __import__("src.engine.asset_manager", fromlist=["AssetManager"]).AssetManager()
+            font = am.get_font(Settings.FONT_NOBLE, SCROLL_TITLE_FONT_SIZE)
+        except Exception:
+            font = pygame.font.SysFont(None, SCROLL_TITLE_FONT_SIZE)
+        text_surf = font.render(label, True, (60, 35, 15))  # dark brown ink
         cx = SCROLL_TITLE_X + SCROLL_TITLE_OFFSET_X
         cy = SCROLL_TITLE_Y + SCROLL_TITLE_OFFSET_Y
         self._screen.blit(text_surf, text_surf.get_rect(center=(cx, cy)))
