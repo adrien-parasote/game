@@ -179,3 +179,172 @@ mode = MODE_FIRE  # default
 **Evidence:** `scripts/calibrate_halos.py`. Calibration 25 champignons en 1 session sans relancer.
 
 ---
+
+
+### L-UX-001 · 2026-04-28 · U · Minor Rework
+**Interruption-first feedback chaining**
+
+New visual feedback (emotes, effects) must clear/overwrite existing ones immediately — never wait for the previous animation to finish.
+
+```python
+# ❌ blocks rapid interactions
+if len(self.emote_group) == 0:
+    self.emote_group.add(sprite)
+
+# ✅ clear first, add immediately
+self.emote_group.empty()
+self.emote_group.add(sprite)
+```
+
+---
+
+---
+
+### A-UX-001 · 2026-04-28 · U · Minor Rework
+**Hardcoded keyboard constants**
+
+```python
+# ❌
+if event.key == pygame.K_e:
+
+# ✅
+if event.key == Settings.INTERACT_KEY:
+```
+
+---
+
+---
+
+### A-UI-002 · 2026-04-30 · U · Major Rework
+**Missing event dispatch for new UI components in game loop**
+
+Adding `handle_event()` to a UI class does nothing unless the game loop explicitly calls it. The absence is silent — clicks register in pygame but reach no handler.
+
+```python
+# ❌ chest_ui.handle_event never called → all arrow clicks silently swallowed
+def _handle_events(self):
+    for event in pygame.event.get():
+        if self.inventory_ui.is_open:
+            self.inventory_ui.handle_input(event)
+        # chest_ui missing entirely
+
+# ✅ every UI component with handle_event must be wired
+def _handle_events(self):
+    for event in pygame.event.get():
+        if self.inventory_ui.is_open:
+            self.inventory_ui.handle_input(event)
+        if self.chest_ui.is_open:
+            self.chest_ui.handle_event(event)
+```
+
+**Rule:** When adding any new UI component with interactive state, immediately add its dispatch to `_handle_events()`. Write a test that calls `handle_event()` via a simulated click and asserts a state change.
+**Evidence:** Chest UI arrows did nothing for entire session until `handle_event` wired. commit `ff92747`.
+
+---
+
+---
+
+### A-UI-003 · 2026-04-30 · U · Major Rework
+**Page-based vs window-based offset clamping are different formulas**
+
+For **window-based** scrolling (slide 1 slot at a time), max_offset = `capacity - visible`. For **page-based** scrolling (jump a full page at a time), max_offset = `capacity - 1`.
+
+```python
+# ❌ window-based clamp applied to page-based jump
+# capacity=24, visible=18 → max_offset=6 → offset=min(18,6)=6 → shows [6:24]=18 slots (wrong)
+max_offset = capacity - visible
+self._inv_offset = min(self._inv_offset + visible, max_offset)
+
+# ✅ page-based: clamp to capacity-1 so partial last page is reachable
+# capacity=24, visible=18 → offset=min(18, 23)=18 → shows [18:24]=6 slots (correct)
+self._inv_offset = min(self._inv_offset + _INV_SLOTS_VISIBLE, self._capacity() - 1)
+```
+
+**Rule:** In spec, declare navigation mode explicitly: `WINDOW` (1-slot slide) or `PAGE` (full-page jump). Apply the correct clamp formula for each.
+**Evidence:** Took 3 correction rounds; `visible_count` exposé the wrong formula. commit `ff92747`.
+
+---
+
+---
+
+### A-UI-004 · 2026-04-30 · U · Minor Rework
+**Left/right arrow semantic direction must be explicit in spec**
+
+"Left arrow" and "right arrow" are physical; "advance" and "rewind" are semantic. Without a clear mapping, implementations diverge and require swap iterations.
+
+```markdown
+# ✅ Spec must state this explicitly:
+# ▶ Right arrow → advance window (higher indices) — visible when more items ahead
+# ◀ Left arrow  → rewind window (lower indices)  — visible when offset > 0
+```
+
+**Rule:** For any scrollable UI, the spec must include a table: `Physical Arrow | Data Direction | Visibility Condition`.
+**Evidence:** 2 direction swaps in one session (left↔right wiring). commit `ff92747`.
+
+---
+
+---
+
+### L-UI-006 · 2026-04-30 · U · Minor Rework
+**visible_count must guard both rendering AND hover hit-testing**
+
+After fixing rendering to only draw N slots, the hover zone loop still iterates all 18 `_inv_slot_positions`, making invisible slots hoverable and triggering out-of-bounds states.
+
+```python
+# ❌ hover registers on invisible slots 6–17 even when only 6 are drawn
+for i, rect in enumerate(self._inv_slot_positions):
+    if rect.collidepoint(mouse_pos):
+        self._hovered_inv_slot = i
+
+# ✅ same visible_count used in both draw and hover
+visible_count = min(_INV_SLOTS_VISIBLE, max(0, self._capacity() - self._inv_offset))
+for i, rect in enumerate(self._inv_slot_positions[:visible_count]):
+    if rect.collidepoint(mouse_pos):
+        self._hovered_inv_slot = i
+```
+
+**Rule:** Any `visible_count` guard introduced for rendering must immediately be applied to all hit-test loops over the same positions list.
+**Evidence:** Hover on ghost slots after page 2 scroll. Fixed in same commit `ff92747`.
+
+---
+
+*Last optimized: 2026-04-30 — added A-UI-002, A-UI-003, A-UI-004, L-UI-006 from ChestUI paged inventory session.*
+
+---
+
+## ✅ Optimisation globale — 2026-04-30
+
+---
+
+### A-UI-005 · 2026-05-01 · U · Minor Rework
+**UI Decoupling from Temporal Animations**
+
+**What happened:** Halting an NPC mid-tile causes visual sliding and snapping issues. The code was then updated to let the NPC finish its tile movement, but the UI bubble appeared instantly, causing the bubble to slide along with the NPC. We then implemented a `pending_npc_dialogue` queue.
+
+**Root cause:** Temporal coupling. Assuming that the logical trigger (pressing 'Interact') and the visual response (opening the UI) must happen on the same frame. For animated entities in a grid-based game, actions often need to be queued until the current animation/movement cycle finishes.
+
+```python
+# ❌ Triggering synchronous UI events (like dialogue bubbles) instantly on entities that have asynchronous or continuous state transitions (like grid movement).
+res = npc.interact(self.game.player)
+if res:
+    self.game._trigger_npc_bubble(npc, res)
+
+# ✅ Implement an event queue or a `pending_action` state in the main update loop.
+res = npc.interact(self.game.player)
+if res:
+    if npc.is_moving:
+        self.game._pending_npc_dialogue = (npc, res)
+    else:
+        self.game._trigger_npc_bubble(npc, res)
+```
+
+**Rule:** When an interaction occurs on a moving entity, store the intent, let the entity resolve its current interpolation (e.g., finish walking to the next tile), and only trigger the UI callback when `entity.is_moving == False`.
+**Evidence:** `src/engine/interaction.py` queueing logic: `if npc.is_moving: self.game._pending_npc_dialogue = (npc, res)`. Tests failed initially because Mock objects have properties that evaluate to True in python, requiring explicit `npc.is_moving = False` in `tests/test_interaction.py`.
+
+---
+
+*Last optimized: 2026-05-01 — optimization session: A-UI-005.*
+
+---
+
+---

@@ -144,7 +144,6 @@ def test_handle_interaction_pickup():
         assert pickup.kill.called
 
 
-@pytest.mark.tc("TC-EMO-03")
 @pytest.mark.tc("IT-PICK-002")
 def test_handle_interaction_pickup_partial():
     """Partial pickup updates quantity and triggers frustration emote."""
@@ -176,7 +175,6 @@ def test_handle_interaction_pickup_partial():
 
 @pytest.mark.tc("CHEST-I-10")
 @pytest.mark.tc("IT-N-01")
-@pytest.mark.tc("IT-INT-01")
 def test_handle_interaction_npc():
     game = MagicMock()
     im = InteractionManager(game)
@@ -533,7 +531,6 @@ def test_interaction_check_teleporters():
     game.transition_map.assert_called_with("next_map.tmj", "spawn_2", "fade")
 
 @pytest.mark.tc("INT-I-05")
-@pytest.mark.tc("IT-INT-02")
 def test_interaction_toggle_entity_by_id():
     game = MagicMock()
     im = InteractionManager(game)

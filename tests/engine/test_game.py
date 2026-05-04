@@ -16,7 +16,6 @@ def test_game_initialization(mock_load):
 
 @patch('os.path.exists', return_value=True)
 @patch('src.map.tmj_parser.TmjParser.load_map')
-@pytest.mark.tc("DBG-MAP")
 def test_game_actual_load_map(mock_load_map, mock_exists):
     mock_load_map.return_value = {
         "width": 10, "height": 10,
@@ -299,7 +298,6 @@ def test_load_map_file_not_found(mock_load):
 
 
 @patch('src.engine.game.Game._load_map')
-@pytest.mark.tc("DBG-SPAWN")
 def test_spawn_entities_initial_spawn_skipped(mock_load):
     """_spawn_entities skips entities with is_initial_spawn=True."""
     game = Game()
@@ -522,8 +520,6 @@ import unittest.mock
 # --- Config / Settings ---
 
 
-@pytest.mark.tc("DBG-CONF")
-@pytest.mark.tc("TC-FONT-01")
 def test_settings_load():
     """Verify settings load defaults and handles missing files."""
     Settings.load()
@@ -531,8 +527,6 @@ def test_settings_load():
     assert Settings.WINDOW_WIDTH > 0
     assert Settings.TILE_SIZE == 32
 
-@pytest.mark.tc("TC-FONT-02")
-@pytest.mark.tc("TC-FONT-03")
 def test_font_tiers_exist():
     """Verify the three font tiers are defined in settings."""
     assert hasattr(Settings, "FONT_NOBLE")

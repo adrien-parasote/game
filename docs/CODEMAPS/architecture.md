@@ -72,13 +72,13 @@ scripts/
   get_version.py        Version bumping utility
   profile_game.py       Performance profiling
 .agents/
-  learnings/        5 domain learning files (workflow_optimization, game_engine, audio_engine, ui, testing)
+  learnings/        6 domain learning files (methodology_and_docs, game_engine, audio_engine, ui, testing, map_rendering)
   rules/            coding-standards.md + language rules
 ```
 
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
-- **Test Suite**: Pytest 9.0.3, **532 tests**, **92% coverage** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (34 files across 5 domains)
+- **Test Suite**: Pytest 9.0.3, **543 tests**, **93% coverage** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (34 files across 5 domains)
 - **Traceability**: `@pytest.mark.tc("TC-ID")` markers — 143 TC IDs across 15 specs, 100% spec coverage. Registered in `pyproject.toml`.
 - **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), ChestUI mixin decomposition, GameEvent dataclass factory pattern

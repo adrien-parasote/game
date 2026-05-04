@@ -87,7 +87,7 @@ Stored on `InteractiveEntity` as `entity.loot_items: list[dict | None]` — fixe
 ## Dependencies
 - **Python 3.13+** (Type-hinting, Dataclasses, IntEnum)
 - **Pygame-CE 2.5.7** (Renderer, Event Loop, Audio Mixer, SDL 2.32.10)
-- **Pytest 9.0.3 + pytest-cov 7.1.0**: 513 tests, 91% overall coverage
+- **Pytest 9.0.3 + pytest-cov 7.1.0**: 543 tests, 93% overall coverage
 
 ## Asset Directory Map
 ```

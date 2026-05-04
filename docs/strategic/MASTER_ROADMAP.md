@@ -14,7 +14,7 @@ L'engine a tous les fondements d'un jeu d'exploration. La prochaine étape logiq
 
 ## 🚀 Roadmap des Prochaines Phases
 
-### Phase 1 : Game Flow & Persistance (Save/Load)
+### Phase 1 : Game Flow & Persistance (Save/Load) ✅ Completed
 *Avant d'ajouter plus de complexité, il faut pouvoir sauvegarder et structurer les états du jeu.*
 
 1. **Serialization & Disk I/O**
@@ -25,7 +25,7 @@ L'engine a tous les fondements d'un jeu d'exploration. La prochaine étape logiq
    - Créer un Menu Principal (Nouvelle Partie, Charger, Options, Quitter).
    - Créer un Menu Échap (Pause) en jeu.
 
-### Phase 2 : Fondations du Combat & Stats
+### Phase 2 : Fondations du Combat & Stats 🔄 In Progress / Next Target
 *Donner une utilité aux armes et armures présentes dans l'inventaire.*
 
 1. **Stat System (Entities)**

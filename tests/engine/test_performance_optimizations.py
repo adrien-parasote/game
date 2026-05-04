@@ -34,13 +34,11 @@ def camera_group():
 # Module 2: CameraGroup Y-sort cache (TC-011 → TC-016)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-@pytest.mark.tc("TC-011")
 def test_get_sorted_sprites_empty(camera_group):
     """TC-011 : get_sorted_sprites() sur groupe vide → []"""
     assert camera_group.get_sorted_sprites() == []
 
 
-@pytest.mark.tc("TC-012")
 def test_get_sorted_sprites_cache_reused(camera_group):
     """TC-012 : 2e appel sans modification → même objet liste (cache)."""
     s1 = _DummySprite(50)
@@ -52,7 +50,6 @@ def test_get_sorted_sprites_cache_reused(camera_group):
     assert first is second
 
 
-@pytest.mark.tc("TC-013")
 def test_cache_dirty_on_add(camera_group):
     """TC-013 : add(sprite) → _cache_dirty = True."""
     # Seed with one sprite and get sorted (marks clean)
@@ -63,7 +60,6 @@ def test_cache_dirty_on_add(camera_group):
     assert camera_group._cache_dirty is True
 
 
-@pytest.mark.tc("TC-014")
 def test_cache_dirty_on_remove(camera_group):
     """TC-014 : remove(sprite) → _cache_dirty = True."""
     s = _DummySprite(10)
@@ -74,7 +70,6 @@ def test_cache_dirty_on_remove(camera_group):
     assert camera_group._cache_dirty is True
 
 
-@pytest.mark.tc("TC-015")
 def test_mark_dirty_sets_flag(camera_group):
     """TC-015 : mark_dirty() → _cache_dirty = True."""
     camera_group.get_sorted_sprites()
@@ -83,7 +78,6 @@ def test_mark_dirty_sets_flag(camera_group):
     assert camera_group._cache_dirty is True
 
 
-@pytest.mark.tc("TC-016")
 def test_sorted_sprites_y_order(camera_group):
     """TC-016 : sprites triés par rect.bottom croissant."""
     s1 = _DummySprite(100)
@@ -113,7 +107,6 @@ def im_setup():
     return game, im
 
 
-@pytest.mark.tc("TC-022")
 def test_interactive_emote_at_dist_47(im_setup):
     """TC-022 : obj à distance=47 → emote déclenchée."""
     game, im = im_setup
@@ -127,7 +120,6 @@ def test_interactive_emote_at_dist_47(im_setup):
     assert game.player.playerEmote.called
 
 
-@pytest.mark.tc("TC-023")
 def test_interactive_emote_at_dist_49_not_triggered(im_setup):
     """TC-023 : obj à distance=49 → pas d'emote."""
     game, im = im_setup
@@ -143,7 +135,6 @@ def test_interactive_emote_at_dist_49_not_triggered(im_setup):
     assert not game.player.playerEmote.called
 
 
-@pytest.mark.tc("TC-024")
 def test_pickup_emote_at_dist_15(im_setup):
     """TC-024 : pickup à distance=15 → emote (is_on_top)."""
     game, im = im_setup
@@ -155,7 +146,6 @@ def test_pickup_emote_at_dist_15(im_setup):
     assert game.player.playerEmote.called
 
 
-@pytest.mark.tc("TC-025")
 def test_object_interaction_at_dist_44(im_setup):
     """TC-025 : obj à distance=44 → interaction valide."""
     game, im = im_setup
@@ -175,7 +165,6 @@ def test_object_interaction_at_dist_44(im_setup):
     assert obj.interact.called
 
 
-@pytest.mark.tc("TC-026")
 def test_chest_auto_close_at_dist_46(im_setup):
     """TC-026 : chest à dist>45 → chest fermé automatiquement."""
     game, im = im_setup
@@ -189,7 +178,6 @@ def test_chest_auto_close_at_dist_46(im_setup):
     assert game.chest_ui.close.called
 
 
-@pytest.mark.tc("TC-027")
 def test_audio_vol_mult_uses_real_distance(im_setup):
     """TC-027 : vol_mult calculé via distance réelle (pas squared)."""
     game, im = im_setup
@@ -216,7 +204,6 @@ def test_audio_vol_mult_uses_real_distance(im_setup):
 # Module 6: Game._viewport_world_rect pre-allocation (TC-033 → TC-036)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-@pytest.mark.tc("TC-033")
 def test_game_has_viewport_world_rect():
     """TC-033 : Game.__init__ crée _viewport_world_rect — vérifié via source."""
     import inspect
@@ -226,7 +213,6 @@ def test_game_has_viewport_world_rect():
     assert "pygame.Rect" in src
 
 
-@pytest.mark.tc("TC-035")
 def test_game_no_dead_draw_methods():
     """TC-035 : _draw_background, _draw_foreground, _draw_hud non présents dans Game."""
     import inspect
@@ -237,7 +223,6 @@ def test_game_no_dead_draw_methods():
     assert "def _draw_hud(" not in src, "_draw_hud dead code should be removed"
 
 
-@pytest.mark.tc("TC-036")
 def test_game_active_torches_initialized():
     """TC-036 : Game._active_torches est un set après init."""
     import inspect

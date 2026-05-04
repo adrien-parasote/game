@@ -1,5 +1,139 @@
 ## 🧪 Testing
 
+### A-TEST-005 · 2026-05-04 · U · Minor Rework
+**Process-wide teardowns in unit tests**
+
+Unpatched calls to `pygame.quit()` or `sys.exit()` during a unit test will secretly tear down the Pygame module (including the font module) for the entire testing process. This causes seemingly unrelated tests to fail randomly.
+
+```python
+# ❌ tears down Pygame for all subsequent tests
+def test_global_events():
+    events = [pygame.event.Event(pygame.QUIT)]
+    game._process_global_events(events)
+
+# ✅ patch process-wide teardowns
+def test_global_events():
+    events = [pygame.event.Event(pygame.QUIT)]
+    with patch("sys.exit"), patch("pygame.quit"):
+        game._process_global_events(events)
+```
+
+**Rule:** Never trigger process-wide teardowns (`sys.exit()`, `pygame.quit()`) in unit tests without explicitly patching them.
+**Evidence:** 17 UI tests failed with `pygame.error: Invalid font (font module quit since font created)` directly after a global event handler test successfully ran unpatched. Fixed by adding `patch("pygame.quit")`.
+
+---
+
+### L-TEST-005 · 2026-04-30 · U · Perfect
+**Fichier de tests ciblé par rapport de couverture**
+
+Plutôt que d'ajouter des tests dispersés dans des fichiers existants, créer un fichier `test_coverage_gaps.py` unique regroupant tous les tests ciblés sur les branches manquantes identifiées par `--cov-report=term-missing`. Plus facile à supprimer/réorganiser et clairement séparé des tests fonctionnels.
+
+```bash
+# Identifier exactement les lignes manquantes
+pytest --cov=src --cov-report=term-missing -q 2>&1 | grep "module_name"
+
+# Résultat → fichier unique organisé par module
+# tests/test_coverage_gaps.py::TestI18nCoverage
+# tests/test_coverage_gaps.py::TestInteractiveCoverage
+# ...
+```
+
+**Règle :** Pour toute session de couverture ciblée, créer `test_coverage_gaps.py` avec classes par module. Ne jamais disperser ces tests dans les fichiers existants — ils deviennent introuvables.
+
+**Evidence :** +51 tests en 1 fichier, coverage 89%→92%. Aucune régression dans les 216 tests existants.
+
+---
+
+---
+
+### A-TEST-006 · 2026-04-30 · U · Major Rework
+**Render-only branches résistent à la couverture sans display réel**
+
+`chest.py` est resté à 84% après tous les tests ciblés. Les branches non couvertes (lignes 205-216, 248-304, 354-356, 550-588) sont toutes dans des méthodes de rendu qui appellent `pygame.Surface.blit()`, `pygame.image.load()`, ou `pygame.transform.smoothscale()` sur des assets réels.
+
+Sans display réel (`SDL_VIDEODRIVER=dummy`), `blit()` fonctionne mais les branches conditionnelles sur la présence d'un asset valide (`if self._slot_img is not None`) ne peuvent être testées sans charger de vrais fichiers PNG.
+
+**Pattern empirique :**
+```
+Couverture atteignable sans assets réels : ~84-88% pour les modules UI lourds
+Couverture atteignable avec assets réels (CI avec display) : ~95%+
+```
+
+**Règle :** Accepter un plafond de couverture de ~85% pour les modules UI render-only en tests headless. Ne pas investir davantage sans infrastructure CI avec display. Documenter ce plafond dans le `Makefile` ou `.coverage.ini`.
+
+```ini
+# .coveragerc ou pyproject.toml — exclure les branches render-only
+[coverage:report]
+exclude_lines =
+    if.*_img is not None
+    screen\.blit\(
+```
+
+**Evidence :** `chest.py` 84% stable même après 8 tests ciblés supplémentaires. `inventory.py` 100% obtenu car ses branches render ne dépendent pas d'assets fichiers.
+
+---
+
+---
+
+### L-TEST-006 · 2026-05-01 · U · Perfect
+**Domain-based test directory structure**
+
+Organiser les tests par domaine métier (mirroring `src/`) produit un ratio signal/bruit maximal : la prochaine IA sait immédiatement où chercher sans lire tous les fichiers.
+
+```
+tests/
+├── conftest.py          # Global SDL init, shared fixtures
+├── engine/              # mirrors src/engine/
+├── entities/            # mirrors src/entities/
+├── map/                 # mirrors src/map/
+├── ui/                  # mirrors src/ui/
+└── graphics/            # mirrors src/graphics/
+```
+
+**Règle :** Chaque nouveau module `src/<domain>/foo.py` → créer `tests/<domain>/test_foo.py`. Jamais de test à la racine `tests/` sauf `conftest.py`.
+
+**Evidence :** 23 fichiers plats → 16 fichiers dans 5 domaines. 436/436, 0 régression. commit `484ccfa`.
+
+---
+
+---
+
+### A-TEST-007 · 2026-05-01 · P · Minor Rework
+**Slice `lines[start:end]` sans validation syntaxique → `IndentationError`**
+
+Extraire un bloc de code par slicing de lignes sans valider que `start` pointe sur la première ligne non-indentée du bloc (def/class) produit un fichier syntaxiquement invalide.
+
+```python
+# ❌ start peut pointer sur une ligne DANS le corps du bloc précédent
+lines = source.splitlines()
+start = next(i for i, l in enumerate(lines) if 'class TestX' in l)
+helper_lines = lines[32:77]  # estimation empirique → fragile
+with open("out.py", "w") as f:
+    f.write("\n".join(helper_lines))  # → IndentationError si mal calé
+
+# ✅ valider avec ast.parse avant d'écrire
+import ast
+candidate = "\n".join(lines[start:end])
+try:
+    ast.parse(candidate)
+    with open("out.py", "w") as f:
+        f.write(candidate)
+except SyntaxError as e:
+    raise RuntimeError(f"Slice invalide [L{start}:L{end}]: {e}")
+```
+
+**Règle générale :** Pour les migrations 1:1, utiliser `shutil.copy()`. Réserver les scripts de slicing aux extractions de classes isolées, toujours validées avec `ast.parse()` avant écriture.
+
+**Evidence :** `tests/entities/test_interactive.py` — `IndentationError` à la ligne 13 corrigé en 30s après refactoring du script. commit `484ccfa`.
+
+---
+
+*Last optimized: 2026-05-01 — added L-TEST-006, A-TEST-007 from test suite urbanization session.*
+
+---
+
+---
+
 ### L-TEST-001 · 2026-04-28 · U · Perfect
 **State flags and numeric attributes on MagicMock**
 
@@ -23,6 +157,8 @@ game._update(0.016)
 
 ---
 
+---
+
 ### L-TEST-002 · 2026-04-28 · U · Minor Rework
 **Gated state transitions need explicit `update(dt)` calls**
 
@@ -41,6 +177,8 @@ entity.interact(player)
 
 ---
 
+---
+
 ### L-TEST-003 · 2026-04-28 · U · Minor Rework
 **Centralized headless initialization in `conftest.py`**
 
@@ -49,6 +187,8 @@ Scattered `pygame.init()` + `SDL_VIDEODRIVER=dummy` calls across test files caus
 ✅ Put all global fixtures (headless driver, mock asset loader) in `tests/conftest.py`. Organize test files by domain (`test_engine.py`, `test_ui.py`, `test_map.py`…).
 
 **Evidence:** 11 files → 6 domain modules, 100% pass rate after consolidation.
+
+---
 
 ---
 
@@ -67,6 +207,8 @@ rect.topleft = (target_x, target_y)
 
 ---
 
+---
+
 ### A-TEST-001 · 2026-04-28 · U · Major Rework
 **Blind `__init__` mocking leaves attributes unset**
 
@@ -82,6 +224,8 @@ with patch.object(MyClass, '__init__', return_value=None):
     obj.some_flag = True
     obj.config = {}
 ```
+
+---
 
 ---
 
@@ -105,6 +249,8 @@ finally:
 
 ---
 
+---
+
 ### A-TEST-003 · 2026-04-30 · U · Minor Rework
 **`patch('builtins.open', side_effect=...)` intercepts all I/O**
 
@@ -125,6 +271,8 @@ def selective_open(path, *args, **kwargs):
 with patch('builtins.open', side_effect=selective_open):
     game = Game()
 ```
+
+---
 
 ---
 
@@ -172,58 +320,6 @@ Adding a new property to a core dependency (`MapManager`) without simultaneously
 
 ---
 
-### L-ARCH-005 · 2026-05-03 · U · Perfect
-**Extract Mixins to preserve test mock boundaries**
-
-The `ChestUI` monolithic class (923 lines) needed splitting to comply with the <400 line rule. However, doing so via structural delegation (`self.transfer_manager._transfer()`) would break dozens of existing tests in `test_chest.py` that mock internal `ui._transfer_...` and `ui._draw_...` methods directly.
-
-**Pattern (what to reproduce)**
-When refactoring monolithic classes that are heavily mocked in existing unit tests, use **Composition via Mixins** instead of Component Delegation to satisfy file-size constraints without triggering massive test rewrites.
-
-By extracting the logic into Mixin classes (`ChestTransferMixin`, `ChestLayoutMixin`, `ChestDrawMixin`) and having `ChestUI` inherit from them, the namespace remained identical. All 471 tests in the suite passed immediately without needing to update mock targets.
-
-**Evidence:**
-- `src/ui/chest.py` successfully split into 5 domain-specific files (`chest.py`, `chest_layout.py`, `chest_transfer.py`, `chest_draw.py`, `chest_constants.py`).
-- The entire `pytest tests/ui/test_chest.py` suite (87 tests) passed with 0 functional changes to the tests themselves.
-
----
-
-### L-ARCH-006 · 2026-05-03 · U · Minor Rework
-**Private Constants Exporting with Wildcard Imports**
-
-When extracting UI configuration into a dedicated `_constants.py` file, we encountered 31 `NameError` test failures in the Python test suite. 
-
-**Anti-pattern (what to avoid)**
-Using `from module_constants import *` will **not** import any constants prefixed with an underscore (e.g. `_ASSET_DIR`, `_FONT_PATH`), as Python treats them as private to the module. If these variables are needed in the consumer file, they will be undefined.
-
-**Pattern (what to reproduce)**
-When extracting private constants, you must either:
-1. Rename the constants to remove the underscore (making them public).
-2. Explicitly import the underscored variables alongside the wildcard import:
-   `from module_constants import *`
-   `from module_constants import _PRIVATE_VAR`
-3. Define `__all__` in the constants file.
-
-We chose option 2 to make the usage explicit.
-
-**Evidence:**
-- Extracted constants from 5 UI files into `_constants.py` files.
-- `test_game.py` failed with `NameError: name '_MENU_ITEM_KEYS' is not defined`.
-- Fixed by adding explicit imports for underscored variables, bringing the test suite back to 100% pass rate.
-
----
-
-### L-PERF-001 · 2026-05-03 · U · Perfect
-**Profiling-Driven Non-Optimization**
-
-**Pattern (what to reproduce)**
-Always run `profile_game.py` or equivalent profiling tools as the absolute first step of any optimization task. If the active frame time is < 50% of the frame budget (e.g. <8ms for a 16.6ms frame at 60fps), STOP. Declare the system performant and exit the optimization workflow. Do not implement architectural "optimizations" (like caching or pre-rendering) if there is no measurable bottleneck, as this only adds premature complexity.
-
-**Evidence:**
-- Executed `@[/performance-optimization]`.
-- `profile_results.txt` showed `6.355s` spent idling in `Clock.tick()` out of `10.828s` total for 600 frames. Active frame time was 7.45ms.
-- Exited the workflow without touching code, saving time and preventing divergence.
-
 ---
 
 ### L-TRACE-001 · 2026-05-04 · U · Perfect
@@ -254,6 +350,8 @@ def test_load_valid_json(self): ...
 
 ---
 
+---
+
 ### A-TRACE-001 · 2026-05-04 · U · Minor Rework
 **TC IDs must be globally unique from the start**
 
@@ -280,6 +378,8 @@ Generic prefixes like `TC-U-01`, `TC-I-01`, `TC-T-01` collided across 3 specs (c
 
 ---
 
+---
+
 ### L-TRACE-002 · 2026-05-04 · U · Perfect
 **Linked test functions table requires exact backtick-only names**
 
@@ -296,6 +396,8 @@ If the function name column contains extra text after the backtick-delimited nam
 
 ---
 
+---
+
 ### A-TRACE-002 · 2026-05-04 · U · Minor Rework
 **`pyproject.toml` marker registration can be silently lost**
 
@@ -309,3 +411,6 @@ The `@pytest.mark.tc` decorator requires `[tool.pytest.ini_options] markers = [.
 
 *Last optimized: 2026-05-04 — L-TRACE-002, A-TRACE-002 from traceability HARDEN session.*
 
+---
+
+---

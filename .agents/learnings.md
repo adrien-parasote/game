@@ -6,8 +6,8 @@
 ## Domains
 
 - [Audio & Engine Setup](learnings/audio_engine.md)
-- [Testing](learnings/testing.md)
-- [Game Engine](learnings/game_engine.md)
+- [Testing & Traceability](learnings/testing.md)
+- [Game Engine & Architecture](learnings/game_engine.md)
 - [Map & Rendering](learnings/map_rendering.md)
-- [UI](learnings/ui.md)
-- [Workflow & Optimization](learnings/workflow_optimization.md)
+- [UI & UX](learnings/ui.md)
+- [Methodology, Agent & Docs](learnings/methodology_and_docs.md)

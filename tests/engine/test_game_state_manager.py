@@ -16,6 +16,8 @@ def mock_game():
     game.visible_sprites = Mock()
     game.visible_sprites.offset = pygame.math.Vector2(50, 50)
     game.audio_manager = Mock()
+    game.clock = Mock()
+    game.clock.tick.return_value = 16
     return game
 
 @pytest.fixture
@@ -154,3 +156,88 @@ def test_handle_events_filtering(gsm, mock_game):
     
     # Assert queue is empty
     assert not pygame.event.get()
+
+def test_run_main_loop_and_global_events(gsm):
+    # Test run() exits gracefully by mocking pygame.display.update to raise a custom exception
+    class BreakLoop(Exception): pass
+    
+    with patch("pygame.display.update", side_effect=BreakLoop):
+        with pytest.raises(BreakLoop):
+            gsm.run()
+            
+    # Test _process_global_events with QUIT
+    event_quit = pygame.event.Event(pygame.QUIT)
+    with patch("sys.exit") as mock_exit, patch("pygame.quit") as mock_pygame_quit:
+        gsm._process_global_events([event_quit])
+        mock_exit.assert_called_once()
+        mock_pygame_quit.assert_called_once()
+        
+    # Test _process_global_events with TOGGLE_FULLSCREEN
+    from src.config import Settings
+    event_fs = pygame.event.Event(pygame.KEYDOWN, key=Settings.TOGGLE_FULLSCREEN_KEY)
+    gsm._process_global_events([event_fs])
+    gsm._game.toggle_fullscreen.assert_called_once()
+    
+    # Test _process_global_events with ESCAPE
+    event_esc = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
+    with patch.object(gsm, "_on_escape") as mock_on_escape:
+        gsm._process_global_events([event_esc])
+        mock_on_escape.assert_called_once()
+
+def test_handle_title_none_result(gsm, mock_title_screen):
+    mock_title_screen.handle_event.return_value = None
+    gsm._handle_title([Mock()], 0.016)
+    mock_title_screen.update.assert_called_once()
+    mock_title_screen.draw.assert_called_once()
+
+def test_handle_paused_none_and_pause_request(gsm, mock_pause_screen):
+    # Test result None
+    mock_pause_screen.handle_event.return_value = None
+    gsm._handle_paused([Mock()], 0.016)
+    mock_pause_screen.update.assert_called_once()
+    
+    # Test PAUSE_REQUESTED in paused state
+    mock_pause_screen.handle_event.return_value = GameEvent.pause_requested()
+    with patch.object(gsm, "_save_to_first_free_slot") as mock_save:
+        gsm._handle_paused([Mock()], 0.016)
+        mock_save.assert_called_once()
+
+def test_restore_inventory_exceptions(gsm, mock_game):
+    # Setup inventory mock
+    inv = Mock()
+    inv.capacity = 2
+    inv.slots = [None, None]
+    inv.equipment = {}
+    mock_game.player.inventory = inv
+    
+    # Force exception on create_item
+    inv.create_item.side_effect = Exception("Test Exception")
+    
+    inv_data = {
+        "slots": [{"id": "potion", "quantity": 1}],
+        "equipment": {
+            "weapon": {"id": "sword", "quantity": 1},
+            "armor": None
+        }
+    }
+    
+    gsm._restore_inventory(mock_game, inv_data)
+    assert inv.slots[0] is None # Did not crash, kept None
+    assert inv.equipment.get("armor") is None # Restored None
+    assert "weapon" not in inv.equipment # Did not crash on exception
+
+def test_resolve_default_map(gsm):
+    # Test world.world logic when NOT in DEBUG or debug room missing
+    with patch("src.config.Settings.DEBUG", False), \
+         patch("os.path.exists", return_value=True), \
+         patch("builtins.open") as mock_open:
+        
+        import io
+        # Valid world.world
+        mock_open.return_value = io.StringIO('{"maps": [{"fileName": "test.tmj"}]}')
+        with patch("json.load", return_value={"maps": [{"fileName": "test.tmj"}]}):
+            assert gsm._resolve_default_map() == "test.tmj"
+            
+        # Exception during world.world reading
+        mock_open.side_effect = Exception("File read error")
+        assert gsm._resolve_default_map() == "00-spawn.tmj"

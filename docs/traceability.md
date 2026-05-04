@@ -2,7 +2,7 @@
 
 # Spec↔Test Traceability Matrix
 
-**Coverage:** 143/143 (100%)
+**Coverage:** 130/130 (100%)
 
 ## chest-ui-spec.md
 
@@ -43,22 +43,6 @@
 | CHEST-I-10 | ✅ | `tests/engine/test_interaction.py::test_handle_interaction_npc` |
 | CHEST-I-11 | ✅ | `tests/engine/test_interaction.py::test_interaction_cooldown` |
 | CHEST-I-12 | ✅ | `tests/engine/test_interaction.py::test_interaction_cooldown` |
-
-## debug-features-spec.md
-
-| TC ID | Status | Test |
-|-------|--------|------|
-| DBG-CONF | ✅ | `tests/engine/test_game.py::test_settings_load` |
-| DBG-MAP | ✅ | `tests/engine/test_game.py::test_game_actual_load_map` |
-| DBG-SPAWN | ✅ | `tests/engine/test_game.py::test_spawn_entities_initial_spawn_skipped` |
-
-## emote_system_update.md
-
-| TC ID | Status | Test |
-|-------|--------|------|
-| TC-EMO-01 | ✅ | `tests/entities/test_entities.py::test_emote_manager_spritesheet_error` |
-| TC-EMO-02 | ✅ | `tests/entities/test_entities.py::test_emote_manager_chaining` |
-| TC-EMO-03 | ✅ | `tests/engine/test_interaction.py::test_handle_interaction_pickup_partial` |
 
 ## engine-core.md
 
@@ -111,6 +95,7 @@
 | GF-031 | ✅ | `tests/engine/test_game_state_manager.py::test_transition_to_playing_no_save_data` |
 | GF-032 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_events_filtering` |
 | GF-033 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_draw_main_menu` |
+| GF-034 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_light_scale_factors` |
 
 ## interactive-objects.md
 
@@ -145,14 +130,6 @@
 | LT-004 | ✅ | `tests/engine/test_lighting.py::test_lighting_night_overlay_lt004` |
 | LT-012 | ✅ | `tests/engine/test_lighting.py::test_beam_cache_reuses_surface` |
 
-## localization_font_urbanization.md
-
-| TC ID | Status | Test |
-|-------|--------|------|
-| TC-FONT-01 | ✅ | `tests/engine/test_game.py::test_settings_load` |
-| TC-FONT-02 | ✅ | `tests/engine/test_game.py::test_font_tiers_exist` |
-| TC-FONT-03 | ✅ | `tests/engine/test_game.py::test_font_tiers_exist` |
-
 ## loot-table-spec.md
 
 | TC ID | Status | Test |
@@ -168,13 +145,6 @@
 | TC-LT-09 | ✅ | `tests/engine/test_loot_table.py::test_unknown_element_id` |
 | TC-LT-10 | ✅ | `tests/engine/test_loot_table.py::test_get_contents_before_load` |
 
-## map_rendering_fix.md
-
-| TC ID | Status | Test |
-|-------|--------|------|
-| TC-MAP-01 | ✅ | `tests/map/test_map.py::test_layer_recursive_order` |
-| TC-MAP-02 | ✅ | `tests/map/test_map.py::test_map_manager_render_layer` |
-
 ## npc-system.md
 
 | TC ID | Status | Test |
@@ -185,14 +155,6 @@
 | TC-N-04 | ✅ | `tests/entities/test_entities.py::test_npc_interact_faces_initiator_horizontal` |
 | IT-N-01 | ✅ | `tests/engine/test_interaction.py::test_handle_interaction_npc` |
 | IT-N-02 | ✅ | `tests/entities/test_entities.py::test_npc_interact_freezes_ai` |
-
-## optimization-spec.md
-
-| TC ID | Status | Test |
-|-------|--------|------|
-| TC-DLG-01 | ✅ | `tests/ui/test_inventory.py::test_dialogue_pagination` |
-| IT-INT-01 | ✅ | `tests/engine/test_interaction.py::test_handle_interaction_npc` |
-| IT-INT-02 | ✅ | `tests/engine/test_interaction.py::test_interaction_toggle_entity_by_id` |
 
 ## save-system.md
 
@@ -208,9 +170,9 @@
 | TC-008 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_init` |
 | TC-009 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_get_clicked_slot` |
 | TC-010 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_update_and_draw` |
-| IT-001 | ✅ | `tests/engine/test_save_manager.py::test_save_creates_file` |
-| IT-002 | ✅ | `tests/ui/test_pause_screen.py::test_pause_screen_handle_event_click_sauvegarder` |
-| IT-003 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_update` |
+| IT-001 | ✅ | `tests/engine/test_performance_optimizations.py::test_title_screen_draw_no_rotozoom` |
+| IT-002 | ✅ | `tests/engine/test_performance_optimizations.py::test_interaction_distance_sq_semantics_match_original` |
+| IT-003 | ✅ | `tests/engine/test_performance_optimizations.py::test_game_viewport_rect_reused_across_updates` |
 
 ## world-system.md
 

@@ -117,3 +117,144 @@ def update(self, dt):
 
 ---
 
+
+
+### A-ARCH-001 · 2026-04-30 · U · Minor Rework
+**Disk I/O dans une méthode appelée à chaque ouverture de panneau**
+
+`ChestUI._compute_layout()` appelait `_load_slot_image()` (chargement disque + `convert_alpha()`) à chaque ouverture de coffre. L'image était déjà disponible en attribut depuis `__init__`.
+
+```python
+# ❌ I/O disque à chaque open() — spike CPU visible
+self._slot_img = pygame.transform.smoothscale(
+    self._load_slot_image(),   # charge depuis disque
+    (slot_size, slot_size)
+)
+
+# ✅ scale depuis l'attribut déjà en mémoire — zéro I/O
+self._slot_img = pygame.transform.smoothscale(self._slot_img, (slot_size, slot_size))
+```
+
+**Règle :** Toute méthode `_compute_layout()` / `_rebuild_layout()` ne doit jamais déclencher d'I/O disque. Les assets sont chargés UNE FOIS dans `__init__`. La spec doit explicitement mentionner « No disk I/O in `draw()` or `_compute_layout()` ».
+
+**Evidence :** `chest.py::_compute_layout` ligne 350 — `_load_slot_image()` remplacé par `self._slot_img`.
+
+---
+
+---
+
+### A-ARCH-002 · 2026-04-30 · U · Spec Wrong
+**Singleton réinstancié à chaque appel — leurre de performance**
+
+`_trigger_dialogue()` dans `game.py` appelait `I18nManager()` (constructeur) à chaque dialogue déclenché. Le singleton `__new__` retourne la même instance, mais le pattern visuel `SomeManager()` dans une méthode d'update/event signal une intention de réinstanciation.
+
+```python
+# ❌ pattern trompeur — semble créer une nouvelle instance
+msg = I18nManager().get(f"dialogues.{full_key}")
+
+# ✅ utiliser l'attribut de classe — intention claire
+msg = self.i18n.get(f"dialogues.{full_key}")
+```
+
+**Règle :** Les singletons ne doivent jamais être appelés par leur constructeur dans des méthodes chaudes. Toujours stocker la référence singleton comme attribut d'instance (`self.i18n = I18nManager()`) dans `__init__` et utiliser `self.i18n` partout.
+
+**Scope :** Universal — s'applique à tout singleton (AudioManager, Settings, etc.).
+
+**Evidence :** `game.py::_trigger_dialogue` ligne 402.
+
+---
+
+---
+
+### L-ARCH-004 · 2026-04-30 · U · Perfect
+**Dispatcher thin + helpers privés pour les méthodes > 50L**
+
+`_spawn_entities()` (93L) et `_check_proximity_emotes()` (68L) ont été décomposées en dispatcher léger + helpers privés focalisés, sans changer le comportement observable.
+
+**Pattern :**
+```python
+# ❌ 90 lignes de if/elif avec logique imbriquée
+def _spawn_entities(self, entities):
+    for ent in entities:
+        if type == "interactive":
+            # 40 lignes...
+        elif type == "teleport":
+            # 15 lignes...
+
+# ✅ dispatcher 20L + helpers 20-30L chacun
+def _spawn_entities(self, entities):
+    for ent in entities:
+        if type == "interactive": self._spawn_interactive(ent, props, map_name)
+        elif type == "teleport":  self._spawn_teleport(ent, props)
+
+def _spawn_interactive(self, ent, props, map_name): ...  # 30L
+def _spawn_teleport(self, ent, props): ...               # 12L
+```
+
+**Règle :** Toute méthode >40L qui contient un `if/elif` de dispatch doit être décomposée. Le dispatcher ne doit faire que router — aucune logique métier.
+
+**Evidence :** `game.py` (-70L sur `_spawn_entities`), `interaction.py` (-55L sur `_check_proximity_emotes`), `inventory.py` (-60L sur `draw`). Zéro régression.
+
+---
+
+---
+
+### L-ARCH-005 · 2026-05-03 · U · Perfect
+**Extract Mixins to preserve test mock boundaries**
+
+The `ChestUI` monolithic class (923 lines) needed splitting to comply with the <400 line rule. However, doing so via structural delegation (`self.transfer_manager._transfer()`) would break dozens of existing tests in `test_chest.py` that mock internal `ui._transfer_...` and `ui._draw_...` methods directly.
+
+**Pattern (what to reproduce)**
+When refactoring monolithic classes that are heavily mocked in existing unit tests, use **Composition via Mixins** instead of Component Delegation to satisfy file-size constraints without triggering massive test rewrites.
+
+By extracting the logic into Mixin classes (`ChestTransferMixin`, `ChestLayoutMixin`, `ChestDrawMixin`) and having `ChestUI` inherit from them, the namespace remained identical. All 471 tests in the suite passed immediately without needing to update mock targets.
+
+**Evidence:**
+- `src/ui/chest.py` successfully split into 5 domain-specific files (`chest.py`, `chest_layout.py`, `chest_transfer.py`, `chest_draw.py`, `chest_constants.py`).
+- The entire `pytest tests/ui/test_chest.py` suite (87 tests) passed with 0 functional changes to the tests themselves.
+
+---
+
+---
+
+### L-ARCH-006 · 2026-05-03 · U · Minor Rework
+**Private Constants Exporting with Wildcard Imports**
+
+When extracting UI configuration into a dedicated `_constants.py` file, we encountered 31 `NameError` test failures in the Python test suite. 
+
+**Anti-pattern (what to avoid)**
+Using `from module_constants import *` will **not** import any constants prefixed with an underscore (e.g. `_ASSET_DIR`, `_FONT_PATH`), as Python treats them as private to the module. If these variables are needed in the consumer file, they will be undefined.
+
+**Pattern (what to reproduce)**
+When extracting private constants, you must either:
+1. Rename the constants to remove the underscore (making them public).
+2. Explicitly import the underscored variables alongside the wildcard import:
+   `from module_constants import *`
+   `from module_constants import _PRIVATE_VAR`
+3. Define `__all__` in the constants file.
+
+We chose option 2 to make the usage explicit.
+
+**Evidence:**
+- Extracted constants from 5 UI files into `_constants.py` files.
+- `test_game.py` failed with `NameError: name '_MENU_ITEM_KEYS' is not defined`.
+- Fixed by adding explicit imports for underscored variables, bringing the test suite back to 100% pass rate.
+
+---
+
+---
+
+### L-PERF-001 · 2026-05-03 · U · Perfect
+**Profiling-Driven Non-Optimization**
+
+**Pattern (what to reproduce)**
+Always run `profile_game.py` or equivalent profiling tools as the absolute first step of any optimization task. If the active frame time is < 50% of the frame budget (e.g. <8ms for a 16.6ms frame at 60fps), STOP. Declare the system performant and exit the optimization workflow. Do not implement architectural "optimizations" (like caching or pre-rendering) if there is no measurable bottleneck, as this only adds premature complexity.
+
+**Evidence:**
+- Executed `@[/performance-optimization]`.
+- `profile_results.txt` showed `6.355s` spent idling in `Clock.tick()` out of `10.828s` total for 600 frames. Active frame time was 7.45ms.
+- Exited the workflow without touching code, saving time and preventing divergence.
+
+---
+
+---

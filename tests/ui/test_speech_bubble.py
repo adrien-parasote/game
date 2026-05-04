@@ -161,5 +161,36 @@ class TestSpeechBubbleFontGuard(unittest.TestCase):
             bubble.draw(_make_surface(), _char_rect(), "Hello", blit_func=MagicMock())
 
 
+class TestSpeechBubbleNamePlate(unittest.TestCase):
+    def test_name_plate_rendered(self):
+        """When speaker_name is provided, a second blit occurs for the name plate."""
+        with mock.patch("pygame.image.load") as ml:
+            def mock_load(path):
+                # Ensure name_plate tiles are created
+                return pygame.Surface((96, 64))
+            ml.side_effect = mock_load
+            
+            bubble = _make_bubble()
+            # Also set the name_font
+            bubble.set_name_font(_MockFont(12))
+            
+            # Manually inject the name_plate tiles to simulate _load_tiles finding them
+            # (since we mock load above but we want specific rects to work)
+            plate_surf = pygame.Surface((96, 64))
+            bubble.tiles["name_plate_left"] = plate_surf.subsurface(pygame.Rect(0, 0, 32, 64))
+            bubble.tiles["name_plate_center"] = plate_surf.subsurface(pygame.Rect(32, 0, 32, 64))
+            bubble.tiles["name_plate_right"] = plate_surf.subsurface(pygame.Rect(64, 0, 32, 64))
+            
+            blit = MagicMock()
+            bubble.draw(_make_surface(), _char_rect(), "Hello", speaker_name="Hero", blit_func=blit)
+            
+            # Should blit twice: once for bubble, once for name plate
+            self.assertEqual(blit.call_count, 2)
+            
+            # Verify the second blit contains the name plate surface
+            name_plate_surf, pos = blit.call_args_list[1][0]
+            self.assertIsInstance(name_plate_surf, pygame.Surface)
+            self.assertGreater(name_plate_surf.get_width(), 0)
+
 if __name__ == "__main__":
     unittest.main()
