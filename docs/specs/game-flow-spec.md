@@ -122,45 +122,46 @@ class SaveManager:
 
 ---
 
-### 2.2 `src/ui/title_screen.py` [NEW]
+### 2.2 `src/ui/title_screen.py` [MODIFIED]
 
 **Responsabilité :** Affichage et navigation du menu principal.
 
 **Layout sur écran 1280×720 :**
 
 ```
-┌──────────────────────────────────────────────┐  720px
-│           [LOGO — centré, y=120]             │
-│                                              │
-│         [BTN Nouvelle Partie — y=330]        │
-│         [BTN Charger         — y=330+70]     │
-│         [BTN Options         — y=330+140]    │
-│         [BTN Quitter         — y=330+210]    │
-└──────────────────────────────────────────────┘ 1280px
+┌────────────────────────────────────────────────┐  720px
+│  [01-menu_background.png — 1280×720, fullscreen]  │
+│  [TITRE TEXT (Cormorant, 90pt, cyan) — y=80, centred]│
+│                                                   │
+│           [Menu items x=1055, y_start=360]        │
+│           Nouvelle Partie, Charger, Options, Quitter│
+└────────────────────────────────────────────────┘ 1280px
 ```
 
-**Dimensions boutons (scaled) :**
-- Source : 341×182 px (1/3 de la spritesheet)
-- Cible : **400×86** px (scale=1.173 en largeur, 86px de hauteur)
-- Centré horizontalement : `x = (1280 - 400) // 2 = 440`
-- Espacement vertical : **70px** entre tops
-- 4 boutons → zone de hauteur : `3 * 70 + 86 = 296px`
-- Zone de départ : `y_start = (720 - 296) // 2 + 80 = 302` (décalé vers le bas pour laisser de la place au logo)
+**Rendu du titre (texte dynamique) :**
+- Police : `assets/fonts/cormorant-garamond-regular.ttf`, taille 90pt
+- Couleur : `(150, 255, 220)` — cyan/turquoise clair
+- Halo glow : `(0, 180, 150)` — cyan intense (rendu via `_blit_halo_text`)
+- Position : centré x=640, y=80
+- Aucun asset image pour le titre (supprimé : `00-title_logo_main_title.png`, `00-title_logo_separator.png`, `00-title_logo_subtitle.png`, `00-title_logo_moon.png`, `00-title_logo_gear.png`)
 
-**Logo :**
-- Source : 903×241 px
-- Scale : `width = 560px` → `scale = 560/903 = 0.620`
-- Hauteur résultante : `int(241 * 0.620) = 149px`
-- Position : `x = (1280-560)//2 = 360`, `y = 60`
-- Colorkey : `(0, 0, 0)` appliqué après chargement
+**Halos animés sur l'arrière-plan (`BACKGROUND_LIGHTS`) :**
+- 7 positions calibrées sur les lanternes et fenêtres de `01-menu_background.png`
+- Halo pré-généré : surface noire 90×90, dégradé quadratique couleur `(255, 120, 20)`, radius 45
+- Scintillement : `sin(t*5 + i*1.5) + sin(t*8.2 + i*0.7)`, désynchronisé par index
+- Blending : `pygame.BLEND_RGB_ADD` (idéme technique que `SaveSlotUI`)
+
+**Rendu des items du menu :**
+- Au repos : effet "engraved in stone" (texte + ombre + reflet via `_blit_engraved`)
+- Au survol : halo cyan `_blit_halo_text` couleur `(150, 255, 220)` / glow `(0, 180, 150)`
 
 **État machine de la TitleScreen :**
 ```
-MAIN_MENU → (clic Charger)  → LOAD_MENU  (overlay panel + slots)
-MAIN_MENU → (clic Options)  → OPTIONS    (overlay panel + stub)
-MAIN_MENU → (clic Quitter)  → QUIT       (pygame.quit + sys.exit)
-LOAD_MENU → (clic slot)     → retourne GameEvent.LOAD_GAME(slot_id)
-LOAD_MENU → (ESC)           → MAIN_MENU
+MAIN_MENU → (clic Charger)       → LOAD_MENU  (overlay panel + slots)
+MAIN_MENU → (clic Options)       → OPTIONS    (overlay panel + stub)
+MAIN_MENU → (clic Quitter)       → QUIT       (pygame.quit + sys.exit)
+LOAD_MENU → (clic slot)          → retourne GameEvent.LOAD_GAME(slot_id)
+LOAD_MENU → (ESC)                → MAIN_MENU
 ```
 
 **Interface publique :**
@@ -168,44 +169,15 @@ LOAD_MENU → (ESC)           → MAIN_MENU
 class TitleScreen:
     def __init__(self, screen: pygame.Surface, save_manager: SaveManager)
     def handle_event(self, event: pygame.Event) -> GameEvent | None
-    def update(self, dt: float) -> None
+    def update(self, dt: float) -> None  # incrèmente _light_time
     def draw(self) -> None
 ```
 
-**`GameEvent` (enum) :**
-```python
-class GameEvent(Enum):
-    NONE = "none"
-    NEW_GAME = "new_game"
-    LOAD_GAME = "load_game"       # .slot_id contient 1..3
-    QUIT = "quit"
-    PAUSE_REQUESTED = "pause_requested"
-    RESUME = "resume"
-    GOTO_TITLE = "goto_title"
-```
-
-**Rendu des boutons (spritesheet) :**
-```python
-# Découpe de 02-menu_buttons.png
-BTN_W_SRC = 341
-BTN_H_SRC = 182
-rects = {
-    "idle":    pygame.Rect(0,           0, BTN_W_SRC, BTN_H_SRC),
-    "hover":   pygame.Rect(BTN_W_SRC,   0, BTN_W_SRC, BTN_H_SRC),
-    "pressed": pygame.Rect(BTN_W_SRC*2, 0, BTN_W_SRC, BTN_H_SRC),
-}
-```
-
-**Rendu des save slots (spritesheet) :**
-```python
-# Découpe de 04-save_slot.png
-SLOT_H_SRC = 512   # moitié de 1024
-rects = {
-    "idle":  pygame.Rect(0, 0,        1024, SLOT_H_SRC),
-    "hover": pygame.Rect(0, SLOT_H_SRC, 1024, SLOT_H_SRC),
-}
-# Scaled target: 800×120px dans le panel
-```
+**Constantes (dans `title_screen_constants.py`) :**
+- `BACKGROUND_LIGHTS` : liste de 7 coordonnées (x,y) calibrées
+- `BG_LIGHT_COLOR = (255, 120, 20)`, `BG_LIGHT_RADIUS = 45`
+- `LOGO_MAIN_COLOR = (150, 255, 220)`, `LOGO_MAIN_HALO = (0, 180, 150)`
+- `MENU_HOVER_COLOR = (150, 255, 220)`, `MENU_HOVER_HALO = (0, 180, 150)`
 
 ---
 
@@ -411,11 +383,12 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 
 | ID | Composant | Input | Expected Output |
 |---|---|---|---|
-| GF-009 | `handle_event()` | MOUSEBUTTONDOWN sur bouton "Nouvelle Partie" | `GameEvent.NEW_GAME` |
-| GF-010 | `handle_event()` | MOUSEBUTTONDOWN sur bouton "Charger" | Transition vers `LOAD_MENU` (state interne) |
-| GF-011 | `handle_event()` | MOUSEBUTTONDOWN sur bouton "Quitter" | `GameEvent.QUIT` |
+| GF-009 | `handle_event()` | MOUSEBUTTONDOWN sur "Nouvelle Partie" | `GameEvent.NEW_GAME` |
+| GF-010 | `handle_event()` | MOUSEBUTTONDOWN sur "Charger" | Transition vers `LOAD_MENU` |
+| GF-011 | `handle_event()` | MOUSEBUTTONDOWN sur "Quitter" | `GameEvent.QUIT` |
 | GF-012 | `handle_event()` | KEYDOWN K_ESCAPE depuis `LOAD_MENU` | Retour vers `MAIN_MENU` |
 | GF-013 | `handle_event()` | Clic sur slot 2 en `LOAD_MENU` | `GameEvent.LOAD_GAME` avec `slot_id=2` |
+| GF-033 | `draw()` en `MAIN_MENU` | `_light_time > 0`, `BACKGROUND_LIGHTS` non vide | Aucune exception, halos blittés via `BLEND_RGB_ADD` |
 
 ### Unit Tests — `GameStateManager`
 
@@ -517,3 +490,4 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | GF-030 | `test_on_escape` | `../../tests/engine/test_game_state_manager.py:L119` |
 | GF-031 | `test_transition_to_playing_no_save_data` | `../../tests/engine/test_game_state_manager.py:L127` |
 | GF-032 | `test_handle_events_filtering` | `../../tests/engine/test_game_state_manager.py:L133` |
+| GF-033 | `test_title_screen_draw_main_menu` | `../../tests/ui/test_title_screen.py` |

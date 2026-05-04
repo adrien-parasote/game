@@ -2,7 +2,7 @@
 
 # Spec↔Test Traceability Matrix
 
-**Coverage:** 142/142 (100%)
+**Coverage:** 143/143 (100%)
 
 ## chest-ui-spec.md
 
@@ -110,6 +110,7 @@
 | GF-030 | ✅ | `tests/engine/test_game_state_manager.py::test_on_escape` |
 | GF-031 | ✅ | `tests/engine/test_game_state_manager.py::test_transition_to_playing_no_save_data` |
 | GF-032 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_events_filtering` |
+| GF-033 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_draw_main_menu` |
 
 ## interactive-objects.md
 

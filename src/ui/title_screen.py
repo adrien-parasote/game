@@ -4,6 +4,7 @@ Spec: docs/specs/game-flow-spec.md#22-srcuititle_screenpy-new
 """
 import logging
 import os
+import math
 import pygame
 from src.config import Settings
 from src.engine.game_events import GameEvent, GameEventType
@@ -11,7 +12,7 @@ from src.engine.save_manager import SaveManager
 from src.ui.save_menu import SaveMenuOverlay
 from src.engine.i18n import I18nManager
 from src.ui.title_screen_constants import *
-from src.ui.title_screen_constants import _MENU_DIR, _UI_DIR, _MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS, LOGO_MAIN_FONT_SIZE, LOGO_MAIN_COLOR, LOGO_MAIN_HALO, MENU_HOVER_COLOR, MENU_HOVER_HALO
+from src.ui.title_screen_constants import _MENU_DIR, _UI_DIR, _MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS, LOGO_MAIN_FONT_SIZE, LOGO_MAIN_COLOR, LOGO_MAIN_HALO, MENU_HOVER_COLOR, MENU_HOVER_HALO, BACKGROUND_LIGHTS, BG_LIGHT_COLOR, BG_LIGHT_RADIUS
 
 class TitleScreen:
     """Main menu screen — background, logo, cursor. Menu to be added."""
@@ -22,6 +23,7 @@ class TitleScreen:
         self.state = "MAIN_MENU"          # "MAIN_MENU" | "LOAD_MENU"
         self._hovered_item: int | None = None
         self._i18n = I18nManager()
+        self._light_time = 0.0
 
         sw, sh = screen.get_size()
         self._sw = sw
@@ -117,6 +119,21 @@ class TitleScreen:
         except OSError:
             self._back_label_font = self._font_small
 
+        # Pre-generate background light halo — same technique as SaveSlotUI
+        # Black surface: invisible in BLEND_RGB_ADD mode
+        r = BG_LIGHT_RADIUS
+        self._light_halo = pygame.Surface((r * 2, r * 2))
+        self._light_halo.fill((0, 0, 0))
+        for ri in range(r, 0, -1):
+            # Quadratic falloff — bright core, soft edges
+            intensity = (1.0 - (ri / r)) ** 2
+            color = (
+                int(BG_LIGHT_COLOR[0] * intensity),
+                int(BG_LIGHT_COLOR[1] * intensity),
+                int(BG_LIGHT_COLOR[2] * intensity),
+            )
+            pygame.draw.circle(self._light_halo, color, (r, r), ri)
+
     def _compute_layout(self) -> None:
         """Compute menu item rects, save slot rects, and back button rect."""
         # Menu item click zones (centred on MENU_ITEM_X)
@@ -151,6 +168,8 @@ class TitleScreen:
         return self._handle_main_menu(event)
 
     def update(self, dt: float) -> None:
+        self._light_time += dt
+        
         mouse_pos = pygame.mouse.get_pos()
         if self.state == "MAIN_MENU":
             self._hovered_item: int | None = None
@@ -165,6 +184,21 @@ class TitleScreen:
 
     def draw(self) -> None:
         self._screen.blit(self._bg, (0, 0))
+
+        # Draw animated background lights
+        for i, (lx, ly) in enumerate(BACKGROUND_LIGHTS):
+            # Candle-like flicker: slow, low-amplitude breathing
+            # ~0.4 Hz primary + ~0.9 Hz secondary — barely perceptible, very warm
+            flicker = (
+                math.sin(self._light_time * 0.4 + i * 1.1) * 0.06 +
+                math.sin(self._light_time * 0.9 + i * 2.3) * 0.04
+            ) + 0.92
+            flicker = max(0.80, min(1.0, flicker))
+
+            # Scale the pre-generated halo by the flicker intensity
+            scaled = pygame.transform.rotozoom(self._light_halo, 0, flicker)
+            hr = scaled.get_width() // 2
+            self._screen.blit(scaled, (lx - hr, ly - hr), special_flags=pygame.BLEND_RGB_ADD)
 
         title_text = self._i18n.get("menu.main_title", "L'Éveil de l'Héritier")
         self._blit_halo_text(

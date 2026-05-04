@@ -22,6 +22,19 @@ SLOT_H_DST = 120
 SLOT_SPACING = 140
 SLOT_PANEL_Y_START = 140   # inside the load panel overlay
 
+# Background animated lights — positions calibrated from image analysis
+BACKGROUND_LIGHTS = [
+    (443, 370),   # lantern left (hanging)
+    (548, 497),   # lantern center-left (hanging)
+    (789, 278),   # lantern top-right (hanging)
+    (872, 455),   # lantern right (hanging)
+    (416, 596),   # city window bottom-left
+    (463, 582),   # city window cluster left
+    (850, 430),   # castle right glow
+]
+BG_LIGHT_COLOR = (255, 120, 20)
+BG_LIGHT_RADIUS = 45
+
 # Semi-transparent overlay for load screen
 OVERLAY_ALPHA = 180
 

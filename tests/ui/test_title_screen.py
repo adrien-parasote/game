@@ -74,6 +74,8 @@ def title_screen(mock_screen, mock_save_manager):
     ts._bg = pygame.Surface((1280, 720))
     ts._overlay = mock_surf
     ts._slot_states = {"idle": mock_surf, "hover": mock_surf}
+    ts._light_time = 0.0
+    ts._light_halo = pygame.Surface((90, 90))  # BG_LIGHT_RADIUS*2, no alpha
     
     # Fonts
     mock_font = _MM()
@@ -298,6 +300,7 @@ def test_title_screen_update(title_screen):
         title_screen.update(0.16)
         assert title_screen._back_hovered is True
 
+@pytest.mark.tc("GF-033")
 def test_title_screen_draw_main_menu(title_screen):
     title_screen.state = "MAIN_MENU"
     title_screen._hovered_item = 0
