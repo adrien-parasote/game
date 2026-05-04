@@ -83,6 +83,7 @@ def title_screen(mock_screen, mock_save_manager):
         28: pygame.Surface((56, 56)),
         18: pygame.Surface((36, 36)),
     }
+    ts._mushroom_halos: dict = {}  # empty until calibration
     
     # Fonts
     mock_font = _MM()

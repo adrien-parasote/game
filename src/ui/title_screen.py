@@ -12,7 +12,7 @@ from src.engine.save_manager import SaveManager
 from src.ui.save_menu import SaveMenuOverlay
 from src.engine.i18n import I18nManager
 from src.ui.title_screen_constants import *
-from src.ui.title_screen_constants import _MENU_DIR, _UI_DIR, _MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS, LOGO_MAIN_FONT_SIZE, LOGO_MAIN_COLOR, LOGO_MAIN_HALO, MENU_HOVER_COLOR, MENU_HOVER_HALO, BACKGROUND_LIGHTS, BG_LIGHT_COLOR, HALO_DEBUG
+from src.ui.title_screen_constants import _MENU_DIR, _UI_DIR, _MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS, LOGO_MAIN_FONT_SIZE, LOGO_MAIN_COLOR, LOGO_MAIN_HALO, MENU_HOVER_COLOR, MENU_HOVER_HALO, BACKGROUND_LIGHTS, BG_LIGHT_COLOR, MUSHROOM_LIGHTS, HALO_DEBUG
 
 class TitleScreen:
     """Main menu screen — background, logo, cursor. Menu to be added."""
@@ -139,6 +139,22 @@ class TitleScreen:
                 pygame.draw.circle(surf, color, (r, r), ri)
             self._light_halos[r] = surf
 
+        # Pre-generate mushroom halo surfaces per unique (color, radius) pair
+        # Colors stored as tuples — hashable key
+        self._mushroom_halos: dict[tuple, dict[int, pygame.Surface]] = {}
+        for _lx, _ly, r, color in MUSHROOM_LIGHTS:
+            ck = tuple(color)
+            if ck not in self._mushroom_halos:
+                self._mushroom_halos[ck] = {}
+            if r not in self._mushroom_halos[ck]:
+                surf = pygame.Surface((r * 2, r * 2))
+                surf.fill((0, 0, 0))
+                for ri in range(r, 0, -1):
+                    intensity = (1.0 - (ri / r)) ** 2
+                    c = (int(ck[0] * intensity), int(ck[1] * intensity), int(ck[2] * intensity))
+                    pygame.draw.circle(surf, c, (r, r), ri)
+                self._mushroom_halos[ck][r] = surf
+
     def _compute_layout(self) -> None:
         """Compute menu item rects, save slot rects, and back button rect."""
         # Menu item click zones (centred on MENU_ITEM_X)
@@ -215,6 +231,32 @@ class TitleScreen:
                 pygame.draw.line(self._screen, (255, 0, 0), (sx - 10, sy), (sx + 10, sy), 1)
                 pygame.draw.line(self._screen, (255, 0, 0), (sx, sy - 10), (sx, sy + 10), 1)
                 pygame.draw.circle(self._screen, (255, 0, 0), (sx, sy), 4)
+
+        # Draw mushroom bioluminescent glows (slower, softer pulse)
+        for i, (lx, ly, hr, color) in enumerate(MUSHROOM_LIGHTS):
+            sx = int(lx * self._light_scale_x)
+            sy = int(ly * self._light_scale_y)
+            scaled_r = int(hr * (self._light_scale_x + self._light_scale_y) / 2)
+            # Slow bioluminescent breathing — more stable than candle flicker
+            flicker = (
+                math.sin(self._light_time * 0.15 + i * 1.3) * 0.10 +
+                math.sin(self._light_time * 0.37 + i * 2.1) * 0.06
+            ) + 0.84
+            flicker = max(0.72, min(1.0, flicker))
+            ck = tuple(color)
+            halos_for_color = self._mushroom_halos.get(ck, {})
+            halo_surf = halos_for_color.get(hr)
+            if halo_surf is None:
+                continue
+            display_scale = flicker * (scaled_r / hr)
+            rendered = pygame.transform.rotozoom(halo_surf, 0, display_scale)
+            offset = rendered.get_width() // 2
+            self._screen.blit(rendered, (sx - offset, sy - offset), special_flags=pygame.BLEND_RGB_ADD)
+
+            if HALO_DEBUG:
+                pygame.draw.line(self._screen, (0, 255, 200), (sx - 8, sy), (sx + 8, sy), 1)
+                pygame.draw.line(self._screen, (0, 255, 200), (sx, sy - 8), (sx, sy + 8), 1)
+                pygame.draw.circle(self._screen, (0, 255, 200), (sx, sy), 3)
 
         title_text = self._i18n.get("menu.main_title", "L'Éveil de l'Héritier")
         self._blit_halo_text(

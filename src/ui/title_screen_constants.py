@@ -62,6 +62,25 @@ BACKGROUND_LIGHTS = [
 BG_LIGHT_COLOR = (255, 120, 20)
 HALO_DEBUG = False  # Set to True to re-enable calibration crosshairs
 
+# Mushroom bioluminescent glows — filled by scripts/apply_calibration.py
+# Format: (x, y, radius, (R, G, B))  — coords in logical 1280×720 space
+MUSHROOM_LIGHTS = [
+    (1087,  513, 40, ( 70, 220, 200)),  # cyan large
+    (1006,   40, 20, ( 70, 220, 200)),  # cyan petit
+    ( 297,  350, 20, ( 70, 220, 200)),  # cyan petit
+    ( 326,  351, 20, ( 70, 220, 200)),  # cyan petit
+    ( 207,  534, 40, ( 70, 220, 200)),  # cyan large
+    ( 208,  247, 40, ( 70, 220, 200)),  # cyan large
+    ( 206,  446, 40, ( 70, 220, 200)),  # cyan large
+    (1104,  242, 28, ( 70, 220, 200)),  # cyan medium
+    (1081,  255, 28, ( 70, 220, 200)),  # cyan medium
+    ( 816,   51, 20, ( 70, 220, 200)),  # cyan petit
+    ( 838,   60, 20, ( 70, 220, 200)),  # cyan petit
+    ( 851,   70, 20, ( 70, 220, 200)),  # cyan petit
+    ( 386,   85, 40, ( 70, 220, 200)),  # cyan large
+    ( 352,  106, 40, ( 70, 220, 200)),  # cyan large
+]
+
 # Semi-transparent overlay for load screen
 OVERLAY_ALPHA = 180
 
