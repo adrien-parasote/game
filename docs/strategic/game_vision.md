@@ -1,32 +1,88 @@
-# 📜 Strategic Vision : L'Éveil de l'Héritier
+# 📜 Vision Stratégique — L'Éveil de l'Héritier
 
-**Titre du jeu :** L'Éveil de l'Héritier : Un Royaume en Ruines
-
-## 📖 Pitch et Contexte Narratif
-Après un sommeil millénaire, vous vous éveillez dans les tréfonds d'un château oublié, le **« Castel »**. Son architecture figée témoigne d'une gloire passée où les rouages mécaniques servaient la noblesse. 
-Votre seul compagnon est votre Majordome, un méca sympathique et protecteur, dernier vestige technologique de votre lignée encore fonctionnel. 
-**Votre mission** : Reconstruire ce royaume, brique par brique, au sein d'une nature qui a repris ses droits.
-
-## 🎨 Direction Artistique et Ambiance
-*L'univers visuel et sonore est une rencontre unique entre technologie rétro et magie.*
-
-*   **L'Esthétique (Lindblum x Treno)** : Le jeu possède la majesté industrielle de Lindblum (Final Fantasy IX), avec ses structures de laiton et ses mécanismes de précision, mais s'imprègne de l'atmosphère nocturne, feutrée et mélancolique de Treno. Chaque fenêtre projette des rayons de lumière bleutés perçant une obscurité omniprésente.
-*   **La Bande Son** : Inspirée par la sérénité des lieux mythiques des RPG classiques, la musique renforce le sentiment de confort et de sécurité au sein du Castel.
-
-## ⚙️ La Symbiose : Technologie, Éther et Nature
-Dans ce monde, la technologie et la magie s'entremêlent de façon indissociable :
-1.  **La Technologie** : Les mécanismes de laiton et les engrenages complexes s'intègrent désormais au milieu des racines. *(Exemple : Les coffres sont des merveilles d'ingénierie qui laissent échapper un jet de vapeur à leur ouverture).*
-2.  **L'Éther** : L'atmosphère est imprégnée d'un soupçon d'éther, une énergie magique qui anime les sources lumineuses. Les cristaux et les torches diffusent des halos dynamiques qui vacillent comme s'ils respiraient.
-3.  **La Flore** : Les vivants (hommes, elfes, nains et hommes-bêtes) doivent impérativement collaborer avec la flore pour prospérer dans ce nouveau monde sauvage.
-
-## 🎮 Gameplay Loop : La Vie au Castel
-Le jeu adopte un style **"Cozy RPG"** (façon Stardew Valley), privilégiant la construction, la culture et le commerce, avec des phases de combat pour protéger les avancées.
-
-*   **Agriculture & Événements** : Faire pousser des plantes et des légumes ancestraux. Les récoltes sont essentielles pour organiser les festivals qui soudent les peuples et redonnent vie et couleurs aux structures de pierre.
-*   **Récolte & Minage** : L'exploration pour récolter du bois et de la roche est vitale pour restaurer la gloire architecturale de la demeure.
-*   **Commerce & Gestion** : Le royaume renaît par l'échange. Gestion de la sacoche et de l'inventaire pour commercer avec les différentes espèces.
-*   **Design & Personnalisation** : Construction et customisation de sa propre maison.
-*   **Émotions (Emotes)** : Le personnage exprime ses émotions via des bulles d'humeur (`!`, `?`).
+**Titre :** L'Éveil de l'Héritier : Un Royaume en Ruines  
+**Roadmap :** `docs/strategic/MASTER_ROADMAP.md`
 
 ---
-> **Note de Synthèse** : Ce projet est un hommage à la nostalgie des RPG classiques, proposant un monde vivant où chaque graine plantée, chaque mécanisme réparé et chaque relation nouée rapproche le royaume de sa renaissance.
+
+## 📖 Pitch et Contexte Narratif
+
+Après un sommeil millénaire, vous vous éveillez dans les tréfonds d'un château oublié, le **« Castel »**. Son architecture figée témoigne d'une gloire passée où les rouages mécaniques servaient la noblesse.
+
+Votre seul compagnon est votre **Majordome**, un méca sympathique et protecteur, dernier vestige technologique de votre lignée encore fonctionnel. Si vous tombez au combat, il vous retrouve et vous ramène dans votre lit.
+
+**Votre mission** : Reconstruire ce royaume, brique par brique, au sein d'une nature qui a repris ses droits — et tisser des liens avec les peuples qui s'y sont installés.
+
+---
+
+## 🎨 Direction Artistique
+
+*Une rencontre entre technologie rétro, magie et nature sauvage.*
+
+- **L'Esthétique (Lindblum × Treno)** : Majesté industrielle de Lindblum (FFIX) + atmosphère nocturne et mélancolique de Treno. Structures de laiton, mécanismes de précision, fenêtres projetant des rayons de lumière bleutés dans l'obscurité.
+- **La Bande Son** : Inspirée des RPG classiques. Confort et sécurité dans le Castel. Mystère dans les forêts. Tension dans les grottes. Fête lors des festivals.
+- **Les Races** : Humains, Elfes, Nains, Hommes-bêtes, Méca (petits automates). Chaque race a son style visuel et son guilde d'appartenance.
+
+---
+
+## ⚙️ La Symbiose : Technologie, Éther et Nature
+
+1. **La Technologie** : Mécanismes de laiton et engrenages intégrés au milieu des racines. Les coffres laissent échapper un jet de vapeur. Le Gardien Méca gère la ferme sur ordre du joueur.
+2. **L'Éther** : Énergie magique qui anime les sources lumineuses et le **Sphérier** de progression. Les cristaux d'éther se récoltent en accomplissant des quêtes et des festivals.
+3. **La Flore** : Humains, elfes, nains et hommes-bêtes collaborent avec la nature. Agriculture, récolte, cuisine — le royaume renaît par la culture autant que par l'épée.
+
+---
+
+## 🎮 Gameplay Loop
+
+Style **Cozy RPG** (Stardew Valley × Dungeon Meshi). Pas de fin imposée — les saisons défilent.
+
+```
+Explorer → Récolter/Chasser → Cuisiner (même les monstres !)
+     ↓                                      ↓
+  Guildes                            Reconstuire le Castel
+(délèguent ce                       Décorer la chambre
+qu'on ne veut                       Déclencher des festivals
+pas faire)                                  ↓
+                                  Tisser des amitiés (PNJs + familiers)
+                                            ↓
+                                  Sphérier → grandir à son rythme
+```
+
+### Pilliers
+- **Liberté de style** : Sphérier à nœuds libres (Cozy, Combat, ou mix)
+- **Jamais bloqué** : les Guildes fournissent ce que le joueur ne veut pas faire
+- **Monstres cuisinables** : chaque ennemi est une recette (style Dungeon Meshi)
+- **Familiers** : animaux/monstres apprivoisés, amitié qui grandit → capacités uniques
+- **Amitié PNJs** : 5 niveaux → accès progressif à du contenu exclusif
+- **Météo contextuelle** : pluie, orage, neige → malus/bonus · équipement l'annule
+- **Jeu sans fin** : saisons infinies, nouvelles zones, nouveaux PNJs
+
+---
+
+## 🤝 Vision Co-op (v2.0)
+
+2-3 joueurs, même machine. Esprit de coopération fort.
+
+```
+🗡️ Guerrier  → chasse monstres → drop viande rare
+🍳 Cuisinier → cuisine Festin de Bête → déclenche Festival
+Festival     → bonus combat (Guerrier) + bonus récolte (Cozy)
+             → spirale positive partagée
+```
+
+- Salle du trésor partagée dans le château
+- Sphérier indépendant par joueur → spécialisation naturelle
+- Nœud **Synergiste** (sphérier) : bonus ×2 en co-op
+
+---
+
+## 🏰 Le Château — Hub Central
+
+Le Castel est le seul espace pleinement aménageable. Pas de mairie — le joueur gère la ville depuis son **Bureau du Seigneur**.
+
+La **Chambre du joueur** s'étend selon le `KingdomState` (score de reconstruction). Le mobilier s'achète aux guildes.
+
+---
+
+> *Ce projet est un hommage à la nostalgie des RPG classiques — un monde vivant où chaque graine plantée, chaque mécanisme réparé, chaque monstre cuisiné et chaque lien noué rapproche le royaume de sa renaissance.*
