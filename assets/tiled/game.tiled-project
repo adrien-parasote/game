@@ -61,6 +61,11 @@
                     "name": "bgm",
                     "type": "string",
                     "value": ""
+                },
+                {
+                    "name": "name",
+                    "type": "string",
+                    "value": ""
                 }
             ],
             "name": "02-map",

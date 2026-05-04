@@ -721,6 +721,11 @@
          "name":"bgm",
          "type":"string",
          "value":"00-castel"
+        }, 
+        {
+         "name":"name",
+         "type":"string",
+         "value":"Castel"
         }],
  "renderorder":"right-down",
  "tiledversion":"1.12.1",
