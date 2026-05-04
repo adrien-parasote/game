@@ -7,6 +7,15 @@ import random
 from .base import BaseEntity
 from src.config import Settings
 from src.graphics.spritesheet import SpriteSheet
+from src.entities.interactive_constants import (
+    INTERACTIVE_SHEET_COLS, INTERACTIVE_DUMMY_FRAME_COUNT, INTERACTIVE_POS_Y_OFFSET,
+    LIGHT_MASK_CACHE_COUNT, LIGHT_MASK_SCALE_BASE, LIGHT_MASK_SCALE_STEP,
+    ANIM_SPEED_LIGHT_SOURCE, ANIM_SPEED_OBJECT,
+    FLICKER_ALPHA_AMPLITUDE, FLICKER_ALPHA_JITTER_SCALE, FLICKER_ALPHA_JITTER_AMP,
+    FLICKER_ALPHA_NOISE_AMP, FLICKER_SCALE_AMPLITUDE,
+    FLICKER_MAIN_FREQ, FLICKER_JITTER_FREQ, FLICKER_SCALE_FREQ, FLICKER_SCALE_PHASE_OFFSET,
+    HALO_DEFAULT_COLOR, HALO_DEFAULT_ALPHA,
+)
 
 class InteractiveEntity(BaseEntity):
     """
@@ -31,7 +40,7 @@ class InteractiveEntity(BaseEntity):
                  is_passable: bool = False, is_animated: bool = False,
                  is_on: bool = None, off_position: int = -1,
                  halo_size: int = 0, halo_color: str = "[255, 255, 255]",
-                 halo_alpha: int = 130, particles: bool = False, particle_count: int = 0,
+                 halo_alpha: int = HALO_DEFAULT_ALPHA, particles: bool = False, particle_count: int = 0,
                  element_id: str = None, target_id: str = None,
                  activate_from_anywhere: bool = False,
                  facing_direction: str = None,
@@ -127,11 +136,11 @@ class InteractiveEntity(BaseEntity):
             
         # Selective Animation Speed
         if self.is_light_source:
-            self.animation_speed = 1.5
+            self.animation_speed = ANIM_SPEED_LIGHT_SOURCE
             if self.is_animated:
                 self.frame_index = random.uniform(float(self.start_row), float(self.end_row + 1))
         else:
-            self.animation_speed = 10.0
+            self.animation_speed = ANIM_SPEED_OBJECT
             
         self.is_animating = self.is_on and self.is_animated
         
@@ -141,7 +150,7 @@ class InteractiveEntity(BaseEntity):
         try:
             self.halo_color = ast.literal_eval(halo_color)
         except (ValueError, SyntaxError, TypeError):
-            self.halo_color = (255, 255, 255)
+            self.halo_color = HALO_DEFAULT_COLOR
             
         if self.halo_size > 0:
             logging.debug(f"InteractiveEntity {sub_type} halo: alpha={self.halo_alpha}, size={self.halo_size}")
@@ -183,13 +192,13 @@ class InteractiveEntity(BaseEntity):
         else:
             real_frame_h = self.sprite_height
             # Fallback for invisible or missing sprites (like signs)
-            dummy_count = 16 
+            dummy_count = INTERACTIVE_DUMMY_FRAME_COUNT
             self.frames = [pygame.Surface((self.sprite_width, real_frame_h), pygame.SRCALPHA) for _ in range(dummy_count)]
             for f in self.frames:
                 if pygame.display.get_surface() is not None:
                     f.convert_alpha()
-                f.fill((0, 0, 0, 0)) 
-            self._sheet_cols = 4
+                f.fill((0, 0, 0, 0))
+            self._sheet_cols = INTERACTIVE_SHEET_COLS
 
     def _setup_physics(self, pos, t_w, t_h, is_passable, obstacles_group, groups, element_id):
         """Initialize sprite rect, world position and collision state."""
@@ -204,7 +213,7 @@ class InteractiveEntity(BaseEntity):
         self.is_passable = is_passable
         self.obstacles_group = obstacles_group
         self.rect = dummy_rect
-        self.pos = pygame.math.Vector2(self.rect.centerx, self.rect.bottom - 16)
+        self.pos = pygame.math.Vector2(self.rect.centerx, self.rect.bottom - INTERACTIVE_POS_Y_OFFSET)
         
         if self.obstacles_group is not None:
             if self.sub_type == 'door' or not self.is_passable:
@@ -215,8 +224,8 @@ class InteractiveEntity(BaseEntity):
         """Pre-generate light mask cache."""
         self.light_mask = self._create_halo_surf(self.halo_size)
         self.light_mask_cache = []
-        for i in range(10):
-            scale = 0.97 + (i * 0.0066)
+        for i in range(LIGHT_MASK_CACHE_COUNT):
+            scale = LIGHT_MASK_SCALE_BASE + (i * LIGHT_MASK_SCALE_STEP)
             scaled_size = int(round(self.halo_size * scale))
             if scaled_size > 0:
                 self.light_mask_cache.append(self._create_halo_surf(scaled_size))
@@ -330,17 +339,17 @@ class InteractiveEntity(BaseEntity):
                 num_frames = max(1, self.end_row - self.start_row + 1)
                 frame_progress = (self.frame_index - self.start_row) % num_frames
                 animation_phase = (frame_progress / num_frames) * 2 * math.pi
-                self.f_alpha = 1.0 + 0.12 * math.sin(animation_phase - math.pi/2) 
-                self.f_alpha += random.uniform(-0.02, 0.02)
-                self.f_scale = 1.0 + 0.03 * math.sin(animation_phase)
+                self.f_alpha = 1.0 + FLICKER_ALPHA_AMPLITUDE * math.sin(animation_phase - math.pi/2)
+                self.f_alpha += random.uniform(-FLICKER_ALPHA_JITTER_AMP, FLICKER_ALPHA_JITTER_AMP)
+                self.f_scale = 1.0 + FLICKER_SCALE_AMPLITUDE * math.sin(animation_phase)
             else:
                 ticks = ticks_ms if ticks_ms is not None else pygame.time.get_ticks()
                 time_sec = ticks / 1000.0
-                main_wave = math.sin(time_sec * 1.5 * math.pi + self.flicker_phase)
-                jitter_wave = 0.3 * math.sin(time_sec * 4.2 * math.pi + self.flicker_phase * 0.5)
-                self.f_alpha = 1.0 + 0.12 * main_wave + 0.02 * jitter_wave
-                self.f_alpha += random.uniform(-0.01, 0.01)
-                self.f_scale = 1.0 + 0.03 * math.sin(time_sec * 1.2 * math.pi + self.flicker_phase + 0.5)
+                main_wave = math.sin(time_sec * FLICKER_MAIN_FREQ * math.pi + self.flicker_phase)
+                jitter_wave = FLICKER_ALPHA_JITTER_SCALE * math.sin(time_sec * FLICKER_JITTER_FREQ * math.pi + self.flicker_phase * 0.5)
+                self.f_alpha = 1.0 + FLICKER_ALPHA_AMPLITUDE * main_wave + FLICKER_ALPHA_JITTER_AMP * jitter_wave
+                self.f_alpha += random.uniform(-FLICKER_ALPHA_NOISE_AMP, FLICKER_ALPHA_NOISE_AMP)
+                self.f_scale = 1.0 + FLICKER_SCALE_AMPLITUDE * math.sin(time_sec * FLICKER_SCALE_FREQ * math.pi + self.flicker_phase + FLICKER_SCALE_PHASE_OFFSET)
         else:
             self.f_alpha = 1.0
             self.f_scale = 1.0

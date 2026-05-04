@@ -1,6 +1,11 @@
 import pygame
 import math
 from src.engine.time_system import TimeSystem
+from src.engine.lighting_constants import (
+    BEAM_TOP_WIDTH, BEAM_BOTTOM_WIDTH, BEAM_HEIGHT, BEAM_MAX_SLANT,
+    OVERLAY_BASE_ALPHA, OVERLAY_ALPHA_RANGE,
+    SLANT_ROUND_STEP, TORCH_ALPHA_QUANTIZE,
+)
 from typing import Any, Dict, List, Tuple
 
 
@@ -20,13 +25,13 @@ class LightingManager:
         self._torch_mask_cache: Dict = {}
         self._beam_surf_cache: Dict = {}
 
-        # Beam shape defaults (pixels). Per-window widths come from Tiled objects.
-        self.beam_top_width = 24
-        self.beam_bottom_width = 52
-        self.beam_height = 70
-        # Max horizontal drift of the beam over its full height (pixels).
-        # Sun swings between -max_slant (west/evening) and +max_slant (east/morning).
-        self.max_slant = 28
+        # Beam shape defaults (pixels). Per-window widths may override BEAM_TOP_WIDTH via Tiled.
+        self.beam_top_width = BEAM_TOP_WIDTH
+        self.beam_bottom_width = BEAM_BOTTOM_WIDTH
+        self.beam_height = BEAM_HEIGHT
+        # Max horizontal drift of the beam over its full height.
+        # Sun swings between -BEAM_MAX_SLANT (evening) and +BEAM_MAX_SLANT (morning).
+        self.max_slant = BEAM_MAX_SLANT
 
     # ------------------------------------------------------------------
     # Public API
@@ -104,7 +109,7 @@ class LightingManager:
             b,
         )
         # Max opacity: ~75% at noon, ~25% at midnight
-        master_alpha = int(255 * (0.25 + 0.50 * b))
+        master_alpha = int(255 * (OVERLAY_BASE_ALPHA + OVERLAY_ALPHA_RANGE * b))
 
         slant = self._compute_slant()
 
@@ -116,8 +121,8 @@ class LightingManager:
             (color[2] // 8) * 8,
         )
         
-        # Round slant to nearest 2px to reduce cache churn
-        key = (color, master_alpha >> 3, top_w, round(slant / 2) * 2)
+        # Round slant to nearest SLANT_ROUND_STEP px to reduce cache churn
+        key = (color, master_alpha >> 3, top_w, round(slant / SLANT_ROUND_STEP) * SLANT_ROUND_STEP)
         if key not in self._beam_surf_cache:
             # Scale bottom proportionally to the requested top_w
             ratio = top_w / max(1, self.beam_top_width)
@@ -236,7 +241,7 @@ class LightingManager:
 
     def _get_torch_mask(self, radius: int, intensity: float) -> pygame.Surface:
         """Radial gradient mask (RGBA) for subtracting darkness around torches."""
-        key = (radius, int(intensity * 20))
+        key = (radius, int(intensity * TORCH_ALPHA_QUANTIZE))
         if key in self._torch_mask_cache:
             return self._torch_mask_cache[key]
 

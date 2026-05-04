@@ -6,6 +6,9 @@ from src.config import Settings
 from src.engine.asset_manager import AssetManager
 from src.engine.i18n import I18nManager
 from src.ui.inventory_constants import *
+from src.ui.ui_colors import (
+    COLOR_TEXT_STONE, COLOR_HIGHLIGHT_GOLD, COLOR_DEBUG_MISSING,
+)
 
 class InventoryUI:
     """
@@ -98,8 +101,8 @@ class InventoryUI:
             return pygame.image.load(path).convert_alpha()
         except pygame.error as e:
             logging.error(f"InventoryUI: Could not load {filename}: {e}")
-            surf = pygame.Surface((32, 32))
-            surf.fill((255, 0, 255))
+            surf = pygame.Surface((INV_PLACEHOLDER_SIZE, INV_PLACEHOLDER_SIZE))
+            surf.fill(COLOR_DEBUG_MISSING)
             return surf
 
     def toggle(self):
@@ -331,7 +334,7 @@ class InventoryUI:
         except Exception as e:
             logging.error(f"InventoryUI: Character preview failed: {e}")
 
-        name_text = self.noble_font.render("Player", True, (60, 40, 30))
+        name_text = self.noble_font.render("Player", True, COLOR_TEXT_STONE)
         screen.blit(name_text, name_text.get_rect(midbottom=self.char_name_pos))
 
         if self.active_tab == 0:
@@ -362,7 +365,7 @@ class InventoryUI:
                 if icon:
                     screen.blit(icon, icon.get_rect(center=(x, y)))
                 if item.quantity > 1:
-                    qty_text = self.tech_font.render(f"x{item.quantity}", True, (60, 40, 30))
+                    qty_text = self.tech_font.render(f"x{item.quantity}", True, COLOR_TEXT_STONE)
                     margin = int(8 * s)
                     screen.blit(qty_text, qty_text.get_rect(bottomright=(slot_rect.right - margin, slot_rect.bottom - margin)))
 
@@ -386,7 +389,7 @@ class InventoryUI:
                 if icon:
                     screen.blit(icon, icon.get_rect(center=pos))
                 if item.quantity > 1:
-                    qty_text = self.tech_font.render(f"x{item.quantity}", True, (60, 40, 30))
+                    qty_text = self.tech_font.render(f"x{item.quantity}", True, COLOR_TEXT_STONE)
                     margin = int(8 * s)
                     screen.blit(qty_text, qty_text.get_rect(bottomright=(rect.right - margin, rect.bottom - margin)))
         
@@ -396,7 +399,7 @@ class InventoryUI:
         pos = self.equipment_slots[name]
         rect = pygame.Rect(0, 0, self.equip_rect_side, self.equip_rect_side)
         rect.center = pos
-        pygame.draw.rect(screen, (255, 215, 0), rect, 3, border_radius=int(12 * s))
+        pygame.draw.rect(screen, COLOR_HIGHLIGHT_GOLD, rect, INV_DRAG_HIGHLIGHT_BORDER, border_radius=int(INV_DRAG_BORDER_RADIUS_BASE * s))
 
     def _draw_dragged_item(self, screen):
         """Draw the item currently being dragged."""
@@ -410,7 +413,7 @@ class InventoryUI:
             
         qty = self._dragging_item["quantity"]
         if qty > 1:
-            qty_text = self.tech_font.render(f"x{qty}", True, (60, 40, 30))
+            qty_text = self.tech_font.render(f"x{qty}", True, COLOR_TEXT_STONE)
             # align to bottom right of the icon rect
             margin = int(8 * self.scale_factor)
             screen.blit(qty_text, qty_text.get_rect(bottomright=(rect.right - margin, rect.bottom - margin)))
@@ -438,8 +441,8 @@ class InventoryUI:
                     name = item_data["name"]
                     description = item_data["description"]
                     
-                    name_text = self.noble_font.render(name, True, (60, 40, 30))
-                    screen.blit(name_text, (stats_x, stats_y - int(16 * s)))
+                    name_text = self.noble_font.render(name, True, COLOR_TEXT_STONE)
+                    screen.blit(name_text, (stats_x, stats_y - int(INV_STAT_NAME_OFFSET_Y * s)))
                     
                     # Draw Wrapped Description (More compact)
                     max_w = self.bg_rect.width - int(INV_INFO_MAX_W_OFFSET * s) 
@@ -456,23 +459,23 @@ class InventoryUI:
                     lines.append(' '.join(current_line))
                     
                     for i, line in enumerate(lines[:3]): # Max 3 lines
-                        desc_surf = self.narrative_font.render(line, True, (60, 40, 30))
+                        desc_surf = self.narrative_font.render(line, True, COLOR_TEXT_STONE)
                         screen.blit(desc_surf, (stats_x, stats_y + int(5 * s) + i * int(18 * s)))
                     return
 
         # Default: Draw Stats
         # LVL (Left part of green bar)
-        lvl_text = self.noble_font.render(f"LVL {self.player.level}", True, (60, 40, 30))
+        lvl_text = self.noble_font.render(f"LVL {self.player.level}", True, COLOR_TEXT_STONE)
         lvl_rect = lvl_text.get_rect(midleft=(stats_x, stats_y))
         screen.blit(lvl_text, lvl_rect)
-        
+
         # HP (Center)
-        hp_text = self.noble_font.render(f"HP {self.player.hp}/{self.player.max_hp}", True, (60, 40, 30))
+        hp_text = self.noble_font.render(f"HP {self.player.hp}/{self.player.max_hp}", True, COLOR_TEXT_STONE)
         hp_rect = hp_text.get_rect(center=(self.bg_rect.x + int(INV_HP_X * s), stats_y))
         screen.blit(hp_text, hp_rect)
-        
+
         # GOLD (Right)
-        gold_text = self.noble_font.render(f"GOLD {self.player.gold}", True, (60, 40, 30))
+        gold_text = self.noble_font.render(f"GOLD {self.player.gold}", True, COLOR_TEXT_STONE)
         gold_rect = gold_text.get_rect(midright=(self.bg_rect.x + int(INV_GOLD_X * s), stats_y))
         screen.blit(gold_text, gold_rect)
 

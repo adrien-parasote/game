@@ -20,7 +20,7 @@ class PauseScreen:
         self._screen = screen
         self._save_manager = save_manager
         self._hovered_btn: int | None = None
-        self._confirm_timer: float = 0.0  # >0 → show "Sauvegardé !" for 2s
+        self._confirm_timer: float = 0.0  # >0 → show "Saved!" feedback for 2s
         self.state = "MAIN" # "MAIN" or "SAVE_MENU"
         self._i18n = I18nManager()
         self._save_menu = SaveMenuOverlay(screen, save_manager, self._i18n.get("pause_menu.save", "Sauvegarder la partie"))
@@ -126,7 +126,7 @@ class PauseScreen:
         if self.state == "SAVE_MENU":
             slot_idx = self._save_menu.get_clicked_slot(event)
             if slot_idx is not None:
-                # Émettre l'événement de demande de sauvegarde pour le slot (1-indexed)
+                # Emit save-requested event for the given slot (1-indexed)
                 return GameEvent(type=GameEventType.SAVE_REQUESTED, slot_id=slot_idx + 1)
             return None
 

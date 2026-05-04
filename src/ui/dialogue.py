@@ -3,6 +3,12 @@ import os
 import logging
 from src.config import Settings
 from src.engine.asset_manager import AssetManager
+from src.ui.dialogue_constants import (
+    DIALOGUE_CONTENT_MARGIN_X,
+    DIALOGUE_MSG_Y_OFFSET_TITLED,
+    DIALOGUE_MSG_Y_OFFSET_PLAIN,
+    DIALOGUE_ARROW_Y_OFFSET,
+)
 
 class DialogueManager:
     """
@@ -78,11 +84,11 @@ class DialogueManager:
             return
 
         # Fixed layout metrics
-        content_margin_x = 140
+        content_margin_x = DIALOGUE_CONTENT_MARGIN_X
         max_w = self.dialogue_box.get_width() - (content_margin_x * 2)
-        
+
         # Available height calculation
-        message_y_offset = 90 if self.title else 42
+        message_y_offset = DIALOGUE_MSG_Y_OFFSET_TITLED if self.title else DIALOGUE_MSG_Y_OFFSET_PLAIN
         available_h = self.dialogue_box.get_height() - message_y_offset - 40 
         
         line_spacing = 1.2
@@ -202,21 +208,21 @@ class DialogueManager:
         box_rect = self.dialogue_box.get_rect(midbottom=(Settings.WINDOW_WIDTH // 2, Settings.WINDOW_HEIGHT - 20))
         screen.blit(self.dialogue_box, box_rect)
         
-        content_margin_x = 140
+        content_margin_x = DIALOGUE_CONTENT_MARGIN_X
 
         # 2. Draw Title
         if self.title and self.font_title:
             title_x = box_rect.x + content_margin_x
-            title_y = box_rect.y + 42
+            title_y = box_rect.y + DIALOGUE_MSG_Y_OFFSET_PLAIN
             # Shadow
             s_surf = self.font_title.render(self.title, True, self._shadow_color)
             screen.blit(s_surf, (title_x + self._shadow_offset, title_y + self._shadow_offset))
             # Title
             title_surf = self.font_title.render(self.title, True, self._text_color)
             screen.blit(title_surf, (title_x, title_y))
-            message_y = box_rect.y + 90
+            message_y = box_rect.y + DIALOGUE_MSG_Y_OFFSET_TITLED
         else:
-            message_y = box_rect.y + 42
+            message_y = box_rect.y + DIALOGUE_MSG_Y_OFFSET_PLAIN
 
         # 3. Draw Message Lines for Current Page (Optimized)
         if self.font_message and self._page_surfaces:
@@ -266,5 +272,5 @@ class DialogueManager:
         # 4. Draw Next Arrow when page is complete
         if self.next_arrow and self._is_page_complete:
             arrow_x = box_rect.x + box_rect.width - content_margin_x + 10
-            arrow_y = box_rect.y + 140
+            arrow_y = box_rect.y + DIALOGUE_ARROW_Y_OFFSET
             screen.blit(self.next_arrow, (arrow_x, arrow_y))

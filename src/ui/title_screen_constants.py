@@ -23,41 +23,41 @@ SLOT_SPACING = 140
 SLOT_PANEL_Y_START = 140   # inside the load panel overlay
 
 # Background animated lights — calibrated interactively via tools/calibrate_halos.py
-# Each entry: (x, y, halo_radius)  — 45=lanterne, 28=fenêtre, 18=petite fenêtre
+# Each entry: (x, y, halo_radius)  — 45=lantern, 28=window, 18=small window
 BACKGROUND_LIGHTS = [
-    ( 443,  378, 45),  # lanterne
-    ( 546,  500, 45),  # lanterne
-    ( 790,  287, 45),  # lanterne
-    ( 861,  406, 45),  # lanterne
-    ( 458,  570, 28),  # fenêtre
-    ( 752,  554, 28),  # fenêtre
-    ( 831,  559, 28),  # fenêtre
-    ( 787,  583, 28),  # fenêtre
-    ( 390,  514, 28),  # fenêtre
-    ( 230,  406, 18),  # petite fenêtre
-    ( 415,  456, 18),  # petite fenêtre
-    ( 444,  458, 18),  # petite fenêtre
-    ( 455,  511, 18),  # petite fenêtre
-    ( 403,  475, 18),  # petite fenêtre
-    ( 393,  583, 18),  # petite fenêtre
-    ( 427,  576, 18),  # petite fenêtre
-    ( 399,  557, 18),  # petite fenêtre
-    ( 490,  630, 28),  # fenêtre
-    ( 482,  533, 18),  # petite fenêtre
-    ( 504,  575, 18),  # petite fenêtre
-    ( 785,  459, 18),  # petite fenêtre
-    ( 744,  363, 18),  # petite fenêtre
-    ( 770,  363, 18),  # petite fenêtre
-    ( 818,  456, 18),  # petite fenêtre
-    ( 827,  509, 18),  # petite fenêtre
-    ( 871,  484, 18),  # petite fenêtre
-    ( 858,  520, 18),  # petite fenêtre
-    ( 900,  496, 18),  # petite fenêtre
-    (1049,  367, 18),  # petite fenêtre
-    (1052,  408, 18),  # petite fenêtre
-    (1035,  538, 18),  # petite fenêtre
-    ( 856,  460, 18),  # petite fenêtre
-    ( 822,  607, 18),  # petite fenêtre
+    ( 443,  378, 45),  # lantern
+    ( 546,  500, 45),  # lantern
+    ( 790,  287, 45),  # lantern
+    ( 861,  406, 45),  # lantern
+    ( 458,  570, 28),  # window
+    ( 752,  554, 28),  # window
+    ( 831,  559, 28),  # window
+    ( 787,  583, 28),  # window
+    ( 390,  514, 28),  # window
+    ( 230,  406, 18),  # small window
+    ( 415,  456, 18),  # small window
+    ( 444,  458, 18),  # small window
+    ( 455,  511, 18),  # small window
+    ( 403,  475, 18),  # small window
+    ( 393,  583, 18),  # small window
+    ( 427,  576, 18),  # small window
+    ( 399,  557, 18),  # small window
+    ( 490,  630, 28),  # window
+    ( 482,  533, 18),  # small window
+    ( 504,  575, 18),  # small window
+    ( 785,  459, 18),  # small window
+    ( 744,  363, 18),  # small window
+    ( 770,  363, 18),  # small window
+    ( 818,  456, 18),  # small window
+    ( 827,  509, 18),  # small window
+    ( 871,  484, 18),  # small window
+    ( 858,  520, 18),  # small window
+    ( 900,  496, 18),  # small window
+    (1049,  367, 18),  # small window
+    (1052,  408, 18),  # small window
+    (1035,  538, 18),  # small window
+    ( 856,  460, 18),  # small window
+    ( 822,  607, 18),  # small window
 ]
 BG_LIGHT_COLOR = (255, 120, 20)
 HALO_DEBUG = False  # Set to True to re-enable calibration crosshairs
@@ -84,12 +84,12 @@ MUSHROOM_LIGHTS = [
     (1118,  524, 16, ( 70, 220, 200)),  # cyan medium
     ( 212,  452, 16, ( 70, 220, 200)),  # cyan medium
     ( 214,  435, 16, ( 70, 220, 200)),  # cyan medium
-    ( 193,  441, 11, ( 70, 220, 200)),  # cyan petit
-    ( 295,  345, 11, ( 70, 220, 200)),  # cyan petit
-    ( 299,  350, 11, ( 70, 220, 200)),  # cyan petit
-    ( 323,  353, 11, ( 70, 220, 200)),  # cyan petit
-    ( 331,  347, 11, ( 70, 220, 200)),  # cyan petit
-    ( 332,  354, 11, ( 70, 220, 200)),  # cyan petit
+    ( 193,  441, 11, ( 70, 220, 200)),  # cyan small
+    ( 295,  345, 11, ( 70, 220, 200)),  # cyan small
+    ( 299,  350, 11, ( 70, 220, 200)),  # cyan small
+    ( 323,  353, 11, ( 70, 220, 200)),  # cyan small
+    ( 331,  347, 11, ( 70, 220, 200)),  # cyan small
+    ( 332,  354, 11, ( 70, 220, 200)),  # cyan small
 ]
 
 # Semi-transparent overlay for load screen

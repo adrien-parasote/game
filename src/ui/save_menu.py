@@ -12,7 +12,7 @@ from src.engine.i18n import I18nManager
 
 
 class SaveSlotUI:
-    """Composant responsable du rendu d'un emplacement de sauvegarde unique."""
+    """Renders a single save slot: background, thumbnail, text, and hover glow."""
     
     def __init__(self, am):
         self._font_title = am.get_font(Settings.FONT_NOBLE, Settings.FONT_SIZE_NOBLE)
@@ -33,11 +33,11 @@ class SaveSlotUI:
         # Pre-calculate halo for hover effect (using additive blending)
         radius = 45
         self._halo = pygame.Surface((radius * 2, radius * 2))
-        self._halo.fill((0, 0, 0)) # Noir: invisible en mode ADD
+        self._halo.fill((0, 0, 0))  # Black: invisible in BLEND_RGB_ADD mode
         for r in range(radius, 0, -1):
-            # Dégradé non-linéaire (quadratique) pour un effet de lumière doux
+            # Non-linear (quadratic) gradient for a soft light falloff
             intensity = (1.0 - (r / radius)) ** 2
-            # Couleur dorée/orangée
+            # Golden/orange hue
             color = (int(255 * intensity), int(160 * intensity), int(40 * intensity))
             pygame.draw.circle(self._halo, color, (radius, radius), r)
         

@@ -12,6 +12,10 @@ import pygame
 from src.config import Settings
 from src.engine.game import Game
 from src.engine.game_events import GameEvent, GameEventType
+from src.engine.game_state_constants import (
+    THUMBNAIL_CROP_SIZE, THUMBNAIL_SIZE, SAVE_BGM_FADE_MS,
+    PLAYER_DEFAULT_HP, PLAYER_DEFAULT_MAX_HP, PLAYER_DEFAULT_LEVEL, PLAYER_DEFAULT_GOLD,
+)
 from src.engine.save_manager import SaveManager
 from src.ui.title_screen import TitleScreen
 from src.ui.pause_screen import PauseScreen
@@ -164,7 +168,7 @@ class GameStateManager:
 
     def _transition_to_title(self) -> None:
         # Stop all game audio before returning to title
-        self._game.audio_manager.stop_bgm(fade_ms=500)
+        self._game.audio_manager.stop_bgm(fade_ms=SAVE_BGM_FADE_MS)
         self._game.audio_manager.stop_all_ambients()
         pygame.mixer.stop()  # stop any remaining SFX channels
         pygame.mouse.set_visible(False)  # custom cursor takes over
@@ -193,26 +197,26 @@ class GameStateManager:
         # Draw pure game frame without UI overlays
         self._game._draw()
         
-        # Capture 246x246 crop centered on player (for a 3x zoom out effect)
-        crop_size = 246
+        # Capture a square crop centered on the player for the save thumbnail
+        crop_size = THUMBNAIL_CROP_SIZE
         sw, sh = self._game.screen.get_size()
         cx, cy = sw // 2, sh // 2
-        
+
         if self._game.player:
-            # player.rect is world coordinates, camera offset converts to screen
+            # player.rect is in world coordinates; camera offset converts to screen space
             px, py = self._game.player.rect.center
             offset = self._game.visible_sprites.offset
             cx = int(px + offset.x)
             cy = int(py + offset.y)
-            
+
         # Clamp crop rect to screen boundaries
         cx = max(crop_size // 2, min(sw - crop_size // 2, cx))
         cy = max(crop_size // 2, min(sh - crop_size // 2, cy))
-        
+
         crop_rect = pygame.Rect(cx - crop_size // 2, cy - crop_size // 2, crop_size, crop_size)
         thumb_surf = self._game.screen.subsurface(crop_rect).copy()
-        # Scale down to 82x82 to fit the UI slot perfectly while keeping file size small
-        thumb_surf = pygame.transform.smoothscale(thumb_surf, (82, 82))
+        # Scale down to THUMBNAIL_SIZE to fit the UI slot while keeping file size small
+        thumb_surf = pygame.transform.smoothscale(thumb_surf, (THUMBNAIL_SIZE, THUMBNAIL_SIZE))
         
         self._save_manager.save_thumbnail(slot_id, thumb_surf)
         self._pause_screen.notify_save_result(True)
@@ -224,10 +228,10 @@ class GameStateManager:
         game = self._game
 
         # Restore player stats
-        game.player.level = data.player.get("level", 1)
-        game.player.hp = data.player.get("hp", 100)
-        game.player.max_hp = data.player.get("max_hp", 100)
-        game.player.gold = data.player.get("gold", 0)
+        game.player.level = data.player.get("level", PLAYER_DEFAULT_LEVEL)
+        game.player.hp = data.player.get("hp", PLAYER_DEFAULT_HP)
+        game.player.max_hp = data.player.get("max_hp", PLAYER_DEFAULT_MAX_HP)
+        game.player.gold = data.player.get("gold", PLAYER_DEFAULT_GOLD)
         game.player.current_state = data.player.get("facing", "down")
 
         # Restore time
