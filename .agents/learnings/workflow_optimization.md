@@ -598,3 +598,28 @@ Never add linked test tables without running the audit immediately after.
 ---
 
 *Last optimized: 2026-05-03 — documentation urbanization session: L-DOC-001, L-DOC-002, L-DOC-003, A-DOC-001.*
+
+---
+
+## 🏗️ Architecture & Decoupling — 2026-05-04
+
+### L-ARCH-006 · 2026-05-04 · U · Perfect
+**Domain-Specific Constants Extraction**
+
+Extracting magic numbers into a single monolithic `constants.py` file creates a global god-object dependency that couples UI, rendering, and logic. Extracting them into domain-specific `_constants.py` files (e.g., `lighting_constants.py`, `dialogue_constants.py`) alongside their components maintains modularity.
+
+**Pattern:**
+```python
+# ❌ Monolithic constants
+# src/constants.py -> used by 50 files
+INV_BG = ...
+BEAM_SLANT = ...
+
+# ✅ Domain-specific constants
+# src/ui/inventory_constants.py
+# src/engine/lighting_constants.py
+```
+
+**Rule:** When eliminating magic numbers, create a `[domain]_constants.py` file in the same directory as the module. Only truly global constants (like UI color palettes) should be centralized (e.g., `ui_colors.py`).
+
+**Evidence:** Extracted magic numbers into 5 specific constants files (`lighting`, `dialogue`, `game_state`, `interactive`, `ui_colors`). 532 tests pass. Zero regressions.
