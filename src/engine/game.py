@@ -86,7 +86,12 @@ class Game:
         self.emote_group = pygame.sprite.Group()
         self.pickups = pygame.sprite.Group()
 
-        
+        # P12: Pre-allocated viewport rect (avoids 2 Rect allocs per frame in _update)
+        self._viewport_world_rect = pygame.Rect(0, 0, Settings.WINDOW_WIDTH + 256, Settings.WINDOW_HEIGHT + 256)
+        # P6: Set of active torch entities (halos > 0, is_on=True) — updated on state change only
+        self._active_torches: set = set()
+
+
         # Local state
         self.is_fullscreen = Settings.FULLSCREEN
         self.last_fps_update = 0
@@ -425,66 +430,6 @@ class Game:
         logging.info(f"Spawned PickupItem '{item_id}' (x{quantity}) at {e_pos}")
 
 
-
-    def _draw_background(self):
-        """Draw tiles with depth <= player depth (behind player) using pre-rendered surfaces."""
-        cam_offset = self.visible_sprites.offset
-        
-        # Get all layers that should be behind the player
-        for layer_id in self.map_manager.layer_order:
-            # We need to know the depth of tiles in this layer. 
-            # In Tiled, layers usually have a uniform depth via properties.
-            # If not, we fall back to checking the first non-zero tile.
-            sample_tile_id = 0
-            for row in self.map_manager.layers[layer_id]:
-                for tid in row:
-                    if tid != 0:
-                        sample_tile_id = tid
-                        break
-                if sample_tile_id != 0: break
-            
-            # Use name-based hint if available (e.g. "01-layer" -> depth 1)
-            layer_name = self.map_manager.layer_names.get(layer_id, "")
-            name_depth = None
-            if len(layer_name) >= 3 and layer_name[:2].isdigit() and layer_name[2] == "-":
-                name_depth = int(layer_name[:2])
-            
-            if name_depth is not None:
-                depth = name_depth
-            else:
-                depth = getattr(self.map_manager.tiles.get(sample_tile_id), "depth", 0) if sample_tile_id else 0
-            
-            if depth <= self.player.depth:
-                surface = self.map_manager.get_layer_surface(layer_id, pygame)
-                if surface:
-                    self.screen.blit(surface, (cam_offset.x, cam_offset.y))
-
-    def _draw_foreground(self):
-        """Draw tiles with depth > player depth (in front of player). Use cached occluded versions if needed."""
-        cam_offset = self.visible_sprites.offset
-        screen_rect = self.screen.get_rect()
-        viewport_world = pygame.Rect(-cam_offset.x, -cam_offset.y, screen_rect.width, screen_rect.height)
-        
-        # Get visual rect anchored bottomright to physical rect for correct occlusion testing
-        visual_rect = self.player.image.get_rect(bottomright=self.player.rect.bottomright)
-        player_screen_rect = visual_rect.move(cam_offset.x, cam_offset.y)
-        
-        for px, py, tile_id, depth in self.map_manager.get_visible_chunks(viewport_world):
-            if depth > self.player.depth:
-                tile_data = self.map_manager.tiles[tile_id]
-                screen_pos = (px + cam_offset.x, py + cam_offset.y)
-                dest_rect = pygame.Rect(screen_pos[0], screen_pos[1], self.tile_size, self.tile_size)
-                
-                if player_screen_rect.colliderect(dest_rect):
-                    # Use pre-cached occluded image
-                    self.screen.blit(tile_data.occluded_image or tile_data.image, screen_pos)
-                else:
-                    self.screen.blit(tile_data.image, screen_pos)
-
-    def _draw_hud(self):
-        """Draw time and season HUD overlay (top-right, fixed to screen)."""
-        self.hud.draw(self.screen)
-
     def _trigger_dialogue(self, element_id: str, title: str = ""):
         """Fetch localized message and start dialogue (signs / objects → bottom box)."""
         map_base = self._current_map_name.split('.')[0]
@@ -677,18 +622,27 @@ class Game:
             was_moving = self.player.is_moving
             self.visible_sprites.update(dt)
             self.interaction_manager.check_teleporters(was_moving)
-            
-            # CPU Freeze optimization for NPCs -> freeze if outside enlarged viewport
-            screen_rect = self.screen.get_rect()
-            viewport_world = screen_rect.move(-self.visible_sprites.offset.x, -self.visible_sprites.offset.y)
-            viewport_world.inflate_ip(128, 128)
-            
+
+            # P12: CPU Freeze optimization for NPCs — reuse pre-allocated rect
+            off_x = int(self.visible_sprites.offset.x)
+            off_y = int(self.visible_sprites.offset.y)
+            self._viewport_world_rect.update(
+                -off_x - 128,
+                -off_y - 128,
+                Settings.WINDOW_WIDTH + 256,
+                Settings.WINDOW_HEIGHT + 256,
+            )
+
+            # P13: One get_ticks() call shared across all interactive entities
+            ticks_ms = pygame.time.get_ticks()
+
             for npc in self.npcs:
-                npc.is_visible = viewport_world.colliderect(npc.rect)
+                npc.is_visible = self._viewport_world_rect.colliderect(npc.rect)
                 npc.update(dt)
-                
+
             for obj in self.interactives:
-                obj.update(dt)
+                obj.update(dt, ticks_ms=ticks_ms)
+
 
             # Resolve ambient sound volumes from this frame's proposals.
             self.audio_manager.flush_ambient()

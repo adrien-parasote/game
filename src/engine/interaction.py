@@ -2,6 +2,11 @@ import pygame
 import logging
 from src.config import Settings
 
+# Pre-computed squared distance thresholds (avoids sqrt per proximity check)
+_RANGE_SQ_48: float = 48.0 ** 2   # 2304.0 — standard interaction range
+_RANGE_SQ_45: float = 45.0 ** 2   # 2025.0 — chest auto-close range
+_RANGE_SQ_16: float = 16.0 ** 2   # 256.0  — is_on_top range
+
 class InteractionManager:
     """
     Manages spatial interactions between the player and world entities (NPCs, Objects).
@@ -69,14 +74,13 @@ class InteractionManager:
         """Trigger 'interact' emote near a valid interactive object. Returns True if triggered."""
         p_pos = self.game.player.pos
         p_state = self.game.player.current_state
-        range_dist = 48.0
 
         for obj in self.game.interactives:
-            dist = p_pos.distance_to(obj.pos)
-            if dist >= range_dist:
+            sq_dist = p_pos.distance_squared_to(obj.pos)
+            if sq_dist >= _RANGE_SQ_48:
                 continue
 
-            is_on_top = dist < 16.0 and getattr(obj, "is_passable", False)
+            is_on_top = sq_dist < _RANGE_SQ_16 and getattr(obj, "is_passable", False)
             is_aligned = abs(p_pos.x - obj.pos.x) < 20 or abs(p_pos.y - obj.pos.y) < 20
 
             if is_on_top:
@@ -102,13 +106,12 @@ class InteractionManager:
         """Trigger 'question' emote near a pickup. Returns True if triggered."""
         p_pos = self.game.player.pos
         p_state = self.game.player.current_state
-        range_dist = 48.0
 
         for pickup in self.game.pickups:
-            dist = p_pos.distance_to(pickup.pos)
-            if dist >= range_dist:
+            sq_dist = p_pos.distance_squared_to(pickup.pos)
+            if sq_dist >= _RANGE_SQ_48:
                 continue
-            is_on_top = dist < 16.0
+            is_on_top = sq_dist < _RANGE_SQ_16
             is_aligned = abs(p_pos.x - pickup.pos.x) < 20 or abs(p_pos.y - pickup.pos.y) < 20
             if is_on_top or (is_aligned and self._facing_toward(p_pos, p_state, pickup.pos)):
                 if pickup != getattr(self, '_last_proximity_target', None):
@@ -123,10 +126,9 @@ class InteractionManager:
         """Trigger 'interact' emote near an NPC. Resets target if nothing in range."""
         p_pos = self.game.player.pos
         p_state = self.game.player.current_state
-        range_dist = 48.0
 
         for npc in self.game.npcs:
-            if p_pos.distance_to(npc.pos) >= range_dist:
+            if p_pos.distance_squared_to(npc.pos) >= _RANGE_SQ_48:
                 continue
             is_aligned = abs(p_pos.x - npc.pos.x) < 20 or abs(p_pos.y - npc.pos.y) < 20
             if is_aligned and self._facing_toward(p_pos, p_state, npc.pos):
@@ -161,54 +163,52 @@ class InteractionManager:
         """Check for nearby interactive objects based on proximity and orientation."""
         p_pos = self.game.player.pos
         p_state = self.game.player.current_state
-        
+
         for obj in self.game.interactives:
-            dist = p_pos.distance_to(obj.pos)
+            sq_dist = p_pos.distance_squared_to(obj.pos)
             valid_orientation = False
-            
+
             # On top check for passable objects
-            if getattr(obj, "is_passable", False) and dist < 16.0:
+            if getattr(obj, "is_passable", False) and sq_dist < _RANGE_SQ_16:
                 valid_orientation = True
 
-            # Adjacent + directional check for specific objects
+            # Adjacent + directional check for activate_from_anywhere objects
             if not valid_orientation and getattr(obj, "activate_from_anywhere", False):
                 is_aligned = abs(p_pos.x - obj.pos.x) < 20 or abs(p_pos.y - obj.pos.y) < 20
-                if dist < 48.0 and is_aligned and self._facing_toward(p_pos, p_state, obj.pos):
+                if sq_dist < _RANGE_SQ_48 and is_aligned and self._facing_toward(p_pos, p_state, obj.pos):
                     valid_orientation = True
-                    
+
             # Standard Directional Logic
-            if not valid_orientation and dist < 45.0:
+            if not valid_orientation and sq_dist < _RANGE_SQ_45:
                 valid_orientation = self._verify_orientation(obj, p_state, p_pos)
-                
+
             if valid_orientation:
                 res = obj.interact(self.game.player)
-                
+
                 if getattr(obj, "sfx", None):
+                    # Audio needs real distance (not squared)
+                    dist = p_pos.distance_to(obj.pos)
                     vol_mult = max(0.4, 1.0 - dist / 120.0)
                     self.game.audio_manager.play_sfx(
                         obj.sfx, getattr(obj, "element_id", None), volume_multiplier=vol_mult
                     )
-                
+
                 if res:
                     self.game._trigger_dialogue(res)
                 else:
-                    # Save state for toggleable objects
                     if hasattr(obj, '_world_state_key'):
                         self.game.world_state.set(obj._world_state_key, {'is_on': obj.is_on})
-                    
+
                     target = getattr(obj, "target_id", None)
                     if target:
                         self.toggle_entity_by_id(target, depth=1)
-                
-                # Handle chest persistence
+
                 if getattr(obj, "sub_type", "") == "chest":
                     if obj.is_on:
                         self._open_chest_entity = obj
-                        # Open chest UI overlay
                         if hasattr(self.game, 'chest_ui'):
                             self.game.chest_ui.open(obj, self.game.player)
                     else:
-                        # Chest closed via action key — hide UI and suppress emote
                         chest_ui = getattr(self.game, "chest_ui", None)
                         if chest_ui is not None and chest_ui.is_open:
                             chest_ui.close()
@@ -222,13 +222,12 @@ class InteractionManager:
         """Check for nearby pickup items."""
         p_pos = self.game.player.pos
         p_state = self.game.player.current_state
-        range_dist = 48.0
-        
+
         for pickup in self.game.pickups:
-            dist = p_pos.distance_to(pickup.pos)
-            if dist >= range_dist:
+            sq_dist = p_pos.distance_squared_to(pickup.pos)
+            if sq_dist >= _RANGE_SQ_48:
                 continue
-            is_on_top = dist < 16.0
+            is_on_top = sq_dist < _RANGE_SQ_16
             is_aligned = abs(p_pos.x - pickup.pos.x) < 20 or abs(p_pos.y - pickup.pos.y) < 20
             if not (is_on_top or (is_aligned and self._facing_toward(p_pos, p_state, pickup.pos))):
                 continue
@@ -240,14 +239,12 @@ class InteractionManager:
             if picked_up > 0:
                 logging.info(f"Picked up {picked_up}x {pickup.item_id}")
 
-            # Persist state so the item doesn't respawn on map reload
             state_key = getattr(pickup, "_world_state_key", None)
             if pickup.quantity <= 0:
                 if state_key:
                     self.game.world_state.set(state_key, {"collected": True})
                 pickup.kill()
             else:
-                # Partial pickup — persist remaining quantity
                 if state_key:
                     self.game.world_state.set(state_key, {"quantity": pickup.quantity})
                 self.game.player.playerEmote('frustration')
@@ -323,8 +320,8 @@ class InteractionManager:
 
         player_pos = self.game.player.pos
         chest = self._open_chest_entity
-        dist = player_pos.distance_to(chest.pos)
-        out_of_range = dist > 45
+        sq_dist = player_pos.distance_squared_to(chest.pos)
+        out_of_range = sq_dist > _RANGE_SQ_45
         wrong_orientation = not self._verify_orientation(
             chest, self.game.player.current_state, player_pos
         )

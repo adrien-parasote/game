@@ -123,12 +123,20 @@ class TitleScreen:
         except OSError:
             self._back_label_font = self._font_small
 
-        # Pre-generate one halo surface per distinct radius — same technique as SaveSlotUI
-        # Black surface: invisible in BLEND_RGB_ADD mode
-        self._light_halos: dict[int, pygame.Surface] = {}
+        # P1: Pre-scale halo surfaces into N_BUCKETS buckets covering flicker range
+        # Avoids rotozoom() per frame — pure lookup at draw time
+        _N_BUCKETS = 10
+        _SCALE_MIN = 0.80   # matches max(0.80, ...) in candle flicker
+        _SCALE_MAX = 1.05   # slight headroom above 1.0
+        self._halo_n_buckets = _N_BUCKETS
+        self._halo_scale_min = _SCALE_MIN
+        self._halo_scale_max = _SCALE_MAX
+
+        # P1: Bucket lookup for fire/candle halos
+        self._light_halos_scaled: dict[int, list[pygame.Surface]] = {}
         for r in {entry[2] for entry in BACKGROUND_LIGHTS}:
-            surf = pygame.Surface((r * 2, r * 2))
-            surf.fill((0, 0, 0))
+            base = pygame.Surface((r * 2, r * 2))
+            base.fill((0, 0, 0))
             for ri in range(r, 0, -1):
                 intensity = (1.0 - (ri / r)) ** 2
                 color = (
@@ -136,24 +144,48 @@ class TitleScreen:
                     int(BG_LIGHT_COLOR[1] * intensity),
                     int(BG_LIGHT_COLOR[2] * intensity),
                 )
-                pygame.draw.circle(surf, color, (r, r), ri)
-            self._light_halos[r] = surf
+                pygame.draw.circle(base, color, (r, r), ri)
+            # Build _N_BUCKETS pre-scaled copies for the display scale range
+            avg_scale = (self._light_scale_x + self._light_scale_y) / 2
+            buckets: list[pygame.Surface] = []
+            for b in range(_N_BUCKETS):
+                t = b / max(_N_BUCKETS - 1, 1)
+                s = (_SCALE_MIN + t * (_SCALE_MAX - _SCALE_MIN)) * avg_scale
+                new_r = max(1, int(r * s))
+                buckets.append(pygame.transform.smoothscale(base, (new_r * 2, new_r * 2)))
+            self._light_halos_scaled[r] = buckets
 
-        # Pre-generate mushroom halo surfaces per unique (color, radius) pair
-        # Colors stored as tuples — hashable key
-        self._mushroom_halos: dict[tuple, dict[int, pygame.Surface]] = {}
+        # P2: Bucket lookup for mushroom bioluminescent halos
+        self._mushroom_halos_scaled: dict[tuple, dict[int, list[pygame.Surface]]] = {}
         for _lx, _ly, r, color in MUSHROOM_LIGHTS:
             ck = tuple(color)
-            if ck not in self._mushroom_halos:
-                self._mushroom_halos[ck] = {}
-            if r not in self._mushroom_halos[ck]:
-                surf = pygame.Surface((r * 2, r * 2))
-                surf.fill((0, 0, 0))
+            if ck not in self._mushroom_halos_scaled:
+                self._mushroom_halos_scaled[ck] = {}
+            if r not in self._mushroom_halos_scaled[ck]:
+                base = pygame.Surface((r * 2, r * 2))
+                base.fill((0, 0, 0))
                 for ri in range(r, 0, -1):
                     intensity = (1.0 - (ri / r)) ** 2
                     c = (int(ck[0] * intensity), int(ck[1] * intensity), int(ck[2] * intensity))
-                    pygame.draw.circle(surf, c, (r, r), ri)
-                self._mushroom_halos[ck][r] = surf
+                    pygame.draw.circle(base, c, (r, r), ri)
+                avg_scale = (self._light_scale_x + self._light_scale_y) / 2
+                buckets_m: list[pygame.Surface] = []
+                for b in range(_N_BUCKETS):
+                    t = b / max(_N_BUCKETS - 1, 1)
+                    s = (_SCALE_MIN + t * (_SCALE_MAX - _SCALE_MIN)) * avg_scale
+                    new_r = max(1, int(r * s))
+                    buckets_m.append(pygame.transform.smoothscale(base, (new_r * 2, new_r * 2)))
+                self._mushroom_halos_scaled[ck][r] = buckets_m
+
+        # P3: Blur cache — invalidated when hovered item changes
+        self._blur_cache: dict[int | None, pygame.Surface] = {}
+        self._prev_hovered_item: int = -2  # sentinel: forces first-frame render
+
+        # P3: Pre-render idle menu label surfaces — avoids font.render() per frame
+        self._menu_label_surfaces: list[pygame.Surface] = [
+            self._render_engraved(self._i18n.get(key, default=default))
+            for key, default in zip(_MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS)
+        ]
 
     def _compute_layout(self) -> None:
         """Compute menu item rects, save slot rects, and back button rect."""
@@ -206,52 +238,47 @@ class TitleScreen:
     def draw(self) -> None:
         self._screen.blit(self._bg, (0, 0))
 
-        # Draw animated background lights
+        # P1: Draw fire/candle lights via pre-scaled bucket lookup (no rotozoom)
         for i, (lx, ly, hr) in enumerate(BACKGROUND_LIGHTS):
-            # Map from logical 1280×720 space to actual surface space
             sx = int(lx * self._light_scale_x)
             sy = int(ly * self._light_scale_y)
-            scaled_r = int(hr * (self._light_scale_x + self._light_scale_y) / 2)
-
-            # Candle-like flicker: slow, low-amplitude breathing
             flicker = (
                 math.sin(self._light_time * 0.4 + i * 1.1) * 0.06 +
                 math.sin(self._light_time * 0.9 + i * 2.3) * 0.04
             ) + 0.92
             flicker = max(0.80, min(1.0, flicker))
 
-            # Use the radius bucket from _light_halos, scaled to surface size
-            halo_surf = self._light_halos[hr]
-            display_scale = flicker * (scaled_r / hr)
-            rendered = pygame.transform.rotozoom(halo_surf, 0, display_scale)
-            offset = rendered.get_width() // 2
-            self._screen.blit(rendered, (sx - offset, sy - offset), special_flags=pygame.BLEND_RGB_ADD)
+            buckets = self._light_halos_scaled.get(hr)
+            if buckets:
+                t = (flicker - self._halo_scale_min) / (self._halo_scale_max - self._halo_scale_min)
+                idx = max(0, min(self._halo_n_buckets - 1, int(t * (self._halo_n_buckets - 1))))
+                rendered = buckets[idx]
+                offset = rendered.get_width() // 2
+                self._screen.blit(rendered, (sx - offset, sy - offset), special_flags=pygame.BLEND_RGB_ADD)
 
             if HALO_DEBUG:
                 pygame.draw.line(self._screen, (255, 0, 0), (sx - 10, sy), (sx + 10, sy), 1)
                 pygame.draw.line(self._screen, (255, 0, 0), (sx, sy - 10), (sx, sy + 10), 1)
                 pygame.draw.circle(self._screen, (255, 0, 0), (sx, sy), 4)
 
-        # Draw mushroom bioluminescent glows (slower, softer pulse)
+        # P2: Draw mushroom glows via pre-scaled bucket lookup (no rotozoom)
         for i, (lx, ly, hr, color) in enumerate(MUSHROOM_LIGHTS):
             sx = int(lx * self._light_scale_x)
             sy = int(ly * self._light_scale_y)
-            scaled_r = int(hr * (self._light_scale_x + self._light_scale_y) / 2)
-            # Slow bioluminescent breathing — more stable than candle flicker
             flicker = (
                 math.sin(self._light_time * 0.15 + i * 1.3) * 0.10 +
                 math.sin(self._light_time * 0.37 + i * 2.1) * 0.06
             ) + 0.84
             flicker = max(0.72, min(1.0, flicker))
             ck = tuple(color)
-            halos_for_color = self._mushroom_halos.get(ck, {})
-            halo_surf = halos_for_color.get(hr)
-            if halo_surf is None:
-                continue
-            display_scale = flicker * (scaled_r / hr)
-            rendered = pygame.transform.rotozoom(halo_surf, 0, display_scale)
-            offset = rendered.get_width() // 2
-            self._screen.blit(rendered, (sx - offset, sy - offset), special_flags=pygame.BLEND_RGB_ADD)
+            halos_for_color = self._mushroom_halos_scaled.get(ck, {})
+            buckets_m = halos_for_color.get(hr)
+            if buckets_m:
+                t = (flicker - self._halo_scale_min) / (self._halo_scale_max - self._halo_scale_min)
+                idx = max(0, min(self._halo_n_buckets - 1, int(t * (self._halo_n_buckets - 1))))
+                rendered = buckets_m[idx]
+                offset = rendered.get_width() // 2
+                self._screen.blit(rendered, (sx - offset, sy - offset), special_flags=pygame.BLEND_RGB_ADD)
 
             if HALO_DEBUG:
                 pygame.draw.line(self._screen, (0, 255, 200), (sx - 8, sy), (sx + 8, sy), 1)
@@ -278,15 +305,68 @@ class TitleScreen:
         self._draw_cursor()
 
     def _draw_menu_items(self) -> None:
-        """Render menu items: engraved stone effect idle, golden on hover."""
+        """Render menu items: pre-rendered engraved idle, halo text on hover."""
+        hovered = self._hovered_item
+
+        # P3: Invalidate blur cache only when hover changes
+        if hovered != self._prev_hovered_item:
+            self._blur_cache.pop(self._prev_hovered_item, None)
+            self._prev_hovered_item = hovered
+
         for i, (key, default) in enumerate(zip(_MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS)):
-            label = self._i18n.get(key, default=default)
             cx = MENU_ITEM_X + MENU_ITEM_OFFSET_X
             cy = MENU_ITEM_Y_START + MENU_ITEM_OFFSET_Y + i * MENU_ITEM_SPACING
-            if self._hovered_item == i:
-                self._blit_halo_text(label, cx, cy, self._menu_item_font, MENU_HOVER_COLOR, MENU_HOVER_HALO)
+            if hovered == i:
+                # P3: Cache the blur surface for this item
+                if i not in self._blur_cache:
+                    label = self._i18n.get(key, default=default)
+                    self._blur_cache[i] = self._render_halo_text(
+                        label, self._menu_item_font, MENU_HOVER_COLOR, MENU_HOVER_HALO
+                    )
+                surf = self._blur_cache[i]
+                w, h = surf.get_size()
+                self._screen.blit(surf, (cx - w // 2, cy - h // 2))
             else:
-                self._blit_engraved(label, cx, cy)
+                # P3: Use pre-rendered idle surface
+                surf = self._menu_label_surfaces[i]
+                w, h = surf.get_size()
+                self._screen.blit(surf, (cx - w // 2, cy - h // 2))
+
+    def _render_halo_text(
+        self,
+        label: str,
+        font: pygame.font.Font,
+        text_color: tuple[int, int, int],
+        halo_color: tuple[int, int, int],
+    ) -> pygame.Surface:
+        """Render text with halo blur and return composited Surface."""
+        base_surf = font.render(label, True, halo_color)
+        w, h = base_surf.get_size()
+        pad = 24
+        padded = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
+        padded.blit(base_surf, (pad, pad))
+        try:
+            blurred = pygame.transform.gaussian_blur(padded, 8)
+        except Exception:
+            blurred = padded
+        out = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
+        out.blit(blurred, (0, 0))
+        text_surf = font.render(label, True, text_color)
+        out.blit(text_surf, (pad, pad))
+        return out
+
+    def _render_engraved(self, label: str) -> pygame.Surface:
+        """Render idle engraved stone effect and return composited Surface."""
+        w_hint, h_hint = self._menu_item_font.size(label)
+        pad = 4
+        out = pygame.Surface((w_hint + pad * 2, h_hint + pad * 2), pygame.SRCALPHA)
+        shadow = self._menu_item_font.render(label, True, MENU_ENGRAVE_SHADOW)
+        highlight = self._menu_item_font.render(label, True, MENU_ENGRAVE_LIGHT)
+        text = self._menu_item_font.render(label, True, MENU_ENGRAVE_TEXT)
+        out.blit(shadow, (pad + 1, pad + 2))
+        out.blit(highlight, (pad - 1, pad - 1))
+        out.blit(text, (pad, pad))
+        return out
 
     def _blit_halo_text(
         self, label: str, cx: int, cy: int,

@@ -305,8 +305,14 @@ class InteractiveEntity(BaseEntity):
             self._update_col_index()
         self.image = self._get_frame(int(self.frame_index))
 
-    def update(self, dt: float):
-        """Update animation and flicker."""
+    def update(self, dt: float, ticks_ms: int | None = None):
+        """Update animation and flicker.
+
+        Args:
+            dt: Delta time in seconds.
+            ticks_ms: Current pygame.time.get_ticks() value (passed from Game to avoid
+                      one get_ticks() call per entity). Falls back to get_ticks() if None.
+        """
         if getattr(self, 'day_night_driven', False):
             self._update_col_index()
             
@@ -328,7 +334,7 @@ class InteractiveEntity(BaseEntity):
                 self.f_alpha += random.uniform(-0.02, 0.02)
                 self.f_scale = 1.0 + 0.03 * math.sin(animation_phase)
             else:
-                ticks = pygame.time.get_ticks()
+                ticks = ticks_ms if ticks_ms is not None else pygame.time.get_ticks()
                 time_sec = ticks / 1000.0
                 main_wave = math.sin(time_sec * 1.5 * math.pi + self.flicker_phase)
                 jitter_wave = 0.3 * math.sin(time_sec * 4.2 * math.pi + self.flicker_phase * 0.5)
@@ -395,25 +401,30 @@ class InteractiveEntity(BaseEntity):
 
     def draw_effects(self, surface: pygame.Surface, cam_offset: pygame.math.Vector2, global_darkness: int):
         """Draw particles (light halo is handled by LightingManager)."""
-        if not self.is_on: return
+        if not self.is_on:
+            return
 
         if self.particles_list:
             base_color = getattr(self, 'halo_color', (250, 250, 250))
             for p in self.particles_list:
                 alpha = (p['life'] / p['max_life']) ** 0.6
                 color = (int(base_color[0] * alpha), int(base_color[1] * alpha), int(base_color[2] * alpha))
-                surface.blit(pygame.Surface((p['size']*2, p['size']*2)), (int(p['x'] + cam_offset.x), int(p['y'] + cam_offset.y)), special_flags=pygame.BLEND_RGB_ADD)
+                # P14: removed useless Surface alloc — draw.circle is sufficient
                 pygame.draw.circle(surface, color, (int(p['x'] + cam_offset.x), int(p['y'] + cam_offset.y)), p['size'])
 
-        # Additive colored glow (works with LightingManager's subtractive mask)
-        if not self.light_mask_cache or self.halo_size <= 0: return
+        if not self.light_mask_cache or self.halo_size <= 0:
+            return
 
-        dark_factor = global_darkness / 180.0 
+        dark_factor = global_darkness / 180.0
         global_factor = max(0.15, dark_factor)
         scale_idx = max(0, min(9, int(round((self.f_scale - 0.97) / 0.0066))))
-        render_surf = self.light_mask_cache[scale_idx].copy()
+        # P9: set_alpha() instead of .copy() — avoids Surface allocation per frame
+        render_surf = self.light_mask_cache[scale_idx]
         m = max(0, min(255, int(round(255 * global_factor * self.f_alpha))))
-        if m < 255: render_surf.fill((m, m, m), special_flags=pygame.BLEND_RGB_MULT)
-        halo_pos = (self.rect.centerx + cam_offset.x - render_surf.get_width() // 2, self.rect.centery + cam_offset.y - render_surf.get_height() // 2)
+        render_surf.set_alpha(m)
+        halo_pos = (
+            self.rect.centerx + cam_offset.x - render_surf.get_width() // 2,
+            self.rect.centery + cam_offset.y - render_surf.get_height() // 2,
+        )
         surface.blit(render_surf, halo_pos, special_flags=pygame.BLEND_RGB_ADD)
 

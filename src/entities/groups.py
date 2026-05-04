@@ -14,6 +14,9 @@ class CameraGroup(pygame.sprite.Group):
         self.half_width = self.display_surface.get_size()[0] // 2
         self.half_height = self.display_surface.get_size()[1] // 2
         self.world_size = (0, 0)
+        self._sorted_cache: List[pygame.sprite.Sprite] = []
+        self._cache_dirty: bool = True
+
 
     def set_world_size(self, width: int, height: int):
         """Set the boundaries of the world in pixels."""
@@ -48,17 +51,40 @@ class CameraGroup(pygame.sprite.Group):
 
         return self.offset
 
+    def mark_dirty(self) -> None:
+        """Invalidate the Y-sort cache — call after any sprite position change."""
+        self._cache_dirty = True
+
+    def add(self, *sprites) -> None:  # type: ignore[override]
+        super().add(*sprites)
+        self._cache_dirty = True
+
+    def remove(self, *sprites) -> None:  # type: ignore[override]
+        super().remove(*sprites)
+        self._cache_dirty = True
+
     def get_sorted_sprites(self) -> List[pygame.sprite.Sprite]:
-        """Return sprites sorted by their Y-coordinate (bottom)."""
-        return sorted(self.sprites(), key=lambda sprite: sprite.rect.bottom)
+        """Return sprites sorted by Y-coordinate (bottom). Result is cached until dirty."""
+        if self._cache_dirty:
+            self._sorted_cache = sorted(self.sprites(), key=lambda s: s.rect.bottom)
+            self._cache_dirty = False
+        return self._sorted_cache
+
 
     def custom_draw(self, surface: pygame.Surface):
         """Draw sprites with already calculated camera offset and Y-sorting."""
+        # Invalidate sort cache if any sprite is currently moving
+        if not self._cache_dirty:
+            for sp in self.sprites():
+                if getattr(sp, "is_moving", False):
+                    self._cache_dirty = True
+                    break
+
         # Get screen rect for culling
         screen_rect = surface.get_rect()
-        
+
         from src.config import Settings
-        
+
         # Sort and draw
         for sprite in self.get_sorted_sprites():
             # Align bottom-right of sprite image to bottom-right of logical hitbox

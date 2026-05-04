@@ -78,27 +78,40 @@ def title_screen(mock_screen, mock_save_manager):
     ts._overlay = mock_surf
     ts._slot_states = {"idle": mock_surf, "hover": mock_surf}
     ts._light_time = 0.0
-    ts._light_halos = {
-        45: pygame.Surface((90, 90)),
-        28: pygame.Surface((56, 56)),
-        18: pygame.Surface((36, 36)),
+    # P1/P2: Pre-scaled halo buckets (10 per radius) — new optimized format
+    _dummy_surf = pygame.Surface((10, 10))
+    _buckets_10 = [_dummy_surf] * 10
+    ts._light_halos_scaled = {
+        45: _buckets_10,
+        28: _buckets_10,
+        18: _buckets_10,
     }
-    ts._mushroom_halos: dict = {}  # empty until calibration
-    
+    ts._mushroom_halos_scaled: dict = {}   # empty until MUSHROOM_LIGHTS populated
+    ts._halo_n_buckets = 10
+    ts._halo_scale_min = 0.80
+    ts._halo_scale_max = 1.05
+
     # Fonts
-    mock_font = _MM()
+    mock_font = MagicMock()
     mock_font.render.return_value = pygame.Surface((10, 10), pygame.SRCALPHA)
+    mock_font.size.return_value = (100, 30)
     ts._font = mock_font
     ts._font_small = mock_font
     ts._title_font = mock_font
     ts._menu_item_font = mock_font
     ts._back_label_font = mock_font
-    
+
+    # P3: Pre-rendered label surfaces and blur cache
+    ts._menu_label_surfaces = [pygame.Surface((100, 30), pygame.SRCALPHA)] * 4
+    ts._blur_cache: dict = {}
+    ts._prev_hovered_item: int = -2
+
     # Icons and Cursors
     ts._pointer_img = mock_surf
     ts._pointer_select_img = mock_surf
     ts._back_btn = mock_surf
     ts._back_btn_hover = mock_surf
+
 
     with patch("pygame.transform.smoothscale", return_value=mock_surf):
         TitleScreen._compute_layout(ts)
