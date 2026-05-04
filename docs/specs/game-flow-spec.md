@@ -146,17 +146,29 @@ class SaveManager:
 - Aucun asset image pour le titre (supprimé : `00-title_logo_main_title.png`, `00-title_logo_separator.png`, `00-title_logo_subtitle.png`, `00-title_logo_moon.png`, `00-title_logo_gear.png`)
 
 **Halos animés sur l'arrière-plan (`BACKGROUND_LIGHTS`) :**
-- **33 positions** calibrées interactivement via `scripts/calibrate_halos.py` sur `01-menu_background.png`
+- **33 positions** calibrées via `scripts/calibrate_halos.py` (mode FIRE)
 - 3 tiers de rayon : `45` (lanternes), `28` (fenêtres), `18` (petites fenêtres)
-- Halos pré-générés à l'init : 1 surface noire par rayon distinct, dégradé quadratique `(255, 120, 20)`, mode `BLEND_RGB_ADD`
-- **Indépendance résolution** : coordonnées définies en espace logique 1280×720 ; facteurs `_light_scale_x / _light_scale_y` calculés depuis `screen.get_size()` et appliqués au rendu pour supporter toute résolution native
-- Scintillement : `sin(t*0.4 + i*1.1) * 0.06 + sin(t*0.9 + i*2.3) * 0.04`, base 0.92 — doux comme une bougie
-- Flag `HALO_DEBUG = False` : mettre à `True` pour afficher croix rouges de calibration
+- Halos pré-générés à l'init : surface noire par rayon distinct, dégradé quadratique `(255, 120, 20)`, `BLEND_RGB_ADD`
+- **Indépendance résolution** : coordonnées en espace logique 1280×720 ; `_light_scale_x / _light_scale_y` depuis `screen.get_size()`
+- Scintillement : `sin(t*0.4 + i*1.1) * 0.06 + sin(t*0.9 + i*2.3) * 0.04`, base 0.92 — bougie
+- Flag `HALO_DEBUG = False` : activer pour croix de calibration (rouge=feu, cyan=champignon)
 
-**Calibration workflow :**
+**Halos champignon bioluminescents (`MUSHROOM_LIGHTS`) :**
+- **25 positions** calibrées via `scripts/calibrate_halos.py` (mode MUSHROOM, touche `M`)
+- Format : `(x, y, radius, (R, G, B))` — couleur par champignon
+- Couleur cyan : `(70, 220, 200)` pour les champignons turquoise ; rouge `(220, 80, 60)` disponible
+- Tiers : r=22 (grands), r=16 (moyens), r=11 (petits)
+- Halos pré-générés à l'init par couple `(color_key, radius)` unique — dict `_mushroom_halos`
+- Respiration lente : `sin(t*0.15 + i*1.3) * 0.10 + sin(t*0.37 + i*2.1) * 0.06`, base 0.84 — bioluminescent
+
+**Calibration workflow (dual-mode) :**
 ```bash
-python3 scripts/calibrate_halos.py   # cliquer sur chaque source (fullscreen|scaled)
-python3 scripts/apply_calibration.py  # injecter dans title_screen_constants.py
+python3 scripts/calibrate_halos.py
+# Mode FIRE (défaut) : cliquer sur lanternes/fenêtres
+# Touche M : switcher vers mode MUSHROOM → cliquer sur champignons
+# Shift+Click = moyen, Ctrl+Click = petit
+# S = sauvegarder les deux listes
+python3 scripts/apply_calibration.py  # injecter BACKGROUND_LIGHTS + MUSHROOM_LIGHTS
 ```
 
 **Rendu des items du menu :**
@@ -182,9 +194,10 @@ class TitleScreen:
 ```
 
 **Constantes (dans `title_screen_constants.py`) :**
-- `BACKGROUND_LIGHTS` : liste de 33 tuples `(x, y, radius)` en espace logique 1280×720
-- `BG_LIGHT_COLOR = (255, 120, 20)` — couleur ambre/feu des halos
-- `HALO_DEBUG = False` — mettre à `True` pour le mode calibration
+- `BACKGROUND_LIGHTS` : 33 tuples `(x, y, radius)` en espace logique 1280×720
+- `BG_LIGHT_COLOR = (255, 120, 20)` — couleur ambre/feu
+- `MUSHROOM_LIGHTS` : 25 tuples `(x, y, radius, (R, G, B))` — couleur cyan `(70, 220, 200)` par défaut
+- `HALO_DEBUG = False` — croix de calibration (rouge=feu, cyan=champignon)
 - `LOGO_MAIN_COLOR = (150, 255, 220)`, `LOGO_MAIN_HALO = (0, 180, 150)`
 - `MENU_HOVER_COLOR = (150, 255, 220)`, `MENU_HOVER_HALO = (0, 180, 150)`
 

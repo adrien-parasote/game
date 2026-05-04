@@ -140,3 +140,42 @@ screen = pygame.display.set_mode((W, H), pygame.FULLSCREEN | pygame.SCALED)
 **Evidence:** `scripts/calibrate_halos.py`. Résolution du décalage après 4 itérations.
 
 ---
+
+### L-UI-008 · 2026-05-04 · U · Perfect
+**Halos multi-types : dict[(color_key, radius)] pour surfaces pré-générées**
+
+Pour rendre des halos de couleurs variées, pré-générer 1 surface par couple unique `(color_tuple, radius)` à l'init. Les lookup au render sont O(1) via double dict `{color_key: {radius: Surface}}`.
+
+```python
+# Init
+for _lx, _ly, r, color in MUSHROOM_LIGHTS:
+    ck = tuple(color)  # hashable key
+    if ck not in self._mushroom_halos:
+        self._mushroom_halos[ck] = {}
+    if r not in self._mushroom_halos[ck]:
+        self._mushroom_halos[ck][r] = _build_halo(ck, r)
+
+# Render
+surf = self._mushroom_halos.get(ck, {}).get(hr)
+if surf is None: continue
+```
+
+**Evidence:** `TitleScreen._mushroom_halos`. Zéro rework. MUSHROOM_LIGHTS vide → pas d'init = backward-compatible.
+
+---
+
+### L-UI-009 · 2026-05-04 · U · Perfect
+**Dual-mode calibration tool : M-key toggle évite de relancer le programme**
+
+Un outil de calibration à mode unique force l'utilisateur à relancer pour calibrer un deuxième type d'entité (ici feu vs champignons). Un toggle `M` en runtime évite cela et conserve les deux listes en mémoire jusqu'au `S` final.
+
+```python
+mode = MODE_FIRE  # default
+# M key → mode = MODE_MUSH if mode == MODE_FIRE else MODE_FIRE
+# Two separate lists: fire_pts, mush_pts
+# S → save both lists in one calibration_result.py
+```
+
+**Evidence:** `scripts/calibrate_halos.py`. Calibration 25 champignons en 1 session sans relancer.
+
+---

@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-04 | Files scanned: 49 | Token estimate: ~510 -->
+<!-- Generated: 2026-05-04 | Files scanned: 49 | Token estimate: ~520 -->
 
 # Game Engine Architecture
 
@@ -33,7 +33,7 @@
 - All UI classes have dedicated `_constants.py` modules for layout/color/size values (`src/ui/*_constants.py`).
 - **InventoryUI** (`src/ui/inventory.py`, 501L): Grid + equipment slots, D&D state machine, tab switching, item info zone.
 - **ChestUI** (`src/ui/chest.py`, 393L) + mixins: `chest_layout.py` (slot geometry), `chest_draw.py` (rendering), `chest_transfer.py` (item movement logic). Chest ↔ Inventory transfer, paged scrolling (18-slot pages), D&D across panels.
-- **TitleScreen** (`src/ui/title_screen.py`, 389L): Main menu state machine (MAIN_MENU/LOAD_MENU/OPTIONS). Titre dynamique rendu avec `_blit_halo_text` (Cormorant Garamond, teinte cyan). **33 halos animés** (3 tiers r=45/28/18) sur les sources lumineuses du background (`BACKGROUND_LIGHTS`, `BLEND_RGB_ADD`, flicker sinusoïdal). **Résolution-indépendant** : coords en espace logique 1280×720, `_light_scale_x/y` calculés depuis `screen.get_size()`. Rendu "engraved in stone" au repos, halo cyan au survol. Returns `GameEvent`.
+- **TitleScreen** (`src/ui/title_screen.py`, 431L): Main menu state machine (MAIN_MENU/LOAD_MENU/OPTIONS). Titre dynamique rendu avec `_blit_halo_text` (Cormorant Garamond, cyan). **33 halos de feu animés** (`BACKGROUND_LIGHTS`, BLEND_RGB_ADD, flicker bougie) + **25 halos champignon bioluminescents** (`MUSHROOM_LIGHTS`, respiration lente `sin*0.15`). Résolution-indépendant : coords en espace logique 1280×720, `_light_scale_x/y` depuis `screen.get_size()`. Rendu "engraved in stone" au repos, halo cyan au survol. Returns `GameEvent`.
 - **PauseScreen** (`src/ui/pause_screen.py`, 275L): In-game pause overlay (MAIN/SAVE_MENU states), save/resume/goto_title, gaussian blur halo hover. `notify_save_result(bool)` for feedback.
 - **SaveMenuOverlay** (`src/ui/save_menu.py`, 206L): Reusable save/load slot overlay. `refresh()` populates `_slots_info` from `SaveManager.list_slots()`. `get_clicked_slot(event)→int|None`. `SaveSlotUI` renders individual slot with background sprite, PNG thumbnail, additive halo.
 - **GameHUD** (`src/ui/hud.py`, 88L): In-game HUD (time, health).

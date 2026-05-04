@@ -65,20 +65,31 @@ HALO_DEBUG = False  # Set to True to re-enable calibration crosshairs
 # Mushroom bioluminescent glows — filled by scripts/apply_calibration.py
 # Format: (x, y, radius, (R, G, B))  — coords in logical 1280×720 space
 MUSHROOM_LIGHTS = [
-    (1087,  513, 40, ( 70, 220, 200)),  # cyan large
-    (1006,   40, 20, ( 70, 220, 200)),  # cyan petit
-    ( 297,  350, 20, ( 70, 220, 200)),  # cyan petit
-    ( 326,  351, 20, ( 70, 220, 200)),  # cyan petit
-    ( 207,  534, 40, ( 70, 220, 200)),  # cyan large
-    ( 208,  247, 40, ( 70, 220, 200)),  # cyan large
-    ( 206,  446, 40, ( 70, 220, 200)),  # cyan large
-    (1104,  242, 28, ( 70, 220, 200)),  # cyan medium
-    (1081,  255, 28, ( 70, 220, 200)),  # cyan medium
-    ( 816,   51, 20, ( 70, 220, 200)),  # cyan petit
-    ( 838,   60, 20, ( 70, 220, 200)),  # cyan petit
-    ( 851,   70, 20, ( 70, 220, 200)),  # cyan petit
-    ( 386,   85, 40, ( 70, 220, 200)),  # cyan large
-    ( 352,  106, 40, ( 70, 220, 200)),  # cyan large
+    ( 196,  520, 22, ( 70, 220, 200)),  # cyan large
+    ( 217,  528, 22, ( 70, 220, 200)),  # cyan large
+    ( 226,  546, 22, ( 70, 220, 200)),  # cyan large
+    ( 207,  232, 22, ( 70, 220, 200)),  # cyan large
+    ( 218,  251, 22, ( 70, 220, 200)),  # cyan large
+    ( 354,  102, 22, ( 70, 220, 200)),  # cyan large
+    ( 379,   84, 22, ( 70, 220, 200)),  # cyan large
+    (1094,  495, 22, ( 70, 220, 200)),  # cyan large
+    (1071,  518, 22, ( 70, 220, 200)),  # cyan large
+    (1097,  516, 22, ( 70, 220, 200)),  # cyan large
+    (1099,  237, 22, ( 70, 220, 200)),  # cyan large
+    (1081,  255, 22, ( 70, 220, 200)),  # cyan large
+    (1005,   37, 22, ( 70, 220, 200)),  # cyan large
+    ( 822,   54, 16, ( 70, 220, 200)),  # cyan medium
+    ( 839,   60, 16, ( 70, 220, 200)),  # cyan medium
+    ( 849,   68, 16, ( 70, 220, 200)),  # cyan medium
+    (1118,  524, 16, ( 70, 220, 200)),  # cyan medium
+    ( 212,  452, 16, ( 70, 220, 200)),  # cyan medium
+    ( 214,  435, 16, ( 70, 220, 200)),  # cyan medium
+    ( 193,  441, 11, ( 70, 220, 200)),  # cyan petit
+    ( 295,  345, 11, ( 70, 220, 200)),  # cyan petit
+    ( 299,  350, 11, ( 70, 220, 200)),  # cyan petit
+    ( 323,  353, 11, ( 70, 220, 200)),  # cyan petit
+    ( 331,  347, 11, ( 70, 220, 200)),  # cyan petit
+    ( 332,  354, 11, ( 70, 220, 200)),  # cyan petit
 ]
 
 # Semi-transparent overlay for load screen
