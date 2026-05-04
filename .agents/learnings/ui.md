@@ -348,3 +348,26 @@ if res:
 ---
 
 ---
+### L-UI-010 · 2026-05-04 · U · Perfect
+**Engraved vs Extruded text effect direction**
+
+The visual perception of "sunken" (engraved) vs "raised" (extruded) text depends entirely on the shadow and highlight offsets relative to the main text.
+
+- **Extruded (Raised)**: Highlights at Top-Left (`-1, -1`), Shadows at Bottom-Right (`+1, +1`). This simulates an object above the surface catching light on its upper edge.
+- **Engraved (Sunken)**: Shadows at Top-Left (`-1, -1`), Highlights at Bottom-Right (`+1, +1`). This simulates a hole where the top-left inner edge is in shadow and the bottom-right inner edge catches light.
+
+✅ **Rule for Engraving:**
+```python
+# Pass 1 — Shadow (top-left -1, -1) : cast by the upper edge of the hole
+shadow = font.render(label, True, SHADOW_COLOR)
+# Pass 2 — Highlight (bottom-right +1, +1) : lit inner far edge
+light  = font.render(label, True, LIGHT_COLOR)
+# Pass 3 — Text (0, 0) : the bottom of the engraving (should be slightly darker than stone)
+text   = font.render(label, True, TEXT_COLOR)
+
+screen.blit(shadow, r.move(-1, -1))
+screen.blit(light,  r.move(1, 1))
+screen.blit(text,   r)
+```
+
+**Evidence:** `PauseScreen._blit_engraved()` fix after user reported "extruded" look. commit `pending`.
