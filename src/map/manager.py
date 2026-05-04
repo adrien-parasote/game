@@ -20,6 +20,7 @@ class MapManager:
         )
         
         self.layout = layout
+        self.name = map_data.get("properties", {}).get("name", "")
         
         first_layer = next(iter(self.layers.values()), [])
         self.height = len(first_layer)

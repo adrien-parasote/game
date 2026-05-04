@@ -36,6 +36,7 @@ def mock_surface():
 def _make_mock_game(tmp_saves_dir):
     """Construit un mock Game minimal avec tous les champs requis par save()."""
     game = MagicMock()
+    game.map_manager.name = "Mocked Map"
     game._current_map_name = "00-spawn.tmj"
     game.player.name = "Hero"
     game.player.pos.x = 320.0

@@ -72,7 +72,7 @@ Stored on `InteractiveEntity` as `entity.loot_items: list[dict | None]` — fixe
   "world_state": {"key": {"is_on": bool}}
 }
 ```
-- **SlotInfo dataclass**: `{slot_id, saved_at, playtime_seconds, map_name, player_name, level}`
+- **SlotInfo dataclass**: `{slot_id, saved_at, playtime_seconds, map_name, map_display_name, player_name, level}`
 - **Operations**: `save(slot_id, game)`, `load(slot_id)→SaveData|None`, `delete(slot_id)`, `list_slots()→list[SlotInfo|None]`, `save_thumbnail(slot_id, surface)`, `load_thumbnail(slot_id)→Surface|None`
 - **Validation**: `_validate_slot_id(n)` — raises `ValueError` if `n` not in `1..3`
 

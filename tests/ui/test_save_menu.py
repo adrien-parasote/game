@@ -14,7 +14,7 @@ def mock_screen():
 def mock_save_manager():
     sm = Mock()
     sm.list_slots.return_value = [
-        SlotInfo(slot_id=1, saved_at="2025-01-01 12:00", playtime_seconds=3600.0, map_name="Test Map", player_name="Hero", level=5),
+        SlotInfo(slot_id=1, saved_at="2025-01-01 12:00", playtime_seconds=3600.0, map_name="Test Map", map_display_name="Mocked Map", player_name="Hero", level=5),
         None,
         None
     ]
@@ -40,7 +40,7 @@ def test_save_slot_ui_draw_filled():
     mock_am.get_font.return_value = pygame.font.SysFont(None, 24)
     slot_ui = SaveSlotUI(mock_am)
     surface = pygame.Surface((800, 120))
-    info = SlotInfo(slot_id=1, saved_at="2025-01-01 12:00", playtime_seconds=3600.0, map_name="Test Map", player_name="Hero", level=5)
+    info = SlotInfo(slot_id=1, saved_at="2025-01-01 12:00", playtime_seconds=3600.0, map_name="Test Map", map_display_name="Mocked Map", player_name="Hero", level=5)
     thumb = pygame.Surface((50, 50))  # Test thumbnail scaling logic
     
     # Draw filled slot

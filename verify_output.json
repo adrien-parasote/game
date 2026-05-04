@@ -1,0 +1,261 @@
+{
+  "project": "/Users/adrien.parasote/Documents/perso/game",
+  "build_system": "Python",
+  "total_duration_s": 2.1,
+  "results": [
+    {
+      "check": "P0_Security",
+      "priority": "P0",
+      "passed": true,
+      "scanned_files": 100,
+      "findings_count": 0,
+      "critical": 0,
+      "high": 0,
+      "findings": []
+    },
+    {
+      "check": "P1_Build",
+      "priority": "P1",
+      "passed": null,
+      "skipped": true,
+      "reason": "No build command for Python"
+    },
+    {
+      "check": "P2_Types",
+      "priority": "P2",
+      "build_system": "Python",
+      "passed": null,
+      "exit_code": -1,
+      "stdout": "",
+      "stderr": "Command not found: pyright",
+      "duration_s": 0,
+      "command": "pyright .",
+      "skipped": true
+    },
+    {
+      "check": "P3_Lint",
+      "priority": "P3",
+      "build_system": "Python",
+      "passed": null,
+      "exit_code": -1,
+      "stdout": "",
+      "stderr": "Command not found: ruff",
+      "duration_s": 0,
+      "command": "ruff check .",
+      "skipped": true
+    },
+    {
+      "check": "P4_Tests",
+      "priority": "P4",
+      "build_system": "Python",
+      "passed": null,
+      "exit_code": -1,
+      "stdout": "",
+      "stderr": "Command not found: pytest",
+      "duration_s": 0,
+      "command": "pytest --tb=short -q",
+      "skipped": true
+    },
+    {
+      "check": "P5_DebugArtifacts",
+      "priority": "P5",
+      "passed": false,
+      "scanned_files": 70,
+      "findings_count": 2,
+      "findings": [
+        {
+          "file": "scripts/calibrate_halos.py",
+          "line": "83",
+          "type": "debug_artifact",
+          "name": "print()",
+          "severity": "medium",
+          "snippet": "print(f\"\u2192 Saved {len(fire)} fire + {len(mush)} mushroom halos to {OUTPUT_PATH}\")"
+        },
+        {
+          "file": "scripts/calibrate_halos.py",
+          "line": "139",
+          "type": "debug_artifact",
+          "name": "print()",
+          "severity": "medium",
+          "snippet": "print(f\"Cannot load background: {e}\")"
+        }
+      ]
+    },
+    {
+      "check": "P6_StubDetection",
+      "priority": "P6",
+      "passed": false,
+      "scanned_files": 70,
+      "findings_count": 6,
+      "findings": [
+        {
+          "file": "src/map/layout.py",
+          "line": "15",
+          "type": "stub",
+          "name": "Raises NotImplementedError (Python)",
+          "severity": "medium",
+          "snippet": "raise NotImplementedError(\"to_world must be implemented by subclass\")"
+        },
+        {
+          "file": "src/engine/game.py",
+          "line": "681",
+          "type": "stub",
+          "name": "Returns empty object",
+          "severity": "medium",
+          "snippet": "return {}"
+        },
+        {
+          "file": "src/engine/game.py",
+          "line": "687",
+          "type": "stub",
+          "name": "Returns empty object",
+          "severity": "medium",
+          "snippet": "return {}"
+        },
+        {
+          "file": "src/engine/inventory_system.py",
+          "line": "36",
+          "type": "stub",
+          "name": "Returns empty object",
+          "severity": "medium",
+          "snippet": "return {}"
+        },
+        {
+          "file": "src/engine/inventory_system.py",
+          "line": "42",
+          "type": "stub",
+          "name": "Returns empty object",
+          "severity": "medium",
+          "snippet": "return {}"
+        },
+        {
+          "file": "src/entities/base.py",
+          "line": "14",
+          "type": "stub",
+          "name": "Stub/placeholder comment (Python)",
+          "severity": "medium",
+          "snippet": "self.image.fill('white') # Placeholder"
+        }
+      ]
+    },
+    {
+      "check": "P7_Architecture",
+      "priority": "P7",
+      "passed": false,
+      "quality_signal": "6469",
+      "rules_pass": false,
+      "gate_pass": false,
+      "violation_count": 6,
+      "violations": [
+        {
+          "type": "architectural_violation",
+          "severity": "error",
+          "message": "min_quality: Quality signal 0.65 below minimum required 0.65"
+        },
+        {
+          "type": "architectural_violation",
+          "severity": "error",
+          "message": "max_cc: 5 function(s) exceed max cyclomatic complexity of 20"
+        },
+        {
+          "type": "architectural_violation",
+          "severity": "error",
+          "message": "max_file_lines: 9 file(s) exceed max length of 500 lines"
+        },
+        {
+          "type": "architectural_violation",
+          "severity": "error",
+          "message": "max_fn_lines: 8 function(s) exceed max length of 80 lines"
+        },
+        {
+          "type": "architectural_violation",
+          "severity": "error",
+          "message": "no_god_files: 1 god file(s) found (fan-out > 15)"
+        },
+        {
+          "type": "regression",
+          "severity": "error",
+          "message": "Structural regression detected. Quality:      6419 -> 6469"
+        }
+      ],
+      "gate_info": "Quality:      6419 -> 6469",
+      "duration_s": 1.0
+    },
+    {
+      "check": "P8_SpecConformance",
+      "priority": "P8",
+      "passed": false,
+      "status": "DIVERGENCE",
+      "divergence_count": 18,
+      "divergences": [
+        "exports: AttributeError",
+        "exports: ChestTransfer",
+        "exports: CoordinateSystem",
+        "exports: E",
+        "exports: Enemy",
+        "exports: FileNotFoundError",
+        "exports: GameEvent.GOTO_TITLE",
+        "exports: GameEvent.LOAD_GAME",
+        "exports: GameEvent.NEW_GAME",
+        "exports: GameEvent.NONE",
+        "routes: /except",
+        "files: assets/fonts/vcr_osd_mono.ttf",
+        "files: assets/images/menu/00-title_logo.png",
+        "files: docs/brain/fcb4f254/performance_audit.md",
+        "files: saves/slot_2.json",
+        "files: saves/slot_3.json",
+        "files: saves/slot_N.json",
+        "files: saves/slot_N_thumb.png"
+      ],
+      "spec_files": [
+        "docs/retrocheck_report_2026-05-04.md",
+        "docs/traceability.md",
+        "docs/research/unit_test_optimization.md",
+        "docs/specs/save-system.md",
+        "docs/specs/game-flow-spec.md",
+        "docs/specs/npc-system.md",
+        "docs/specs/interactive-objects.md",
+        "docs/specs/chest-ui-spec.md",
+        "docs/specs/world-system.md",
+        "docs/specs/lighting-system.md",
+        "docs/specs/engine-core.md",
+        "docs/specs/item_pickup_spec.md",
+        "docs/specs/loot-table-spec.md",
+        "docs/specs/inventory-spec.md",
+        "docs/codemaps/architecture.md",
+        "docs/codemaps/data.md",
+        "docs/codemaps/logic.md",
+        "docs/strategic/MASTER_ROADMAP.md",
+        "docs/strategic/game_vision.md",
+        "docs/strategic/blueprint.md",
+        "docs/ADRs/ADR-003-key-mapping.md",
+        "docs/ADRs/ADR-001-gamestate-architecture.md",
+        "docs/ADRs/ADR-002-save-format.md",
+        "docs/specs/archive/quality-gates.md",
+        "docs/specs/archive/debug-features-spec.md",
+        "docs/specs/archive/test_suite_optimization.md",
+        "docs/specs/archive/performance-optimization-spec.md",
+        "docs/specs/archive/emote_system_update.md",
+        "docs/specs/archive/map_rendering_fix.md",
+        "docs/specs/archive/optimization-spec.md",
+        "docs/specs/archive/localization_font_urbanization.md"
+      ],
+      "duration_s": 0.1
+    },
+    {
+      "check": "P9_TestQuality",
+      "priority": "P9",
+      "passed": true,
+      "scanned_test_files": 30,
+      "no_assertion_count": 0,
+      "findings": []
+    }
+  ],
+  "summary": {
+    "total": 10,
+    "passed": 2,
+    "failed": 4,
+    "skipped": 4
+  },
+  "verdict": "FAIL"
+}

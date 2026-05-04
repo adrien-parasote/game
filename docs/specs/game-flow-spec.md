@@ -53,7 +53,7 @@ SLOT_FILENAME = "slot_{n}.json"   # n = 1, 2, 3
 class SaveManager:
     def list_slots(self) -> list[SlotInfo | None]
         # Retourne liste de 3 éléments. None = slot vide.
-        # SlotInfo = dataclass { slot_id, saved_at, playtime_seconds, location, map_name }
+        # SlotInfo = dataclass { slot_id, saved_at, playtime_seconds, location, map_name, map_display_name }
 
     def save(self, slot_id: int, game: Game) -> None
         # slot_id: 1..3. Sérialise game state → saves/slot_{id}.json

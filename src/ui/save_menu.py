@@ -57,9 +57,7 @@ class SaveSlotUI:
         surface.blit(self._bg, rect)
         
         if info is None:
-            empty_text = self._i18n.get("save_menu.slot_empty", "Emplacement {slot_id} — Vide").format(slot_id=slot_id)
-            text = self._font_title.render(empty_text, True, (140, 120, 100))
-            surface.blit(text, text.get_rect(center=(rect.x + rect.w // 2, rect.centery)))
+            pass
         else:
             # Thumbnail area in 03-save_slot.png starts around x=56, y=59 and is ~82x82 pixels
             thumb_rect = pygame.Rect(rect.x + 56, rect.y + 59, 82, 82)
@@ -72,25 +70,27 @@ class SaveSlotUI:
                 pygame.draw.rect(surface, (20, 20, 20), thumb_rect)
                 pygame.draw.rect(surface, (80, 80, 80), thumb_rect, 1)
 
-            # Texts on the right side
-            text_x = rect.x + 180
-            text_y = rect.y + 30
-            
-            # Title: Map Name
-            title_text = self._font_title.render(info.map_name, True, (220, 200, 150))
-            surface.blit(title_text, (text_x, text_y))
+            # Title: Map Name (Centered in the top ribbon)
+            display_name = info.map_display_name if info.map_display_name else ""
+            if display_name:
+                display_name = self._i18n.get(display_name, display_name)
+            title_text = self._font_title.render(display_name, True, (220, 200, 150))
+            title_rect = title_text.get_rect(center=(rect.x + rect.w // 2, rect.y + 22))
+            surface.blit(title_text, title_rect)
             
             # Details: Level, Time
-            details_y = text_y + 40
+            text_x = rect.x + 180
+            details_y = rect.y + 70
+            
             level_str = self._i18n.get("save_menu.level", "Niveau: {level}").format(level=info.level)
-            level_text = self._font_small.render(level_str, True, (180, 180, 180))
+            level_text = self._font_small.render(level_str, True, (60, 40, 30))
             surface.blit(level_text, (text_x, details_y))
             
             # Formatted playtime (e.g. 02h 15m)
             hours = int(info.playtime_seconds // 3600)
             minutes = int((info.playtime_seconds % 3600) // 60)
             time_str = self._i18n.get("save_menu.time", "Temps: {hours:02d}h {minutes:02d}m").format(hours=hours, minutes=minutes)
-            time_text = self._font_small.render(time_str, True, (180, 180, 180))
+            time_text = self._font_small.render(time_str, True, (60, 40, 30))
             surface.blit(time_text, (text_x, details_y + 30))
 
         # Hover Effect: Draw true additive light glow over the 4 gems

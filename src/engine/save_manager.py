@@ -20,6 +20,7 @@ class SlotInfo:
     saved_at: str
     playtime_seconds: float
     map_name: str
+    map_display_name: str
     player_name: str
     level: int
 
@@ -162,6 +163,7 @@ class SaveManager:
                 saved_at=data.get("saved_at", ""),
                 playtime_seconds=data.get("playtime_seconds", 0),
                 map_name=player_data.get("map_name", ""),
+                map_display_name=player_data.get("map_display_name", ""),
                 player_name=player_data.get("name", "Hero"),
                 level=player_data.get("level", 1)
             )
@@ -179,6 +181,7 @@ class SaveManager:
             "player": {
                 "name": getattr(game.player, "name", "Hero"),
                 "map_name": game._current_map_name,
+                "map_display_name": getattr(game.map_manager, "name", ""),
                 "x": float(game.player.pos.x),
                 "y": float(game.player.pos.y),
                 "facing": game.player.current_state,

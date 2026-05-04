@@ -188,7 +188,8 @@ def test_title_click_slot_in_load_menu_returns_load_event(title_screen, mock_sav
     title_screen._load_menu._slots_info = [
         None,
         SlotInfo(slot_id=2, saved_at="2026-05-02T14:00:00",
-                 playtime_seconds=3600, map_name="00-spawn.tmj", player_name="Hero", level=1),
+                 playtime_seconds=7200.0, map_name="10-village.tmj", map_display_name="Mocked Map",
+                 player_name="Hero", level=10),
         None,
     ]
     title_screen.state = "LOAD_MENU"
