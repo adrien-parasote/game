@@ -109,3 +109,34 @@ grep -r '03-panel_background' src/ tests/
 
 ---
 
+
+### L-UI-007 · 2026-05-04 · U · Major Rework
+**Coordonnées UI en espace logique fixe, pas `screen.get_size()`**
+
+En fullscreen natif sur macOS, `pygame.display.set_mode((1280,720), FULLSCREEN).get_size()` peut retourner la résolution physique (ex: 2560×1600) au lieu de 1280×720. Utiliser `screen.get_size()` pour scaler le background ET placer des halos en coordonnées logiques 1280×720 produit un décalage systématique.
+
+✅ **Calculer des facteurs de scale à l'init et les appliquer au rendu :**
+```python
+self._scale_x = screen.get_size()[0] / LOGICAL_W
+self._scale_y = screen.get_size()[1] / LOGICAL_H
+# Au rendu :
+sx = int(logical_x * self._scale_x)
+sy = int(logical_y * self._scale_y)
+```
+
+**Evidence:** `TitleScreen._light_scale_x/y`. 5+ sessions de calibration infructueuses avant identification.
+
+---
+
+### A-UI-003 · 2026-05-04 · U · Major Rework
+**Outil de calibration : `FULLSCREEN | SCALED`, pas `FULLSCREEN` seul**
+
+`pygame.FULLSCREEN` sans `SCALED` peut letterboxer si la résolution cible est indisponible — les coords souris ne correspondent plus à l'espace 1280×720. `FULLSCREEN | SCALED` étire le canvas et traduit automatiquement les coords souris.
+
+```python
+screen = pygame.display.set_mode((W, H), pygame.FULLSCREEN | pygame.SCALED)
+```
+
+**Evidence:** `scripts/calibrate_halos.py`. Résolution du décalage après 4 itérations.
+
+---

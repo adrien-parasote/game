@@ -22,18 +22,45 @@ SLOT_H_DST = 120
 SLOT_SPACING = 140
 SLOT_PANEL_Y_START = 140   # inside the load panel overlay
 
-# Background animated lights — positions calibrated from image analysis
+# Background animated lights — calibrated interactively via tools/calibrate_halos.py
+# Each entry: (x, y, halo_radius)  — 45=lanterne, 28=fenêtre, 18=petite fenêtre
 BACKGROUND_LIGHTS = [
-    (443, 370),   # lantern left (hanging)
-    (548, 497),   # lantern center-left (hanging)
-    (789, 278),   # lantern top-right (hanging)
-    (872, 455),   # lantern right (hanging)
-    (416, 596),   # city window bottom-left
-    (463, 582),   # city window cluster left
-    (850, 430),   # castle right glow
+    ( 443,  378, 45),  # lanterne
+    ( 546,  500, 45),  # lanterne
+    ( 790,  287, 45),  # lanterne
+    ( 861,  406, 45),  # lanterne
+    ( 458,  570, 28),  # fenêtre
+    ( 752,  554, 28),  # fenêtre
+    ( 831,  559, 28),  # fenêtre
+    ( 787,  583, 28),  # fenêtre
+    ( 390,  514, 28),  # fenêtre
+    ( 230,  406, 18),  # petite fenêtre
+    ( 415,  456, 18),  # petite fenêtre
+    ( 444,  458, 18),  # petite fenêtre
+    ( 455,  511, 18),  # petite fenêtre
+    ( 403,  475, 18),  # petite fenêtre
+    ( 393,  583, 18),  # petite fenêtre
+    ( 427,  576, 18),  # petite fenêtre
+    ( 399,  557, 18),  # petite fenêtre
+    ( 490,  630, 28),  # fenêtre
+    ( 482,  533, 18),  # petite fenêtre
+    ( 504,  575, 18),  # petite fenêtre
+    ( 785,  459, 18),  # petite fenêtre
+    ( 744,  363, 18),  # petite fenêtre
+    ( 770,  363, 18),  # petite fenêtre
+    ( 818,  456, 18),  # petite fenêtre
+    ( 827,  509, 18),  # petite fenêtre
+    ( 871,  484, 18),  # petite fenêtre
+    ( 858,  520, 18),  # petite fenêtre
+    ( 900,  496, 18),  # petite fenêtre
+    (1049,  367, 18),  # petite fenêtre
+    (1052,  408, 18),  # petite fenêtre
+    (1035,  538, 18),  # petite fenêtre
+    ( 856,  460, 18),  # petite fenêtre
+    ( 822,  607, 18),  # petite fenêtre
 ]
 BG_LIGHT_COLOR = (255, 120, 20)
-BG_LIGHT_RADIUS = 45
+HALO_DEBUG = False  # Set to True to re-enable calibration crosshairs
 
 # Semi-transparent overlay for load screen
 OVERLAY_ALPHA = 180

@@ -62,7 +62,10 @@ def title_screen(mock_screen, mock_save_manager):
     ts._slots = [None, None, None]
     ts._hovered_slot = None
     ts._hovered_item = None
+    ts._sw = 1280
     ts._sh = 720
+    ts._light_scale_x = 1.0
+    ts._light_scale_y = 1.0
     ts._logo_surf = mock_surf
     ts._panel_load = mock_surf
     ts._load_menu = MagicMock()
@@ -75,7 +78,11 @@ def title_screen(mock_screen, mock_save_manager):
     ts._overlay = mock_surf
     ts._slot_states = {"idle": mock_surf, "hover": mock_surf}
     ts._light_time = 0.0
-    ts._light_halo = pygame.Surface((90, 90))  # BG_LIGHT_RADIUS*2, no alpha
+    ts._light_halos = {
+        45: pygame.Surface((90, 90)),
+        28: pygame.Surface((56, 56)),
+        18: pygame.Surface((36, 36)),
+    }
     
     # Fonts
     mock_font = _MM()
@@ -305,7 +312,8 @@ def test_title_screen_draw_main_menu(title_screen):
     title_screen.state = "MAIN_MENU"
     title_screen._hovered_item = 0
     with patch("pygame.mouse.get_pos", return_value=(0,0)), \
-         patch("pygame.mouse.get_pressed", return_value=(False, False, False)):
+         patch("pygame.mouse.get_pressed", return_value=(False, False, False)), \
+         patch("pygame.draw.line"), patch("pygame.draw.circle"):
         title_screen.draw()
     assert title_screen._screen.blit.call_count > 0
 
@@ -314,7 +322,8 @@ def test_title_screen_draw_load_menu(title_screen):
     title_screen.state = "LOAD_MENU"
     title_screen._refresh_slots()
     with patch("pygame.mouse.get_pos", return_value=(0,0)), \
-         patch("pygame.mouse.get_pressed", return_value=(False, False, False)):
+         patch("pygame.mouse.get_pressed", return_value=(False, False, False)), \
+         patch("pygame.draw.line"), patch("pygame.draw.circle"):
         title_screen.draw()
     title_screen._load_menu.draw.assert_called_once()
 
@@ -322,7 +331,8 @@ def test_title_screen_draw_options(title_screen):
     title_screen.state = "OPTIONS"
     title_screen._back_hovered = True
     with patch("pygame.mouse.get_pos", return_value=(0,0)), \
-         patch("pygame.mouse.get_pressed", return_value=(False, False, False)):
+         patch("pygame.mouse.get_pressed", return_value=(False, False, False)), \
+         patch("pygame.draw.line"), patch("pygame.draw.circle"):
         title_screen.draw()
     assert title_screen._screen.blit.call_count > 0
 

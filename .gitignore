@@ -30,3 +30,8 @@ logs/
 # Player saves (local only — never commit)
 saves/
 !.agents/learnings/
+
+# Sentrux — generated baseline (re-create with: sentrux gate --save .)
+.sentrux/baseline.json
+scripts/calibration_result.py
+assets/halo.png

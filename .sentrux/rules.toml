@@ -1,0 +1,52 @@
+# Sentrux Architectural Rules — Project Template
+# ================================================
+# Installed by: .agents/tools/sentrux/installer.sh
+# Docs: https://github.com/sentrux/sentrux
+#
+# Layer ordering convention:
+#   lower order  = higher level (app/presentation, closer to user)
+#   higher order = foundational (domain, shared types)
+#   High layers (low order) may depend on foundational layers (high order).
+#   NOT the reverse.
+#
+# Customize this file for your project's architecture.
+# The [constraints] section applies globally; add [[layers]] and
+# [[boundaries]] to match your package layout.
+
+[constraints]
+min_quality = 0.65       # Quality signal floor (6500/10000) — never drop below
+max_cycles = 0           # Zero circular dependencies (ADP)
+max_cc = 20              # Max cyclomatic complexity per function
+max_fn_lines = 80        # Max function length
+max_file_lines = 500     # No god files
+no_god_files = true      # Enforce modular structure
+
+# ── Example Layer Definitions (uncomment and adapt) ──
+# Lower order = higher layer. Higher order = foundational.
+#
+# [[layers]]
+# name = "cmd"
+# paths = ["cmd/**"]
+# order = 0
+#
+# [[layers]]
+# name = "handler"
+# paths = ["internal/handler/**"]
+# order = 1
+#
+# [[layers]]
+# name = "service"
+# paths = ["internal/service/**"]
+# order = 2
+#
+# [[layers]]
+# name = "domain"
+# paths = ["internal/domain/**"]
+# order = 3
+
+# ── Example Boundary Rules (uncomment and adapt) ──
+#
+# [[boundaries]]
+# from = "internal/domain/**"
+# to = "internal/handler/**"
+# reason = "Domain must not depend on handlers (DIP violation)"

@@ -146,10 +146,18 @@ class SaveManager:
 - Aucun asset image pour le titre (supprimé : `00-title_logo_main_title.png`, `00-title_logo_separator.png`, `00-title_logo_subtitle.png`, `00-title_logo_moon.png`, `00-title_logo_gear.png`)
 
 **Halos animés sur l'arrière-plan (`BACKGROUND_LIGHTS`) :**
-- 7 positions calibrées sur les lanternes et fenêtres de `01-menu_background.png`
-- Halo pré-généré : surface noire 90×90, dégradé quadratique couleur `(255, 120, 20)`, radius 45
-- Scintillement : `sin(t*5 + i*1.5) + sin(t*8.2 + i*0.7)`, désynchronisé par index
-- Blending : `pygame.BLEND_RGB_ADD` (idéme technique que `SaveSlotUI`)
+- **33 positions** calibrées interactivement via `scripts/calibrate_halos.py` sur `01-menu_background.png`
+- 3 tiers de rayon : `45` (lanternes), `28` (fenêtres), `18` (petites fenêtres)
+- Halos pré-générés à l'init : 1 surface noire par rayon distinct, dégradé quadratique `(255, 120, 20)`, mode `BLEND_RGB_ADD`
+- **Indépendance résolution** : coordonnées définies en espace logique 1280×720 ; facteurs `_light_scale_x / _light_scale_y` calculés depuis `screen.get_size()` et appliqués au rendu pour supporter toute résolution native
+- Scintillement : `sin(t*0.4 + i*1.1) * 0.06 + sin(t*0.9 + i*2.3) * 0.04`, base 0.92 — doux comme une bougie
+- Flag `HALO_DEBUG = False` : mettre à `True` pour afficher croix rouges de calibration
+
+**Calibration workflow :**
+```bash
+python3 scripts/calibrate_halos.py   # cliquer sur chaque source (fullscreen|scaled)
+python3 scripts/apply_calibration.py  # injecter dans title_screen_constants.py
+```
 
 **Rendu des items du menu :**
 - Au repos : effet "engraved in stone" (texte + ombre + reflet via `_blit_engraved`)
@@ -174,8 +182,9 @@ class TitleScreen:
 ```
 
 **Constantes (dans `title_screen_constants.py`) :**
-- `BACKGROUND_LIGHTS` : liste de 7 coordonnées (x,y) calibrées
-- `BG_LIGHT_COLOR = (255, 120, 20)`, `BG_LIGHT_RADIUS = 45`
+- `BACKGROUND_LIGHTS` : liste de 33 tuples `(x, y, radius)` en espace logique 1280×720
+- `BG_LIGHT_COLOR = (255, 120, 20)` — couleur ambre/feu des halos
+- `HALO_DEBUG = False` — mettre à `True` pour le mode calibration
 - `LOGO_MAIN_COLOR = (150, 255, 220)`, `LOGO_MAIN_HALO = (0, 180, 150)`
 - `MENU_HOVER_COLOR = (150, 255, 220)`, `MENU_HOVER_HALO = (0, 180, 150)`
 
