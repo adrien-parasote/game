@@ -124,6 +124,9 @@ class PauseScreen:
                 return None
             
         if self.state == "SAVE_MENU":
+            if self._save_menu.is_back_clicked(event):
+                self.state = "MAIN"
+                return None
             slot_idx = self._save_menu.get_clicked_slot(event)
             if slot_idx is not None:
                 # Emit save-requested event for the given slot (1-indexed)
@@ -244,8 +247,8 @@ class PauseScreen:
         light  = self._item_font.render(label, True, ENGRAVE_LIGHT)
         text   = self._item_font.render(label, True, ENGRAVE_TEXT)
         r = text.get_rect(center=(cx, cy))
-        self._screen.blit(shadow, r.move(1, 2))
-        self._screen.blit(light,  r.move(-1, -1))
+        self._screen.blit(shadow, r.move(-1, -1))
+        self._screen.blit(light,  r.move(1, 1))
         self._screen.blit(text,   r)
 
     def notify_save_result(self, success: bool) -> None:

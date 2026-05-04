@@ -108,9 +108,9 @@ MENU_ITEM_OFFSET_X = 50      # fine-tune x offset
 MENU_ITEM_OFFSET_Y = 0      # fine-tune y offset
 
 # "Engraved in stone" effect for idle state
-MENU_ENGRAVE_TEXT   = (58, 85, 92)   # text: slightly lighter than stone
-MENU_ENGRAVE_SHADOW = (12, 20, 23)   # shadow (bottom-right +1,+2): engraving depth
-MENU_ENGRAVE_LIGHT  = (75, 105, 112) # highlight (top-left -1,-1): lit edge
+MENU_ENGRAVE_TEXT   = (45, 65, 75)   # text: slightly lighter than stone
+MENU_ENGRAVE_SHADOW = (12, 20, 23)   # shadow (top-left -1,-1): engraving depth
+MENU_ENGRAVE_LIGHT  = (90, 120, 130) # highlight (bottom-right +1,+1): lit edge
 
 _MENU_ITEM_KEYS = ["menu.new_game", "menu.load", "menu.options", "menu.quit"]
 _MENU_ITEM_DEFAULTS = ["Nouvelle Partie", "Charger", "Options", "Quitter"]

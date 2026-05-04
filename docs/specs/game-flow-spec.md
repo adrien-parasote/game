@@ -181,7 +181,7 @@ MAIN_MENU → (clic Charger)       → LOAD_MENU  (overlay panel + slots)
 MAIN_MENU → (clic Options)       → OPTIONS    (overlay panel + stub)
 MAIN_MENU → (clic Quitter)       → QUIT       (pygame.quit + sys.exit)
 LOAD_MENU → (clic slot)          → retourne GameEvent.LOAD_GAME(slot_id)
-LOAD_MENU → (ESC)                → MAIN_MENU
+LOAD_MENU → (ESC ou bouton retour) → MAIN_MENU
 ```
 
 **Interface publique :**
@@ -412,6 +412,7 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | GF-013 | `handle_event()` | Clic sur slot 2 en `LOAD_MENU` | `GameEvent.LOAD_GAME` avec `slot_id=2` |
 | GF-033 | `draw()` en `MAIN_MENU` | `_light_time > 0`, `BACKGROUND_LIGHTS` non vide | Aucune exception, halos blittés via `BLEND_RGB_ADD` |
 | GF-034 | `__init__()` scale factors | `screen.get_size()` retourne `(2560, 1440)` | `_light_scale_x == 2.0`, `_light_scale_y == 2.0` |
+| GF-035 | `handle_event()` | Clic sur bouton retour en `LOAD_MENU` | Retour vers `MAIN_MENU` |
 
 ### Unit Tests — `GameStateManager`
 
@@ -515,3 +516,4 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | GF-032 | `test_handle_events_filtering` | `../../tests/engine/test_game_state_manager.py:L133` |
 | GF-033 | `test_title_screen_draw_main_menu` | `../../tests/ui/test_title_screen.py` |
 | GF-034 | `test_title_screen_light_scale_factors` | `../../tests/ui/test_title_screen.py` |
+| GF-035 | `test_title_screen_options_state_transitions` | `../../tests/ui/test_title_screen.py` |

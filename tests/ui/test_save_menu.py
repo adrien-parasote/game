@@ -89,3 +89,23 @@ def test_save_menu_overlay_update_and_draw(mock_screen, mock_save_manager):
             
         menu.draw()
         mock_screen.blit.assert_called()
+
+@pytest.mark.tc("TC-011")
+def test_save_menu_overlay_back_clicked(mock_screen, mock_save_manager):
+    pygame.font.init()
+    with patch("src.ui.save_menu.SaveSlotUI") as mock_slot_ui:
+        mock_slot_ui.return_value.get_size.return_value = (800, 120)
+        menu = SaveMenuOverlay(mock_screen, mock_save_manager, "Test Title")
+        menu.back_btn_rect = pygame.Rect(10, 10, 100, 50)
+        
+        # Click outside
+        event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=(0, 0))
+        assert not menu.is_back_clicked(event)
+        
+        # Click inside
+        event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=(50, 30))
+        assert menu.is_back_clicked(event)
+        
+        # Other button click
+        event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=3, pos=(50, 30))
+        assert not menu.is_back_clicked(event)

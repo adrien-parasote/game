@@ -70,6 +70,7 @@ def title_screen(mock_screen, mock_save_manager):
     ts._panel_load = mock_surf
     ts._load_menu = MagicMock()
     ts._load_menu.get_clicked_slot.return_value = None
+    ts._load_menu.is_back_clicked.return_value = False
 
     from unittest.mock import MagicMock as _MM
     ts._i18n = _MM()
@@ -430,3 +431,14 @@ def test_title_screen_handle_options_ignore(title_screen):
     event = _make_mouse_event((0, 0))
     title_screen.handle_event(event)
     assert title_screen.state == "OPTIONS"
+
+@pytest.mark.tc("GF-035")
+def test_title_screen_load_menu_back_button(title_screen):
+    """GF-035 : clic bouton retour en LOAD_MENU → retour MAIN_MENU."""
+    title_screen.state = "LOAD_MENU"
+    title_screen._load_menu.is_back_clicked.return_value = True
+    
+    event = _make_mouse_event((0, 0)) # pos handled by mock
+    title_screen.handle_event(event)
+    
+    assert title_screen.state == "MAIN_MENU"

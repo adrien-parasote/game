@@ -36,6 +36,16 @@ Le slot utilise le background `assets/images/menu/03-save_slot.png` (427x200).
   - Bas-Gauche : `(26, 170)`
   - Bas-Droite : `(414, 171)`
 
+### 1.3 Bouton Retour (Back Button)
+
+Le `SaveMenuOverlay` inclut un bouton "Retour" positionné en bas à gauche du panneau.
+- **Icone** : `assets/images/menu/01-menu_back_cursor.png` (28x25).
+- **Label** : Texte "Retour" (I18n: `menu.back`) rendu avec la police `Cormorant Garamond`.
+- **Rendu** :
+  - **Repos** : Effet gravé ("engraved").
+  - **Survol** : Halo cyan intense (`(150, 255, 220)` / glow `(0, 180, 150)`).
+- **Interaction** : Cliquer sur ce bouton permet de fermer l'overlay et de retourner à l'état précédent.
+
 ## Assumptions
 
 | Assumption | Risk Level | Implication | Validation |
@@ -70,6 +80,7 @@ Le slot utilise le background `assets/images/menu/03-save_slot.png` (427x200).
 | TC-008 | SaveMenuOverlay | `__init__` + `refresh()` | `_slots_info[0].map_name` correct | SlotInfo None pour slots vides |
 | TC-009 | SaveMenuOverlay | `get_clicked_slot(event)` | Retourne l'index du slot cliqué | Clic hors des rects → None |
 | TC-010 | SaveMenuOverlay | `update(dt)` + `draw()` | `_hovered_slot` mis à jour, `screen.blit` appelé | — |
+| TC-011 | SaveMenuOverlay | `is_back_clicked(event)` | Retourne True si clic sur bouton retour | Clic hors bouton retour → False |
 
 ### Integration Tests Required
 
@@ -107,6 +118,7 @@ Le slot utilise le background `assets/images/menu/03-save_slot.png` (427x200).
 | TC-008 | `test_save_menu_overlay_init` | `../../tests/ui/test_save_menu.py:L48` |
 | TC-009 | `test_save_menu_overlay_get_clicked_slot` | `../../tests/ui/test_save_menu.py:L57` |
 | TC-010 | `test_save_menu_overlay_update_and_draw` | `../../tests/ui/test_save_menu.py:L73` |
+| TC-011 | `test_save_menu_overlay_back_clicked` | `../../tests/ui/test_save_menu.py` |
 | IT-001 | `test_save_creates_file` | `../../tests/engine/test_save_manager.py` |
 | IT-002 | `test_pause_screen_handle_event_click_sauvegarder` | `../../tests/ui/test_pause_screen.py` |
 | IT-003 | `test_title_screen_update` | `../../tests/ui/test_title_screen.py` |

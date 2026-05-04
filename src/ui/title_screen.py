@@ -363,8 +363,8 @@ class TitleScreen:
         shadow = self._menu_item_font.render(label, True, MENU_ENGRAVE_SHADOW)
         highlight = self._menu_item_font.render(label, True, MENU_ENGRAVE_LIGHT)
         text = self._menu_item_font.render(label, True, MENU_ENGRAVE_TEXT)
-        out.blit(shadow, (pad + 1, pad + 2))
-        out.blit(highlight, (pad - 1, pad - 1))
+        out.blit(shadow, (pad - 1, pad - 1))
+        out.blit(highlight, (pad + 1, pad + 1))
         out.blit(text, (pad, pad))
         return out
 
@@ -419,8 +419,8 @@ class TitleScreen:
         light  = f.render(label, True, MENU_ENGRAVE_LIGHT)
         text   = f.render(label, True, MENU_ENGRAVE_TEXT)
         r = text.get_rect(center=(cx, cy))
-        self._screen.blit(shadow, r.move(1, 2))
-        self._screen.blit(light,  r.move(-1, -1))
+        self._screen.blit(shadow, r.move(-1, -1))
+        self._screen.blit(light,  r.move(1, 1))
         self._screen.blit(text,   r)
 
     # ── Load overlay ───────────────────────────────────────────────────────────
@@ -500,6 +500,10 @@ class TitleScreen:
 
     def _handle_load_menu(self, event: pygame.Event) -> GameEvent | None:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            self.state = "MAIN_MENU"
+            return None
+
+        if self._load_menu.is_back_clicked(event):
             self.state = "MAIN_MENU"
             return None
 
