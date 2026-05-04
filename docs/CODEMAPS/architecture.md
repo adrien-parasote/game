@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-04 | Files scanned: 49 | Token estimate: ~480 -->
+<!-- Generated: 2026-05-04 | Files scanned: 49 | Token estimate: ~510 -->
 
 # Game Engine Architecture
 
@@ -33,7 +33,7 @@
 - All UI classes have dedicated `_constants.py` modules for layout/color/size values (`src/ui/*_constants.py`).
 - **InventoryUI** (`src/ui/inventory.py`, 501L): Grid + equipment slots, D&D state machine, tab switching, item info zone.
 - **ChestUI** (`src/ui/chest.py`, 393L) + mixins: `chest_layout.py` (slot geometry), `chest_draw.py` (rendering), `chest_transfer.py` (item movement logic). Chest ↔ Inventory transfer, paged scrolling (18-slot pages), D&D across panels.
-- **TitleScreen** (`src/ui/title_screen.py`, ~358L): Main menu state machine (MAIN_MENU/LOAD_MENU/OPTIONS). Titre dynamique rendu avec `_blit_halo_text` (police Cormorant Garamond, teinte cyan). Halos vacillants animés sur les sources lumineuses de l'arrière-plan (`BACKGROUND_LIGHTS`, `BLEND_RGB_ADD`, scintillement sinusoïdal désynchronisé). Rendu des items du menu avec effet "engraved in stone" au repos + halo cyan au survol. Returns `GameEvent`.
+- **TitleScreen** (`src/ui/title_screen.py`, 389L): Main menu state machine (MAIN_MENU/LOAD_MENU/OPTIONS). Titre dynamique rendu avec `_blit_halo_text` (Cormorant Garamond, teinte cyan). **33 halos animés** (3 tiers r=45/28/18) sur les sources lumineuses du background (`BACKGROUND_LIGHTS`, `BLEND_RGB_ADD`, flicker sinusoïdal). **Résolution-indépendant** : coords en espace logique 1280×720, `_light_scale_x/y` calculés depuis `screen.get_size()`. Rendu "engraved in stone" au repos, halo cyan au survol. Returns `GameEvent`.
 - **PauseScreen** (`src/ui/pause_screen.py`, 275L): In-game pause overlay (MAIN/SAVE_MENU states), save/resume/goto_title, gaussian blur halo hover. `notify_save_result(bool)` for feedback.
 - **SaveMenuOverlay** (`src/ui/save_menu.py`, 206L): Reusable save/load slot overlay. `refresh()` populates `_slots_info` from `SaveManager.list_slots()`. `get_clicked_slot(event)→int|None`. `SaveSlotUI` renders individual slot with background sprite, PNG thumbnail, additive halo.
 - **GameHUD** (`src/ui/hud.py`, 88L): In-game HUD (time, health).
@@ -61,12 +61,16 @@
 ```
 docs/
   specs/            18 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
-  traceability.md   Auto-generated spec↔test coverage matrix (scripts/tc_report.py) — 142/142 (100%)
+  traceability.md   Auto-generated spec↔test coverage matrix (scripts/tc_report.py) — 143/143 (100%)
   CODEMAPS/         Architecture maps (this directory)
   strategic/        MASTER_ROADMAP.md, game_vision.md, blueprint.md
   ADRs/             3 Architecture Decision Records
 scripts/
-  tc_report.py      Spec↔Test traceability report (CLI + --markdown export)
+  tc_report.py          Spec↔Test traceability report (CLI + --markdown export)
+  calibrate_halos.py    Outil interactif calibration halos (FULLSCREEN|SCALED) → calibration_result.py
+  apply_calibration.py  Inject calibration_result.py → title_screen_constants.py
+  get_version.py        Version bumping utility
+  profile_game.py       Performance profiling
 .agents/
   learnings/        5 domain learning files (workflow_optimization, game_engine, audio_engine, ui, testing)
   rules/            coding-standards.md + language rules
@@ -75,6 +79,6 @@ scripts/
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
-- **Test Suite**: Pytest 9.0.3, **513 tests**, **91% coverage** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (33 files across 5 domains)
-- **Traceability**: `@pytest.mark.tc("TC-ID")` markers — 142 TC IDs across 15 specs, 100% spec coverage. Registered in `pyproject.toml`.
+- **Test Suite**: Pytest 9.0.3, **513 tests**, **91% coverage** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (34 files across 5 domains)
+- **Traceability**: `@pytest.mark.tc("TC-ID")` markers — 143 TC IDs across 15 specs, 100% spec coverage. Registered in `pyproject.toml`.
 - **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction, ChestUI mixin decomposition, GameEvent dataclass factory pattern

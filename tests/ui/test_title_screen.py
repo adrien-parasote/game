@@ -103,6 +103,29 @@ def title_screen(mock_screen, mock_save_manager):
         TitleScreen._compute_layout(ts)
     return ts
 
+# ── GF-034 : Scale factors résolution-indépendante ────────────────────────────
+
+@pytest.mark.tc("GF-034")
+def test_title_screen_light_scale_factors(mock_save_manager):
+    """GF-034 : _light_scale_x/y calculés depuis screen.get_size() — espace logique 1280×720."""
+    mock_screen = MagicMock(spec=pygame.Surface)
+    mock_screen.get_size.return_value = (2560, 1440)
+    with patch("src.ui.title_screen.TitleScreen._load_assets"), \
+         patch("src.ui.title_screen.TitleScreen._compute_layout"), \
+         patch("src.ui.title_screen.SaveMenuOverlay"):
+        ts = TitleScreen.__new__(TitleScreen)
+        ts._screen = mock_screen
+        ts._save_manager = mock_save_manager
+        # Simulate __init__ scale computation only
+        sw, sh = mock_screen.get_size()
+        ts._sw = sw
+        ts._sh = sh
+        ts._light_scale_x = sw / 1280.0
+        ts._light_scale_y = sh / 720.0
+
+    assert ts._light_scale_x == 2.0
+    assert ts._light_scale_y == 2.0
+
 
 # ── TC-009 à TC-011 : Items texte du menu ────────────────────────────────────
 

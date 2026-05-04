@@ -398,6 +398,7 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | GF-012 | `handle_event()` | KEYDOWN K_ESCAPE depuis `LOAD_MENU` | Retour vers `MAIN_MENU` |
 | GF-013 | `handle_event()` | Clic sur slot 2 en `LOAD_MENU` | `GameEvent.LOAD_GAME` avec `slot_id=2` |
 | GF-033 | `draw()` en `MAIN_MENU` | `_light_time > 0`, `BACKGROUND_LIGHTS` non vide | Aucune exception, halos blittés via `BLEND_RGB_ADD` |
+| GF-034 | `__init__()` scale factors | `screen.get_size()` retourne `(2560, 1440)` | `_light_scale_x == 2.0`, `_light_scale_y == 2.0` |
 
 ### Unit Tests — `GameStateManager`
 
@@ -500,3 +501,4 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | GF-031 | `test_transition_to_playing_no_save_data` | `../../tests/engine/test_game_state_manager.py:L127` |
 | GF-032 | `test_handle_events_filtering` | `../../tests/engine/test_game_state_manager.py:L133` |
 | GF-033 | `test_title_screen_draw_main_menu` | `../../tests/ui/test_title_screen.py` |
+| GF-034 | `test_title_screen_light_scale_factors` | `../../tests/ui/test_title_screen.py` |
