@@ -1,9 +1,9 @@
-import sys
-import os
 import logging
+import os
+import sys
 
 # Add src to path if needed for local execution
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.engine.game_state_manager import GameStateManager
 

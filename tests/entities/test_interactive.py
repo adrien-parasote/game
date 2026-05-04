@@ -1,14 +1,17 @@
 """Coverage tests for InteractiveEntity (entities layer)."""
-import pytest
-import pygame
-from unittest.mock import MagicMock, patch
+
 import os
+from unittest.mock import MagicMock, patch
+
+import pygame
+import pytest
 
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.display.init()
 pygame.font.init()
 
 from src.entities.interactive import InteractiveEntity
+
 
 def _make_interactive(
     sub_type="lever",
@@ -67,12 +70,12 @@ class TestInteractiveCoverage:
 
     def test_is_on_defaults_to_true_for_light_source(self):
         """L96: light source defaults to is_on=True when is_on arg is None."""
-        entity, _ = _make_interactive(halo_size=50, is_on=None)
+        entity, _ = _make_interactive(halo_size=50, is_on=None)  # type: ignore
         assert entity.is_on is True
 
     def test_is_on_defaults_to_true_for_animated(self):
         """L96: animated entity defaults to is_on=True when is_on arg is None."""
-        entity, _ = _make_interactive(is_animated=True, is_on=None)
+        entity, _ = _make_interactive(is_animated=True, is_on=None)  # type: ignore
         assert entity.is_on is True
 
     def test_light_source_random_frame_offset(self):
@@ -189,7 +192,7 @@ class TestInteractiveDayNight:
         """TC-03: day_night_driven=False, _time_system injecté -> ignore brightness, suit _static_is_on"""
         entity, _ = _make_interactive(halo_size=50, day_night_driven=False, is_on=True)
         time_sys = MagicMock()
-        time_sys.brightness = 0.8 # jour
+        time_sys.brightness = 0.8  # jour
         entity._time_system = time_sys
         assert entity.is_on is True
 
@@ -197,7 +200,7 @@ class TestInteractiveDayNight:
         """TC-04: interact() en mode auto de nuit -> light_control == 'forced_off'"""
         entity, _ = _make_interactive(halo_size=50, day_night_driven=True)
         time_sys = MagicMock()
-        time_sys.brightness = 0.3 # nuit -> allumé auto
+        time_sys.brightness = 0.3  # nuit -> allumé auto
         entity._time_system = time_sys
         entity.interact(MagicMock())
         assert entity.light_control == "forced_off"
@@ -206,7 +209,7 @@ class TestInteractiveDayNight:
         """TC-05: interact() en mode auto de jour -> light_control == 'forced_on'"""
         entity, _ = _make_interactive(halo_size=50, day_night_driven=True)
         time_sys = MagicMock()
-        time_sys.brightness = 0.8 # jour -> éteint auto
+        time_sys.brightness = 0.8  # jour -> éteint auto
         entity._time_system = time_sys
         entity.interact(MagicMock())
         assert entity.light_control == "forced_on"
@@ -221,14 +224,15 @@ class TestInteractiveDayNight:
     def test_tc07_restore_state_preserves_control(self):
         """TC-07: restore_state({'light_control': 'forced_on'}) -> light_control == 'forced_on'"""
         entity, _ = _make_interactive(halo_size=50, day_night_driven=True)
-        entity.restore_state({'light_control': 'forced_on'})
+        entity.restore_state({"light_control": "forced_on"})
         assert entity.light_control == "forced_on"
 
     def test_tc08_fallback_without_timesystem(self):
         """TC-08: _time_system=None, day_night_driven=True -> fallback _static_is_on"""
         entity, _ = _make_interactive(halo_size=50, day_night_driven=True, is_on=True)
-        assert getattr(entity, '_time_system', None) is None
+        assert getattr(entity, "_time_system", None) is None
         assert entity.is_on is True
+
 
 class TestInteractiveAmbientAudio:
     def test_ambient_proposes_distance_when_on(self):
@@ -265,6 +269,7 @@ class TestInteractiveAmbientAudio:
 #                      281, 283, 285, 290, 293-296, 310
 # ---------------------------------------------------------------------------
 
+
 def _make_game_mock():
     game = MagicMock()
     game.player.pos = pygame.math.Vector2(100, 100)
@@ -274,5 +279,3 @@ def _make_game_mock():
     game.pickups = []
     game.npcs = []
     return game
-
-

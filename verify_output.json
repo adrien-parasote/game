@@ -1,13 +1,13 @@
 {
   "project": "/Users/adrien.parasote/Documents/perso/game",
   "build_system": "Python",
-  "total_duration_s": 2.1,
+  "total_duration_s": 7.5,
   "results": [
     {
       "check": "P0_Security",
       "priority": "P0",
       "passed": true,
-      "scanned_files": 100,
+      "scanned_files": 102,
       "findings_count": 0,
       "critical": 0,
       "high": 0,
@@ -24,48 +24,61 @@
       "check": "P2_Types",
       "priority": "P2",
       "build_system": "Python",
-      "passed": null,
-      "exit_code": -1,
-      "stdout": "",
-      "stderr": "Command not found: pyright",
-      "duration_s": 0,
-      "command": "pyright .",
-      "skipped": true
+      "passed": false,
+      "exit_code": 1,
+      "stdout": "MockFont\u00a0\u00bb n\u2019est pas assignable \u00e0 \u00ab\u00a0Font\u00a0\u00bb (reportArgumentType)\n/Users/adrien.parasote/Documents/perso/game/tests/ui/test_title_screen.py\n  /Users/adrien.parasote/Documents/perso/game/tests/ui/test_title_screen.py:66:8 - error: D\u00e9sol\u00e9... Nous ne pouvons pas affecter l\u2019attribut \u00ab\u00a0_slots\u00a0\u00bb pour la classe \u00ab\u00a0TitleScreen\u00a0\u00bb\n  \u00a0\u00a0L\u2019attribut \u00ab\u00a0_slots\u00a0\u00bb est inconnu (reportAttributeAccessIssue)\n  /Users/adrien.parasote/Documents/perso/game/tests/ui/test_title_screen.py:67:8 - error: D\u00e9sol\u00e9... Nous ne pouvons pas affecter l\u2019attribut \u00ab\u00a0_hovered_slot\u00a0\u00bb pour la classe \u00ab\u00a0TitleScreen\u00a0\u00bb\n  \u00a0\u00a0L\u2019attribut \u00ab\u00a0_hovered_slot\u00a0\u00bb est inconnu (reportAttributeAccessIssue)\n  /Users/adrien.parasote/Documents/perso/game/tests/ui/test_title_screen.py:73:8 - error: D\u00e9sol\u00e9... Nous ne pouvons pas affecter l\u2019attribut \u00ab\u00a0_logo_surf\u00a0\u00bb pour la classe \u00ab\u00a0TitleScreen\u00a0\u00bb\n  \u00a0\u00a0L\u2019attribut \u00ab\u00a0_logo_surf\u00a0\u00bb est inconnu (reportAttributeAccessIssue)\n  /Users/adrien.parasote/Documents/perso/game/tests/ui/test_title_screen.py:74:8 - error: D\u00e9sol\u00e9... Nous ne pouvons pas affecter l\u2019attribut \u00ab\u00a0_panel_load\u00a0\u00bb pour la classe \u00ab\u00a0TitleScreen\u00a0\u00bb\n  \u00a0\u00a0L\u2019attribut \u00ab\u00a0_panel_load\u00a0\u00bb est inconnu (reportAttributeAccessIssue)\n  /Users/adrien.parasote/Documents/perso/game/tests/ui/test_title_screen.py:85:8 - error: D\u00e9sol\u00e9... Nous ne pouvons pas affecter l\u2019attribut \u00ab\u00a0_slot_states\u00a0\u00bb pour la classe \u00ab\u00a0TitleScreen\u00a0\u00bb\n  \u00a0\u00a0L\u2019attribut \u00ab\u00a0_slot_states\u00a0\u00bb est inconnu (reportAttributeAccessIssue)\n  /Users/adrien.parasote/Documents/perso/game/tests/ui/test_title_screen.py:95:32 - error: Annotation de type non prise en charge pour cette instruction (reportInvalidTypeForm)\n  /Users/adrien.parasote/Documents/perso/game/tests/ui/test_title_screen.py:112:21 - error: Annotation de type non prise en charge pour cette instruction (reportInvalidTypeForm)\n  /Users/adrien.parasote/Documents/perso/game/tests/ui/test_title_screen.py:113:28 - error: Annotation de type non prise en charge pour cette instruction (reportInvalidTypeForm)\n136 errors, 0 warnings, 0 informations \n",
+      "stderr": "",
+      "duration_s": 1.6,
+      "command": "pyright ."
     },
     {
       "check": "P3_Lint",
       "priority": "P3",
       "build_system": "Python",
-      "passed": null,
-      "exit_code": -1,
-      "stdout": "",
-      "stderr": "Command not found: ruff",
-      "duration_s": 0,
-      "command": "ruff check .",
-      "skipped": true
+      "passed": false,
+      "exit_code": 1,
+      "stdout": "\u001b[1mscripts/check_lengths.py\u001b[0m\u001b[36m:\u001b[0m1\u001b[36m:\u001b[0m1\u001b[36m:\u001b[0m \u001b[1;31mI001\u001b[0m [\u001b[36m*\u001b[0m] Import block is un-sorted or un-formatted\n  \u001b[1m\u001b[94m|\u001b[0m\n\u001b[1m\u001b[94m1 |\u001b[0m \u001b[1m\u001b[91m/\u001b[0m import ast\n\u001b[1m\u001b[94m2 |\u001b[0m \u001b[1m\u001b[91m|\u001b[0m import os\n  \u001b[1m\u001b[94m|\u001b[0m \u001b[1m\u001b[91m|_________^\u001b[0m \u001b[1m\u001b[91mI001\u001b[0m\n\u001b[1m\u001b[94m3 |\u001b[0m\n\u001b[1m\u001b[94m4 |\u001b[0m   def check_functions(directory):\n  \u001b[1m\u001b[94m|\u001b[0m\n  \u001b[1m\u001b[94m= \u001b[0m\u001b[1m\u001b[96mhelp\u001b[0m: Organize imports\n\n\u001b[1mscripts/check_lengths.py\u001b[0m\u001b[36m:\u001b[0m13\u001b[36m:\u001b[0m32\u001b[36m:\u001b[0m \u001b[1;31mUP038\u001b[0m Use `X | Y` in `isinstance` call instead of `(X, Y)`\n   \u001b[1m\u001b[94m|\u001b[0m\n\u001b[1m\u001b[94m11 |\u001b[0m                         tree = ast.parse(fd.read())\n\u001b[1m\u001b[94m12 |\u001b[0m                         for node in ast.walk(tree):\n\u001b[1m\u001b[94m13 |\u001b[0m                             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):\n   \u001b[1m\u001b[94m|\u001b[0m                                \u001b[1m\u001b[91m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\u001b[0m \u001b[1m\u001b[91mUP038\u001b[0m\n\u001b[1m\u001b[94m14 |\u001b[0m                                 lines = node.end_lineno - node.lineno\n\u001b[1m\u001b[94m15 |\u001b[0m                                 if lines > 60: # Threshold 60 to be safe\n   \u001b[1m\u001b[94m|\u001b[0m\n   \u001b[1m\u001b[94m= \u001b[0m\u001b[1m\u001b[96mhelp\u001b[0m: Convert to `X | Y`\n\nFound 2 errors.\n[\u001b[36m*\u001b[0m] 1 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).\n",
+      "stderr": "",
+      "duration_s": 0.0,
+      "command": "ruff check ."
     },
     {
       "check": "P4_Tests",
       "priority": "P4",
       "build_system": "Python",
-      "passed": null,
-      "exit_code": -1,
-      "stdout": "",
-      "stderr": "Command not found: pytest",
-      "duration_s": 0,
-      "command": "pytest --tb=short -q",
-      "skipped": true
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "........................................................................ [ 13%]\n........................................................................ [ 26%]\n........................................................................ [ 39%]\n........................................................................ [ 52%]\n........................................................................ [ 66%]\n........................................................................ [ 79%]\n........................................................................ [ 92%]\n.........................................                                [100%]\n545 passed in 3.45s\n",
+      "stderr": "",
+      "duration_s": 3.8,
+      "command": "pytest --tb=short -q"
     },
     {
       "check": "P5_DebugArtifacts",
       "priority": "P5",
       "passed": false,
-      "scanned_files": 70,
-      "findings_count": 2,
+      "scanned_files": 72,
+      "findings_count": 4,
       "findings": [
         {
+          "file": "scripts/check_lengths.py",
+          "line": "16",
+          "type": "debug_artifact",
+          "name": "print()",
+          "severity": "medium",
+          "snippet": "print(f\"{path}:{node.lineno} {node.name} ({lines} lines)\")"
+        },
+        {
+          "file": "scripts/check_lengths.py",
+          "line": "18",
+          "type": "debug_artifact",
+          "name": "print()",
+          "severity": "medium",
+          "snippet": "print(f\"Error parsing {path}: {e}\")"
+        },
+        {
           "file": "scripts/calibrate_halos.py",
-          "line": "83",
+          "line": "84",
           "type": "debug_artifact",
           "name": "print()",
           "severity": "medium",
@@ -73,7 +86,7 @@
         },
         {
           "file": "scripts/calibrate_halos.py",
-          "line": "139",
+          "line": "138",
           "type": "debug_artifact",
           "name": "print()",
           "severity": "medium",
@@ -85,12 +98,12 @@
       "check": "P6_StubDetection",
       "priority": "P6",
       "passed": false,
-      "scanned_files": 70,
+      "scanned_files": 72,
       "findings_count": 6,
       "findings": [
         {
           "file": "src/map/layout.py",
-          "line": "15",
+          "line": "16",
           "type": "stub",
           "name": "Raises NotImplementedError (Python)",
           "severity": "medium",
@@ -98,7 +111,7 @@
         },
         {
           "file": "src/engine/game.py",
-          "line": "681",
+          "line": "696",
           "type": "stub",
           "name": "Returns empty object",
           "severity": "medium",
@@ -106,7 +119,7 @@
         },
         {
           "file": "src/engine/game.py",
-          "line": "687",
+          "line": "702",
           "type": "stub",
           "name": "Returns empty object",
           "severity": "medium",
@@ -114,7 +127,7 @@
         },
         {
           "file": "src/engine/inventory_system.py",
-          "line": "36",
+          "line": "45",
           "type": "stub",
           "name": "Returns empty object",
           "severity": "medium",
@@ -122,7 +135,7 @@
         },
         {
           "file": "src/engine/inventory_system.py",
-          "line": "42",
+          "line": "51",
           "type": "stub",
           "name": "Returns empty object",
           "severity": "medium",
@@ -130,11 +143,11 @@
         },
         {
           "file": "src/entities/base.py",
-          "line": "14",
+          "line": "24",
           "type": "stub",
           "name": "Stub/placeholder comment (Python)",
           "severity": "medium",
-          "snippet": "self.image.fill('white') # Placeholder"
+          "snippet": "self.image.fill(\"white\")  # Placeholder"
         }
       ]
     },
@@ -142,30 +155,35 @@
       "check": "P7_Architecture",
       "priority": "P7",
       "passed": false,
-      "quality_signal": "6469",
+      "quality_signal": "5626",
       "rules_pass": false,
       "gate_pass": false,
-      "violation_count": 6,
+      "violation_count": 7,
       "violations": [
         {
           "type": "architectural_violation",
           "severity": "error",
-          "message": "min_quality: Quality signal 0.65 below minimum required 0.65"
+          "message": "min_quality: Quality signal 0.56 below minimum required 0.65"
         },
         {
           "type": "architectural_violation",
           "severity": "error",
-          "message": "max_cc: 5 function(s) exceed max cyclomatic complexity of 20"
+          "message": "max_cycles: Found 1 circular dependencies, maximum allowed is 0"
         },
         {
           "type": "architectural_violation",
           "severity": "error",
-          "message": "max_file_lines: 9 file(s) exceed max length of 500 lines"
+          "message": "max_cc: 6 function(s) exceed max cyclomatic complexity of 20"
         },
         {
           "type": "architectural_violation",
           "severity": "error",
-          "message": "max_fn_lines: 8 function(s) exceed max length of 80 lines"
+          "message": "max_file_lines: 12 file(s) exceed max length of 500 lines"
+        },
+        {
+          "type": "architectural_violation",
+          "severity": "error",
+          "message": "max_fn_lines: 11 function(s) exceed max length of 80 lines"
         },
         {
           "type": "architectural_violation",
@@ -175,11 +193,11 @@
         {
           "type": "regression",
           "severity": "error",
-          "message": "Structural regression detected. Quality:      6419 -> 6469"
+          "message": "Structural regression detected. Quality:      6419 -> 5626"
         }
       ],
-      "gate_info": "Quality:      6419 -> 6469",
-      "duration_s": 1.0
+      "gate_info": "Quality:      6419 -> 5626",
+      "duration_s": 0.9
     },
     {
       "check": "P8_SpecConformance",
@@ -253,9 +271,9 @@
   ],
   "summary": {
     "total": 10,
-    "passed": 2,
-    "failed": 4,
-    "skipped": 4
+    "passed": 3,
+    "failed": 6,
+    "skipped": 1
   },
   "verdict": "FAIL"
 }

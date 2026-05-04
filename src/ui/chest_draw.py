@@ -1,14 +1,18 @@
-# src/ui/chest_draw.py
-"""Rendering logic for the Chest UI."""
+from typing import TYPE_CHECKING
 
 import pygame
+
 from src.config import Settings
-from src.ui.chest_constants import _TITLE_OFFSET_X, _TITLE_OFFSET_Y, _INV_SLOTS_VISIBLE
+from src.ui.chest_constants import _INV_SLOTS_VISIBLE, _TITLE_OFFSET_X, _TITLE_OFFSET_Y
+
+if TYPE_CHECKING:
+    from src.ui.chest_protocol import ChestUIProtocol
+
 
 class ChestDrawMixin:
     """Mixin handling drawing of chest and player inventory panels."""
 
-    def _draw_title(self, screen: pygame.Surface) -> None:
+    def _draw_title(self: "ChestUIProtocol", screen: pygame.Surface) -> None:
         """Render the chest name centred in the title zone."""
         if self._title_rect is None:
             return
@@ -18,7 +22,7 @@ class ChestDrawMixin:
         cy = self._title_rect.centery + _TITLE_OFFSET_Y
         screen.blit(surf, surf.get_rect(center=(cx, cy)))
 
-    def _draw_slots(self, screen: pygame.Surface) -> None:
+    def _draw_slots(self: "ChestUIProtocol", screen: pygame.Surface) -> None:
         """Render chest slot frames, item icons, quantities, and hover overlay."""
         if self._qty_font is None:
             self._qty_font = pygame.font.Font(Settings.FONT_TECH, Settings.FONT_SIZE_TECH)
@@ -43,11 +47,15 @@ class ChestDrawMixin:
             entry = contents[i]
             if entry is None:
                 continue
-                
+
             item_id = entry.get("item_id", "")
 
             # Skip drawing if this item is being dragged
-            if self._dragging_item and self._dragging_item["source"] == "chest" and self._dragging_item["index"] == i:
+            if (
+                self._dragging_item
+                and self._dragging_item["source"] == "chest"
+                and self._dragging_item["index"] == i
+            ):
                 continue
 
             icon_name = self._resolve_icon_name(item_id)
@@ -70,18 +78,22 @@ class ChestDrawMixin:
             )
             screen.blit(self._hover_img, hover_rect)
 
-    def _draw_arrow_hovers(self, screen: pygame.Surface) -> None:
+    def _draw_arrow_hovers(self: "ChestUIProtocol", screen: pygame.Surface) -> None:
         """Render chest arrow hover overlays."""
         # Left button (up_rect) should show DOWN arrow (to inventory)
         if self._hovered_chest_arrow == "up" and self._arrow_up_rect and self._arrow_down_hover_img:
             rect = self._arrow_down_hover_img.get_rect(center=self._arrow_up_rect.center)
             screen.blit(self._arrow_down_hover_img, rect)
         # Right button (down_rect) should show UP arrow (to chest)
-        elif self._hovered_chest_arrow == "down" and self._arrow_down_rect and self._arrow_up_hover_img:
+        elif (
+            self._hovered_chest_arrow == "down"
+            and self._arrow_down_rect
+            and self._arrow_up_hover_img
+        ):
             rect = self._arrow_up_hover_img.get_rect(center=self._arrow_down_rect.center)
             screen.blit(self._arrow_up_hover_img, rect)
 
-    def _draw_inv_slots(self, screen: pygame.Surface) -> None:
+    def _draw_inv_slots(self: "ChestUIProtocol", screen: pygame.Surface) -> None:
         """Render player inventory slot frames, item icons, quantities and hover overlay."""
         if self._qty_font is None:
             self._qty_font = pygame.font.Font(Settings.FONT_TECH, Settings.FONT_SIZE_TECH)
@@ -108,7 +120,11 @@ class ChestDrawMixin:
 
             # Skip drawing if this item is being dragged
             actual_index = self._inv_offset + i
-            if self._dragging_item and self._dragging_item["source"] == "inv" and self._dragging_item["index"] == actual_index:
+            if (
+                self._dragging_item
+                and self._dragging_item["source"] == "inv"
+                and self._dragging_item["index"] == actual_index
+            ):
                 continue
 
             item = page_items[i]
@@ -121,48 +137,52 @@ class ChestDrawMixin:
             qty = getattr(item, "quantity", 1)
             if qty > 1:
                 qty_surf = self._qty_font.render(f"x{qty}", True, (60, 40, 30))
-                qty_rect = qty_surf.get_rect(bottomright=(rect.right - margin, rect.bottom - margin))
+                qty_rect = qty_surf.get_rect(
+                    bottomright=(rect.right - margin, rect.bottom - margin)
+                )
                 screen.blit(qty_surf, qty_rect)
 
         # Hover overlay (guard against hovering a now-hidden slot)
         hov = self._hovered_inv_slot
         if hov is not None and hov < visible_count and self._hover_img:
-            hover_rect = self._hover_img.get_rect(
-                center=self._inv_slot_positions[hov].center
-            )
+            hover_rect = self._hover_img.get_rect(center=self._inv_slot_positions[hov].center)
             screen.blit(self._hover_img, hover_rect)
 
-    def _draw_inv_arrows(self, screen: pygame.Surface) -> None:
+    def _draw_inv_arrows(self: "ChestUIProtocol", screen: pygame.Surface) -> None:
         """Render left/right arrow hover overlays.
         Left arrow: rewinds window — visible when there are items behind (offset > 0).
         Right arrow: advances window — visible when more items exist ahead.
         """
-        if (self._can_scroll_left()
-                and self._hovered_inv_arrow == "left"
-                and self._inv_arrow_left_rect
-                and self._arrow_left_hover_img):
+        if (
+            self._can_scroll_left()
+            and self._hovered_inv_arrow == "left"
+            and self._inv_arrow_left_rect
+            and self._arrow_left_hover_img
+        ):
             rect = self._arrow_left_hover_img.get_rect(center=self._inv_arrow_left_rect.center)
             screen.blit(self._arrow_left_hover_img, rect)
 
-        if (self._can_scroll_right()
-                and self._hovered_inv_arrow == "right"
-                and self._inv_arrow_right_rect
-                and self._arrow_right_hover_img):
+        if (
+            self._can_scroll_right()
+            and self._hovered_inv_arrow == "right"
+            and self._inv_arrow_right_rect
+            and self._arrow_right_hover_img
+        ):
             rect = self._arrow_right_hover_img.get_rect(center=self._inv_arrow_right_rect.center)
             screen.blit(self._arrow_right_hover_img, rect)
 
-    def _draw_cursor(self, screen: pygame.Surface) -> None:
+    def _draw_cursor(self: "ChestUIProtocol", screen: pygame.Surface) -> None:
         """Draw the glove cursor at mouse position (always on top)."""
         mouse_pos = pygame.mouse.get_pos()
         img = self._pointer_select_img if pygame.mouse.get_pressed()[0] else self._pointer_img
         if img:
             screen.blit(img, mouse_pos)
 
-    def _draw_dragged_item(self, screen: pygame.Surface) -> None:
+    def _draw_dragged_item(self: "ChestUIProtocol", screen: pygame.Surface) -> None:
         """Render the icon of the item currently being dragged."""
         if not self._dragging_item:
             return
-        
+
         slot_size = self._slot_img.get_width() if self._slot_img else 49
         icon_size = max(1, slot_size - 8)
         icon = self._get_item_icon(self._dragging_item["icon"], icon_size)

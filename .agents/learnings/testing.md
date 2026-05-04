@@ -414,3 +414,62 @@ The `@pytest.mark.tc` decorator requires `[tool.pytest.ini_options] markers = [.
 ---
 
 ---
+
+### L-STATIC-001 · 2026-05-04 · U · Minor Rework
+**`assert x is not None` raises `AssertionError`, not `RuntimeError` — update test expectations**
+
+When a guard pattern changes from `raise RuntimeError(...)` to `assert x is not None`, any test expecting `RuntimeError` will fail with a confusing `AssertionError` instead.
+
+```python
+# ❌ Old guard pattern — RuntimeError
+if self.font is None:
+    raise RuntimeError("Font not set")
+
+# ✅ New assert guard — raises AssertionError
+assert self.font is not None
+
+# Test must match the actual exception type:
+# ❌ with self.assertRaises(RuntimeError): ...
+# ✅ with self.assertRaises(AssertionError): ...
+```
+
+**Rule:** When converting `raise RuntimeError` to `assert`, run `grep -r "assertRaises(RuntimeError)"` in the test suite and update all matching tests.
+
+**Evidence:** `test_speech_bubble.py::TestSpeechBubbleFontGuard::test_raises_when_font_not_set` failed 1 test after `draw()` guard was migrated to `assert self.font is not None`.
+
+---
+
+---
+
+### L-STATIC-002 · 2026-05-04 · U · Minor Rework
+**Stub/Dummy classes need explicit `str | None` type annotations for Pyright strict mode**
+
+Mock/stub classes that initialize attributes to `None` and later assign string values must use explicit type annotations. Without them, Pyright infers `None` type and blocks any heterogeneous assignment.
+
+```python
+# ❌ Pyright infers type as None — string assignment flagged
+class DummySprite:
+    def __init__(self):
+        self.target_map = None      # inferred: None
+        self.target_spawn_id = None # inferred: None
+
+sprite.target_map = "next_map.tmj"  # ERROR: cannot assign str to None
+
+# ✅ Explicit union allows heterogeneous assignment
+class DummySprite:
+    def __init__(self):
+        self.target_map: str | None = None
+        self.target_spawn_id: str | None = None
+```
+
+**Rule:** All stub/dummy/test helper classes in strict Pyright projects must declare every attribute with an explicit type annotation in `__init__`, even when the initial value is `None`.
+
+**Evidence:** 4 `reportAttributeAccessIssue` errors in `tests/engine/test_interaction.py` resolved by annotating `DummySprite` attributes.
+
+---
+
+*Last optimized: 2026-05-04 — L-STATIC-001, L-STATIC-002 from Pyright hardening HARDEN session.*
+
+---
+
+---

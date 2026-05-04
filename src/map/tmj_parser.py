@@ -1,30 +1,34 @@
-import os
 import json
+import os
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from typing import Any
+
 import pygame
+
 from src.map.project_schema import TiledProject
+
 
 @dataclass
 class TileMapData:
     image: pygame.Surface
     depth: int
     collidable: bool
-    occluded_image: Optional[pygame.Surface] = None
-    properties: Dict[str, Any] = None
+    occluded_image: pygame.Surface | None = None
+    properties: dict[str, Any] | None = None
+
 
 class TmjParser:
     """Parser for Tiled (.tmj) map files and their associated external (.tsx) tilesets."""
-    
+
     def __init__(self):
-        self.project: Optional[TiledProject] = None
+        self.project: TiledProject | None = None
         # Attempt to load project from standard location
         project_path = "assets/tiled/game.tiled-project"
         if os.path.exists(project_path):
             self.project = TiledProject(project_path)
-            
-    def load_map(self, tmj_path: str) -> Dict[str, Any]:
+
+    def load_map(self, tmj_path: str) -> dict[str, Any]:
         """Loads a .tmj file and resolves all local and external dependencies recursively."""
         if not os.path.exists(tmj_path):
             if not tmj_path.startswith("assets"):
@@ -32,26 +36,26 @@ class TmjParser:
                 tmj_path = os.path.join(os.getcwd(), tmj_path)
             if not os.path.exists(tmj_path):
                 raise FileNotFoundError(f"Map file not found: {tmj_path}")
-            
-        with open(tmj_path, 'r', encoding='utf-8') as f:
+
+        with open(tmj_path, encoding="utf-8") as f:
             data = json.load(f)
-            
+
         # Boundary validation
         if "layers" not in data or "tilesets" not in data:
             raise ValueError("Invalid TMJ format: Missing 'layers' or 'tilesets' keys.")
-            
+
         map_result = {
             "width": data["width"],
             "height": data["height"],
             "layers": {},
             "tiles": {},
-            "layer_names": {}, # Store ID -> Name mapping
-            "layer_order": [], # Store IDs in rendering order
+            "layer_names": {},  # Store ID -> Name mapping
+            "layer_order": [],  # Store IDs in rendering order
             "spawn_player": None,
-            "entities": [], # All objects from Sprites group
-            "properties": {p["name"]: p["value"] for p in data.get("properties", [])}
+            "entities": [],  # All objects from Sprites group
+            "properties": {p["name"]: p["value"] for p in data.get("properties", [])},
         }
-        
+
         # 1. Parse tilesets
         for ts in data["tilesets"]:
             firstgid = ts["firstgid"]
@@ -59,18 +63,18 @@ class TmjParser:
             # Join relative to map file
             tsx_path = os.path.normpath(os.path.join(os.path.dirname(tmj_path), source))
             self._parse_tsx(tsx_path, firstgid, map_result["tiles"])
-            
+
         # 2. Parse layers recursively
         self._process_layers(data["layers"], data["width"], map_result)
-        
+
         return map_result
 
-    def _process_layers(self, layers: list, map_width: int, map_result: Dict[str, Any]):
+    def _process_layers(self, layers: list, map_width: int, map_result: dict[str, Any]):
         """Recursively walk through groups and parse layers/objects."""
         for layer in layers:
             l_type = layer.get("type")
             l_name = layer.get("name")
-            
+
             if l_type == "tilelayer":
                 l_id = layer.get("id")
                 map_result["layer_names"][l_id] = l_name
@@ -82,21 +86,21 @@ class TmjParser:
                 # Collect entities from any objectgroup
                 self._parse_objects(layer, map_result)
 
-    def _parse_objects(self, layer_data: Dict[str, Any], map_result: Dict[str, Any]):
+    def _parse_objects(self, layer_data: dict[str, Any], map_result: dict[str, Any]):
         """Parse all objects in an objectgroup and identify specific targets like player spawn."""
         for obj in layer_data.get("objects", []):
             # Parse custom properties
             props = {}
             for p in obj.get("properties", []):
                 props[p.get("name")] = p.get("value")
-            
+
             # Resolve properties via Tiled Project if enabled
             obj_type = obj.get("type", obj.get("class", ""))
-            
+
             if self.project and obj_type:
                 # Use project defaults as base, override with map properties
                 props = self.project.resolve(obj_type, props)
-                
+
             # Map object data for easier consumption
             obj_info = {
                 "id": obj.get("id"),
@@ -106,44 +110,53 @@ class TmjParser:
                 "y": obj.get("y", 0),
                 "width": obj.get("width", 0),
                 "height": obj.get("height", 0),
-                "properties": props
+                "properties": props,
             }
-            
+
             # Check for player spawn property or class
             if props.get("spawn_player") is True or obj_info["type"] == "player":
                 map_result["spawn_player"] = obj_info
-            
+
             # Add to general entity list if it's not just a metadata object
             map_result["entities"].append(obj_info)
 
-    def _parse_tsx(self, tsx_path: str, firstgid: int, tile_dict: Dict[int, TileMapData]):
+    def _parse_tsx(self, tsx_path: str, firstgid: int, tile_dict: dict[int, TileMapData]):
         """Parses an external XML tileset (.tsx) and loads images."""
         if not os.path.exists(tsx_path):
             raise FileNotFoundError(f"Tileset file not found: {tsx_path}")
-            
-        with open(tsx_path, 'r', encoding='utf-8') as f:
+
+        with open(tsx_path, encoding="utf-8") as f:
             tree = ET.parse(f)
         root = tree.getroot()
-        
-        tilewidth = int(root.get("tilewidth"))
-        tileheight = int(root.get("tileheight"))
-        columns = int(root.get("columns", 1)) # Fallback 1 if missing
-        
+
+        tw_str = root.get("tilewidth")
+        th_str = root.get("tileheight")
+        if tw_str is None or th_str is None:
+            raise ValueError(f"TSX missing tilewidth or tileheight: {tsx_path}")
+
+        tilewidth = int(tw_str)
+        tileheight = int(th_str)
+        columns = int(root.get("columns", "1"))
+
         # Load associated image
         image_elem = root.find("image")
         if image_elem is None:
             raise ValueError(f"No <image> tag found in TSX: {tsx_path}")
-            
+
         img_source = image_elem.get("source")
+        if img_source is None:
+            raise ValueError(f"Image tag missing source in TSX: {tsx_path}")
+
         img_path = os.path.normpath(os.path.join(os.path.dirname(tsx_path), img_source))
-        
+
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"Tileset image not found: {img_path}")
-            
+
         from src.engine.asset_manager import AssetManager
+
         am = AssetManager()
         sheet = am.get_image(img_path)
-        
+
         # Parse tileset-level properties
         tileset_props = {}
         ts_properties_node = root.find("properties")
@@ -151,6 +164,8 @@ class TmjParser:
             for p in ts_properties_node.findall("property"):
                 name = p.get("name")
                 val = p.get("value")
+                if name is None or val is None:
+                    continue
                 type_str = p.get("type", "string")
                 if type_str == "bool":
                     tileset_props[name] = val.lower() == "true"
@@ -158,20 +173,28 @@ class TmjParser:
                     tileset_props[name] = int(val)
                 else:
                     tileset_props[name] = val
-        
+
         # Find explicit custom properties for tiles if any
         custom_props = {}
         for tile in root.findall("tile"):
-            local_id = int(tile.get("id"))
-            props = {"collidable": tileset_props.get("collidable", False), "depth": tileset_props.get("depth", 0)}
-            
+            local_id_str = tile.get("id")
+            if local_id_str is None:
+                continue
+            local_id = int(local_id_str)
+            props = {
+                "collidable": tileset_props.get("collidable", False),
+                "depth": tileset_props.get("depth", 0),
+            }
+
             properties_node = tile.find("properties")
             if properties_node is not None:
                 for p in properties_node.findall("property"):
                     name = p.get("name")
                     val = p.get("value")
+                    if name is None or val is None:
+                        continue
                     type_str = p.get("type", "string")
-                    
+
                     if type_str == "bool":
                         props[name] = val.lower() == "true"
                     elif type_str == "int":
@@ -179,53 +202,62 @@ class TmjParser:
                     else:
                         props[name] = val
             custom_props[local_id] = props
-                        
+
         # Slice image into single tiles based on tilecount.
         # TSX tilecount is present, or inferred
-        tilecount = int(root.get("tilecount", (sheet.get_width() // tilewidth) * (sheet.get_height() // tileheight)))
-        
+        tilecount = int(
+            root.get(
+                "tilecount", (sheet.get_width() // tilewidth) * (sheet.get_height() // tileheight)
+            )
+        )
+
         for i in range(tilecount):
             global_id = firstgid + i
             # Calculate rect bounds
             x = (i % columns) * tilewidth
             y = (i // columns) * tileheight
-            
+
             rect = pygame.Rect(x, y, tilewidth, tileheight)
-            surface = sheet.subsurface(rect).copy() # isolated copy
-            
+            surface = sheet.subsurface(rect).copy()  # isolated copy
+
             # Fetch properties or defaults
             props = tileset_props.copy()
             props.update(custom_props.get(i, {}))
-            
+
             # Ensure required keys exist
             if "collidable" not in props:
                 props["collidable"] = False
             if "depth" not in props:
                 props["depth"] = 0
-            
+
             # Pre-cache occluded version for high depth tiles
             occluded = None
             if props["depth"] > 0:
                 from src.config import Settings
+
                 occluded = surface.copy()
                 occluded.set_alpha(Settings.OCCLUSION_ALPHA)
-            
+
             tile_dict[global_id] = TileMapData(
                 image=surface,
                 depth=props["depth"],
                 collidable=props["collidable"],
                 occluded_image=occluded,
-                properties=props
+                properties=props,
             )
-            
-    def _parse_tilelayer(self, layer_data: Dict[str, Any], map_width: int, layers_dict: Dict[int, list]):
+
+    def _parse_tilelayer(
+        self, layer_data: dict[str, Any], map_width: int, layers_dict: dict[int, list]
+    ):
         """Convert a 1D layer data array into a 2D matrix directly and append to layers_dict."""
         layer_id = layer_data.get("id")
+        if layer_id is None:
+            return
         raw_data = layer_data.get("data", [])
-        
+
         # Create 2D chunk equivalent
         matrix = []
         for i in range(0, len(raw_data), map_width):
-            matrix.append(raw_data[i:i+map_width])
-            
+            matrix.append(raw_data[i : i + map_width])
+
         layers_dict[layer_id] = matrix

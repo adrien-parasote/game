@@ -32,7 +32,7 @@ INV_EQUIPMENT_SLOTS = {
     "UPPER_BODY": (499, 291),
     "LOWER_BODY": (498, 406),
     "RIGHT_HAND": (469, 529),
-    "SHOES": (354, 549)
+    "SHOES": (354, 549),
 }
 
 # Inventory Grid (BLUE zone - Right)
@@ -54,9 +54,9 @@ INV_HP_X = 929
 INV_GOLD_X = 1160
 
 # Drag-and-drop highlight
-INV_DRAG_HIGHLIGHT_BORDER: int = 3      # Border width for drag-selected slot (px)
-INV_DRAG_BORDER_RADIUS_BASE: int = 12   # Base border radius for drag highlight (before scale)
-INV_STAT_NAME_OFFSET_Y: int = 16        # Item name label Y-offset in the stats panel (px)
+INV_DRAG_HIGHLIGHT_BORDER: int = 3  # Border width for drag-selected slot (px)
+INV_DRAG_BORDER_RADIUS_BASE: int = 12  # Base border radius for drag highlight (before scale)
+INV_STAT_NAME_OFFSET_Y: int = 16  # Item name label Y-offset in the stats panel (px)
 
 # Fallback placeholder
-INV_PLACEHOLDER_SIZE: int = 32          # Fallback surface size for missing assets (px)
+INV_PLACEHOLDER_SIZE: int = 32  # Fallback surface size for missing assets (px)

@@ -1,8 +1,9 @@
 """
 GameEvent — Events exchanged between game states and the GameStateManager.
 """
+
+from dataclasses import dataclass
 from enum import Enum
-from dataclasses import dataclass, field
 
 
 class GameEventType(Enum):

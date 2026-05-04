@@ -3,18 +3,20 @@
 Covers: loading, item_id validation, stack splitting, overflow trimming,
 and edge cases (missing files, malformed JSON, zero quantity).
 """
+
 import json
-import os
 import logging
+import os
+from unittest.mock import mock_open, patch
+
 import pytest
-from unittest.mock import patch, mock_open
 
-from src.engine.loot_table import LootTable, CHEST_MAX_SLOTS
-
+from src.engine.loot_table import CHEST_MAX_SLOTS, LootTable
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def property_types():
@@ -49,6 +51,7 @@ def loot_table():
 # ---------------------------------------------------------------------------
 # TC-LT-01: Valid load
 # ---------------------------------------------------------------------------
+
 
 class TestLootTableLoad:
     """Tests for LootTable.load()."""
@@ -166,6 +169,7 @@ class TestLootTableLoad:
 # TC-LT-05/06: get_contents
 # ---------------------------------------------------------------------------
 
+
 class TestGetContents:
     """Tests for LootTable.get_contents()."""
 
@@ -198,6 +202,7 @@ class TestGetContents:
 # ---------------------------------------------------------------------------
 # Stack splitting tests
 # ---------------------------------------------------------------------------
+
 
 class TestStackSplitting:
     """Tests for stack_max splitting logic."""
@@ -263,8 +268,8 @@ class TestStackSplitting:
         """Multiple items with different quantities → correct total slots."""
         data = {
             "chest_1": [
-                {"item_id": "potion_red", "quantity": 15},      # 10+5 = 2 slots
-                {"item_id": "ether_potion", "quantity": 3},     # 1 slot
+                {"item_id": "potion_red", "quantity": 15},  # 10+5 = 2 slots
+                {"item_id": "ether_potion", "quantity": 3},  # 1 slot
             ]
         }
         loot_file = tmp_path / "loot_table.json"

@@ -3,11 +3,10 @@
 Loads chest contents from a JSON file, validates item IDs against
 property types, splits stacks by stack_max, and trims overflow.
 """
+
 import json
 import logging
-import math
 import os
-from typing import Optional
 
 CHEST_MAX_SLOTS = 20  # 10 columns x 2 rows in the chest UI
 
@@ -57,13 +56,13 @@ class LootTable:
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _read_json(self, path: str) -> Optional[dict]:
+    def _read_json(self, path: str) -> dict | None:
         """Read and parse JSON file. Returns None on failure."""
         if not os.path.exists(path):
             logging.error(f"LootTable: File not found at '{path}'.")
             return None
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
             if not isinstance(data, dict):
                 logging.error(f"LootTable: Expected dict at root, got {type(data).__name__}.")
@@ -73,9 +72,7 @@ class LootTable:
             logging.error(f"LootTable: Malformed JSON in '{path}': {e}")
             return None
 
-    def _validate_entries(
-        self, chest_key: str, entries: list, property_types: dict
-    ) -> list[dict]:
+    def _validate_entries(self, chest_key: str, entries: list, property_types: dict) -> list[dict]:
         """Filter entries: skip missing item_id, unknown items, zero quantity."""
         valid = []
         for entry in entries:
@@ -102,9 +99,7 @@ class LootTable:
             valid.append({"item_id": item_id, "quantity": quantity})
         return valid
 
-    def _split_stacks(
-        self, entries: list[dict], property_types: dict
-    ) -> list[dict]:
+    def _split_stacks(self, entries: list[dict], property_types: dict) -> list[dict]:
         """Split entries that exceed stack_max into multiple stacks."""
         result = []
         for entry in entries:

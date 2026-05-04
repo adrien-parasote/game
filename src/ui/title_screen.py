@@ -2,17 +2,57 @@
 TitleScreen — Main menu UI with state machine.
 Spec: docs/specs/game-flow-spec.md#22-srcuititle_screenpy-new
 """
+
 import logging
-import os
 import math
+import os
+
 import pygame
+
 from src.config import Settings
 from src.engine.game_events import GameEvent, GameEventType
+from src.engine.i18n import I18nManager
 from src.engine.save_manager import SaveManager
 from src.ui.save_menu import SaveMenuOverlay
-from src.engine.i18n import I18nManager
-from src.ui.title_screen_constants import *
-from src.ui.title_screen_constants import _MENU_DIR, _UI_DIR, _MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS, LOGO_MAIN_FONT_SIZE, LOGO_MAIN_COLOR, LOGO_MAIN_HALO, MENU_HOVER_COLOR, MENU_HOVER_HALO, BACKGROUND_LIGHTS, BG_LIGHT_COLOR, MUSHROOM_LIGHTS, HALO_DEBUG
+from src.ui.title_screen_constants import (
+    _MENU_DIR,
+    _MENU_ITEM_DEFAULTS,
+    _MENU_ITEM_KEYS,
+    _UI_DIR,
+    BACK_BTN_FONT_SIZE,
+    BACK_BTN_GAP,
+    BACK_BTN_H,
+    BACK_BTN_LABEL_DEFAULT,
+    BACK_BTN_LABEL_KEY,
+    BACK_BTN_OFFSET_X,
+    BACK_BTN_OFFSET_Y,
+    BACK_BTN_W,
+    BACK_BTN_X,
+    BACK_BTN_Y,
+    BACKGROUND_LIGHTS,
+    BG_LIGHT_COLOR,
+    HALO_DEBUG,
+    LOGO_MAIN_COLOR,
+    LOGO_MAIN_FONT_SIZE,
+    LOGO_MAIN_HALO,
+    LOGO_Y,
+    LOGO_ZONE_W,
+    MENU_ENGRAVE_LIGHT,
+    MENU_ENGRAVE_SHADOW,
+    MENU_ENGRAVE_TEXT,
+    MENU_FONT_PATH,
+    MENU_HOVER_COLOR,
+    MENU_HOVER_HALO,
+    MENU_ITEM_FONT_SIZE,
+    MENU_ITEM_OFFSET_X,
+    MENU_ITEM_OFFSET_Y,
+    MENU_ITEM_SPACING,
+    MENU_ITEM_X,
+    MENU_ITEM_Y_START,
+    MUSHROOM_LIGHTS,
+    OVERLAY_ALPHA,
+)
+
 
 class TitleScreen:
     """Main menu screen — background, logo, cursor. Menu to be added."""
@@ -20,7 +60,7 @@ class TitleScreen:
     def __init__(self, screen: pygame.Surface, save_manager: SaveManager) -> None:
         self._screen = screen
         self._save_manager = save_manager
-        self.state = "MAIN_MENU"          # "MAIN_MENU" | "LOAD_MENU"
+        self.state = "MAIN_MENU"  # "MAIN_MENU" | "LOAD_MENU"
         self._hovered_item: int | None = None
         self._i18n = I18nManager()
         self._light_time = 0.0
@@ -31,9 +71,13 @@ class TitleScreen:
         # Scale factors: BACKGROUND_LIGHTS coords are in logical 1280×720 space
         self._light_scale_x = sw / 1280.0
         self._light_scale_y = sh / 720.0
-        logging.debug(f"TitleScreen: surface={sw}x{sh}, light_scale=({self._light_scale_x:.3f}, {self._light_scale_y:.3f})")
-        
-        self._load_menu = SaveMenuOverlay(screen, save_manager, self._i18n.get("save_menu.title_load", "Charger une partie"))
+        logging.debug(
+            f"TitleScreen: surface={sw}x{sh}, light_scale=({self._light_scale_x:.3f}, {self._light_scale_y:.3f})"
+        )
+
+        self._load_menu = SaveMenuOverlay(
+            screen, save_manager, self._i18n.get("save_menu.title_load", "Charger une partie")
+        )
 
         self._load_assets()
         self._compute_layout()
@@ -117,17 +161,15 @@ class TitleScreen:
         )
         # Label font (Cormorant Garamond, small — cached at init)
         try:
-            self._back_label_font = pygame.font.Font(
-                MENU_FONT_PATH, BACK_BTN_FONT_SIZE
-            )
+            self._back_label_font = pygame.font.Font(MENU_FONT_PATH, BACK_BTN_FONT_SIZE)
         except OSError:
             self._back_label_font = self._font_small
 
         # P1: Pre-scale halo surfaces into N_BUCKETS buckets covering flicker range
         # Avoids rotozoom() per frame — pure lookup at draw time
         _N_BUCKETS = 10
-        _SCALE_MIN = 0.80   # matches max(0.80, ...) in candle flicker
-        _SCALE_MAX = 1.05   # slight headroom above 1.0
+        _SCALE_MIN = 0.80  # matches max(0.80, ...) in candle flicker
+        _SCALE_MAX = 1.05  # slight headroom above 1.0
         self._halo_n_buckets = _N_BUCKETS
         self._halo_scale_min = _SCALE_MIN
         self._halo_scale_max = _SCALE_MAX
@@ -179,12 +221,12 @@ class TitleScreen:
 
         # P3: Blur cache — invalidated when hovered item changes
         self._blur_cache: dict[int | None, pygame.Surface] = {}
-        self._prev_hovered_item: int = -2  # sentinel: forces first-frame render
+        self._prev_hovered_item: int | None = None
 
         # P3: Pre-render idle menu label surfaces — avoids font.render() per frame
         self._menu_label_surfaces: list[pygame.Surface] = [
             self._render_engraved(self._i18n.get(key, default=default))
-            for key, default in zip(_MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS)
+            for key, default in zip(_MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS, strict=False)
         ]
 
     def _compute_layout(self) -> None:
@@ -204,10 +246,9 @@ class TitleScreen:
         # We don't know text width at layout time, so we use a generous fixed width
         bcx = BACK_BTN_X + BACK_BTN_OFFSET_X
         bcy = BACK_BTN_Y + BACK_BTN_OFFSET_Y
-        back_total_w = 120   # conservative estimate: text (~70px) + gap + icon (28px)
+        back_total_w = 120  # conservative estimate: text (~70px) + gap + icon (28px)
         self.back_btn_rect = pygame.Rect(
-            bcx - back_total_w // 2, bcy - BACK_BTN_H // 2,
-            back_total_w, max(BACK_BTN_H, 28)
+            bcx - back_total_w // 2, bcy - BACK_BTN_H // 2, back_total_w, max(BACK_BTN_H, 28)
         )
         self._back_hovered: bool = False
 
@@ -222,7 +263,7 @@ class TitleScreen:
 
     def update(self, dt: float) -> None:
         self._light_time += dt
-        
+
         mouse_pos = pygame.mouse.get_pos()
         if self.state == "MAIN_MENU":
             self._hovered_item: int | None = None
@@ -243,8 +284,8 @@ class TitleScreen:
             sx = int(lx * self._light_scale_x)
             sy = int(ly * self._light_scale_y)
             flicker = (
-                math.sin(self._light_time * 0.4 + i * 1.1) * 0.06 +
-                math.sin(self._light_time * 0.9 + i * 2.3) * 0.04
+                math.sin(self._light_time * 0.4 + i * 1.1) * 0.06
+                + math.sin(self._light_time * 0.9 + i * 2.3) * 0.04
             ) + 0.92
             flicker = max(0.80, min(1.0, flicker))
 
@@ -254,7 +295,9 @@ class TitleScreen:
                 idx = max(0, min(self._halo_n_buckets - 1, int(t * (self._halo_n_buckets - 1))))
                 rendered = buckets[idx]
                 offset = rendered.get_width() // 2
-                self._screen.blit(rendered, (sx - offset, sy - offset), special_flags=pygame.BLEND_RGB_ADD)
+                self._screen.blit(
+                    rendered, (sx - offset, sy - offset), special_flags=pygame.BLEND_RGB_ADD
+                )
 
             if HALO_DEBUG:
                 pygame.draw.line(self._screen, (255, 0, 0), (sx - 10, sy), (sx + 10, sy), 1)
@@ -266,8 +309,8 @@ class TitleScreen:
             sx = int(lx * self._light_scale_x)
             sy = int(ly * self._light_scale_y)
             flicker = (
-                math.sin(self._light_time * 0.15 + i * 1.3) * 0.10 +
-                math.sin(self._light_time * 0.37 + i * 2.1) * 0.06
+                math.sin(self._light_time * 0.15 + i * 1.3) * 0.10
+                + math.sin(self._light_time * 0.37 + i * 2.1) * 0.06
             ) + 0.84
             flicker = max(0.72, min(1.0, flicker))
             ck = tuple(color)
@@ -278,7 +321,9 @@ class TitleScreen:
                 idx = max(0, min(self._halo_n_buckets - 1, int(t * (self._halo_n_buckets - 1))))
                 rendered = buckets_m[idx]
                 offset = rendered.get_width() // 2
-                self._screen.blit(rendered, (sx - offset, sy - offset), special_flags=pygame.BLEND_RGB_ADD)
+                self._screen.blit(
+                    rendered, (sx - offset, sy - offset), special_flags=pygame.BLEND_RGB_ADD
+                )
 
             if HALO_DEBUG:
                 pygame.draw.line(self._screen, (0, 255, 200), (sx - 8, sy), (sx + 8, sy), 1)
@@ -287,12 +332,7 @@ class TitleScreen:
 
         title_text = self._i18n.get("menu.main_title", "L'Éveil de l'Héritier")
         self._blit_halo_text(
-            title_text, 
-            LOGO_ZONE_W // 2, 
-            LOGO_Y, 
-            self._title_font, 
-            LOGO_MAIN_COLOR, 
-            LOGO_MAIN_HALO
+            title_text, LOGO_ZONE_W // 2, LOGO_Y, self._title_font, LOGO_MAIN_COLOR, LOGO_MAIN_HALO
         )
 
         if self.state == "MAIN_MENU":
@@ -313,7 +353,7 @@ class TitleScreen:
             self._blur_cache.pop(self._prev_hovered_item, None)
             self._prev_hovered_item = hovered
 
-        for i, (key, default) in enumerate(zip(_MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS)):
+        for i, (key, default) in enumerate(zip(_MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS, strict=False)):
             cx = MENU_ITEM_X + MENU_ITEM_OFFSET_X
             cy = MENU_ITEM_Y_START + MENU_ITEM_OFFSET_Y + i * MENU_ITEM_SPACING
             if hovered == i:
@@ -369,25 +409,28 @@ class TitleScreen:
         return out
 
     def _blit_halo_text(
-        self, label: str, cx: int, cy: int,
+        self,
+        label: str,
+        cx: int,
+        cy: int,
         font: pygame.font.Font,
         text_color: tuple[int, int, int],
-        halo_color: tuple[int, int, int]
+        halo_color: tuple[int, int, int],
     ) -> None:
         """Draw text with a soft, spreading glowing halo effect."""
         base_surf = font.render(label, True, halo_color)
         w, h = base_surf.get_size()
-        
+
         # Create a padded surface so the blur doesn't clip
         pad = 24
         padded = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
         padded.blit(base_surf, (pad, pad))
-        
+
         try:
             # Use pygame-ce's fast gaussian_blur
             blurred = pygame.transform.gaussian_blur(padded, 8)
             blurred.set_alpha(255)
-            
+
             # Blit 3 times for a very strong, dense center glow that is highly visible
             rect = blurred.get_rect(center=(cx, cy))
             self._screen.blit(blurred, rect)
@@ -399,13 +442,12 @@ class TitleScreen:
             offsets = [(-3, -3), (3, -3), (-3, 3), (3, 3), (0, -4), (0, 4), (-4, 0), (4, 0)]
             for dx, dy in offsets:
                 self._screen.blit(base_surf, base_surf.get_rect(center=(cx + dx, cy + dy)))
-            
+
         main_surf = font.render(label, True, text_color)
         self._screen.blit(main_surf, main_surf.get_rect(center=(cx, cy)))
 
     def _blit_engraved(
-        self, label: str, cx: int, cy: int,
-        font: pygame.font.Font | None = None
+        self, label: str, cx: int, cy: int, font: pygame.font.Font | None = None
     ) -> None:
         """3-pass engraved-in-stone text effect.
 
@@ -416,12 +458,12 @@ class TitleScreen:
         """
         f = font if font is not None else self._menu_item_font
         shadow = f.render(label, True, MENU_ENGRAVE_SHADOW)
-        light  = f.render(label, True, MENU_ENGRAVE_LIGHT)
-        text   = f.render(label, True, MENU_ENGRAVE_TEXT)
+        light = f.render(label, True, MENU_ENGRAVE_LIGHT)
+        text = f.render(label, True, MENU_ENGRAVE_TEXT)
         r = text.get_rect(center=(cx, cy))
         self._screen.blit(shadow, r.move(-1, -1))
-        self._screen.blit(light,  r.move(1, 1))
-        self._screen.blit(text,   r)
+        self._screen.blit(light, r.move(1, 1))
+        self._screen.blit(text, r)
 
     # ── Load overlay ───────────────────────────────────────────────────────────
 
@@ -444,10 +486,10 @@ class TitleScreen:
             if not rect.collidepoint(event.pos):
                 continue
             actions = [
-                GameEvent.new_game,     # 0 — Nouvelle Partie
-                self._enter_load_menu, # 1 — Charger
-                self._enter_options,   # 2 — Options
-                GameEvent.quit,        # 3 — Quitter
+                GameEvent.new_game,  # 0 — Nouvelle Partie
+                self._enter_load_menu,  # 1 — Charger
+                self._enter_options,  # 2 — Options
+                GameEvent.quit,  # 3 — Quitter
             ]
             return actions[i]()
         return None
@@ -494,7 +536,9 @@ class TitleScreen:
         # Draw label right of icon: engraved at rest, golden on hover
         label_cx = left_x + icon_w + BACK_BTN_GAP + label_w // 2
         if self._back_hovered:
-            self._blit_halo_text(label, label_cx, cy, self._back_label_font, MENU_HOVER_COLOR, MENU_HOVER_HALO)
+            self._blit_halo_text(
+                label, label_cx, cy, self._back_label_font, MENU_HOVER_COLOR, MENU_HOVER_HALO
+            )
         else:
             self._blit_engraved(label, label_cx, cy, font=self._back_label_font)
 

@@ -1,13 +1,13 @@
 import math
+from unittest.mock import MagicMock, PropertyMock, patch
 
-import pytest
 import pygame
-from unittest.mock import MagicMock, patch, PropertyMock
+import pytest
 
-from src.map.manager import MapManager
-from src.map.layout import OrthogonalLayout
-from src.engine.time_system import TimeSystem, WorldTime
 from src.engine.lighting import LightingManager
+from src.engine.time_system import TimeSystem, WorldTime
+from src.map.layout import OrthogonalLayout
+from src.map.manager import MapManager
 
 
 @pytest.fixture(autouse=True)
@@ -25,14 +25,16 @@ def setup_pygame():
 # Helpers
 # ------------------------------------------------------------------
 
+
 def _make_lighting(hour: int = 12) -> LightingManager:
     """Create a LightingManager with a TimeSystem at the given hour."""
     ts = TimeSystem(initial_hour=hour)
     return LightingManager(ts, screen_size=(200, 200))
 
 
-def _mock_time_system(hour: int, minute: int = 0, brightness: float = 1.0,
-                      night_alpha: int = 0) -> MagicMock:
+def _mock_time_system(
+    hour: int, minute: int = 0, brightness: float = 1.0, night_alpha: int = 0
+) -> MagicMock:
     """Build a mock TimeSystem with controllable world_time, brightness, night_alpha."""
     ts = MagicMock()
     type(ts).world_time = PropertyMock(return_value=WorldTime(hour=hour, minute=minute, day=0))
@@ -44,6 +46,7 @@ def _mock_time_system(hour: int, minute: int = 0, brightness: float = 1.0,
 # ------------------------------------------------------------------
 # LT-001: Window position cache
 # ------------------------------------------------------------------
+
 
 @pytest.mark.tc("LT-001")
 def test_map_manager_window_cache_lt001():
@@ -70,6 +73,7 @@ def test_map_manager_window_cache_lt001():
 # LT-002: Beam color sync
 # ------------------------------------------------------------------
 
+
 @pytest.mark.tc("LT-002")
 def test_lighting_beam_color_sync_lt003():
     """LT-002: Beam color syncs with brightness via _lerp_color."""
@@ -86,6 +90,7 @@ def test_lighting_beam_color_sync_lt003():
 # ------------------------------------------------------------------
 # LT-004: Night overlay
 # ------------------------------------------------------------------
+
 
 @pytest.mark.tc("LT-004")
 def test_lighting_night_overlay_lt004():
@@ -104,6 +109,7 @@ def test_lighting_night_overlay_lt004():
 # ------------------------------------------------------------------
 # Slant: sun cycle
 # ------------------------------------------------------------------
+
 
 class TestComputeSlantSun:
     """_compute_slant returns correct sun-dominated slant values."""
@@ -133,6 +139,7 @@ class TestComputeSlantSun:
 # ------------------------------------------------------------------
 # Slant: moon cycle
 # ------------------------------------------------------------------
+
 
 class TestComputeSlantMoon:
     """_compute_slant returns correct moon-dominated slant values."""
@@ -166,6 +173,7 @@ class TestComputeSlantMoon:
 # Slant: continuity (no jumps)
 # ------------------------------------------------------------------
 
+
 class TestSlantContinuity:
     """Slant values should be smooth and continuous across the 24h cycle."""
 
@@ -197,6 +205,7 @@ class TestSlantContinuity:
 # ------------------------------------------------------------------
 # Beam surface: basic properties
 # ------------------------------------------------------------------
+
 
 class TestCreateBeamSurface:
     """_create_beam_surface produces correct surfaces."""
@@ -269,6 +278,7 @@ class TestCreateBeamSurface:
 # Beam cache
 # ------------------------------------------------------------------
 
+
 @pytest.mark.tc("LT-012")
 def test_beam_cache_reuses_surface():
     """Calling _get_beam_surface_for_time twice with same state returns same object."""
@@ -294,6 +304,7 @@ def test_beam_cache_eviction():
 # draw_additive_window_beams
 # ------------------------------------------------------------------
 
+
 def test_draw_beams_empty_list():
     """draw_additive_window_beams with empty list should not crash."""
     lm = _make_lighting()
@@ -311,6 +322,7 @@ def test_draw_beams_2_tuple_fallback():
 # ------------------------------------------------------------------
 # resize
 # ------------------------------------------------------------------
+
 
 def test_resize_updates_overlay():
     """Resizing should recreate the overlay surface."""
@@ -331,6 +343,7 @@ def test_resize_noop_if_same():
 # ------------------------------------------------------------------
 # _get_torch_mask
 # ------------------------------------------------------------------
+
 
 def test_torch_mask_center_bright():
     """The center of a torch mask should have the highest alpha."""

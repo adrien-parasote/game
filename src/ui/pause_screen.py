@@ -2,16 +2,37 @@
 PauseScreen — Overlay pause menu on top of the running game.
 Spec: docs/specs/game-flow-spec.md#24-srcuipause_screenpy-new
 """
+
 import logging
 import os
+
 import pygame
+
 from src.config import Settings
 from src.engine.game_events import GameEvent, GameEventType
-from src.engine.save_manager import SaveManager
-from src.ui.save_menu import SaveMenuOverlay
 from src.engine.i18n import I18nManager
-from src.ui.pause_screen_constants import *
-from src.ui.pause_screen_constants import _MENU_DIR, _UI_DIR, _FONT_PATH, _BUTTON_KEYS, _BUTTON_DEFAULTS
+from src.engine.save_manager import SaveManager
+from src.ui.pause_screen_constants import (
+    _BUTTON_DEFAULTS,
+    _BUTTON_KEYS,
+    _FONT_PATH,
+    _MENU_DIR,
+    _UI_DIR,
+    ENGRAVE_LIGHT,
+    ENGRAVE_SHADOW,
+    ENGRAVE_TEXT,
+    ITEM_SPACING,
+    ITEM_Y_START_OFFSET,
+    OVERLAY_ALPHA,
+    PANEL_H,
+    PANEL_W,
+    PAUSE_ITEM_FONT_SIZE,
+    PAUSE_TITLE_FONT_SIZE,
+    PAUSE_TITLE_OFFSET,
+    TITLE_COLOR,
+)
+from src.ui.save_menu import SaveMenuOverlay
+
 
 class PauseScreen:
     """Semi-transparent overlay with 3 pause actions."""
@@ -21,9 +42,11 @@ class PauseScreen:
         self._save_manager = save_manager
         self._hovered_btn: int | None = None
         self._confirm_timer: float = 0.0  # >0 → show "Saved!" feedback for 2s
-        self.state = "MAIN" # "MAIN" or "SAVE_MENU"
+        self.state = "MAIN"  # "MAIN" or "SAVE_MENU"
         self._i18n = I18nManager()
-        self._save_menu = SaveMenuOverlay(screen, save_manager, self._i18n.get("pause_menu.save", "Sauvegarder la partie"))
+        self._save_menu = SaveMenuOverlay(
+            screen, save_manager, self._i18n.get("pause_menu.save", "Sauvegarder la partie")
+        )
 
         sw, sh = screen.get_size()
         self._sw = sw
@@ -75,19 +98,15 @@ class PauseScreen:
 
         try:
             self._title_font = pygame.font.Font(_FONT_PATH, PAUSE_TITLE_FONT_SIZE)
-            self._item_font  = pygame.font.Font(_FONT_PATH, PAUSE_ITEM_FONT_SIZE)
+            self._item_font = pygame.font.Font(_FONT_PATH, PAUSE_ITEM_FONT_SIZE)
             self._success_font = pygame.font.Font(_FONT_PATH, 26)
         except OSError:
             self._title_font = pygame.font.SysFont(None, 42)
-            self._item_font  = pygame.font.SysFont(None, 32)
+            self._item_font = pygame.font.SysFont(None, 32)
             self._success_font = pygame.font.SysFont(None, 26)
         try:
-            am = __import__(
-                "src.engine.asset_manager", fromlist=["AssetManager"]
-            ).AssetManager()
-            self._font_small = am.get_font(
-                Settings.FONT_NARRATIVE, Settings.FONT_SIZE_NARRATIVE
-            )
+            am = __import__("src.engine.asset_manager", fromlist=["AssetManager"]).AssetManager()
+            self._font_small = am.get_font(Settings.FONT_NARRATIVE, Settings.FONT_SIZE_NARRATIVE)
         except Exception:
             self._font_small = pygame.font.SysFont(None, 24)
 
@@ -100,7 +119,8 @@ class PauseScreen:
         panel_rect = pygame.Rect(
             self._sw // 2 - PANEL_W // 2,
             self._sh // 2 - PANEL_H // 2,
-            PANEL_W, PANEL_H,
+            PANEL_W,
+            PANEL_H,
         )
         # Click zones: centred horizontally, spaced vertically from ITEM_Y_START_OFFSET
         btn_w, btn_h = 280, 50
@@ -111,7 +131,8 @@ class PauseScreen:
                 pygame.Rect(
                     x,
                     panel_rect.top + ITEM_Y_START_OFFSET + i * ITEM_SPACING,
-                    btn_w, btn_h,
+                    btn_w,
+                    btn_h,
                 )
             )
 
@@ -122,7 +143,7 @@ class PauseScreen:
             if self.state == "SAVE_MENU":
                 self.state = "MAIN"
                 return None
-            
+
         if self.state == "SAVE_MENU":
             if self._save_menu.is_back_clicked(event):
                 self.state = "MAIN"
@@ -168,7 +189,8 @@ class PauseScreen:
         panel_rect = pygame.Rect(
             self._sw // 2 - PANEL_W // 2,
             self._sh // 2 - PANEL_H // 2,
-            PANEL_W, PANEL_H,
+            PANEL_W,
+            PANEL_H,
         )
 
         self._screen.blit(self._panel, panel_rect)
@@ -182,50 +204,53 @@ class PauseScreen:
         )
 
         # Menu items — engraved idle, golden hover
-        for i, (rect, key, default) in enumerate(zip(self.button_rects, _BUTTON_KEYS, _BUTTON_DEFAULTS)):
+        for i, (rect, key, default) in enumerate(
+            zip(self.button_rects, _BUTTON_KEYS, _BUTTON_DEFAULTS, strict=False)
+        ):
             label = self._i18n.get(key, default)
             cx = rect.centerx
             cy = rect.centery
             if self._hovered_btn == i:
                 # Text is light sky blue, Halo is intense bright blue
-                self._blit_halo_text(label, cx, cy, self._item_font, (180, 230, 255), (40, 120, 255))
+                self._blit_halo_text(
+                    label, cx, cy, self._item_font, (180, 230, 255), (40, 120, 255)
+                )
             else:
                 self._blit_engraved(label, cx, cy)
 
         if self._confirm_timer > 0:
             success_text = self._i18n.get("pause_menu.saved_success", "Partie sauvegardée !")
-            msg = self._success_font.render(
-                success_text, True, (180, 220, 150)
-            )
+            msg = self._success_font.render(success_text, True, (180, 220, 150))
             # Apply alpha fade out: timer goes from 2.0 to 0.0
             alpha = int(min(255, (self._confirm_timer / 2.0) * 255))
             msg.set_alpha(alpha)
-            self._screen.blit(
-                msg, msg.get_rect(midbottom=(self._sw // 2, self._sh - 40))
-            )
+            self._screen.blit(msg, msg.get_rect(midbottom=(self._sw // 2, self._sh - 40)))
 
         self._draw_cursor()
 
     def _blit_halo_text(
-        self, label: str, cx: int, cy: int,
+        self,
+        label: str,
+        cx: int,
+        cy: int,
         font: pygame.font.Font,
         text_color: tuple[int, int, int],
-        halo_color: tuple[int, int, int]
+        halo_color: tuple[int, int, int],
     ) -> None:
         """Draw text with a soft, spreading glowing halo effect."""
         base_surf = font.render(label, True, halo_color)
         w, h = base_surf.get_size()
-        
+
         # Create a padded surface so the blur doesn't clip
         pad = 24
         padded = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
         padded.blit(base_surf, (pad, pad))
-        
+
         try:
             # Use pygame-ce's fast gaussian_blur
             blurred = pygame.transform.gaussian_blur(padded, 8)
             blurred.set_alpha(255)
-            
+
             # Blit 3 times for a very strong, dense center glow that is highly visible
             rect = blurred.get_rect(center=(cx, cy))
             self._screen.blit(blurred, rect)
@@ -237,19 +262,19 @@ class PauseScreen:
             offsets = [(-3, -3), (3, -3), (-3, 3), (3, 3), (0, -4), (0, 4), (-4, 0), (4, 0)]
             for dx, dy in offsets:
                 self._screen.blit(base_surf, base_surf.get_rect(center=(cx + dx, cy + dy)))
-            
+
         main_surf = font.render(label, True, text_color)
         self._screen.blit(main_surf, main_surf.get_rect(center=(cx, cy)))
 
     def _blit_engraved(self, label: str, cx: int, cy: int) -> None:
         """3-pass stone engraving: shadow | light | text. Matches TitleScreen effect."""
         shadow = self._item_font.render(label, True, ENGRAVE_SHADOW)
-        light  = self._item_font.render(label, True, ENGRAVE_LIGHT)
-        text   = self._item_font.render(label, True, ENGRAVE_TEXT)
+        light = self._item_font.render(label, True, ENGRAVE_LIGHT)
+        text = self._item_font.render(label, True, ENGRAVE_TEXT)
         r = text.get_rect(center=(cx, cy))
         self._screen.blit(shadow, r.move(-1, -1))
-        self._screen.blit(light,  r.move(1, 1))
-        self._screen.blit(text,   r)
+        self._screen.blit(light, r.move(1, 1))
+        self._screen.blit(text, r)
 
     def notify_save_result(self, success: bool) -> None:
         """Call after a save attempt to show confirmation for 2 seconds."""

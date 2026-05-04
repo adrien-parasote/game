@@ -1,8 +1,11 @@
-import pytest
-import pygame
 from unittest.mock import Mock, patch
-from src.engine.game_state_manager import GameStateManager, GameState
+
+import pygame
+import pytest
+
 from src.engine.game_events import GameEvent
+from src.engine.game_state_manager import GameState, GameStateManager
+
 
 @pytest.fixture
 def mock_game():
@@ -20,16 +23,19 @@ def mock_game():
     game.clock.tick.return_value = 16
     return game
 
+
 @pytest.fixture
 def mock_save_manager():
     sm = Mock()
     sm.list_slots.return_value = [None, None, None]
     return sm
 
+
 @pytest.fixture
 def mock_title_screen():
     ts = Mock()
     return ts
+
 
 @pytest.fixture
 def mock_pause_screen():
@@ -37,18 +43,23 @@ def mock_pause_screen():
     ps._save_menu = Mock()
     return ps
 
+
 @pytest.fixture
 def gsm(mock_game, mock_save_manager, mock_title_screen, mock_pause_screen):
-    with patch("src.engine.game_state_manager.TitleScreen", return_value=mock_title_screen), \
-         patch("src.engine.game_state_manager.PauseScreen", return_value=mock_pause_screen), \
-         patch("src.engine.game_state_manager.Game", return_value=mock_game), \
-         patch("src.engine.game_state_manager.SaveManager", return_value=mock_save_manager):
+    with (
+        patch("src.engine.game_state_manager.TitleScreen", return_value=mock_title_screen),
+        patch("src.engine.game_state_manager.PauseScreen", return_value=mock_pause_screen),
+        patch("src.engine.game_state_manager.Game", return_value=mock_game),
+        patch("src.engine.game_state_manager.SaveManager", return_value=mock_save_manager),
+    ):
         manager = GameStateManager()
         return manager
+
 
 @pytest.mark.tc("GF-019")
 def test_initial_state(gsm):
     assert gsm.state == GameState.TITLE
+
 
 @pytest.mark.tc("GF-020")
 def test_handle_title_new_game(gsm, mock_title_screen):
@@ -56,18 +67,26 @@ def test_handle_title_new_game(gsm, mock_title_screen):
     gsm._handle_title([Mock()], 0.016)
     assert gsm.state == GameState.PLAYING
 
+
 @pytest.mark.tc("GF-021")
 def test_handle_title_load_game(gsm, mock_title_screen, mock_save_manager, mock_game):
     mock_title_screen.handle_event.return_value = GameEvent.load_requested(1)
-    mock_save_manager.load.return_value = Mock(player={"map_name": "Test Map"}, inventory={}, world_state={}, time_system={}, map="Test Map")
-    
+    mock_save_manager.load.return_value = Mock(
+        player={"map_name": "Test Map"},
+        inventory={},
+        world_state={},
+        time_system={},
+        map="Test Map",
+    )
+
     # We pass a valid pygame Event to avoid TypeError in post()
     test_event = pygame.event.Event(pygame.USEREVENT)
     mock_game.player.inventory.capacity = 20
     gsm._handle_title([test_event], 0.016)
-    
+
     assert gsm.state == GameState.PLAYING
     mock_save_manager.load.assert_called_with(1)
+
 
 @pytest.mark.tc("GF-022")
 def test_handle_title_quit(gsm, mock_title_screen):
@@ -76,15 +95,17 @@ def test_handle_title_quit(gsm, mock_title_screen):
         gsm._handle_title([Mock()], 0.016)
         mock_exit.assert_called_once()
 
+
 @pytest.mark.tc("GF-023")
 def test_handle_playing_pause_requested(gsm, mock_game):
     gsm.state = GameState.PLAYING
     mock_game.run_frame.return_value = GameEvent.pause_requested()
-    
+
     test_event = pygame.event.Event(pygame.USEREVENT)
     gsm._handle_playing([test_event], 0.016)
-    
+
     assert gsm.state == GameState.PAUSED
+
 
 @pytest.mark.tc("GF-024")
 def test_handle_paused_resume(gsm, mock_pause_screen):
@@ -92,6 +113,7 @@ def test_handle_paused_resume(gsm, mock_pause_screen):
     mock_pause_screen.handle_event.return_value = GameEvent.resume()
     gsm._handle_paused([Mock()], 0.016)
     assert gsm.state == GameState.PLAYING
+
 
 @pytest.mark.tc("GF-025")
 def test_handle_paused_save_requested(gsm, mock_pause_screen, mock_save_manager, mock_game):
@@ -103,6 +125,7 @@ def test_handle_paused_save_requested(gsm, mock_pause_screen, mock_save_manager,
         mock_save_manager.save_thumbnail.assert_called_once()
         mock_pause_screen.notify_save_result.assert_called_with(True)
 
+
 @pytest.mark.tc("GF-026")
 def test_handle_paused_goto_title(gsm, mock_pause_screen, mock_title_screen, mock_game):
     gsm.state = GameState.PAUSED
@@ -113,12 +136,14 @@ def test_handle_paused_goto_title(gsm, mock_pause_screen, mock_title_screen, moc
     assert mock_pause_screen.state == "MAIN"
     mock_game.audio_manager.stop_bgm.assert_called()
 
+
 @pytest.mark.tc("GF-027")
 def test_save_to_first_free_slot(gsm, mock_save_manager, mock_game):
     mock_save_manager.list_slots.return_value = [Mock(), None, Mock()]
     with patch("pygame.transform.smoothscale", return_value=Mock()):
         gsm._save_to_first_free_slot()
         mock_save_manager.save.assert_called_with(2, mock_game)
+
 
 @pytest.mark.tc("GF-028")
 def test_save_to_first_free_slot_all_full(gsm, mock_save_manager, mock_game):
@@ -127,6 +152,7 @@ def test_save_to_first_free_slot_all_full(gsm, mock_save_manager, mock_game):
         gsm._save_to_first_free_slot()
         # Fallback to slot 1
         mock_save_manager.save.assert_called_with(1, mock_game)
+
 
 @pytest.mark.tc("GF-029")
 @pytest.mark.tc("GF-030")
@@ -138,6 +164,7 @@ def test_on_escape(gsm):
     gsm._on_escape()
     assert gsm.state == GameState.PLAYING
 
+
 @pytest.mark.tc("GF-031")
 def test_transition_to_playing_no_save_data(gsm, mock_save_manager, mock_game):
     mock_save_manager.load.return_value = None
@@ -145,44 +172,49 @@ def test_transition_to_playing_no_save_data(gsm, mock_save_manager, mock_game):
     mock_game._load_map.assert_called()
     assert gsm.state == GameState.PLAYING
 
+
 @pytest.mark.tc("GF-032")
 def test_handle_events_filtering(gsm, mock_game):
     # Just to run through run() with ESC
-    pygame.event.clear() # Clear queue
+    pygame.event.clear()  # Clear queue
     event = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
-    
+
     # Should filter it out and not post it back
     gsm._handle_playing([event], 0.016)
-    
+
     # Assert queue is empty
     assert not pygame.event.get()
 
+
 def test_run_main_loop_and_global_events(gsm):
     # Test run() exits gracefully by mocking pygame.display.update to raise a custom exception
-    class BreakLoop(Exception): pass
-    
+    class BreakLoop(Exception):
+        pass
+
     with patch("pygame.display.update", side_effect=BreakLoop):
         with pytest.raises(BreakLoop):
             gsm.run()
-            
+
     # Test _process_global_events with QUIT
     event_quit = pygame.event.Event(pygame.QUIT)
     with patch("sys.exit") as mock_exit, patch("pygame.quit") as mock_pygame_quit:
         gsm._process_global_events([event_quit])
         mock_exit.assert_called_once()
         mock_pygame_quit.assert_called_once()
-        
+
     # Test _process_global_events with TOGGLE_FULLSCREEN
     from src.config import Settings
+
     event_fs = pygame.event.Event(pygame.KEYDOWN, key=Settings.TOGGLE_FULLSCREEN_KEY)
     gsm._process_global_events([event_fs])
     gsm._game.toggle_fullscreen.assert_called_once()
-    
+
     # Test _process_global_events with ESCAPE
     event_esc = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
     with patch.object(gsm, "_on_escape") as mock_on_escape:
         gsm._process_global_events([event_esc])
         mock_on_escape.assert_called_once()
+
 
 def test_handle_title_none_result(gsm, mock_title_screen):
     mock_title_screen.handle_event.return_value = None
@@ -190,17 +222,19 @@ def test_handle_title_none_result(gsm, mock_title_screen):
     mock_title_screen.update.assert_called_once()
     mock_title_screen.draw.assert_called_once()
 
+
 def test_handle_paused_none_and_pause_request(gsm, mock_pause_screen):
     # Test result None
     mock_pause_screen.handle_event.return_value = None
     gsm._handle_paused([Mock()], 0.016)
     mock_pause_screen.update.assert_called_once()
-    
+
     # Test PAUSE_REQUESTED in paused state
     mock_pause_screen.handle_event.return_value = GameEvent.pause_requested()
     with patch.object(gsm, "_save_to_first_free_slot") as mock_save:
         gsm._handle_paused([Mock()], 0.016)
         mock_save.assert_called_once()
+
 
 def test_restore_inventory_exceptions(gsm, mock_game):
     # Setup inventory mock
@@ -209,35 +243,35 @@ def test_restore_inventory_exceptions(gsm, mock_game):
     inv.slots = [None, None]
     inv.equipment = {}
     mock_game.player.inventory = inv
-    
+
     # Force exception on create_item
     inv.create_item.side_effect = Exception("Test Exception")
-    
+
     inv_data = {
         "slots": [{"id": "potion", "quantity": 1}],
-        "equipment": {
-            "weapon": {"id": "sword", "quantity": 1},
-            "armor": None
-        }
+        "equipment": {"weapon": {"id": "sword", "quantity": 1}, "armor": None},
     }
-    
+
     gsm._restore_inventory(mock_game, inv_data)
-    assert inv.slots[0] is None # Did not crash, kept None
-    assert inv.equipment.get("armor") is None # Restored None
-    assert "weapon" not in inv.equipment # Did not crash on exception
+    assert inv.slots[0] is None  # Did not crash, kept None
+    assert inv.equipment.get("armor") is None  # Restored None
+    assert "weapon" not in inv.equipment  # Did not crash on exception
+
 
 def test_resolve_default_map(gsm):
     # Test world.world logic when NOT in DEBUG or debug room missing
-    with patch("src.config.Settings.DEBUG", False), \
-         patch("os.path.exists", return_value=True), \
-         patch("builtins.open") as mock_open:
-        
+    with (
+        patch("src.config.Settings.DEBUG", False),
+        patch("os.path.exists", return_value=True),
+        patch("builtins.open") as mock_open,
+    ):
         import io
+
         # Valid world.world
         mock_open.return_value = io.StringIO('{"maps": [{"fileName": "test.tmj"}]}')
         with patch("json.load", return_value={"maps": [{"fileName": "test.tmj"}]}):
             assert gsm._resolve_default_map() == "test.tmj"
-            
+
         # Exception during world.world reading
         mock_open.side_effect = Exception("File read error")
         assert gsm._resolve_default_map() == "00-spawn.tmj"

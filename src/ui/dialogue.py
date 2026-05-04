@@ -1,79 +1,90 @@
-import pygame
-import os
 import logging
+import os
+
+import pygame
+
 from src.config import Settings
 from src.engine.asset_manager import AssetManager
 from src.ui.dialogue_constants import (
-    DIALOGUE_CONTENT_MARGIN_X,
-    DIALOGUE_MSG_Y_OFFSET_TITLED,
-    DIALOGUE_MSG_Y_OFFSET_PLAIN,
     DIALOGUE_ARROW_Y_OFFSET,
+    DIALOGUE_CONTENT_MARGIN_X,
+    DIALOGUE_MSG_Y_OFFSET_PLAIN,
+    DIALOGUE_MSG_Y_OFFSET_TITLED,
 )
+
 
 class DialogueManager:
     """
     Handles dialogue box rendering, text wrapping, and state management.
     Optimized for performance by pre-calculating text wrapping.
     """
-    
+
     def __init__(self):
         self.is_active = False
         self.message = ""
         self.title = ""
         self.displayed_text = ""
-        
+
         # Settings.TEXT_SPEED is delay per character (seconds); convert to chars per second
         self.typewriter_speed = 1.0 / getattr(Settings, "TEXT_SPEED", 0.05)
-        
+
         # Paginated text state
         self._pages: list[list[str]] = []  # List of pages, each page is a list of lines
-        self._page_surfaces: list[pygame.Surface] = [] # Pre-rendered surface for each page
+        self._page_surfaces: list[pygame.Surface] = []  # Pre-rendered surface for each page
         self._current_page_index = 0
         self._page_char_index = 0.0
         self._is_page_complete = False
-        
+
         # UI Assets
         self.dialogue_box = None
         self.next_arrow = None
-        
+
         # Scaling (based on HUD scale 0.5)
         self.scale = 0.5
-        
+
         # Style
-        self._shadow_color = (180, 170, 150) # Light shadow for parchment
+        self._shadow_color = (180, 170, 150)  # Light shadow for parchment
         self._shadow_offset = 1
-        self._text_color = (60, 40, 30)      # Dark brown for high contrast on parchment
-        
+        self._text_color = (60, 40, 30)  # Dark brown for high contrast on parchment
+
         # Fonts
         self.font_title = None
         self.font_message = None
-        
+
         self._load_assets()
 
     def _load_assets(self):
         """Load HUD assets and prepare fonts."""
         try:
             hud_dir = os.path.join("assets", "images", "hud")
-            
+
             # 1. Dialogue Box (05-textbox.png)
             box_path = os.path.join(hud_dir, "05-textbox.png")
             if os.path.exists(box_path):
                 img = pygame.image.load(box_path).convert_alpha()
                 w, h = img.get_size()
-                self.dialogue_box = pygame.transform.smoothscale(img, (int(w * self.scale), int(h * self.scale)))
-            
+                self.dialogue_box = pygame.transform.smoothscale(
+                    img, (int(w * self.scale), int(h * self.scale))
+                )
+
             # 2. Next Arrow (06-cursor.png)
             arrow_path = os.path.join(hud_dir, "06-cursor.png")
             if os.path.exists(arrow_path):
                 img = pygame.image.load(arrow_path).convert_alpha()
                 w, h = img.get_size()
-                self.next_arrow = pygame.transform.smoothscale(img, (int(w * self.scale), int(h * self.scale)))
-            
+                self.next_arrow = pygame.transform.smoothscale(
+                    img, (int(w * self.scale), int(h * self.scale))
+                )
+
             # 3. Fonts
             am = AssetManager()
-            self.font_message = am.get_font(Settings.FONT_NARRATIVE, int(Settings.FONT_SIZE_NARRATIVE * 1.5)) # Larger for dialogue
-            self.font_title = am.get_font(Settings.FONT_NOBLE, int(Settings.FONT_SIZE_NOBLE * 1.5)) # Larger for dialogue
-            
+            self.font_message = am.get_font(
+                Settings.FONT_NARRATIVE, int(Settings.FONT_SIZE_NARRATIVE * 1.5)
+            )  # Larger for dialogue
+            self.font_title = am.get_font(
+                Settings.FONT_NOBLE, int(Settings.FONT_SIZE_NOBLE * 1.5)
+            )  # Larger for dialogue
+
         except Exception as e:
             logging.error(f"Failed to load dialogue assets: {e}")
 
@@ -88,39 +99,41 @@ class DialogueManager:
         max_w = self.dialogue_box.get_width() - (content_margin_x * 2)
 
         # Available height calculation
-        message_y_offset = DIALOGUE_MSG_Y_OFFSET_TITLED if self.title else DIALOGUE_MSG_Y_OFFSET_PLAIN
-        available_h = self.dialogue_box.get_height() - message_y_offset - 40 
-        
+        message_y_offset = (
+            DIALOGUE_MSG_Y_OFFSET_TITLED if self.title else DIALOGUE_MSG_Y_OFFSET_PLAIN
+        )
+        available_h = self.dialogue_box.get_height() - message_y_offset - 40
+
         line_spacing = 1.2
         line_height = self.font_message.get_linesize() * line_spacing
         max_lines = max(1, int(available_h // line_height))
-        
+
         # 1. Wrap all text into lines
         all_lines = []
-        words = text.split(' ')
+        words = text.split(" ")
         current_line_words = []
-        
+
         for word in words:
-            test_line = ' '.join(current_line_words + [word]) if current_line_words else word
+            test_line = " ".join(current_line_words + [word]) if current_line_words else word
             if self.font_message.size(test_line)[0] <= max_w:
                 current_line_words.append(word)
             else:
-                all_lines.append(' '.join(current_line_words))
+                all_lines.append(" ".join(current_line_words))
                 current_line_words = [word]
         if current_line_words:
-            all_lines.append(' '.join(current_line_words))
-            
+            all_lines.append(" ".join(current_line_words))
+
         # 2. Group lines into pages and pre-render them
         self._pages = []
         self._page_surfaces = []
         for i in range(0, len(all_lines), max_lines):
-            page_lines = all_lines[i:i + max_lines]
+            page_lines = all_lines[i : i + max_lines]
             self._pages.append(page_lines)
-            
+
             # Pre-render the full page to a transparent surface
             surf_h = int(len(page_lines) * line_height)
             page_surf = pygame.Surface((max_w, surf_h), pygame.SRCALPHA)
-            
+
             y_offset = 0
             for line in page_lines:
                 # Shadow
@@ -130,7 +143,7 @@ class DialogueManager:
                 line_surf = self.font_message.render(line, True, self._text_color)
                 page_surf.blit(line_surf, (0, y_offset))
                 y_offset += line_height
-            
+
             self._page_surfaces.append(page_surf)
 
     def start_dialogue(self, text: str, title: str = ""):
@@ -146,13 +159,13 @@ class DialogueManager:
         self._current_page_index = 0
         self._page_char_index = 0.0
         self._is_page_complete = False
-        
+
         self._paginate(text)
-        
+
         if not self._pages:
             self.is_active = False
             return
-            
+
         logging.info(f"Dialogue started: [{title}] {text[:30]}... ({len(self._pages)} pages)")
 
     def advance(self):
@@ -186,9 +199,9 @@ class DialogueManager:
         """Update typewriter animation for the current page."""
         if not self.is_active or self._is_page_complete:
             return
-            
+
         current_page_text = " ".join(self._pages[self._current_page_index])
-        
+
         if self._page_char_index < len(current_page_text):
             self._page_char_index += self.typewriter_speed * dt
             current_len = int(self._page_char_index)
@@ -203,11 +216,13 @@ class DialogueManager:
         """Draw the dialogue box and paginated text."""
         if not self.is_active or not self.dialogue_box:
             return
-            
+
         # 1. Position box at bottom
-        box_rect = self.dialogue_box.get_rect(midbottom=(Settings.WINDOW_WIDTH // 2, Settings.WINDOW_HEIGHT - 20))
+        box_rect = self.dialogue_box.get_rect(
+            midbottom=(Settings.WINDOW_WIDTH // 2, Settings.WINDOW_HEIGHT - 20)
+        )
         screen.blit(self.dialogue_box, box_rect)
-        
+
         content_margin_x = DIALOGUE_CONTENT_MARGIN_X
 
         # 2. Draw Title
@@ -227,9 +242,9 @@ class DialogueManager:
         # 3. Draw Message Lines for Current Page (Optimized)
         if self.font_message and self._page_surfaces:
             message_x = box_rect.x + content_margin_x
-            
+
             page_surf = self._page_surfaces[self._current_page_index]
-            
+
             if self._is_page_complete:
                 screen.blit(page_surf, (message_x, message_y))
             else:
@@ -237,23 +252,25 @@ class DialogueManager:
                 # Wait, clipping by width won't work perfectly for multi-line text because we need to reveal
                 # line by line. Let's do it by rendering only the visible lines from the page_surf,
                 # plus the currently typing line.
-                
+
                 line_spacing = 1.2
                 line_height = self.font_message.get_linesize() * line_spacing
                 current_page_lines = self._pages[self._current_page_index]
                 chars_to_show = len(self.displayed_text)
                 accumulated_chars = 0
-                
+
                 y_offset = 0
                 for line in current_page_lines:
                     if accumulated_chars >= chars_to_show:
                         break
-                    
+
                     line_len_with_space = len(line) + 1
-                    
+
                     if accumulated_chars + len(line) <= chars_to_show:
                         # Full line is visible: blit this horizontal strip from the pre-rendered page_surf
-                        strip_rect = pygame.Rect(0, int(y_offset), page_surf.get_width(), int(line_height))
+                        strip_rect = pygame.Rect(
+                            0, int(y_offset), page_surf.get_width(), int(line_height)
+                        )
                         screen.blit(page_surf, (message_x, message_y + y_offset), strip_rect)
                         accumulated_chars += line_len_with_space
                     else:
@@ -261,12 +278,22 @@ class DialogueManager:
                         chars_in_this_line = chars_to_show - accumulated_chars
                         text_to_draw = line[:chars_in_this_line]
                         if text_to_draw:
-                            shadow_surf = self.font_message.render(text_to_draw, True, self._shadow_color)
-                            screen.blit(shadow_surf, (message_x + self._shadow_offset, message_y + y_offset + self._shadow_offset))
-                            line_surf = self.font_message.render(text_to_draw, True, self._text_color)
+                            shadow_surf = self.font_message.render(
+                                text_to_draw, True, self._shadow_color
+                            )
+                            screen.blit(
+                                shadow_surf,
+                                (
+                                    message_x + self._shadow_offset,
+                                    message_y + y_offset + self._shadow_offset,
+                                ),
+                            )
+                            line_surf = self.font_message.render(
+                                text_to_draw, True, self._text_color
+                            )
                             screen.blit(line_surf, (message_x, message_y + y_offset))
                         accumulated_chars = chars_to_show
-                    
+
                     y_offset += line_height
 
         # 4. Draw Next Arrow when page is complete

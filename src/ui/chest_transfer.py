@@ -1,45 +1,49 @@
-# src/ui/chest_transfer.py
-"""Transfer and auto-stacking logic for the Chest UI."""
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.ui.chest_protocol import ChestUIProtocol
+
 
 class ChestTransferMixin:
     """Mixin handling item transfers between chest and player inventory."""
 
-    def _transfer_chest_to_inventory(self) -> None:
+    def _transfer_chest_to_inventory(self: "ChestUIProtocol") -> None:
         """Auto-transfer from chest to player inventory."""
         if not self._chest_entity or not self._player:
             return
-        
+
         contents = self._get_chest_contents()
         for i in range(len(contents)):
             entry = contents[i]
             if entry is None:
                 continue
-                
+
             remaining = self._player.inventory.add_item(entry["item_id"], entry["quantity"])
-            
+
             if remaining == 0:
                 contents[i] = None
             else:
                 entry["quantity"] = remaining
                 break
 
-    def _transfer_inventory_to_chest(self) -> None:
+    def _transfer_inventory_to_chest(self: "ChestUIProtocol") -> None:
         """Auto-transfer from player inventory to chest."""
         if not self._chest_entity or not self._player:
             return
-        
+
         contents = self._get_chest_contents()
         inv = self._player.inventory
-        
+
         for i in range(inv.capacity):
             item = inv.slots[i]
             if item is None:
                 continue
-            
+
             # 1. Try to stack in chest
             stacked = False
             for entry in contents:
-                if entry is None: continue
+                if entry is None:
+                    continue
                 if entry["item_id"] == item.id and entry["quantity"] < item.stack_max:
                     can_add = min(item.quantity, item.stack_max - entry["quantity"])
                     entry["quantity"] += can_add
@@ -48,7 +52,7 @@ class ChestTransferMixin:
                         inv.slots[i] = None
                         stacked = True
                         break
-            
+
             if stacked:
                 continue
 
@@ -62,19 +66,19 @@ class ChestTransferMixin:
                 # Chest is full
                 break
 
-    def _transfer_dragged_to_chest(self, target_idx: int) -> None:
+    def _transfer_dragged_to_chest(self: "ChestUIProtocol", target_idx: int) -> None:
         """Move the currently dragged item to the chest at target_idx."""
-        if not self._dragging_item or not self._chest_entity:
+        if not self._dragging_item or not self._chest_entity or not self._player:
             return
-        
+
         item_id = self._dragging_item["item_id"]
         qty = self._dragging_item["quantity"]
         source = self._dragging_item["source"]
         src_idx = self._dragging_item["index"]
-        
+
         contents = self._get_chest_contents()
         target_entry = contents[target_idx]
-        
+
         if source == "chest":
             if src_idx == target_idx:
                 return
@@ -92,10 +96,10 @@ class ChestTransferMixin:
             else:
                 contents[target_idx], contents[src_idx] = contents[src_idx], contents[target_idx]
             return
-            
+
         # Source is inventory
         inv = self._player.inventory
-        
+
         if target_entry is None:
             contents[target_idx] = {"item_id": item_id, "quantity": qty}
             inv.slots[src_idx] = None
@@ -110,23 +114,23 @@ class ChestTransferMixin:
         else:
             swapped_id = target_entry["item_id"]
             swapped_qty = target_entry["quantity"]
-            
+
             contents[target_idx] = {"item_id": item_id, "quantity": qty}
             inv.slots[src_idx] = inv.create_item(swapped_id, swapped_qty)
 
-    def _transfer_dragged_to_inventory(self, target_idx: int) -> None:
+    def _transfer_dragged_to_inventory(self: "ChestUIProtocol", target_idx: int) -> None:
         """Move the currently dragged item to the player inventory at target_idx."""
         if not self._dragging_item or not self._player:
             return
-        
+
         item_id = self._dragging_item["item_id"]
         qty = self._dragging_item["quantity"]
         source = self._dragging_item["source"]
         src_idx = self._dragging_item["index"]
-        
+
         inv = self._player.inventory
         target_slot = inv.slots[target_idx]
-        
+
         if source == "inv":
             if src_idx == target_idx:
                 return
@@ -140,12 +144,15 @@ class ChestTransferMixin:
                 if inv.slots[src_idx].quantity <= 0:
                     inv.slots[src_idx] = None
             else:
-                inv.slots[target_idx], inv.slots[src_idx] = inv.slots[src_idx], inv.slots[target_idx]
+                inv.slots[target_idx], inv.slots[src_idx] = (
+                    inv.slots[src_idx],
+                    inv.slots[target_idx],
+                )
             return
-            
+
         # Source is chest
         contents = self._get_chest_contents()
-        
+
         if target_slot is None:
             inv.slots[target_idx] = inv.create_item(item_id, qty)
             contents[src_idx] = None
@@ -158,6 +165,6 @@ class ChestTransferMixin:
         else:
             swapped_id = target_slot.id
             swapped_qty = target_slot.quantity
-            
+
             inv.slots[target_idx] = inv.create_item(item_id, qty)
             contents[src_idx] = {"item_id": swapped_id, "quantity": swapped_qty}

@@ -2,3 +2,15 @@
 markers = [
     "tc(id): Spec test case traceability marker — links test to a TC-ID in docs/specs/",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "T20", "W", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["T201"]
+"tests/*.py" = ["F841", "F401", "E402"] # Allow some unused vars/imports and non-top-level imports in tests

@@ -2,9 +2,10 @@
 Apply calibration result from scripts/calibration_result.py into title_screen_constants.py.
 Run: python3 scripts/apply_calibration.py
 """
+
+import os
 import re
 import sys
-import os
 
 RESULT_PATH = os.path.join("scripts", "calibration_result.py")
 CONSTANTS_PATH = os.path.join("src", "ui", "title_screen_constants.py")

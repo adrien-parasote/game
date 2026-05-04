@@ -1,22 +1,25 @@
 import pygame
-from typing import List
+
 
 class CameraGroup(pygame.sprite.Group):
     """
     A specialized sprite group that handles Y-sorting (Depth Sorting)
     and camera offset displacement during drawing.
     """
-    
+
     def __init__(self):
         super().__init__()
         self.display_surface = pygame.display.get_surface()
         self.offset = pygame.math.Vector2()
-        self.half_width = self.display_surface.get_size()[0] // 2
-        self.half_height = self.display_surface.get_size()[1] // 2
+        if self.display_surface:
+            self.half_width = self.display_surface.get_size()[0] // 2
+            self.half_height = self.display_surface.get_size()[1] // 2
+        else:
+            self.half_width = 0
+            self.half_height = 0
         self.world_size = (0, 0)
-        self._sorted_cache: List[pygame.sprite.Sprite] = []
+        self._sorted_cache: list[pygame.sprite.Sprite] = []
         self._cache_dirty: bool = True
-
 
     def set_world_size(self, width: int, height: int):
         """Set the boundaries of the world in pixels."""
@@ -24,12 +27,17 @@ class CameraGroup(pygame.sprite.Group):
 
     def calculate_offset(self, target: pygame.sprite.Sprite) -> pygame.math.Vector2:
         """Calculate and clamp the camera offset relative to a target sprite."""
+        if not target.rect:
+            return self.offset
         # Standard centering offset
         off_x = self.half_width - target.rect.centerx
         off_y = self.half_height - target.rect.centery
 
         # Screen dimensions
-        sw, sh = self.display_surface.get_size()
+        if self.display_surface:
+            sw, sh = self.display_surface.get_size()
+        else:
+            sw, sh = 0, 0
         ww, wh = self.world_size
 
         # Clamp X logic
@@ -63,13 +71,14 @@ class CameraGroup(pygame.sprite.Group):
         super().remove(*sprites)
         self._cache_dirty = True
 
-    def get_sorted_sprites(self) -> List[pygame.sprite.Sprite]:
+    def get_sorted_sprites(self) -> list[pygame.sprite.Sprite]:
         """Return sprites sorted by Y-coordinate (bottom). Result is cached until dirty."""
         if self._cache_dirty:
-            self._sorted_cache = sorted(self.sprites(), key=lambda s: s.rect.bottom)
+            self._sorted_cache = sorted(
+                self.sprites(), key=lambda s: s.rect.bottom if s.rect else 0
+            )
             self._cache_dirty = False
         return self._sorted_cache
-
 
     def custom_draw(self, surface: pygame.Surface):
         """Draw sprites with already calculated camera offset and Y-sorting."""
@@ -87,17 +96,20 @@ class CameraGroup(pygame.sprite.Group):
 
         # Sort and draw
         for sprite in self.get_sorted_sprites():
+            if not sprite.image or not sprite.rect:
+                continue
+
             # Align bottom-right of sprite image to bottom-right of logical hitbox
             visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
-            
+
             # Calculate world visual rect in screen space
             offset_pos = visual_rect.topleft + self.offset
-            
+
             # Simple Frustum Culling: check if sprite overlaps screen
             screen_sprite_rect = pygame.Rect(offset_pos, visual_rect.size)
             if screen_rect.colliderect(screen_sprite_rect):
                 surface.blit(sprite.image, offset_pos)
-                
+
                 # Debug Hitbox Rendering
                 if Settings.DEBUG:
                     debug_rect = sprite.rect.move(self.offset.x, self.offset.y)

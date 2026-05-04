@@ -3,6 +3,7 @@ GameStateManager — Main loop orchestrator, manages TITLE/PLAYING/PAUSED states
 Spec: docs/specs/game-flow-spec.md#23-srcenginegame_state_managerpy-new
 ADR: docs/ADRs/ADR-001-gamestate-architecture.md
 """
+
 import logging
 import sys
 from enum import Enum
@@ -11,14 +12,19 @@ import pygame
 
 from src.config import Settings
 from src.engine.game import Game
-from src.engine.game_events import GameEvent, GameEventType
+from src.engine.game_events import GameEventType
 from src.engine.game_state_constants import (
-    THUMBNAIL_CROP_SIZE, THUMBNAIL_SIZE, SAVE_BGM_FADE_MS,
-    PLAYER_DEFAULT_HP, PLAYER_DEFAULT_MAX_HP, PLAYER_DEFAULT_LEVEL, PLAYER_DEFAULT_GOLD,
+    PLAYER_DEFAULT_GOLD,
+    PLAYER_DEFAULT_HP,
+    PLAYER_DEFAULT_LEVEL,
+    PLAYER_DEFAULT_MAX_HP,
+    SAVE_BGM_FADE_MS,
+    THUMBNAIL_CROP_SIZE,
+    THUMBNAIL_SIZE,
 )
 from src.engine.save_manager import SaveManager
-from src.ui.title_screen import TitleScreen
 from src.ui.pause_screen import PauseScreen
+from src.ui.title_screen import TitleScreen
 
 
 class GameState(Enum):
@@ -39,7 +45,7 @@ class GameStateManager:
         self._title_screen = TitleScreen(self._game.screen, self._save_manager)
         self._pause_screen = PauseScreen(self._game.screen, self._save_manager)
         self.state = GameState.TITLE
-        self._default_map: str | None = None   # resolved once on new game
+        self._default_map: str | None = None  # resolved once on new game
 
     # ── Main loop ─────────────────────────────────────────────────────────────
 
@@ -101,8 +107,9 @@ class GameStateManager:
 
     def _handle_playing(self, events: list, dt: float) -> None:
         # Inject filtered events into game (without ESC — handled globally)
-        filtered = [e for e in events
-                    if not (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE)]
+        filtered = [
+            e for e in events if not (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE)
+        ]
         # Feed events back to pygame queue so Game._handle_events() can consume them
         for event in filtered:
             pygame.event.post(event)
@@ -126,7 +133,8 @@ class GameStateManager:
                 # Sauvegarder button — find first free slot
                 self._save_to_first_free_slot()
             elif result.type == GameEventType.SAVE_REQUESTED:
-                self._handle_save_requested(result.slot_id)
+                if result.slot_id is not None:
+                    self._handle_save_requested(result.slot_id)
             elif result.type == GameEventType.GOTO_TITLE:
                 self._transition_to_title()
 
@@ -135,16 +143,14 @@ class GameStateManager:
 
     # ── Transitions ───────────────────────────────────────────────────────────
 
-    def _transition_to_playing(
-        self, slot_id: int | None, resume: bool = False
-    ) -> None:
+    def _transition_to_playing(self, slot_id: int | None, resume: bool = False) -> None:
         """
         Transition to PLAYING state.
         - slot_id=None + resume=False → new game (load default map)
         - slot_id=N               → load save slot N
         - slot_id=None + resume=True → resume from pause (no map load)
         """
-        pygame.mouse.set_visible(True)   # restore system cursor during gameplay
+        pygame.mouse.set_visible(True)  # restore system cursor during gameplay
         if resume:
             self.state = GameState.PLAYING
             return
@@ -193,16 +199,16 @@ class GameStateManager:
     def _handle_save_requested(self, slot_id: int) -> None:
         """Execute save sequence and generate thumbnail."""
         self._save_manager.save(slot_id, self._game)
-        
+
         # Draw pure game frame without UI overlays
         self._game._draw()
-        
+
         # Capture a square crop centered on the player for the save thumbnail
         crop_size = THUMBNAIL_CROP_SIZE
         sw, sh = self._game.screen.get_size()
         cx, cy = sw // 2, sh // 2
 
-        if self._game.player:
+        if self._game.player and self._game.player.rect:
             # player.rect is in world coordinates; camera offset converts to screen space
             px, py = self._game.player.rect.center
             offset = self._game.visible_sprites.offset
@@ -217,7 +223,7 @@ class GameStateManager:
         thumb_surf = self._game.screen.subsurface(crop_rect).copy()
         # Scale down to THUMBNAIL_SIZE to fit the UI slot while keeping file size small
         thumb_surf = pygame.transform.smoothscale(thumb_surf, (THUMBNAIL_SIZE, THUMBNAIL_SIZE))
-        
+
         self._save_manager.save_thumbnail(slot_id, thumb_surf)
         self._pause_screen.notify_save_result(True)
         self._pause_screen._save_menu.refresh()
@@ -248,11 +254,13 @@ class GameStateManager:
 
         # Position player (after map load — player rect is reset by _load_map)
         import pygame as _pg
+
         x = data.player.get("x", 0.0)
         y = data.player.get("y", 0.0)
         game.player.pos = _pg.math.Vector2(x, y)
         game.player.target_pos = _pg.math.Vector2(x, y)
-        game.player.rect.center = (int(x), int(y))
+        if game.player.rect:
+            game.player.rect.center = (int(x), int(y))
 
     def _restore_inventory(self, game, inv_data: dict) -> None:
         """Rebuild Inventory from save dict."""
@@ -262,9 +270,7 @@ class GameStateManager:
         for i, slot_data in enumerate(inv_data.get("slots", [])):
             if slot_data is not None and i < inv.capacity:
                 try:
-                    inv.slots[i] = inv.create_item(
-                        slot_data["id"], slot_data["quantity"]
-                    )
+                    inv.slots[i] = inv.create_item(slot_data["id"], slot_data["quantity"])
                 except Exception as e:
                     logging.warning(f"GSM: Could not restore slot {i}: {e}")
 
@@ -283,6 +289,7 @@ class GameStateManager:
         """Return the initial map: debug room if Settings.DEBUG, else world.world first entry."""
         import json
         import os
+
         from src.config import Settings
 
         # Debug room takes priority over world.world
@@ -294,11 +301,9 @@ class GameStateManager:
         world_path = os.path.join("assets", "tiled", "maps", "world.world")
         if os.path.exists(world_path):
             try:
-                with open(world_path, "r", encoding="utf-8") as f:
+                with open(world_path, encoding="utf-8") as f:
                     world_data = json.load(f)
-                    return world_data.get("maps", [{}])[0].get(
-                        "fileName", "00-spawn.tmj"
-                    )
+                    return world_data.get("maps", [{}])[0].get("fileName", "00-spawn.tmj")
             except Exception as e:
                 logging.error(f"GSM: Could not read world.world: {e}")
         return "00-spawn.tmj"

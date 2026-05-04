@@ -5,21 +5,27 @@ Focus: drag-and-drop logic, transfer methods, drawing with items,
 and icon cache — the uncovered branches from the coverage report.
 """
 
-import pytest
-import pygame
-from unittest.mock import MagicMock, patch, PropertyMock
-from src.ui.inventory import InventoryUI
-from src.engine.inventory_system import Item
+from unittest.mock import MagicMock, PropertyMock, patch
 
+import pygame
+import pytest
+
+from src.engine.inventory_system import Item
+from src.ui.inventory import InventoryUI
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_item(item_id="sword", qty=1, stack_max=1, icon=None):
     return Item(
-        id=item_id, name="Test", description="Desc",
-        quantity=qty, stack_max=stack_max, icon=icon,
+        id=item_id,
+        name="Test",
+        description="Desc",
+        quantity=qty,
+        stack_max=stack_max,
+        icon=icon,
     )
 
 
@@ -30,8 +36,14 @@ def _make_player(capacity=28, items=None):
     inv.capacity = capacity
     inv.slots = [None] * capacity
     inv.equipment = {
-        "HEAD": None, "BAG": None, "BELT": None, "LEFT_HAND": None,
-        "UPPER_BODY": None, "LOWER_BODY": None, "RIGHT_HAND": None, "SHOES": None,
+        "HEAD": None,
+        "BAG": None,
+        "BELT": None,
+        "LEFT_HAND": None,
+        "UPPER_BODY": None,
+        "LOWER_BODY": None,
+        "RIGHT_HAND": None,
+        "SHOES": None,
     }
     inv.item_data = {
         "sword": {"stack_max": 1, "equip_slot": "RIGHT_HAND"},
@@ -62,6 +74,7 @@ def _make_ui(player=None):
 # ---------------------------------------------------------------------------
 # Drag start — equipment slot (lines 139-163)
 # ---------------------------------------------------------------------------
+
 
 class TestDragStartEquipment:
     def test_drag_from_equipment_slot(self):
@@ -151,6 +164,7 @@ class TestDragStartEquipment:
         event.pos = (400, 400)
 
         ui.handle_input(event)
+        assert ui._dragging_item is not None
         assert ui._dragging_item["icon"] == "sword.png"
 
 
@@ -158,12 +172,19 @@ class TestDragStartEquipment:
 # Mouse motion + mouse up (lines 165-178)
 # ---------------------------------------------------------------------------
 
+
 class TestDragMotionAndDrop:
     def test_mouse_motion_updates_drag_pos(self):
         """MOUSEMOTION while dragging updates _drag_pos."""
         ui = _make_ui()
         ui.is_open = True
-        ui._dragging_item = {"source": "grid", "index": 0, "item_id": "x", "quantity": 1, "icon": "x.png"}
+        ui._dragging_item = {
+            "source": "grid",
+            "index": 0,
+            "item_id": "x",
+            "quantity": 1,
+            "icon": "x.png",
+        }
 
         event = MagicMock()
         event.type = pygame.MOUSEMOTION
@@ -176,7 +197,13 @@ class TestDragMotionAndDrop:
         """MOUSEBUTTONUP clears _dragging_item."""
         ui = _make_ui()
         ui.is_open = True
-        ui._dragging_item = {"source": "grid", "index": 0, "item_id": "x", "quantity": 1, "icon": "x.png"}
+        ui._dragging_item = {
+            "source": "grid",
+            "index": 0,
+            "item_id": "x",
+            "quantity": 1,
+            "icon": "x.png",
+        }
 
         event = MagicMock()
         event.type = pygame.MOUSEBUTTONUP
@@ -190,11 +217,17 @@ class TestDragMotionAndDrop:
         """Dropping on equipment slot calls _transfer_dragged_to_equipment."""
         ui = _make_ui()
         ui.is_open = True
-        ui._dragging_item = {"source": "grid", "index": 0, "item_id": "sword", "quantity": 1, "icon": "sword.png"}
+        ui._dragging_item = {
+            "source": "grid",
+            "index": 0,
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "sword.png",
+        }
         ui.hovered_slot = ("equipment", "RIGHT_HAND")
 
-        with patch.object(ui, '_transfer_dragged_to_equipment') as mock_xfer:
-            with patch.object(ui, 'update_hover'):
+        with patch.object(ui, "_transfer_dragged_to_equipment") as mock_xfer:
+            with patch.object(ui, "update_hover"):
                 event = MagicMock()
                 event.type = pygame.MOUSEBUTTONUP
                 event.button = 1
@@ -206,11 +239,17 @@ class TestDragMotionAndDrop:
         """Dropping on grid slot calls _transfer_dragged_to_grid."""
         ui = _make_ui()
         ui.is_open = True
-        ui._dragging_item = {"source": "equipment", "name": "HEAD", "item_id": "helm", "quantity": 1, "icon": "helm.png"}
+        ui._dragging_item = {
+            "source": "equipment",
+            "name": "HEAD",
+            "item_id": "helm",
+            "quantity": 1,
+            "icon": "helm.png",
+        }
         ui.hovered_slot = ("grid", 5)
 
-        with patch.object(ui, '_transfer_dragged_to_grid') as mock_xfer:
-            with patch.object(ui, 'update_hover'):
+        with patch.object(ui, "_transfer_dragged_to_grid") as mock_xfer:
+            with patch.object(ui, "update_hover"):
                 event = MagicMock()
                 event.type = pygame.MOUSEBUTTONUP
                 event.button = 1
@@ -223,12 +262,19 @@ class TestDragMotionAndDrop:
 # _transfer_dragged_to_equipment (lines 191-231)
 # ---------------------------------------------------------------------------
 
+
 class TestTransferDraggedToEquipment:
     def test_equip_to_equip_same_slot_noop(self):
         """Dragging from equipment to same slot does nothing."""
         player = _make_player()
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "equipment", "name": "HEAD", "item_id": "helm", "quantity": 1, "icon": "h.png"}
+        ui._dragging_item = {
+            "source": "equipment",
+            "name": "HEAD",
+            "item_id": "helm",
+            "quantity": 1,
+            "icon": "h.png",
+        }
         ui._transfer_dragged_to_equipment("HEAD")
         # Should just return without changes
 
@@ -239,7 +285,13 @@ class TestTransferDraggedToEquipment:
         player.inventory.unequip_item = MagicMock(return_value=item)
         player.inventory.equip_item = MagicMock(return_value=None)  # success
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "equipment", "name": "RIGHT_HAND", "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "equipment",
+            "name": "RIGHT_HAND",
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_equipment("LEFT_HAND")
         player.inventory.unequip_item.assert_called_once_with("RIGHT_HAND")
@@ -253,7 +305,13 @@ class TestTransferDraggedToEquipment:
         # equip_item returns the item back (failure)
         player.inventory.equip_item = MagicMock(return_value=item)
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "equipment", "name": "RIGHT_HAND", "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "equipment",
+            "name": "RIGHT_HAND",
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_equipment("HEAD")
         # Should call equip_item twice: once to try HEAD, once to put back in RIGHT_HAND
@@ -268,7 +326,13 @@ class TestTransferDraggedToEquipment:
         # First equip succeeds but returns swapped item, second equip to put swapped back returns None
         player.inventory.equip_item = MagicMock(side_effect=[item_swapped, None])
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "equipment", "name": "RIGHT_HAND", "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "equipment",
+            "name": "RIGHT_HAND",
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_equipment("LEFT_HAND")
         assert player.inventory.equip_item.call_count == 2
@@ -282,7 +346,13 @@ class TestTransferDraggedToEquipment:
         # First equip returns swapped, second equip also fails (returns swapped)
         player.inventory.equip_item = MagicMock(side_effect=[item_swapped, item_swapped])
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "equipment", "name": "RIGHT_HAND", "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "equipment",
+            "name": "RIGHT_HAND",
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_equipment("LEFT_HAND")
         player.inventory.add_item.assert_called_once()
@@ -294,7 +364,13 @@ class TestTransferDraggedToEquipment:
         player.inventory.slots[2] = item
         player.inventory.equip_item = MagicMock(return_value=None)  # success
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "grid", "index": 2, "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "grid",
+            "index": 2,
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_equipment("RIGHT_HAND")
         assert player.inventory.slots[2] is None
@@ -307,7 +383,13 @@ class TestTransferDraggedToEquipment:
         player.inventory.slots[2] = item
         player.inventory.equip_item = MagicMock(return_value=item)  # fail
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "grid", "index": 2, "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "grid",
+            "index": 2,
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_equipment("HEAD")
         assert player.inventory.slots[2] is item  # returned to grid
@@ -320,7 +402,13 @@ class TestTransferDraggedToEquipment:
         player.inventory.slots[2] = item_src
         player.inventory.equip_item = MagicMock(return_value=item_swapped)
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "grid", "index": 2, "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "grid",
+            "index": 2,
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_equipment("RIGHT_HAND")
         assert player.inventory.slots[2] is item_swapped
@@ -335,13 +423,20 @@ class TestTransferDraggedToEquipment:
 # _transfer_dragged_to_grid (lines 233-285)
 # ---------------------------------------------------------------------------
 
+
 class TestTransferDraggedToGrid:
     def test_grid_to_grid_same_slot_noop(self):
         """Dropping on the same grid slot does nothing."""
         player = _make_player()
         player.inventory.slots[0] = _make_item("sword")
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "grid", "index": 0, "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "grid",
+            "index": 0,
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_grid(0)
 
@@ -351,7 +446,13 @@ class TestTransferDraggedToGrid:
         item = _make_item("sword")
         player.inventory.slots[0] = item
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "grid", "index": 0, "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "grid",
+            "index": 0,
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_grid(5)
         assert player.inventory.slots[5] is item
@@ -365,7 +466,13 @@ class TestTransferDraggedToGrid:
         player.inventory.slots[0] = src
         player.inventory.slots[1] = target
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "grid", "index": 0, "item_id": "potion", "quantity": 3, "icon": "p.png"}
+        ui._dragging_item = {
+            "source": "grid",
+            "index": 0,
+            "item_id": "potion",
+            "quantity": 3,
+            "icon": "p.png",
+        }
 
         ui._transfer_dragged_to_grid(1)
         assert target.quantity == 7
@@ -379,7 +486,13 @@ class TestTransferDraggedToGrid:
         player.inventory.slots[0] = item_a
         player.inventory.slots[1] = item_b
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "grid", "index": 0, "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "grid",
+            "index": 0,
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_grid(1)
         assert player.inventory.slots[0] is item_b
@@ -391,7 +504,13 @@ class TestTransferDraggedToGrid:
         item = _make_item("sword")
         player.inventory.equipment["RIGHT_HAND"] = item
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "equipment", "name": "RIGHT_HAND", "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "equipment",
+            "name": "RIGHT_HAND",
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_grid(0)
         assert player.inventory.slots[0] is item
@@ -405,7 +524,13 @@ class TestTransferDraggedToGrid:
         player.inventory.equipment["BELT"] = src
         player.inventory.slots[0] = target
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "equipment", "name": "BELT", "item_id": "potion", "quantity": 2, "icon": "p.png"}
+        ui._dragging_item = {
+            "source": "equipment",
+            "name": "BELT",
+            "item_id": "potion",
+            "quantity": 2,
+            "icon": "p.png",
+        }
 
         ui._transfer_dragged_to_grid(0)
         assert target.quantity == 5
@@ -421,7 +546,13 @@ class TestTransferDraggedToGrid:
         # equip_item should accept the grid_item into RIGHT_HAND
         player.inventory.equip_item = MagicMock(return_value=None)
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "equipment", "name": "RIGHT_HAND", "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "equipment",
+            "name": "RIGHT_HAND",
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_grid(0)
         # grid should now have the equipment item, equip_item called for the swap
@@ -437,7 +568,13 @@ class TestTransferDraggedToGrid:
         # equip_item fails: returns the grid_item back
         player.inventory.equip_item = MagicMock(return_value=grid_item)
         ui = _make_ui(player)
-        ui._dragging_item = {"source": "equipment", "name": "RIGHT_HAND", "item_id": "sword", "quantity": 1, "icon": "s.png"}
+        ui._dragging_item = {
+            "source": "equipment",
+            "name": "RIGHT_HAND",
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "s.png",
+        }
 
         ui._transfer_dragged_to_grid(0)
         # Should abort: grid_item stays in slot 0
@@ -453,6 +590,7 @@ class TestTransferDraggedToGrid:
 # Drawing methods (lines 366, 391-397, 412-422)
 # ---------------------------------------------------------------------------
 
+
 class TestDrawingWithItems:
     def test_draw_grid_skips_dragged_item(self):
         """Grid draw skips the item being dragged."""
@@ -461,7 +599,13 @@ class TestDrawingWithItems:
         player.inventory.slots[0] = item
         ui = _make_ui(player)
         ui.is_open = True
-        ui._dragging_item = {"source": "grid", "index": 0, "item_id": "sword", "quantity": 1, "icon": "sword.png"}
+        ui._dragging_item = {
+            "source": "grid",
+            "index": 0,
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "sword.png",
+        }
 
         screen = pygame.Surface((1280, 720))
         # Should not crash even with dragged item
@@ -474,7 +618,13 @@ class TestDrawingWithItems:
         player.inventory.equipment["RIGHT_HAND"] = item
         ui = _make_ui(player)
         ui.is_open = True
-        ui._dragging_item = {"source": "equipment", "name": "RIGHT_HAND", "item_id": "sword", "quantity": 1, "icon": "sword.png"}
+        ui._dragging_item = {
+            "source": "equipment",
+            "name": "RIGHT_HAND",
+            "item_id": "sword",
+            "quantity": 1,
+            "icon": "sword.png",
+        }
 
         screen = pygame.Surface((1280, 720))
         ui._draw_equipment_slots(screen, ui.scale_factor)
@@ -483,7 +633,13 @@ class TestDrawingWithItems:
         """_draw_dragged_item renders without crash."""
         ui = _make_ui()
         ui.is_open = True
-        ui._dragging_item = {"source": "grid", "index": 0, "item_id": "x", "quantity": 3, "icon": "x.png"}
+        ui._dragging_item = {
+            "source": "grid",
+            "index": 0,
+            "item_id": "x",
+            "quantity": 3,
+            "icon": "x.png",
+        }
         ui._drag_pos = (400, 400)
 
         screen = pygame.Surface((1280, 720))
@@ -515,6 +671,7 @@ class TestDrawingWithItems:
 # Icon cache (lines 460-461, 485-508)
 # ---------------------------------------------------------------------------
 
+
 class TestIconCache:
     def test_get_item_icon_cached(self):
         """Second call returns from cache."""
@@ -541,18 +698,20 @@ class TestIconCache:
 # Keyboard input (lines 180-189)
 # ---------------------------------------------------------------------------
 
+
 class TestKeyboardInput:
     def test_preview_directions(self):
         """Arrow keys change character preview state."""
         from src.config import Settings
+
         ui = _make_ui()
         ui.is_open = True
 
         for key, expected in [
-            (Settings.MOVE_UP, 'up'),
-            (Settings.MOVE_DOWN, 'down'),
-            (Settings.MOVE_LEFT, 'left'),
-            (Settings.MOVE_RIGHT, 'right'),
+            (Settings.MOVE_UP, "up"),
+            (Settings.MOVE_DOWN, "down"),
+            (Settings.MOVE_LEFT, "left"),
+            (Settings.MOVE_RIGHT, "right"),
         ]:
             event = MagicMock()
             event.type = pygame.KEYDOWN
@@ -564,6 +723,7 @@ class TestKeyboardInput:
 # ---------------------------------------------------------------------------
 # Info zone draw (lines 430-483)
 # ---------------------------------------------------------------------------
+
 
 class TestDrawInfoZone:
     def test_draw_info_zone_default_stats(self):
@@ -586,8 +746,9 @@ class TestDrawInfoZone:
         ui.hovered_slot = ("grid", 0)
 
         screen = pygame.Surface((1280, 720))
-        with patch('src.ui.inventory.I18nManager') as mock_i18n:
+        with patch("src.ui.inventory.I18nManager") as mock_i18n:
             mock_i18n.return_value.get_item.return_value = {
-                "name": "Potion Rouge", "description": "Restaure 50 PV."
+                "name": "Potion Rouge",
+                "description": "Restaure 50 PV.",
             }
             ui._draw_info_zone(screen)

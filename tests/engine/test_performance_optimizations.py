@@ -3,13 +3,16 @@ Tests RED — Performance Optimizations
 Spec: docs/specs/performance-optimization-spec.md
 TC-001..TC-036 + IT-001..IT-003
 """
+
+from unittest.mock import MagicMock, call, patch
+
 import pygame
 import pytest
-from unittest.mock import MagicMock, patch, call
+
 from src.entities.groups import CameraGroup
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 class _DummySprite(pygame.sprite.Sprite):
     def __init__(self, bottom_y: int):
@@ -33,6 +36,7 @@ def camera_group():
 # ═══════════════════════════════════════════════════════════════════════════════
 # Module 2: CameraGroup Y-sort cache (TC-011 → TC-016)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def test_get_sorted_sprites_empty(camera_group):
     """TC-011 : get_sorted_sprites() sur groupe vide → []"""
@@ -94,6 +98,7 @@ def test_sorted_sprites_y_order(camera_group):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 from src.engine.interaction import InteractionManager
+
 
 @pytest.fixture
 def im_setup():
@@ -160,7 +165,10 @@ def test_object_interaction_at_dist_44(im_setup):
     obj.is_on = True
     obj.interact.return_value = None
     game.interactives = [obj]
-    with patch("pygame.key.get_pressed", return_value={__import__("src.config", fromlist=["Settings"]).Settings.INTERACT_KEY: True}):
+    with patch(
+        "pygame.key.get_pressed",
+        return_value={__import__("src.config", fromlist=["Settings"]).Settings.INTERACT_KEY: True},
+    ):
         im.handle_interactions()
     assert obj.interact.called
 
@@ -192,7 +200,10 @@ def test_audio_vol_mult_uses_real_distance(im_setup):
     obj.is_on = True
     obj.interact.return_value = None
     game.interactives = [obj]
-    with patch("pygame.key.get_pressed", return_value={__import__("src.config", fromlist=["Settings"]).Settings.INTERACT_KEY: True}):
+    with patch(
+        "pygame.key.get_pressed",
+        return_value={__import__("src.config", fromlist=["Settings"]).Settings.INTERACT_KEY: True},
+    ):
         im.handle_interactions()
     if game.audio_manager.play_sfx.called:
         call_kwargs = game.audio_manager.play_sfx.call_args[1]
@@ -204,10 +215,13 @@ def test_audio_vol_mult_uses_real_distance(im_setup):
 # Module 6: Game._viewport_world_rect pre-allocation (TC-033 → TC-036)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def test_game_has_viewport_world_rect():
     """TC-033 : Game.__init__ crée _viewport_world_rect — vérifié via source."""
     import inspect
+
     from src.engine import game as game_module
+
     src = inspect.getsource(game_module)
     assert "_viewport_world_rect" in src
     assert "pygame.Rect" in src
@@ -216,7 +230,9 @@ def test_game_has_viewport_world_rect():
 def test_game_no_dead_draw_methods():
     """TC-035 : _draw_background, _draw_foreground, _draw_hud non présents dans Game."""
     import inspect
+
     from src.engine import game as game_module
+
     src = inspect.getsource(game_module)
     assert "def _draw_background(" not in src, "_draw_background dead code should be removed"
     assert "def _draw_foreground(" not in src, "_draw_foreground dead code should be removed"
@@ -226,7 +242,9 @@ def test_game_no_dead_draw_methods():
 def test_game_active_torches_initialized():
     """TC-036 : Game._active_torches est un set après init."""
     import inspect
+
     from src.engine import game as game_module
+
     src = inspect.getsource(game_module)
     assert "_active_torches" in src, "_active_torches must be defined in Game"
 
@@ -235,17 +253,22 @@ def test_game_active_torches_initialized():
 # Integration Tests (IT-001, IT-002, IT-003)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @pytest.mark.tc("IT-001")
 def test_title_screen_draw_no_rotozoom():
     """IT-001 : draw() n'appelle pas rotozoom — lookup depuis _light_halos_scaled."""
     import inspect
+
     from src.ui import title_screen as ts_module
+
     src = inspect.getsource(ts_module.TitleScreen.draw)
     # The actual call would be: pygame.transform.rotozoom(  — check for call syntax
-    assert "pygame.transform.rotozoom(" not in src, \
+    assert "pygame.transform.rotozoom(" not in src, (
         "draw() must NOT call pygame.transform.rotozoom() — use bucket lookup"
-    assert "_light_halos_scaled" in src or "buckets" in src, \
+    )
+    assert "_light_halos_scaled" in src or "buckets" in src, (
         "draw() must use bucket lookup for halos"
+    )
 
 
 @pytest.mark.tc("IT-002")
@@ -283,7 +306,9 @@ def test_interaction_distance_sq_semantics_match_original(im_setup):
 def test_game_viewport_rect_reused_across_updates():
     """IT-003 : _viewport_world_rect est le même objet entre 2 appels _update."""
     import inspect
+
     from src.engine import game as game_module
+
     src = inspect.getsource(game_module)
     # Verify _viewport_world_rect is used in _update without screen.get_rect().move()
     # The old pattern created 2 new Rects per frame

@@ -7,9 +7,12 @@ Spec:
 - interact() toggles is_on and updates col_index accordingly
 - restore_state({'is_on': bool}) also updates col_index
 """
-import pytest
-import pygame
+
 from unittest.mock import MagicMock, patch
+
+import pygame
+import pytest
+
 from src.entities.interactive import InteractiveEntity
 
 
@@ -26,10 +29,11 @@ def _make_entity(**kwargs) -> InteractiveEntity:
         off_position=-1,
     )
     defaults.update(kwargs)
-    return InteractiveEntity(**defaults)
+    return InteractiveEntity(**defaults)  # type: ignore
 
 
 # ── Initialization ──────────────────────────────────────────────────────────
+
 
 class TestOffPositionInit:
     def test_no_off_position_col_index_equals_position(self):
@@ -61,6 +65,7 @@ class TestOffPositionInit:
 
 # ── Toggling via interact() ─────────────────────────────────────────────────
 
+
 class TestOffPositionToggle:
     def test_interact_on_to_off_switches_col(self):
         """interact() when ON → OFF should set col_index to off_position."""
@@ -85,13 +90,14 @@ class TestOffPositionToggle:
     def test_interact_double_toggle_returns_to_on(self):
         """Two interact() calls cycle back to ON with correct col."""
         entity = _make_entity(position=0, off_position=1, is_on=True, is_animated=True)
-        entity.interact(MagicMock())   # → OFF
-        entity.interact(MagicMock())   # → ON
+        entity.interact(MagicMock())  # → OFF
+        entity.interact(MagicMock())  # → ON
         assert entity.is_on is True
         assert entity.col_index == 0
 
 
 # ── State restore ───────────────────────────────────────────────────────────
+
 
 class TestOffPositionRestoreState:
     def test_restore_on_sets_on_col(self):
@@ -114,6 +120,7 @@ class TestOffPositionRestoreState:
 
 
 # ── Frame rendering ─────────────────────────────────────────────────────────
+
 
 class TestOffPositionFrameRendering:
     def test_get_frame_uses_off_col_when_off(self):

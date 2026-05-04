@@ -1,12 +1,19 @@
-import pygame
 import math
-from src.engine.time_system import TimeSystem
+from typing import Any
+
+import pygame
+
 from src.engine.lighting_constants import (
-    BEAM_TOP_WIDTH, BEAM_BOTTOM_WIDTH, BEAM_HEIGHT, BEAM_MAX_SLANT,
-    OVERLAY_BASE_ALPHA, OVERLAY_ALPHA_RANGE,
-    SLANT_ROUND_STEP, TORCH_ALPHA_QUANTIZE,
+    BEAM_BOTTOM_WIDTH,
+    BEAM_HEIGHT,
+    BEAM_MAX_SLANT,
+    BEAM_TOP_WIDTH,
+    OVERLAY_ALPHA_RANGE,
+    OVERLAY_BASE_ALPHA,
+    SLANT_ROUND_STEP,
+    TORCH_ALPHA_QUANTIZE,
 )
-from typing import Any, Dict, List, Tuple
+from src.engine.time_system import TimeSystem
 
 
 class LightingManager:
@@ -18,12 +25,12 @@ class LightingManager:
     2. create_overlay()              — dark overlay with holes punched for lights
     """
 
-    def __init__(self, time_system: TimeSystem, screen_size: Tuple[int, int]):
+    def __init__(self, time_system: TimeSystem, screen_size: tuple[int, int]):
         self.time_system = time_system
         self.screen_size = screen_size
         self._overlay_cache = pygame.Surface(screen_size, pygame.SRCALPHA)
-        self._torch_mask_cache: Dict = {}
-        self._beam_surf_cache: Dict = {}
+        self._torch_mask_cache: dict = {}
+        self._beam_surf_cache: dict = {}
 
         # Beam shape defaults (pixels). Per-window widths may override BEAM_TOP_WIDTH via Tiled.
         self.beam_top_width = BEAM_TOP_WIDTH
@@ -37,7 +44,7 @@ class LightingManager:
     # Public API
     # ------------------------------------------------------------------
 
-    def resize(self, new_size: Tuple[int, int]) -> None:
+    def resize(self, new_size: tuple[int, int]) -> None:
         if self.screen_size != new_size:
             self.screen_size = new_size
             self._overlay_cache = pygame.Surface(new_size, pygame.SRCALPHA)
@@ -45,22 +52,28 @@ class LightingManager:
     def draw_additive_window_beams(
         self,
         screen: pygame.Surface,
-        window_positions: List[Tuple],
+        window_positions: list[tuple],
         cam_offset: Any,
     ) -> None:
         """Blit colored window-light trapezoids onto the scene."""
         if not window_positions:
             return
         for spec in window_positions:
-            cx, wy, top_w = spec if len(spec) == 3 else (*spec, self.beam_top_width)
+            if len(spec) == 3:
+                cx, wy, top_w_raw = spec
+                top_w = int(top_w_raw)
+            else:
+                cx, wy = spec
+                top_w = self.beam_top_width
+
             beam = self._get_beam_surface_for_time(top_w)
             bw = beam.get_width()
             screen.blit(beam, (int(cx + cam_offset.x) - bw // 2, int(wy + cam_offset.y)))
 
     def create_overlay(
         self,
-        window_positions: List[Tuple],
-        active_torches: List[Any],
+        window_positions: list[tuple],
+        active_torches: list[Any],
         cam_offset: Any,
     ) -> pygame.Surface:
         """Return the full-screen darkness overlay with light holes punched in it."""
@@ -78,12 +91,19 @@ class LightingManager:
             cx = int(torch.rect.centerx + cam_offset.x)
             cy = int(torch.rect.centery + cam_offset.y)
             mask = self._get_torch_mask(radius, torch.f_alpha)
-            self._overlay_cache.blit(mask, mask.get_rect(center=(cx, cy)),
-                                     special_flags=pygame.BLEND_RGBA_SUB)
+            self._overlay_cache.blit(
+                mask, mask.get_rect(center=(cx, cy)), special_flags=pygame.BLEND_RGBA_SUB
+            )
 
         # Windows — punch a beam-shaped hole in the darkness
         for spec in window_positions:
-            cx, wy, top_w = spec if len(spec) == 3 else (*spec, self.beam_top_width)
+            if len(spec) == 3:
+                cx, wy, top_w_raw = spec
+                top_w = int(top_w_raw)
+            else:
+                cx, wy = spec
+                top_w = self.beam_top_width
+
             beam = self._get_beam_surface_for_time(top_w)
             bw = beam.get_width()
             self._overlay_cache.blit(
@@ -98,14 +118,14 @@ class LightingManager:
     # Beam helpers
     # ------------------------------------------------------------------
 
-    def _get_beam_surface_for_time(self, top_w: int = None) -> pygame.Surface:
+    def _get_beam_surface_for_time(self, top_w: int | None = None) -> pygame.Surface:
         """Return a cached beam surface tuned to the current time of day."""
         if top_w is None:
             top_w = self.beam_top_width
         b = self.time_system.brightness
         color = self._lerp_color(
-            (160, 180, 255),   # cool moonlight
-            (255, 248, 220),   # warm sunlight (soft, not too yellow)
+            (160, 180, 255),  # cool moonlight
+            (255, 248, 220),  # warm sunlight (soft, not too yellow)
             b,
         )
         # Max opacity: ~75% at noon, ~25% at midnight
@@ -120,7 +140,7 @@ class LightingManager:
             (color[1] // 8) * 8,
             (color[2] // 8) * 8,
         )
-        
+
         # Round slant to nearest SLANT_ROUND_STEP px to reduce cache churn
         key = (color, master_alpha >> 3, top_w, round(slant / SLANT_ROUND_STEP) * SLANT_ROUND_STEP)
         if key not in self._beam_surf_cache:
@@ -146,7 +166,7 @@ class LightingManager:
         """
         wt = self.time_system.world_time
         frac_hour = wt.hour + wt.minute / 60.0  # 0.0 – 23.999
-        b = self.time_system.brightness          # 0=midnight, 1=noon
+        b = self.time_system.brightness  # 0=midnight, 1=noon
 
         # Sun: cosine anchored at 6h
         sun_angle = 2 * math.pi * (frac_hour - 6.0) / 24.0
@@ -160,8 +180,12 @@ class LightingManager:
         return sun_slant * b + moon_slant * (1.0 - b)
 
     def _create_beam_surface(
-        self, base_color: Tuple[int, int, int], master_alpha: int,
-        top_w: int = None, bot_w: int = None, slant: float = 0,
+        self,
+        base_color: tuple[int, int, int],
+        master_alpha: int,
+        top_w: int | None = None,
+        bot_w: int | None = None,
+        slant: float = 0,
     ) -> pygame.Surface:
         """
         Build a soft, diffuse beam with a natural oval bottom edge.
@@ -185,10 +209,10 @@ class LightingManager:
         if bot_w is None:
             bot_w = self.beam_bottom_width
 
-        h  = self.beam_height
+        h = self.beam_height
         # Extra width: gaussian tails + slant padding on both sides
         pad = int(abs(slant)) + 10
-        w  = int(bot_w * 1.8) + pad * 2
+        w = int(bot_w * 1.8) + pad * 2
         cx = w // 2  # top of beam is always at surface center
 
         r, g, b = base_color
@@ -245,8 +269,8 @@ class LightingManager:
         if key in self._torch_mask_cache:
             return self._torch_mask_cache[key]
 
-        size   = radius * 2
-        surf   = pygame.Surface((size, size), pygame.SRCALPHA)
+        size = radius * 2
+        surf = pygame.Surface((size, size), pygame.SRCALPHA)
         surf.fill((0, 0, 0, 0))
         center = (radius, radius)
 
@@ -264,8 +288,8 @@ class LightingManager:
 
     @staticmethod
     def _lerp_color(
-        a: Tuple[int, int, int], b: Tuple[int, int, int], t: float
-    ) -> Tuple[int, int, int]:
+        a: tuple[int, int, int], b: tuple[int, int, int], t: float
+    ) -> tuple[int, int, int]:
         return (
             int(a[0] + (b[0] - a[0]) * t),
             int(a[1] + (b[1] - a[1]) * t),

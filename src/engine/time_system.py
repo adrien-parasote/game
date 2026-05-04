@@ -1,17 +1,19 @@
 """
 TimeSystem — Internal world clock for the RPG engine.
 """
+
 import math
 from dataclasses import dataclass
 from enum import IntEnum
+
 from src.config import Settings
 
 # --- Constants ---
 GAME_MINUTES_PER_HOUR: int = 60
 GAME_HOURS_PER_DAY: int = 24
 GAME_SEASONS_PER_YEAR: int = 4
-MAX_DT_CLAMP: float = 10.0                 # Clamp large dt gaps (debugger pauses)
-MAX_NIGHT_ALPHA: int = 180                 # 70% opacity max at midnight
+MAX_DT_CLAMP: float = 10.0  # Clamp large dt gaps (debugger pauses)
+MAX_NIGHT_ALPHA: int = 180  # 70% opacity max at midnight
 
 
 class Season(IntEnum):
@@ -32,9 +34,10 @@ SEASON_LABELS: dict = {
 @dataclass
 class WorldTime:
     """Immutable snapshot of the current in-game time."""
-    hour: int    # 0–23
+
+    hour: int  # 0–23
     minute: int  # 0–59
-    day: int     # 0–N total days elapsed
+    day: int  # 0–N total days elapsed
 
 
 class TimeSystem:
@@ -56,12 +59,15 @@ class TimeSystem:
         """
         # Ensure hour is within [0, 23]
         safe_hour = initial_hour % GAME_HOURS_PER_DAY
-        
+
         # Calculate starting minutes based on initial season and hour
         initial_minutes = (
-            Settings.INITIAL_SEASON * Settings.DAYS_PER_SEASON * GAME_HOURS_PER_DAY * GAME_MINUTES_PER_HOUR
+            Settings.INITIAL_SEASON
+            * Settings.DAYS_PER_SEASON
+            * GAME_HOURS_PER_DAY
+            * GAME_MINUTES_PER_HOUR
         ) + (safe_hour * GAME_MINUTES_PER_HOUR)
-        
+
         self._total_minutes: float = float(initial_minutes)
 
     def update(self, dt: float) -> None:

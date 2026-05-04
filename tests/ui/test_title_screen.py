@@ -2,15 +2,18 @@
 Tests RED — TitleScreen (TC-009 à TC-013) + GameStateManager (TC-014 à TC-018)
 Spec: docs/specs/game-flow-spec.md#4-test-case-specifications
 """
+
+from unittest.mock import MagicMock, call, patch
+
 import pygame
 import pytest
-from unittest.mock import MagicMock, patch, call
-from src.engine.game_events import GameEvent, GameEventType
-from src.ui.title_screen import TitleScreen
-from src.engine.game_state_manager import GameStateManager, GameState
 
+from src.engine.game_events import GameEvent, GameEventType
+from src.engine.game_state_manager import GameState, GameStateManager
+from src.ui.title_screen import TitleScreen
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _make_key_event(key):
     """Crée un événement KEYDOWN pygame minimal."""
@@ -30,6 +33,7 @@ def _make_mouse_event(pos):
 
 
 # ── Fixtures TitleScreen ───────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def mock_screen():
@@ -59,25 +63,21 @@ def title_screen(mock_screen, mock_save_manager):
     ts._screen = mock_screen
     ts._save_manager = mock_save_manager
     ts.state = "MAIN_MENU"
-    ts._slots = [None, None, None]
-    ts._hovered_slot = None
     ts._hovered_item = None
     ts._sw = 1280
     ts._sh = 720
     ts._light_scale_x = 1.0
     ts._light_scale_y = 1.0
-    ts._logo_surf = mock_surf
-    ts._panel_load = mock_surf
     ts._load_menu = MagicMock()
     ts._load_menu.get_clicked_slot.return_value = None
     ts._load_menu.is_back_clicked.return_value = False
 
     from unittest.mock import MagicMock as _MM
+
     ts._i18n = _MM()
     ts._i18n.get.side_effect = lambda key, default="": default
     ts._bg = pygame.Surface((1280, 720))
     ts._overlay = mock_surf
-    ts._slot_states = {"idle": mock_surf, "hover": mock_surf}
     ts._light_time = 0.0
     # P1/P2: Pre-scaled halo buckets (10 per radius) — new optimized format
     _dummy_surf = pygame.Surface((10, 10))
@@ -87,7 +87,7 @@ def title_screen(mock_screen, mock_save_manager):
         28: _buckets_10,
         18: _buckets_10,
     }
-    ts._mushroom_halos_scaled: dict = {}   # empty until MUSHROOM_LIGHTS populated
+    ts._mushroom_halos_scaled = {}  # empty until MUSHROOM_LIGHTS populated
     ts._halo_n_buckets = 10
     ts._halo_scale_min = 0.80
     ts._halo_scale_max = 1.05
@@ -104,8 +104,8 @@ def title_screen(mock_screen, mock_save_manager):
 
     # P3: Pre-rendered label surfaces and blur cache
     ts._menu_label_surfaces = [pygame.Surface((100, 30), pygame.SRCALPHA)] * 4
-    ts._blur_cache: dict = {}
-    ts._prev_hovered_item: int = -2
+    ts._blur_cache = {}
+    ts._prev_hovered_item = -2
 
     # Icons and Cursors
     ts._pointer_img = mock_surf
@@ -113,21 +113,24 @@ def title_screen(mock_screen, mock_save_manager):
     ts._back_btn = mock_surf
     ts._back_btn_hover = mock_surf
 
-
     with patch("pygame.transform.smoothscale", return_value=mock_surf):
         TitleScreen._compute_layout(ts)
     return ts
 
+
 # ── GF-034 : Scale factors résolution-indépendante ────────────────────────────
+
 
 @pytest.mark.tc("GF-034")
 def test_title_screen_light_scale_factors(mock_save_manager):
     """GF-034 : _light_scale_x/y calculés depuis screen.get_size() — espace logique 1280×720."""
     mock_screen = MagicMock(spec=pygame.Surface)
     mock_screen.get_size.return_value = (2560, 1440)
-    with patch("src.ui.title_screen.TitleScreen._load_assets"), \
-         patch("src.ui.title_screen.TitleScreen._compute_layout"), \
-         patch("src.ui.title_screen.SaveMenuOverlay"):
+    with (
+        patch("src.ui.title_screen.TitleScreen._load_assets"),
+        patch("src.ui.title_screen.TitleScreen._compute_layout"),
+        patch("src.ui.title_screen.SaveMenuOverlay"),
+    ):
         ts = TitleScreen.__new__(TitleScreen)
         ts._screen = mock_screen
         ts._save_manager = mock_save_manager
@@ -143,6 +146,7 @@ def test_title_screen_light_scale_factors(mock_save_manager):
 
 
 # ── TC-009 à TC-011 : Items texte du menu ────────────────────────────────────
+
 
 def test_title_click_new_game_returns_event(title_screen):
     """TC-009 : clic centre de l'item 'Nouvelle Partie' (index 0) → GameEvent NEW_GAME."""
@@ -170,6 +174,7 @@ def test_title_click_quitter_returns_quit_event(title_screen):
 
 # ── TC-012 : ESC depuis LOAD_MENU → MAIN_MENU ────────────────────────────────
 
+
 def test_title_esc_from_load_menu_returns_to_main(title_screen):
     """TC-012 : K_ESCAPE depuis LOAD_MENU → retour MAIN_MENU."""
     # Simuler transition vers LOAD_MENU
@@ -183,20 +188,28 @@ def test_title_esc_from_load_menu_returns_to_main(title_screen):
 
 # ── TC-013 : clic slot 2 en LOAD_MENU → LOAD_GAME ────────────────────────────
 
+
 def test_title_click_slot_in_load_menu_returns_load_event(title_screen, mock_save_manager):
     """TC-013 : clic slot 2 en LOAD_MENU → GameEvent LOAD_GAME slot_id=2."""
     from src.engine.save_manager import SlotInfo
+
     title_screen._load_menu._slots_info = [
         None,
-        SlotInfo(slot_id=2, saved_at="2026-05-02T14:00:00",
-                 playtime_seconds=7200.0, map_name="10-village.tmj", map_display_name="Mocked Map",
-                 player_name="Hero", level=10),
+        SlotInfo(
+            slot_id=2,
+            saved_at="2026-05-02T14:00:00",
+            playtime_seconds=7200.0,
+            map_name="10-village.tmj",
+            map_display_name="Mocked Map",
+            player_name="Hero",
+            level=10,
+        ),
         None,
     ]
     title_screen.state = "LOAD_MENU"
     title_screen._load_menu.get_clicked_slot.return_value = 1  # idx 1
 
-    event = _make_mouse_event((0, 0)) # pos ignored by mock
+    event = _make_mouse_event((0, 0))  # pos ignored by mock
 
     result = title_screen.handle_event(event)
 
@@ -209,14 +222,16 @@ def test_title_click_slot_in_load_menu_returns_load_event(title_screen, mock_sav
 # GameStateManager Tests
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @pytest.fixture
 def mock_gsm():
     """GameStateManager avec Game et TitleScreen entièrement mockés."""
-    with patch("src.engine.game_state_manager.Game") as MockGame, \
-         patch("src.engine.game_state_manager.TitleScreen") as MockTitle, \
-         patch("src.engine.game_state_manager.PauseScreen") as MockPause, \
-         patch("src.engine.game_state_manager.SaveManager") as MockSM:
-
+    with (
+        patch("src.engine.game_state_manager.Game") as MockGame,
+        patch("src.engine.game_state_manager.TitleScreen") as MockTitle,
+        patch("src.engine.game_state_manager.PauseScreen") as MockPause,
+        patch("src.engine.game_state_manager.SaveManager") as MockSM,
+    ):
         mock_game_inst = MagicMock()
         mock_game_inst.run_frame.return_value = GameEvent.none()
         MockGame.return_value = mock_game_inst
@@ -242,19 +257,20 @@ def mock_gsm():
 
 # ── TC-014 : pygame.QUIT → pygame.quit() ─────────────────────────────────────
 
+
 def test_gsm_pygame_quit_exits(mock_gsm):
     """TC-014 : pygame.QUIT → pygame.quit() appelé + sys.exit()."""
     quit_event = MagicMock()
     quit_event.type = pygame.QUIT
 
-    with patch("pygame.quit") as mock_pq, \
-         patch("sys.exit") as mock_exit:
+    with patch("pygame.quit") as mock_pq, patch("sys.exit") as mock_exit:
         mock_gsm._process_global_events([quit_event])
         mock_pq.assert_called_once()
         mock_exit.assert_called_once()
 
 
 # ── TC-015 : ESC en PLAYING → PAUSED ─────────────────────────────────────────
+
 
 def test_gsm_esc_in_playing_transitions_to_paused(mock_gsm):
     """TC-015 : K_ESCAPE en PLAYING → state == PAUSED."""
@@ -269,6 +285,7 @@ def test_gsm_esc_in_playing_transitions_to_paused(mock_gsm):
 
 # ── TC-016 : ESC en PAUSED → PLAYING ─────────────────────────────────────────
 
+
 def test_gsm_esc_in_paused_transitions_to_playing(mock_gsm):
     """TC-016 : K_ESCAPE en PAUSED → state == PLAYING."""
     mock_gsm.state = GameState.PAUSED
@@ -282,6 +299,7 @@ def test_gsm_esc_in_paused_transitions_to_playing(mock_gsm):
 
 # ── TC-017 : _transition_to_playing(None) → _load_map ────────────────────────
 
+
 def test_gsm_transition_to_playing_new_game_calls_load_map(mock_gsm):
     """TC-017 : _transition_to_playing(None) → game._load_map() avec default_map."""
     mock_gsm._transition_to_playing(slot_id=None)
@@ -292,21 +310,40 @@ def test_gsm_transition_to_playing_new_game_calls_load_map(mock_gsm):
 
 # ── TC-018 : _transition_to_playing(1) → save_manager.load(1) ───────────────
 
+
 def test_gsm_transition_to_playing_load_slot(mock_gsm):
     """TC-018 : _transition_to_playing(1) → save_manager.load(1) appelé, state=PLAYING."""
     from src.engine.save_manager import SaveData
+
     mock_data = SaveData(
         version="0.4.0",
         saved_at="2026-05-02",
         playtime_seconds=0,
-        player={"map_name": "00-spawn.tmj", "x": 0.0, "y": 0.0,
-                "facing": "down", "level": 1, "hp": 100, "max_hp": 100, "gold": 0},
+        player={
+            "map_name": "00-spawn.tmj",
+            "x": 0.0,
+            "y": 0.0,
+            "facing": "down",
+            "level": 1,
+            "hp": 100,
+            "max_hp": 100,
+            "gold": 0,
+        },
         time_system={"total_minutes": 0.0},
-        inventory={"slots": [None]*28, "equipment": {
-            "HEAD": None, "BAG": None, "BELT": None, "LEFT_HAND": None,
-            "UPPER_BODY": None, "LOWER_BODY": None, "RIGHT_HAND": None, "SHOES": None
-        }},
-        world_state={}
+        inventory={
+            "slots": [None] * 28,
+            "equipment": {
+                "HEAD": None,
+                "BAG": None,
+                "BELT": None,
+                "LEFT_HAND": None,
+                "UPPER_BODY": None,
+                "LOWER_BODY": None,
+                "RIGHT_HAND": None,
+                "SHOES": None,
+            },
+        },
+        world_state={},
     )
     mock_gsm._save_manager.load.return_value = mock_data
 
@@ -315,17 +352,21 @@ def test_gsm_transition_to_playing_load_slot(mock_gsm):
     mock_gsm._save_manager.load.assert_called_once_with(1)
     assert mock_gsm.state == GameState.PLAYING
 
+
 # ── Tests additionnels TitleScreen (Coverage) ────────────────────────────────
+
 
 def test_title_screen_load_assets_with_fallbacks(mock_screen, mock_save_manager):
     mock_surf = pygame.Surface((1024, 1024), pygame.SRCALPHA)
-    with patch("pygame.image.load", return_value=mock_surf), \
-         patch("pygame.font.Font", side_effect=OSError), \
-         patch("src.engine.asset_manager.AssetManager", side_effect=Exception):
-         
+    with (
+        patch("pygame.image.load", return_value=mock_surf),
+        patch("pygame.font.Font", side_effect=OSError),
+        patch("src.engine.asset_manager.AssetManager", side_effect=Exception),
+    ):
         ts = TitleScreen(mock_screen, mock_save_manager)
         assert ts._font is not None
         assert ts._bg.get_size() == (1280, 720)
+
 
 @pytest.mark.tc("TC-004")
 @pytest.mark.tc("IT-003")
@@ -334,7 +375,7 @@ def test_title_screen_update(title_screen):
     with patch("pygame.mouse.get_pos", return_value=title_screen.menu_item_rects[1].center):
         title_screen.update(0.16)
         assert title_screen._hovered_item == 1
-        
+
     # Test update delegates to _load_menu
     title_screen.state = "LOAD_MENU"
     title_screen.update(0.16)
@@ -346,34 +387,47 @@ def test_title_screen_update(title_screen):
         title_screen.update(0.16)
         assert title_screen._back_hovered is True
 
+
 @pytest.mark.tc("GF-033")
 def test_title_screen_draw_main_menu(title_screen):
     title_screen.state = "MAIN_MENU"
     title_screen._hovered_item = 0
-    with patch("pygame.mouse.get_pos", return_value=(0,0)), \
-         patch("pygame.mouse.get_pressed", return_value=(False, False, False)), \
-         patch("pygame.draw.line"), patch("pygame.draw.circle"):
+    with (
+        patch("pygame.mouse.get_pos", return_value=(0, 0)),
+        patch("pygame.mouse.get_pressed", return_value=(False, False, False)),
+        patch("pygame.draw.line"),
+        patch("pygame.draw.circle"),
+    ):
         title_screen.draw()
     assert title_screen._screen.blit.call_count > 0
+
 
 @pytest.mark.tc("TC-005")
 def test_title_screen_draw_load_menu(title_screen):
     title_screen.state = "LOAD_MENU"
     title_screen._refresh_slots()
-    with patch("pygame.mouse.get_pos", return_value=(0,0)), \
-         patch("pygame.mouse.get_pressed", return_value=(False, False, False)), \
-         patch("pygame.draw.line"), patch("pygame.draw.circle"):
+    with (
+        patch("pygame.mouse.get_pos", return_value=(0, 0)),
+        patch("pygame.mouse.get_pressed", return_value=(False, False, False)),
+        patch("pygame.draw.line"),
+        patch("pygame.draw.circle"),
+    ):
         title_screen.draw()
     title_screen._load_menu.draw.assert_called_once()
+
 
 def test_title_screen_draw_options(title_screen):
     title_screen.state = "OPTIONS"
     title_screen._back_hovered = True
-    with patch("pygame.mouse.get_pos", return_value=(0,0)), \
-         patch("pygame.mouse.get_pressed", return_value=(False, False, False)), \
-         patch("pygame.draw.line"), patch("pygame.draw.circle"):
+    with (
+        patch("pygame.mouse.get_pos", return_value=(0, 0)),
+        patch("pygame.mouse.get_pressed", return_value=(False, False, False)),
+        patch("pygame.draw.line"),
+        patch("pygame.draw.circle"),
+    ):
         title_screen.draw()
     assert title_screen._screen.blit.call_count > 0
+
 
 def test_title_screen_options_state_transitions(title_screen):
     # Entre en OPTIONS via clic sur le menu
@@ -381,15 +435,16 @@ def test_title_screen_options_state_transitions(title_screen):
     event = _make_mouse_event(title_screen.menu_item_rects[2].center)
     title_screen.handle_event(event)
     assert title_screen.state == "OPTIONS"
-    
+
     # Sortie avec ESC
     title_screen.handle_event(_make_key_event(pygame.K_ESCAPE))
     assert title_screen.state == "MAIN_MENU"
-    
+
     # Rentrée (force state) et Sortie avec le bouton retour
     title_screen.state = "OPTIONS"
     title_screen.handle_event(_make_mouse_event(title_screen.back_btn_rect.center))
     assert title_screen.state == "MAIN_MENU"
+
 
 def test_title_screen_handle_load_menu_ignore(title_screen):
     title_screen.state = "LOAD_MENU"
@@ -398,15 +453,16 @@ def test_title_screen_handle_load_menu_ignore(title_screen):
     event.type = pygame.KEYDOWN
     event.key = pygame.K_SPACE
     assert title_screen.handle_event(event) is None
-    
+
     event = MagicMock()
     event.type = pygame.MOUSEBUTTONDOWN
     event.button = 3
     assert title_screen.handle_event(event) is None
-    
+
     # Not clicking on any slot
     event = _make_mouse_event((0, 0))
     assert title_screen.handle_event(event) is None
+
 
 def test_title_screen_handle_main_menu_ignore(title_screen):
     title_screen.state = "MAIN_MENU"
@@ -414,10 +470,11 @@ def test_title_screen_handle_main_menu_ignore(title_screen):
     event = MagicMock()
     event.type = pygame.KEYDOWN
     assert title_screen.handle_event(event) is None
-    
+
     # click outside
     event = _make_mouse_event((0, 0))
     assert title_screen.handle_event(event) is None
+
 
 def test_title_screen_handle_options_ignore(title_screen):
     title_screen.state = "OPTIONS"
@@ -426,19 +483,20 @@ def test_title_screen_handle_options_ignore(title_screen):
     event.type = pygame.KEYDOWN
     event.key = pygame.K_SPACE
     assert title_screen.handle_event(event) is None
-    
+
     # click outside back button
     event = _make_mouse_event((0, 0))
     title_screen.handle_event(event)
     assert title_screen.state == "OPTIONS"
+
 
 @pytest.mark.tc("GF-035")
 def test_title_screen_load_menu_back_button(title_screen):
     """GF-035 : clic bouton retour en LOAD_MENU → retour MAIN_MENU."""
     title_screen.state = "LOAD_MENU"
     title_screen._load_menu.is_back_clicked.return_value = True
-    
-    event = _make_mouse_event((0, 0)) # pos handled by mock
+
+    event = _make_mouse_event((0, 0))  # pos handled by mock
     title_screen.handle_event(event)
-    
+
     assert title_screen.state == "MAIN_MENU"

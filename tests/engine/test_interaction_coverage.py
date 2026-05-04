@@ -1,16 +1,19 @@
 """Coverage tests for InteractionManager and pickup persistence."""
-import pytest
-import pygame
-from unittest.mock import MagicMock, patch
 
 import os
+from unittest.mock import MagicMock, patch
+
+import pygame
+import pytest
+
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.display.init()
 pygame.font.init()
 
+from src.config import Settings
 from src.engine.interaction import InteractionManager
 from src.engine.world_state import WorldState
-from src.config import Settings
+
 
 def _make_game_mock():
     game = MagicMock()
@@ -21,6 +24,7 @@ def _make_game_mock():
     game.pickups = []
     game.npcs = []
     return game
+
 
 class TestInteractionManagerCoverage:
     def test_emote_cooldown_decrements(self):
@@ -48,8 +52,10 @@ class TestInteractionManagerCoverage:
         im = InteractionManager(game)
         im._interaction_cooldown = 0
 
-        with patch("pygame.key.get_pressed", return_value={Settings.INTERACT_KEY: True}), \
-             patch.object(Settings, "ENABLE_FAILED_INTERACTION_EMOTE", True):
+        with (
+            patch("pygame.key.get_pressed", return_value={Settings.INTERACT_KEY: True}),
+            patch.object(Settings, "ENABLE_FAILED_INTERACTION_EMOTE", True),
+        ):
             im.handle_interactions()
 
         game.player.playerEmote.assert_called_with("question")
@@ -86,7 +92,7 @@ class TestInteractionManagerCoverage:
         obj.is_on = False
         obj.is_passable = False
         obj.sub_type = "lever"
-        obj.activate_from_anywhere = True   # Direct attribute — no property patch needed
+        obj.activate_from_anywhere = True  # Direct attribute — no property patch needed
         game.interactives = [obj]
         game.player.pos = pygame.math.Vector2(100, 100)
         game.player.current_state = "down"
@@ -315,7 +321,6 @@ class TestPickupPersistence:
 
     def test_spawn_pickup_skips_if_collected(self):
         """_spawn_pickup skips entity if world_state marks it as collected."""
-        from src.engine.world_state import WorldState
 
         world_state = WorldState()
         world_state.set("map01_42", {"collected": True})
@@ -329,6 +334,7 @@ class TestPickupPersistence:
 
         # Import _spawn_pickup through the Game class context
         from src.engine.game import Game
+
         # Build a minimal ent dict with id=42 so make_key → "map01_42"
         ent = {"id": 42, "x": 100, "y": 100, "properties": {}}
         props = {"object_id": "potion_red", "sprite_sheet": "potion_red", "quantity": "5"}
@@ -340,4 +346,3 @@ class TestPickupPersistence:
         saved = world_state.get(state_key)
         assert saved == {"collected": True}
         assert saved.get("collected") is True  # Guard that would skip spawn
-

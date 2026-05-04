@@ -1,26 +1,26 @@
-import sys
-import os
 import cProfile
+import os
 import pstats
-import time
+import sys
+
 import pygame
 
 # Add src to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.engine.game_state_manager import GameStateManager
-from src.engine.game_events import GameEventType
+
 
 def run_profile():
     pygame.init()
     manager = GameStateManager()
-    
+
     # Force state to playing to skip title screen
     manager._transition_to_playing(slot_id=None)
-    
+
     frames = 0
-    start_time = time.time()
-    
+    # start_time = time.time()
+
     # We'll run exactly 600 frames (10 seconds at 60fps)
     while frames < 600:
         dt = manager._game.clock.tick(60) / 1000.0
@@ -32,21 +32,21 @@ def run_profile():
 
     pygame.quit()
 
+
 if __name__ == "__main__":
     sys.stdout.write("Starting profiling...\n")
     profiler = cProfile.Profile()
     profiler.enable()
-    
+
     try:
         run_profile()
     except Exception as e:
         sys.stderr.write(f"Error: {e}\n")
-        
+
     profiler.disable()
-    
+
     sys.stdout.write("Profiling complete. Saving stats...\n")
-    stats = pstats.Stats(profiler).sort_stats('tottime')
     with open("profile_results.txt", "w") as f:
-        stats.stream = f
+        stats = pstats.Stats(profiler, stream=f).sort_stats("tottime")
         stats.print_stats(50)
     sys.stdout.write("Results saved to profile_results.txt\n")

@@ -2,12 +2,12 @@
 SaveManager — Serialization and persistence of save slots.
 Spec: docs/specs/game-flow-spec.md#21-srcenginesave_managerpy-new
 """
+
 import json
 import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 SAVES_DIR = "saves"
 MAX_SLOTS = 3
@@ -44,7 +44,7 @@ class SaveManager:
 
     # ── Public API ────────────────────────────────────────────────────────────
 
-    def list_slots(self) -> list[Optional[SlotInfo]]:
+    def list_slots(self) -> list[SlotInfo | None]:
         """Return a list of 3 elements — None for empty slots."""
         result = []
         for slot_id in range(1, MAX_SLOTS + 1):
@@ -65,12 +65,13 @@ class SaveManager:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             os.replace(tmp_path, path)
             logging.info(f"SaveManager: Slot {slot_id} saved to {path}")
-        except IOError as e:
+        except OSError as e:
             logging.error(f"SaveManager: Failed to write slot {slot_id}: {e}")
 
     def save_thumbnail(self, slot_id: int, surface) -> None:
         """Sauvegarde une capture d'écran pour la miniature du slot."""
         import pygame
+
         self._validate_slot_id(slot_id)
         os.makedirs(self._saves_dir, exist_ok=True)
         path = os.path.join(self._saves_dir, f"slot_{slot_id}_thumb.png")
@@ -82,6 +83,7 @@ class SaveManager:
     def load_thumbnail(self, slot_id: int):
         """Retourne la miniature en pygame.Surface, ou None si non trouvée."""
         import pygame
+
         self._validate_slot_id(slot_id)
         path = os.path.join(self._saves_dir, f"slot_{slot_id}_thumb.png")
         if not os.path.exists(path):
@@ -92,8 +94,7 @@ class SaveManager:
             logging.warning(f"SaveManager: Failed to load thumbnail {slot_id}: {e}")
             return None
 
-
-    def load(self, slot_id: int) -> Optional[SaveData]:
+    def load(self, slot_id: int) -> SaveData | None:
         """Deserialize save slot. Returns None if empty or corrupted."""
         self._validate_slot_id(slot_id)
         path = self._slot_path(slot_id)
@@ -102,9 +103,9 @@ class SaveManager:
             return None
 
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
-        except (json.JSONDecodeError, IOError) as e:
+        except (OSError, json.JSONDecodeError) as e:
             logging.warning(f"SaveManager: Slot {slot_id} corrompu: {e}")
             return None
 
@@ -149,13 +150,13 @@ class SaveManager:
                 f"SaveManager: slot_id must be between 1 and {MAX_SLOTS}, got {slot_id}"
             )
 
-    def _read_slot_info(self, slot_id: int) -> Optional[SlotInfo]:
+    def _read_slot_info(self, slot_id: int) -> SlotInfo | None:
         """Read minimal slot metadata without full deserialization."""
         path = self._slot_path(slot_id)
         if not os.path.exists(path):
             return None
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
             player_data = data.get("player", {})
             return SlotInfo(
@@ -165,9 +166,9 @@ class SaveManager:
                 map_name=player_data.get("map_name", ""),
                 map_display_name=player_data.get("map_display_name", ""),
                 player_name=player_data.get("name", "Hero"),
-                level=player_data.get("level", 1)
+                level=player_data.get("level", 1),
             )
-        except (json.JSONDecodeError, IOError, KeyError) as e:
+        except (OSError, json.JSONDecodeError, KeyError) as e:
             logging.warning(f"SaveManager: Could not read slot {slot_id} info: {e}")
             return None
 

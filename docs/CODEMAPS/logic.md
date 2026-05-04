@@ -20,7 +20,7 @@ PAUSED → GameEvent.goto_title()        → _transition_to_title()        → T
 - **Footsteps**: Triggered on frames 1 and 3. `MapManager.get_terrain_material_at()` resolves surface. `AudioManager.play_sfx(footstep_{material})` falls back to base footstep if specific file is missing.
 
 ## Interaction Chain
-`INTERACT_KEY (E)` → `InteractionManager.handle_interactions()`
+`INTERACT_KEY (E)` → `InteractionManager.handle_interactions()`  *(typed `game: Any` — no cyclic import to `game.py`)*
 - `_check_npc_interactions()`: dist < 48px + facing → `NPC.interact()` → `Game._trigger_npc_bubble()`
 - `_check_object_interactions()`: orthogonal dist < 45px + facing within 45° → `InteractiveEntity.interact()` → toggle `is_on` + SFX → `WorldState.set()` → `Game._trigger_dialogue()` / `chest_ui.open()`
 - `_check_pickup_interactions()`: dist < 48px → `Inventory.add_item()` → `WorldState.set({looted:True})` → `pickup.kill()`

@@ -1,15 +1,18 @@
 """Tests for Map system: layers, collision, MapManager, layout."""
-import pytest
-import pygame
-from unittest.mock import MagicMock, patch
-from src.map.tmj_parser import TmjParser
-from src.map.manager import MapManager
-from src.map.layout import OrthogonalLayout
 
+from unittest.mock import MagicMock, patch
+
+import pygame
+import pytest
+
+from src.map.layout import OrthogonalLayout
+from src.map.manager import MapManager
+from src.map.tmj_parser import TmjParser
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def map_data():
@@ -38,25 +41,65 @@ def map_manager(map_data):
 # Layer parsing & ordering (TmjParser)
 # ---------------------------------------------------------------------------
 
+
 def test_layer_recursive_order():
     """Nested group layers are found and sorted by name prefix."""
     parser = TmjParser()
     mock_data = {
-        "width": 2, "height": 2, "tilewidth": 32, "tileheight": 32,
+        "width": 2,
+        "height": 2,
+        "tilewidth": 32,
+        "tileheight": 32,
         "layers": [
             {"type": "group", "name": "Sprites", "layers": []},
             {
-                "type": "group", "name": "Layers",
+                "type": "group",
+                "name": "Layers",
                 "layers": [
-                    {"id": 3, "name": "02-layer", "type": "tilelayer", "data": [0, 0, 0, 0], "width": 2, "height": 2, "opacity": 1, "visible": True},
-                    {"id": 2, "name": "01-layer", "type": "tilelayer", "data": [0, 0, 0, 0], "width": 2, "height": 2, "opacity": 1, "visible": True},
-                    {"id": 1, "name": "00-layer", "type": "tilelayer", "data": [0, 0, 0, 0], "width": 2, "height": 2, "opacity": 1, "visible": True},
+                    {
+                        "id": 3,
+                        "name": "02-layer",
+                        "type": "tilelayer",
+                        "data": [0, 0, 0, 0],
+                        "width": 2,
+                        "height": 2,
+                        "opacity": 1,
+                        "visible": True,
+                    },
+                    {
+                        "id": 2,
+                        "name": "01-layer",
+                        "type": "tilelayer",
+                        "data": [0, 0, 0, 0],
+                        "width": 2,
+                        "height": 2,
+                        "opacity": 1,
+                        "visible": True,
+                    },
+                    {
+                        "id": 1,
+                        "name": "00-layer",
+                        "type": "tilelayer",
+                        "data": [0, 0, 0, 0],
+                        "width": 2,
+                        "height": 2,
+                        "opacity": 1,
+                        "visible": True,
+                    },
                 ],
             },
         ],
         "tilesets": [],
     }
-    result = {"layers": {}, "layer_order": [], "layer_names": {}, "tiles": {}, "width": 2, "height": 2, "tile_size": 32}
+    result = {
+        "layers": {},
+        "layer_order": [],
+        "layer_names": {},
+        "tiles": {},
+        "width": 2,
+        "height": 2,
+        "tile_size": 32,
+    }
     parser._process_layers(mock_data["layers"], 2, result)
 
     assert 1 in result["layer_names"]
@@ -71,12 +114,15 @@ def test_layer_recursive_order():
 # Collision detection
 # ---------------------------------------------------------------------------
 
+
 def test_map_manager_collision_basics():
     """Collision detection works across layers using tile coordinates."""
     map_d = {
         "layers": {1: [[1, 0], [0, 0]]},
         "tiles": {1: MagicMock(collidable=True)},
-        "width": 2, "height": 2, "tile_size": 32,
+        "width": 2,
+        "height": 2,
+        "tile_size": 32,
     }
     manager = MapManager(map_d, OrthogonalLayout(32))
     assert manager.is_collidable(0, 0) is True
@@ -95,6 +141,7 @@ def test_map_manager_collision_out_of_bounds(map_data):
 # Layout
 # ---------------------------------------------------------------------------
 
+
 def test_orthogonal_layout():
     layout = OrthogonalLayout(32)
     assert layout.to_screen(1, 1) == (32, 32)
@@ -104,6 +151,7 @@ def test_orthogonal_layout():
 # ---------------------------------------------------------------------------
 # MapManager: init & empty
 # ---------------------------------------------------------------------------
+
 
 def test_map_manager_init(map_data):
     layout = MagicMock()
@@ -124,6 +172,7 @@ def test_map_manager_empty_layers():
 # ---------------------------------------------------------------------------
 # MapManager: get_layer_surface
 # ---------------------------------------------------------------------------
+
 
 def test_map_manager_render_layer(map_manager):
     """First render creates surface of correct size."""
@@ -156,6 +205,7 @@ def test_map_manager_render_layer_exception(map_data):
 # MapManager: get_visible_chunks
 # ---------------------------------------------------------------------------
 
+
 def test_get_visible_chunks_full_viewport(map_manager):
     """Full viewport yields all non-zero tiles."""
     viewport = MagicMock()
@@ -185,8 +235,10 @@ def test_get_visible_chunks_partial_viewport(map_manager):
 # TiledProject schema resolution
 # ---------------------------------------------------------------------------
 
+
 def test_tiled_project_resolution():
     from src.map.project_schema import TiledProject
+
     project_data = {
         "propertyTypes": [
             {
@@ -199,9 +251,11 @@ def test_tiled_project_resolution():
             }
         ]
     }
-    with patch("os.path.exists", return_value=True), \
-         patch("builtins.open", MagicMock()), \
-         patch("json.load", return_value=project_data):
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("builtins.open", MagicMock()),
+        patch("json.load", return_value=project_data),
+    ):
         project = TiledProject("dummy.tiled-project")
 
         res = project.resolve("base_entity")
@@ -213,9 +267,11 @@ def test_tiled_project_resolution():
         assert res["name"] == "Unknown"
         assert res["ad_hoc"] == "test"
 
+
 # ---------------------------------------------------------------------------
 # MapManager: get_terrain_material_at
 # ---------------------------------------------------------------------------
+
 
 def test_get_terrain_material_at(map_manager):
     """get_terrain_material_at returns the material property of the topmost tile."""
@@ -223,13 +279,13 @@ def test_get_terrain_material_at(map_manager):
     # We will patch its properties to have material
     tile = map_manager.tiles[1]
     tile.properties = {"material": "wood"}
-    
+
     # Grid coordinates are x=0, y=0. Screen coordinates for this are 0..31
     material = map_manager.get_terrain_material_at(15, 15)
     assert material == "wood"
-    
+
     # Outside map returns None
     assert map_manager.get_terrain_material_at(-10, -10) is None
-    
+
     # Empty tile returns None
-    assert map_manager.get_terrain_material_at(32, 0) is None # x=1, y=0 is 0 in the mock map_data
+    assert map_manager.get_terrain_material_at(32, 0) is None  # x=1, y=0 is 0 in the mock map_data

@@ -1,7 +1,8 @@
-import pygame
-import os
 import logging
-from typing import Dict, Optional
+import os
+
+import pygame
+
 from src.config import Settings
 
 # Ambients play at most 60 % of SFX_VOLUME — audible atmospheric background
@@ -11,6 +12,7 @@ AMBIENT_VOLUME_SCALE = 0.8
 # Falloff parameters for distance-based ambient volume.
 AMBIENT_MAX_DISTANCE: float = 300.0
 AMBIENT_MIN_FALLOFF: float = 0.05
+
 
 class AudioManager:
     """
@@ -24,18 +26,19 @@ class AudioManager:
       setting volume from the minimum (closest) distance proposed this frame.
     - Sounds with no proposals are automatically stopped.
     """
+
     def __init__(self):
         self.bgm_dir = os.path.join("assets", "audio", "bgm")
         self.sfx_dir = os.path.join("assets", "audio", "sfx")
 
-        self.current_bgm: Optional[str] = None
-        self.sounds: Dict[str, pygame.mixer.Sound] = {}
-        self.ambient_sounds: Dict[str, pygame.mixer.Sound] = {}
+        self.current_bgm: str | None = None
+        self.sounds: dict[str, pygame.mixer.Sound] = {}
+        self.ambient_sounds: dict[str, pygame.mixer.Sound] = {}
         # Tracks the specific Channel for each ambient sound so we stop only
         # that channel (not all channels playing a given Sound object).
-        self.ambient_channels: Dict[str, pygame.mixer.Channel] = {}
+        self.ambient_channels: dict[str, pygame.mixer.Channel] = {}
         # Accumulates (sound_name → min_distance) proposals for the current frame.
-        self._ambient_proposals: Dict[str, float] = {}
+        self._ambient_proposals: dict[str, float] = {}
         self.is_muted: bool = False
 
         # Initialize mixer if not already done
@@ -117,7 +120,9 @@ class AudioManager:
             self.current_bgm = None
             logging.info("Stopping BGM")
 
-    def play_sfx(self, name: str, source_id: str = None, volume_multiplier: float = 1.0) -> bool:
+    def play_sfx(
+        self, name: str, source_id: str | None = None, volume_multiplier: float = 1.0
+    ) -> bool:
         """
         Play a sound effect.
         Note: The source_id is provided to identify the emitter, preventing overlapping issues.
@@ -172,7 +177,7 @@ class AudioManager:
         """
         if not name:
             return
-        current_min = self._ambient_proposals.get(name, float('inf'))
+        current_min = self._ambient_proposals.get(name, float("inf"))
         self._ambient_proposals[name] = min(current_min, distance)
 
     def flush_ambient(self) -> None:
@@ -213,8 +218,7 @@ class AudioManager:
             # Update volume from closest source
             sound = self.ambient_sounds.get(name)
             if sound and not self.is_muted:
-                falloff = max(AMBIENT_MIN_FALLOFF,
-                              1.0 - (min_dist / AMBIENT_MAX_DISTANCE))
+                falloff = max(AMBIENT_MIN_FALLOFF, 1.0 - (min_dist / AMBIENT_MAX_DISTANCE))
                 volume = Settings.SFX_VOLUME * AMBIENT_VOLUME_SCALE * falloff
                 sound.set_volume(volume)
 

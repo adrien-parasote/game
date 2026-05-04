@@ -1,10 +1,12 @@
-import pygame
-import os
 import logging
+import os
+
+import pygame
+
 
 class SpriteSheet:
     """Utility class to extract images from a spritesheet."""
-    
+
     def __init__(self, filename: str):
         self.filename = filename
         if not filename or filename.endswith("/") or filename.endswith("\\"):
@@ -36,32 +38,36 @@ class SpriteSheet:
         if not self.valid or self.sheet is None:
             # Fallback returning a list of plain colored dummy surfaces
             return [self._create_dummy_surface((32, 32), transparent) for _ in range(cols * rows)]
-            
+
         sheet_w, sheet_h = self.sheet.get_size()
         frame_w = sheet_w // cols
         frame_h = sheet_h // rows
-        
+
         return self._slice_sheet(cols, rows, frame_w, frame_h)
 
-    def load_grid_by_size(self, frame_w: int, frame_h: int, transparent: bool = False) -> list[pygame.Surface]:
+    def load_grid_by_size(
+        self, frame_w: int, frame_h: int, transparent: bool = False
+    ) -> list[pygame.Surface]:
         """
         Slice the spritesheet into a grid based on fixed frame dimensions.
         """
         if not self.valid or self.sheet is None:
             # Fallback with dummy surfaces
             return [self._create_dummy_surface((frame_w, frame_h), transparent) for _ in range(16)]
-            
+
         sheet_w, sheet_h = self.sheet.get_size()
         cols = sheet_w // frame_w
         rows = sheet_h // frame_h
-        
+
         # Store actual layout for callers
         self.last_cols = cols
         self.last_rows = rows
-        
+
         return self._slice_sheet(cols, rows, frame_w, frame_h)
 
-    def _slice_sheet(self, cols: int, rows: int, frame_w: int, frame_h: int) -> list[pygame.Surface]:
+    def _slice_sheet(
+        self, cols: int, rows: int, frame_w: int, frame_h: int
+    ) -> list[pygame.Surface]:
         """Internal helper to slice the sheet once dimensions are known."""
         frames = []
         for row in range(rows):
@@ -78,5 +84,5 @@ class SpriteSheet:
         if transparent:
             return pygame.Surface(size, pygame.SRCALPHA).convert_alpha()
         surf = pygame.Surface(size)
-        surf.fill((0, 0, 255)) # Blue default
+        surf.fill((0, 0, 255))  # Blue default
         return surf

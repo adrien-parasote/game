@@ -258,3 +258,29 @@ Always run `profile_game.py` or equivalent profiling tools as the absolute first
 ---
 
 ---
+
+### L-ARCH-007 · 2026-05-04 · U · Perfect
+**Break TYPE_CHECKING cycles with `Any` for same-layer mutual imports**
+
+When two modules in the same layer mutually import each other, a `TYPE_CHECKING` guard delays the circular import to type-checking time — but architectural cycle detectors (sentrux) still flag it. For same-layer dependencies used only as a runtime attribute bag (not for type narrowing), type with `Any`.
+
+```python
+# ❌ Cycle still detected by sentrux at architecture level
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.engine.game import Game
+
+class InteractionManager:
+    def __init__(self, game: "Game"): ...
+
+# ✅ Zero cycle: same layer, attribute access, no narrowing needed
+from typing import Any
+
+class InteractionManager:
+    def __init__(self, game: Any): ...
+```
+
+**Rule:** Use `Any` for same-layer circular refs where the type annotation provides no functional value. Reserve `TYPE_CHECKING` for cross-layer deps where type correctness adds real IDE value.
+
+**Evidence:** `sentrux check` flagged `game.py ↔ interaction.py` as 1 cycle. After `Any` refactor: 0 cycles.
+

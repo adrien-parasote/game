@@ -34,4 +34,6 @@ saves/
 # Sentrux — generated baseline (re-create with: sentrux gate --save .)
 .sentrux/baseline.json
 scripts/calibration_result.py
-assets/halo.png
+pyright_output.txt
+src/dsm.txt
+fix_indent.py

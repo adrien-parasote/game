@@ -1,16 +1,19 @@
 """Coverage tests for BaseEntity and Player (entity layer)."""
-import pytest
-import pygame
-from unittest.mock import MagicMock, patch
 
 import os
+from unittest.mock import MagicMock, patch
+
+import pygame
+import pytest
+
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 pygame.display.init()
 pygame.font.init()
 
+from src.config import Settings
 from src.entities.base import BaseEntity
 from src.entities.player import Player
-from src.config import Settings
+
 
 class TestBaseEntityCoverage:
     def test_start_move_zero_direction_returns_early(self):
@@ -65,8 +68,12 @@ class TestPlayerCoverage:
     def test_input_move_down(self):
         """L53-56: pressing MOVE_DOWN sets direction and state."""
         player = Player(pos=(100, 100))
-        keys = {Settings.MOVE_UP: False, Settings.MOVE_DOWN: True,
-                Settings.MOVE_LEFT: False, Settings.MOVE_RIGHT: False}
+        keys = {
+            Settings.MOVE_UP: False,
+            Settings.MOVE_DOWN: True,
+            Settings.MOVE_LEFT: False,
+            Settings.MOVE_RIGHT: False,
+        }
         with patch("pygame.key.get_pressed", return_value=keys):
             player.input()
         assert player.direction.y == 1
@@ -75,8 +82,12 @@ class TestPlayerCoverage:
     def test_input_move_left(self):
         """L58-61: pressing MOVE_LEFT sets direction and state."""
         player = Player(pos=(100, 100))
-        keys = {Settings.MOVE_UP: False, Settings.MOVE_DOWN: False,
-                Settings.MOVE_LEFT: True, Settings.MOVE_RIGHT: False}
+        keys = {
+            Settings.MOVE_UP: False,
+            Settings.MOVE_DOWN: False,
+            Settings.MOVE_LEFT: True,
+            Settings.MOVE_RIGHT: False,
+        }
         with patch("pygame.key.get_pressed", return_value=keys):
             player.input()
         assert player.direction.x == -1
@@ -85,8 +96,12 @@ class TestPlayerCoverage:
     def test_input_move_right(self):
         """L62-65: pressing MOVE_RIGHT sets direction and state."""
         player = Player(pos=(100, 100))
-        keys = {Settings.MOVE_UP: False, Settings.MOVE_DOWN: False,
-                Settings.MOVE_LEFT: False, Settings.MOVE_RIGHT: True}
+        keys = {
+            Settings.MOVE_UP: False,
+            Settings.MOVE_DOWN: False,
+            Settings.MOVE_LEFT: False,
+            Settings.MOVE_RIGHT: True,
+        }
         with patch("pygame.key.get_pressed", return_value=keys):
             player.input()
         assert player.direction.x == 1
@@ -113,4 +128,3 @@ class TestPlayerCoverage:
 # InteractiveEntity — lines 78, 96, 102, 113-114, 147-151, 193, 225, 230
 #                     261-266, 276-277, 280-286, 288-301
 # ---------------------------------------------------------------------------
-

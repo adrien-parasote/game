@@ -1,74 +1,117 @@
-import pygame
-import os
-import logging
 import ast
+import logging
 import math
+import os
 import random
-from .base import BaseEntity
-from src.config import Settings
-from src.graphics.spritesheet import SpriteSheet
+
+import pygame
+
 from src.entities.interactive_constants import (
-    INTERACTIVE_SHEET_COLS, INTERACTIVE_DUMMY_FRAME_COUNT, INTERACTIVE_POS_Y_OFFSET,
-    LIGHT_MASK_CACHE_COUNT, LIGHT_MASK_SCALE_BASE, LIGHT_MASK_SCALE_STEP,
-    ANIM_SPEED_LIGHT_SOURCE, ANIM_SPEED_OBJECT,
-    FLICKER_ALPHA_AMPLITUDE, FLICKER_ALPHA_JITTER_SCALE, FLICKER_ALPHA_JITTER_AMP,
-    FLICKER_ALPHA_NOISE_AMP, FLICKER_SCALE_AMPLITUDE,
-    FLICKER_MAIN_FREQ, FLICKER_JITTER_FREQ, FLICKER_SCALE_FREQ, FLICKER_SCALE_PHASE_OFFSET,
-    HALO_DEFAULT_COLOR, HALO_DEFAULT_ALPHA,
+    ANIM_SPEED_LIGHT_SOURCE,
+    ANIM_SPEED_OBJECT,
+    FLICKER_ALPHA_AMPLITUDE,
+    FLICKER_ALPHA_JITTER_AMP,
+    FLICKER_ALPHA_JITTER_SCALE,
+    FLICKER_ALPHA_NOISE_AMP,
+    FLICKER_JITTER_FREQ,
+    FLICKER_MAIN_FREQ,
+    FLICKER_SCALE_AMPLITUDE,
+    FLICKER_SCALE_FREQ,
+    FLICKER_SCALE_PHASE_OFFSET,
+    HALO_DEFAULT_ALPHA,
+    HALO_DEFAULT_COLOR,
+    INTERACTIVE_DUMMY_FRAME_COUNT,
+    INTERACTIVE_POS_Y_OFFSET,
+    INTERACTIVE_SHEET_COLS,
+    LIGHT_MASK_CACHE_COUNT,
+    LIGHT_MASK_SCALE_BASE,
+    LIGHT_MASK_SCALE_STEP,
 )
+from src.graphics.spritesheet import SpriteSheet
+
+from .base import BaseEntity
+
 
 class InteractiveEntity(BaseEntity):
     """
-    Fixed interactive object (chest, switch, lamp, etc.) with animation 
+    Fixed interactive object (chest, switch, lamp, etc.) with animation
     and optional lighting halo.
     """
-    
+
     # Position to Direction mapping for interaction validation
     # Standard RPG spritesheet layout: 0=Down, 1=Left, 2=Right, 3=Up
-    POSITION_TO_DIR = {
-        0: 'down',
-        1: 'left',
-        2: 'right',
-        3: 'up'
-    }
+    POSITION_TO_DIR = {0: "down", 1: "left", 2: "right", 3: "up"}
 
-    def __init__(self, pos: tuple, groups: list[pygame.sprite.Group], 
-                 sub_type: str, sprite_sheet: str, position: int = 3, 
-                 depth: int = 1, start_row: int = 0, end_row: int = 3,
-                 width: int = 32, height: int = 32, obstacles_group: pygame.sprite.Group = None,
-                 tiled_width: int = None, tiled_height: int = None,
-                 is_passable: bool = False, is_animated: bool = False,
-                 is_on: bool = None, off_position: int = -1,
-                 halo_size: int = 0, halo_color: str = "[255, 255, 255]",
-                 halo_alpha: int = HALO_DEFAULT_ALPHA, particles: bool = False, particle_count: int = 0,
-                 element_id: str = None, target_id: str = None,
-                 activate_from_anywhere: bool = False,
-                 facing_direction: str = None,
-                 sfx: str = "",
-                 sfx_ambient: str = "",
-                 day_night_driven: bool = False):
-        
+    def __init__(
+        self,
+        pos: tuple,
+        groups: list[pygame.sprite.Group],
+        sub_type: str,
+        sprite_sheet: str,
+        position: int = 3,
+        depth: int = 1,
+        start_row: int = 0,
+        end_row: int = 3,
+        width: int = 32,
+        height: int = 32,
+        obstacles_group: pygame.sprite.Group | None = None,
+        tiled_width: int | None = None,
+        tiled_height: int | None = None,
+        is_passable: bool = False,
+        is_animated: bool = False,
+        is_on: bool | None = None,
+        off_position: int = -1,
+        halo_size: int = 0,
+        halo_color: str = "[255, 255, 255]",
+        halo_alpha: int = HALO_DEFAULT_ALPHA,
+        particles: bool = False,
+        particle_count: int = 0,
+        element_id: str | None = None,
+        target_id: str | None = None,
+        activate_from_anywhere: bool = False,
+        facing_direction: str | None = None,
+        sfx: str = "",
+        sfx_ambient: str = "",
+        day_night_driven: bool = False,
+    ):
         # 1. Properties & State Initialization
         self.target_id = target_id
-        
-        self._parse_properties(sub_type, start_row, end_row, is_on, is_animated, 
-                             depth, position, off_position, halo_size, halo_color, halo_alpha,
-                             particles, particle_count, activate_from_anywhere,
-                             sprite_sheet, facing_direction, sfx, sfx_ambient, day_night_driven)
-        
+
+        self._parse_properties(
+            sub_type,
+            start_row,
+            end_row,
+            is_on,
+            is_animated,
+            depth,
+            position,
+            off_position,
+            halo_size,
+            halo_color,
+            halo_alpha,
+            particles,
+            particle_count,
+            activate_from_anywhere,
+            sprite_sheet,
+            facing_direction,
+            sfx,
+            sfx_ambient,
+            day_night_driven,
+        )
+
         # 2. Asset Loading
         self._load_assets(sprite_sheet, width, height)
-        
+
         # 3. Physics & Layout Setup
         t_w = tiled_width if tiled_width is not None else width
         t_h = tiled_height if tiled_height is not None else height
         self._setup_physics(pos, t_w, t_h, is_passable, obstacles_group, groups, element_id)
-        
+
         # 4. Lighting Initialization
         self.light_mask_cache = []
         if self.halo_size > 0:
             self._setup_lighting()
-            
+
         # Chest contents (populated externally by LootTable for sub_type='chest')
         self.contents: list[dict] = []
 
@@ -78,24 +121,42 @@ class InteractiveEntity(BaseEntity):
     @property
     def is_on(self) -> bool:
         if not self.day_night_driven:
-            return getattr(self, '_static_is_on', False)
+            return getattr(self, "_static_is_on", False)
         if self.light_control == "forced_on":
             return True
         if self.light_control == "forced_off":
             return False
         # "auto" : follows the night
-        if getattr(self, '_time_system', None) is None:
-            return getattr(self, '_static_is_on', False)
+        if self._time_system is None:
+            return getattr(self, "_static_is_on", False)
         return self._time_system.brightness < 0.4
 
     @is_on.setter
     def is_on(self, value: bool) -> None:
         self._static_is_on = value
 
-    def _parse_properties(self, sub_type, start_row, end_row, is_on, is_animated, 
-                           depth, position, off_position, halo_size, halo_color, halo_alpha,
-                           particles, particle_count, activate_from_anywhere,
-                           sprite_sheet, facing_direction, sfx, sfx_ambient, day_night_driven):
+    def _parse_properties(
+        self,
+        sub_type,
+        start_row,
+        end_row,
+        is_on,
+        is_animated,
+        depth,
+        position,
+        off_position,
+        halo_size,
+        halo_color,
+        halo_alpha,
+        particles,
+        particle_count,
+        activate_from_anywhere,
+        sprite_sheet,
+        facing_direction,
+        sfx,
+        sfx_ambient,
+        day_night_driven,
+    ):
         """Parse raw properties and initialize basic state."""
         self.sub_type = sub_type
         self.start_row = start_row
@@ -105,35 +166,37 @@ class InteractiveEntity(BaseEntity):
         self.on_position = position
         self.off_position = off_position
         self.col_index = position
-        
+
         # Day/Night Automation
         self.day_night_driven = day_night_driven
-        self._time_system = None
+        from src.engine.time_system import TimeSystem
+
+        self._time_system: TimeSystem | None = None
         self.light_control = "auto" if day_night_driven else "none"
-        
+
         # Determine direction_str (Priority: facing_direction > POSITION_TO_DIR)
         if facing_direction:
             self.direction_str = facing_direction
         else:
-            self.direction_str = self.POSITION_TO_DIR.get(position, 'down')
-        
+            self.direction_str = self.POSITION_TO_DIR.get(position, "down")
+
         # State
         # If starting ON and not animated, jump to end frame (e.g., open door)
         if is_on and not is_animated:
             self.frame_index = float(self.end_row)
         else:
             self.frame_index = float(self.start_row)
-            
+
         # Determine is_on and specific behaviors
         self.is_light_source = halo_size > 0
-        
+
         if is_on is not None:
             self._static_is_on = is_on
         else:
             self._static_is_on = self.is_animated or self.is_light_source
-            
+
         self._update_col_index()
-            
+
         # Selective Animation Speed
         if self.is_light_source:
             self.animation_speed = ANIM_SPEED_LIGHT_SOURCE
@@ -141,9 +204,9 @@ class InteractiveEntity(BaseEntity):
                 self.frame_index = random.uniform(float(self.start_row), float(self.end_row + 1))
         else:
             self.animation_speed = ANIM_SPEED_OBJECT
-            
+
         self.is_animating = self.is_on and self.is_animated
-        
+
         # Halo Props
         self.halo_size = halo_size
         self.halo_alpha = halo_alpha
@@ -151,19 +214,21 @@ class InteractiveEntity(BaseEntity):
             self.halo_color = ast.literal_eval(halo_color)
         except (ValueError, SyntaxError, TypeError):
             self.halo_color = HALO_DEFAULT_COLOR
-            
+
         if self.halo_size > 0:
-            logging.debug(f"InteractiveEntity {sub_type} halo: alpha={self.halo_alpha}, size={self.halo_size}")
+            logging.debug(
+                f"InteractiveEntity {sub_type} halo: alpha={self.halo_alpha}, size={self.halo_size}"
+            )
 
         self.flicker_phase = random.uniform(0, 2 * math.pi)
         self.f_alpha = 1.0
         self.f_scale = 1.0
-        
+
         # Particle System
         self.particles = particles
         self.particle_count = particle_count
         self.particles_list = []
-        
+
         # Interaction
         self.activate_from_anywhere = activate_from_anywhere
         self.sfx = sfx
@@ -173,27 +238,36 @@ class InteractiveEntity(BaseEntity):
         """Load spritesheet and compute frame dimensions."""
         self.sprite_width = width
         self.sprite_height = height
-        
+
         sheet_path = ""
         if sprite_sheet and sprite_sheet.strip():
-            sheet_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "sprites", sprite_sheet)
-        
+            sheet_path = os.path.join(
+                os.path.dirname(__file__), "..", "..", "assets", "images", "sprites", sprite_sheet
+            )
+
         sheet = SpriteSheet(sheet_path) if sheet_path else None
-        
+
         # Signs are invisible if they have no sprite sheet
-        is_transparent = (self.sub_type == 'sign' and (not sprite_sheet or not sheet or not sheet.valid))
-        
+        is_transparent = self.sub_type == "sign" and (
+            not sprite_sheet or not sheet or not sheet.valid
+        )
+
         if sheet and sheet.valid and sheet.sheet is not None:
             _, sheet_h = sheet.sheet.get_size()
-            total_rows = self.end_row + 1 
+            total_rows = self.end_row + 1
             real_frame_h = sheet_h // total_rows if total_rows > 0 else self.sprite_height
-            self.frames = sheet.load_grid_by_size(self.sprite_width, real_frame_h, transparent=is_transparent)
-            self._sheet_cols = getattr(sheet, 'last_cols', 4)
+            self.frames = sheet.load_grid_by_size(
+                self.sprite_width, real_frame_h, transparent=is_transparent
+            )
+            self._sheet_cols = getattr(sheet, "last_cols", 4)
         else:
             real_frame_h = self.sprite_height
             # Fallback for invisible or missing sprites (like signs)
             dummy_count = INTERACTIVE_DUMMY_FRAME_COUNT
-            self.frames = [pygame.Surface((self.sprite_width, real_frame_h), pygame.SRCALPHA) for _ in range(dummy_count)]
+            self.frames = [
+                pygame.Surface((self.sprite_width, real_frame_h), pygame.SRCALPHA)
+                for _ in range(dummy_count)
+            ]
             for f in self.frames:
                 if pygame.display.get_surface() is not None:
                     f.convert_alpha()
@@ -204,19 +278,21 @@ class InteractiveEntity(BaseEntity):
         """Initialize sprite rect, world position and collision state."""
         dummy_rect = pygame.Rect(0, 0, self.sprite_width, self.sprite_height)
         dummy_rect.midbottom = (pos[0] + t_w // 2, pos[1] + t_h)
-        
+
         center_pos = dummy_rect.center
         super().__init__(center_pos, groups, element_id=element_id)
-        
+
         self.tiled_width = t_w
         self.tiled_height = t_h
         self.is_passable = is_passable
         self.obstacles_group = obstacles_group
         self.rect = dummy_rect
-        self.pos = pygame.math.Vector2(self.rect.centerx, self.rect.bottom - INTERACTIVE_POS_Y_OFFSET)
-        
+        self.pos = pygame.math.Vector2(
+            self.rect.centerx, self.rect.bottom - INTERACTIVE_POS_Y_OFFSET
+        )
+
         if self.obstacles_group is not None:
-            if self.sub_type == 'door' or not self.is_passable:
+            if self.sub_type == "door" or not self.is_passable:
                 if not (self.is_on and self.is_passable):
                     self.obstacles_group.add(self)
 
@@ -238,10 +314,10 @@ class InteractiveEntity(BaseEntity):
         surf = pygame.Surface((size, size))
         surf.fill((0, 0, 0))
         center = (radius, radius)
-        
+
         base_color = pygame.Color(*self.halo_color)
         alpha_factor = self.halo_alpha / 255.0
-        
+
         for r in range(radius, 0, -1):
             ratio = r / radius
             intensity = (1.0 - ratio) ** 2
@@ -249,10 +325,10 @@ class InteractiveEntity(BaseEntity):
             color = (
                 int(base_color.r * final_intensity),
                 int(base_color.g * final_intensity),
-                int(base_color.b * final_intensity)
+                int(base_color.b * final_intensity),
             )
             pygame.draw.circle(surf, color, center, r)
-            
+
         return surf
 
     def _get_frame(self, row_index: int) -> pygame.Surface:
@@ -271,46 +347,46 @@ class InteractiveEntity(BaseEntity):
         else:
             self.col_index = self.on_position
 
-    def interact(self, initiator) -> str:
+    def interact(self, initiator) -> str | None:
         """Toggle state or return dialogue key."""
-        if self.sub_type == 'sign':
+        if self.sub_type == "sign":
             return self.element_id
-            
-        if getattr(self, 'day_night_driven', False):
-            if getattr(self, 'light_control', 'auto') == "auto":
+
+        if getattr(self, "day_night_driven", False):
+            if getattr(self, "light_control", "auto") == "auto":
                 self.light_control = "forced_off" if self.is_on else "forced_on"
             else:
                 self.light_control = "auto"
             self._update_col_index()
             logging.info(f"Light '{self.sub_type}' control -> {self.light_control}")
         else:
-            if not getattr(self, 'is_animating', False) or getattr(self, 'is_animated', False):
+            if not getattr(self, "is_animating", False) or getattr(self, "is_animated", False):
                 self.is_on = not self.is_on
                 self._update_col_index()
                 self.is_animating = True
-                if not getattr(self, 'is_animated', False):
+                if not getattr(self, "is_animated", False):
                     self.is_closing = not self.is_on
                 logging.info(f"Object {self.sub_type} toggled to {'ON' if self.is_on else 'OFF'}")
-        
+
         return None
 
     def restore_state(self, state: dict):
         """Restore state from WorldState."""
-        if 'is_on' in state:
-            is_on = state['is_on']
+        if "is_on" in state:
+            is_on = state["is_on"]
             self.is_on = is_on
             self._update_col_index()
-            if is_on and not getattr(self, 'is_animated', False):
+            if is_on and not getattr(self, "is_animated", False):
                 self.frame_index = float(self.end_row)
             elif not is_on:
                 self.frame_index = float(self.start_row)
-            if self.sub_type == 'door' and getattr(self, 'obstacles_group', None) is not None:
-                if is_on and getattr(self, 'is_passable', False):
+            if self.sub_type == "door" and getattr(self, "obstacles_group", None) is not None:
+                if is_on and getattr(self, "is_passable", False):
                     self.obstacles_group.remove(self)
                 else:
                     self.obstacles_group.add(self)
-        if 'light_control' in state:
-            self.light_control = state['light_control']
+        if "light_control" in state:
+            self.light_control = state["light_control"]
             self._update_col_index()
         self.image = self._get_frame(int(self.frame_index))
 
@@ -322,14 +398,14 @@ class InteractiveEntity(BaseEntity):
             ticks_ms: Current pygame.time.get_ticks() value (passed from Game to avoid
                       one get_ticks() call per entity). Falls back to get_ticks() if None.
         """
-        if getattr(self, 'day_night_driven', False):
+        if getattr(self, "day_night_driven", False):
             self._update_col_index()
-            
+
         # Ambient Audio — propose model: each entity contributes its distance.
         # flush_ambient() (called from game loop) picks the nearest source.
-        has_ambient = bool(self.sfx_ambient) if hasattr(self, 'sfx_ambient') else False
-        if has_ambient and hasattr(self, 'game') and hasattr(self.game, 'audio_manager') and self.game.audio_manager:
-            if self.is_on and hasattr(self.game, 'player') and self.game.player:
+        has_ambient = bool(self.sfx_ambient) if hasattr(self, "sfx_ambient") else False
+        if has_ambient and self.game and self.game.audio_manager:
+            if self.is_on and self.game.player:
                 dist = self.pos.distance_to(self.game.player.pos)
                 self.game.audio_manager.propose_ambient(self.sfx_ambient, dist)
             # If is_on=False: no proposal → flush_ambient stops the channel automatically.
@@ -339,17 +415,29 @@ class InteractiveEntity(BaseEntity):
                 num_frames = max(1, self.end_row - self.start_row + 1)
                 frame_progress = (self.frame_index - self.start_row) % num_frames
                 animation_phase = (frame_progress / num_frames) * 2 * math.pi
-                self.f_alpha = 1.0 + FLICKER_ALPHA_AMPLITUDE * math.sin(animation_phase - math.pi/2)
+                self.f_alpha = 1.0 + FLICKER_ALPHA_AMPLITUDE * math.sin(
+                    animation_phase - math.pi / 2
+                )
                 self.f_alpha += random.uniform(-FLICKER_ALPHA_JITTER_AMP, FLICKER_ALPHA_JITTER_AMP)
                 self.f_scale = 1.0 + FLICKER_SCALE_AMPLITUDE * math.sin(animation_phase)
             else:
                 ticks = ticks_ms if ticks_ms is not None else pygame.time.get_ticks()
                 time_sec = ticks / 1000.0
                 main_wave = math.sin(time_sec * FLICKER_MAIN_FREQ * math.pi + self.flicker_phase)
-                jitter_wave = FLICKER_ALPHA_JITTER_SCALE * math.sin(time_sec * FLICKER_JITTER_FREQ * math.pi + self.flicker_phase * 0.5)
-                self.f_alpha = 1.0 + FLICKER_ALPHA_AMPLITUDE * main_wave + FLICKER_ALPHA_JITTER_AMP * jitter_wave
+                jitter_wave = FLICKER_ALPHA_JITTER_SCALE * math.sin(
+                    time_sec * FLICKER_JITTER_FREQ * math.pi + self.flicker_phase * 0.5
+                )
+                self.f_alpha = (
+                    1.0
+                    + FLICKER_ALPHA_AMPLITUDE * main_wave
+                    + FLICKER_ALPHA_JITTER_AMP * jitter_wave
+                )
                 self.f_alpha += random.uniform(-FLICKER_ALPHA_NOISE_AMP, FLICKER_ALPHA_NOISE_AMP)
-                self.f_scale = 1.0 + FLICKER_SCALE_AMPLITUDE * math.sin(time_sec * FLICKER_SCALE_FREQ * math.pi + self.flicker_phase + FLICKER_SCALE_PHASE_OFFSET)
+                self.f_scale = 1.0 + FLICKER_SCALE_AMPLITUDE * math.sin(
+                    time_sec * FLICKER_SCALE_FREQ * math.pi
+                    + self.flicker_phase
+                    + FLICKER_SCALE_PHASE_OFFSET
+                )
         else:
             self.f_alpha = 1.0
             self.f_scale = 1.0
@@ -363,63 +451,82 @@ class InteractiveEntity(BaseEntity):
                 self.frame_index = float(self.start_row)
                 self.is_animating = False
         elif self.is_animating:
-            if getattr(self, 'is_closing', False):
+            if getattr(self, "is_closing", False):
                 self.frame_index -= self.animation_speed * dt
                 if self.frame_index <= self.start_row:
                     self.frame_index = float(self.start_row)
                     self.is_animating = False
-                    if self.sub_type == 'door' and self.obstacles_group:
+                    if self.sub_type == "door" and self.obstacles_group:
                         self.obstacles_group.add(self)
             else:
                 self.frame_index += self.animation_speed * dt
                 if self.frame_index >= self.end_row:
                     self.frame_index = float(self.end_row)
                     self.is_animating = False
-                    if self.sub_type == 'door' and self.is_passable and self.obstacles_group:
+                    if self.sub_type == "door" and self.is_passable and self.obstacles_group:
                         self.obstacles_group.remove(self)
-        
+
         self.image = self._get_frame(int(self.frame_index))
 
         if self.particles and self.is_on:
             if len(self.particles_list) < self.particle_count:
                 expected_spawns = (self.particle_count / 1.5) * dt
                 spawns = int(expected_spawns)
-                if random.random() < (expected_spawns - spawns): spawns += 1
-                if spawns == 0 and random.random() < 0.3: spawns = 1
+                if random.random() < (expected_spawns - spawns):
+                    spawns += 1
+                if spawns == 0 and random.random() < 0.3:
+                    spawns = 1
                 for _ in range(spawns):
-                    life = random.uniform(1.0, 2.0)
-                    self.particles_list.append({
-                        'x': self.rect.centerx + random.uniform(-4, 4),
-                        'y': self.rect.top + (self.rect.height * 0.33) + random.uniform(-2, 2),
-                        'vx': random.uniform(-2.0, 2.0),
-                        'vy': random.uniform(-10.0, -5.0),
-                        'life': life, 'max_life': life,
-                        'size': 1 if random.random() < 0.9 else 2,
-                        'phase': random.uniform(0, math.pi * 2)
-                    })
+                    if self.rect:
+                        life = random.uniform(1.0, 2.0)
+                        self.particles_list.append(
+                            {
+                                "x": self.rect.centerx + random.uniform(-4, 4),
+                                "y": self.rect.top
+                                + (self.rect.height * 0.33)
+                                + random.uniform(-2, 2),
+                                "vx": random.uniform(-2.0, 2.0),
+                                "vy": random.uniform(-10.0, -5.0),
+                                "life": life,
+                                "max_life": life,
+                                "size": 1 if random.random() < 0.9 else 2,
+                                "phase": random.uniform(0, math.pi * 2),
+                            }
+                        )
 
         if self.particles_list:
             alive = []
             for p in self.particles_list:
-                p['life'] -= dt
-                if p['life'] > 0:
-                    p['x'] += (p['vx'] + math.sin(p['phase'] + p['life'] * 3.0) * 5.0) * dt
-                    p['y'] += p['vy'] * dt
+                p["life"] -= dt
+                if p["life"] > 0:
+                    p["x"] += (p["vx"] + math.sin(p["phase"] + p["life"] * 3.0) * 5.0) * dt
+                    p["y"] += p["vy"] * dt
                     alive.append(p)
             self.particles_list = alive
 
-    def draw_effects(self, surface: pygame.Surface, cam_offset: pygame.math.Vector2, global_darkness: int):
+    def draw_effects(
+        self, surface: pygame.Surface, cam_offset: pygame.math.Vector2, global_darkness: int
+    ):
         """Draw particles (light halo is handled by LightingManager)."""
         if not self.is_on:
             return
 
         if self.particles_list:
-            base_color = getattr(self, 'halo_color', (250, 250, 250))
+            base_color = getattr(self, "halo_color", (250, 250, 250))
             for p in self.particles_list:
-                alpha = (p['life'] / p['max_life']) ** 0.6
-                color = (int(base_color[0] * alpha), int(base_color[1] * alpha), int(base_color[2] * alpha))
+                alpha = (p["life"] / p["max_life"]) ** 0.6
+                color = (
+                    int(base_color[0] * alpha),
+                    int(base_color[1] * alpha),
+                    int(base_color[2] * alpha),
+                )
                 # P14: removed useless Surface alloc — draw.circle is sufficient
-                pygame.draw.circle(surface, color, (int(p['x'] + cam_offset.x), int(p['y'] + cam_offset.y)), p['size'])
+                pygame.draw.circle(
+                    surface,
+                    color,
+                    (int(p["x"] + cam_offset.x), int(p["y"] + cam_offset.y)),
+                    p["size"],
+                )
 
         if not self.light_mask_cache or self.halo_size <= 0:
             return
@@ -431,9 +538,9 @@ class InteractiveEntity(BaseEntity):
         render_surf = self.light_mask_cache[scale_idx]
         m = max(0, min(255, int(round(255 * global_factor * self.f_alpha))))
         render_surf.set_alpha(m)
-        halo_pos = (
-            self.rect.centerx + cam_offset.x - render_surf.get_width() // 2,
-            self.rect.centery + cam_offset.y - render_surf.get_height() // 2,
-        )
-        surface.blit(render_surf, halo_pos, special_flags=pygame.BLEND_RGB_ADD)
-
+        if self.rect:
+            halo_pos = (
+                self.rect.centerx + cam_offset.x - render_surf.get_width() // 2,
+                self.rect.centery + cam_offset.y - render_surf.get_height() // 2,
+            )
+            surface.blit(render_surf, halo_pos, special_flags=pygame.BLEND_RGB_ADD)

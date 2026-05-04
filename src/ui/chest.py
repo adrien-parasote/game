@@ -4,17 +4,26 @@ Implements the UI that appears when a chest is opened.
 Refactored to delegate layout, transfer, and rendering to mixins.
 """
 
-import os
-import math
 import logging
-import pygame
-from src.config import Settings
+import os
 
-from src.ui.chest_constants import *
-from src.ui.chest_constants import _INV_SLOTS_VISIBLE, _TARGET_WIDTH, _INV_TARGET_WIDTH
+import pygame
+
+from src.config import Settings
+from src.ui.chest_constants import (
+    _INV_SLOTS_VISIBLE,
+    _INV_TARGET_WIDTH,
+    _TARGET_WIDTH,
+    ASSET_CHEST_BG,
+    ASSET_INV_BG,
+    ASSET_POINTER,
+    ASSET_POINTER_SELECT,
+    ASSET_SLOT_IMG,
+)
+from src.ui.chest_draw import ChestDrawMixin
 from src.ui.chest_layout import ChestLayoutMixin
 from src.ui.chest_transfer import ChestTransferMixin
-from src.ui.chest_draw import ChestDrawMixin
+
 
 class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin):
     """Public interface for the chest overlay."""
@@ -27,7 +36,7 @@ class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin):
         # Chest panel assets
         self._bg: pygame.Surface | None = self._load_background()
         self._slot_img: pygame.Surface | None = self._load_slot_image()
-        self._hover_img: pygame.Surface | None = None   # scaled in _compute_layout
+        self._hover_img: pygame.Surface | None = None  # scaled in _compute_layout
 
         # Inventory panel assets
         self._inv_bg: pygame.Surface | None = self._load_inv_background()
@@ -51,27 +60,29 @@ class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin):
         self._bg_rect: pygame.Rect | None = None
         self._title_rect: pygame.Rect | None = None
         self._content_rect: pygame.Rect | None = None
-        self._slot_positions: list[pygame.Rect] = []       # chest slots
+        self._slot_positions: list[pygame.Rect] = []  # chest slots
         self._arrow_up_rect: pygame.Rect | None = None
         self._arrow_down_rect: pygame.Rect | None = None
 
         self._inv_bg_rect: pygame.Rect | None = None
-        self._inv_slot_positions: list[pygame.Rect] = []   # player inv slots (current page)
+        self._inv_slot_positions: list[pygame.Rect] = []  # player inv slots (current page)
         self._inv_arrow_left_rect: pygame.Rect | None = None
         self._inv_arrow_right_rect: pygame.Rect | None = None
 
         # --- Hover state ---
         self._hovered_chest_slot: int | None = None
-        self._hovered_chest_arrow: str | None = None   # "up" | "down"
+        self._hovered_chest_arrow: str | None = None  # "up" | "down"
         self._hovered_inv_slot: int | None = None
-        self._hovered_inv_arrow: str | None = None     # "left" | "right"
+        self._hovered_inv_arrow: str | None = None  # "left" | "right"
 
         # --- Scroll offset (index of first visible inv slot) ---
         self._inv_offset: int = 0
         self._layout_computed: bool = False
 
         # --- Drag & Drop state ---
-        self._dragging_item: dict | None = None   # {"item_id": str, "quantity": int, "source": str, "index": int, "icon": str}
+        self._dragging_item: dict | None = (
+            None  # {"item_id": str, "quantity": int, "source": str, "index": int, "icon": str}
+        )
         self._drag_pos: tuple[int, int] = (0, 0)
 
     # -----------------------------------------------------------------------
@@ -157,19 +168,35 @@ class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin):
                 return
 
         # 4. Inventory arrow buttons (only if visible)
-        if self._can_scroll_left() and self._inv_arrow_left_rect and self._inv_arrow_left_rect.collidepoint(mouse_pos):
+        if (
+            self._can_scroll_left()
+            and self._inv_arrow_left_rect
+            and self._inv_arrow_left_rect.collidepoint(mouse_pos)
+        ):
             self._hovered_inv_arrow = "left"
             return
-        if self._can_scroll_right() and self._inv_arrow_right_rect and self._inv_arrow_right_rect.collidepoint(mouse_pos):
+        if (
+            self._can_scroll_right()
+            and self._inv_arrow_right_rect
+            and self._inv_arrow_right_rect.collidepoint(mouse_pos)
+        ):
             self._hovered_inv_arrow = "right"
 
     def _handle_mouse_down(self, event: pygame.event.Event) -> None:
         pos = event.pos
 
         # Inventory scroll (page-based jumps)
-        if self._can_scroll_right() and self._inv_arrow_right_rect and self._inv_arrow_right_rect.collidepoint(pos):
+        if (
+            self._can_scroll_right()
+            and self._inv_arrow_right_rect
+            and self._inv_arrow_right_rect.collidepoint(pos)
+        ):
             self._scroll_right()
-        elif self._can_scroll_left() and self._inv_arrow_left_rect and self._inv_arrow_left_rect.collidepoint(pos):
+        elif (
+            self._can_scroll_left()
+            and self._inv_arrow_left_rect
+            and self._inv_arrow_left_rect.collidepoint(pos)
+        ):
             self._scroll_left()
 
         # Auto-transfer arrows
@@ -193,27 +220,28 @@ class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin):
                             "quantity": entry["quantity"],
                             "source": "chest",
                             "index": i,
-                            "icon": self._resolve_icon_name(entry["item_id"])
+                            "icon": self._resolve_icon_name(entry["item_id"]),
                         }
                         self._drag_pos = pos
                         return
 
             # Check Inventory slots
             visible_count = min(_INV_SLOTS_VISIBLE, max(0, self._capacity() - self._inv_offset))
-            for i, rect in enumerate(self._inv_slot_positions[:visible_count]):
-                if rect.collidepoint(pos):
-                    actual_index = self._inv_offset + i
-                    item = self._player.inventory.get_item_at(actual_index)
-                    if item:
-                        self._dragging_item = {
-                            "item_id": item.id,
-                            "quantity": item.quantity,
-                            "source": "inv",
-                            "index": actual_index,
-                            "icon": item.icon if item.icon else f"{item.id}.png"
-                        }
-                        self._drag_pos = pos
-                        return
+            if self._player:
+                for i, rect in enumerate(self._inv_slot_positions[:visible_count]):
+                    if rect.collidepoint(pos):
+                        actual_index = self._inv_offset + i
+                        item = self._player.inventory.get_item_at(actual_index)
+                        if item:
+                            self._dragging_item = {
+                                "item_id": item.id,
+                                "quantity": item.quantity,
+                                "source": "inv",
+                                "index": actual_index,
+                                "icon": item.icon if item.icon else f"{item.id}.png",
+                            }
+                            self._drag_pos = pos
+                            return
 
     def _handle_mouse_motion(self, event: pygame.event.Event) -> None:
         """Update drag position."""
@@ -224,10 +252,10 @@ class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin):
         """Handle item drop."""
         if not self._dragging_item:
             return
-        
+
         pos = event.pos
-        self.update_hover(pos) # Ensure accurate drop location
-        
+        self.update_hover(pos)  # Ensure accurate drop location
+
         # Determine destination
         if self._hovered_chest_slot is not None:
             self._transfer_dragged_to_chest(self._hovered_chest_slot)
@@ -237,7 +265,7 @@ class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin):
         else:
             # Dropped outside any valid slot, item stays at its source
             pass
-        
+
         self._dragging_item = None
 
     def handle_event(self, event: pygame.event.Event) -> None:
@@ -308,9 +336,7 @@ class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin):
             logging.warning(f"ChestUI arrow hover load failed ({path}): {e}")
             return None
 
-    def _get_item_icon(
-        self, icon_filename: str, slot_size: int
-    ) -> pygame.Surface | None:
+    def _get_item_icon(self, icon_filename: str, slot_size: int) -> pygame.Surface | None:
         """Load, scale, and cache an item icon to *slot_size* px."""
         cache_key = f"{icon_filename}@{slot_size}"
         if cache_key in self._icon_cache:
@@ -363,7 +389,7 @@ class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin):
         if self._player is None:
             return []
         start = self._inv_offset
-        end   = start + _INV_SLOTS_VISIBLE
+        end = start + _INV_SLOTS_VISIBLE
         return self._player.inventory.slots[start:end]
 
     # -----------------------------------------------------------------------
@@ -375,11 +401,12 @@ class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin):
         if self._chest_entity is None:
             return []
         contents = getattr(self._chest_entity, "contents", [])
-        
+
         from src.engine.loot_table import CHEST_MAX_SLOTS
+
         while len(contents) < CHEST_MAX_SLOTS:
             contents.append(None)
-            
+
         return contents
 
     def _resolve_icon_name(self, item_id: str) -> str:

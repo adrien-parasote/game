@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-04 | Files scanned: 49 | Token estimate: ~520 -->
+<!-- Generated: 2026-05-04 | Files scanned: 55 | Token estimate: ~520 -->
 
 # Game Engine Architecture
 
@@ -18,7 +18,7 @@
 | **GameStateManager** | `src/engine/game_state_manager.py` | 300 | Top-level state machine (TITLE/PLAYING/PAUSED), global event routing, save/load orchestration |
 | **Game** | `src/engine/game.py` | 762 | Gameplay orchestrator, entity spawning, event dispatch, map transitions |
 | **RenderManager** | `src/engine/render_manager.py` | 109 | Scene rendering pipeline (background, foreground, HUD, overlays) |
-| **InteractionManager** | `src/engine/interaction.py` | 440 | Proximity/facing checks for objects, NPCs, pickups, chests, emotes, teleporters |
+| **InteractionManager** | `src/engine/interaction.py` | 473 | Proximity/facing checks for objects, NPCs, pickups, chests, emotes, teleporters. Typed `game: Any` (no hard coupling to `Game`) |
 | **SaveManager** | `src/engine/save_manager.py` | 218 | JSON save/load (3 slots), inventory + world state serialization, PNG thumbnails |
 | **GameEvents** | `src/engine/game_events.py` | 59 | `GameEvent` dataclass + `GameEventType` enum. Factory methods: `new_game()`, `load_requested(slot_id)`, `quit()`, `pause_requested()`, `resume()`, `save_requested(slot_id)`, `goto_title()` |
 | **MapManager** | `src/map/manager.py` | 185 | Layer surfaces, TMJ state, collision tile queries, window positions |
@@ -35,7 +35,7 @@
 - **ChestUI** (`src/ui/chest.py`, 393L) + mixins: `chest_layout.py` (slot geometry), `chest_draw.py` (rendering), `chest_transfer.py` (item movement logic). Chest ↔ Inventory transfer, paged scrolling (18-slot pages), D&D across panels.
 - **TitleScreen** (`src/ui/title_screen.py`, 431L): Main menu state machine (MAIN_MENU/LOAD_MENU/OPTIONS). Renders dynamic title using `title_screen_constants.py`. **33 fire halos** (`BACKGROUND_LIGHTS`, BLEND_RGB_ADD, flicker) + **25 bioluminescent mushrooms** (`MUSHROOM_LIGHTS`, slow breath `sin*0.15`). Resolution-independent: logical 1280×720 mapped via `_light_scale_x/y` from `screen.get_size()`. Returns `GameEvent`.
 - **PauseScreen** (`src/ui/pause_screen.py`, 276L): In-game pause overlay (MAIN/SAVE_MENU states), save/resume/goto_title, gaussian blur halo hover. `notify_save_result(bool)` for feedback.
-- **SaveMenuOverlay** (`src/ui/save_menu.py`, 207L): Reusable save/load slot overlay. `refresh()` populates `_slots_info` from `SaveManager.list_slots()`. `get_clicked_slot(event)→int|None`. `SaveSlotUI` renders individual slot with background sprite, PNG thumbnail, additive halo.
+- **SaveMenuOverlay** (`src/ui/save_menu.py`, 340L): Reusable save/load slot overlay. `refresh()` populates `_slots_info` from `SaveManager.list_slots()`. `get_clicked_slot(event)→int|None`. `SaveSlotUI` renders individual slot with background sprite, PNG thumbnail, additive halo. **Back button** (engraved label + icon, hover glow) triggers `on_back()` callback.
 - **GameHUD** (`src/ui/hud.py`, 88L): In-game HUD (time, health).
 - **Inventory** (`src/engine/inventory_system.py`, 133L): 28-slot padded list (`None` fill), equipment dict (8 slots), `add/remove/equip/unequip`.
 
@@ -79,6 +79,6 @@ scripts/
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
-- **Test Suite**: Pytest 9.0.3, **543 tests**, **93% coverage** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (34 files across 5 domains)
-- **Traceability**: `@pytest.mark.tc("TC-ID")` markers — 143 TC IDs across 15 specs, 100% spec coverage. Registered in `pyproject.toml`.
+- **Test Suite**: Pytest 9.0.3, **545 tests**, **92% coverage** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (34 files across 5 domains)
+- **Traceability**: `@pytest.mark.tc("TC-ID")` markers — 132 TC IDs across 15 specs, 100% spec coverage. Registered in `pyproject.toml`.
 - **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), ChestUI mixin decomposition, GameEvent dataclass factory pattern

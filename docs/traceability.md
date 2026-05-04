@@ -2,7 +2,7 @@
 
 # Spec↔Test Traceability Matrix
 
-**Coverage:** 130/130 (100%)
+**Coverage:** 132/132 (100%)
 
 ## chest-ui-spec.md
 
@@ -96,6 +96,7 @@
 | GF-032 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_events_filtering` |
 | GF-033 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_draw_main_menu` |
 | GF-034 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_light_scale_factors` |
+| GF-035 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_load_menu_back_button` |
 
 ## interactive-objects.md
 
@@ -170,6 +171,7 @@
 | TC-008 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_init` |
 | TC-009 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_get_clicked_slot` |
 | TC-010 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_update_and_draw` |
+| TC-011 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_back_clicked` |
 | IT-001 | ✅ | `tests/engine/test_performance_optimizations.py::test_title_screen_draw_no_rotozoom` |
 | IT-002 | ✅ | `tests/engine/test_performance_optimizations.py::test_interaction_distance_sq_semantics_match_original` |
 | IT-003 | ✅ | `tests/engine/test_performance_optimizations.py::test_game_viewport_rect_reused_across_updates` |

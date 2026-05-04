@@ -2,23 +2,25 @@
 Save Menu UI Components.
 Spec: docs/specs/save-system.md
 """
-import os
-import pygame
+
 import logging
-from typing import Optional
-from src.engine.save_manager import SaveManager, SlotInfo
+import os
+
+import pygame
+
 from src.config import Settings
 from src.engine.i18n import I18nManager
+from src.engine.save_manager import SaveManager, SlotInfo
 
 
 class SaveSlotUI:
     """Renders a single save slot: background, thumbnail, text, and hover glow."""
-    
+
     def __init__(self, am):
         self._font_title = am.get_font(Settings.FONT_NOBLE, Settings.FONT_SIZE_NOBLE)
         self._font_small = am.get_font(Settings.FONT_NARRATIVE, Settings.FONT_SIZE_NARRATIVE)
         self._i18n = I18nManager()
-        
+
         # Load the slot background
         path = os.path.join("assets", "images", "menu", "03-save_slot.png")
         try:
@@ -40,22 +42,25 @@ class SaveSlotUI:
             # Golden/orange hue
             color = (int(255 * intensity), int(160 * intensity), int(40 * intensity))
             pygame.draw.circle(self._halo, color, (radius, radius), r)
-        
+
         # Approximate gem coordinates in 427x200 space
-        self._gem_coords = [
-            (26, 27),
-            (413, 27),
-            (26, 170),
-            (414, 171)
-        ]
+        self._gem_coords = [(26, 27), (413, 27), (26, 170), (414, 171)]
 
     def get_size(self) -> tuple[int, int]:
         return self._bg.get_size()
 
-    def draw(self, surface: pygame.Surface, rect: pygame.Rect, slot_id: int, info: Optional[SlotInfo], thumbnail: Optional[pygame.Surface], is_hovered: bool) -> None:
+    def draw(
+        self,
+        surface: pygame.Surface,
+        rect: pygame.Rect,
+        slot_id: int,
+        info: SlotInfo | None,
+        thumbnail: pygame.Surface | None,
+        is_hovered: bool,
+    ) -> None:
         """Render the slot background, thumbnail, text and hover effect."""
         surface.blit(self._bg, rect)
-        
+
         if info is None:
             pass
         else:
@@ -77,19 +82,23 @@ class SaveSlotUI:
             title_text = self._font_title.render(display_name, True, (220, 200, 150))
             title_rect = title_text.get_rect(center=(rect.x + rect.w // 2, rect.y + 22))
             surface.blit(title_text, title_rect)
-            
+
             # Details: Level, Time
             text_x = rect.x + 180
             details_y = rect.y + 70
-            
-            level_str = self._i18n.get("save_menu.level", "Niveau: {level}").format(level=info.level)
+
+            level_str = self._i18n.get("save_menu.level", "Niveau: {level}").format(
+                level=info.level
+            )
             level_text = self._font_small.render(level_str, True, (60, 40, 30))
             surface.blit(level_text, (text_x, details_y))
-            
+
             # Formatted playtime (e.g. 02h 15m)
             hours = int(info.playtime_seconds // 3600)
             minutes = int((info.playtime_seconds % 3600) // 60)
-            time_str = self._i18n.get("save_menu.time", "Temps: {hours:02d}h {minutes:02d}m").format(hours=hours, minutes=minutes)
+            time_str = self._i18n.get(
+                "save_menu.time", "Temps: {hours:02d}h {minutes:02d}m"
+            ).format(hours=hours, minutes=minutes)
             time_text = self._font_small.render(time_str, True, (60, 40, 30))
             surface.blit(time_text, (text_x, details_y + 30))
 
@@ -104,7 +113,7 @@ class SaveSlotUI:
 
 class SaveMenuOverlay:
     """
-    Overlay menu managing 3 save slots. 
+    Overlay menu managing 3 save slots.
     Can be used for both Loading (TitleScreen) and Saving (PauseScreen).
     """
 
@@ -113,35 +122,35 @@ class SaveMenuOverlay:
         self._save_manager = save_manager
         self._title_text = title
         self._i18n = I18nManager()
-        self._slots_info: list[Optional[SlotInfo]] = [None, None, None]
-        self._thumbnails: list[Optional[pygame.Surface]] = [None, None, None]
-        self._hovered_slot: Optional[int] = None
-        
+        self._slots_info: list[SlotInfo | None] = [None, None, None]
+        self._thumbnails: list[pygame.Surface | None] = [None, None, None]
+        self._hovered_slot: int | None = None
+
         self._sw, self._sh = screen.get_size()
-        
+
         # Load asset manager fonts
         try:
             am = __import__("src.engine.asset_manager", fromlist=["AssetManager"]).AssetManager()
         except Exception:
             am = None
-            
+
         if am:
             self._font_title = am.get_font(Settings.FONT_NOBLE, int(Settings.FONT_SIZE_NOBLE * 1.5))
         else:
             self._font_title = pygame.font.SysFont(None, 48)
 
-        self._slot_ui = SaveSlotUI(am) if am else None # Fallback logic can be added if needed
-        
+        self._slot_ui = SaveSlotUI(am) if am else None  # Fallback logic can be added if needed
+
         # Semi-transparent background panel
         self._panel = pygame.Surface((600, 800), pygame.SRCALPHA)
         self._panel.fill((10, 18, 22, 220))
 
         # Back button assets
         self._back_hovered = False
-        self._back_offset_x = 10 # Default padding from left
-        self._back_offset_y = 10 # Default padding from bottom
+        self._back_offset_x = 10  # Default padding from left
+        self._back_offset_y = 10  # Default padding from bottom
         self._load_back_assets()
-        
+
         self._compute_layout()
 
     def _load_back_assets(self) -> None:
@@ -167,17 +176,16 @@ class SaveMenuOverlay:
             self.slot_rects = []
             self.back_btn_rect = pygame.Rect(0, 0, 0, 0)
             return
-            
+
         slot_w, slot_h = self._slot_ui.get_size()
         spacing = 20
         total_h = (slot_h * 3) + (spacing * 2)
-        
+
         start_y = (self._sh - total_h) // 2 + 30
         start_x = (self._sw - slot_w) // 2
-        
+
         self.slot_rects = [
-            pygame.Rect(start_x, start_y + i * (slot_h + spacing), slot_w, slot_h)
-            for i in range(3)
+            pygame.Rect(start_x, start_y + i * (slot_h + spacing), slot_w, slot_h) for i in range(3)
         ]
 
         # Panel rect (shared with draw)
@@ -185,7 +193,7 @@ class SaveMenuOverlay:
             self._sw // 2 - 300,
             max(0, self.slot_rects[0].y - 80),
             600,
-            (self.slot_rects[-1].bottom - self.slot_rects[0].y + 120)
+            (self.slot_rects[-1].bottom - self.slot_rects[0].y + 120),
         )
 
         # Back button at bottom left of the panel
@@ -194,7 +202,8 @@ class SaveMenuOverlay:
         self.back_btn_rect = pygame.Rect(
             self._panel_rect.left + self._back_offset_x,
             self._panel_rect.bottom - bh - self._back_offset_y,
-            bw, bh
+            bw,
+            bh,
         )
 
     def refresh(self) -> None:
@@ -213,16 +222,18 @@ class SaveMenuOverlay:
             if rect.collidepoint(mouse_pos):
                 self._hovered_slot = i
                 break
-        
+
         self._back_hovered = self.back_btn_rect.collidepoint(mouse_pos)
 
     def draw(self) -> None:
         # Draw background panel
         self._screen.blit(self._panel, self._panel_rect)
-        
+
         # Draw title
         title_surf = self._font_title.render(self._title_text, True, (220, 200, 150))
-        self._screen.blit(title_surf, title_surf.get_rect(midtop=(self._sw // 2, self._panel_rect.y + 20)))
+        self._screen.blit(
+            title_surf, title_surf.get_rect(midtop=(self._sw // 2, self._panel_rect.y + 20))
+        )
 
         # Draw slots
         if self._slot_ui:
@@ -233,7 +244,7 @@ class SaveMenuOverlay:
                     slot_id=i + 1,
                     info=self._slots_info[i],
                     thumbnail=self._thumbnails[i],
-                    is_hovered=(self._hovered_slot == i)
+                    is_hovered=(self._hovered_slot == i),
                 )
 
         # Draw Back Button
@@ -242,7 +253,7 @@ class SaveMenuOverlay:
     def _draw_back_button(self) -> None:
         """Render the Back button at the bottom left of the panel."""
         label = self._i18n.get("menu.back", "Retour")
-        
+
         # Center of the button area for alignment
         cx = self.back_btn_rect.centerx
         cy = self.back_btn_rect.centery
@@ -250,31 +261,36 @@ class SaveMenuOverlay:
         # Render icon (hover = slightly larger)
         icon = self._back_btn_icon_hover if self._back_hovered else self._back_btn_icon
         icon_w = icon.get_width()
-        
+
         # Measure label width
         label_surf_measure = self._font_back.render(label, True, (0, 0, 0))
         label_w = label_surf_measure.get_width()
         gap = 8
-        
+
         total_w = icon_w + gap + label_w
         start_x = cx - total_w // 2
-        
+
         # Draw icon
         icon_r = icon.get_rect(midleft=(start_x, cy))
         self._screen.blit(icon, icon_r)
-        
+
         # Draw text
         text_cx = start_x + icon_w + gap + label_w // 2
         if self._back_hovered:
-            self._blit_halo_text(label, text_cx, cy, self._font_back, (150, 255, 220), (0, 180, 150))
+            self._blit_halo_text(
+                label, text_cx, cy, self._font_back, (150, 255, 220), (0, 180, 150)
+            )
         else:
             self._blit_engraved(label, text_cx, cy, self._font_back)
 
     def _blit_halo_text(
-        self, label: str, cx: int, cy: int,
+        self,
+        label: str,
+        cx: int,
+        cy: int,
         font: pygame.font.Font,
         text_color: tuple[int, int, int],
-        halo_color: tuple[int, int, int]
+        halo_color: tuple[int, int, int],
     ) -> None:
         """Draw text with a soft, spreading glowing halo effect."""
         base_surf = font.render(label, True, halo_color)
@@ -289,24 +305,24 @@ class SaveMenuOverlay:
             self._screen.blit(blurred, rect)
         except AttributeError:
             pass
-            
+
         main_surf = font.render(label, True, text_color)
         self._screen.blit(main_surf, main_surf.get_rect(center=(cx, cy)))
 
     def _blit_engraved(self, label: str, cx: int, cy: int, font: pygame.font.Font) -> None:
         """3-pass stone engraving: shadow | light | text."""
         # Engraving colors consistent with TitleScreen
-        ENGRAVE_TEXT   = (45, 65, 75)
+        ENGRAVE_TEXT = (45, 65, 75)
         ENGRAVE_SHADOW = (12, 20, 23)
-        ENGRAVE_LIGHT  = (90, 120, 130)
-        
+        ENGRAVE_LIGHT = (90, 120, 130)
+
         shadow = font.render(label, True, ENGRAVE_SHADOW)
-        light  = font.render(label, True, ENGRAVE_LIGHT)
-        text   = font.render(label, True, ENGRAVE_TEXT)
+        light = font.render(label, True, ENGRAVE_LIGHT)
+        text = font.render(label, True, ENGRAVE_TEXT)
         r = text.get_rect(center=(cx, cy))
         self._screen.blit(shadow, r.move(-1, -1))
-        self._screen.blit(light,  r.move(1, 1))
-        self._screen.blit(text,   r)
+        self._screen.blit(light, r.move(1, 1))
+        self._screen.blit(text, r)
 
     def is_back_clicked(self, event: pygame.Event) -> bool:
         """Return True if the Back button was clicked."""
@@ -315,7 +331,7 @@ class SaveMenuOverlay:
                 return True
         return False
 
-    def get_clicked_slot(self, event: pygame.Event) -> Optional[int]:
+    def get_clicked_slot(self, event: pygame.Event) -> int | None:
         """Return slot index (0, 1, 2) if clicked, else None."""
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for i, rect in enumerate(self.slot_rects):

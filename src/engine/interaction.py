@@ -1,48 +1,52 @@
-import pygame
 import logging
+from typing import Any
+
+import pygame
+
 from src.config import Settings
 
 # Pre-computed squared distance thresholds (avoids sqrt per proximity check)
-_RANGE_SQ_48: float = 48.0 ** 2   # 2304.0 — standard interaction range
-_RANGE_SQ_45: float = 45.0 ** 2   # 2025.0 — chest auto-close range
-_RANGE_SQ_16: float = 16.0 ** 2   # 256.0  — is_on_top range
+_RANGE_SQ_48: float = 48.0**2  # 2304.0 — standard interaction range
+_RANGE_SQ_45: float = 45.0**2  # 2025.0 — chest auto-close range
+_RANGE_SQ_16: float = 16.0**2  # 256.0  — is_on_top range
+
 
 class InteractionManager:
     """
     Manages spatial interactions between the player and world entities (NPCs, Objects).
     Decouples interaction logic from the core Game class.
     """
-    
-    def __init__(self, game):
+
+    def __init__(self, game: Any):
         self.game = game
         self._interaction_cooldown = 0
-        self._emote_cooldown = 0 # Cooldown between proximity emote triggers
-        self._last_proximity_target = None # Tracks the last entity we emoted for
+        self._emote_cooldown = 0  # Cooldown between proximity emote triggers
+        self._last_proximity_target = None  # Tracks the last entity we emoted for
         self._open_chest_entity = None  # Tracks currently opened chest entity
-        
+
     def update(self, dt: float):
         """Update timers and check for nearby interactives to trigger indicators."""
         if self._interaction_cooldown > 0:
             self._interaction_cooldown = max(0, self._interaction_cooldown - dt)
         if self._emote_cooldown > 0:
             self._emote_cooldown = max(0, self._emote_cooldown - dt)
-            
+
         self._check_proximity_emotes()
         self._check_chest_auto_close()
 
     def handle_interactions(self):
         """Main entry point for checking interactions based on player input."""
         keys = pygame.key.get_pressed()
-        
+
         # Check interaction input (E for Objects/NPCs)
         interact_pressed = keys[Settings.INTERACT_KEY]
-        
+
         if interact_pressed and not self.game.player.is_moving:
             # Prevent interaction spam
             if self._interaction_cooldown > 0:
                 return
             self._interaction_cooldown = 0.5
-            
+
             # 1. NPC Interaction (Projection-based)
             if self._check_npc_interactions():
                 return
@@ -54,11 +58,11 @@ class InteractionManager:
             # 3. Pickup Items
             if self._check_pickup_interactions():
                 return
-                
+
             # 4. Failed Interaction (Question mark)
             # Trigger 'question' emote if enabled and we are facing a collision or just pressed Action in thin air
             if Settings.ENABLE_FAILED_INTERACTION_EMOTE:
-                self.game.player.playerEmote('question')
+                self.game.player.playerEmote("question")
 
     def _check_proximity_emotes(self):
         """Trigger proximity emotes when near interactive objects, pickups or NPCs."""
@@ -94,8 +98,8 @@ class InteractionManager:
                 continue
             if obj.is_on and getattr(obj, "sub_type", "") in ("chest", "door"):
                 continue
-            if obj != getattr(self, '_last_proximity_target', None):
-                self.game.player.playerEmote('interact')
+            if obj != getattr(self, "_last_proximity_target", None):
+                self.game.player.playerEmote("interact")
                 self._emote_cooldown = 0.8
                 self._last_proximity_target = obj
             return True
@@ -114,8 +118,8 @@ class InteractionManager:
             is_on_top = sq_dist < _RANGE_SQ_16
             is_aligned = abs(p_pos.x - pickup.pos.x) < 20 or abs(p_pos.y - pickup.pos.y) < 20
             if is_on_top or (is_aligned and self._facing_toward(p_pos, p_state, pickup.pos)):
-                if pickup != getattr(self, '_last_proximity_target', None):
-                    self.game.player.playerEmote('question')
+                if pickup != getattr(self, "_last_proximity_target", None):
+                    self.game.player.playerEmote("question")
                     self._emote_cooldown = 0.8
                     self._last_proximity_target = pickup
                 return True
@@ -132,14 +136,13 @@ class InteractionManager:
                 continue
             is_aligned = abs(p_pos.x - npc.pos.x) < 20 or abs(p_pos.y - npc.pos.y) < 20
             if is_aligned and self._facing_toward(p_pos, p_state, npc.pos):
-                if npc != getattr(self, '_last_proximity_target', None):
-                    self.game.player.playerEmote('interact')
+                if npc != getattr(self, "_last_proximity_target", None):
+                    self.game.player.playerEmote("interact")
                     self._emote_cooldown = 0.8
                     self._last_proximity_target = npc
                 return
 
         self._last_proximity_target = None
-
 
     def _check_npc_interactions(self) -> bool:
         """Check for nearby NPCs in front of the player."""
@@ -148,7 +151,7 @@ class InteractionManager:
         target_rect = pygame.Rect(target_pos.x - 16, target_pos.y - 16, 32, 32)
 
         for npc in self.game.npcs:
-            if npc.rect.colliderect(target_rect):
+            if npc.rect and npc.rect.colliderect(target_rect):
                 res = npc.interact(self.game.player)
                 if res:
                     if npc.is_moving:
@@ -157,7 +160,6 @@ class InteractionManager:
                         self.game._trigger_npc_bubble(npc, res)
                 return True
         return False
-
 
     def _check_object_interactions(self):
         """Check for nearby interactive objects based on proximity and orientation."""
@@ -175,7 +177,11 @@ class InteractionManager:
             # Adjacent + directional check for activate_from_anywhere objects
             if not valid_orientation and getattr(obj, "activate_from_anywhere", False):
                 is_aligned = abs(p_pos.x - obj.pos.x) < 20 or abs(p_pos.y - obj.pos.y) < 20
-                if sq_dist < _RANGE_SQ_48 and is_aligned and self._facing_toward(p_pos, p_state, obj.pos):
+                if (
+                    sq_dist < _RANGE_SQ_48
+                    and is_aligned
+                    and self._facing_toward(p_pos, p_state, obj.pos)
+                ):
                     valid_orientation = True
 
             # Standard Directional Logic
@@ -190,14 +196,16 @@ class InteractionManager:
                     dist = p_pos.distance_to(obj.pos)
                     vol_mult = max(0.4, 1.0 - dist / 120.0)
                     self.game.audio_manager.play_sfx(
-                        obj.sfx, getattr(obj, "element_id", None), volume_multiplier=vol_mult
+                        str(obj.sfx),
+                        str(getattr(obj, "element_id", "")),
+                        volume_multiplier=vol_mult,
                     )
 
                 if res:
                     self.game._trigger_dialogue(res)
                 else:
-                    if hasattr(obj, '_world_state_key'):
-                        self.game.world_state.set(obj._world_state_key, {'is_on': obj.is_on})
+                    if hasattr(obj, "_world_state_key"):
+                        self.game.world_state.set(obj._world_state_key, {"is_on": obj.is_on})
 
                     target = getattr(obj, "target_id", None)
                     if target:
@@ -206,7 +214,7 @@ class InteractionManager:
                 if getattr(obj, "sub_type", "") == "chest":
                     if obj.is_on:
                         self._open_chest_entity = obj
-                        if hasattr(self.game, 'chest_ui'):
+                        if hasattr(self.game, "chest_ui"):
                             self.game.chest_ui.open(obj, self.game.player)
                     else:
                         chest_ui = getattr(self.game, "chest_ui", None)
@@ -247,30 +255,35 @@ class InteractionManager:
             else:
                 if state_key:
                     self.game.world_state.set(state_key, {"quantity": pickup.quantity})
-                self.game.player.playerEmote('frustration')
+                self.game.player.playerEmote("frustration")
                 logging.info(f"Inventory full, {pickup.quantity}x {pickup.item_id} left on ground.")
 
             return True
         return False
 
-
     def _get_player_facing_vector(self) -> pygame.math.Vector2:
         """Get unit vector based on player facing direction."""
         p_state = self.game.player.current_state
-        if p_state == 'down': return pygame.math.Vector2(0, 1)
-        if p_state == 'up': return pygame.math.Vector2(0, -1)
-        if p_state == 'left': return pygame.math.Vector2(-1, 0)
-        if p_state == 'right': return pygame.math.Vector2(1, 0)
+        if p_state == "down":
+            return pygame.math.Vector2(0, 1)
+        if p_state == "up":
+            return pygame.math.Vector2(0, -1)
+        if p_state == "left":
+            return pygame.math.Vector2(-1, 0)
+        if p_state == "right":
+            return pygame.math.Vector2(1, 0)
         return pygame.math.Vector2(0, 0)
 
-    def _facing_toward(self, player_pos: pygame.math.Vector2, facing: str, obj_pos: pygame.math.Vector2) -> bool:
+    def _facing_toward(
+        self, player_pos: pygame.math.Vector2, facing: str, obj_pos: pygame.math.Vector2
+    ) -> bool:
         """Return True if the player is looking in the direction of obj_pos from player_pos."""
         dx = obj_pos.x - player_pos.x
         dy = obj_pos.y - player_pos.y
         if abs(dx) >= abs(dy):  # horizontal dominant axis
-            return (facing == 'right' and dx > 0) or (facing == 'left' and dx < 0)
+            return (facing == "right" and dx > 0) or (facing == "left" and dx < 0)
         # vertical dominant axis
-        return (facing == 'down' and dy > 0) or (facing == 'up' and dy < 0)
+        return (facing == "down" and dy > 0) or (facing == "up" and dy < 0)
 
     def _verify_orientation(self, obj, p_state: str, p_pos: pygame.math.Vector2) -> bool:
         """Verify if player is correctly oriented toward an object to interact."""
@@ -278,32 +291,32 @@ class InteractionManager:
         # To interact with its front, the player must be on that side, facing the opposite way.
         o_dir = getattr(obj, "direction_str", "down")
         o_pos = obj.pos
-        
+
         # Enforce orthogonal alignment
         x_aligned = abs(p_pos.x - o_pos.x) < 20
         y_aligned = abs(p_pos.y - o_pos.y) < 20
-        
+
         # Standard directional check (player must be at the object's front)
-        if o_dir == 'up' and p_state == 'down' and p_pos.y < o_pos.y and x_aligned:
+        if o_dir == "up" and p_state == "down" and p_pos.y < o_pos.y and x_aligned:
             return True
-        if o_dir == 'down' and p_state == 'up' and p_pos.y > o_pos.y and x_aligned:
+        if o_dir == "down" and p_state == "up" and p_pos.y > o_pos.y and x_aligned:
             return True
-        if o_dir == 'left' and p_state == 'right' and p_pos.x < o_pos.x and y_aligned:
+        if o_dir == "left" and p_state == "right" and p_pos.x < o_pos.x and y_aligned:
             return True
-        if o_dir == 'right' and p_state == 'left' and p_pos.x > o_pos.x and y_aligned:
+        if o_dir == "right" and p_state == "left" and p_pos.x > o_pos.x and y_aligned:
             return True
-        
+
         # Relaxation for open doors (allow walking through/closing from the opposite side)
-        if obj.sub_type == 'door' and getattr(obj, "is_on", False):
-            if o_dir == 'up' and p_state == 'up' and p_pos.y > o_pos.y and x_aligned:
+        if obj.sub_type == "door" and getattr(obj, "is_on", False):
+            if o_dir == "up" and p_state == "up" and p_pos.y > o_pos.y and x_aligned:
                 return True
-            if o_dir == 'down' and p_state == 'down' and p_pos.y < o_pos.y and x_aligned:
+            if o_dir == "down" and p_state == "down" and p_pos.y < o_pos.y and x_aligned:
                 return True
-            if o_dir == 'left' and p_state == 'left' and p_pos.x > o_pos.x and y_aligned:
+            if o_dir == "left" and p_state == "left" and p_pos.x > o_pos.x and y_aligned:
                 return True
-            if o_dir == 'right' and p_state == 'right' and p_pos.x < o_pos.x and y_aligned:
+            if o_dir == "right" and p_state == "right" and p_pos.x < o_pos.x and y_aligned:
                 return True
-            
+
         return False
 
     def _check_chest_auto_close(self) -> None:
@@ -320,6 +333,8 @@ class InteractionManager:
 
         player_pos = self.game.player.pos
         chest = self._open_chest_entity
+        if chest is None or chest.pos is None:
+            return
         sq_dist = player_pos.distance_squared_to(chest.pos)
         out_of_range = sq_dist > _RANGE_SQ_45
         wrong_orientation = not self._verify_orientation(
@@ -331,15 +346,15 @@ class InteractionManager:
 
     def _close_chest(self, chest, chest_ui) -> None:
         """Trigger chest closing animation, play sfx, persist state, and hide UI."""
-        chest.interact(self.game.player)   # toggles is_on=False + starts animation
+        chest.interact(self.game.player)  # toggles is_on=False + starts animation
         if getattr(chest, "sfx", None):
             dist = self.game.player.pos.distance_to(chest.pos)
             vol_mult = max(0.4, 1.0 - dist / 120.0)
             self.game.audio_manager.play_sfx(
-                chest.sfx, getattr(chest, "element_id", None), volume_multiplier=vol_mult
+                str(chest.sfx), str(getattr(chest, "element_id", "")), volume_multiplier=vol_mult
             )
-        if hasattr(chest, '_world_state_key'):
-            self.game.world_state.set(chest._world_state_key, {'is_on': chest.is_on})
+        if hasattr(chest, "_world_state_key"):
+            self.game.world_state.set(chest._world_state_key, {"is_on": chest.is_on})
         chest_ui.close()
         self._open_chest_entity = None
         # Suppress ! emote from firing immediately while player is still in proximity
@@ -352,58 +367,72 @@ class InteractionManager:
         wx, wy = self.game.layout.to_world(px_center, py_center)
         if self.game.map_manager.is_collidable(int(wx), int(wy)):
             return True
-            
+
         # 2. Check Dynamic Obstacles (Doors, etc.)
         for obj in self.game.obstacles_group:
-            if obj == requester: continue
-            if obj.rect.collidepoint(px_center, py_center):
+            if obj == requester:
+                continue
+            if obj.rect and obj.rect.collidepoint(px_center, py_center):
                 return True
-        
+
         # 3. Check NPCs
         for npc in self.game.npcs:
-            if npc == requester: continue
-            if npc.rect.collidepoint(px_center, py_center):
+            if npc == requester:
+                continue
+            if npc.rect and npc.rect.collidepoint(px_center, py_center):
                 return True
-        
+
         # 4. Check Player (if requester is an NPC)
         if self.game.player != requester:
-            if self.game.player.rect.collidepoint(px_center, py_center):
+            if self.game.player.rect and self.game.player.rect.collidepoint(px_center, py_center):
                 return True
-                
+
         return False
 
     def check_teleporters(self, was_moving: bool):
         """Active spatial check testing if interaction just resolved over teleport rect."""
         just_arrived = was_moving and not self.game.player.is_moving
-        intent_active = not was_moving and not self.game.player.is_moving and self.game.player.direction.magnitude() > 0
-        
+        intent_active = (
+            not was_moving
+            and not self.game.player.is_moving
+            and self.game.player.direction.magnitude() > 0
+        )
+
         if not just_arrived and not intent_active:
-            return 
-            
+            return
+
         for tp in self.game.teleports_group:
             # Player hits teleport zone via strict collision rect
-            if not self.game.player.rect.colliderect(tp.rect):
+            if (
+                tp.rect is None
+                or not self.game.player.rect
+                or not self.game.player.rect.colliderect(tp.rect)
+            ):
                 continue
-            
-            req = getattr(tp, 'required_direction', 'any')
-            
+
+            req = getattr(tp, "required_direction", "any")
+
             if just_arrived:
                 # Direction guard: on arrival, must match required direction (unless 'any')
-                if req != 'any' and self.game.player.current_state != req:
-                    logging.debug(f"Teleport skipped (Arrival) — required '{req}', player facing '{self.game.player.current_state}'")
+                if req != "any" and self.game.player.current_state != req:
+                    logging.debug(
+                        f"Teleport skipped (Arrival) — required '{req}', player facing '{self.game.player.current_state}'"
+                    )
                     continue
             elif intent_active:
                 # Intent guard: do not trigger intent for 'any' portals to avoid trapping the player
-                if req == 'any':
+                if req == "any":
                     continue
                 if self.game.player.current_state != req:
-                    logging.debug(f"Teleport skipped (Intent) — required '{req}', player faced '{self.game.player.current_state}'")
+                    logging.debug(
+                        f"Teleport skipped (Intent) — required '{req}', player faced '{self.game.player.current_state}'"
+                    )
                     continue
-                
+
             logging.info(f"Teleport triggered -> {tp.target_map} / {tp.target_spawn_id}")
-            if getattr(tp, 'sfx', None):
+            if getattr(tp, "sfx", None):
                 self.game.audio_manager.play_sfx(tp.sfx, str(id(tp)))
-                
+
             self.game.transition_map(tp.target_map, tp.target_spawn_id, tp.transition_type)
             break
 
@@ -411,27 +440,34 @@ class InteractionManager:
         """Toggle the state of any entity matching element_id == target_id."""
         if not target_id:
             return
-            
+
         if depth > 1:
-            logging.warning(f"Interaction chaining loop detected for target_id={target_id}. Breaking chain.")
+            logging.warning(
+                f"Interaction chaining loop detected for target_id={target_id}. Breaking chain."
+            )
             return
 
         for group in (self.game.interactives, self.game.npcs):
             for entity in group:
-                if getattr(entity, 'element_id', None) == target_id:
-                    if hasattr(entity, 'interact'):
+                if getattr(entity, "element_id", None) == target_id:
+                    if hasattr(entity, "interact"):
                         entity.interact(self.game.player)
-                        
+
                         if getattr(entity, "sfx", None):
-                            self.game.audio_manager.play_sfx(entity.sfx, getattr(entity, "element_id", None))
-                        
+                            self.game.audio_manager.play_sfx(
+                                str(entity.sfx), str(getattr(entity, "element_id", ""))
+                            )
+
                         # Save state
-                        if hasattr(entity, '_world_state_key'):
-                            self.game.world_state.set(entity._world_state_key, {
-                                'is_on': entity.is_on,
-                                'light_control': getattr(entity, 'light_control', 'auto')
-                            })
-                        
-                        next_target = getattr(entity, 'target_id', None)
+                        if hasattr(entity, "_world_state_key"):
+                            self.game.world_state.set(
+                                entity._world_state_key,
+                                {
+                                    "is_on": entity.is_on,
+                                    "light_control": getattr(entity, "light_control", "auto"),
+                                },
+                            )
+
+                        next_target = getattr(entity, "target_id", None)
                         if next_target:
                             self.toggle_entity_by_id(next_target, depth + 1)

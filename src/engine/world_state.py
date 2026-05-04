@@ -1,5 +1,6 @@
 class WorldState:
     """Persistent storage for object states across maps during a game session."""
+
     def __init__(self):
         self._state = {}
 
@@ -18,5 +19,5 @@ class WorldState:
     @staticmethod
     def make_key(map_name: str, tiled_id: int) -> str:
         """Constructs a standard unique key from the map name and the native Tiled ID."""
-        stem = map_name.rsplit('.', 1)[0] if '.' in map_name else map_name
+        stem = map_name.rsplit(".", 1)[0] if "." in map_name else map_name
         return f"{stem}_{tiled_id}"

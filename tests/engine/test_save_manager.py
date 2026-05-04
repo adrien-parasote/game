@@ -2,14 +2,17 @@
 Tests RED — SaveManager (TC-001 à TC-008)
 Spec: docs/specs/game-flow-spec.md#4-test-case-specifications
 """
+
 import json
 import os
-import pytest
 from unittest.mock import MagicMock, patch
-from src.engine.save_manager import SaveManager, SlotInfo, SaveData
 
+import pytest
+
+from src.engine.save_manager import SaveData, SaveManager, SlotInfo
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def tmp_saves_dir(tmp_path):
@@ -22,15 +25,16 @@ def manager(tmp_saves_dir):
     """SaveManager pointant vers un dossier temporaire vide."""
     return SaveManager(saves_dir=tmp_saves_dir)
 
+
 @pytest.fixture
 def mock_surface():
     """Returns a simple pygame surface for thumbnail testing."""
     import pygame
+
     pygame.init()
     surf = pygame.Surface((120, 120))
     surf.fill((255, 0, 0))
     return surf
-
 
 
 def _make_mock_game(tmp_saves_dir):
@@ -49,17 +53,22 @@ def _make_mock_game(tmp_saves_dir):
 
     # Inventory: 28 slots dont un item
     from src.engine.inventory_system import Inventory, Item
+
     inv = Inventory(capacity=28)
     inv.slots[3] = Item(id="sword_iron", name="Épée", description="", quantity=1, stack_max=1)
-    inv.equipment["LEFT_HAND"] = Item(id="sword_iron", name="Épée", description="", quantity=1, stack_max=1)
+    inv.equipment["LEFT_HAND"] = Item(
+        id="sword_iron", name="Épée", description="", quantity=1, stack_max=1
+    )
     game.player.inventory = inv
 
     from src.engine.time_system import TimeSystem
+
     ts = TimeSystem(initial_hour=6)
     ts._total_minutes = 7200.0
     game.time_system = ts
 
     from src.engine.world_state import WorldState
+
     ws = WorldState()
     ws.set("castle_hall_chest_01", {"is_on": True})
     game.world_state = ws
@@ -69,13 +78,16 @@ def _make_mock_game(tmp_saves_dir):
 
 # ── TC-001 : list_slots — dossier vide ───────────────────────────────────────
 
+
 @pytest.mark.tc("GF-007")
 def test_list_slots_empty(manager):
     """TC-001 (Old) : dossier saves/ vide → [None, None, None]"""
     result = manager.list_slots()
     assert result == [None, None, None]
 
+
 # ── TC-001 : save_thumbnail ───────────────────────────────────────────────────
+
 
 @pytest.mark.tc("TC-001")
 def test_save_thumbnail_creates_file(manager, tmp_saves_dir, mock_surface):
@@ -84,18 +96,22 @@ def test_save_thumbnail_creates_file(manager, tmp_saves_dir, mock_surface):
     path = os.path.join(tmp_saves_dir, "slot_1_thumb.png")
     assert os.path.exists(path)
 
+
 # ── TC-002 : load_thumbnail ───────────────────────────────────────────────────
+
 
 @pytest.mark.tc("TC-002")
 def test_load_thumbnail_returns_surface(manager, tmp_saves_dir, mock_surface):
     """TC-002 : load_thumbnail retourne une Surface si elle existe"""
     import pygame
+
     manager.save_thumbnail(1, mock_surface)
-    
+
     surf = manager.load_thumbnail(1)
     assert surf is not None
     assert isinstance(surf, pygame.Surface)
     assert surf.get_size() == (120, 120)
+
 
 @pytest.mark.tc("TC-002")
 def test_load_thumbnail_returns_none_if_missing(manager):
@@ -103,8 +119,8 @@ def test_load_thumbnail_returns_none_if_missing(manager):
     assert manager.load_thumbnail(1) is None
 
 
-
 # ── TC-002 : save — création du fichier ───────────────────────────────────────
+
 
 @pytest.mark.tc("GF-001")
 @pytest.mark.tc("IT-001")
@@ -116,7 +132,7 @@ def test_save_creates_file(manager, tmp_saves_dir):
     path = os.path.join(tmp_saves_dir, "slot_1.json")
     assert os.path.exists(path)
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
     assert data["version"] == "0.4.0"
@@ -126,6 +142,7 @@ def test_save_creates_file(manager, tmp_saves_dir):
 
 
 # ── TC-003 : load — slot existant ─────────────────────────────────────────────
+
 
 @pytest.mark.tc("GF-002")
 def test_load_existing_slot(manager, tmp_saves_dir):
@@ -143,6 +160,7 @@ def test_load_existing_slot(manager, tmp_saves_dir):
 
 # ── TC-004 : load — slot vide ─────────────────────────────────────────────────
 
+
 @pytest.mark.tc("GF-003")
 def test_load_empty_slot_returns_none(manager):
     """TC-004 : load(2) sur slot vide retourne None."""
@@ -151,6 +169,7 @@ def test_load_empty_slot_returns_none(manager):
 
 
 # ── TC-005 : load — JSON corrompu ─────────────────────────────────────────────
+
 
 @pytest.mark.tc("GF-004")
 def test_load_corrupted_json_returns_none(manager, tmp_saves_dir, caplog):
@@ -161,15 +180,18 @@ def test_load_corrupted_json_returns_none(manager, tmp_saves_dir, caplog):
         f.write("{ invalid json !!!")
 
     import logging
+
     with caplog.at_level(logging.WARNING):
         result = manager.load(1)
 
     assert result is None
-    assert any("corrompu" in r.message.lower() or "slot" in r.message.lower()
-               for r in caplog.records)
+    assert any(
+        "corrompu" in r.message.lower() or "slot" in r.message.lower() for r in caplog.records
+    )
 
 
 # ── TC-006 : delete ───────────────────────────────────────────────────────────
+
 
 @pytest.mark.tc("GF-005")
 def test_delete_slot(manager, tmp_saves_dir):
@@ -184,6 +206,7 @@ def test_delete_slot(manager, tmp_saves_dir):
 
 
 # ── TC-007 : Inventory roundtrip ──────────────────────────────────────────────
+
 
 @pytest.mark.tc("GF-009")
 def test_inventory_roundtrip(manager, tmp_saves_dir):
@@ -207,6 +230,7 @@ def test_inventory_roundtrip(manager, tmp_saves_dir):
 
 # ── TC-008 : WorldState roundtrip ─────────────────────────────────────────────
 
+
 @pytest.mark.tc("CORE-W-01")
 @pytest.mark.tc("GF-010")
 def test_world_state_roundtrip(manager, tmp_saves_dir):
@@ -223,6 +247,7 @@ def test_world_state_roundtrip(manager, tmp_saves_dir):
 
 
 # ── Cas limites ───────────────────────────────────────────────────────────────
+
 
 @pytest.mark.tc("GF-006")
 def test_slot_id_out_of_range_raises(manager):
@@ -243,22 +268,22 @@ def test_list_slots_reflects_saved(manager, tmp_saves_dir):
 
     result = manager.list_slots()
 
-    assert result[0] is None   # slot 1 vide
-    assert isinstance(result[1], SlotInfo)   # slot 2 sauvegardé
-    assert result[2] is None   # slot 3 vide
+    assert result[0] is None  # slot 1 vide
+    assert isinstance(result[1], SlotInfo)  # slot 2 sauvegardé
+    assert result[2] is None  # slot 3 vide
     assert result[1].slot_id == 2
     assert result[1].map_name == "00-spawn.tmj"
     assert result[1].level == 1
     assert result[1].player_name == "Hero"
 
 
-
 @pytest.mark.tc("GF-011")
 def test_save_io_error_does_not_crash(manager, tmp_saves_dir, caplog):
     """save() ne crash pas sur IOError — log ERROR."""
     import logging
+
     game = _make_mock_game(tmp_saves_dir)
-    with patch("builtins.open", side_effect=IOError("disk full")):
+    with patch("builtins.open", side_effect=OSError("disk full")):
         with caplog.at_level(logging.ERROR):
             # Ne doit pas lever d'exception
             manager.save(1, game)

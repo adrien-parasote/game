@@ -1,13 +1,27 @@
-import os
-import json
 import logging
+import os
+
 import pygame
-from src.engine.time_system import TimeSystem, Season
+
+from src.config import Settings
 from src.engine.asset_manager import AssetManager
 from src.engine.i18n import I18nManager
-from src.config import Settings
-from src.ui.hud_constants import *
-from src.ui.hud_constants import _SEASON_FILES, _SEASON_LANG_KEYS
+from src.engine.time_system import TimeSystem
+from src.ui.hud_constants import (
+    _SEASON_FILES,
+    FONT_SIZE,
+    HUD_MARGIN_X,
+    HUD_MARGIN_Y,
+    HUD_SCALE,
+    SEASON_DAY_ANCHOR,
+    SEASON_ICON_CENTER,
+    SEASON_ICON_SIZE,
+    SHADOW_COLOR,
+    SHADOW_OFFSET,
+    TEXT_COLOR,
+    TIME_ANCHOR,
+)
+
 
 class GameHUD:
     """
@@ -53,7 +67,9 @@ class GameHUD:
 
     def _render_text_centered(self, surface: pygame.Surface, text: str, center: tuple) -> None:
         shadow_surf = self._font.render(text, True, SHADOW_COLOR)
-        shadow_rect = shadow_surf.get_rect(center=(center[0] + SHADOW_OFFSET, center[1] + SHADOW_OFFSET))
+        shadow_rect = shadow_surf.get_rect(
+            center=(center[0] + SHADOW_OFFSET, center[1] + SHADOW_OFFSET)
+        )
         surface.blit(shadow_surf, shadow_rect)
         main_surf = self._font.render(text, True, TEXT_COLOR)
         main_rect = main_surf.get_rect(center=center)
@@ -80,7 +96,7 @@ class GameHUD:
         wt = self.time_system.world_time
         day_label = I18nManager().get("day_label", "Day").upper()
         season_day_text = f"{day_label} {wt.day + 1}"
-        
+
         self._render_text_centered(
             screen,
             season_day_text,

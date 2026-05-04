@@ -32,12 +32,13 @@ pygame.display.set_mode((1, 1))
 with mock.patch("pygame.image.load") as _mock_load:
     _fake_tile = pygame.Surface((32, 32))
     _mock_load.return_value = _fake_tile
-    from src.ui.speech_bubble import SpeechBubble, TILE_SIZE
+    from src.ui.speech_bubble import TILE_SIZE, SpeechBubble
 
 
 # ---------------------------------------------------------------------------
 # Shared test font
 # ---------------------------------------------------------------------------
+
 
 class _MockFont:
     """Deterministic pygame.font.Font stand-in.
@@ -62,10 +63,11 @@ class _MockFont:
 # Test helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_bubble(**kwargs) -> SpeechBubble:
     """Return a SpeechBubble with a mock font, ready to draw."""
     bubble = SpeechBubble(**kwargs)
-    bubble.set_font(_MockFont())
+    bubble.set_font(_MockFont())  # type: ignore
     return bubble
 
 
@@ -81,6 +83,7 @@ def _char_rect() -> pygame.Rect:
 # Test cases
 # ---------------------------------------------------------------------------
 
+
 class TestSpeechBubbleMaxWidth(unittest.TestCase):
     def test_max_width_not_exceeded(self):
         """Bubble width is capped at max_width_px."""
@@ -93,10 +96,11 @@ class TestSpeechBubbleMaxWidth(unittest.TestCase):
     def test_wrap_uses_padding_not_tile_size(self):
         """_wrap_text inner width = max_width_px - 2*padding."""
         bubble = _make_bubble(max_width_px=100)
-        bubble.padding = 10
+        bubble.pad_x = 10
         lines = bubble._wrap_text("word " * 20)
         # Each word is 7*5=35px wide; inner_max_width = 100 - 20 = 80
         # So at most floor(80/36) words per line
+        assert bubble.font is not None
         for line in lines:
             self.assertLessEqual(bubble.font.size(line)[0], 80)
 
@@ -114,7 +118,7 @@ class TestSpeechBubblePosition(unittest.TestCase):
         # Single blit call for the entire bubble (including integrated tail)
         self.assertEqual(blit.call_count, 1)
         bg_surf, (bx, by) = blit.call_args_list[0][0]
-        
+
         expected_y = rect.top - bubble.tail_gap - bg_surf.get_height()
         self.assertEqual(by, expected_y)
 
@@ -150,14 +154,16 @@ class TestSpeechBubbleFontGuard(unittest.TestCase):
     def test_raises_when_font_not_set(self):
         """draw() raises RuntimeError when no font is assigned."""
         with mock.patch("pygame.image.load") as ml:
+
             def mock_load(path):
                 if "23-bubble_name" in path:
                     return pygame.Surface((96, 64))
                 return pygame.Surface((32, 32))
+
             ml.side_effect = mock_load
             bubble = SpeechBubble()
         # font deliberately NOT set
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(AssertionError):
             bubble.draw(_make_surface(), _char_rect(), "Hello", blit_func=MagicMock())
 
 
@@ -165,32 +171,35 @@ class TestSpeechBubbleNamePlate(unittest.TestCase):
     def test_name_plate_rendered(self):
         """When speaker_name is provided, a second blit occurs for the name plate."""
         with mock.patch("pygame.image.load") as ml:
+
             def mock_load(path):
                 # Ensure name_plate tiles are created
                 return pygame.Surface((96, 64))
+
             ml.side_effect = mock_load
-            
+
             bubble = _make_bubble()
             # Also set the name_font
-            bubble.set_name_font(_MockFont(12))
-            
+            bubble.set_name_font(_MockFont(12))  # type: ignore
+
             # Manually inject the name_plate tiles to simulate _load_tiles finding them
             # (since we mock load above but we want specific rects to work)
             plate_surf = pygame.Surface((96, 64))
             bubble.tiles["name_plate_left"] = plate_surf.subsurface(pygame.Rect(0, 0, 32, 64))
             bubble.tiles["name_plate_center"] = plate_surf.subsurface(pygame.Rect(32, 0, 32, 64))
             bubble.tiles["name_plate_right"] = plate_surf.subsurface(pygame.Rect(64, 0, 32, 64))
-            
+
             blit = MagicMock()
             bubble.draw(_make_surface(), _char_rect(), "Hello", speaker_name="Hero", blit_func=blit)
-            
+
             # Should blit twice: once for bubble, once for name plate
             self.assertEqual(blit.call_count, 2)
-            
+
             # Verify the second blit contains the name plate surface
             name_plate_surf, pos = blit.call_args_list[1][0]
             self.assertIsInstance(name_plate_surf, pygame.Surface)
             self.assertGreater(name_plate_surf.get_width(), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

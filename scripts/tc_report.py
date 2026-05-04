@@ -8,6 +8,7 @@ Usage:
     python scripts/tc_report.py              # CLI report
     python scripts/tc_report.py --markdown   # + export docs/traceability.md
 """
+
 import argparse
 import glob
 import os
@@ -15,12 +16,11 @@ import re
 import sys
 from collections import defaultdict
 
-
 SPECS_DIR = "docs/specs"
 TRACEABILITY_OUTPUT = "docs/traceability.md"
 
 
-def extract_spec_tc_ids(specs_dir: str) -> dict[str, list[str]]:
+def extract_spec_tc_ids(specs_dir: str) -> tuple[dict[str, str], dict[str, list[str]]]:
     """Parse specs to extract TC-ID → spec name mappings."""
     tc_to_spec = {}
     spec_tcs = defaultdict(list)
@@ -29,7 +29,7 @@ def extract_spec_tc_ids(specs_dir: str) -> dict[str, list[str]]:
         with open(spec) as f:
             content = f.read()
         name = os.path.basename(spec)
-        for tc_id, func_name in re.findall(
+        for tc_id, _func_name in re.findall(
             r"\|\s*([\w-]+)\s*\|\s*`(test_[^`]+)`\s*\|\s*`\.\./\.\./[^`]+`",
             content,
         ):
@@ -37,8 +37,6 @@ def extract_spec_tc_ids(specs_dir: str) -> dict[str, list[str]]:
             spec_tcs[name].append(tc_id)
 
     return tc_to_spec, spec_tcs
-
-
 
 
 def _scan_source_for_markers() -> dict[str, list[str]]:
@@ -59,6 +57,7 @@ def _scan_source_for_markers() -> dict[str, list[str]]:
                 pending_tcs.append(tc_match.group(1))
             elif re.match(r"\s*def (test_\w+)\(", line) and pending_tcs:
                 func_match = re.match(r"\s*def (test_\w+)\(", line)
+                assert func_match is not None
                 func_name = func_match.group(1)
                 node_id = f"{test_file}::{func_name}"
                 for tc_id in pending_tcs:
@@ -71,9 +70,9 @@ def _scan_source_for_markers() -> dict[str, list[str]]:
 
 
 def generate_report(
-    tc_to_spec: dict,
-    spec_tcs: dict,
-    tc_to_tests: dict,
+    tc_to_spec: dict[str, str],
+    spec_tcs: dict[str, list[str]],
+    tc_to_tests: dict[str, list[str]],
     markdown: bool = False,
 ) -> None:
     """Generate and sys.stdout.write the traceability report."""
@@ -91,17 +90,19 @@ def generate_report(
     sys.stdout.write(f"Specs scanned:      {len(spec_tcs)}")
     sys.stdout.write(f"TC IDs in specs:    {len(all_spec_ids)}")
     sys.stdout.write(f"TC markers found:   {len(all_test_ids)}")
-    sys.stdout.write(f"Coverage:           {coverage_pct:.0f}% ({len(covered)}/{len(all_spec_ids)})")
+    sys.stdout.write(
+        f"Coverage:           {coverage_pct:.0f}% ({len(covered)}/{len(all_spec_ids)})"
+    )
     sys.stdout.write(f"Missing markers:    {len(missing)}")
     sys.stdout.write(f"Orphan markers:     {len(orphans)}")
 
     if missing:
-        sys.stdout.write(f"\n❌ MISSING (in spec but no @pytest.mark.tc):")
+        sys.stdout.write("\n❌ MISSING (in spec but no @pytest.mark.tc):")
         for tc_id in sorted(missing):
             sys.stdout.write(f"   {tc_id} — {tc_to_spec[tc_id]}")
 
     if orphans:
-        sys.stdout.write(f"\n⚠️  ORPHAN (in test but not in spec):")
+        sys.stdout.write("\n⚠️  ORPHAN (in test but not in spec):")
         for tc_id in sorted(orphans):
             tests = tc_to_tests[tc_id]
             sys.stdout.write(f"   {tc_id} — {tests[0]}")
@@ -128,7 +129,7 @@ def _write_markdown(
         "# Spec↔Test Traceability Matrix",
         "",
         f"**Coverage:** {len(covered)}/{len(tc_to_spec)} "
-        f"({len(covered)/len(tc_to_spec)*100:.0f}%)",
+        f"({len(covered) / len(tc_to_spec) * 100:.0f}%)",
         "",
     ]
 
@@ -164,9 +165,7 @@ def _write_markdown(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Spec↔Test Traceability Report")
-    parser.add_argument(
-        "--markdown", action="store_true", help="Export docs/traceability.md"
-    )
+    parser.add_argument("--markdown", action="store_true", help="Export docs/traceability.md")
     args = parser.parse_args()
 
     os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

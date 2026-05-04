@@ -1,14 +1,18 @@
 """Coverage tests for I18nManager (engine-level i18n module)."""
+
 import os
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 import pygame
+
 pygame.display.init()
 pygame.font.init()
 
 from src.engine.i18n import I18nManager
+
 
 class TestI18nCoverage:
     def setup_method(self):
@@ -24,8 +28,10 @@ class TestI18nCoverage:
     def test_load_locale_json_error_logs_error(self, caplog):
         """L33-35: JSON parse failure → empty data."""
         mgr = I18nManager()
-        with patch("os.path.exists", return_value=True), \
-             patch("builtins.open", side_effect=Exception("corrupt")):
+        with (
+            patch("os.path.exists", return_value=True),
+            patch("builtins.open", side_effect=Exception("corrupt")),
+        ):
             mgr.load("fr")
         assert mgr.data == {}
 
@@ -66,4 +72,3 @@ class TestI18nCoverage:
 # ---------------------------------------------------------------------------
 # BaseEntity — lines 51, 66-68, 76, 79
 # ---------------------------------------------------------------------------
-
