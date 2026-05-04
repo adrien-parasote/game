@@ -11,7 +11,7 @@ from src.engine.save_manager import SaveManager
 from src.ui.save_menu import SaveMenuOverlay
 from src.engine.i18n import I18nManager
 from src.ui.title_screen_constants import *
-from src.ui.title_screen_constants import _MENU_DIR, _UI_DIR, _MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS
+from src.ui.title_screen_constants import _MENU_DIR, _UI_DIR, _MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS, LOGO_MAIN_FONT_SIZE, LOGO_MAIN_COLOR, LOGO_MAIN_HALO, MENU_HOVER_COLOR, MENU_HOVER_HALO
 
 class TitleScreen:
     """Main menu screen — background, logo, cursor. Menu to be added."""
@@ -64,46 +64,6 @@ class TitleScreen:
         sw, sh = surf.get_size()
         return pygame.transform.smoothscale(surf, (target_w, int(sh * target_w / sw)))
 
-    def _build_logo_composite(self) -> pygame.Surface:
-        """Assemble 5 alpha-transparent logo parts into one surface."""
-        main = self._scale(self._load_asset("00-title_logo_main_title.png"), LOGO_MAIN_W)
-
-        moon_raw = self._load_asset("00-title_logo_moon.png")
-        mw, mh = moon_raw.get_size()
-        moon = pygame.transform.smoothscale(moon_raw, (int(mw * LOGO_ACCENT_H / mh), LOGO_ACCENT_H))
-
-        gear_raw = self._load_asset("00-title_logo_gear.png")
-        gw, gh = gear_raw.get_size()
-        gear = pygame.transform.smoothscale(gear_raw, (int(gw * LOGO_ACCENT_H / gh), LOGO_ACCENT_H))
-
-        sep = self._scale(self._load_asset("00-title_logo_separator.png"), LOGO_SEP_W)
-        sub = self._scale(self._load_asset("00-title_logo_subtitle.png"), LOGO_SUB_W)
-
-        main_w, main_h = main.get_size()
-        _, sep_h = sep.get_size()
-        _, sub_h = sub.get_size()
-        moon_w, moon_h = moon.get_size()
-        gear_w, _ = gear.get_size()
-
-        comp_w = main_w + moon_w + gear_w + 8
-        comp_h = main_h + LOGO_GAP + sep_h + LOGO_GAP + sub_h
-        comp = pygame.Surface((comp_w, comp_h), pygame.SRCALPHA)
-
-        moon_base_y = (main_h - moon_h) // 2
-        main_x = moon_w + 4
-        comp.blit(moon, (0 + MOON_OFFSET_X, moon_base_y + MOON_OFFSET_Y))
-        comp.blit(main, (main_x, 0))
-        comp.blit(gear, (main_x + main_w + 4 + GEAR_OFFSET_X, moon_base_y + GEAR_OFFSET_Y))
-
-        sep_x = (comp_w - LOGO_SEP_W) // 2
-        sep_y = main_h + LOGO_GAP
-        comp.blit(sep, (sep_x, sep_y))
-
-        sub_x = (comp_w - LOGO_SUB_W) // 2
-        comp.blit(sub, (sub_x, sep_y + sep_h + LOGO_GAP))
-
-        return comp
-
     # ── Assets & layout ────────────────────────────────────────────────────────
 
     def _load_assets(self) -> None:
@@ -111,8 +71,11 @@ class TitleScreen:
         bg_raw = self._load_asset("01-menu_background.png")
         self._bg = pygame.transform.smoothscale(bg_raw, (self._sw, self._sh))
 
-        # Logo composite
-        self._logo_surf = self._build_logo_composite()
+        # Fonts
+        try:
+            self._title_font = pygame.font.Font(MENU_FONT_PATH, LOGO_MAIN_FONT_SIZE)
+        except OSError:
+            self._title_font = pygame.font.SysFont(None, LOGO_MAIN_FONT_SIZE)
 
         # Semi-transparent overlay
         self._overlay = pygame.Surface((self._sw, self._sh))
@@ -135,11 +98,9 @@ class TitleScreen:
 
         # Scroll title + menu item fonts — Cormorant Garamond, cached at init
         try:
-            self._scroll_title_font = pygame.font.Font(SCROLL_TITLE_FONT_PATH, SCROLL_TITLE_FONT_SIZE)
-            self._menu_item_font = pygame.font.Font(SCROLL_TITLE_FONT_PATH, MENU_ITEM_FONT_SIZE)
+            self._menu_item_font = pygame.font.Font(MENU_FONT_PATH, MENU_ITEM_FONT_SIZE)
         except OSError:
             logging.warning("TitleScreen: Cormorant Garamond not found, falling back to Noble font")
-            self._scroll_title_font = self._font
             self._menu_item_font = self._font
 
         # Options back button — 01-menu_back_cursor.png
@@ -151,7 +112,7 @@ class TitleScreen:
         # Label font (Cormorant Garamond, small — cached at init)
         try:
             self._back_label_font = pygame.font.Font(
-                SCROLL_TITLE_FONT_PATH, BACK_BTN_FONT_SIZE
+                MENU_FONT_PATH, BACK_BTN_FONT_SIZE
             )
         except OSError:
             self._back_label_font = self._font_small
@@ -205,10 +166,15 @@ class TitleScreen:
     def draw(self) -> None:
         self._screen.blit(self._bg, (0, 0))
 
-        logo_x = (LOGO_ZONE_W - self._logo_surf.get_width()) // 2
-        self._screen.blit(self._logo_surf, (logo_x, LOGO_Y))
-
-        self._draw_scroll_title()
+        title_text = self._i18n.get("menu.main_title", "L'Éveil de l'Héritier")
+        self._blit_halo_text(
+            title_text, 
+            LOGO_ZONE_W // 2, 
+            LOGO_Y, 
+            self._title_font, 
+            LOGO_MAIN_COLOR, 
+            LOGO_MAIN_HALO
+        )
 
         if self.state == "MAIN_MENU":
             self._draw_menu_items()
@@ -226,8 +192,7 @@ class TitleScreen:
             cx = MENU_ITEM_X + MENU_ITEM_OFFSET_X
             cy = MENU_ITEM_Y_START + MENU_ITEM_OFFSET_Y + i * MENU_ITEM_SPACING
             if self._hovered_item == i:
-                # Text is light sky blue, Halo is intense bright blue
-                self._blit_halo_text(label, cx, cy, self._menu_item_font, (180, 230, 255), (40, 120, 255))
+                self._blit_halo_text(label, cx, cy, self._menu_item_font, MENU_HOVER_COLOR, MENU_HOVER_HALO)
             else:
                 self._blit_engraved(label, cx, cy)
 
@@ -298,14 +263,6 @@ class TitleScreen:
         img = self._pointer_select_img if pygame.mouse.get_pressed()[0] else self._pointer_img
         self._screen.blit(img, mouse_pos)
 
-    def _draw_scroll_title(self) -> None:
-        """Render the menu title on the right panel scroll banner."""
-        label = self._i18n.get("menu.title", default="Menu")
-        text_surf = self._scroll_title_font.render(label, True, SCROLL_TITLE_COLOR)
-        cx = SCROLL_TITLE_X + SCROLL_TITLE_OFFSET_X
-        cy = SCROLL_TITLE_Y + SCROLL_TITLE_OFFSET_Y
-        self._screen.blit(text_surf, text_surf.get_rect(center=(cx, cy)))
-
     # ── Event handlers ─────────────────────────────────────────────────────────
 
     def _handle_main_menu(self, event: pygame.Event) -> GameEvent | None:
@@ -365,7 +322,7 @@ class TitleScreen:
         # Draw label right of icon: engraved at rest, golden on hover
         label_cx = left_x + icon_w + BACK_BTN_GAP + label_w // 2
         if self._back_hovered:
-            self._blit_halo_text(label, label_cx, cy, self._back_label_font, (180, 230, 255), (40, 120, 255))
+            self._blit_halo_text(label, label_cx, cy, self._back_label_font, MENU_HOVER_COLOR, MENU_HOVER_HALO)
         else:
             self._blit_engraved(label, label_cx, cy, font=self._back_label_font)
 

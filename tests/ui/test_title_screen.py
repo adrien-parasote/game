@@ -80,7 +80,7 @@ def title_screen(mock_screen, mock_save_manager):
     mock_font.render.return_value = pygame.Surface((10, 10), pygame.SRCALPHA)
     ts._font = mock_font
     ts._font_small = mock_font
-    ts._scroll_title_font = mock_font
+    ts._title_font = mock_font
     ts._menu_item_font = mock_font
     ts._back_label_font = mock_font
     

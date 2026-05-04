@@ -4,20 +4,16 @@ import os
 _MENU_DIR = os.path.join("assets", "images", "menu")
 _UI_DIR = os.path.join("assets", "images", "ui")
 
-# Logo composite: 5 separate alpha-transparent PNGs assembled at runtime
+# Logo composite: 3 separate alpha-transparent PNGs assembled at runtime
 LOGO_MAIN_W = 640          # main title scaled width
-LOGO_ACCENT_H = 58         # moon/gear icon height
 LOGO_SEP_W = 380           # separator width
 LOGO_SUB_W = 380           # subtitle width
-LOGO_Y = 30                # top of logo block on screen
+LOGO_Y = 80                # center y of title text on screen
 LOGO_GAP = 6               # vertical gap between elements
-LOGO_ZONE_W = 720          # left panel width — logo is centered within this zone
-
-# Fine-tune moon/gear position (px, relative to default centred placement)
-MOON_OFFSET_X = 25         # >0 → right,  <0 → left
-MOON_OFFSET_Y = 55         # >0 → down,   <0 → up
-GEAR_OFFSET_X = -25        # >0 → right,  <0 → left
-GEAR_OFFSET_Y = 55         # >0 → down,   <0 → up
+LOGO_ZONE_W = 1280         # full screen width to center the title
+LOGO_MAIN_FONT_SIZE = 90
+LOGO_MAIN_COLOR = (150, 255, 220)
+LOGO_MAIN_HALO = (0, 180, 150)
 
 # Save slot spritesheet (04-save_slot.png 1024x1024, 2 states stacked)
 SLOT_H_SRC = 512
@@ -29,23 +25,16 @@ SLOT_PANEL_Y_START = 140   # inside the load panel overlay
 # Semi-transparent overlay for load screen
 OVERLAY_ALPHA = 180
 
-# Right panel scroll banner
-SCROLL_TITLE_X = 1000      # centre-x of the scroll text zone (pixels)
-SCROLL_TITLE_Y = 80       # centre-y of the scroll text zone (pixels)
-SCROLL_TITLE_OFFSET_X = 0  # fine-tune x  (>0 right, <0 left)
-SCROLL_TITLE_OFFSET_Y = 0  # fine-tune y  (>0 down,  <0 up)
-SCROLL_TITLE_FONT_SIZE = 50  # menu title font size (px)
-SCROLL_TITLE_FONT_PATH = "assets/fonts/cormorant-garamond-regular.ttf"  # scroll title font
-SCROLL_TITLE_COLOR = (72, 40, 12)   # sepia ink
+MENU_FONT_PATH = "assets/fonts/cormorant-garamond-regular.ttf"  # general menu font
 
 # Right panel — menu items
 MENU_ITEM_X = 1005          # centre-x of items (centre of text zone)
 MENU_ITEM_Y_START = 360     # y of the first item
 MENU_ITEM_SPACING = 80      # vertical spacing between items
 MENU_ITEM_FONT_SIZE = 38    # item font size (px)
-MENU_ITEM_COLOR = (220, 195, 140)        # warm gold on hover
-MENU_ITEM_HOVER_COLOR = (255, 235, 180)  # bright gold on hover
-MENU_ITEM_OFFSET_X = 0      # fine-tune x offset
+MENU_HOVER_COLOR = (150, 255, 220)       # bright cyan on hover
+MENU_HOVER_HALO = (0, 180, 150)          # cyan glow on hover
+MENU_ITEM_OFFSET_X = 50      # fine-tune x offset
 MENU_ITEM_OFFSET_Y = 0      # fine-tune y offset
 
 # "Engraved in stone" effect for idle state
