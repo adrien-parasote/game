@@ -84,7 +84,7 @@ sub_types: chest | lever | door | sign | animated_decor
 `Game._check_teleporters()` → on arrival tile or intent tile → `transition_map(target_map, spawn_id, type)`
 `transition_map()` → fade out → `MapLoader.load_map(map_file, spawn_id)` → `AssetManager.clear()` → `TmjParser.load_map()` → `MapManager` → `EntityFactory.spawn_entities()` → entities call `WorldState.get(key)` to restore state → fade in.
 - **MapLoader** (`src/engine/map_loader.py`, ~115L): handles BGM, cleanup, player position. Extracted from `Game._load_map()` in Phase 1.5.
-- **EntityFactory** (`src/engine/entity_factory.py`, 265L): dispatches entity creation by type. Extracted from `Game._spawn_entities()` in Phase 1.5.
+- **EntityFactory** (`src/engine/entity_factory.py`, 265L): dispatches entity creation by type. Extracted from `Game._spawn_entities()` in Phase 1.5. Dispatch order: interactive (`03-`) → NPC (`entity_type=='npc'` | `ent_type_field=='15-npc'` | `07-`) → teleport (`15-`) → pickup (`08-`). ⚠️ NPC must be checked before teleport: Tiled NPC type `'15-npc'` shares the `15-` prefix with teleports.
 - **SpatialUtils** (`src/engine/spatial_utils.py`): `get_facing_vector()`, `is_facing_toward()`, `verify_orientation()` — utility functions shared by InteractionManager and CollisionChecker.
 
 ## Time System
