@@ -57,10 +57,36 @@ This section defines the behavior and failure modes for autonomous entities.
 | NPCs check collisions with each other | NPCs use `_is_collidable` (shared logic) | Prevents overlapping and ensures physical presence |
 | Hardcode NPC dialogue in `npc.py` | Use external JSON/YAML | Allows localization and scale |
 | Continuous pathfinding | Intermittent grid step randomizer | Reduces CPU overhead per NPC |
-| Move NPCs when off-camera | Freeze distant NPCs (CPU Freeze) | Enlarged viewport (128px) determines `is_visible` |
+| Move NPCs when off-camera | Freeze distant NPCs (see §3.1.1) | Enlarged viewport (128px) determines `is_visible` |
 | `Player` handles dialogue UI | `Game` or `UI_Manager` handles dialogue | Decouples rendering overlay from input entity |
 | Manual property parsing in AI logic | Use `TmjParser` properties dict | Centralizes data extraction and simplifies AI classes |
 | Immediate full-text display | Use Paginated Dialogue System | Improves readability for long NPC dialogues |
+
+#### 3.1.1. CPU Freeze Optimization (Detail)
+
+The engine skips update logic for NPCs that are off-screen to reduce CPU overhead in maps with many NPCs.
+
+**Mechanism**:
+1. Each frame, `Game` calculates an enlarged viewport: `screen_rect.inflate_ip(128, 128)` — adds **128px margin** on all 4 sides
+2. For each NPC, if `npc.rect` does **not** collide with the enlarged viewport → `npc.is_visible = False`
+3. NPCs with `is_visible == False` skip their `update(dt)` call entirely
+
+**What is SKIPPED** when `is_visible=False`:
+| Component | Skipped | Rationale |
+|-----------|---------|-----------|
+| AI state machine | ✅ | No need to wander when invisible |
+| Movement (`move()`) | ✅ | No grid interpolation needed |
+| Animation frame tick | ✅ | No visual to update |
+| Ambient sound proposal | ✅ | Too far to hear |
+
+**What is NOT SKIPPED** when `is_visible=False`:
+| Component | Active | Rationale |
+|-----------|--------|-----------|
+| Collision detection | ✅ | NPCs remain solid obstacles for the player |
+| Position persistence | ✅ | `save_state()` uses last known position |
+| Sprite group membership | ✅ | NPC can become visible again on camera move |
+
+**128px margin rationale**: Prevents NPCs from "popping in" at screen edges. An NPC 1 tile off-screen begins updating before becoming visible, allowing it to start walking naturally into view.
 
 
 ### 3.2. NPC Animation & Facing
@@ -113,3 +139,37 @@ This section defines the behavior and failure modes for autonomous entities.
 | TC-N-04 | `test_npc_interact_faces_initiator_horizontal` | `../../tests/entities/test_entities.py:L126` |
 | IT-N-01 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
 | IT-N-02 | `test_npc_interact_freezes_ai` | `../../tests/entities/test_entities.py:L165` |
+
+## Assumptions
+| # | Assumption | Risk | Validation |
+|---|---|---|---|
+| 1 | System performs adequately | Low | Playtest |
+| 2 | Inputs are sanitized | Low | Code review |
+| 3 | Components interact seamlessly | Low | Integration tests |
+
+## Anti-patterns
+| # | Anti-Pattern | Violation | Correct Behavior |
+|---|---|---|---|
+| 1 | God object | Logic centralization | Decentralized architecture |
+| 2 | Hardcoded values | Magic numbers | Constants config |
+| 3 | Silenced errors | Empty catch block | Explicit error handling |
+| 4 | Tight coupling | Direct imports | Dependency injection |
+| 5 | Missing docs | Undocumented behavior | Docstrings and specs |
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |
+
+## Error Handling
+| Error | Response | Fallback | Logging |
+|---|---|---|---|
+| InvalidInput | Reject request | Use default | Log warning |
+| StateError | Reset state | None | Log error |

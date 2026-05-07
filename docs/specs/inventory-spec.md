@@ -162,3 +162,31 @@
 - **Unit tests (equipment)**: [test_inventory_equipment.py L1](../../tests/ui/test_inventory_equipment.py#L1)
 - **Unit tests (drag-drop coverage)**: [test_inventory_coverage.py L1](../../tests/ui/test_inventory_coverage.py#L1)
 - **Integration tests (chest)**: [test_inventory_chest_interaction.py L1](../../tests/ui/test_inventory_chest_interaction.py#L1)
+
+## Assumptions
+| # | Assumption | Risk | Validation |
+|---|---|---|---|
+| 1 | System performs adequately | Low | Playtest |
+| 2 | Inputs are sanitized | Low | Code review |
+| 3 | Components interact seamlessly | Low | Integration tests |
+
+## Anti-patterns
+| # | Anti-Pattern | Violation | Correct Behavior |
+|---|---|---|---|
+| 1 | God object | Logic centralization | Decentralized architecture |
+| 2 | Hardcoded values | Magic numbers | Constants config |
+| 3 | Silenced errors | Empty catch block | Explicit error handling |
+| 4 | Tight coupling | Direct imports | Dependency injection |
+| 5 | Missing docs | Undocumented behavior | Docstrings and specs |
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |

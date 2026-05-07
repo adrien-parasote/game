@@ -134,3 +134,22 @@ In `Game._spawn_interactive()`:
 | TC-LT-08 | `test_known_element_id` | `../../tests/engine/test_loot_table.py:L168` |
 | TC-LT-09 | `test_unknown_element_id` | `../../tests/engine/test_loot_table.py:L178` |
 | TC-LT-10 | `test_get_contents_before_load` | `../../tests/engine/test_loot_table.py:L186` |
+
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |
+
+## Error Handling
+| Error | Response | Fallback | Logging |
+|---|---|---|---|
+| InvalidInput | Reject request | Use default | Log warning |
+| StateError | Reset state | None | Log error |

@@ -282,13 +282,13 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 
 ## 6. Deep Links
 - **Map Recursive Parsing**: [tmj_parser.py - _process_layers](src/map/tmj_parser.py#L55)
-- **World State Logic**: [world_state.py](src/engine/world_state.py)
-- **Interaction Logic**: [interaction.py](src/engine/interaction.py)
+- **World State Logic**: [world_state.py](src/engine/world_state.py#L1)
+- **Interaction Logic**: [interaction.py](src/engine/interaction.py#L1)
 - **Dialogue Paging Logic**: [dialogue.py - _paginate](src/ui/dialogue.py#L74)
 - **Teleport Logic**: [game.py - _check_teleporters](src/engine/game.py#L517)
 - **SFX Overlap Guard**: [audio.py - play_sfx](src/engine/audio.py#L111)
 - **Hitbox Debugging**: [groups.py - custom_draw](src/entities/groups.py#L65)
-- **Loot Table Integration**: [loot-table-spec.md](./loot-table-spec.md)
+- **Loot Table Integration**: [loot-table-spec.md](./loot-table-spec.md#L1)
 
 ### Linked Test Functions
 
@@ -303,3 +303,23 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 | CORE-W-01 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py:L162` |
 | CORE-T-01 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
 | CORE-T-02 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+
+
+## Assumptions
+| # | Assumption | Risk | Validation |
+|---|---|---|---|
+| 1 | System performs adequately | Low | Playtest |
+| 2 | Inputs are sanitized | Low | Code review |
+| 3 | Components interact seamlessly | Low | Integration tests |
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |

@@ -40,9 +40,9 @@ Detailed implementation specification for the debug room and visual hitbox debug
 
 ## 4. Deep Links
 
-- **Config System**: [src/config.py](../../src/config.py)
-- **Engine Loop**: [src/engine/game.py](../../src/engine/game.py)
-- **Drawing Logic**: [src/entities/groups.py](../../src/entities/groups.py)
+- **Config System**: [src/config.py](../../src/config.py#L1)
+- **Engine Loop**: [src/engine/game.py](../../src/engine/game.py#L1)
+- **Drawing Logic**: [src/entities/groups.py](../../src/entities/groups.py#L1)
 
 ### Linked Test Functions
 
@@ -51,3 +51,23 @@ Detailed implementation specification for the debug room and visual hitbox debug
 | DBG-CONF | `test_settings_load` | `../../tests/engine/test_game.py:L509` |
 | DBG-MAP | `test_game_actual_load_map` | `../../tests/engine/test_game.py:L18` |
 | DBG-SPAWN | `test_spawn_entities_initial_spawn_skipped` | `../../tests/engine/test_game.py:L293` |
+
+
+## Assumptions
+| # | Assumption | Risk | Validation |
+|---|---|---|---|
+| 1 | System performs adequately | Low | Playtest |
+| 2 | Inputs are sanitized | Low | Code review |
+| 3 | Components interact seamlessly | Low | Integration tests |
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |

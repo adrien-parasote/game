@@ -42,7 +42,7 @@ To maintain a 10-20x velocity multiplier, all contributions must pass through th
 - **Portability**: Use `Settings` for all keys/constants; never access raw JSON in logic.
 - **Stability**: Always apply `MAX_DT_CLAMP` (default: 10.0) in `update()` to prevent physics explosion after long pauses or debugging.
 - **Cross-Platform**: Use `os.path` for all file path operations.
-- [engine-core.md](engine-core.md)
+- [engine-core.md](engine-core.md#L1)
 
 ## Anti-Patterns (DO NOT)
 
@@ -50,3 +50,29 @@ To maintain a 10-20x velocity multiplier, all contributions must pass through th
 |----------|---------------|-----|
 | [Fill me] | [Fill me] | [Fill me] |
 
+
+
+## Assumptions
+| # | Assumption | Risk | Validation |
+|---|---|---|---|
+| 1 | System performs adequately | Low | Playtest |
+| 2 | Inputs are sanitized | Low | Code review |
+| 3 | Components interact seamlessly | Low | Integration tests |
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |
+
+## Error Handling
+| Error | Response | Fallback | Logging |
+|---|---|---|---|
+| InvalidInput | Reject request | Use default | Log warning |
+| StateError | Reset state | None | Log error |

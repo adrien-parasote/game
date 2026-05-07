@@ -10,7 +10,7 @@ Improve emote responsiveness, and ensure chaining works correctly.
 
 - Ensure `trigger` effectively kills existing emotes to prevent overlap.
 
-### [MODIFY] [emote_sprite.py](../../src/entities/emote_sprite.py)
+### [MODIFY] [emote_sprite.py](../../src/entities/emote_sprite.py#L1)
 - Set default `duration` to `0.6` (configurable via `Settings`).
 - Accelerate the `rise_offset` to match the shorter duration.
 
@@ -52,3 +52,22 @@ Improve emote responsiveness, and ensure chaining works correctly.
 | TC-EMO-01 | `test_emote_manager_spritesheet_error` | `../../tests/entities/test_entities.py:L363` |
 | TC-EMO-02 | `test_emote_manager_chaining` | `../../tests/entities/test_entities.py:L394` |
 | TC-EMO-03 | `test_handle_interaction_pickup_partial` | `../../tests/engine/test_interaction.py:L141` |
+
+## Assumptions
+| # | Assumption | Risk | Validation |
+|---|---|---|---|
+| 1 | System performs adequately | Low | Playtest |
+| 2 | Inputs are sanitized | Low | Code review |
+| 3 | Components interact seamlessly | Low | Integration tests |
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |

@@ -37,3 +37,4 @@ scripts/calibration_result.py
 pyright_output.txt
 src/dsm.txt
 fix_indent.py
+.tdd_lock

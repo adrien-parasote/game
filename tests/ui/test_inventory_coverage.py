@@ -746,7 +746,7 @@ class TestDrawInfoZone:
         ui.hovered_slot = ("grid", 0)
 
         screen = pygame.Surface((1280, 720))
-        with patch("src.ui.inventory.I18nManager") as mock_i18n:
+        with patch("src.ui.inventory_draw.I18nManager") as mock_i18n:
             mock_i18n.return_value.get_item.return_value = {
                 "name": "Potion Rouge",
                 "description": "Restaure 50 PV.",

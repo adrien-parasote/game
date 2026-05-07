@@ -260,14 +260,17 @@ def test_title_screen_draw_no_rotozoom():
     import inspect
 
     from src.ui import title_screen as ts_module
+    from src.ui import title_screen_lights as ts_lights_module
 
-    src = inspect.getsource(ts_module.TitleScreen.draw)
+    draw_src = inspect.getsource(ts_module.TitleScreen.draw)
+    lights_src = inspect.getsource(ts_lights_module.TitleLightsMixin)
+    combined = draw_src + lights_src
     # The actual call would be: pygame.transform.rotozoom(  — check for call syntax
-    assert "pygame.transform.rotozoom(" not in src, (
+    assert "pygame.transform.rotozoom(" not in combined, (
         "draw() must NOT call pygame.transform.rotozoom() — use bucket lookup"
     )
-    assert "_light_halos_scaled" in src or "buckets" in src, (
-        "draw() must use bucket lookup for halos"
+    assert "_light_halos_scaled" in combined or "buckets" in combined, (
+        "draw pipeline must use bucket lookup for halos"
     )
 
 

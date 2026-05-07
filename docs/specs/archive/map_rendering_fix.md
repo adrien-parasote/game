@@ -8,15 +8,15 @@ Ensure that the `00-layer` (typically the base background) is always visible and
 
 ## Proposed Changes
 
-### [MODIFY] [tmj_parser.py](../../src/map/tmj_parser.py)
+### [MODIFY] [tmj_parser.py](../../src/map/tmj_parser.py#L1)
 - Update `_parse_tilelayer` to store the layer name in addition to the data.
 - The `layers_dict` should mapping `layer_id` to a dictionary or object containing both name and data.
 
-### [MODIFY] [manager.py](../../src/map/manager.py)
+### [MODIFY] [manager.py](../../src/map/manager.py#L1)
 - Update `MapManager` to handle the new layer data structure.
 - Store a mapping of names to IDs.
 
-### [MODIFY] [game.py](../../src/engine/game.py)
+### [MODIFY] [game.py](../../src/engine/game.py#L1)
 - In `_draw_background`, prioritize layers named `00-layer` or similar patterns.
 - Ensure the rendering order follows the layer sequence defined in the map file or explicit name-based ordering.
 
@@ -56,3 +56,23 @@ Ensure that the `00-layer` (typically the base background) is always visible and
 |---------|---------------|------|
 | TC-MAP-01 | `test_layer_recursive_order` | `../../tests/map/test_map.py:L41` |
 | TC-MAP-02 | `test_map_manager_render_layer` | `../../tests/map/test_map.py:L128` |
+
+
+## Assumptions
+| # | Assumption | Risk | Validation |
+|---|---|---|---|
+| 1 | System performs adequately | Low | Playtest |
+| 2 | Inputs are sanitized | Low | Code review |
+| 3 | Components interact seamlessly | Low | Integration tests |
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |

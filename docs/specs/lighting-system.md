@@ -111,3 +111,22 @@ Tied to `TimeSystem.brightness`:
 | LT-005..LT-009 | `TestSlantContinuity.*` | `../../tests/engine/test_lighting.py:L108` |
 | LT-010..LT-011 | `TestBeamSurface.*` | `../../tests/engine/test_lighting.py:L201` |
 | LT-012 | `test_beam_cache_reuses_surface` | `../../tests/engine/test_lighting.py:L269` |
+
+## Assumptions
+| # | Assumption | Risk | Validation |
+|---|---|---|---|
+| 1 | System performs adequately | Low | Playtest |
+| 2 | Inputs are sanitized | Low | Code review |
+| 3 | Components interact seamlessly | Low | Integration tests |
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |

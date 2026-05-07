@@ -478,3 +478,16 @@ Residual ambiguity: exact pixel fractions for the image zones (Assumption A-04).
 | CHEST-I-10 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
 | CHEST-I-11 | `test_interaction_cooldown` | `../../tests/engine/test_interaction.py:L33` |
 | CHEST-I-12 | `test_interaction_cooldown` | `../../tests/engine/test_interaction.py:L33` |
+
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |

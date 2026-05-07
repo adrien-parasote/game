@@ -149,3 +149,23 @@ Pickups use the same `{map_basename}_{tiled_id}` key format.
 | WS-008 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
 | WS-009 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
 | WS-010 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+
+
+## Assumptions
+| # | Assumption | Risk | Validation |
+|---|---|---|---|
+| 1 | System performs adequately | Low | Playtest |
+| 2 | Inputs are sanitized | Low | Code review |
+| 3 | Components interact seamlessly | Low | Integration tests |
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |

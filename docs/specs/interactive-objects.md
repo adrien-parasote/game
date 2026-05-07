@@ -160,6 +160,77 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
   - **Drawing**: `pygame.draw.circle` with a radius of `1px` (90%) or `2px` (10%).
   - **Fading**: `alpha = (life / max_life) ** 0.6`. Multiply RGB by alpha using `BLEND_RGB_ADD` for vibrant luminosity.
 
+### 2.6. Day/Night Automation (`day_night_driven`)
+
+Objects with `day_night_driven=True` (typically torches, lamps, lanterns) automatically switch ON/OFF based on the world time, with player override capability.
+
+#### Tiled Property
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `day_night_driven` | bool | `false` | If `true`, the object follows the day/night cycle |
+
+#### `light_control` State Machine
+
+The `light_control` field governs how the `is_on` property resolves:
+
+| State | `is_on` Resolution | Trigger |
+|-------|---------------------|---------|
+| `auto` | `TimeSystem.brightness < 0.4` → ON, else OFF | Default for `day_night_driven=True` |
+| `forced_on` | Always `True` | Player interaction while currently ON in `auto` mode |
+| `forced_off` | Always `False` | Player interaction while currently OFF in `auto` mode |
+| `none` | Uses `_static_is_on` directly | Default for non-`day_night_driven` objects |
+
+#### `is_on` Property Logic
+
+```python
+@property
+def is_on(self) -> bool:
+    if not self.day_night_driven:
+        return self._static_is_on           # Standard toggle
+    if self.light_control == "forced_on":
+        return True
+    if self.light_control == "forced_off":
+        return False
+    # "auto" — follows the night cycle
+    return self._time_system.brightness < 0.4
+```
+
+**Brightness threshold**: `0.4` on the `TimeSystem.brightness` scale (0.0 = midnight, 1.0 = noon). This means lights turn ON when the sun is ~60% below peak.
+
+#### Interaction Transitions
+
+```
+Player interacts with a day_night_driven object:
+  ├─ Current light_control == "auto"
+  │    ├─ is_on == True  → light_control = "forced_off"
+  │    └─ is_on == False → light_control = "forced_on"
+  │
+  └─ Current light_control == "forced_on" or "forced_off"
+       └─ light_control = "auto" (revert to cycle)
+```
+
+**Key design**: Player toggles cycle through `auto → forced → auto`, never directly setting the underlying `_static_is_on`. This ensures the object can always return to automatic behavior.
+
+#### Per-Frame Update
+
+During `update(dt)`, if `day_night_driven=True`:
+- `_update_col_index()` is called every frame to sync the spritesheet column (ON/OFF visual) with the current `is_on` state
+- This handles the gradual day→night transition where `brightness` crosses the 0.4 threshold
+
+#### Persistence
+
+`light_control` is saved in `WorldState` alongside `is_on`:
+```python
+# Save
+world_state.set(key, {"is_on": self.is_on, "light_control": self.light_control})
+
+# Restore
+if "light_control" in state:
+    self.light_control = state["light_control"]
+```
+
+This preserves player overrides across map transitions and save/load cycles.
+
 
 ## 3. Anti-Patterns (DO NOT)
 
@@ -253,3 +324,22 @@ If `particles` is true, the object acts as a lightweight particle emitter when `
 | INT-I-03 | `test_verify_orientation_door_relaxed` | `../../tests/engine/test_interaction.py:L102` |
 | INT-I-04 | `test_anywhere_object_diagonal_rejection` | `../../tests/engine/test_interaction.py:L384` |
 | INT-I-05 | `test_interaction_toggle_entity_by_id` | `../../tests/engine/test_interaction.py:L513` |
+
+## Assumptions
+| # | Assumption | Risk | Validation |
+|---|---|---|---|
+| 1 | System performs adequately | Low | Playtest |
+| 2 | Inputs are sanitized | Low | Code review |
+| 3 | Components interact seamlessly | Low | Integration tests |
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |

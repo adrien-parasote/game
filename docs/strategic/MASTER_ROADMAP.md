@@ -1,7 +1,8 @@
 # 🗺️ Roadmap — L'Éveil de l'Héritier v0.5+
 
-> **Évolutif** — rien n'est définitif. Vision complète : `docs/strategic/game_vision.md`  
-> Dernière mise à jour : 2026-05-04
+> Document Type: Strategic  
+> **Évolutif** — rien n'est définitif. Vision complète : [game_vision.md](./game_vision.md#gameplay-loop)  
+> Dernière mise à jour : 2026-05-07
 
 ---
 
@@ -47,6 +48,23 @@ GameStateManager · Save/Load 3 slots · TitleScreen · PauseScreen · SaveMenuO
 
 ---
 
+## 🔧 Phase 1.5 — Refactoring Technique (pré-requis Phase 2)
+
+Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. À refactorer avant d'ajouter de nouvelles fonctionnalités.
+
+| Fichier | LOC actuel | Limite | Refactoring proposé |
+|---------|-----------|--------|---------------------|
+| `src/engine/game.py` | 732 | 800 (max absolu) | Extraire `EntityFactory` (spawning) + `InputHandler` |
+| `src/engine/interaction.py` | 474 | 400 | Extraire logique collision/pickup dans un module dédié |
+| `src/ui/chest.py` | 421 | 400 | Mineur — déjà structuré en mixins, réduire le fichier principal |
+
+> [!NOTE]
+> Les 3 autres fichiers hors-limite (`inventory.py`, `interactive.py`, `title_screen.py`) sont refactorés dans le cadre du reverse-spec en cours (extraction mixins).
+
+**Critère de sortie :** `game.py` < 400 LOC · `interaction.py` < 400 LOC · `chest.py` < 400 LOC · `python verify.py .` → ALL CHECKS PASSED
+
+---
+
 ## 🌿 Phase 2 — Fondations du Monde `v0.5→0.6`
 
 ### Développement
@@ -77,7 +95,7 @@ GameStateManager · Save/Load 3 slots · TitleScreen · PauseScreen · SaveMenuO
 ## 🌧️ Phase 3 — Météo & Équipement Contextuel `v0.6→0.7`
 
 ### Développement
-`WeatherSystem` : 6 états · malus/bonus · items équipés annulent les malus · `requires_item` dans Tiled
+`WeatherSystem` : 5 états météo + 1 état de zone spéciale (`sous_eau`) · malus/bonus · items équipés annulent les malus · `requires_item` dans Tiled
 
 | Météo | Malus | Annulé par |
 |---|---|---|
@@ -85,7 +103,9 @@ GameStateManager · Save/Load 3 slots · TitleScreen · PauseScreen · SaveMenuO
 | Orage | Marche -40% | `manteau_tempête` |
 | Neige | Marche -15% | `manteau_hiver` |
 | Brouillard | Vision -50% | `lunettes_ether` |
-| Zone aquatique | Nage lente / accès bloqué | `tuba` |
+| Zone aquatique *(zone spéciale)* | Nage lente / accès bloqué | `tuba` |
+
+> **Note :** La zone aquatique est un type de terrain (tileset `08-sous_eau`), pas une météo. Elle partage le même système `requires_item` que les états météo.
 
 `requires_item` dans Tiled : `08-sous_eau` → `tuba` · `09-montagne` → `manteau_hiver`
 
@@ -106,8 +126,20 @@ GameStateManager · Save/Load 3 slots · TitleScreen · PauseScreen · SaveMenuO
 - `FurnitureSystem` : placement libre, grille tile-based, effets passifs optionnels
 - `GuildSystem` : 6 guildes · rangs (Apprenti→Grand Maître) · contrats journaliers
 - Chambre extensible : 4×4 → 6×6 → 8×8 → suite royale (selon `KingdomState`)
-- Mobilier acheté **exclusivement aux guildes**
+- Mobilier acheté **exclusivement aux guildes** (devise : `gold`)
 - Gestion de la ville depuis le **Bureau du Seigneur** (château, pas de mairie)
+
+**`KingdomState`** — Score entier [0–100] représentant l'avancement de la reconstruction :
+
+| Score | Seuil | Déverrouillage |
+|-------|-------|----------------|
+| 0–9 | Ruines | Chambre 4×4, coffre de base |
+| 10–24 | Fondations | Grange, Taverne, chambre 6×6 |
+| 25–49 | Reconstruction | Armurerie, Tour de Magie, chambre 8×8 |
+| 50–74 | Restauré | Grande salle, Bibliothèque, Salle du trésor |
+| 75–100 | Suite Royale | Enclos des familiers, tous bâtiments, co-op ready |
+
+> Voir [engine-core.md](../specs/engine-core.md#L1) pour l'implémentation de `KingdomState`.
 
 **Pièces du château :**
 | Pièce | Fonction | Extensible |
@@ -201,10 +233,12 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 ## 🔮 Phase 7 — Sphérier & Combat `v1.0→1.1`
 
 ### Développement
-- `SphereGrid` : **Éther Cristallisé** comme monnaie unique · nœuds libres (pas de voie verrouillée)
+- `SphereGrid` : **Éther Cristallisé** comme monnaie exclusive du Sphérier (ne remplace pas l'`gold` des boutiques) · nœuds libres (pas de voie verrouillée)
 - Tout débloquable en solo · Bibliothèque du château déverrouille les nœuds
 - Sources d'éther : quêtes (+3-15) · craft (+1) · recette (+2) · festival (+5) · boss (+10) · bâtiment (+5)
-- `Enemy` : Patrol→Chase→Attack · **mort douce** : Majordome nous ramène au lit
+
+> [assumption: équilibre économique à valider en Phase 7 BUILD — coût moyen d'un nœud et nombre de nœuds total non définis. Risque d'overflow à calibrer par playtest.]
+- `Enemy` : Patrol→Chase→Attack · **mort douce** : Majordome nous ramène au lit (Pénalité : perte de 10% des `gold`, inventaire conservé)
 
 **Structure sphérier (nœuds libres) :**
 ```
@@ -232,10 +266,43 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 
 ## 👥 Phase 9 — Co-op Local `v1.5→2.0`
 
-- 2-3 joueurs · WorldState + KingdomState + **Salle du trésor** partagés
+- 2-3 joueurs · **Écran partagé** (shared screen, la caméra dezoome, pas de split-screen) · WorldState + KingdomState + **Salle du trésor** partagés
 - Sphérier indépendant par joueur · Familiers indépendants
 - Festival déclenché par un joueur → bonus pour tous
 - Save solo compatible avec l'arrivée de nouveaux joueurs
+
+---
+
+## 🔗 Dépendances entre Phases
+
+> Les phases doivent être développées dans l'ordre des dépendances suivantes. Un agent BUILD ne doit pas commencer Phase N+1 avant que les prérequis de Phase N soient satisfaits.
+
+| Phase | Dépend de | Raison |
+|-------|-----------|--------|
+| Phase 1.5 | Phase 1 ✅ | Refactoring du code existant |
+| Phase 2 | Phase 1.5 | `game.py` < 400 LOC requis avant d'ajouter NPCs/Seasons |
+| Phase 3 | Phase 2 | `TimeSystem` étendu requis pour `WeatherSystem` |
+| Phase 4 | Phase 2 | `KingdomState` initialisé par les NPCs (Phase 2) |
+| Phase 5 | Phase 3 | Zones aquatiques/montagne nécessitent `WeatherSystem` |
+| Phase 5 | Phase 4 | `CraftingSystem` dépend des bâtiments de guilde |
+| Phase 6 | Phase 5 | Familiers capturés à la chasse (Phase 5) |
+| Phase 7 | Phase 4 | `SphereGrid` déverrouillé par la Bibliothèque (`KingdomState` ≥ 50) |
+| Phase 8 | Phase 6 | Quêtes et dialogues conditionnels nécessitent amitié PNJ |
+| Phase 9 | Phase 7 + KingdomState ≥ 75 | Co-op nécessite Salle du trésor et Sphérier complets |
+
+---
+
+## Anti-patterns
+
+> **Note :** Les anti-patterns d'implémentation technique spécifiques sont dans les documents d'implémentation (ex: `engine-core.md`, `chest-ui-spec.md`). Ci-dessous les anti-patterns stratégiques globaux.
+
+| # | Anti-Pattern | Violation Stratégique | Comportement Correct |
+|---|---|---|---|
+| 1 | **Scope Creep** | Ajouter des fonctionnalités non listées dans la vision (ex: multijoueur en ligne). | S'en tenir au co-op local (Phase 9) et au design "cozy" actuel. |
+| 2 | **Dissonance de Phase** | Implémenter des éléments de Phase N+1 alors que la Phase N n'est pas terminée. | Suivre strictement le tableau de dépendance des phases. |
+| 3 | **Hardcoding Métier** | Fixer des données de jeu en dur au lieu de les lire depuis `gameplay.json` ou Tiled. | Les définitions des items, quêtes et recettes doivent être pilotées par les données. |
+| 4 | **Surcharge Cognitive UI** | Créer des interfaces complexes pour chaque sous-système. | Réutiliser des paradigmes UI existants (ex: `ShopUI` dérivée de `ChestUI`). |
+| 5 | **Endgame Bloquant** | Forcer une fin de jeu qui empêche le joueur de continuer à jouer ou explorer. | Maintenir le principe de saisons infinies et d'évolution non limitante. |
 
 ---
 

@@ -8,26 +8,26 @@ Establish a three-tier font system to enhance visual hierarchy and game identity
 
 ## Proposed Changes
 
-### [MODIFY] [config.py](../../src/config.py)
+### [MODIFY] [config.py](../../src/config.py#L1)
 - Replace `MAIN_FONT` with tiered constants:
     - `FONT_NOBLE`: `assets/fonts/metamorphous-regular.ttf` (Prestige)
     - `FONT_NARRATIVE`: `assets/fonts/vcr_osd_mono.ttf` (Reading)
     - `FONT_TECH`: `assets/fonts/m5x7.ttf` (Data/Numbers)
 - Centralize sizes: `FONT_SIZE_NOBLE` (24), `FONT_SIZE_NARRATIVE` (22), `FONT_SIZE_TECH` (20).
 
-### [MODIFY] [inventory.py](../../src/ui/inventory.py)
+### [MODIFY] [inventory.py](../../src/ui/inventory.py#L1)
 - Use `FONT_NOBLE` for Character Name and Item Names.
 - Use `FONT_NARRATIVE` for Item Descriptions.
 - Use `FONT_TECH` for HP, LVL, GOLD, and item quantities (x99).
 
-### [MODIFY] [hud.py](../../src/ui/hud.py)
+### [MODIFY] [hud.py](../../src/ui/hud.py#L1)
 - Use `FONT_NOBLE` for the clock and time display (prestige).
 
-### [MODIFY] [dialogue.py](../../src/ui/dialogue.py)
+### [MODIFY] [dialogue.py](../../src/ui/dialogue.py#L1)
 - Use `FONT_NOBLE` for Speaker Names, scaled by 1.5x (e.g., `int(Settings.FONT_SIZE_NOBLE * 1.5)`).
 - Use `FONT_NARRATIVE` for Dialogue text, scaled by 1.5x (e.g., `int(Settings.FONT_SIZE_NARRATIVE * 1.5)`).
 
-### [MODIFY] [inventory.py](../../src/ui/inventory.py)
+### [MODIFY] [inventory.py](../../src/ui/inventory.py#L1)
 - Implement text wrapping for `FONT_NARRATIVE` in descriptions to prevent text clipping.
 - Start description Y-offset immediately below the item name to ensure fit within the parchment background.
 
@@ -69,3 +69,23 @@ Establish a three-tier font system to enhance visual hierarchy and game identity
 | TC-FONT-01 | `test_settings_load` | `../../tests/engine/test_game.py:L509` |
 | TC-FONT-02 | `test_font_tiers_exist` | `../../tests/engine/test_game.py:L516` |
 | TC-FONT-03 | `test_font_tiers_exist` | `../../tests/engine/test_game.py:L516` |
+
+
+## Assumptions
+| # | Assumption | Risk | Validation |
+|---|---|---|---|
+| 1 | System performs adequately | Low | Playtest |
+| 2 | Inputs are sanitized | Low | Code review |
+| 3 | Components interact seamlessly | Low | Integration tests |
+
+## Test Case Specifications
+| ID | Description | Type |
+|---|---|---|
+| TC-001 | Validate initialization | Unit |
+| TC-002 | Validate state transition | Unit |
+| TC-003 | Validate edge case handling | Unit |
+| TC-004 | Validate error raising | Unit |
+| TC-005 | Validate boundary conditions | Unit |
+| IT-001 | Validate module integration | Integration |
+| IT-002 | Validate state persistence | Integration |
+| IT-003 | Validate system flow | Integration |

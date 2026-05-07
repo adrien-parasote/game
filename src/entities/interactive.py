@@ -9,33 +9,25 @@ import pygame
 from src.entities.interactive_constants import (
     ANIM_SPEED_LIGHT_SOURCE,
     ANIM_SPEED_OBJECT,
-    FLICKER_ALPHA_AMPLITUDE,
-    FLICKER_ALPHA_JITTER_AMP,
-    FLICKER_ALPHA_JITTER_SCALE,
-    FLICKER_ALPHA_NOISE_AMP,
-    FLICKER_JITTER_FREQ,
-    FLICKER_MAIN_FREQ,
-    FLICKER_SCALE_AMPLITUDE,
-    FLICKER_SCALE_FREQ,
-    FLICKER_SCALE_PHASE_OFFSET,
     HALO_DEFAULT_ALPHA,
     HALO_DEFAULT_COLOR,
     INTERACTIVE_DUMMY_FRAME_COUNT,
     INTERACTIVE_POS_Y_OFFSET,
     INTERACTIVE_SHEET_COLS,
-    LIGHT_MASK_CACHE_COUNT,
-    LIGHT_MASK_SCALE_BASE,
-    LIGHT_MASK_SCALE_STEP,
 )
+from src.entities.interactive_lighting import InteractiveLightingMixin
+from src.entities.interactive_particles import InteractiveParticleMixin
 from src.graphics.spritesheet import SpriteSheet
 
 from .base import BaseEntity
 
 
-class InteractiveEntity(BaseEntity):
+class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, BaseEntity):
     """
     Fixed interactive object (chest, switch, lamp, etc.) with animation
     and optional lighting halo.
+    Lighting logic provided by InteractiveLightingMixin.
+    Particle logic provided by InteractiveParticleMixin.
     """
 
     # Position to Direction mapping for interaction validation
@@ -296,41 +288,6 @@ class InteractiveEntity(BaseEntity):
                 if not (self.is_on and self.is_passable):
                     self.obstacles_group.add(self)
 
-    def _setup_lighting(self):
-        """Pre-generate light mask cache."""
-        self.light_mask = self._create_halo_surf(self.halo_size)
-        self.light_mask_cache = []
-        for i in range(LIGHT_MASK_CACHE_COUNT):
-            scale = LIGHT_MASK_SCALE_BASE + (i * LIGHT_MASK_SCALE_STEP)
-            scaled_size = int(round(self.halo_size * scale))
-            if scaled_size > 0:
-                self.light_mask_cache.append(self._create_halo_surf(scaled_size))
-            else:
-                self.light_mask_cache.append(self.light_mask)
-
-    def _create_halo_surf(self, radius) -> pygame.Surface:
-        """Generate radial gradient surface."""
-        size = int(radius * 2)
-        surf = pygame.Surface((size, size))
-        surf.fill((0, 0, 0))
-        center = (radius, radius)
-
-        base_color = pygame.Color(*self.halo_color)
-        alpha_factor = self.halo_alpha / 255.0
-
-        for r in range(radius, 0, -1):
-            ratio = r / radius
-            intensity = (1.0 - ratio) ** 2
-            final_intensity = intensity * alpha_factor
-            color = (
-                int(base_color.r * final_intensity),
-                int(base_color.g * final_intensity),
-                int(base_color.b * final_intensity),
-            )
-            pygame.draw.circle(surf, color, center, r)
-
-        return surf
-
     def _get_frame(self, row_index: int) -> pygame.Surface:
         """Get frame for current animation state."""
         cols = self._sheet_cols
@@ -411,33 +368,7 @@ class InteractiveEntity(BaseEntity):
             # If is_on=False: no proposal → flush_ambient stops the channel automatically.
 
         if self.is_on and self.halo_size > 0:
-            if self.is_light_source and self.is_animated:
-                num_frames = max(1, self.end_row - self.start_row + 1)
-                frame_progress = (self.frame_index - self.start_row) % num_frames
-                animation_phase = (frame_progress / num_frames) * 2 * math.pi
-                self.f_alpha = 1.0 + FLICKER_ALPHA_AMPLITUDE * math.sin(
-                    animation_phase - math.pi / 2
-                )
-                self.f_alpha += random.uniform(-FLICKER_ALPHA_JITTER_AMP, FLICKER_ALPHA_JITTER_AMP)
-                self.f_scale = 1.0 + FLICKER_SCALE_AMPLITUDE * math.sin(animation_phase)
-            else:
-                ticks = ticks_ms if ticks_ms is not None else pygame.time.get_ticks()
-                time_sec = ticks / 1000.0
-                main_wave = math.sin(time_sec * FLICKER_MAIN_FREQ * math.pi + self.flicker_phase)
-                jitter_wave = FLICKER_ALPHA_JITTER_SCALE * math.sin(
-                    time_sec * FLICKER_JITTER_FREQ * math.pi + self.flicker_phase * 0.5
-                )
-                self.f_alpha = (
-                    1.0
-                    + FLICKER_ALPHA_AMPLITUDE * main_wave
-                    + FLICKER_ALPHA_JITTER_AMP * jitter_wave
-                )
-                self.f_alpha += random.uniform(-FLICKER_ALPHA_NOISE_AMP, FLICKER_ALPHA_NOISE_AMP)
-                self.f_scale = 1.0 + FLICKER_SCALE_AMPLITUDE * math.sin(
-                    time_sec * FLICKER_SCALE_FREQ * math.pi
-                    + self.flicker_phase
-                    + FLICKER_SCALE_PHASE_OFFSET
-                )
+            self._update_flicker(dt, ticks_ms)
         else:
             self.f_alpha = 1.0
             self.f_scale = 1.0
@@ -468,79 +399,14 @@ class InteractiveEntity(BaseEntity):
 
         self.image = self._get_frame(int(self.frame_index))
 
-        if self.particles and self.is_on:
-            if len(self.particles_list) < self.particle_count:
-                expected_spawns = (self.particle_count / 1.5) * dt
-                spawns = int(expected_spawns)
-                if random.random() < (expected_spawns - spawns):
-                    spawns += 1
-                if spawns == 0 and random.random() < 0.3:
-                    spawns = 1
-                for _ in range(spawns):
-                    if self.rect:
-                        life = random.uniform(1.0, 2.0)
-                        self.particles_list.append(
-                            {
-                                "x": self.rect.centerx + random.uniform(-4, 4),
-                                "y": self.rect.top
-                                + (self.rect.height * 0.33)
-                                + random.uniform(-2, 2),
-                                "vx": random.uniform(-2.0, 2.0),
-                                "vy": random.uniform(-10.0, -5.0),
-                                "life": life,
-                                "max_life": life,
-                                "size": 1 if random.random() < 0.9 else 2,
-                                "phase": random.uniform(0, math.pi * 2),
-                            }
-                        )
-
-        if self.particles_list:
-            alive = []
-            for p in self.particles_list:
-                p["life"] -= dt
-                if p["life"] > 0:
-                    p["x"] += (p["vx"] + math.sin(p["phase"] + p["life"] * 3.0) * 5.0) * dt
-                    p["y"] += p["vy"] * dt
-                    alive.append(p)
-            self.particles_list = alive
+        self._update_particles(dt)
 
     def draw_effects(
         self, surface: pygame.Surface, cam_offset: pygame.math.Vector2, global_darkness: int
     ):
-        """Draw particles (light halo is handled by LightingManager)."""
+        """Draw particles and light halo effects."""
         if not self.is_on:
             return
 
-        if self.particles_list:
-            base_color = getattr(self, "halo_color", (250, 250, 250))
-            for p in self.particles_list:
-                alpha = (p["life"] / p["max_life"]) ** 0.6
-                color = (
-                    int(base_color[0] * alpha),
-                    int(base_color[1] * alpha),
-                    int(base_color[2] * alpha),
-                )
-                # P14: removed useless Surface alloc — draw.circle is sufficient
-                pygame.draw.circle(
-                    surface,
-                    color,
-                    (int(p["x"] + cam_offset.x), int(p["y"] + cam_offset.y)),
-                    p["size"],
-                )
-
-        if not self.light_mask_cache or self.halo_size <= 0:
-            return
-
-        dark_factor = global_darkness / 180.0
-        global_factor = max(0.15, dark_factor)
-        scale_idx = max(0, min(9, int(round((self.f_scale - 0.97) / 0.0066))))
-        # P9: set_alpha() instead of .copy() — avoids Surface allocation per frame
-        render_surf = self.light_mask_cache[scale_idx]
-        m = max(0, min(255, int(round(255 * global_factor * self.f_alpha))))
-        render_surf.set_alpha(m)
-        if self.rect:
-            halo_pos = (
-                self.rect.centerx + cam_offset.x - render_surf.get_width() // 2,
-                self.rect.centery + cam_offset.y - render_surf.get_height() // 2,
-            )
-            surface.blit(render_surf, halo_pos, special_flags=pygame.BLEND_RGB_ADD)
+        self._draw_particles(surface, cam_offset)
+        self._draw_halo(surface, cam_offset, global_darkness)

@@ -4,7 +4,6 @@ Spec: docs/specs/game-flow-spec.md#22-srcuititle_screenpy-new
 """
 
 import logging
-import math
 import os
 
 import pygame
@@ -20,42 +19,37 @@ from src.ui.title_screen_constants import (
     _MENU_ITEM_KEYS,
     _UI_DIR,
     BACK_BTN_FONT_SIZE,
-    BACK_BTN_GAP,
     BACK_BTN_H,
-    BACK_BTN_LABEL_DEFAULT,
-    BACK_BTN_LABEL_KEY,
-    BACK_BTN_OFFSET_X,
-    BACK_BTN_OFFSET_Y,
     BACK_BTN_W,
-    BACK_BTN_X,
-    BACK_BTN_Y,
-    BACKGROUND_LIGHTS,
-    BG_LIGHT_COLOR,
-    HALO_DEBUG,
     LOGO_MAIN_COLOR,
     LOGO_MAIN_FONT_SIZE,
     LOGO_MAIN_HALO,
     LOGO_Y,
     LOGO_ZONE_W,
-    MENU_ENGRAVE_LIGHT,
-    MENU_ENGRAVE_SHADOW,
-    MENU_ENGRAVE_TEXT,
     MENU_FONT_PATH,
-    MENU_HOVER_COLOR,
-    MENU_HOVER_HALO,
-    MENU_ITEM_FONT_SIZE,
     MENU_ITEM_OFFSET_X,
     MENU_ITEM_OFFSET_Y,
     MENU_ITEM_SPACING,
+    MENU_ITEM_FONT_SIZE,
     MENU_ITEM_X,
     MENU_ITEM_Y_START,
-    MUSHROOM_LIGHTS,
     OVERLAY_ALPHA,
+    BACK_BTN_OFFSET_X,
+    BACK_BTN_OFFSET_Y,
+    BACK_BTN_X,
+    BACK_BTN_Y,
+    BACK_BTN_GAP,
 )
+from src.ui.title_screen_draw import TitleDrawMixin
+from src.ui.title_screen_lights import TitleLightsMixin
 
 
-class TitleScreen:
-    """Main menu screen — background, logo, cursor. Menu to be added."""
+class TitleScreen(TitleLightsMixin, TitleDrawMixin):
+    """Main menu screen — background, logo, cursor.
+
+    Light halo logic provided by TitleLightsMixin.
+    Text rendering provided by TitleDrawMixin.
+    """
 
     def __init__(self, screen: pygame.Surface, save_manager: SaveManager) -> None:
         self._screen = screen
@@ -165,59 +159,8 @@ class TitleScreen:
         except OSError:
             self._back_label_font = self._font_small
 
-        # P1: Pre-scale halo surfaces into N_BUCKETS buckets covering flicker range
-        # Avoids rotozoom() per frame — pure lookup at draw time
-        _N_BUCKETS = 10
-        _SCALE_MIN = 0.80  # matches max(0.80, ...) in candle flicker
-        _SCALE_MAX = 1.05  # slight headroom above 1.0
-        self._halo_n_buckets = _N_BUCKETS
-        self._halo_scale_min = _SCALE_MIN
-        self._halo_scale_max = _SCALE_MAX
-
-        # P1: Bucket lookup for fire/candle halos
-        self._light_halos_scaled: dict[int, list[pygame.Surface]] = {}
-        for r in {entry[2] for entry in BACKGROUND_LIGHTS}:
-            base = pygame.Surface((r * 2, r * 2))
-            base.fill((0, 0, 0))
-            for ri in range(r, 0, -1):
-                intensity = (1.0 - (ri / r)) ** 2
-                color = (
-                    int(BG_LIGHT_COLOR[0] * intensity),
-                    int(BG_LIGHT_COLOR[1] * intensity),
-                    int(BG_LIGHT_COLOR[2] * intensity),
-                )
-                pygame.draw.circle(base, color, (r, r), ri)
-            # Build _N_BUCKETS pre-scaled copies for the display scale range
-            avg_scale = (self._light_scale_x + self._light_scale_y) / 2
-            buckets: list[pygame.Surface] = []
-            for b in range(_N_BUCKETS):
-                t = b / max(_N_BUCKETS - 1, 1)
-                s = (_SCALE_MIN + t * (_SCALE_MAX - _SCALE_MIN)) * avg_scale
-                new_r = max(1, int(r * s))
-                buckets.append(pygame.transform.smoothscale(base, (new_r * 2, new_r * 2)))
-            self._light_halos_scaled[r] = buckets
-
-        # P2: Bucket lookup for mushroom bioluminescent halos
-        self._mushroom_halos_scaled: dict[tuple, dict[int, list[pygame.Surface]]] = {}
-        for _lx, _ly, r, color in MUSHROOM_LIGHTS:
-            ck = tuple(color)
-            if ck not in self._mushroom_halos_scaled:
-                self._mushroom_halos_scaled[ck] = {}
-            if r not in self._mushroom_halos_scaled[ck]:
-                base = pygame.Surface((r * 2, r * 2))
-                base.fill((0, 0, 0))
-                for ri in range(r, 0, -1):
-                    intensity = (1.0 - (ri / r)) ** 2
-                    c = (int(ck[0] * intensity), int(ck[1] * intensity), int(ck[2] * intensity))
-                    pygame.draw.circle(base, c, (r, r), ri)
-                avg_scale = (self._light_scale_x + self._light_scale_y) / 2
-                buckets_m: list[pygame.Surface] = []
-                for b in range(_N_BUCKETS):
-                    t = b / max(_N_BUCKETS - 1, 1)
-                    s = (_SCALE_MIN + t * (_SCALE_MAX - _SCALE_MIN)) * avg_scale
-                    new_r = max(1, int(r * s))
-                    buckets_m.append(pygame.transform.smoothscale(base, (new_r * 2, new_r * 2)))
-                self._mushroom_halos_scaled[ck][r] = buckets_m
+        # P1+P2: Pre-scale halo surfaces into buckets — delegated to TitleLightsMixin
+        self._init_light_halos()
 
         # P3: Blur cache — invalidated when hovered item changes
         self._blur_cache: dict[int | None, pygame.Surface] = {}
@@ -279,56 +222,9 @@ class TitleScreen:
     def draw(self) -> None:
         self._screen.blit(self._bg, (0, 0))
 
-        # P1: Draw fire/candle lights via pre-scaled bucket lookup (no rotozoom)
-        for i, (lx, ly, hr) in enumerate(BACKGROUND_LIGHTS):
-            sx = int(lx * self._light_scale_x)
-            sy = int(ly * self._light_scale_y)
-            flicker = (
-                math.sin(self._light_time * 0.4 + i * 1.1) * 0.06
-                + math.sin(self._light_time * 0.9 + i * 2.3) * 0.04
-            ) + 0.92
-            flicker = max(0.80, min(1.0, flicker))
-
-            buckets = self._light_halos_scaled.get(hr)
-            if buckets:
-                t = (flicker - self._halo_scale_min) / (self._halo_scale_max - self._halo_scale_min)
-                idx = max(0, min(self._halo_n_buckets - 1, int(t * (self._halo_n_buckets - 1))))
-                rendered = buckets[idx]
-                offset = rendered.get_width() // 2
-                self._screen.blit(
-                    rendered, (sx - offset, sy - offset), special_flags=pygame.BLEND_RGB_ADD
-                )
-
-            if HALO_DEBUG:
-                pygame.draw.line(self._screen, (255, 0, 0), (sx - 10, sy), (sx + 10, sy), 1)
-                pygame.draw.line(self._screen, (255, 0, 0), (sx, sy - 10), (sx, sy + 10), 1)
-                pygame.draw.circle(self._screen, (255, 0, 0), (sx, sy), 4)
-
-        # P2: Draw mushroom glows via pre-scaled bucket lookup (no rotozoom)
-        for i, (lx, ly, hr, color) in enumerate(MUSHROOM_LIGHTS):
-            sx = int(lx * self._light_scale_x)
-            sy = int(ly * self._light_scale_y)
-            flicker = (
-                math.sin(self._light_time * 0.15 + i * 1.3) * 0.10
-                + math.sin(self._light_time * 0.37 + i * 2.1) * 0.06
-            ) + 0.84
-            flicker = max(0.72, min(1.0, flicker))
-            ck = tuple(color)
-            halos_for_color = self._mushroom_halos_scaled.get(ck, {})
-            buckets_m = halos_for_color.get(hr)
-            if buckets_m:
-                t = (flicker - self._halo_scale_min) / (self._halo_scale_max - self._halo_scale_min)
-                idx = max(0, min(self._halo_n_buckets - 1, int(t * (self._halo_n_buckets - 1))))
-                rendered = buckets_m[idx]
-                offset = rendered.get_width() // 2
-                self._screen.blit(
-                    rendered, (sx - offset, sy - offset), special_flags=pygame.BLEND_RGB_ADD
-                )
-
-            if HALO_DEBUG:
-                pygame.draw.line(self._screen, (0, 255, 200), (sx - 8, sy), (sx + 8, sy), 1)
-                pygame.draw.line(self._screen, (0, 255, 200), (sx, sy - 8), (sx, sy + 8), 1)
-                pygame.draw.circle(self._screen, (0, 255, 200), (sx, sy), 3)
+        # P1+P2: Draw light halos (delegated to TitleLightsMixin)
+        self._draw_background_lights()
+        self._draw_mushroom_lights()
 
         title_text = self._i18n.get("menu.main_title", "L'Éveil de l'Héritier")
         self._blit_halo_text(
@@ -344,138 +240,11 @@ class TitleScreen:
 
         self._draw_cursor()
 
-    def _draw_menu_items(self) -> None:
-        """Render menu items: pre-rendered engraved idle, halo text on hover."""
-        hovered = self._hovered_item
-
-        # P3: Invalidate blur cache only when hover changes
-        if hovered != self._prev_hovered_item:
-            self._blur_cache.pop(self._prev_hovered_item, None)
-            self._prev_hovered_item = hovered
-
-        for i, (key, default) in enumerate(zip(_MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS, strict=False)):
-            cx = MENU_ITEM_X + MENU_ITEM_OFFSET_X
-            cy = MENU_ITEM_Y_START + MENU_ITEM_OFFSET_Y + i * MENU_ITEM_SPACING
-            if hovered == i:
-                # P3: Cache the blur surface for this item
-                if i not in self._blur_cache:
-                    label = self._i18n.get(key, default=default)
-                    self._blur_cache[i] = self._render_halo_text(
-                        label, self._menu_item_font, MENU_HOVER_COLOR, MENU_HOVER_HALO
-                    )
-                surf = self._blur_cache[i]
-                w, h = surf.get_size()
-                self._screen.blit(surf, (cx - w // 2, cy - h // 2))
-            else:
-                # P3: Use pre-rendered idle surface
-                surf = self._menu_label_surfaces[i]
-                w, h = surf.get_size()
-                self._screen.blit(surf, (cx - w // 2, cy - h // 2))
-
-    def _render_halo_text(
-        self,
-        label: str,
-        font: pygame.font.Font,
-        text_color: tuple[int, int, int],
-        halo_color: tuple[int, int, int],
-    ) -> pygame.Surface:
-        """Render text with halo blur and return composited Surface."""
-        base_surf = font.render(label, True, halo_color)
-        w, h = base_surf.get_size()
-        pad = 24
-        padded = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
-        padded.blit(base_surf, (pad, pad))
-        try:
-            blurred = pygame.transform.gaussian_blur(padded, 8)
-        except Exception:
-            blurred = padded
-        out = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
-        out.blit(blurred, (0, 0))
-        text_surf = font.render(label, True, text_color)
-        out.blit(text_surf, (pad, pad))
-        return out
-
-    def _render_engraved(self, label: str) -> pygame.Surface:
-        """Render idle engraved stone effect and return composited Surface."""
-        w_hint, h_hint = self._menu_item_font.size(label)
-        pad = 4
-        out = pygame.Surface((w_hint + pad * 2, h_hint + pad * 2), pygame.SRCALPHA)
-        shadow = self._menu_item_font.render(label, True, MENU_ENGRAVE_SHADOW)
-        highlight = self._menu_item_font.render(label, True, MENU_ENGRAVE_LIGHT)
-        text = self._menu_item_font.render(label, True, MENU_ENGRAVE_TEXT)
-        out.blit(shadow, (pad - 1, pad - 1))
-        out.blit(highlight, (pad + 1, pad + 1))
-        out.blit(text, (pad, pad))
-        return out
-
-    def _blit_halo_text(
-        self,
-        label: str,
-        cx: int,
-        cy: int,
-        font: pygame.font.Font,
-        text_color: tuple[int, int, int],
-        halo_color: tuple[int, int, int],
-    ) -> None:
-        """Draw text with a soft, spreading glowing halo effect."""
-        base_surf = font.render(label, True, halo_color)
-        w, h = base_surf.get_size()
-
-        # Create a padded surface so the blur doesn't clip
-        pad = 24
-        padded = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
-        padded.blit(base_surf, (pad, pad))
-
-        try:
-            # Use pygame-ce's fast gaussian_blur
-            blurred = pygame.transform.gaussian_blur(padded, 8)
-            blurred.set_alpha(255)
-
-            # Blit 3 times for a very strong, dense center glow that is highly visible
-            rect = blurred.get_rect(center=(cx, cy))
-            self._screen.blit(blurred, rect)
-            self._screen.blit(blurred, rect)
-            self._screen.blit(blurred, rect)
-        except AttributeError:
-            # Fallback if standard pygame is used
-            base_surf.set_alpha(80)
-            offsets = [(-3, -3), (3, -3), (-3, 3), (3, 3), (0, -4), (0, 4), (-4, 0), (4, 0)]
-            for dx, dy in offsets:
-                self._screen.blit(base_surf, base_surf.get_rect(center=(cx + dx, cy + dy)))
-
-        main_surf = font.render(label, True, text_color)
-        self._screen.blit(main_surf, main_surf.get_rect(center=(cx, cy)))
-
-    def _blit_engraved(
-        self, label: str, cx: int, cy: int, font: pygame.font.Font | None = None
-    ) -> None:
-        """3-pass engraved-in-stone text effect.
-
-        Pass 1 — shadow (bottom-right): simulates the dark background of the engraving.
-        Pass 2 — highlight (top-left): simulates light on the upper edge.
-        Pass 3 — main text: slightly lighter than the stone.
-        Uses self._menu_item_font by default; pass a custom font to override.
-        """
-        f = font if font is not None else self._menu_item_font
-        shadow = f.render(label, True, MENU_ENGRAVE_SHADOW)
-        light = f.render(label, True, MENU_ENGRAVE_LIGHT)
-        text = f.render(label, True, MENU_ENGRAVE_TEXT)
-        r = text.get_rect(center=(cx, cy))
-        self._screen.blit(shadow, r.move(-1, -1))
-        self._screen.blit(light, r.move(1, 1))
-        self._screen.blit(text, r)
-
     # ── Load overlay ───────────────────────────────────────────────────────────
 
     def _refresh_slots(self) -> None:
         """Reload slot data from SaveManager (call when entering LOAD_MENU)."""
         self._load_menu.refresh()
-
-    def _draw_cursor(self) -> None:
-        """Draw custom cursor on top of everything."""
-        mouse_pos = pygame.mouse.get_pos()
-        img = self._pointer_select_img if pygame.mouse.get_pressed()[0] else self._pointer_img
-        self._screen.blit(img, mouse_pos)
 
     # ── Event handlers ─────────────────────────────────────────────────────────
 
@@ -510,37 +279,6 @@ class TitleScreen:
             if self.back_btn_rect.collidepoint(event.pos):
                 self.state = "MAIN_MENU"
         return None
-
-    def _draw_options_overlay(self) -> None:
-        """Draw options panel: 'Retour' label (engraved/golden) + back icon."""
-        label = self._i18n.get(BACK_BTN_LABEL_KEY, default=BACK_BTN_LABEL_DEFAULT)
-        cx = BACK_BTN_X + BACK_BTN_OFFSET_X
-        cy = BACK_BTN_Y + BACK_BTN_OFFSET_Y
-
-        # Render icon (hover = slightly larger)
-        btn = self._back_btn_hover if self._back_hovered else self._back_btn
-        icon_w = btn.get_width()
-
-        # Measure label width for layout (use engraved text surface)
-        label_surf_measure = self._back_label_font.render(label, True, (0, 0, 0))
-        label_w = label_surf_measure.get_width()
-
-        # Total width: icon + gap + label  — centred on (cx, cy)
-        total_w = icon_w + BACK_BTN_GAP + label_w
-        left_x = cx - total_w // 2
-
-        # Draw icon left
-        icon_r = btn.get_rect(midleft=(left_x, cy))
-        self._screen.blit(btn, icon_r)
-
-        # Draw label right of icon: engraved at rest, golden on hover
-        label_cx = left_x + icon_w + BACK_BTN_GAP + label_w // 2
-        if self._back_hovered:
-            self._blit_halo_text(
-                label, label_cx, cy, self._back_label_font, MENU_HOVER_COLOR, MENU_HOVER_HALO
-            )
-        else:
-            self._blit_engraved(label, label_cx, cy, font=self._back_label_font)
 
     def _handle_load_menu(self, event: pygame.Event) -> GameEvent | None:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
