@@ -4,6 +4,7 @@ Spec: docs/specs/perf-constants-spec.md#feature-p-const-01e--save-menu-constants
 """
 
 from src.ui.pause_screen_constants import ENGRAVE_LIGHT, ENGRAVE_SHADOW, ENGRAVE_TEXT
+from src.ui.ui_colors import COLOR_TEXT_STONE
 
 # ---------------------------------------------------------------------------
 # SaveSlotUI — slot background card (source asset: 427×200 px)
@@ -33,7 +34,7 @@ SAVE_SLOT_FALLBACK_BORDER: tuple[int, int, int] = (100, 100, 100)
 
 # Text colors
 SAVE_TITLE_COLOR: tuple[int, int, int] = (220, 200, 150)
-SAVE_DETAIL_COLOR: tuple[int, int, int] = (60, 40, 30)  # Dark brown — parchment theme
+SAVE_DETAIL_COLOR: tuple[int, int, int] = COLOR_TEXT_STONE  # (60, 40, 30) — from ui_colors.py
 
 # Detail text layout (px from card origin)
 SAVE_DETAIL_TEXT_X_OFFSET: int = 180

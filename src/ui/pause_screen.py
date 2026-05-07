@@ -116,8 +116,8 @@ class PauseScreen:
             self._item_font = pygame.font.Font(_FONT_PATH, PAUSE_ITEM_FONT_SIZE)
             self._success_font = pygame.font.Font(_FONT_PATH, PAUSE_SUCCESS_FONT_SIZE)
         except OSError:
-            self._title_font = pygame.font.SysFont(None, 42)
-            self._item_font = pygame.font.SysFont(None, 32)
+            self._title_font = pygame.font.SysFont(None, PAUSE_TITLE_FONT_SIZE)
+            self._item_font = pygame.font.SysFont(None, PAUSE_ITEM_FONT_SIZE)
             self._success_font = pygame.font.SysFont(None, PAUSE_SUCCESS_FONT_SIZE)
         try:
             am = __import__("src.engine.asset_manager", fromlist=["AssetManager"]).AssetManager()

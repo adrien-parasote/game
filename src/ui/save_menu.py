@@ -93,9 +93,11 @@ class SaveSlotUI:
         surface: pygame.Surface,
         rect: pygame.Rect,
         slot_id: int,
-        info: SlotInfo | None,
+        info: "SlotInfo | None",
         thumbnail: pygame.Surface | None,
         is_hovered: bool,
+        cached_level_surf: pygame.Surface | None = None,
+        cached_time_surf: pygame.Surface | None = None,
     ) -> None:
         """Render the slot background, thumbnail, text and hover effect."""
         surface.blit(self._bg, rect)
@@ -125,23 +127,29 @@ class SaveSlotUI:
             title_rect = title_text.get_rect(center=(rect.x + rect.w // 2, rect.y + 22))
             surface.blit(title_text, title_rect)
 
-            # Details: Level, Time
+            # Details: Level, Time — use pre-rendered surfs if provided
             text_x = rect.x + SAVE_DETAIL_TEXT_X_OFFSET
             details_y = rect.y + SAVE_DETAIL_TEXT_Y_OFFSET
 
-            level_str = self._i18n.get("save_menu.level", "Niveau: {level}").format(
-                level=info.level
-            )
-            level_text = self._font_small.render(level_str, True, SAVE_DETAIL_COLOR)
-            surface.blit(level_text, (text_x, details_y))
+            if cached_level_surf is not None:
+                surface.blit(cached_level_surf, (text_x, details_y))
+            else:
+                level_str = self._i18n.get("save_menu.level", "Niveau: {level}").format(
+                    level=info.level
+                )
+                level_text = self._font_small.render(level_str, True, SAVE_DETAIL_COLOR)
+                surface.blit(level_text, (text_x, details_y))
 
-            hours = int(info.playtime_seconds // 3600)
-            minutes = int((info.playtime_seconds % 3600) // 60)
-            time_str = self._i18n.get(
-                "save_menu.time", "Temps: {hours:02d}h {minutes:02d}m"
-            ).format(hours=hours, minutes=minutes)
-            time_text = self._font_small.render(time_str, True, SAVE_DETAIL_COLOR)
-            surface.blit(time_text, (text_x, details_y + SAVE_DETAIL_LINE_SPACING))
+            if cached_time_surf is not None:
+                surface.blit(cached_time_surf, (text_x, details_y + SAVE_DETAIL_LINE_SPACING))
+            else:
+                hours = int(info.playtime_seconds // 3600)
+                minutes = int((info.playtime_seconds % 3600) // 60)
+                time_str = self._i18n.get(
+                    "save_menu.time", "Temps: {hours:02d}h {minutes:02d}m"
+                ).format(hours=hours, minutes=minutes)
+                time_text = self._font_small.render(time_str, True, SAVE_DETAIL_COLOR)
+                surface.blit(time_text, (text_x, details_y + SAVE_DETAIL_LINE_SPACING))
 
         # Hover Effect: Draw true additive light glow over the 4 gems
         if is_hovered:
@@ -190,6 +198,9 @@ class SaveMenuOverlay:
 
         # Cached title surfaces — populated in refresh(), one per slot
         self._cached_title_surfs: list[pygame.Surface | None] = [None, None, None]
+        # Cached per-slot level / time text surfaces (populated in refresh())
+        self._cached_level_surfs: list[pygame.Surface | None] = [None, None, None]
+        self._cached_time_surfs: list[pygame.Surface | None] = [None, None, None]
 
         # Back button assets
         self._back_hovered = False
@@ -200,7 +211,7 @@ class SaveMenuOverlay:
         self._compute_layout()
 
     def _load_back_assets(self) -> None:
-        """Load icon and font for the Back button."""
+        """Load icon and font for the Back button. Pre-render idle/hover label surfaces."""
         path = os.path.join("assets", "images", "menu", "01-menu_back_cursor.png")
         try:
             raw = pygame.image.load(path).convert_alpha()
@@ -220,6 +231,44 @@ class SaveMenuOverlay:
             self._font_back = pygame.font.Font(BACK_FONT_PATH, BACK_FONT_SIZE)
         except OSError:
             self._font_back = pygame.font.SysFont(None, BACK_FONT_SIZE)
+
+        # Pre-render back button label surfaces (idle + hover) — zero allocs in draw()
+        label = self._i18n.get("menu.back", "Retour")
+        self._back_idle_surf: pygame.Surface = self._make_back_idle_surf(label)
+        self._back_hover_surf: pygame.Surface = self._make_back_hover_surf(label)
+
+    def _make_back_idle_surf(self, label: str) -> pygame.Surface:
+        """Pre-render 3-pass engraved back-button label to a composite surface."""
+        shadow = self._font_back.render(label, True, ENGRAVE_SHADOW)
+        light = self._font_back.render(label, True, ENGRAVE_LIGHT)
+        text = self._font_back.render(label, True, ENGRAVE_TEXT)
+        w = text.get_width() + 2
+        h = text.get_height() + 2
+        out = pygame.Surface((w, h), pygame.SRCALPHA)
+        out.blit(shadow, (0, 0))
+        out.blit(light, (2, 2))
+        out.blit(text, (1, 1))
+        return out
+
+    def _make_back_hover_surf(self, label: str) -> pygame.Surface:
+        """Pre-render halo glow + main text for the hovered back-button label."""
+        base = self._font_back.render(label, True, BACK_HALO_COLOR)
+        w, h = base.get_size()
+        pad = SAVE_HALO_BLUR_PADDING
+        padded = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
+        padded.blit(base, (pad, pad))
+        out = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
+        try:
+            blurred = pygame.transform.gaussian_blur(padded, SAVE_HALO_BLUR_RADIUS)
+            out.blit(blurred, (0, 0))
+            out.blit(blurred, (0, 0))
+        except AttributeError:
+            base.set_alpha(80)
+            for dx, dy in [(-3, -3), (3, -3), (-3, 3), (3, 3)]:
+                out.blit(base, (pad + dx, pad + dy))
+        main = self._font_back.render(label, True, BACK_TEXT_COLOR)
+        out.blit(main, (pad, pad))
+        return out
 
     def _compute_layout(self) -> None:
         if not self._slot_ui:
@@ -255,19 +304,45 @@ class SaveMenuOverlay:
         )
 
     def refresh(self) -> None:
-        """Re-read slot metadata and thumbnails from disk; pre-cache title surfaces."""
+        """Re-read slot metadata and thumbnails from disk; pre-cache all text surfaces."""
         self._slots_info = self._save_manager.list_slots()
         self._cached_title_surfs = []
+        self._cached_level_surfs = []
+        self._cached_time_surfs = []
         for i in range(3):
             if self._slots_info[i] is not None:
+                info = self._slots_info[i]
                 self._thumbnails[i] = self._save_manager.load_thumbnail(i + 1)
-                # Pre-render the overlay title — no render() calls in draw()
-                display_name = self._slots_info[i].map_display_name or ""
-                title_surf = self._font_title.render(display_name, True, SAVE_TITLE_COLOR)
-                self._cached_title_surfs.append(title_surf)
+                # Pre-render overlay title
+                display_name = info.map_display_name or ""
+                self._cached_title_surfs.append(
+                    self._font_title.render(display_name, True, SAVE_TITLE_COLOR)
+                )
+                # Pre-render detail level text
+                level_str = self._i18n.get(
+                    "save_menu.level", "Niveau: {level}"
+                ).format(level=info.level)
+                self._cached_level_surfs.append(
+                    self._font_small.render(level_str, True, SAVE_DETAIL_COLOR)
+                    if hasattr(self, "_font_small")
+                    else None
+                )
+                # Pre-render detail time text
+                hours = int(info.playtime_seconds // 3600)
+                minutes = int((info.playtime_seconds % 3600) // 60)
+                time_str = self._i18n.get(
+                    "save_menu.time", "Temps: {hours:02d}h {minutes:02d}m"
+                ).format(hours=hours, minutes=minutes)
+                self._cached_time_surfs.append(
+                    self._font_small.render(time_str, True, SAVE_DETAIL_COLOR)
+                    if hasattr(self, "_font_small")
+                    else None
+                )
             else:
                 self._thumbnails[i] = None
                 self._cached_title_surfs.append(None)
+                self._cached_level_surfs.append(None)
+                self._cached_time_surfs.append(None)
 
     def update(self, dt: float) -> None:
         mouse_pos = pygame.mouse.get_pos()
@@ -299,15 +374,19 @@ class SaveMenuOverlay:
                     info=self._slots_info[i],
                     thumbnail=self._thumbnails[i],
                     is_hovered=(self._hovered_slot == i),
+                    cached_level_surf=self._cached_level_surfs[i]
+                    if i < len(self._cached_level_surfs)
+                    else None,
+                    cached_time_surf=self._cached_time_surfs[i]
+                    if i < len(self._cached_time_surfs)
+                    else None,
                 )
 
         # Draw Back Button
         self._draw_back_button()
 
     def _draw_back_button(self) -> None:
-        """Render the Back button at the bottom left of the panel."""
-        label = self._i18n.get("menu.back", "Retour")
-
+        """Render the Back button at the bottom left of the panel using pre-rendered surfaces."""
         # Center of the button area for alignment
         cx = self.back_btn_rect.centerx
         cy = self.back_btn_rect.centery
@@ -316,8 +395,9 @@ class SaveMenuOverlay:
         icon = self._back_btn_icon_hover if self._back_hovered else self._back_btn_icon
         icon_w = icon.get_width()
 
-        # Measure label width — use font.size() to avoid allocating a surface
-        label_w = self._font_back.size(label)[0]
+        # Measure label width from pre-rendered surface
+        label_surf = self._back_hover_surf if self._back_hovered else self._back_idle_surf
+        label_w = label_surf.get_width()
         gap = BACK_LABEL_GAP
 
         total_w = icon_w + gap + label_w
@@ -327,14 +407,9 @@ class SaveMenuOverlay:
         icon_r = icon.get_rect(midleft=(start_x, cy))
         self._screen.blit(icon, icon_r)
 
-        # Draw text
+        # Blit pre-rendered label surface — zero alloc in draw()
         text_cx = start_x + icon_w + gap + label_w // 2
-        if self._back_hovered:
-            self._blit_halo_text(
-                label, text_cx, cy, self._font_back, BACK_TEXT_COLOR, BACK_HALO_COLOR
-            )
-        else:
-            self._blit_engraved(label, text_cx, cy, self._font_back)
+        self._screen.blit(label_surf, label_surf.get_rect(center=(text_cx, cy)))
 
     def _blit_halo_text(
         self,

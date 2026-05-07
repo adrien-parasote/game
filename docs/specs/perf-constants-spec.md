@@ -415,7 +415,7 @@ for i, (rect, surf_idle, surf_hover) in enumerate(
 | UT-003 | Unit | `tests/ui/test_pause_screen.py` | `_make_halo_surface()` returns Surface even when `gaussian_blur` raises `AttributeError` |
 | UT-004 | Unit | `tests/ui/test_save_menu.py` | `SaveMenuOverlay.refresh()` populates `_cached_title_surfs` list of length 3 |
 | UT-005 | Unit | `tests/ui/test_perf_hud.py` | `GameHUD.__init__` stores `_i18n`; calling `draw()` does NOT construct `I18nManager` |
-| UT-006 | Unit | `tests/engine/test_lighting.py` | `_get_beam_surface_for_time()` called with patched `BEAM_COLOR_MOON` — color used in lerp |
+| UT-006 | Unit | `tests/engine/test_perf_lighting.py` | `_get_beam_surface_for_time()` called with patched `BEAM_COLOR_MOON` — color used in lerp |
 | UT-007 | Unit | `tests/ui/test_dialogue.py` | `DialogueManager._shadow_color == DIALOGUE_SHADOW_COLOR` after `__init__` |
 | UT-008 | Unit | `tests/ui/test_perf_constants.py` | `_draw_title()` renders text == `CHEST_TITLE_TEXT` (mock render, capture arg) |
 | UT-009 | Unit | `tests/ui/test_perf_constants.py` | `_title_font` is same object on second `_draw_title()` call — lazy-init guard works |
