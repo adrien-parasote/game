@@ -183,17 +183,13 @@ To maintain consistency across map transitions, the engine uses a session-persis
   - **Visual Sync**: Restored entities automatically snap to their final frame (start/end row) to prevent animation glitches on reload.
 ### R. The Rendering Pipeline (`_draw_scene`)
 
-The engine uses a multi-pass rendering pipeline to combine layers, entities, and environmental effects.
+The engine uses a multi-pass rendering pipeline to combine layers, entities, and environmental effects. The authoritative list is maintained in `camera-rendering-spec.md`, but generally follows:
 
-1.  **Pass 1: Background**: Draw map layers with `depth=0`.
-2.  **Pass 2: Sorted Entities**: Draw `visible_sprites` using Y-Sorting.
-3.  **Pass 3: Foreground**: Draw map layers with `depth=1` (Occlusion).
-4.  **Pass 4: Environmental Overlay**:
-    *   **Night Surface**: If `night_alpha > 0`, blit a full-screen black overlay with `SRCALPHA`.
-    *   **Light Halos**: Blit pre-calculated light masks using `BLEND_RGB_ADD` **after** the night overlay to "cut through" the darkness.
-5.  **Pass 5: UI/HUD**: Draw clock, season, and active dialogue boxes.
-6.  **Pass 6: Player Emotes**: Rendered manually from `emote_group` with camera offset after the HUD to ensure top-level visibility.
-7.  **Pass 7: Custom Cursor**: The absolute last rendering step. Size is configurable via `Settings.CURSOR_SIZE`.
+1.  **Pass 0-3: World**: Background layers, Y-Sorted entities, Foreground layers (Occlusion).
+2.  **Pass 4-5: Environmental Overlay**: Additive window beams, Night Surface (`SRCALPHA`), and Light Halos (`BLEND_RGB_ADD`).
+3.  **Pass 6: Base HUD**: Clock, season.
+4.  **Pass 7: Player Emotes**: Rendered manually from `emote_group` with camera offset.
+5.  **Pass 8-12: Top-level UI**: Dialogue boxes, Speech bubbles, Inventory, Chest UI, and Custom Cursor (Pass 12).
 
 ### T. UI Hierarchy & Input Blocking
 
@@ -252,17 +248,23 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 
 ## 5. Test Case Specifications (Aggregated)
 
-| ID | Topic | Input | Expected Output |
-|----|-------|-------|-----------------|
-| CORE-R-01 | Y-Sorting | [Y=100, Y=50] | Rendered [50, 100] |
-| CORE-R-02 | Culling | Viewport at (0,0) | Only first tiles rendered |
-| CORE-C-01 | Cam Clamp | Player at (0,0) | Offset = 0 |
-| CORE-R-03 | Visual Anchor | Image 32x48 | Topleft extends 16px up |
-| CORE-H-01 | HUD | Dialogue started | Text paginated and typing initiated |
-| CORE-H-02 | HUD | Skip request | `displayed_text` immediately filled |
-| CORE-W-01 | WorldState | Toggle lever + Reload | Lever remains in toggled state |
-| CORE-T-01 | Teleport | Overlap + Intent (DIR) | `transition_map` triggered |
-| CORE-T-02 | Teleport | Overlap + 'Any' Portal | Intent ignored, triggers on Arrival |
+### Unit Tests
+| ID | Topic | Input | Expected Output | Edge Cases |
+|----|-------|-------|-----------------|------------|
+| TC-001 | Y-Sorting | [Y=100, Y=50] | Rendered [50, 100] | Same Y |
+| TC-002 | Culling | Viewport at (0,0) | Only first tiles rendered | Out of bounds |
+| TC-003 | Cam Clamp | Player at (0,0) | Offset = 0 | Map < screen |
+| TC-004 | Visual Anchor | Image 32x48 | Topleft extends 16px up | Image smaller than tile |
+| TC-005 | HUD | Dialogue started | Text paginated and typing initiated | Missing title |
+| TC-006 | HUD | Skip request | `displayed_text` immediately filled | Skipped at end |
+
+### Integration Tests
+| Test ID | Flow | Setup | Verification |
+|---------|------|-------|--------------|
+| IT-001 | WorldState | Toggle lever + Reload | Lever remains in toggled state |
+| IT-002 | Teleport | Overlap + Intent (DIR) | `transition_map` triggered |
+| IT-003 | Teleport | Overlap + 'Any' Portal | Intent ignored, triggers on Arrival |
+| IT-004 | The Rendering Pipeline (`_draw_scene`) | Game loop cycle | Pipeline from Pass 0 to 11 runs without exceptions |
 
 ## 5. Error Handling Matrix (Aggregated)
 
@@ -297,15 +299,16 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| CORE-R-01 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
-| CORE-R-02 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
-| CORE-R-03 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
-| CORE-C-01 | `test_game_initialization` | `../../tests/engine/test_game.py:L10` |
-| CORE-H-01 | `test_update_dialogue_branch` | `../../tests/engine/test_game.py:L339` |
-| CORE-H-02 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py:L403` |
-| CORE-W-01 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py:L162` |
-| CORE-T-01 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
-| CORE-T-02 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+| TC-001 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
+| TC-002 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
+| TC-003 | `test_game_initialization` | `../../tests/engine/test_game.py:L10` |
+| TC-004 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
+| TC-005 | `test_update_dialogue_branch` | `../../tests/engine/test_game.py:L339` |
+| TC-006 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py:L403` |
+| IT-001 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py:L162` |
+| IT-002 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+| IT-003 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
+| IT-004 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
 
 
 ## Assumptions

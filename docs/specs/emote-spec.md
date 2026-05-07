@@ -111,7 +111,15 @@ Emote triggering is rate-limited by the `InteractionManager`:
 
 The cooldown prevents sprite stacking when the player stands near multiple interactive objects.
 
-## 6. Anti-Patterns (DO NOT)
+## 6. Assumptions
+
+| # | Assumption | Risk | Validation |
+|---|------------|------|------------|
+| 1 | Emotes have a fixed 8-frame duration. | Low | Spritesheet uses a 5x8 grid. |
+| 2 | Emote is always shown above the entity. | Low | Fixed -15px offset applied. |
+| 3 | Only one emote can be active per entity. | Medium | Group is emptied before spawn. |
+
+## 7. Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
@@ -126,26 +134,27 @@ The cooldown prevents sprite stacking when the player stands near multiple inter
 ### Unit Tests
 | Test ID | Component | Input | Expected Output | Edge Cases |
 |---------|-----------|-------|-----------------|------------|
-| EMO-U-01 | EmoteManager.trigger | `"interact"`, entity | EmoteSprite added to group | Invalid emote name |
-| EMO-U-02 | EmoteSprite.update | dt=0.3 (half duration) | Frame index ~4, risen ~7px | dt=0 |
-| EMO-U-03 | EmoteSprite.update | dt=0.7 (past duration) | Sprite killed from group | Exactly 0.6s |
-| EMO-U-04 | Replacement | Trigger twice rapidly | Only 1 sprite in group | Same entity, different emote |
+| TC-001 | EmoteManager.trigger | `"interact"`, entity | EmoteSprite added to group | Invalid emote name |
+| TC-002 | EmoteSprite.update | dt=0.3 (half duration) | Frame index ~4, risen ~7px | dt=0 |
+| TC-003 | EmoteSprite.update | dt=0.7 (past duration) | Sprite killed from group | Exactly 0.6s |
+| TC-004 | Replacement | Trigger twice rapidly | Only 1 sprite in group | Same entity, different emote |
+| TC-005 | EmoteManager init | Empty args | Group is initialized | Missing assets |
 
 ### Integration Tests
 | Test ID | Flow | Setup | Verification |
 |---------|------|-------|--------------|
-| EMO-I-01 | Proximity trigger | Player at 40px from object | `interact` emote triggered after cooldown |
-| EMO-I-02 | Failed interaction | Player presses E with no target | `question` emote triggered |
-| TC-EMO-01 | EmoteManager column | Trigger `'frustration'` | Column 4 frames are loaded |
-| TC-EMO-02 | Emote chaining | Trigger A then B rapidly | Emote A killed immediately, B starts |
-| TC-EMO-03 | Pickup full inventory | `_check_pickup_interactions` with full inv | `frustration` emote triggered, no dialogue |
+| IT-001 | Proximity trigger | Player at 40px from object | `interact` emote triggered after cooldown |
+| IT-002 | Failed interaction | Player presses E with no target | `question` emote triggered |
+| IT-003 | EmoteManager column | Trigger `'frustration'` | Column 4 frames are loaded |
+| IT-004 | Emote chaining | Trigger A then B rapidly | Emote A killed immediately, B starts |
+| IT-005 | Pickup full inventory | `_check_pickup_interactions` with full inv | `frustration` emote triggered, no dialogue |
 
 ### Linked Test Functions
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-EMO-01 | `test_emote_manager_spritesheet_error` | `../../tests/entities/test_entities.py:L363` |
-| TC-EMO-02 | `test_emote_manager_chaining` | `../../tests/entities/test_entities.py:L394` |
-| TC-EMO-03 | `test_handle_interaction_pickup_partial` | `../../tests/engine/test_interaction.py:L141` |
+| IT-003 | `test_emote_manager_spritesheet_error` | `../../tests/entities/test_entities.py:L363` |
+| IT-004 | `test_emote_manager_chaining` | `../../tests/entities/test_entities.py:L394` |
+| IT-005 | `test_handle_interaction_pickup_partial` | `../../tests/engine/test_interaction.py:L141` |
 
 ## 8. Error Handling Matrix
 

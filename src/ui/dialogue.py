@@ -10,6 +10,8 @@ from src.ui.dialogue_constants import (
     DIALOGUE_CONTENT_MARGIN_X,
     DIALOGUE_MSG_Y_OFFSET_PLAIN,
     DIALOGUE_MSG_Y_OFFSET_TITLED,
+    DIALOGUE_SHADOW_COLOR,
+    DIALOGUE_TEXT_COLOR,
 )
 
 
@@ -43,9 +45,9 @@ class DialogueManager:
         self.scale = 0.5
 
         # Style
-        self._shadow_color = (180, 170, 150)  # Light shadow for parchment
+        self._shadow_color = DIALOGUE_SHADOW_COLOR
         self._shadow_offset = 1
-        self._text_color = (60, 40, 30)  # Dark brown for high contrast on parchment
+        self._text_color = DIALOGUE_TEXT_COLOR
 
         # Fonts
         self.font_title = None

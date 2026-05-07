@@ -33,6 +33,7 @@ class GameHUD:
         self._clock_surf = self._load_scaled_clock()
         self._season_surfs = self._load_season_icons()
         self._font = self._load_font()
+        self._i18n = I18nManager()  # Cached once — never construct in draw()
 
     @staticmethod
     def _hud_asset_path(filename: str) -> str:
@@ -94,7 +95,7 @@ class GameHUD:
         )
 
         wt = self.time_system.world_time
-        day_label = I18nManager().get("day_label", "Day").upper()
+        day_label = self._i18n.get("day_label", "Day").upper()
         season_day_text = f"{day_label} {wt.day + 1}"
 
         self._render_text_centered(

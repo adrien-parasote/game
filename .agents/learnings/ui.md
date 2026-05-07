@@ -371,3 +371,58 @@ screen.blit(text,   r)
 ```
 
 **Evidence:** `PauseScreen._blit_engraved()` fix after user reported "extruded" look. commit `pending`.
+
+---
+
+### L-UI-011 · 2026-05-07 · U · Perfect
+**Pre-render cache pattern for static button surfaces**
+
+Per-frame `font.render()` + `gaussian_blur()` for static UI labels (pause menu buttons, save menu back button) is the largest single-frame CPU bottleneck in the UI layer. Surfaces that don't change between frames must be pre-computed once at `__init__` or `_load_assets()`.
+
+```python
+# ❌ Every draw() call: ~1ms per button × 3 buttons = 3ms/frame wasted
+def draw(self):
+    for label in labels:
+        surf = font.render(label, True, color)       # alloc
+        blurred = pygame.transform.gaussian_blur(surf, 8)  # alloc + GPU round-trip
+        screen.blit(blurred, pos)
+
+# ✅ Pre-render at __init__: zero allocs in draw()
+def __init__(self):
+    self._rendered = [self._make_surface(label) for label in labels]
+
+def draw(self):
+    for i, surf in enumerate(self._rendered):
+        screen.blit(surf, pos[i])   # O(1), no alloc
+```
+
+**Pattern:** Separate `_rendered_idle` / `_rendered_hover` lists, populated once. `draw()` only indexes into them based on hover state.
+
+**Evidence:** `PauseScreen._make_engraved_surface()` / `_make_halo_surface()`. commit `perf-constants`.
+
+---
+
+### L-UI-012 · 2026-05-07 · U · Perfect
+**Constants-first refactor: extract literals before writing tests**
+
+When refactoring inline magic values to constants files, the order matters:
+1. **Add constant to `_constants.py`** with the exact value.
+2. **Import it in the source file** and replace the inline literal.
+3. **Write the test** that imports from `_constants.py` and asserts the source uses it.
+
+Doing step 3 before steps 1-2 causes the test to pass vacuously (the constant doesn't exist yet) or fail with `ImportError` — both mask the real goal.
+
+**Anti-pattern:** Writing tests that mock `font.render()` but forget to make the mock return a real `pygame.Surface`. Any code that calls `.blit()` on the mock's return value will raise `TypeError: argument 1 must be pygame.surface.Surface, not MagicMock`.
+
+```python
+# ✅ Mock font render must return real Surface when downstream code blits the result
+mock_font.render.return_value = pygame.Surface((10, 10), pygame.SRCALPHA)
+```
+
+**Also:** `font.size(label)` is faster than `font.render(label, True, (0,0,0)).get_width()` when you only need the text width — it returns a `(w, h)` tuple with zero allocation.
+
+**Evidence:** `save_menu.py` back-button label-width fix. commit `perf-constants`.
+
+---
+
+*Last optimized: 2026-05-07 — added L-UI-011, L-UI-012 from perf-constants-spec session.*

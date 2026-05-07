@@ -18,17 +18,32 @@ from src.ui.pause_screen_constants import (
     _FONT_PATH,
     _MENU_DIR,
     _UI_DIR,
+    CONFIRM_DISPLAY_SECONDS,
+    CONFIRM_MSG_MARGIN_BOTTOM,
+    CURSOR_RAW_H,
+    CURSOR_RAW_W,
     ENGRAVE_LIGHT,
     ENGRAVE_SHADOW,
     ENGRAVE_TEXT,
+    FALLBACK_SURF_SIZE,
+    HALO_BLUR_PADDING,
+    HALO_BLUR_RADIUS,
+    HOVER_HALO_COLOR,
+    HOVER_TEXT_COLOR,
     ITEM_SPACING,
     ITEM_Y_START_OFFSET,
     OVERLAY_ALPHA,
+    PANEL_FALLBACK_BORDER,
+    PANEL_FALLBACK_FILL,
     PANEL_H,
     PANEL_W,
+    PAUSE_BTN_H,
+    PAUSE_BTN_W,
     PAUSE_ITEM_FONT_SIZE,
+    PAUSE_SUCCESS_FONT_SIZE,
     PAUSE_TITLE_FONT_SIZE,
     PAUSE_TITLE_OFFSET,
+    SUCCESS_COLOR,
     TITLE_COLOR,
 )
 from src.ui.save_menu import SaveMenuOverlay
@@ -41,7 +56,7 @@ class PauseScreen:
         self._screen = screen
         self._save_manager = save_manager
         self._hovered_btn: int | None = None
-        self._confirm_timer: float = 0.0  # >0 → show "Saved!" feedback for 2s
+        self._confirm_timer: float = 0.0  # >0 → show "Saved!" feedback
         self.state = "MAIN"  # "MAIN" or "SAVE_MENU"
         self._i18n = I18nManager()
         self._save_menu = SaveMenuOverlay(
@@ -61,7 +76,7 @@ class PauseScreen:
             return pygame.image.load(path).convert_alpha()
         except pygame.error as e:
             logging.error(f"PauseScreen: Could not load {filename}: {e}")
-            surf = pygame.Surface((32, 32))
+            surf = pygame.Surface((FALLBACK_SURF_SIZE, FALLBACK_SURF_SIZE))
             surf.fill((255, 0, 255))
             return surf
 
@@ -72,12 +87,12 @@ class PauseScreen:
             raw = pygame.image.load(path).convert_alpha()
         except pygame.error as e:
             logging.error(f"PauseScreen: Could not load cursor {filename}: {e}")
-            surf = pygame.Surface((32, 32))
+            surf = pygame.Surface((FALLBACK_SURF_SIZE, FALLBACK_SURF_SIZE))
             surf.fill((255, 0, 255))
             return surf
         target_h = Settings.CURSOR_SIZE
-        ratio = target_h / 535
-        target_w = int(309 * ratio)
+        ratio = target_h / CURSOR_RAW_H
+        target_w = int(CURSOR_RAW_W * ratio)
         return pygame.transform.smoothscale(raw, (target_w, target_h))
 
     def _load_assets(self) -> None:
@@ -88,22 +103,22 @@ class PauseScreen:
 
         # Panel background — 02-panel_background.png (600x600 RGBA → scaled)
         panel_raw = self._load_asset("02-panel_background.png")
-        if panel_raw.get_size() != (32, 32):  # not the error fallback
+        if panel_raw.get_size() != (FALLBACK_SURF_SIZE, FALLBACK_SURF_SIZE):
             self._panel = pygame.transform.smoothscale(panel_raw, (480, 480))
         else:
             # Fallback: programmatic surface
             self._panel = pygame.Surface((480, 480), pygame.SRCALPHA)
-            self._panel.fill((10, 18, 22, 210))
-            pygame.draw.rect(self._panel, (60, 80, 85), self._panel.get_rect(), 2)
+            self._panel.fill(PANEL_FALLBACK_FILL)
+            pygame.draw.rect(self._panel, PANEL_FALLBACK_BORDER, self._panel.get_rect(), 2)
 
         try:
             self._title_font = pygame.font.Font(_FONT_PATH, PAUSE_TITLE_FONT_SIZE)
             self._item_font = pygame.font.Font(_FONT_PATH, PAUSE_ITEM_FONT_SIZE)
-            self._success_font = pygame.font.Font(_FONT_PATH, 26)
+            self._success_font = pygame.font.Font(_FONT_PATH, PAUSE_SUCCESS_FONT_SIZE)
         except OSError:
             self._title_font = pygame.font.SysFont(None, 42)
             self._item_font = pygame.font.SysFont(None, 32)
-            self._success_font = pygame.font.SysFont(None, 26)
+            self._success_font = pygame.font.SysFont(None, PAUSE_SUCCESS_FONT_SIZE)
         try:
             am = __import__("src.engine.asset_manager", fromlist=["AssetManager"]).AssetManager()
             self._font_small = am.get_font(Settings.FONT_NARRATIVE, Settings.FONT_SIZE_NARRATIVE)
@@ -114,6 +129,50 @@ class PauseScreen:
         self._pointer_img = self._load_cursor("05-pointer.png")
         self._pointer_select_img = self._load_cursor("06-pointer_select.png")
 
+        # Pre-render button label surfaces (idle + hover) — zero allocs in draw()
+        self._rendered_idle: list[pygame.Surface] = []
+        self._rendered_hover: list[pygame.Surface] = []
+        for key, default in zip(_BUTTON_KEYS, _BUTTON_DEFAULTS, strict=False):
+            label = self._i18n.get(key, default)
+            self._rendered_idle.append(self._make_engraved_surface(label))
+            self._rendered_hover.append(self._make_halo_surface(label))
+
+    def _make_engraved_surface(self, label: str) -> pygame.Surface:
+        """Pre-render 3-pass stone engraving to a single composite surface."""
+        shadow = self._item_font.render(label, True, ENGRAVE_SHADOW)
+        light = self._item_font.render(label, True, ENGRAVE_LIGHT)
+        text = self._item_font.render(label, True, ENGRAVE_TEXT)
+        w = text.get_width() + 2
+        h = text.get_height() + 2
+        out = pygame.Surface((w, h), pygame.SRCALPHA)
+        out.blit(shadow, (0, 0))
+        out.blit(light, (2, 2))
+        out.blit(text, (1, 1))
+        return out
+
+    def _make_halo_surface(self, label: str) -> pygame.Surface:
+        """Pre-render halo glow + main text to a composite surface."""
+        base = self._item_font.render(label, True, HOVER_HALO_COLOR)
+        w, h = base.get_size()
+        pad = HALO_BLUR_PADDING
+        padded = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
+        padded.blit(base, (pad, pad))
+        out = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
+        try:
+            blurred = pygame.transform.gaussian_blur(padded, HALO_BLUR_RADIUS)
+            out.blit(blurred, (0, 0))
+            out.blit(blurred, (0, 0))
+            out.blit(blurred, (0, 0))
+        except AttributeError:
+            # Fallback for standard pygame (no gaussian_blur)
+            base.set_alpha(80)
+            offsets = [(-3, -3), (3, -3), (-3, 3), (3, 3), (0, -4), (0, 4), (-4, 0), (4, 0)]
+            for dx, dy in offsets:
+                out.blit(base, (pad + dx, pad + dy))
+        main = self._item_font.render(label, True, HOVER_TEXT_COLOR)
+        out.blit(main, (pad, pad))
+        return out
+
     def _compute_layout(self) -> None:
         """Button rects aligned to the inner stone area of the panel."""
         panel_rect = pygame.Rect(
@@ -122,8 +181,7 @@ class PauseScreen:
             PANEL_W,
             PANEL_H,
         )
-        # Click zones: centred horizontally, spaced vertically from ITEM_Y_START_OFFSET
-        btn_w, btn_h = 280, 50
+        btn_w, btn_h = PAUSE_BTN_W, PAUSE_BTN_H
         x = panel_rect.centerx - btn_w // 2
         self.button_rects = []
         for i in range(len(_BUTTON_KEYS)):
@@ -150,7 +208,6 @@ class PauseScreen:
                 return None
             slot_idx = self._save_menu.get_clicked_slot(event)
             if slot_idx is not None:
-                # Emit save-requested event for the given slot (1-indexed)
                 return GameEvent(type=GameEventType.SAVE_REQUESTED, slot_id=slot_idx + 1)
             return None
 
@@ -195,7 +252,7 @@ class PauseScreen:
 
         self._screen.blit(self._panel, panel_rect)
 
-        # Title — Cormorant Garamond, golden, centered at the top of the panel
+        # Title — Cormorant Garamond, golden, centered at top of panel
         title_text = self._i18n.get("pause_menu.title", "PAUSE")
         title = self._title_font.render(title_text, True, TITLE_COLOR)
         self._screen.blit(
@@ -203,83 +260,29 @@ class PauseScreen:
             title.get_rect(midtop=(panel_rect.centerx, panel_rect.top + PAUSE_TITLE_OFFSET)),
         )
 
-        # Menu items — engraved idle, golden hover
-        for i, (rect, key, default) in enumerate(
-            zip(self.button_rects, _BUTTON_KEYS, _BUTTON_DEFAULTS, strict=False)
+        # Menu items — blit pre-rendered cached surfaces
+        for i, (rect, surf_idle, surf_hover) in enumerate(
+            zip(self.button_rects, self._rendered_idle, self._rendered_hover, strict=False)
         ):
-            label = self._i18n.get(key, default)
-            cx = rect.centerx
-            cy = rect.centery
-            if self._hovered_btn == i:
-                # Text is light sky blue, Halo is intense bright blue
-                self._blit_halo_text(
-                    label, cx, cy, self._item_font, (180, 230, 255), (40, 120, 255)
-                )
-            else:
-                self._blit_engraved(label, cx, cy)
+            surf = surf_hover if self._hovered_btn == i else surf_idle
+            self._screen.blit(surf, surf.get_rect(center=rect.center))
 
         if self._confirm_timer > 0:
             success_text = self._i18n.get("pause_menu.saved_success", "Partie sauvegardée !")
-            msg = self._success_font.render(success_text, True, (180, 220, 150))
-            # Apply alpha fade out: timer goes from 2.0 to 0.0
-            alpha = int(min(255, (self._confirm_timer / 2.0) * 255))
+            msg = self._success_font.render(success_text, True, SUCCESS_COLOR)
+            alpha = int(min(255, (self._confirm_timer / CONFIRM_DISPLAY_SECONDS) * 255))
             msg.set_alpha(alpha)
-            self._screen.blit(msg, msg.get_rect(midbottom=(self._sw // 2, self._sh - 40)))
+            self._screen.blit(
+                msg,
+                msg.get_rect(midbottom=(self._sw // 2, self._sh - CONFIRM_MSG_MARGIN_BOTTOM)),
+            )
 
         self._draw_cursor()
 
-    def _blit_halo_text(
-        self,
-        label: str,
-        cx: int,
-        cy: int,
-        font: pygame.font.Font,
-        text_color: tuple[int, int, int],
-        halo_color: tuple[int, int, int],
-    ) -> None:
-        """Draw text with a soft, spreading glowing halo effect."""
-        base_surf = font.render(label, True, halo_color)
-        w, h = base_surf.get_size()
-
-        # Create a padded surface so the blur doesn't clip
-        pad = 24
-        padded = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
-        padded.blit(base_surf, (pad, pad))
-
-        try:
-            # Use pygame-ce's fast gaussian_blur
-            blurred = pygame.transform.gaussian_blur(padded, 8)
-            blurred.set_alpha(255)
-
-            # Blit 3 times for a very strong, dense center glow that is highly visible
-            rect = blurred.get_rect(center=(cx, cy))
-            self._screen.blit(blurred, rect)
-            self._screen.blit(blurred, rect)
-            self._screen.blit(blurred, rect)
-        except AttributeError:
-            # Fallback if standard pygame is used
-            base_surf.set_alpha(80)
-            offsets = [(-3, -3), (3, -3), (-3, 3), (3, 3), (0, -4), (0, 4), (-4, 0), (4, 0)]
-            for dx, dy in offsets:
-                self._screen.blit(base_surf, base_surf.get_rect(center=(cx + dx, cy + dy)))
-
-        main_surf = font.render(label, True, text_color)
-        self._screen.blit(main_surf, main_surf.get_rect(center=(cx, cy)))
-
-    def _blit_engraved(self, label: str, cx: int, cy: int) -> None:
-        """3-pass stone engraving: shadow | light | text. Matches TitleScreen effect."""
-        shadow = self._item_font.render(label, True, ENGRAVE_SHADOW)
-        light = self._item_font.render(label, True, ENGRAVE_LIGHT)
-        text = self._item_font.render(label, True, ENGRAVE_TEXT)
-        r = text.get_rect(center=(cx, cy))
-        self._screen.blit(shadow, r.move(-1, -1))
-        self._screen.blit(light, r.move(1, 1))
-        self._screen.blit(text, r)
-
     def notify_save_result(self, success: bool) -> None:
-        """Call after a save attempt to show confirmation for 2 seconds."""
+        """Call after a save attempt to show confirmation for CONFIRM_DISPLAY_SECONDS."""
         if success:
-            self._confirm_timer = 2.0
+            self._confirm_timer = CONFIRM_DISPLAY_SECONDS
             self.state = "MAIN"
 
     def _draw_cursor(self) -> None:

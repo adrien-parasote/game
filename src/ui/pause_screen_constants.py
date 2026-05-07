@@ -33,3 +33,34 @@ TITLE_COLOR = (220, 195, 140)
 
 _BUTTON_KEYS = ["pause_menu.main_menu", "pause_menu.resume", "pause_menu.save"]
 _BUTTON_DEFAULTS = ["Menu Principal", "Reprendre", "Sauvegarder"]
+
+# Cursor source image raw dimensions (px) — used to compute scaled ratio
+CURSOR_RAW_H: int = 535
+CURSOR_RAW_W: int = 309
+
+# Fallback surface size for error placeholders
+FALLBACK_SURF_SIZE: int = 32
+
+# Panel fallback colors (used when panel PNG fails to load)
+PANEL_FALLBACK_FILL: tuple[int, int, int, int] = (10, 18, 22, 210)
+PANEL_FALLBACK_BORDER: tuple[int, int, int] = (60, 80, 85)
+
+# Font sizes
+PAUSE_SUCCESS_FONT_SIZE: int = 26
+
+# Button click zone dimensions
+PAUSE_BTN_W: int = 280
+PAUSE_BTN_H: int = 50
+
+# Menu item hover colors
+HOVER_TEXT_COLOR: tuple[int, int, int] = (180, 230, 255)
+HOVER_HALO_COLOR: tuple[int, int, int] = (40, 120, 255)
+
+# Save confirmation feedback colors and timing
+SUCCESS_COLOR: tuple[int, int, int] = (180, 220, 150)
+CONFIRM_DISPLAY_SECONDS: float = 2.0
+CONFIRM_MSG_MARGIN_BOTTOM: int = 40
+
+# Halo blur parameters
+HALO_BLUR_PADDING: int = 24
+HALO_BLUR_RADIUS: int = 8

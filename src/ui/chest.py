@@ -47,6 +47,8 @@ class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin):
         self._icon_cache: dict[str, pygame.Surface | None] = {}
         # Quantity badge font (tech font, lazy-init to match InventoryUI)
         self._qty_font: pygame.font.Font | None = None
+        # Title font (lazy-init in ChestDrawMixin._draw_title — created once, never per frame)
+        self._title_font: pygame.font.Font | None = None
 
         # --- Computed layout (filled in _compute_layout) ---
         self._bg_rect: pygame.Rect | None = None

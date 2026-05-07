@@ -97,6 +97,7 @@ Wrapped in `try-except TypeError` for test compatibility with mock surfaces.
 | 9 | `speech_bubble.draw()` | NPC speech bubble | Normal |
 | 10 | `inventory_ui.draw()` | Inventory overlay (if open) | Normal |
 | 11 | `chest_ui.draw()` | Chest overlay (if open) | Normal |
+| 12 | Custom Cursor | The absolute last rendering step | Normal |
 
 ### 4.2. Background Rendering (`draw_background`)
 
@@ -165,7 +166,15 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | `transparent=False` | 32×32 blue solid surface |
 | `transparent=True` | 32×32 fully transparent SRCALPHA surface |
 
-## 6. Anti-Patterns (DO NOT)
+## 6. Assumptions
+
+| # | Assumption | Risk | Validation |
+|---|------------|------|------------|
+| 1 | Map layers are statically ordered by depth. | Low | Confirmed via `MapManager`. |
+| 2 | Camera is always bound to player. | Low | Current implementation hardcodes player target. |
+| 3 | Frustum culling margin is 0. | Medium | If sprites are larger than 32px, they might cull early. |
+
+## 7. Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
@@ -181,27 +190,27 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 ### Unit Tests
 | Test ID | Component | Input | Expected Output | Edge Cases |
 |---------|-----------|-------|-----------------|------------|
-| CAM-U-01 | calculate_offset | Player at center | offset = (0, 0) | Map smaller than screen |
-| CAM-U-02 | calculate_offset | Player at (0, 0) | offset clamped to (0, 0) | Edge of world |
-| CAM-U-03 | get_sorted_sprites | Sprites at Y=100, Y=50 | Sorted [Y=50, Y=100] | All at same Y |
-| CAM-U-04 | Frustum culling | Sprite at (-100, -100) | Not blitted | Partially on-screen |
-| CAM-U-05 | SpriteSheet.load_grid | 4×4, valid file | 16 surfaces | Missing file |
-| CAM-U-06 | SpriteSheet.load_grid_by_size | 32×48 frames | Correct frame count + last_cols/rows | Sheet not divisible |
-| CAM-U-07 | mark_dirty | Called after position change | Cache rebuilds on next sort | Rapid successive dirties |
+| TC-001 | calculate_offset | Player at center | offset = (0, 0) | Map smaller than screen |
+| TC-002 | calculate_offset | Player at (0, 0) | offset clamped to (0, 0) | Edge of world |
+| TC-003 | get_sorted_sprites | Sprites at Y=100, Y=50 | Sorted [Y=50, Y=100] | All at same Y |
+| TC-004 | Frustum culling | Sprite at (-100, -100) | Not blitted | Partially on-screen |
+| TC-005 | SpriteSheet.load_grid | 4×4, valid file | 16 surfaces | Missing file |
+| TC-006 | SpriteSheet.load_grid_by_size | 32×48 frames | Correct frame count + last_cols/rows | Sheet not divisible |
+| TC-007 | mark_dirty | Called after position change | Cache rebuilds on next sort | Rapid successive dirties |
 
 ### Integration Tests
 | Test ID | Flow | Setup | Verification |
 |---------|------|-------|--------------|
-| CAM-I-01 | Full draw_scene | Game with loaded map + entities | No exceptions, correct pass order |
-| CAM-I-02 | Foreground occlusion | Player under depth-1 tile | Occluded surface used for overlapping tile |
-| TC-MAP-01 | Layer ordering | Map with `00-layer` | `00-layer` identified as background, rendered first |
-| TC-MAP-02 | Multi-layer render | Map with multiple layers | `00-layer` drawn bottom-most |
+| IT-001 | Full draw_scene | Game with loaded map + entities | No exceptions, correct pass order |
+| IT-002 | Foreground occlusion | Player under depth-1 tile | Occluded surface used for overlapping tile |
+| IT-003 | Layer ordering | Map with `00-layer` | `00-layer` identified as background, rendered first |
+| IT-004 | Multi-layer render | Map with multiple layers | `00-layer` drawn bottom-most |
 
 ### Linked Test Functions
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-MAP-01 | `test_layer_recursive_order` | `../../tests/map/test_map.py:L41` |
-| TC-MAP-02 | `test_map_manager_render_layer` | `../../tests/map/test_map.py:L128` |
+| IT-003 | `test_layer_recursive_order` | `../../tests/map/test_map.py:L41` |
+| IT-004 | `test_map_manager_render_layer` | `../../tests/map/test_map.py:L128` |
 
 ## 8. Error Handling Matrix
 

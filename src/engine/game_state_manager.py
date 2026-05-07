@@ -130,7 +130,7 @@ class GameStateManager:
             if result.type == GameEventType.RESUME:
                 self._transition_to_playing(slot_id=None, resume=True)
             elif result.type == GameEventType.PAUSE_REQUESTED:
-                # Sauvegarder button — find first free slot
+                # Save button — find first free slot
                 self._save_to_first_free_slot()
             elif result.type == GameEventType.SAVE_REQUESTED:
                 if result.slot_id is not None:

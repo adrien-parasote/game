@@ -20,3 +20,7 @@ OVERLAY_ALPHA_RANGE: float = 0.50  # Dynamic brightness range fraction
 # Cache tuning
 SLANT_ROUND_STEP: int = 2  # Round beam slant to nearest N px to reduce cache churn
 TORCH_ALPHA_QUANTIZE: int = 20  # Intensity quantization step for torch mask cache key
+
+# Day/night beam colorimetry — used in _get_beam_surface_for_time()
+BEAM_COLOR_MOON: tuple[int, int, int] = (160, 180, 255)  # Cool moonlight tint
+BEAM_COLOR_SUN: tuple[int, int, int] = (255, 248, 220)   # Warm sunlight tint

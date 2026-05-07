@@ -5,6 +5,8 @@ import pygame
 
 from src.engine.lighting_constants import (
     BEAM_BOTTOM_WIDTH,
+    BEAM_COLOR_MOON,
+    BEAM_COLOR_SUN,
     BEAM_HEIGHT,
     BEAM_MAX_SLANT,
     BEAM_TOP_WIDTH,
@@ -124,8 +126,8 @@ class LightingManager:
             top_w = self.beam_top_width
         b = self.time_system.brightness
         color = self._lerp_color(
-            (160, 180, 255),  # cool moonlight
-            (255, 248, 220),  # warm sunlight (soft, not too yellow)
+            BEAM_COLOR_MOON,  # cool moonlight
+            BEAM_COLOR_SUN,   # warm sunlight (soft, not too yellow)
             b,
         )
         # Max opacity: ~75% at noon, ~25% at midnight

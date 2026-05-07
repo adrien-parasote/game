@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-07 | Files scanned: 62 | Token estimate: ~560 -->
+<!-- Generated: 2026-05-07 | Files scanned: 66 | Token estimate: ~600 -->
 
 # Game Engine Architecture
 
@@ -34,18 +34,18 @@
 ## Key Subsystems
 
 ### UI & HUD Components
-- **Constants Architecture**: All UI and Engine modules have dedicated `_constants.py` modules for layout, color, and behavior values (`src/ui/inventory_constants.py`, `src/engine/lighting_constants.py`, `src/engine/game_state_constants.py`, `src/entities/interactive_constants.py`, `src/ui/dialogue_constants.py`). Shared UI colors are centralized in `src/ui/ui_colors.py`. Codebase is 100% localized to English.
+- **Constants Architecture**: All UI and Engine modules have dedicated `_constants.py` modules. Complete list: `src/ui/pause_screen_constants.py`, `src/ui/save_menu_constants.py` (new), `src/ui/hud_constants.py`, `src/ui/chest_constants.py`, `src/ui/dialogue_constants.py`, `src/ui/inventory_constants.py`, `src/engine/lighting_constants.py`, `src/engine/game_state_constants.py`, `src/entities/interactive_constants.py`. Shared UI colors in `src/ui/ui_colors.py`. Codebase is 100% English-only (all French comments eliminated as of 2026-05-07).
 - **Protocol Files**: `src/ui/chest_protocol.py`, `src/ui/inventory_protocol.py` — shared type protocols for mixin composition.
 - **InventoryUI** (`src/ui/inventory.py`, 404L) + `inventory_draw.py` (247L): Grid + equipment slots, D&D state machine, tab switching, item info zone.
 - **ChestUI** (`src/ui/chest.py`, 343L) + mixins: `chest_layout.py` (slot geometry), `chest_draw.py` (280L, rendering), `chest_transfer.py` (item movement logic). Chest ↔ Inventory transfer, paged scrolling (18-slot pages), D&D across panels.
 - **TitleScreen** (`src/ui/title_screen.py`, 431L): Main menu state machine (MAIN_MENU/LOAD_MENU/OPTIONS). Renders dynamic title using `title_screen_constants.py`. **33 fire halos** (`BACKGROUND_LIGHTS`, BLEND_RGB_ADD, flicker) + **25 bioluminescent mushrooms** (`MUSHROOM_LIGHTS`, slow breath `sin*0.15`). Resolution-independent: logical 1280×720 mapped via `_light_scale_x/y` from `screen.get_size()`. Returns `GameEvent`.
-- **PauseScreen** (`src/ui/pause_screen.py`, 276L): In-game pause overlay (MAIN/SAVE_MENU states), save/resume/goto_title, gaussian blur halo hover. `notify_save_result(bool)` for feedback.
-- **SaveMenuOverlay** (`src/ui/save_menu.py`, 340L): Reusable save/load slot overlay. `refresh()` populates `_slots_info` from `SaveManager.list_slots()`. `get_clicked_slot(event)→int|None`. `SaveSlotUI` renders individual slot with background sprite, PNG thumbnail, additive halo. **Back button** (engraved label + icon, hover glow) triggers `on_back()` callback.
-- **GameHUD** (`src/ui/hud.py`, 88L): In-game HUD (time, health).
+- **PauseScreen** (`src/ui/pause_screen.py`, 264L): In-game pause overlay (MAIN/SAVE_MENU states), save/resume/goto_title. **Pre-render cache pattern**: button label surfaces (`_rendered_idle`, `_rendered_hover`) computed once at `__init__` via `_make_engraved_surface()` and `_make_halo_surface()` — zero `Surface()` / `gaussian_blur()` calls inside `draw()`. Constants from `pause_screen_constants.py`. `notify_save_result(bool)` for feedback.
+- **SaveMenuOverlay** (`src/ui/save_menu.py`, 380L): Reusable save/load slot overlay. `refresh()` populates `_slots_info` + `_cached_title_surfs` (pre-rendered title surfaces, one per slot) from `SaveManager.list_slots()`. `get_clicked_slot(event)→int|None`. `SaveSlotUI` renders individual slot with background sprite (size driven by `SAVE_SLOT_BG_W/H` constants), PNG thumbnail, additive halo. **Back button** (engraved label + icon, hover glow) — label width measured via `font.size()`, no Surface allocation. All constants in `save_menu_constants.py`.
+- **GameHUD** (`src/ui/hud.py`, 90L): In-game HUD (time, health). `I18nManager` cached at `__init__` (`self._i18n`) — not constructed per frame.
 - **Inventory** (`src/engine/inventory_system.py`, 133L): 28-slot padded list (`None` fill), equipment dict (8 slots), `add/remove/equip/unequip`.
 
 ### Dialogue & Speech
-- **DialogueManager** (`src/ui/dialogue.py`, 271L): Typewriter, paginated text, 9-patch HUD overlay. Uses `dialogue_constants.py`.
+- **DialogueManager** (`src/ui/dialogue.py`, 271L): Typewriter, paginated text, 9-patch HUD overlay. Uses `dialogue_constants.py` (`DIALOGUE_SHADOW_COLOR`, `DIALOGUE_TEXT_COLOR` — parchment palette).
 - **SpeechBubble** (`src/ui/speech_bubble.py`, 263L): NPC nine-patch bubble, name plate, paginated text, auto-wrap 224px.
 
 ### Entities
@@ -56,7 +56,7 @@
 - **EmoteManager** (`src/entities/emote.py`, 62L): `!` / `?` / `frustration` emote sprites above player.
 
 ### Engine Support
-- **LightingManager** (`src/engine/lighting.py`, 269L): Night overlay, additive torch masks, slanted window beam shafts (continuous cosine blending at dawn/dusk). Uses `lighting_constants.py`.
+- **LightingManager** (`src/engine/lighting.py`, 300L): Night overlay, additive torch masks, slanted window beam shafts (continuous cosine blending at dawn/dusk). Beam colors driven by `BEAM_COLOR_MOON`/`BEAM_COLOR_SUN` constants in `lighting_constants.py`.
 - **TimeSystem** (`src/engine/time_system.py`, 124L): In-game clock, seasons, `night_alpha`, `brightness`.
 - **AudioManager** (`src/engine/audio.py`, 248L): BGM/SFX via pygame mixer (32 channels), mute toggle, spatial ambient audio with `ambient_channels` dict + 20% floor volume, footstep normalization.
 - **LootTable** (`src/engine/loot_table.py`, 130L): JSON-driven chest contents, stack splitting, slot overflow trimming.
@@ -65,10 +65,10 @@
 ## Documentation & Tooling
 ```
 docs/
-  specs/            23 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
+  specs/            24 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
   traceability.md   Auto-generated spec↔test coverage matrix (scripts/tc_report.py — run to refresh)
   codemaps/         Architecture maps (this directory)
-  strategic/        MASTER_ROADMAP.md, game_vision.md
+  strategic/        MASTER_ROADMAP.md, game_vision.md, perf-constants-audit-strategy.md
   ADRs/             4 Architecture Decision Records (ADR-001 à ADR-004)
   research/         Research docs (unit_test_optimization.md)
 scripts/
@@ -86,6 +86,6 @@ scripts/
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
-- **Test Suite**: Pytest 9.0.3, **647 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (5 domains)
+- **Test Suite**: Pytest 9.0.3, **661 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (5 domains)
 - **Traceability**: `@pytest.mark.tc("TC-ID")` markers — voir `docs/traceability.md` (auto-généré). Registered in `pyproject.toml`.
-- **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), ChestUI mixin decomposition, GameEvent dataclass factory pattern, Context Injection (`SomeManager(game: Any)`) pour sous-managers Phase 1.5
+- **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), **Pre-render cache pattern** (static button/label surfaces pre-computed at init, zero allocation in draw loop), ChestUI mixin decomposition, GameEvent dataclass factory pattern, Context Injection (`SomeManager(game: Any)`) pour sous-managers Phase 1.5

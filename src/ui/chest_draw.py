@@ -14,6 +14,10 @@ from src.ui.chest_constants import (
     ASSET_CHEST_BG,
     ASSET_INV_BG,
     ASSET_SLOT_IMG,
+    CHEST_INV_SLOT_FALLBACK_COLOR,
+    CHEST_SLOT_FALLBACK_COLOR,
+    CHEST_TEXT_COLOR,
+    CHEST_TITLE_TEXT,
 )
 
 if TYPE_CHECKING:
@@ -27,8 +31,9 @@ class ChestDrawMixin:
         """Render the chest name centred in the title zone."""
         if self._title_rect is None:
             return
-        font = pygame.font.Font(Settings.FONT_NOBLE, Settings.FONT_SIZE_NOBLE)
-        surf = font.render("Chest", True, (60, 40, 30))
+        if self._title_font is None:
+            self._title_font = pygame.font.Font(Settings.FONT_NOBLE, Settings.FONT_SIZE_NOBLE)
+        surf = self._title_font.render(CHEST_TITLE_TEXT, True, CHEST_TEXT_COLOR)
         cx = self._title_rect.centerx + _TITLE_OFFSET_X
         cy = self._title_rect.centery + _TITLE_OFFSET_Y
         screen.blit(surf, surf.get_rect(center=(cx, cy)))
@@ -49,7 +54,7 @@ class ChestDrawMixin:
             if self._slot_img:
                 screen.blit(self._slot_img, rect)
             else:
-                pygame.draw.rect(screen, (200, 200, 200), rect, 2)
+                pygame.draw.rect(screen, CHEST_SLOT_FALLBACK_COLOR, rect, 2)
 
             # Item icon + quantity
             if i >= len(contents):
@@ -77,7 +82,7 @@ class ChestDrawMixin:
 
             qty = entry.get("quantity", 1)
             if qty > 1:
-                qty_surf = self._qty_font.render(f"x{qty}", True, (60, 40, 30))
+                qty_surf = self._qty_font.render(f"x{qty}", True, CHEST_TEXT_COLOR)
                 qty_rect = qty_surf.get_rect(
                     bottomright=(rect.right - margin, rect.bottom - margin)
                 )
@@ -123,7 +128,7 @@ class ChestDrawMixin:
             if self._slot_img:
                 screen.blit(self._slot_img, rect)
             else:
-                pygame.draw.rect(screen, (180, 180, 180), rect, 2)
+                pygame.draw.rect(screen, CHEST_INV_SLOT_FALLBACK_COLOR, rect, 2)
 
             # Item icon + quantity
             if i >= len(page_items) or page_items[i] is None:
@@ -147,7 +152,7 @@ class ChestDrawMixin:
 
             qty = getattr(item, "quantity", 1)
             if qty > 1:
-                qty_surf = self._qty_font.render(f"x{qty}", True, (60, 40, 30))
+                qty_surf = self._qty_font.render(f"x{qty}", True, CHEST_TEXT_COLOR)
                 qty_rect = qty_surf.get_rect(
                     bottomright=(rect.right - margin, rect.bottom - margin)
                 )

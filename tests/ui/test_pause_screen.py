@@ -163,15 +163,20 @@ def test_pause_screen_draw(pause_screen):
 
 
 def test_pause_screen_font_fallback(mock_screen, mock_save_manager):
-    # Tester le fallback des polices (OSError et Exception sur AssetManager)
+    # Test font fallback (OSError on Font, Exception on AssetManager)
+    real_surf = pygame.Surface((10, 10), pygame.SRCALPHA)
     with (
         patch("pygame.image.load") as mock_load,
         patch("pygame.font.Font", side_effect=OSError),
         patch("pygame.font.SysFont") as mock_sysfont,
         patch("src.engine.asset_manager.AssetManager", side_effect=Exception),
+        patch("src.ui.pause_screen.I18nManager") as mock_i18n,
     ):
         mock_surf = pygame.Surface((32, 32), pygame.SRCALPHA)
         mock_load.return_value = mock_surf
+        mock_sysfont.return_value.render.return_value = real_surf
+        mock_sysfont.return_value.get_height.return_value = 10
+        mock_i18n.return_value.get.side_effect = lambda k, d: d
 
         ps = PauseScreen(mock_screen, mock_save_manager)
         assert mock_sysfont.call_count >= 3  # title, item, small fonts fallbacks
