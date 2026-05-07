@@ -71,10 +71,10 @@ def test_game_actual_load_map(mock_load_map, mock_exists):
 
     with (
         patch("src.engine.audio.AudioManager.play_bgm") as mock_bgm,
-        patch("src.engine.game.InteractiveEntity"),
-        patch("src.engine.game.NPC"),
-        patch("src.engine.game.Teleport"),
-        patch("src.engine.game.PickupItem"),
+        patch("src.engine.entity_factory.InteractiveEntity"),
+        patch("src.engine.entity_factory.NPC"),
+        patch("src.engine.entity_factory.Teleport"),
+        patch("src.engine.entity_factory.PickupItem"),
     ):
         game = Game()
         assert mock_bgm.called
@@ -120,7 +120,7 @@ def test_game_entity_spawning(mock_load):
         "properties": {"entity_type": "interactive", "sub_type": "chest", "is_on": False},
     }
 
-    with patch("src.engine.game.InteractiveEntity") as mock_ent:
+    with patch("src.engine.entity_factory.InteractiveEntity") as mock_ent:
         game._spawn_entities([mock_obj])
         assert mock_ent.called
 
@@ -347,14 +347,16 @@ def test_spawn_entities_initial_spawn_skipped(mock_load):
     game.map_manager = MagicMock()
     game.layout.to_world.return_value = (0, 0)
     entity = {"id": 1, "x": 0, "y": 0, "properties": {"is_initial_spawn": True}}
-    with patch("src.engine.game.InteractiveEntity") as mock_ent:
+    with patch("src.engine.entity_factory.InteractiveEntity") as mock_ent:
         game._spawn_entities([entity])
     mock_ent.assert_not_called()
 
 
 @patch("src.engine.game.Game._load_map")
-def test_spawn_entities_sign_logged(mock_load):
+def test_spawn_entities_sign_logged(mock_load, caplog):
     """_spawn_entities logs info for sign entities."""
+    import logging
+
     game = Game()
     game.map_manager = MagicMock()
     entity = {
@@ -365,9 +367,9 @@ def test_spawn_entities_sign_logged(mock_load):
         "height": 32,
         "properties": {"entity_type": "interactive", "sub_type": "sign", "element_id": "book"},
     }
-    with patch("src.engine.game.InteractiveEntity"), patch("logging.info") as mock_log:
+    with patch("src.engine.entity_factory.InteractiveEntity"), caplog.at_level(logging.INFO):
         game._spawn_entities([entity])
-    assert any("Sign detected" in str(c) for c in mock_log.call_args_list)
+    assert any("Sign detected" in r.message for r in caplog.records)
 
 
 @patch("src.engine.game.Game._load_map")

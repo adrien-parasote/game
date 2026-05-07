@@ -473,3 +473,44 @@ class DummySprite:
 ---
 
 ---
+
+### L-TEST-008 · 2026-05-07 · U · Minor Rework
+**Lazy imports dans les méthodes sont impatchables par `unittest.mock.patch`**
+
+`patch('module.ClassName')` cherche l'attribut sur le module au moment du patch. Si l'import est lazy (dans le corps d'une fonction), l'attribut n'existe pas → `AttributeError`.
+
+```python
+# ❌ lazy → patch('src.engine.map_loader.TmjParser') → AttributeError
+class MapLoader:
+    def load(self):
+        from src.map.tmj_parser import TmjParser  # lazy
+
+# ✅ module-level → patchable
+from src.map.tmj_parser import TmjParser
+```
+
+**Règle :** Si une classe/fonction doit être mockable via `patch`, son import doit être au niveau module.
+**Evidence :** TC-ML-03 (Phase 1.5) — `AttributeError: <module 'src.engine.map_loader'> does not have the attribute 'TmjParser'`.
+
+---
+
+### A-TEST-008 · 2026-05-07 · U · Minor Rework
+**`MagicMock()` attributs booléens sont truthy — setter explicite requis**
+
+`MagicMock()` auto-crée chaque attribut comme un `MagicMock()` truthy. Les gardes `if x.is_active:` sont toujours `True` sans assignation explicite.
+
+```python
+# ❌ is_active → MagicMock() → truthy → mauvaise branche
+game = MagicMock()
+
+# ✅ assigner False explicitement
+game.dialogue_manager.is_active = False
+game.chest_ui.is_open = False
+```
+
+**Règle :** Pour tout fixture `MagicMock`, assigner explicitement tous les attributs booléens critiques.
+**Evidence :** TC-IH-02 : `AssertionError: Expected 'handle_interactions' to have been called once. Called 0 times.` (Phase 1.5).
+
+---
+
+*Last optimized: 2026-05-07 — L-TEST-008, A-TEST-008 from Phase 1.5 HARDEN session.*

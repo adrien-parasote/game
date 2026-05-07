@@ -19,11 +19,17 @@ def mock_game_setup():
         game.chest_ui = MagicMock()
         game.dialogue_manager = MagicMock()
         game._npc_bubble = None  # required by _handle_events guard
+        game.interaction_manager = MagicMock()
+        game.npcs = pygame.sprite.Group()
 
         # Default states
         game.inventory_ui.is_open = False
         game.chest_ui.is_open = False
         game.dialogue_manager.is_active = False
+
+        # Wire InputHandler (needed since __init__ is patched)
+        from src.engine.input_handler import InputHandler
+        game._input_handler = InputHandler(game)
 
         return game
 
