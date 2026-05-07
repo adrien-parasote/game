@@ -14,7 +14,6 @@ import pygame
 import pytest
 
 os.environ["SDL_VIDEODRIVER"] = "dummy"
-pygame.display.init()
 
 
 # ---------------------------------------------------------------------------
@@ -467,7 +466,7 @@ class TestInputHandler:
         game = _make_game_for_input()
         ih = InputHandler(game)
         quit_event = pygame.event.Event(pygame.QUIT)
-        with pytest.raises(SystemExit):
+        with patch("pygame.quit"), pytest.raises(SystemExit):
             ih.handle_events([quit_event])
 
     @pytest.mark.tc("TC-IH-02")
