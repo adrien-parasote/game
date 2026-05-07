@@ -284,3 +284,29 @@ class InteractionManager:
 
 **Evidence:** `sentrux check` flagged `game.py ↔ interaction.py` as 1 cycle. After `Any` refactor: 0 cycles.
 
+---
+
+### A-EF-001 · 2026-05-07 · P · Major Rework (silent bug)
+**Dispatcher `startswith()` avec préfixe partagé entre types Tiled → entité silencieusement perdue**
+
+Le type Tiled `'15-npc'` et les teleports (`'15-teleport'`, `'13-teleport'`) partagent le préfixe `'15-'`. Le dispatcher `spawn_entities` testait les teleports en premier avec `ent_type_field.startswith("15-")`, ce qui absorbait silencieusement tout objet `15-npc` avant d'atteindre la branche NPC. Zéro erreur, zéro warning — le NPC était simplement absent de la map.
+
+```python
+# ❌ Téléport intercepte le NPC silencieusement
+elif _get_property(props, "type") == "teleport" or ent_type_field.startswith("15-"):
+    self.spawn_teleport(ent, props)  # capte "15-npc" !
+elif entity_type == "npc" or ...:
+    self.spawn_npc(ent, props)       # jamais atteint
+
+# ✅ NPC en priorité, exact match '15-npc', teleport après
+elif entity_type == "npc" or ent_type_field == "15-npc" or ent_type_field.startswith("07-"):
+    self.spawn_npc(ent, props)
+elif _get_property(props, "type") == "teleport" or ent_type_field.startswith("15-"):
+    self.spawn_teleport(ent, props)
+```
+
+**Règle :** Dans tout dispatcher sur des préfixes de chaînes, vérifier d'abord que les types les plus spécifiques (match exact ou sous-type nommé) sont checkés avant les catches larges (`startswith`). Documenter l'ordre de priorité dans la spec avec un ⚠️ explicite quand deux types partagent un préfixe.
+
+**Règle spec :** Quand la spec décrit le type Tiled d'une entité dans les test cases (`TC-EF-06 : type '07-npc'`), elle doit refléter le type exact présent dans les assets Tiled — vérifiable via `python3 -c "import json; ..."` sur le fichier `.tmj`. Un type erroné dans les TCs = bug potentiel non couvert par les tests.
+
+**Evidence :** `entity_factory.py` dispatch corrigé. `Spawned NPC 'npc' at [174, 462]` visible dans les logs après fix. `TC-EF-06` mis à jour dans `phase-1.5-game-refactoring.md` v1.3. 661/661 tests verts.

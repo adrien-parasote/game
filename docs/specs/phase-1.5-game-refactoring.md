@@ -1,7 +1,7 @@
 # Spec — Phase 1.5 : Refactoring `game.py` [Implementation]
 
 > Document Type: Implementation  
-> **Version :** 1.2 — 2026-05-07  
+> **Version :** 1.3 — 2026-05-07  
 > **Statut :** Delivered ✅ (BUILD terminé, tous tests verts, 93% coverage global)  
 > **Covers :** F1 (`game_setup.py`), F2 (`entity_factory.py`), F3 (`map_loader.py`), F4 (`input_handler.py`), F5 (`test_coverage_gaps_phase15.py`)
 > **Réf. Roadmap :** [`docs/strategic/MASTER_ROADMAP.md#phase-15`](../strategic/MASTER_ROADMAP.md#phase-15)  
@@ -313,6 +313,7 @@ game.py réel:            479 LOC  (thin wrappers conservés pour compat tests)
 | Appeler `_load_map` depuis `__init__` via le MapLoader sans passer par la méthode wrapper | Toujours appeler `self._load_map(default_map)` | Interface préservée, testabilité via `skip_map_load=True` inchangée |
 | Mettre de la logique métier dans le thin wrapper `_load_map` | Wrapper = `self._map_loader.load(map_name, target_spawn_id, transition_type)` et rien d'autre | Toute logique dans `MapLoader.load()` pour cohérence |
 | Importer `TmjParser` en lazy import dans `MapLoader.load()` | Importer `TmjParser` au niveau du module dans `map_loader.py` | Import module-level requis pour que `patch('src.engine.map_loader.TmjParser')` fonctionne dans les tests |
+| Utiliser le préfixe `15-` dans le dispatcher teleport sans guard NPC | Check NPC (`entity_type=='npc'` ou `ent_type_field=='15-npc'`) en priorité avant teleport | Les NPCs Tiled ont le type `15-npc` — ils seraient silencieusement absorbés par le catch `startswith("15-")` des teleports |
 | Modifier les tests existants pour s'adapter aux nouvelles classes | Mettre à jour uniquement les imports et les mock targets si nécessaire | Les tests valident le comportement, pas l'implémentation interne |
 
 ---
@@ -340,10 +341,11 @@ game.py réel:            479 LOC  (thin wrappers conservés pour compat tests)
 | TC-EF-03 | `_get_property` absent | `{}`, `"key"`, `default="x"` | `"x"` |
 | TC-EF-04 | `spawn_interactive` ajoute à `visible_sprites` et `interactives` | Mock game + ent dict type `03-interactive` | Entity dans les 2 groupes |
 | TC-EF-05 | `spawn_teleport` ajoute à `teleports_group` | Mock game + ent dict type `15-teleport` | Entity dans `teleports_group` |
-| TC-EF-06 | `spawn_npc` ajoute à `visible_sprites` et `npcs` | Mock game + ent dict type `07-npc` | Entity dans les 2 groupes |
+| TC-EF-06 | `spawn_npc` ajoute à `visible_sprites` et `npcs` | Mock game + ent dict type `15-npc` (type Tiled réel) | Entity dans les 2 groupes |
 | TC-EF-07 | `spawn_pickup` ajoute à `pickups` | Mock game + ent dict type pickup | Entity dans `pickups` |
 | TC-EF-08 | `spawn_entities` dispatcher : type inconnu ignoré | ent dict avec type non reconnu | Aucune exception, log warning |
 | TC-EF-09 | `spawn_interactive` avec world_state restore | game.world_state a une entrée → entity restorée | `entity.is_on` = valeur sauvegardée |
+| TC-EF-10 | `spawn_entities` dispatcher : `15-npc` dispatché vers `spawn_npc` avant teleport | ent dict type `15-npc` | `spawn_npc` appelé, pas `spawn_teleport` |
 
 ### Unit Tests — `map_loader.py`
 

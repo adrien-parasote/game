@@ -88,10 +88,10 @@ class EntityFactory:
             ent_type_field = ent.get("type", "")
             if entity_type == "interactive" or ent_type_field.startswith("03-"):
                 self.spawn_interactive(ent, props, map_name)
+            elif entity_type == "npc" or ent_type_field == "15-npc" or ent_type_field.startswith("07-"):
+                self.spawn_npc(ent, props)
             elif _get_property(props, "type") == "teleport" or ent_type_field.startswith("15-"):
                 self.spawn_teleport(ent, props)
-            elif entity_type == "npc" or ent_type_field.startswith("07-"):
-                self.spawn_npc(ent, props)
             elif entity_type == "object" or ent_type_field.startswith("08-"):
                 self.spawn_pickup(ent, props)
             else:
