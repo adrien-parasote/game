@@ -136,6 +136,16 @@ The cooldown prevents sprite stacking when the player stands near multiple inter
 |---------|------|-------|--------------|
 | EMO-I-01 | Proximity trigger | Player at 40px from object | `interact` emote triggered after cooldown |
 | EMO-I-02 | Failed interaction | Player presses E with no target | `question` emote triggered |
+| TC-EMO-01 | EmoteManager column | Trigger `'frustration'` | Column 4 frames are loaded |
+| TC-EMO-02 | Emote chaining | Trigger A then B rapidly | Emote A killed immediately, B starts |
+| TC-EMO-03 | Pickup full inventory | `_check_pickup_interactions` with full inv | `frustration` emote triggered, no dialogue |
+
+### Linked Test Functions
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-EMO-01 | `test_emote_manager_spritesheet_error` | `../../tests/entities/test_entities.py:L363` |
+| TC-EMO-02 | `test_emote_manager_chaining` | `../../tests/entities/test_entities.py:L394` |
+| TC-EMO-03 | `test_handle_interaction_pickup_partial` | `../../tests/engine/test_interaction.py:L141` |
 
 ## 8. Error Handling Matrix
 
@@ -153,22 +163,3 @@ The cooldown prevents sprite stacking when the player stands near multiple inter
 - **Rendering (Pass 6)**: [render_manager.py L1](../../src/engine/render_manager.py#L1)
 - **Emote section in engine-core**: [engine-core.md §S](../../docs/specs/engine-core.md#L1)
 
-
-## Assumptions
-| # | Assumption | Risk | Validation |
-|---|---|---|---|
-| 1 | System performs adequately | Low | Playtest |
-| 2 | Inputs are sanitized | Low | Code review |
-| 3 | Components interact seamlessly | Low | Integration tests |
-
-## Test Case Specifications
-| ID | Description | Type |
-|---|---|---|
-| TC-001 | Validate initialization | Unit |
-| TC-002 | Validate state transition | Unit |
-| TC-003 | Validate edge case handling | Unit |
-| TC-004 | Validate error raising | Unit |
-| TC-005 | Validate boundary conditions | Unit |
-| IT-001 | Validate module integration | Integration |
-| IT-002 | Validate state persistence | Integration |
-| IT-003 | Validate system flow | Integration |

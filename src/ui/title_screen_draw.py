@@ -4,6 +4,8 @@
 import pygame
 
 from src.ui.title_screen_constants import (
+    _MENU_ITEM_DEFAULTS,
+    _MENU_ITEM_KEYS,
     BACK_BTN_GAP,
     BACK_BTN_LABEL_DEFAULT,
     BACK_BTN_LABEL_KEY,
@@ -21,8 +23,6 @@ from src.ui.title_screen_constants import (
     MENU_ITEM_SPACING,
     MENU_ITEM_X,
     MENU_ITEM_Y_START,
-    _MENU_ITEM_DEFAULTS,
-    _MENU_ITEM_KEYS,
 )
 
 

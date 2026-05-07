@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-04 | Files scanned: 55 | Token estimate: ~520 -->
+<!-- Generated: 2026-05-07 | Files scanned: 62 | Token estimate: ~560 -->
 
 # Game Engine Architecture
 
@@ -15,15 +15,19 @@
 
 | Module | File | Lines | Role |
 |---|---|---|---|
-| **GameStateManager** | `src/engine/game_state_manager.py` | 300 | Top-level state machine (TITLE/PLAYING/PAUSED), global event routing, save/load orchestration |
-| **Game** | `src/engine/game.py` | 762 | Gameplay orchestrator, entity spawning, event dispatch, map transitions |
+| **GameStateManager** | `src/engine/game_state_manager.py` | 309 | Top-level state machine (TITLE/PLAYING/PAUSED), global event routing, save/load orchestration |
+| **Game** | `src/engine/game.py` | 420 | Gameplay orchestrator, thin wrappers delegating to sub-managers. Phase 1.5 refactored. |
 | **RenderManager** | `src/engine/render_manager.py` | 109 | Scene rendering pipeline (background, foreground, HUD, overlays) |
-| **InteractionManager** | `src/engine/interaction.py` | 473 | Proximity/facing checks for objects, NPCs, pickups, chests, emotes, teleporters. Typed `game: Any` (no hard coupling to `Game`) |
-| **SaveManager** | `src/engine/save_manager.py` | 218 | JSON save/load (3 slots), inventory + world state serialization, PNG thumbnails |
+| **InteractionManager** | `src/engine/interaction.py` | 400 | Proximity/facing checks for objects, NPCs, pickups, chests, emotes, teleporters. Typed `game: Any` (no hard coupling to `Game`) |
+| **EntityFactory** | `src/engine/entity_factory.py` | 265 | Entity spawning (interactive, teleport, NPC, pickup). Extracted from `Game` in Phase 1.5. Pattern: `EntityFactory(game: Any)`. |
+| **MapLoader** | `src/engine/map_loader.py` | ~115 | Map loading pipeline (parse, BGM, cleanup, spawn, player position). Extracted from `Game` in Phase 1.5. |
+| **InputHandler** | `src/engine/input_handler.py` | ~55 | Pygame event dispatch (interact, inventory, dialogue). Extracted from `Game` in Phase 1.5. |
+| **CollisionChecker** | `src/engine/collision_checker.py` | ~80 | Tile + entity collision checks. Extracted from `Game` in Phase 1.5. |
+| **SaveManager** | `src/engine/save_manager.py` | 222 | JSON save/load (3 slots), inventory + world state serialization, PNG thumbnails |
 | **GameEvents** | `src/engine/game_events.py` | 59 | `GameEvent` dataclass + `GameEventType` enum. Factory methods: `new_game()`, `load_requested(slot_id)`, `quit()`, `pause_requested()`, `resume()`, `save_requested(slot_id)`, `goto_title()` |
-| **MapManager** | `src/map/manager.py` | 185 | Layer surfaces, TMJ state, collision tile queries, window positions |
-| **TmjParser** | `src/map/tmj_parser.py` | 231 | TMJ/TSX parsing → structured `map_data` dict |
-| **CameraGroup** | `src/entities/groups.py` | 82 | Y-sorted rendering, camera offset, clamped scroll |
+| **MapManager** | `src/map/manager.py` | 191 | Layer surfaces, TMJ state, collision tile queries, window positions |
+| **TmjParser** | `src/map/tmj_parser.py` | 263 | TMJ/TSX parsing → structured `map_data` dict |
+| **CameraGroup** | `src/entities/groups.py` | ~121 | Y-sorted rendering, camera offset, clamped scroll, dirty-flag sort cache |
 | **AssetManager** | `src/engine/asset_manager.py` | 76 | Singleton image/font cache with per-map clear |
 | **I18nManager** | `src/engine/i18n.py` | 58 | Singleton translation lookup via nested key paths |
 
@@ -31,8 +35,9 @@
 
 ### UI & HUD Components
 - **Constants Architecture**: All UI and Engine modules have dedicated `_constants.py` modules for layout, color, and behavior values (`src/ui/inventory_constants.py`, `src/engine/lighting_constants.py`, `src/engine/game_state_constants.py`, `src/entities/interactive_constants.py`, `src/ui/dialogue_constants.py`). Shared UI colors are centralized in `src/ui/ui_colors.py`. Codebase is 100% localized to English.
-- **InventoryUI** (`src/ui/inventory.py`, 502L): Grid + equipment slots, D&D state machine, tab switching, item info zone.
-- **ChestUI** (`src/ui/chest.py`, 393L) + mixins: `chest_layout.py` (slot geometry), `chest_draw.py` (rendering), `chest_transfer.py` (item movement logic). Chest ↔ Inventory transfer, paged scrolling (18-slot pages), D&D across panels.
+- **Protocol Files**: `src/ui/chest_protocol.py`, `src/ui/inventory_protocol.py` — shared type protocols for mixin composition.
+- **InventoryUI** (`src/ui/inventory.py`, 404L) + `inventory_draw.py` (247L): Grid + equipment slots, D&D state machine, tab switching, item info zone.
+- **ChestUI** (`src/ui/chest.py`, 343L) + mixins: `chest_layout.py` (slot geometry), `chest_draw.py` (280L, rendering), `chest_transfer.py` (item movement logic). Chest ↔ Inventory transfer, paged scrolling (18-slot pages), D&D across panels.
 - **TitleScreen** (`src/ui/title_screen.py`, 431L): Main menu state machine (MAIN_MENU/LOAD_MENU/OPTIONS). Renders dynamic title using `title_screen_constants.py`. **33 fire halos** (`BACKGROUND_LIGHTS`, BLEND_RGB_ADD, flicker) + **25 bioluminescent mushrooms** (`MUSHROOM_LIGHTS`, slow breath `sin*0.15`). Resolution-independent: logical 1280×720 mapped via `_light_scale_x/y` from `screen.get_size()`. Returns `GameEvent`.
 - **PauseScreen** (`src/ui/pause_screen.py`, 276L): In-game pause overlay (MAIN/SAVE_MENU states), save/resume/goto_title, gaussian blur halo hover. `notify_save_result(bool)` for feedback.
 - **SaveMenuOverlay** (`src/ui/save_menu.py`, 340L): Reusable save/load slot overlay. `refresh()` populates `_slots_info` from `SaveManager.list_slots()`. `get_clicked_slot(event)→int|None`. `SaveSlotUI` renders individual slot with background sprite, PNG thumbnail, additive halo. **Back button** (engraved label + icon, hover glow) triggers `on_back()` callback.
@@ -60,11 +65,12 @@
 ## Documentation & Tooling
 ```
 docs/
-  specs/            18 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
-  traceability.md   Auto-generated spec↔test coverage matrix (scripts/tc_report.py) — 143/143 (100%)
-  CODEMAPS/         Architecture maps (this directory)
-  strategic/        MASTER_ROADMAP.md, game_vision.md, blueprint.md
-  ADRs/             3 Architecture Decision Records
+  specs/            23 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
+  traceability.md   Auto-generated spec↔test coverage matrix (scripts/tc_report.py — run to refresh)
+  codemaps/         Architecture maps (this directory)
+  strategic/        MASTER_ROADMAP.md, game_vision.md
+  ADRs/             4 Architecture Decision Records (ADR-001 à ADR-004)
+  research/         Research docs (unit_test_optimization.md)
 scripts/
   tc_report.py          Spec↔Test traceability report (CLI + --markdown export)
   calibrate_halos.py    Outil interactif calibration halos (FULLSCREEN|SCALED) → calibration_result.py
@@ -74,11 +80,12 @@ scripts/
 .agents/
   learnings/        6 domain learning files (methodology_and_docs, game_engine, audio_engine, ui, testing, map_rendering)
   rules/            coding-standards.md + language rules
+  learnings.md      Index des learnings par domaine
 ```
 
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
-- **Test Suite**: Pytest 9.0.3, **545 tests**, **92% coverage** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (34 files across 5 domains)
-- **Traceability**: `@pytest.mark.tc("TC-ID")` markers — 132 TC IDs across 15 specs, 100% spec coverage. Registered in `pyproject.toml`.
-- **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), ChestUI mixin decomposition, GameEvent dataclass factory pattern
+- **Test Suite**: Pytest 9.0.3, **647 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (5 domains)
+- **Traceability**: `@pytest.mark.tc("TC-ID")` markers — voir `docs/traceability.md` (auto-généré). Registered in `pyproject.toml`.
+- **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), ChestUI mixin decomposition, GameEvent dataclass factory pattern, Context Injection (`SomeManager(game: Any)`) pour sous-managers Phase 1.5

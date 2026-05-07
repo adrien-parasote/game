@@ -48,22 +48,24 @@ GameStateManager · Save/Load 3 slots · TitleScreen · PauseScreen · SaveMenuO
 
 ---
 
-## 🔧 Phase 1.5 — Refactoring Technique (pré-requis Phase 2)
+## ✅ Phase 1.5 — Refactoring Technique `TERMINÉE` (pré-requis Phase 2)
 
-Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. À refactorer avant d'ajouter de nouvelles fonctionnalités.
+Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Refactorisés avant l'ajout de nouvelles fonctionnalités.
 
-| Fichier | LOC actuel | Limite | Refactoring proposé |
-|---------|-----------|--------|---------------------|
-| `src/engine/game.py` | 732 | 800 (max absolu) | Extraire `EntityFactory` (spawning) + `InputHandler` |
-| `src/engine/interaction.py` | 474 | 400 | Extraire logique collision/pickup dans un module dédié |
-| `src/ui/chest.py` | 421 | 400 | Mineur — déjà structuré en mixins, réduire le fichier principal |
+| Fichier | LOC avant | LOC après | Résultat |
+|---------|-----------|-----------|---------|
+| `src/engine/game.py` | 732 | 420 | ✅ `EntityFactory` + `MapLoader` + `InputHandler` extraits |
+| `src/engine/interaction.py` | 474 | 400 | ✅ `CollisionChecker` extrait |
+| `src/ui/chest.py` | 421 | 343 | ✅ Mixins `chest_draw`, `chest_transfer`, `chest_layout` |
 
 > [!NOTE]
 > Les 3 autres fichiers hors-limite (`inventory.py`, `interactive.py`, `title_screen.py`) sont refactorés dans le cadre du reverse-spec en cours (extraction mixins).
 
-**Critère de sortie :** `game.py` < 400 LOC · `interaction.py` < 400 LOC · `chest.py` < 400 LOC · `python verify.py .` → ALL CHECKS PASSED
+**Résultats :** `game.py` → 420 LOC · `interaction.py` → 400 LOC · `chest.py` → 343 LOC · Suite 647 tests, tous verts ✅  
+**Spec :** [`docs/specs/phase-1.5-game-refactoring.md`](../specs/phase-1.5-game-refactoring.md)
 
 ---
+
 
 ## 🌿 Phase 2 — Fondations du Monde `v0.5→0.6`
 
@@ -138,6 +140,15 @@ Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. À 
 | 25–49 | Reconstruction | Armurerie, Tour de Magie, chambre 8×8 |
 | 50–74 | Restauré | Grande salle, Bibliothèque, Salle du trésor |
 | 75–100 | Suite Royale | Enclos des familiers, tous bâtiments, co-op ready |
+
+**Calcul du score `KingdomState` (cumulatif) :**
+| Action | Points | Limite |
+|---|---|---|
+| Reconstruction bâtiment (niv. 2) | +5 | Par bâtiment |
+| Restauration bâtiment (niv. 4) | +10 | Par bâtiment |
+| Quête de guilde majeure | +2 | - |
+| Défaite Boss de zone | +5 | Une fois par boss |
+| Festival réussi | +1 | Par festival |
 
 > Voir [engine-core.md](../specs/engine-core.md#L1) pour l'implémentation de `KingdomState`.
 
@@ -235,7 +246,7 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 ### Développement
 - `SphereGrid` : **Éther Cristallisé** comme monnaie exclusive du Sphérier (ne remplace pas l'`gold` des boutiques) · nœuds libres (pas de voie verrouillée)
 - Tout débloquable en solo · Bibliothèque du château déverrouille les nœuds
-- Sources d'éther : quêtes (+3-15) · craft (+1) · recette (+2) · festival (+5) · boss (+10) · bâtiment (+5)
+- Sources d'éther (one-time) : quêtes (+3-15) · craft (+1) · recette (+2) · festival (+5) · boss (+10) · bâtiment complété (+5)
 
 > [assumption: équilibre économique à valider en Phase 7 BUILD — coût moyen d'un nœud et nombre de nœuds total non définis. Risque d'overflow à calibrer par playtest.]
 - `Enemy` : Patrol→Chase→Attack · **mort douce** : Majordome nous ramène au lit (Pénalité : perte de 10% des `gold`, inventaire conservé)
@@ -267,6 +278,7 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 ## 👥 Phase 9 — Co-op Local `v1.5→2.0`
 
 - 2-3 joueurs · **Écran partagé** (shared screen, la caméra dezoome, pas de split-screen) · WorldState + KingdomState + **Salle du trésor** partagés
+- **Verrouillage interaction** : Le premier joueur à interagir avec un PNJ ou un déclencheur d'événement verrouille l'action pour les autres jusqu'à la fin du dialogue/cinématique.
 - Sphérier indépendant par joueur · Familiers indépendants
 - Festival déclenché par un joueur → bonus pour tous
 - Save solo compatible avec l'arrivée de nouveaux joueurs

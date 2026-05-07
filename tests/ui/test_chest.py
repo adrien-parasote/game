@@ -100,7 +100,7 @@ def test_draw_when_open_and_assets_present(monkeypatch):
 @pytest.mark.tc("CHEST-U-10")
 def test_load_background_missing_file(monkeypatch, caplog):
     ui = ChestUI()
-    monkeypatch.setattr("src.ui.chest.ASSET_CHEST_BG", "nonexistent.png")
+    monkeypatch.setattr("src.ui.chest_draw.ASSET_CHEST_BG", "nonexistent.png")
     result = ui._load_background()
     assert result is None
     assert any("failed" in rec.message.lower() for rec in caplog.records)
@@ -109,7 +109,7 @@ def test_load_background_missing_file(monkeypatch, caplog):
 @pytest.mark.tc("CHEST-U-11")
 def test_load_slot_image_missing_file(monkeypatch, caplog):
     ui = ChestUI()
-    monkeypatch.setattr("src.ui.chest.ASSET_SLOT_IMG", "nonexistent.png")
+    monkeypatch.setattr("src.ui.chest_draw.ASSET_SLOT_IMG", "nonexistent.png")
     result = ui._load_slot_image()
     assert result is None
     assert any("failed" in rec.message.lower() for rec in caplog.records)
@@ -1004,7 +1004,7 @@ class TestLoadInvBackground:
     def test_load_inv_bg_missing_file(self, caplog):
         """Missing inv background returns None and logs error."""
         ui = ChestUI()
-        with patch("src.ui.chest.ASSET_INV_BG", "nonexistent.png"):
+        with patch("src.ui.chest_draw.ASSET_INV_BG", "nonexistent.png"):
             result = ui._load_inv_background()
         assert result is None
         assert any("failed" in r.message.lower() for r in caplog.records)

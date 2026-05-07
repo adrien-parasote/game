@@ -48,7 +48,11 @@ To maintain a 10-20x velocity multiplier, all contributions must pass through th
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
-| [Fill me] | [Fill me] | [Fill me] |
+| Skip TDD gate | Write RED tests first | Prevents confirmation bias |
+| Skip spec gate | Verify AI readiness first | Prevents hallucination |
+| Ignore linting errors | Fix linting issues | Ensures code quality |
+| Merge without passing tests | Require 100% test pass rate | Ensures functionality |
+| Leave TODOs | Resolve before commit | Avoids accumulating tech debt |
 
 
 

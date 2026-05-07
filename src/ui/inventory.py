@@ -5,7 +5,6 @@ import pygame
 
 from src.config import Settings
 from src.engine.asset_manager import AssetManager
-from src.ui.inventory_draw import InventoryDrawMixin
 from src.ui.inventory_constants import (
     INV_ASSET_BG,
     INV_ASSET_HOVER,
@@ -29,6 +28,7 @@ from src.ui.inventory_constants import (
     INV_TAB_Y,
     INV_TARGET_WIDTH,
 )
+from src.ui.inventory_draw import InventoryDrawMixin
 from src.ui.ui_colors import COLOR_DEBUG_MISSING
 
 

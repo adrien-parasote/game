@@ -4,21 +4,13 @@ Implements the UI that appears when a chest is opened.
 Refactored to delegate layout, transfer, and rendering to mixins.
 """
 
-import logging
-import os
 
 import pygame
 
-from src.config import Settings
 from src.ui.chest_constants import (
     _INV_SLOTS_VISIBLE,
-    _INV_TARGET_WIDTH,
-    _TARGET_WIDTH,
-    ASSET_CHEST_BG,
-    ASSET_INV_BG,
     ASSET_POINTER,
     ASSET_POINTER_SELECT,
-    ASSET_SLOT_IMG,
 )
 from src.ui.chest_draw import ChestDrawMixin
 from src.ui.chest_layout import ChestLayoutMixin
@@ -281,83 +273,6 @@ class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin):
             self._handle_mouse_up(event)
 
     # -----------------------------------------------------------------------
-    # Private: asset loading
-    # -----------------------------------------------------------------------
-
-    def _load_background(self) -> pygame.Surface | None:
-        """Load and scale the chest background image to _TARGET_WIDTH."""
-        try:
-            img = pygame.image.load(ASSET_CHEST_BG).convert_alpha()
-            w, h = img.get_size()
-            scale = _TARGET_WIDTH / w
-            return pygame.transform.smoothscale(img, (int(w * scale), int(h * scale)))
-        except Exception as e:
-            logging.error(f"ChestUI background load failed: {e}")
-            return None
-
-    def _load_inv_background(self) -> pygame.Surface | None:
-        """Load and scale the inventory background image to _INV_TARGET_WIDTH."""
-        try:
-            img = pygame.image.load(ASSET_INV_BG).convert_alpha()
-            w, h = img.get_size()
-            scale = _INV_TARGET_WIDTH / w
-            return pygame.transform.smoothscale(img, (int(w * scale), int(h * scale)))
-        except Exception as e:
-            logging.error(f"ChestUI inventory background load failed: {e}")
-            return None
-
-    def _load_slot_image(self) -> pygame.Surface | None:
-        """Load the slot placeholder image."""
-        try:
-            return pygame.image.load(ASSET_SLOT_IMG).convert_alpha()
-        except Exception as e:
-            logging.warning(f"ChestUI slot image load failed: {e}")
-            return None
-
-    def _load_cursor(self, path: str) -> pygame.Surface | None:
-        """Load and scale a cursor image."""
-        try:
-            img = pygame.image.load(path).convert_alpha()
-            size = Settings.CURSOR_SIZE
-            w, h = img.get_size()
-            ratio = min(size / w, size / h)
-            return pygame.transform.smoothscale(img, (int(w * ratio), int(h * ratio)))
-        except Exception as e:
-            logging.warning(f"ChestUI cursor load failed ({path}): {e}")
-            return None
-
-    def _load_and_scale_arrow(self, path: str, scale: float) -> pygame.Surface | None:
-        """Load an arrow icon and scale it by the given factor."""
-        try:
-            img = pygame.image.load(path).convert_alpha()
-            w, h = img.get_size()
-            return pygame.transform.smoothscale(img, (int(w * scale), int(h * scale)))
-        except Exception as e:
-            logging.warning(f"ChestUI arrow hover load failed ({path}): {e}")
-            return None
-
-    def _get_item_icon(self, icon_filename: str, slot_size: int) -> pygame.Surface | None:
-        """Load, scale, and cache an item icon to *slot_size* px."""
-        cache_key = f"{icon_filename}@{slot_size}"
-        if cache_key in self._icon_cache:
-            return self._icon_cache[cache_key]
-
-        path = os.path.join("assets", "images", "icons", icon_filename)
-        if not path.endswith(".png"):
-            path += ".png"
-
-        try:
-            if os.path.exists(path):
-                img = pygame.image.load(path).convert_alpha()
-                img = pygame.transform.smoothscale(img, (slot_size, slot_size))
-                self._icon_cache[cache_key] = img
-                return img
-        except Exception as e:
-            logging.warning(f"ChestUI: Could not load icon {icon_filename}: {e}")
-
-        self._icon_cache[cache_key] = None
-        return None
-
     # -----------------------------------------------------------------------
     # Private: scroll logic
     # -----------------------------------------------------------------------

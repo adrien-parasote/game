@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-04 | Files scanned: 49 | Token estimate: ~480 -->
+<!-- Generated: 2026-05-07 | Files scanned: 66 | Token estimate: ~500 -->
 
 # Engine Logic Flow
 
@@ -16,7 +16,8 @@ PAUSED → GameEvent.goto_title()        → _transition_to_title()        → T
 - `_process_global_events()`: `pygame.QUIT` → `sys.exit()`, fullscreen toggle — runs every frame regardless of state.
 
 ## Movement Chain
-`Player.input()` (WASD/Arrows) → `BaseEntity.move(dt)` → `Game._is_collidable()` (MapManager tile check + obstacle group) → `rect` update + animation frame
+`Player.input()` (WASD/Arrows) → `BaseEntity.move(dt)` → `CollisionChecker.is_collidable()` (tile check via MapManager + obstacle group) → `rect` update + animation frame
+- **CollisionChecker** (`src/engine/collision_checker.py`, ~80L): extracted from `Game._is_collidable()` in Phase 1.5. Uses `game: Any` context injection.
 - **Footsteps**: Triggered on frames 1 and 3. `MapManager.get_terrain_material_at()` resolves surface. `AudioManager.play_sfx(footstep_{material})` falls back to base footstep if specific file is missing.
 
 ## Interaction Chain
@@ -81,7 +82,10 @@ sub_types: chest | lever | door | sign | animated_decor
 
 ## Map Loading & Teleportation
 `Game._check_teleporters()` → on arrival tile or intent tile → `transition_map(target_map, spawn_id, type)`
-`transition_map()` → fade out → `_load_map()` → `AssetManager.clear()` → `TmjParser.load_map()` → `MapManager` → `_spawn_entities()` → entities call `WorldState.get(key)` to restore state → fade in.
+`transition_map()` → fade out → `MapLoader.load_map(map_file, spawn_id)` → `AssetManager.clear()` → `TmjParser.load_map()` → `MapManager` → `EntityFactory.spawn_entities()` → entities call `WorldState.get(key)` to restore state → fade in.
+- **MapLoader** (`src/engine/map_loader.py`, ~115L): handles BGM, cleanup, player position. Extracted from `Game._load_map()` in Phase 1.5.
+- **EntityFactory** (`src/engine/entity_factory.py`, 265L): dispatches entity creation by type. Extracted from `Game._spawn_entities()` in Phase 1.5.
+- **SpatialUtils** (`src/engine/spatial_utils.py`): `get_facing_vector()`, `is_facing_toward()`, `verify_orientation()` — utility functions shared by InteractionManager and CollisionChecker.
 
 ## Time System
 `TimeSystem.update(dt)` → accumulates `elapsed_seconds` → `world_time` (hour/minute/season) → `night_alpha` (0–200) → `brightness` (float 0.0–1.0) → drives `LightingManager` and `GameHUD` clock display.

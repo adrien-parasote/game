@@ -194,6 +194,14 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 |---------|------|-------|--------------|
 | CAM-I-01 | Full draw_scene | Game with loaded map + entities | No exceptions, correct pass order |
 | CAM-I-02 | Foreground occlusion | Player under depth-1 tile | Occluded surface used for overlapping tile |
+| TC-MAP-01 | Layer ordering | Map with `00-layer` | `00-layer` identified as background, rendered first |
+| TC-MAP-02 | Multi-layer render | Map with multiple layers | `00-layer` drawn bottom-most |
+
+### Linked Test Functions
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-MAP-01 | `test_layer_recursive_order` | `../../tests/map/test_map.py:L41` |
+| TC-MAP-02 | `test_map_manager_render_layer` | `../../tests/map/test_map.py:L128` |
 
 ## 8. Error Handling Matrix
 
@@ -215,22 +223,3 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 - **Unit tests (render manager)**: [test_render_manager.py L1](../../tests/engine/test_render_manager.py#L1)
 - **Unit tests (graphics)**: [test_graphics.py L1](../../tests/graphics/test_graphics.py#L1)
 
-
-## Assumptions
-| # | Assumption | Risk | Validation |
-|---|---|---|---|
-| 1 | System performs adequately | Low | Playtest |
-| 2 | Inputs are sanitized | Low | Code review |
-| 3 | Components interact seamlessly | Low | Integration tests |
-
-## Test Case Specifications
-| ID | Description | Type |
-|---|---|---|
-| TC-001 | Validate initialization | Unit |
-| TC-002 | Validate state transition | Unit |
-| TC-003 | Validate edge case handling | Unit |
-| TC-004 | Validate error raising | Unit |
-| TC-005 | Validate boundary conditions | Unit |
-| IT-001 | Validate module integration | Integration |
-| IT-002 | Validate state persistence | Integration |
-| IT-003 | Validate system flow | Integration |

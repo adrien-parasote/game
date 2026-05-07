@@ -33,7 +33,7 @@ To support large maps, only visible tiles are processed.
 - **Math**: 
   - `start_col = floor(viewport.left / tile_size)`
   - `end_col = ceil(viewport.right / tile_size)`
-- **Behavior**: Iterate only through this O(1) range in `MapManager`.
+- **Behavior**: Iterate only through this O(1) range in `MapManager` using `range(start_col, end_col + 1)`.
 
 ### B. Camera Clamping
 The viewport is constrained to the map boundaries.
@@ -108,6 +108,7 @@ To maintain modularity, the engine decouples map parsing from rendering logic.
 In addition to map tile collisions, the engine supports blocking player movement through dynamic entities.
 - **Mechanism**: The `_is_collidable` check in `Game` iterates through the `interactives` and `npcs` sprite groups.
 - **Detection**: Uses `collidepoint` check on the entity's physical hitbox (`obj.rect`).
+- **Signature**: Adapters must accept `(px_center, py_center, requester=None)` to support coordinate-based collision querying.
 - **Scope**: Applied to `interactives` (Doors, etc.) and `npcs` to ensure physical consistency.
 
 ### L. GameHUD (Visual UI)
@@ -136,7 +137,9 @@ The engine supports a multiverse structure defined by Tiled World files.
   - **Direction Guard**: If `required_direction` is not `"any"`, the player's `current_state` (facing direction) must match the property Value to trigger the transition.
   - **Fading**: Uses a full-screen black surface with incrementing alpha. The `time_system` continues to update during the fade to maintain simulation continuity.
 
-  - **Infinite Loop Protection**: Atomic detection after movement prevents a player from being immediately teleported back if spawned on a portal.
+  - **Infinite Loop Protection**: 
+    - **Arrival Trigger**: Must reset `was_moving` state upon map load.
+    - **Cooldown**: A 0.5s global teleport cooldown is enforced to prevent rapid map oscillations.
 - **Map Loading (`_load_map`)**:
   - Systematic cleanup of `interactives`, `npcs`, `obstacles_group`, and `teleports_group`.
   - The `Player` instance is preserved and repositioned to the exact coordinates of the target `00-spawn_point`.
@@ -166,7 +169,7 @@ The dialogue system (HUD) uses a multi-page architecture with typewriter effects
 - **State Machine**:
   1. **Typing**: Text is revealed character-by-character.
   2. **Page Complete**: Reveals the "Next" cursor (`06-cursor.png`).
-  3. **Skip**: Pressing `Settings.INTERACT_KEY` while typing immediately fills the current page.
+  3. **Skip**: Pressing `Settings.INTERACT_KEY` while typing immediately fills the current page. (Must be debounced from the initial interaction trigger via `KEYUP` or state-frame guard).
   4. **Next**: Pressing `Settings.INTERACT_KEY` when page is complete advances to the next page or closes the dialogue.
 - **Shadowing**: All text is rendered twice (2px offset) to ensure visibility against complex backgrounds.
 
@@ -247,7 +250,7 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 | Interact while facing away | Validate facing direction | Prevents "psychic" interactions through back-facing |
 | Render to non-Surface objects | Type-check or wrap with `try-except` | Prevents crashes in unit tests using Mocks |
 
-## 4. Test Case Specifications (Aggregated)
+## 5. Test Case Specifications (Aggregated)
 
 | ID | Topic | Input | Expected Output |
 |----|-------|-------|-----------------|
@@ -306,20 +309,11 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 
 
 ## Assumptions
-| # | Assumption | Risk | Validation |
-|---|---|---|---|
-| 1 | System performs adequately | Low | Playtest |
-| 2 | Inputs are sanitized | Low | Code review |
-| 3 | Components interact seamlessly | Low | Integration tests |
 
-## Test Case Specifications
-| ID | Description | Type |
-|---|---|---|
-| TC-001 | Validate initialization | Unit |
-| TC-002 | Validate state transition | Unit |
-| TC-003 | Validate edge case handling | Unit |
-| TC-004 | Validate error raising | Unit |
-| TC-005 | Validate boundary conditions | Unit |
-| IT-001 | Validate module integration | Integration |
-| IT-002 | Validate state persistence | Integration |
-| IT-003 | Validate system flow | Integration |
+| # | Assumption | Risk | Validation |
+|---|-----------|------|------------|
+| 1 | `pygame.display.get_surface()` retourne toujours un Surface valide une fois initialisé | Low | Tests existants (mocks) + integration test |
+| 2 | Le fichier `assets/tiled/game.tiled-project` existe en production (peut être absent dans les clones dev) | Medium | `load_property_types` retourne `[]` en fallback — jamais de crash |
+| 3 | Les coordonnées Tiled sont en Top-Left — le moteur applique l'offset `TILE_SIZE/2` au chargement | Low | `TmjParser` applique systématiquement la correction (vérifié par TC-MAP-*) |
+| 4 | La carte `99-debug_room.tmj` existe quand `DEBUG=True` — si absente, le jeu log CRITICAL et ne charge pas de carte | Medium | À vérifier en mode DEBUG avant release |
+| 5 | Les fichiers BGM sont tous en `.ogg` — autres formats non supportés par `pygame.mixer` | Low | Convention de projet — validée par linter asset |

@@ -430,3 +430,25 @@ self._viewport_world_rect.height = self.screen.get_height() + 256
 - **Tests interaction** : [test_interaction.py L1](../../tests/engine/test_interaction.py#L1)
 - **Tests render manager** : [test_render_manager.py L1](../../tests/engine/test_render_manager.py#L1)
 - **Tests entities** : [test_lighting.py L1](../../tests/engine/test_lighting.py#L1)
+- **DialogueManager** : [dialogue.py L1](../../src/ui/dialogue.py#L1)
+
+---
+
+## Absorbed from optimization-spec.md (2026-05-07)
+
+> Les spécifications ci-dessous proviennent de `optimization-spec.md` (consolidé ici).
+
+### DialogueManager Optimization TCs
+
+| TC ID | Component | Input | Expected Output | Edge Cases |
+|-------|-----------|-------|-----------------|------------|
+| TC-DLG-01 | Pagination | Very long text | Correct number of pages | Empty string, single word |
+| TC-DLG-02 | Typewriter | `dt` updates | `displayed_text` matches index | Speed=0, extreme `dt` |
+| TC-DLG-03 | Advancing | Skip input | Page complete immediately | Last page closes |
+
+### Linked Test Functions
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-DLG-01 | `test_dialogue_pagination` | `../../tests/ui/test_inventory.py:L238` |
+| IT-INT-01 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
+| IT-INT-02 | `test_interaction_toggle_entity_by_id` | `../../tests/engine/test_interaction.py:L513` |

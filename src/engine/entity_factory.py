@@ -20,7 +20,6 @@ from src.entities.npc import NPC
 from src.entities.pickup import PickupItem
 from src.entities.teleport import Teleport
 
-
 # ---------------------------------------------------------------------------
 # Property helper (module-level so EntityFactory and tests can use it)
 # ---------------------------------------------------------------------------
@@ -78,11 +77,10 @@ class EntityFactory:
             entities: List of Tiled entity dicts from TmjParser.
             map_name: Current map filename (used for world_state keys).
         """
-        half_tile = self.game.tile_size // 2
+        self.game.tile_size // 2
         for ent in entities:
             props = ent.get("properties", {})
             entity_type = _get_property(props, "entity_type", default="unknown")
-            e_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
 
             if _get_property(props, "is_initial_spawn") is True:
                 continue
