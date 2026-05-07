@@ -1,9 +1,9 @@
 # Spec — Phase 1.5 : Refactoring `game.py` [Implementation]
 
 > Document Type: Implementation  
-> **Version :** 1.1 — 2026-05-07  
-> **Statut :** Delivered ✅ (BUILD terminé, tous tests verts)  
-> **Covers :** F1 (`game_setup.py`), F2 (`entity_factory.py`), F3 (`map_loader.py`), F4 (`input_handler.py`)  
+> **Version :** 1.2 — 2026-05-07  
+> **Statut :** Delivered ✅ (BUILD terminé, tous tests verts, 93% coverage global)  
+> **Covers :** F1 (`game_setup.py`), F2 (`entity_factory.py`), F3 (`map_loader.py`), F4 (`input_handler.py`), F5 (`test_coverage_gaps_phase15.py`)
 > **Réf. Roadmap :** [`docs/strategic/MASTER_ROADMAP.md#phase-15`](../strategic/MASTER_ROADMAP.md#phase-15)  
 > **ADR :** [`docs/ADRs/ADR-004-refactoring-context-injection.md`](../ADRs/ADR-004-refactoring-context-injection.md#L1)
 
@@ -410,6 +410,21 @@ game.py réel:            479 LOC  (thin wrappers conservés pour compat tests)
 | IT-002 | IT-ML-01 | integration |
 | IT-003 | IT-IH-01 | integration |
 | IT-004 | IT-GS-01 | integration |
+
+### Coverage Gap Tests (Phase 1.5 Hardening)
+
+Pour garantir la résilience du moteur et atteindre le seuil de `>=90% global coverage`, une série de tests ciblés a été ajoutée dans `tests/test_coverage_gaps_phase15.py` :
+
+| Cible | But |
+|-------|-----|
+| `TestGameCoverage` | Tester les branches de délégation tardive (PNJs, _start_initial_ambients) et UI fallback. |
+| `TestEntityFactoryCoverage` | Couvrir les lectures de `_get_property` imbriquées et la restauration des états sauvegardés (ex. quantity/collected). |
+| `TestCameraGroupCoverage` | Valider les clampings de caméra (`calculate_offset`) et les invalidations de cache pour les entités en mouvement. |
+| `TestPickupCoverage` | Assurer la fallback de chargement de spritesheet sans extension `.png`. |
+| `TestLightingCoverage` | Valider l'eviction du cache (LRU) et la gestion des halos lumineux sans intensité (`is_on=False`). |
+| `TestTiledProjectCoverage` | Vérifier la gestion des erreurs de syntaxe JSON et la résolution de propriétés imbriquées (classes). |
+| `TestInteractiveLightingCoverage` | Vérifier le `_update_flicker` sur des entités avec fallback `is_on=False` ou animées. |
+| `TestSaveMenuCoverage` | Couvrir l'initialisation UI avec fallback `AssetManager` et interactions annulées (back button). |
 
 ---
 
