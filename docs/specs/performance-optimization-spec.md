@@ -5,7 +5,7 @@
 
 > Document Type: Implementation
 > Version: 1.0 — 2026-05-04
-> Audit source: `docs/brain/fcb4f254/performance_audit.md`
+> Audit source: docs/brain/fcb4f254/performance_audit.md
 
 ## Scope
 
@@ -421,7 +421,7 @@ self._viewport_world_rect.height = self.screen.get_height() + 256
 
 ## Deep Links
 
-- **Audit source** : [performance_audit.md](../../.gemini/antigravity/brain/fcb4f254-aa2a-4df8-a2c4-670ad9e422b1/performance_audit.md#L1)
+- **Audit source** : performance_audit.md
 - **TitleScreen** : [title_screen.py L1](../../src/ui/title_screen.py#L1)
 - **TitleScreen constants** : [title_screen_constants.py L1](../../src/ui/title_screen_constants.py#L1)
 - **CameraGroup** : [groups.py L51](../../src/entities/groups.py#L51)

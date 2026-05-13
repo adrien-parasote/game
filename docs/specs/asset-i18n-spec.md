@@ -52,7 +52,7 @@ class AssetManager:
 1. Return cached surface if `path` in `_images`
 2. If file doesn't exist:
    - `fallback=True` → log ERROR, return 32×32 magenta placeholder
-   - `fallback=False` → raise `FileNotFoundError`
+   - `fallback=False` → raise FileNotFoundError
 3. Load with `pygame.image.load(path).convert_alpha()`
 4. Cache and return
 
@@ -168,7 +168,7 @@ Returns the full `self.data` dictionary.
 | UT-AM-01 | `AssetManager()` | Two calls | Same instance (singleton) |
 | UT-AM-02 | `get_image` | Valid path | Surface returned, cached |
 | UT-AM-03 | `get_image` | Missing path, fallback=True | Magenta 32×32 surface |
-| UT-AM-04 | `get_image` | Missing path, fallback=False | `FileNotFoundError` raised |
+| UT-AM-04 | `get_image` | Missing path, fallback=False | FileNotFoundError raised |
 | UT-AM-05 | `get_font` | Valid path + size | Font returned, cached |
 | UT-AM-06 | `get_font` | Missing path | SysFont fallback |
 | UT-AM-07 | `clear_cache` | After loading | All caches empty |

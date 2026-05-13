@@ -351,7 +351,7 @@ class ChestUI:
 | CHEST-U-08 | `ChestUI._draw_slots` | `slot_size=0` | No `blit` calls | Zero div guard |
 | CHEST-U-09 | `ChestUI._draw_slots` | `slot_img=None` | Falls back to `pygame.draw.rect` | Missing asset |
 | CHEST-U-10 | `_load_background` | `pygame.error` raised | Returns `None` | File not found |
-| CHEST-U-11 | `_load_slot_image` | `FileNotFoundError` raised | Returns `None` | Headless / missing |
+| CHEST-U-11 | `_load_slot_image` | FileNotFoundError raised | Returns `None` | Headless / missing |
 
 ### Transfer Tests — `../../tests/test_transfer_logic.py` (NEW v1.2)
 
@@ -395,7 +395,7 @@ class ChestUI:
 
 | Error | Detection | Response | Fallback |
 |-------|-----------|----------|----------|
-| `07-chest.png` missing | `pygame.error` / `FileNotFoundError` in `_load_background` | `logging.error(...)`, return `None` | `draw()` guards: `if self._bg is None: return` |
+| `07-chest.png` missing | `pygame.error` / FileNotFoundError in `_load_background` | `logging.error(...)`, return `None` | `draw()` guards: `if self._bg is None: return` |
 | `03-inventory_slot.png` missing | Same in `_load_slot_image` | `logging.warning(...)`, return `None` | `_draw_slots` falls back to `pygame.draw.rect` wireframe |
 | `chest_ui` missing on `game` | `getattr(self.game, 'chest_ui', None)` | Return early silently | Interaction system stable |
 | `slot_size == 0` | Guard at top of `_draw_slots` | Return early | No blit / no div by zero |
@@ -408,7 +408,7 @@ class ChestUI:
 | Reference | Location |
 |-----------|----------|
 | `ChestUI` class | [chest.py L1](../../src/ui/chest.py#L1) |
-| `ChestTransfer` logic | [chest_transfer.py L1](../../src/ui/chest_transfer.py#L1) |
+| ChestTransfer logic | [chest_transfer.py L1](../../src/ui/chest_transfer.py#L1) |
 | `InventoryUI` (pattern to follow) | [inventory.py L1](../../src/ui/inventory.py#L1) |
 | `InteractionManager._check_proximity_emotes` | [interaction.py L56](../../src/engine/interaction.py#L56) |
 | `Game._draw_scene` | [game.py L509](../../src/engine/game.py#L509) |

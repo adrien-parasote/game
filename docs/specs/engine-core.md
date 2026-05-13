@@ -91,7 +91,7 @@ Decoupled logic in `InteractionManager` handles all entity/player spatial trigge
 - **Objects**: Proximity (<45px) and orientation checks defined by object type.
 - **Door Relaxation**: Open doors (`is_on=True`) allow interaction from the "wrong" side to enable closing after passing through.
 - **Cooldown**: A 0.5s interaction cooldown prevents input spamming.
-- **Unified Key**: The `E` key (`Settings.INTERACT_KEY`) is the universal trigger.
+- **Unified Key**: The E key (`Settings.INTERACT_KEY`) is the universal trigger.
 
 ### J. Map Data Architecture (TMJ/TSX)
 To maintain modularity, the engine decouples map parsing from rendering logic.
@@ -240,7 +240,7 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 | Load assets in `draw()` | Use pre-cached assets | Frame drops and I/O overhead |
 | Clamp `rect` directly | Clamp `pos` (float) | Prevents sub-pixel jitter and rounding errors |
 | Hardcode screen sizes | Use `surface.get_size()` | Support Fullscreen and dynamic resizing |
-| Direct coordinate access | Use `CoordinateSystem` | Decouples rendering from game logic |
+| Direct coordinate access | Use CoordinateSystem | Decouples rendering from game logic |
 | Scroll camera off map | Apply Map Clamping | Professional polish and boundary consistency |
 | Call `.fill()` on a shared `Surface` | Remove debug rendering | Modifies frames persistently and breaks culling |
 | Use `image.get_rect()` for hitbox | Use `Rect(0,0,TILE,TILE)` | Prevents physical vs visual conflict (offset logic) |
@@ -274,7 +274,7 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 | Failure | Detection | Response | Fallback |
 |---------|-----------|----------|----------|
 | Config Corrupt | `JSONDecodeError` | Log Warning | Use internal defaults |
-| Map Missing | `FileNotFoundError` | Log Critical | Safe loop abort |
+| Map Missing | FileNotFoundError | Log Critical | Safe loop abort |
 | Surface None | `TypeError` in Draw | Log Error | Ignore rendering step (safe for tests) |
 | Dialogue Key Fail| Missing `fr.json` key | Log Warning | Show raw key or empty string |
 | Audio Init Fail | `pygame.mixer` error | Log Warning | Disable audio system, continue game |

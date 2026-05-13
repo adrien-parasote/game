@@ -198,8 +198,8 @@ Player presses E while bubble is open
 
 | Error Type | Detection | Response | Fallback |
 |------------|-----------|----------|----------|
-| Missing tile asset | `FileNotFoundError` | Log warning | Use magenta debug surface |
-| Missing font | `FileNotFoundError` | Log error | Use pygame default font |
+| Missing tile asset | FileNotFoundError | Log warning | Use magenta debug surface |
+| Missing font | FileNotFoundError | Log error | Use pygame default font |
 | Empty text | `len(text) == 0` | Log warning | Don't show bubble |
 | Missing i18n key | Key not in lang dict | Log warning | Show raw key string |
 

@@ -147,7 +147,7 @@
 
 | Error Type | Detection | Response | Fallback | Logging |
 |------------|-----------|----------|----------|---------|
-| `propertytypes.json` missing | `FileNotFoundError` in `_load_item_data` | Return `{}` | Item has no equip restriction | `WARNING` |
+| `propertytypes.json` missing | FileNotFoundError in `_load_item_data` | Return `{}` | Item has no equip restriction | `WARNING` |
 | `propertytypes.json` malformed | `json.JSONDecodeError` | Return `{}` | Item has no equip restriction | `WARNING` |
 | Asset image missing (slot, cursor) | `pygame.error` | Catch silently | Fallback 32×32 magenta surface | `WARNING` |
 | `get_item_at` out-of-bounds | Index `< 0` or `>= capacity` | Return `None` | — | — |

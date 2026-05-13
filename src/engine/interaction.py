@@ -169,60 +169,61 @@ class InteractionManager:
         p_state = self.game.player.current_state
 
         for obj in self.game.interactives:
-            sq_dist = p_pos.distance_squared_to(obj.pos)
-            valid_orientation = False
-
-            if getattr(obj, "is_passable", False) and sq_dist < _RANGE_SQ_16:
-                valid_orientation = True
-
-            if not valid_orientation and getattr(obj, "activate_from_anywhere", False):
-                is_aligned = abs(p_pos.x - obj.pos.x) < 20 or abs(p_pos.y - obj.pos.y) < 20
-                if (
-                    sq_dist < _RANGE_SQ_48
-                    and is_aligned
-                    and facing_toward(p_pos, p_state, obj.pos)
-                ):
-                    valid_orientation = True
-
-            if not valid_orientation and sq_dist < _RANGE_SQ_45:
-                valid_orientation = self._verify_orientation(obj, p_state, p_pos)
-
-            if valid_orientation:
-                res = obj.interact(self.game.player)
-
-                if getattr(obj, "sfx", None):
-                    dist = p_pos.distance_to(obj.pos)
-                    vol_mult = max(0.4, 1.0 - dist / 120.0)
-                    self.game.audio_manager.play_sfx(
-                        str(obj.sfx),
-                        str(getattr(obj, "element_id", "")),
-                        volume_multiplier=vol_mult,
-                    )
-
-                if res:
-                    self.game._trigger_dialogue(res)
-                else:
-                    if hasattr(obj, "_world_state_key"):
-                        self.game.world_state.set(obj._world_state_key, {"is_on": obj.is_on})
-
-                    target = getattr(obj, "target_id", None)
-                    if target:
-                        self.toggle_entity_by_id(target, depth=1)
-
-                if getattr(obj, "sub_type", "") == "chest":
-                    if obj.is_on:
-                        self._open_chest_entity = obj
-                        if hasattr(self.game, "chest_ui"):
-                            self.game.chest_ui.open(obj, self.game.player)
-                    else:
-                        chest_ui = getattr(self.game, "chest_ui", None)
-                        if chest_ui is not None and chest_ui.is_open:
-                            chest_ui.close()
-                        self._open_chest_entity = None
-                        self._last_proximity_target = obj
-                        self._emote_cooldown = 1.0
+            if self._is_object_interactable(obj, p_pos, p_state):
+                self._trigger_object_interaction(obj, p_pos)
                 return True
         return False
+
+    def _is_object_interactable(self, obj, p_pos, p_state) -> bool:
+        sq_dist = p_pos.distance_squared_to(obj.pos)
+
+        if getattr(obj, "is_passable", False) and sq_dist < _RANGE_SQ_16:
+            return True
+
+        if getattr(obj, "activate_from_anywhere", False):
+            is_aligned = abs(p_pos.x - obj.pos.x) < 20 or abs(p_pos.y - obj.pos.y) < 20
+            if sq_dist < _RANGE_SQ_48 and is_aligned and facing_toward(p_pos, p_state, obj.pos):
+                return True
+
+        if sq_dist < _RANGE_SQ_45:
+            return self._verify_orientation(obj, p_state, p_pos)
+
+        return False
+
+    def _trigger_object_interaction(self, obj, p_pos):
+        res = obj.interact(self.game.player)
+
+        if getattr(obj, "sfx", None):
+            dist = p_pos.distance_to(obj.pos)
+            vol_mult = max(0.4, 1.0 - dist / 120.0)
+            self.game.audio_manager.play_sfx(
+                str(obj.sfx),
+                str(getattr(obj, "element_id", "")),
+                volume_multiplier=vol_mult,
+            )
+
+        if res:
+            self.game._trigger_dialogue(res)
+        else:
+            if hasattr(obj, "_world_state_key"):
+                self.game.world_state.set(obj._world_state_key, {"is_on": obj.is_on})
+
+            target = getattr(obj, "target_id", None)
+            if target:
+                self.toggle_entity_by_id(target, depth=1)
+
+        if getattr(obj, "sub_type", "") == "chest":
+            if obj.is_on:
+                self._open_chest_entity = obj
+                if hasattr(self.game, "chest_ui"):
+                    self.game.chest_ui.open(obj, self.game.player)
+            else:
+                chest_ui = getattr(self.game, "chest_ui", None)
+                if chest_ui is not None and chest_ui.is_open:
+                    chest_ui.close()
+                self._open_chest_entity = None
+                self._last_proximity_target = obj
+                self._emote_cooldown = 1.0
 
     def _check_pickup_interactions(self) -> bool:
         """Check for nearby pickup items."""

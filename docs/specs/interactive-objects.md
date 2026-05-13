@@ -244,7 +244,7 @@ This preserves player overrides across map transitions and save/load cycles.
 | Add doors to map collision layer | Use `obstacles_group` | Allows dynamic passage |
 | Pass center pos only | Pass Tiled top-left and dimensions | Ensures correct visual alignment |
 | Hardcode door state | Use `is_on` and `is_closing` flags | Animation state machine consistency |
-| Use `SPACE` for objects | Use `E` key (Unified) | UX differentiation for objects |
+| Use `SPACE` for objects | Use E key (Unified) | UX differentiation for objects |
 | Calculate distance every frame | Calculate only on key press | CPU optimization |
 | Scale surfaces in `update` | Pre-calculate a scaling cache in `__init__` | `pygame.transform.scale` causes severe frame drops when called per-frame on multiple objects |
 | Mega `__init__` methods | Refactor into private helper methods (`_parse_properties`, `_setup_physics`) | Ensure compliance with the 50-line maximum per method rule |

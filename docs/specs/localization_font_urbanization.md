@@ -14,7 +14,7 @@ Establish a three-tier font system to enhance visual hierarchy and game identity
 ### [MODIFY] [config.py](../../src/config.py#L1)
 - Replace `MAIN_FONT` with tiered constants:
     - `FONT_NOBLE`: `assets/fonts/metamorphous-regular.ttf` (Prestige)
-    - `FONT_NARRATIVE`: `assets/fonts/vcr_osd_mono.ttf` (Reading)
+    - `FONT_NARRATIVE`: `assets/fonts/m5x7.ttf` (Reading)
     - `FONT_TECH`: `assets/fonts/m5x7.ttf` (Data/Numbers)
 - Centralize sizes: `FONT_SIZE_NOBLE` (24), `FONT_SIZE_NARRATIVE` (22), `FONT_SIZE_TECH` (20).
 

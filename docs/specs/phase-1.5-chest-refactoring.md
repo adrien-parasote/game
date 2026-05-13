@@ -215,7 +215,7 @@ Attendu après refactoring : 0 match dans `chest.py`, 6 matches dans `chest_draw
 | ❌ Ne pas faire | ✅ Faire à la place | Pourquoi |
 |----------------|--------------------|---------| 
 | Ajouter un `__init__` dans `ChestDrawMixin` | Garder les mixins sans `__init__` | L'état (`_icon_cache`, `_bg`, etc.) est défini dans `ChestUI.__init__` — pattern existant du projet |
-| Créer un 5ème mixin `ChestAssetsMixin` | Intégrer dans `ChestDrawMixin` existant | 5ème mixin pour 68 LOC = over-engineering ; drawing + assets = cohésion fonctionnelle |
+| Créer un 5ème mixin **ChestAssetsMixin** | Intégrer dans `ChestDrawMixin` existant | 5ème mixin pour 68 LOC = over-engineering ; drawing + assets = cohésion fonctionnelle |
 | Dupliquer les méthodes (les garder dans `chest.py` ET les ajouter dans `chest_draw.py`) | Supprimer de `chest.py`, ajouter dans `chest_draw.py` | Double définition → Python MRO choisit la première, mais c'est un bug latent |
 | Appeler `pygame.image.load()` dans `draw()` ou `_compute_layout()` | Garder les loads dans `__init__` uniquement (L-ARCH-001) | Disk I/O dans le render loop → frame drops |
 | Modifier la logique de `_get_item_icon` (cache, path resolution) | Copie exacte de L339-L359 | Le cache `@size` est une optimisation critique |

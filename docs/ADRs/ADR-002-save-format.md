@@ -19,7 +19,7 @@ Il faut choisir comment sérialiser et stocker l'état du jeu (3 slots).
 
 JSON. Fichiers stockés dans `saves/` à la racine du projet. Répertoire dans `.gitignore`.
 
-## Structure du fichier `saves/slot_N.json`
+## Structure du fichier `saves/slot_[N].json`
 
 ```json
 {

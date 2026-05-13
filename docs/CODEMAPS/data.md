@@ -59,7 +59,7 @@ Stored on `InteractiveEntity` as `entity.loot_items: list[dict | None]` — fixe
 
 
 ## Save Data Model (`SaveManager`, `src/engine/save_manager.py`)
-- **Slots**: 3 slots → `saves/slot_N.json` + `saves/slot_N_thumb.png`
+- **Slots**: 3 slots → `saves/slot_[N].json` + `saves/slot_[N]_thumb.png`
 - **Format** (version `0.4.0`):
 ```json
 {
@@ -107,5 +107,5 @@ assets/
     tilesets/         .tsx tileset definitions
   langs/              fr.json (localization)
   data/               loot_table.json, propertytypes.json
-saves/                slot_N.json + slot_N_thumb.png (runtime, gitignored)
+saves/                slot_[N].json + slot_[N]_thumb.png (runtime, gitignored)
 ```

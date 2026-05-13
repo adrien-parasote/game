@@ -9,7 +9,7 @@
 **Date :** 2026-05-02  
 **Status :** ✅ Prêt pour BUILD  
 **ADRs :** ADR-001, ADR-002, ADR-003  
-**Blueprint :** `docs/strategic/blueprint.md`
+**Blueprint :** `docs/strategic/game_vision.md`
 
 ---
 
@@ -455,7 +455,7 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 
 | Erreur | Détection | Réponse | Fallback |
 |---|---|---|---|
-| `saves/slot_N.json` manquant | `FileNotFoundError` dans `load()` | Log DEBUG | Retourner `None` (slot vide) |
+| `saves/slot_[N].json` manquant | FileNotFoundError dans `load()` | Log DEBUG | Retourner `None` (slot vide) |
 | JSON invalide | `json.JSONDecodeError` | Log WARNING "Slot N corrompu" | Retourner `None` |
 | Version schéma incompatible | `data["version"] != SCHEMA_VERSION` | Log WARNING | Retourner `None` |
 | Écriture disque impossible | `IOError` dans `save()` | Log ERROR | Ne pas crasher, afficher message UI |
@@ -476,7 +476,7 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 - `WorldState._state` → [world_state.py L4](src/engine/world_state.py#L4)
 - `WorldState.make_key()` → [world_state.py L18](src/engine/world_state.py#L18)
 - `Settings.QUIT_KEY` (à supprimer) → `src/config.py`
-- Blueprint → [blueprint.md](docs/strategic/blueprint.md#architecture--décision-centrale)
+- Blueprint → [game_vision.md](docs/strategic/game_vision.md)
 - ADR-001 → [ADR-001](docs/ADRs/ADR-001-gamestate-architecture.md#décision)
 - ADR-002 → [ADR-002](docs/ADRs/ADR-002-save-format.md#structure-du-fichier-savesslot_njson)
 - ADR-003 → [ADR-003](docs/ADRs/ADR-003-key-mapping.md#décision)

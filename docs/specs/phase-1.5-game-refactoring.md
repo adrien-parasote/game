@@ -55,7 +55,7 @@ def load_property_types(project_path: str) -> list[dict]:
 
 **Comportement exact à préserver :**
 - `setup_logging` : configure `RotatingFileHandler` sur `logs/game.log` + `StreamHandler`. Niveau log depuis `Settings.LOG_LEVEL`. Format : `%(asctime)s - %(levelname)s - %(message)s`.
-- `load_property_types` : lit `assets/tiled/game.tiled-project` (JSON), retourne `data.get("propertyTypes", [])`. Si `FileNotFoundError` ou `JSONDecodeError` → log warning, retourne `[]`.
+- `load_property_types` : lit `assets/tiled/game.tiled-project` (JSON), retourne `data.get("propertyTypes", [])`. Si FileNotFoundError ou `JSONDecodeError` → log warning, retourne `[]`.
 
 **Appel dans `Game.__init__` après extraction :**
 ```python
@@ -438,9 +438,9 @@ Pour garantir la résilience du moteur et atteindre le seuil de `>=90% global co
 | Failure | Détection | Réponse | Fallback |
 |---------|-----------|---------|---------|
 | Fichier map absent | `os.path.exists` → False dans `MapLoader.load` | `logging.error(f"Target map not found: {map_path}")` + `return` | Pas de changement d'état — map précédente reste chargée |
-| `game.tiled-project` absent | `FileNotFoundError` dans `load_property_types` | `logging.warning(...)` | Retourne `[]` — loot_table fonctionne sans property types |
+| `game.tiled-project` absent | FileNotFoundError dans `load_property_types` | `logging.warning(...)` | Retourne `[]` — loot_table fonctionne sans property types |
 | Spawn point non trouvé | Aucun match dans la boucle resolve | `logging.warning(...)` | Player positionné au centre de la carte |
-| NPC spawn sans asset | `FileNotFoundError` dans `EntityFactory.spawn_npc` | `logging.error(...)` — NPC non ajouté | Carte reste jouable sans ce NPC |
+| NPC spawn sans asset | FileNotFoundError dans `EntityFactory.spawn_npc` | `logging.error(...)` — NPC non ajouté | Carte reste jouable sans ce NPC |
 | Entity type inconnu | Type non dans le dispatcher de `spawn_entities` | `logging.warning(f"Unknown entity type: {ent_type}")` | Entity ignorée |
 
 ---

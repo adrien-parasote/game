@@ -124,7 +124,7 @@ Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Ref
 ## 🏗️ Phase 4 — Château, Bâtiments & Guildes `v0.7→0.8`
 
 ### Développement
-- `BuildingSystem` : 4 niveaux (ruiné→reconstruit→décoré→restauré)
+- **Building System** : 4 niveaux (ruiné→reconstruit→décoré→restauré)
 - `FurnitureSystem` : placement libre, grille tile-based, effets passifs optionnels
 - `GuildSystem` : 6 guildes · rangs (Apprenti→Grand Maître) · contrats journaliers
 - Chambre extensible : 4×4 → 6×6 → 8×8 → suite royale (selon `KingdomState`)
@@ -189,7 +189,7 @@ Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Ref
 - **Gardien Méca** : ordres simples → coffre `jardin_stock` · extensible avec niveau Jardin
 - **Chasseurs** : animaux dans `05-foret` → viande, peaux, captures de familiers
 - **Bûcherons** : arbres abattables → bois · **Mineurs** : veines minerai → pierre, métal
-- `CraftingSystem` : `recipes.json` unifié cuisine + artisanat · filtré par station + niveau bâtiment
+- **Crafting System** : `recipes.json` unifié cuisine + artisanat · filtré par station + niveau bâtiment
 - **Monstres cuisinables** (Dungeon Meshi) : Bestiaire Culinaire in-game
 
 | Monstre | Drop cuisinable | Effet plat |
@@ -220,7 +220,7 @@ Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Ref
 ## 🐾 Phase 6 — Familiers & Amitié `v0.9→1.0`
 
 ### Développement
-- `FamiliarSystem` : apprivoisement (nourrir un animal affaibli) · 5 niveaux d'amitié
+- **Familiar System** : apprivoisement (nourrir un animal affaibli) · 5 niveaux d'amitié
 - `FriendshipSystem` : 5 niveaux avec PNJs · cadeaux · accès progressif
 
 **Familiers :**
@@ -249,7 +249,7 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 - Sources d'éther (one-time) : quêtes (+3-15) · craft (+1) · recette (+2) · festival (+5) · boss (+10) · bâtiment complété (+5)
 
 > [assumption: équilibre économique à valider en Phase 7 BUILD — coût moyen d'un nœud et nombre de nœuds total non définis. Risque d'overflow à calibrer par playtest.]
-- `Enemy` : Patrol→Chase→Attack · **mort douce** : Majordome nous ramène au lit (Pénalité : perte de 10% des `gold`, inventaire conservé)
+- **Enemy** : Patrol→Chase→Attack · **mort douce** : Majordome nous ramène au lit (Pénalité : perte de 10% des `gold`, inventaire conservé)
 
 **Structure sphérier (nœuds libres) :**
 ```
@@ -296,7 +296,7 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 | Phase 3 | Phase 2 | `TimeSystem` étendu requis pour `WeatherSystem` |
 | Phase 4 | Phase 2 | `KingdomState` initialisé par les NPCs (Phase 2) |
 | Phase 5 | Phase 3 | Zones aquatiques/montagne nécessitent `WeatherSystem` |
-| Phase 5 | Phase 4 | `CraftingSystem` dépend des bâtiments de guilde |
+| Phase 5 | Phase 4 | **Crafting System** dépend des bâtiments de guilde |
 | Phase 6 | Phase 5 | Familiers capturés à la chasse (Phase 5) |
 | Phase 7 | Phase 4 | `SphereGrid` déverrouillé par la Bibliothèque (`KingdomState` ≥ 50) |
 | Phase 8 | Phase 6 | Quêtes et dialogues conditionnels nécessitent amitié PNJ |

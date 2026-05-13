@@ -267,11 +267,11 @@ class LayoutStrategy(ABC):
 
 | Error Type | Detection | Response | Fallback |
 |------------|-----------|----------|----------|
-| Missing .tmj | `FileNotFoundError` | Log critical | Abort map load |
+| Missing .tmj | FileNotFoundError | Log critical | Abort map load |
 | Malformed JSON | `json.JSONDecodeError` | Log error | Return empty dict |
-| Missing .tsx | `FileNotFoundError` | Log warning | Skip tileset, continue |
+| Missing .tsx | FileNotFoundError | Log warning | Skip tileset, continue |
 | Invalid XML | `xml.etree.ElementTree.ParseError` | Log error | Skip tileset |
-| Missing .tiled-project | `FileNotFoundError` | Log warning | Use empty schema (no defaults) |
+| Missing .tiled-project | FileNotFoundError | Log warning | Use empty schema (no defaults) |
 | GID out of range | KeyError in tile_dict | Log debug | Return default TileProperty |
 
 ## 10. Deep Links

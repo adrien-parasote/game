@@ -41,7 +41,7 @@
 
 | Error Type | Detection | Response | Fallback | Logging | Alert |
 |------------|-----------|----------|----------|---------|-------|
-| Missing JSON | `FileNotFoundError` | Load empty dict | Default item props | ERROR | Toast "Config Error" |
+| Missing JSON | FileNotFoundError | Load empty dict | Default item props | ERROR | Toast "Config Error" |
 | Missing Icon | `pygame.error` | Use magenta placeholder | No icon displayed | WARNING | None |
 | Invalid Sprite | `NoneType` in draw | Skip draw call | Invisible item | ERROR | None |
 

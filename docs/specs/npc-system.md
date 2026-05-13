@@ -118,7 +118,7 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 
 | Error Type | Detection | Response | Fallback |
 |------------|-----------|----------|----------|
-| Missing Spritesheet | `FileNotFoundError` | Use generic blue rectangle (via existing logic) | `is_moving` set false to prevent visual artifacts |
+| Missing Spritesheet | FileNotFoundError | Use generic blue rectangle (via existing logic) | `is_moving` set false to prevent visual artifacts |
 | Invalid Path/Wander | Wall collision returned | Cancel current wander vector | Re-eval after 2s cooldown |
 | Missing Dialogue Key | i18n lookup returns `None` | Log warning, no bubble shown | NPC stays in `interact` state until player moves away |
 | Missing Map Properties | `props.get()` returns `None` | Use engine defaults (NPC speed, etc.) | Log Warning |
