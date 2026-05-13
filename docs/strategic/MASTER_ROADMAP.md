@@ -11,7 +11,7 @@
 | Catégorie | Fichiers | Statut |
 |---|---|---|
 | Maps | `00-spawn.tmj`, `01-castel.tmj` | ⚠️ À refaire |
-| Maps | `99-debug_room.tmj` | ✅ Référence technique |
+| Maps | `99-debug_room.tmj` | ⚠️ À refaire |
 | Sprites | `01-character.png`, `02-butler.png` | ✅ |
 | Sprites interactifs | portes, coffres, torches, leviers, emotes | ✅ |
 | Tilesets | sol, murs, fenêtres, mobilier intérieur | ✅ (intérieur uniquement) |
@@ -48,7 +48,9 @@ GameStateManager · Save/Load 3 slots · TitleScreen · PauseScreen · SaveMenuO
 
 ---
 
-## ✅ Phase 1.5 — Refactoring Technique `TERMINÉE` (pré-requis Phase 2)
+## 🚧 Phase 1.5 — Refactoring Technique `EN COURS` (pré-requis Phase 2)
+
+> **Note :** En cours tant que la refonte des maps n'est pas terminée.
 
 Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Refactorisés avant l'ajout de nouvelles fonctionnalités.
 

@@ -533,3 +533,14 @@ entity.walkable_func = lambda px, py: False
 **Anti-pattern:** Renaming a core property without running a workspace-wide `grep` on the old property name, especially in the `tests/` directory.
 **Fix:** Always run a full-text search across the entire project (including `tests/`) for the old property string when executing a rename.
 **Evidence:** `test_start_move_collision_blocks_move` failed after `collision_func` was renamed to `walkable_func` in an earlier step, because the test kept injecting the old name into the entity instance.
+
+---
+
+### A-TEST-010 · 2026-05-13 · U · Minor Rework
+**Static data-only tests fail P9 Test Quality behavioral checks**
+
+When tests only assert the static state of a data structure (e.g., parsing output) without invoking the system's behavior, the P9_TestQuality check correctly flags them. AI-generated tests often default to structural data equality.
+
+**Anti-pattern:** Writing tests that only assert structural data equality (e.g., `assert parsed_data == expected_dict`).
+**Fix:** Migrate static tests to integration-based behavioral tests. Assert how the system *behaves* with the parsed data (e.g., checking state changes, correct method delegations).
+**Evidence:** P9_TestQuality failures resolved by migrating static data-only tests to integration-based behavioral tests in the verification pipeline.
