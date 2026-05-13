@@ -1,6 +1,8 @@
 [tool.pytest.ini_options]
 markers = [
     "tc(id): Spec test case traceability marker — links test to a TC-ID in docs/specs/",
+    "unit: Unit tests (fast, no I/O)",
+    "integration: Integration tests (may perform file I/O)",
 ]
 
 [tool.ruff]
@@ -13,4 +15,5 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/*.py" = ["T201"]
+"scripts/test_*.py" = ["F841", "F401", "E402"]
 "tests/*.py" = ["F841", "F401", "E402"] # Allow some unused vars/imports and non-top-level imports in tests
