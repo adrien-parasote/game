@@ -89,7 +89,7 @@ To support Tiled's `<animation>` tags natively without destroying the `get_layer
     -   Extract `<frame tileid="X" duration="Y"/>`.
     -   Store as `frames = [(firstgid + int(tileid), int(duration)), ...]`.
 2.  **Caching Strategy (`MapManager.get_layer_surface`)**:
-    -   When blitting tiles to the static cached layer `Surface`, **skip** any tile that has `frames is not None`.
+    -   When blitting tiles to the static cached layer Surface, **skip** any tile that has `frames is not None`.
 3.  **Dynamic Rendering (`MapManager.get_visible_animated_chunks`)**:
     -   Create a new generator similar to `get_visible_chunks`.
     -   It yields `(px, py, tile_id, depth)` only for tiles where `frames` is not None.

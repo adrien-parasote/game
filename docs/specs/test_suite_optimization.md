@@ -69,7 +69,7 @@ tests/
 |----------|---------------|-----|
 | Scatter `pygame.init()` per file | Use global `conftest.py` | Drift, env failures |
 | Test in a flat `../../tests/` root | Use domain subdirectories | Unfindable on large suites |
-| `shutil.copy` + slice extraction in same script | Copy 1:1 separately, slice separately | Slice without `ast.parse()` → `IndentationError` |
+| `shutil.copy` + slice extraction in same script | Copy 1:1 separately, slice separately | Slice without `ast.parse()` → IndentationError |
 | Add coverage tests to existing functional files | Create `test_*_coverage.py` per module | Stays removable and localized |
 | Assert `surface.get_size()` after UI `__init__` | Assert `is not None` / `isinstance(Surface)` | `smoothscale` changes size at init |
 | Modify `Settings` without restoring | `try/finally: Settings.X = original` | Singleton pollution cascades |

@@ -17,7 +17,7 @@ Render the game world using a multi-pass pipeline that correctly orders sprites 
 |--------|------|-----|----------------|
 | `CameraGroup` | `src/entities/groups.py` | 121 | Camera offset, Y-sort, frustum culling, sprite drawing |
 | `RenderManager` | `src/engine/render_manager.py` | 120 | Multi-pass scene orchestrator |
-| `SpriteSheet` | `src/graphics/spritesheet.py` | 89 | Grid-based spritesheet extraction utility |
+| SpriteSheet | `src/graphics/spritesheet.py` | 89 | Grid-based spritesheet extraction utility |
 
 ## 3. CameraGroup — Camera & Sprite Rendering
 
@@ -73,7 +73,7 @@ Sprites are anchored `bottomright` of visual image to `bottomright` of logical h
 
 ### 3.5. Debug Hitbox Rendering
 
-When `Settings.DEBUG` is enabled, red rectangles are drawn around all sprite hitboxes:
+When Settings.DEBUG is enabled, red rectangles are drawn around all sprite hitboxes:
 ```python
 if Settings.DEBUG:
     debug_rect = sprite.rect.move(self.offset.x, self.offset.y)
@@ -221,14 +221,14 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 |------------|-----------|----------|----------|
 | No display surface | `pygame.display.get_surface()` is None | Set `half_width/height = 0` | Camera offset stays at origin |
 | Missing sprite image | `sprite.image is None` | Skip in custom_draw | No blit attempt |
-| Mock surface in tests | `TypeError` in `pygame.draw.rect` | Caught in try-except | Skip debug rendering |
+| Mock surface in tests | TypeError in `pygame.draw.rect` | Caught in try-except | Skip debug rendering |
 | Spritesheet load fail | `pygame.error` | Log error, `valid=False` | Return blue dummy surfaces |
 | Division by zero | Frame dims = 0 | Guard in `load_grid` | Return empty list |
 
 ## 9. Deep Links
 - **`CameraGroup`**: [groups.py L4](../../src/entities/groups.py#L4)
 - **`RenderManager`**: [render_manager.py L6](../../src/engine/render_manager.py#L6)
-- **`SpriteSheet`**: [spritesheet.py L7](../../src/graphics/spritesheet.py#L7)
+- **SpriteSheet**: [spritesheet.py L7](../../src/graphics/spritesheet.py#L7)
 - **`MapManager.get_layer_surface`**: [manager.py L1](../../src/map/manager.py#L1)
 - **`LightingManager`**: [lighting.py L1](../../src/engine/lighting.py#L1)
 - **Engine core spec (rendering pipeline)**: [engine-core.md §R](./engine-core.md#L1)

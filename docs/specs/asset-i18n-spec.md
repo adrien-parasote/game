@@ -155,10 +155,10 @@ Returns the full `self.data` dictionary.
 | Image file not found | `os.path.exists()` | Log ERROR | Magenta placeholder or raise |
 | Image load failure | `pygame.error` | Log ERROR | Magenta placeholder or raise |
 | Font file not found | `os.path.exists()` | Silent | `SysFont("Arial", size)` |
-| Font load failure | `Exception` | Log ERROR | `pygame.font.Font(None, size)` |
+| Font load failure | Exception | Log ERROR | `pygame.font.Font(None, size)` |
 | Locale file not found | `os.path.exists()` | Log WARNING | `data = {}` |
-| Locale JSON invalid | `Exception` | Log ERROR | `data = {}` |
-| Translation key missing | `KeyError`/`TypeError` | Silent | Return `default` or `key` |
+| Locale JSON invalid | Exception | Log ERROR | `data = {}` |
+| Translation key missing | KeyError/TypeError | Silent | Return `default` or `key` |
 
 ## 7. Test Case Specifications
 

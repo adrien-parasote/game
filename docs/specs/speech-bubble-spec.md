@@ -59,7 +59,7 @@ Dimensions are rounded up to multiples of tile size (32px) for clean tiling.
 
 ### 4.1. Text Wrapping
 
-- **Font**: `Settings.FONT_NARRATIVE` (loaded from settings)
+- **Font**: Settings.FONT_NARRATIVE (loaded from settings)
 - **Max width**: `max_width_px = 224` (7 tiles × 32px)
 - **Algorithm**: Word-level wrapping using `font.size(word)` to measure
 - **Overflow**: Words exceeding max width are force-split at character level

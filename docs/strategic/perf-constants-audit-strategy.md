@@ -14,7 +14,7 @@ performance and code maintainability:
 1. **Per-frame Surface allocations** — `_blit_halo_text()` (shared across
    `pause_screen.py`, `save_menu.py`, `title_screen_draw.py`) allocates
    `pygame.Surface` + runs `gaussian_blur()` at 60 FPS during hover states.
-   `chest_draw._draw_title()` instantiates a `Font` object every draw frame.
+   `chest_draw._draw_title()` instantiates a Font object every draw frame.
    `hud.draw()` constructs `I18nManager()` every frame.
 
 2. **Orphaned magic values** — 40+ RGB tuples, pixel sizes, font sizes, and

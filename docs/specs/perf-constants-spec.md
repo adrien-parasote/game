@@ -401,7 +401,7 @@ for i, (rect, surf_idle, surf_hover) in enumerate(
 
 | Failure | Location | Handling |
 |---|---|---|
-| `gaussian_blur` not available (standard pygame) | `_make_halo_surface()` | `except AttributeError` → use 8-offset fallback, pre-render same way |
+| `gaussian_blur` not available (standard pygame) | `_make_halo_surface()` | `except` AttributeError → use 8-offset fallback, pre-render same way |
 | `pause_screen_constants` import missing | `pause_screen.py` imports | Import error surfaces immediately — test suite catches this |
 | `save_menu_constants` import of `ENGRAVE_*` | re-export from `pause_screen_constants` | Circular guard: `pause_screen_constants` has no UI imports |
 | `ui_colors.COLOR_TEXT_STONE` missing | `chest_constants.py`, `save_menu_constants.py` | Import error caught at module load — not a runtime risk |
@@ -415,7 +415,7 @@ for i, (rect, surf_idle, surf_hover) in enumerate(
 |---|---|---|---|
 | UT-001 | Unit | `tests/ui/test_pause_screen.py` | `PauseScreen.__init__` pre-renders `_rendered_idle` (len == 3, all pygame.Surface) |
 | UT-002 | Unit | `tests/ui/test_pause_screen.py` | `PauseScreen.draw()` with hover=0 blits `_rendered_hover[0]` — no new Surface alloc |
-| UT-003 | Unit | `tests/ui/test_pause_screen.py` | `_make_halo_surface()` returns Surface even when `gaussian_blur` raises `AttributeError` |
+| UT-003 | Unit | `tests/ui/test_pause_screen.py` | `_make_halo_surface()` returns Surface even when `gaussian_blur` raises AttributeError |
 | UT-004 | Unit | `tests/ui/test_save_menu.py` | `SaveMenuOverlay.refresh()` populates `_cached_title_surfs` list of length 3 |
 | UT-005 | Unit | `tests/ui/test_perf_hud.py` | `GameHUD.__init__` stores `_i18n`; calling `draw()` does NOT construct `I18nManager` |
 | UT-006 | Unit | `tests/engine/test_perf_lighting.py` | `_get_beam_surface_for_time()` called with patched `BEAM_COLOR_MOON` — color used in lerp |

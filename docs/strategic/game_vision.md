@@ -81,7 +81,7 @@ Festival     → bonus combat (Guerrier) + bonus récolte (Cozy)
 
 Le Castel est le seul espace pleinement aménageable. Pas de mairie — le joueur gère la ville depuis son **Bureau du Seigneur**.
 
-La **Chambre du joueur** s'étend selon le `KingdomState` (score de reconstruction). Le mobilier s'achète aux guildes.
+La **Chambre du joueur** s'étend selon le KingdomState (score de reconstruction). Le mobilier s'achète aux guildes.
 
 ---
 

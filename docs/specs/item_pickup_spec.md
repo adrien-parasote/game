@@ -12,7 +12,7 @@
 |----------|---------------|-----|
 | Hardcode item properties in `PickupItem` | Use `propertytypes.json` as central source | Easier balance changes and consistency |
 | Remove item from map before inventory check | Check `inventory.can_add()` first | Prevents losing items if pickup fails |
-| Use `pygame.display.flip()` in entity code | Manage rendering in `Game` or `UI` classes | Separation of concerns and performance |
+| Use `pygame.display.flip()` in entity code | Manage rendering in `Game` or UI classes | Separation of concerns and performance |
 | Directly modify `Player` attributes from UI | Use `Inventory` methods (encapsulation) | Safer state management |
 | Use absolute paths for assets | Use `os.path.join` and relative paths | Portability across OS |
 | Assume `item_id` == `icon_filename` | Allow explicit `icon` property in metadata | Decouples IDs from asset filenames |
@@ -43,7 +43,7 @@
 |------------|-----------|----------|----------|---------|-------|
 | Missing JSON | FileNotFoundError | Load empty dict | Default item props | ERROR | Toast "Config Error" |
 | Missing Icon | `pygame.error` | Use magenta placeholder | No icon displayed | WARNING | None |
-| Invalid Sprite | `NoneType` in draw | Skip draw call | Invisible item | ERROR | None |
+| Invalid Sprite | NoneType in draw | Skip draw call | Invisible item | ERROR | None |
 
 ## 4. Deep Links
 

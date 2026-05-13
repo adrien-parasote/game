@@ -12,11 +12,11 @@ This document consolidates all rendering, logic, and optimization specifications
 
 | Module | Responsibility | Primary Classes |
 |--------|----------------|-----------------|
-| **Engine** | Lifecycle, Config, Events | `Game`, `Settings`, `Logger` |
+| **Engine** | Lifecycle, Config, Events | `Game`, `Settings`, Logger |
 | **Map** | Data, Culling, Layout | `MapManager`, `LayoutStrategy` |
 | **Entity** | Sprites, Sorting, Movement | `BaseEntity`, `Player`, `CameraGroup`, `Teleport` |
 | **Logic** | Interaction gating, Proximity | `InteractionManager` |
-| **System** | Persistence, State, Loot | `WorldState`, `LootTable` |
+| **System** | Persistence, State, Loot | WorldState, `LootTable` |
 
 ## 2. Context Stack (AI Prompting Guide)
 
@@ -52,7 +52,7 @@ All entities move in discrete steps of `TILE_SIZE`.
 - **Centering**:
   - Entities must always be aligned to tile centers: `(x * TILE_SIZE + TILE_SIZE/2, y * TILE_SIZE + TILE_SIZE/2)`.
   - Spawning and movement targets must maintain this half-tile offset.
-- **Interpolation**: Smooth movement between tiles using `Settings.PLAYER_SPEED`.
+- **Interpolation**: Smooth movement between tiles using Settings.PLAYER_SPEED.
 
 ### D. World Boundaries (Player/Entity)
 All entities are physically restricted to map dimensions.
@@ -61,7 +61,7 @@ All entities are physically restricted to map dimensions.
 
 ### E. Visual Anchoring vs Physical Hitbox
 Sprites are often taller than a single tile (e.g. 32x48 images on 32x32 tiles).
-- **Physical Hitbox**: Must strictly remain 32x32 (`Settings.TILE_SIZE`) to maintain grid alignment.
+- **Physical Hitbox**: Must strictly remain 32x32 (Settings.TILE_SIZE) to maintain grid alignment.
 - **Visual Anchoring**: Rendered images are offset such that the `bottomright` of the image aligns exactly with the `bottomright` of the physical hitbox. 
 - **Occlusion Check**: To trigger foreground tile overlap (alpha blending), the system uses the full expanded visual rect, not just the physical hitbox.
 
@@ -73,9 +73,9 @@ The engine uses a dual-configuration architecture to separate technical and game
 
 ### G. Time & Seasonal System
 The engine maintains an internal world clock to drive environmental changes and simulation.
-- **Timing**: Configurable via `Settings.MINUTE_DURATION` (default 1.5 real seconds per game minute).
+- **Timing**: Configurable via Settings.MINUTE_DURATION (default 1.5 real seconds per game minute).
 - **Conversion**: 1 real second = (1 / MINUTE_DURATION) game minutes.
-- **Cycles**: 24-hour days, `Settings.DAYS_PER_SEASON` game days per season, and 4-season years.
+- **Cycles**: 24-hour days, Settings.DAYS_PER_SEASON game days per season, and 4-season years.
 - **Lighting**: A sinusoidal brightness factor calculated as `0.5 + 0.5 * sin(2π * hour/24 - π/2)`.
 - **Night Overlay**: A full-screen black overlay (`#000000`) with alpha calculated from the inverse of brightness (max 180 alpha at midnight).
 
@@ -91,7 +91,7 @@ Decoupled logic in `InteractionManager` handles all entity/player spatial trigge
 - **Objects**: Proximity (<45px) and orientation checks defined by object type.
 - **Door Relaxation**: Open doors (`is_on=True`) allow interaction from the "wrong" side to enable closing after passing through.
 - **Cooldown**: A 0.5s interaction cooldown prevents input spamming.
-- **Unified Key**: The E key (`Settings.INTERACT_KEY`) is the universal trigger.
+- **Unified Key**: The E key (Settings.INTERACT_KEY) is the universal trigger.
 
 ### J. Map Data Architecture (TMJ/TSX)
 To maintain modularity, the engine decouples map parsing from rendering logic.
@@ -99,7 +99,7 @@ To maintain modularity, the engine decouples map parsing from rendering logic.
   - `width`, `height`: Map dimensions in tiles.
   - `spawn_player`: Dict with `x` and `y` center coordinates.
   - `entities`: List of object dictionaries ready for engine spawning.
-  - `tile_dict`: Mapping of GIDs to `TileProperty` objects (including collision and depth).
+  - `tile_dict`: Mapping of GIDs to TileProperty objects (including collision and depth).
 - **Coordinates**: Tiled object coordinates (Top-Left) are automatically offset by `TILE_SIZE / 2` to align with the center-based system.
 - **Property Extraction & Schema Resolution**: Since Tiled 1.10+, object custom classes store properties in nested dictionaries under the hood. 
   - **TiledProject Resolver**: The engine now loads `assets/tiled/game.tiled-project` to handle recursive inheritance for Tiled Classes (`propertyTypes`).
@@ -120,8 +120,8 @@ The HUD provides information about the current time, day, and season.
 - **Scaling**: Uses `HUD_SCALE = 0.4` for the clock and `HUD_SCALE = 0.64` for the dialogue box (fit 2000px assets to 1280px screen).
 - **Dialogue UI**:
   - **Message Zone**: Centered horizontally, occupies the middle-third of the text box.
-  - **Typewriter Effect**: Speed controlled by `Settings.TEXT_SPEED` (characters per second).
-  - **Paging Logic**: Automatic pagination. If text exceeds the box's capacity, the typing stops. The user must press the interaction key (`Settings.INTERACT_KEY`) to skip typing or advance to the next page.
+  - **Typewriter Effect**: Speed controlled by Settings.TEXT_SPEED (characters per second).
+  - **Paging Logic**: Automatic pagination. If text exceeds the box's capacity, the typing stops. The user must press the interaction key (Settings.INTERACT_KEY) to skip typing or advance to the next page.
 - **Label System**: Uses `fr.json` (or other lang) for localized strings.
 
 ### M. Interconnected World (Teleportation)
@@ -160,7 +160,7 @@ The engine features a centralized audio system for atmospheric music and interac
 
 ### O. Debug Mode & Visual Hitboxes
 The engine includes a technical debugging layer for development verification.
-- **Toggle**: Controlled by `Settings.DEBUG` (loaded from `settings.json`'s `debug.enabled` field).
+- **Toggle**: Controlled by Settings.DEBUG (loaded from `settings.json`'s `debug.enabled` field).
 - **Map Override**: If `DEBUG` is active, the engine bypasses the default map and loads `99-debug_room.tmj` at startup.
 - **Hitbox Rendering**: When active, all entity physical hitboxes (`rect`) are outlined in red (`(255, 0, 0)`) in the `CameraGroup` draw loop.
 - **Robustness**: Debug rendering is wrapped in safety checks (`try-except TypeError`) to handle mock surfaces during automated testing.
@@ -172,8 +172,8 @@ The dialogue system (HUD) uses a multi-page architecture with typewriter effects
 - **State Machine**:
   1. **Typing**: Text is revealed character-by-character.
   2. **Page Complete**: Reveals the "Next" cursor (`06-cursor.png`).
-  3. **Skip**: Pressing `Settings.INTERACT_KEY` while typing immediately fills the current page. (Must be debounced from the initial interaction trigger via `KEYUP` or state-frame guard).
-  4. **Next**: Pressing `Settings.INTERACT_KEY` when page is complete advances to the next page or closes the dialogue.
+  3. **Skip**: Pressing Settings.INTERACT_KEY while typing immediately fills the current page. (Must be debounced from the initial interaction trigger via `KEYUP` or state-frame guard).
+  4. **Next**: Pressing Settings.INTERACT_KEY when page is complete advances to the next page or closes the dialogue.
 - **Shadowing**: All text is rendered twice (2px offset) to ensure visibility against complex backgrounds.
 
 ### Q. World State Persistence
@@ -228,7 +228,7 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 - **Follow Logic**: Pinned to the player's X coordinate and relative Y during its entire lifetime.
 - **Triggers**:
     - **Proximity (`interact`)**: Triggered when within 48px of any interactive object or NPC. Strictly limited by a **1.5s cooldown** to prevent sprite stacking and frame-by-frame spam when iterating spatial checks.
-    - **Fail Feedback (`question`)**: Triggered when an interaction input occurs but no target is found or blocked. Optional via `Settings.ENABLE_FAILED_INTERACTION_EMOTE`.
+    - **Fail Feedback (`question`)**: Triggered when an interaction input occurs but no target is found or blocked. Optional via Settings.ENABLE_FAILED_INTERACTION_EMOTE.
     - **Inventory Full (`frustration`)**: Triggered when the player attempts to pick up an item but the inventory is full.
 - **Replacement Policy**: Triggering a new emote immediately `empty()`s the rendering group for that player.
 - **Audio**: Plays `03-emote.ogg` on trigger.
@@ -242,7 +242,7 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 | Hardcode screen sizes | Use `surface.get_size()` | Support Fullscreen and dynamic resizing |
 | Direct coordinate access | Use CoordinateSystem | Decouples rendering from game logic |
 | Scroll camera off map | Apply Map Clamping | Professional polish and boundary consistency |
-| Call `.fill()` on a shared `Surface` | Remove debug rendering | Modifies frames persistently and breaks culling |
+| Call `.fill()` on a shared Surface | Remove debug rendering | Modifies frames persistently and breaks culling |
 | Use `image.get_rect()` for hitbox | Use `Rect(0,0,TILE,TILE)` | Prevents physical vs visual conflict (offset logic) |
 | Blit starting from `topleft` | Align `bottomright` | Prevents tall sprites from "sinking" into tiles |
 | Use `print()` for debugging | Use the `logging` module | Standardized output and production-ready tracking |
@@ -273,9 +273,9 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 
 | Failure | Detection | Response | Fallback |
 |---------|-----------|----------|----------|
-| Config Corrupt | `JSONDecodeError` | Log Warning | Use internal defaults |
+| Config Corrupt | JSONDecodeError | Log Warning | Use internal defaults |
 | Map Missing | FileNotFoundError | Log Critical | Safe loop abort |
-| Surface None | `TypeError` in Draw | Log Error | Ignore rendering step (safe for tests) |
+| Surface None | TypeError in Draw | Log Error | Ignore rendering step (safe for tests) |
 | Dialogue Key Fail| Missing `fr.json` key | Log Warning | Show raw key or empty string |
 | Audio Init Fail | `pygame.mixer` error | Log Warning | Disable audio system, continue game |
 | Interaction Loop | Chaining depth > 1 | Log Warning | Break chain to prevent recursion crash |

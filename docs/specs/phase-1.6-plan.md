@@ -88,6 +88,6 @@
 - **Acceptance Criteria:** Water tiles appear and animate synchronously every 150ms. FPS remains at 60.
 
 ## 4. Test Strategy Summary
-- Unit tests (`tests/map/test_parser.py`, `tests/map/test_manager.py`) to verify `TileMapData` fields and logic.
+- Unit tests (`tests/map/test_parser.py`, `test_parser.py`) to verify `TileMapData` fields and logic.
 - Integration tests (`tests/engine/test_game.py`) to verify `start_move` interception and rendering.
 - `verify.py` will be run after all steps to guarantee zero regressions.

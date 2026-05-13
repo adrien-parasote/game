@@ -17,7 +17,7 @@
 
 | # | Assumption | Risk |
 |---|---|---|
-| A1 | `Item` est un dataclass Python pur — sérialisable via `.__dict__` | LOW — confirmé par `inventory_system.py` |
+| A1 | `Item` est une structure de données Python pure — sérialisable via `.__dict__` | LOW — confirmé par `inventory_system.py` |
 | A2 | `TimeSystem._total_minutes` est le seul état interne à sauvegarder | LOW — toutes les propriétés sont dérivées |
 | A3 | `WorldState._state` est un `dict[str, dict]` de types JSON-natifs | LOW — confirmé par `world_state.py` |
 | A4 | `Game.__init__` charge toujours une map au démarrage — ce comportement est modifié : `Game.__init__` ne charge plus de map si appelé en mode "shell" | MEDIUM — nécessite un flag `skip_map_load` |
@@ -157,7 +157,7 @@ class SaveManager:
 - Flag `HALO_DEBUG = False` : activer pour croix de calibration (rouge=feu, cyan=champignon)
 
 **Halos champignon bioluminescents (`MUSHROOM_LIGHTS`) :**
-- **25 positions** calibrées via `scripts/calibrate_halos.py` (mode MUSHROOM, touche `M`)
+- **25 positions** calibrées via `scripts/calibrate_halos.py` (mode MUSHROOM, touche M)
 - Format : `(x, y, radius, (R, G, B))` — couleur par champignon
 - Couleur cyan : `(70, 220, 200)` pour les champignons turquoise ; rouge `(220, 80, 60)` disponible
 - Tiers : r=22 (grands), r=16 (moyens), r=11 (petits)
@@ -249,7 +249,7 @@ class GameStateManager:
 **`Game.run_frame(dt) -> GameEvent` :**
 - Remplace `Game.run()` pour le mode tick-par-tick
 - Appelle `_handle_events()`, `_update(dt)`, `_draw()`
-- Retourne `GameEvent.PAUSE_REQUESTED` si ESC intercepté, sinon `GameEvent.NONE`
+- Retourne GameEvent.PAUSE_REQUESTED si ESC intercepté, sinon GameEvent.NONE
 - **`Game.run()` est préservé intact** pour les tests existants
 
 ---
@@ -306,7 +306,7 @@ def run_frame(self, dt: float) -> GameEvent:
     return GameEvent.NONE
 ```
 
-3. **Suppression de `Settings.QUIT_KEY`** dans `_handle_events()` :
+3. **Suppression de Settings.QUIT_KEY** dans `_handle_events()` :
 ```python
 # ❌ Supprimer ces lignes (géré par GameStateManager)
 if event.key == Settings.QUIT_KEY:
@@ -382,7 +382,7 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | `pygame.display.init()` dans `TitleScreen` | Le display est déjà init dans `Game.__init__` | Double init = crash |
 | Modifier `Game.run()` | Ajouter `Game.run_frame()` à côté | Les 444 tests existants appellent `run()` |
 | Hardcoder les positions de boutons | Calculer depuis `Settings.WINDOW_WIDTH/HEIGHT` | Ne supporte pas le changement de résolution |
-| Appeler `sys.exit()` depuis `TitleScreen` | Retourner `GameEvent.QUIT` | Séparation des responsabilités |
+| Appeler `sys.exit()` depuis `TitleScreen` | Retourner GameEvent.QUIT | Séparation des responsabilités |
 | Écrire dans `saves/` sans `os.makedirs(exist_ok=True)` | Toujours créer le dossier d'abord | `saves/` peut ne pas exister au 1er lancement |
 | `open(path, "w")` sans `try/except` sur les saves | Wrapper dans `try/except IOError` | Disque plein, permissions, etc. |
 | Tester les coordonnées de boutons avec des valeurs hardcodées | Tester les `GameEvent` retournés | Les positions changent avec la résolution |
@@ -408,11 +408,11 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 
 | ID | Composant | Input | Expected Output |
 |---|---|---|---|
-| TC-009 | `handle_event()` | MOUSEBUTTONDOWN sur "Nouvelle Partie" | `GameEvent.NEW_GAME` |
+| TC-009 | `handle_event()` | MOUSEBUTTONDOWN sur "Nouvelle Partie" | GameEvent.NEW_GAME |
 | TC-010 | `handle_event()` | MOUSEBUTTONDOWN sur "Charger" | Transition vers `LOAD_MENU` |
-| TC-011 | `handle_event()` | MOUSEBUTTONDOWN sur "Quitter" | `GameEvent.QUIT` |
+| TC-011 | `handle_event()` | MOUSEBUTTONDOWN sur "Quitter" | GameEvent.QUIT |
 | TC-012 | `handle_event()` | KEYDOWN K_ESCAPE depuis `LOAD_MENU` | Retour vers `MAIN_MENU` |
-| TC-013 | `handle_event()` | Clic sur slot 2 en `LOAD_MENU` | `GameEvent.LOAD_GAME` avec `slot_id=2` |
+| TC-013 | `handle_event()` | Clic sur slot 2 en `LOAD_MENU` | GameEvent.LOAD_GAME avec `slot_id=2` |
 | TC-033 | `draw()` en `MAIN_MENU` | `_light_time > 0`, `BACKGROUND_LIGHTS` non vide | Aucune exception, halos blittés via `BLEND_RGB_ADD` |
 | TC-034 | `__init__()` scale factors | `screen.get_size()` retourne `(2560, 1440)` | `_light_scale_x == 2.0`, `_light_scale_y == 2.0` |
 | TC-035 | `handle_event()` | Clic sur bouton retour en `LOAD_MENU` | Retour vers `MAIN_MENU` |
@@ -427,13 +427,13 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | TC-017 | `_transition_to_playing(None)` | New game | `game._load_map()` appelé avec default_map |
 | TC-018 | `_transition_to_playing(1)` | Slot 1 existant | `save_manager.load(1)` appelé, state = PLAYING |
 | TC-019 | `GameStateManager.__init__` | Appel sans args | `state == GameState.TITLE` |
-| TC-020 | `_handle_title()` | `GameEvent.NEW_GAME` reçu | `state == GameState.PLAYING` |
+| TC-020 | `_handle_title()` | GameEvent.NEW_GAME reçu | `state == GameState.PLAYING` |
 | TC-021 | `_handle_title()` | `GameEvent.LOAD_REQUESTED(1)` reçu | `save_manager.load(1)` appelé, `state == PLAYING` |
-| TC-022 | `_handle_title()` | `GameEvent.QUIT` reçu | `sys.exit()` appelé |
-| TC-023 | `_handle_playing()` | `game.run_frame()` retourne `GameEvent.PAUSE_REQUESTED` | `state == GameState.PAUSED` |
-| TC-024 | `_handle_paused()` | `GameEvent.RESUME` reçu | `state == GameState.PLAYING` |
+| TC-022 | `_handle_title()` | GameEvent.QUIT reçu | `sys.exit()` appelé |
+| TC-023 | `_handle_playing()` | `game.run_frame()` retourne GameEvent.PAUSE_REQUESTED | `state == GameState.PAUSED` |
+| TC-024 | `_handle_paused()` | GameEvent.RESUME reçu | `state == GameState.PLAYING` |
 | TC-025 | `_handle_paused()` | `GameEvent.SAVE_REQUESTED(1)` | `save_manager.save(1)` appelé, résultat notifié |
-| TC-026 | `_handle_paused()` | `GameEvent.GOTO_TITLE` | `state == GameState.TITLE`, title.state reset |
+| TC-026 | `_handle_paused()` | GameEvent.GOTO_TITLE | `state == GameState.TITLE`, title.state reset |
 | TC-027 | `_save_to_first_free_slot()` | Slot 1 occupé, slot 2 libre | `save_manager.save(2, game)` appelé |
 | TC-028 | `_save_to_first_free_slot()` | Tous slots occupés | Fallback → `save_manager.save(1, game)` |
 | TC-029 | `_on_escape()` depuis PLAYING | state = PLAYING | `state == GameState.PAUSED` |
@@ -458,7 +458,7 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | `saves/slot_[N].json` manquant | FileNotFoundError dans `load()` | Log DEBUG | Retourner `None` (slot vide) |
 | JSON invalide | `json.JSONDecodeError` | Log WARNING "Slot N corrompu" | Retourner `None` |
 | Version schéma incompatible | `data["version"] != SCHEMA_VERSION` | Log WARNING | Retourner `None` |
-| Écriture disque impossible | `IOError` dans `save()` | Log ERROR | Ne pas crasher, afficher message UI |
+| Écriture disque impossible | IOError dans `save()` | Log ERROR | Ne pas crasher, afficher message UI |
 | Asset menu manquant | `pygame.error` au chargement | Log ERROR | Surface 32×32 magenta (pattern existant) |
 | `item_id` inconnu au chargement | `create_item()` → `tech_data = {}` | Log WARNING | Item avec `stack_max=1`, nom = item_id |
 | `K_ESCAPE` hors état valide | Vérification `if state in (PLAYING, PAUSED)` | Ignorer silencieusement | — |
@@ -475,7 +475,7 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 - `TimeSystem._total_minutes` → [time_system.py L65](src/engine/time_system.py#L65)
 - `WorldState._state` → [world_state.py L4](src/engine/world_state.py#L4)
 - `WorldState.make_key()` → [world_state.py L18](src/engine/world_state.py#L18)
-- `Settings.QUIT_KEY` (à supprimer) → `src/config.py`
+- Settings.QUIT_KEY (à supprimer) → `src/config.py`
 - Blueprint → [game_vision.md](docs/strategic/game_vision.md)
 - ADR-001 → [ADR-001](docs/ADRs/ADR-001-gamestate-architecture.md#décision)
 - ADR-002 → [ADR-002](docs/ADRs/ADR-002-save-format.md#structure-du-fichier-savesslot_njson)

@@ -44,8 +44,8 @@ The RPG engine has a fully functional `InteractiveEntity` with `sub_type='chest'
 |-------|------|-------------|-------|
 | Chest background | `assets/images/HUD/07-chest.png` | ~1200x325px (estimated) | Main overlay frame |
 | Slot frame | `assets/images/ui/03-inventory_slot.png` | 55x58px | Repeated for each content slot |
-| Noble font | `Settings.FONT_NOBLE` / `Settings.FONT_SIZE_NOBLE` | 18pt | Chest name label |
-| Tech font | `Settings.FONT_TECH` / `Settings.FONT_SIZE_TECH` | 12pt | Quantity labels in slots |
+| Noble font | Settings.FONT_NOBLE / Settings.FONT_SIZE_NOBLE | 18pt | Chest name label |
+| Tech font | Settings.FONT_TECH / Settings.FONT_SIZE_TECH | 12pt | Quantity labels in slots |
 | Loot Table | `assets/data/loot_table.json` | JSON | Source of truth for chest contents |
 | Property Types | `assets/data/propertytypes.json` | JSON | Metadata for item validation |
 
@@ -324,7 +324,7 @@ class ChestUI:
 | Render item names in slots | Visual-only slots in v1 | Item system not yet designed |
 | Suppress `!` emote for closed chests | Suppress only for `is_on=True` | Player must see emote to know chest is interactable |
 | Crash on missing asset | Guard `draw()` with `if self._bg is None: return` | Headless tests must not crash |
-| Direct `game.chest_ui` access in `_check_chest_auto_close` | `getattr(self.game, 'chest_ui', None)` | MagicMock with `spec=[]` raises `AttributeError` |
+| Direct `game.chest_ui` access in `_check_chest_auto_close` | `getattr(self.game, 'chest_ui', None)` | MagicMock with `spec=[]` raises AttributeError |
 | Draw chest UI before inventory | Draw last (after inventory) | Z-order: chest behind inventory |
 | Draw cursor before dragged item | Draw item first, cursor last | Cursor must always be visible on top |
 | Split drag transfers in D&D | Full stack only | No partial split — `_dragging_item["quantity"]` is the entire stack |
@@ -378,7 +378,7 @@ class ChestUI:
 | CHEST-I-02 | Auto-close: out of range | `_open_chest_entity` set, player at (500,500) | `game.chest_ui.close()` called |
 | CHEST-I-03 | Auto-close: in range | `_open_chest_entity` set, player in valid zone | `close()` NOT called |
 | CHEST-I-04 | Auto-close: no entity | `_open_chest_entity=None` | No error, no close |
-| CHEST-I-05 | Auto-close: no chest_ui attr | `game = MagicMock(spec=[])` | No `AttributeError` |
+| CHEST-I-05 | Auto-close: no chest_ui attr | `game = MagicMock(spec=[])` | No AttributeError |
 | CHEST-I-06 | Auto-close: already closed | `chest_ui.is_open=False` | `_open_chest_entity → None` |
 | CHEST-I-07 | Emote: closed chest | Chest `is_on=False`, player in range | `playerEmote('interact')` called |
 | CHEST-I-08 | Emote: open chest | Chest `is_on=True`, player in range | Emote suppressed |

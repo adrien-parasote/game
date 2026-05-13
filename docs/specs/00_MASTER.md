@@ -22,7 +22,7 @@ This document is the master index for all technical specifications in the RPG en
 | Spec | File | Modules Covered |
 |------|------|-----------------|
 | Map Parser | [map-parser-spec.md](./map-parser-spec.md#L1) | `TmjParser`, `TiledProject`, `MapManager`, `OrthogonalLayout` |
-| World System | [world-system.md](./world-system.md#L1) | `WorldManager`, map transitions |
+| World System | [world-system.md](./world-system.md#L1) | WorldManager, map transitions |
 | Directional Autotiles | [phase-1.6-directional-autotiles.md](./phase-1.6-directional-autotiles.md#L1) | Walkability, autotile pipeline |
 
 ### Entities
@@ -31,7 +31,7 @@ This document is the master index for all technical specifications in the RPG en
 | Interactive Objects | [interactive-objects.md](./interactive-objects.md#L1) | `InteractiveEntity`, `BaseEntity` |
 | Interactive Lighting | [interactive-lighting-spec.md](./interactive-lighting-spec.md#L1) | `InteractiveLightingMixin`, `InteractiveParticleMixin` |
 | NPC System | [npc-system.md](./npc-system.md#L1) | `NPC`, patrol, dialogue triggers |
-| Emotes | [emote-spec.md](./emote-spec.md#L1) | `EmoteSystem` |
+| Emotes | [emote-spec.md](./emote-spec.md#L1) | EmoteSystem |
 | Item Pickup | [item_pickup_spec.md](./item_pickup_spec.md#L1) | `PickupItem`, ground drops |
 
 ### UI
@@ -49,7 +49,7 @@ This document is the master index for all technical specifications in the RPG en
 | Spec | File | Modules Covered |
 |------|------|-----------------|
 | Lighting System | [lighting-system.md](./lighting-system.md#L1) | `LightingManager`, day/night, window beams |
-| Camera & Rendering | [camera-rendering-spec.md](./camera-rendering-spec.md#L1) | `Camera`, `RenderManager` |
+| Camera & Rendering | [camera-rendering-spec.md](./camera-rendering-spec.md#L1) | Camera, `RenderManager` |
 | Debug Features | [debug-features-spec.md](./debug-features-spec.md#L1) | Debug overlay, console |
 
 ### Performance & Quality

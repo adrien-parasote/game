@@ -221,7 +221,7 @@ Hmm — encore légèrement > 400.
 | Créer une classe dans `spatial_utils.py` | Fonctions module-level uniquement | Géométrie pure = pas d'état = pas de classe |
 | Changer la logique de `verify_orientation` (threshold 20px, door relaxation) | Copier exactement L288-L320 | Ces valeurs sont calibrées par gameplay testing |
 | Réordonner les 4 checks dans `CollisionChecker.check` | Ordre : tiles → obstacles → NPCs → player | Performance optimization implicite (fail-fast sur tiles) |
-| Tester `spatial_utils` via `InteractionManager` | Tester les fonctions directement avec des `Vector2` et mock objects | Les fonctions pures sont 100% testables sans pygame display |
+| Tester `spatial_utils` via `InteractionManager` | Tester les fonctions directement avec des Vector2 et mock objects | Les fonctions pures sont 100% testables sans pygame display |
 
 ---
 
@@ -301,7 +301,7 @@ Hmm — encore légèrement > 400.
 
 | Failure | Détection | Réponse | Fallback |
 |---------|-----------|---------|---------|
-| `game.layout` None lors de `CollisionChecker.check` | `AttributeError` | Propagé (ne pas swallow) — indique init incorrecte de `Game` | Aucun — c'est un bug d'initialisation |
+| `game.layout` None lors de `CollisionChecker.check` | AttributeError | Propagé (ne pas swallow) — indique init incorrecte de `Game` | Aucun — c'est un bug d'initialisation |
 | `obj.direction_str` absent dans `verify_orientation` | `getattr(obj, "direction_str", "down")` | Utilise `"down"` par défaut | Comportement safe — pas de crash |
 | `obj.pos` None dans `verify_orientation` | Caller doit vérifier avant appel | Pas de guard dans la fonction pure | Crasherait avec AttributeError — documenté comme precondition |
 

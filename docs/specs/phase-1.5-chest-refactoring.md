@@ -40,7 +40,7 @@ Ce refactoring est un ajustement mineur : déplacer 6 méthodes asset-loading de
 | `_load_background` | 10 | L287-L296 | Load + scale chest bg à `_TARGET_WIDTH` |
 | `_load_inv_background` | 10 | L298-L307 | Load + scale inv bg à `_INV_TARGET_WIDTH` |
 | `_load_slot_image` | 7 | L309-L315 | Load slot placeholder |
-| `_load_cursor` | 11 | L317-L327 | Load + scale cursor via `Settings.CURSOR_SIZE` |
+| `_load_cursor` | 11 | L317-L327 | Load + scale cursor via Settings.CURSOR_SIZE |
 | `_load_and_scale_arrow` | 9 | L329-L337 | Load + scale arrow par facteur |
 | `_get_item_icon` | 21 | L339-L359 | Load, scale, cache item icon par `icon_filename@size` |
 | **Total déplacé** | **68 LOC** | — | — |
@@ -273,7 +273,7 @@ Note : Les tests existants dans `tests/ui/test_chest.py` (52 tests) couvrent dé
 
 | Failure | Détection | Réponse | Fallback |
 |---------|-----------|---------|---------|
-| Asset image absent (`FileNotFoundError`) | `except Exception` dans chaque `_load_*` | `logging.error/warning` | Retourne `None` — les méthodes draw vérifient `if self._bg is not None` |
+| Asset image absent (FileNotFoundError) | `except Exception` dans chaque `_load_*` | `logging.error/warning` | Retourne `None` — les méthodes draw vérifient `if self._bg is not None` |
 | `convert_alpha()` sans display init | `pygame.error` dans `except Exception` | `logging.error` | Retourne `None` |
 | Icon inexistant dans `_get_item_icon` | `os.path.exists` False | Met `None` en cache | Slot vide affiché, pas de crash |
 | `_icon_cache` non initialisé | Ne peut pas arriver si `ChestUI.__init__` exécuté | N/A | Guard `hasattr(self, "_icon_cache")` optionnel si défense en profondeur requise |

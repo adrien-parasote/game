@@ -16,7 +16,7 @@ Pour faire descendre `game.py` sous 400 LOC, il est nécessaire d'extraire `Enti
 |--------|-------------|---------|
 | **A** `game: Any` | Passer `game` comme `Any` dans le constructeur | ✅ Choisi |
 | **B** `TYPE_CHECKING` | `if TYPE_CHECKING: from src.engine.game import Game` | ❌ Crée cycles détectés par sentrux |
-| **C** Protocol/ABC | `Game` implemente une `IGameContext` interface | ❌ Sur-ingénierie pour Phase 1.5 |
+| **C** Protocol/ABC | `Game` implemente une IGameContext interface | ❌ Sur-ingénierie pour Phase 1.5 |
 | **D** Fonctions module-level | `spawn_entities(game, entities)` | Partiel — OK pour `game_setup.py` et `spatial_utils.py` |
 
 ## Décision

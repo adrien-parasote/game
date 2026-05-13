@@ -54,8 +54,8 @@ def load_property_types(project_path: str) -> list[dict]:
 ```
 
 **Comportement exact à préserver :**
-- `setup_logging` : configure `RotatingFileHandler` sur `logs/game.log` + `StreamHandler`. Niveau log depuis `Settings.LOG_LEVEL`. Format : `%(asctime)s - %(levelname)s - %(message)s`.
-- `load_property_types` : lit `assets/tiled/game.tiled-project` (JSON), retourne `data.get("propertyTypes", [])`. Si FileNotFoundError ou `JSONDecodeError` → log warning, retourne `[]`.
+- `setup_logging` : configure RotatingFileHandler sur `logs/game.log` + StreamHandler. Niveau log depuis Settings.LOG_LEVEL. Format : `%(asctime)s - %(levelname)s - %(message)s`.
+- `load_property_types` : lit `assets/tiled/game.tiled-project` (JSON), retourne `data.get("propertyTypes", [])`. Si FileNotFoundError ou JSONDecodeError → log warning, retourne `[]`.
 
 **Appel dans `Game.__init__` après extraction :**
 ```python
@@ -152,7 +152,7 @@ class MapLoader:
 3. Parser avec `TmjParser` (L200-L201)
 4. Créer `OrthogonalLayout` + `MapManager` sur `self.game` (L203-L204)
 5. Jouer BGM si propriété `bgm` présente (L206-L208)
-6. Mettre à jour `Settings.MAP_SIZE` et `self.game.map_size` (L211-L212)
+6. Mettre à jour Settings.MAP_SIZE et `self.game.map_size` (L211-L212)
 7. Initialiser world size sur `visible_sprites` (L215-L217)
 8. Sauvegarder states NPC avant départ (L220-L225)
 9. Vider tous les groupes d'entités (L228-L234)
@@ -215,7 +215,7 @@ class InputHandler:
 - `KEYDOWN K_ESCAPE` (quand pas dialogue ouvert) → `sys.exit()`
 - `KEYDOWN Settings.INTERACT_KEY` → dispatch selon état (dialogue, npc_bubble, world interact)
 - `KEYDOWN Settings.INVENTORY_KEY` → toggle inventory si chest fermé
-- Emote reset sur `Settings.INTERACT_KEY` si `_current_interactive_target` présent
+- Emote reset sur Settings.INTERACT_KEY si `_current_interactive_target` présent
 
 **Appel dans `Game.__init__` :**
 ```python
@@ -344,7 +344,7 @@ game.py réel:            479 LOC  (thin wrappers conservés pour compat tests)
 | TC-EF-03 | `_get_property` absent | `{}`, `"key"`, `default="x"` | `"x"` |
 | TC-EF-04 | `spawn_interactive` ajoute à `visible_sprites` et `interactives` | Mock game + ent dict type `03-interactive` | Entity dans les 2 groupes |
 | TC-EF-05 | `spawn_teleport` ajoute à `teleports_group` | Mock game + ent dict type `15-teleport` | Entity dans `teleports_group` |
-| TC-EF-06 | `spawn_npc` ajoute à `visible_sprites` et `npcs` | Mock game + ent dict type `15-npc` (type Tiled réel) | Entity dans les 2 groupes |
+| TC-EF-06 | `spawn_npc` ajoute à `visible_sprites` et `npcs` | Mock game + ent dict format Tiled réel | Entity dans les 2 groupes |
 | TC-EF-07 | `spawn_pickup` ajoute à `pickups` | Mock game + ent dict type pickup | Entity dans `pickups` |
 | TC-EF-08 | `spawn_entities` dispatcher : type inconnu ignoré | ent dict avec type non reconnu | Aucune exception, log warning |
 | TC-EF-09 | `spawn_interactive` avec world_state restore | game.world_state a une entrée → entity restorée | `entity.is_on` = valeur sauvegardée |

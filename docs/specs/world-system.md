@@ -14,7 +14,7 @@ The system manages how the player interacts with the environment and transitions
 ## 2. Interaction Model
 
 ### 2.1 Standard Proximity Interaction
-Triggered by `Settings.INTERACT_KEY`. Valid if:
+Triggered by Settings.INTERACT_KEY. Valid if:
 - Distance between player center and object footprint center < 45px.
 - Player is facing the object (e.g., if object faces 'down', player must face 'up' and be below it).
 
@@ -71,8 +71,8 @@ Every interactive object is assigned a unique persistence key based on its map a
 Example: The lever with ID 58 in `01-castel.tmj` will have the key `01-castel_58`.
 
 ### 5.3 Behavior — Interactive Objects
-- **Spawn Registration**: When a map loads, the engine constructs the `InteractiveEntity`. Before generating its visual layout, the engine queries the `WorldState` dictionary using the persistence key. If a state exists (e.g., `{'is_on': True}`), the object's `is_on` status is overridden, and its visual frame is snapped immediately.
-- **State Mutation**: When an interaction resolves (by the player hitting the interact key, or via an interaction chain), the updated `is_on` state is written to the `WorldState` dictionary via its key.
+- **Spawn Registration**: When a map loads, the engine constructs the `InteractiveEntity`. Before generating its visual layout, the engine queries the WorldState dictionary using the persistence key. If a state exists (e.g., `{'is_on': True}`), the object's `is_on` status is overridden, and its visual frame is snapped immediately.
+- **State Mutation**: When an interaction resolves (by the player hitting the interact key, or via an interaction chain), the updated `is_on` state is written to the WorldState dictionary via its key.
 
 ### 5.4 Behavior — Pickup Items
 Pickups use the same `{map_basename}_{tiled_id}` key format.

@@ -165,7 +165,7 @@ The cooldown prevents sprite stacking when the player stands near multiple inter
 |------------|-----------|----------|----------|
 | Missing spritesheet | FileNotFoundError | Log error | Use blue fallback surfaces |
 | Invalid emote name | KeyError in column map | Log warning | No emote triggered |
-| Entity without rect | `AttributeError` | Log error | Skip emote creation |
+| Entity without rect | AttributeError | Log error | Skip emote creation |
 | SFX play failure | `pygame.error` | Log warning | Silent emote (visual only) |
 
 ## 9. Deep Links

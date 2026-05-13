@@ -39,7 +39,7 @@ Establish a three-tier font system to enhance visual hierarchy and game identity
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
 | Use a single font for all UI | Use tiered fonts based on role | Improves visual hierarchy |
-| Use `Settings.MAIN_FONT` | Use `Settings.FONT_NOBLE/NARRATIVE/TECH` | Legacy constant removal |
+| Use Settings.MAIN_FONT | Use `Settings.FONT_NOBLE/NARRATIVE/TECH` | Legacy constant removal |
 | Use Noble font for small numbers | Use Tech font | Noble is too wide for small slots |
 | Scale fonts manually | Use appropriate sizes in `Settings` | Crisp rendering of pixel fonts |
 | Hardcode font paths | Load from centralized Settings | Enables easy swapping and prevents missing files |

@@ -32,7 +32,7 @@ The engine supports interactive chests, but their contents were previously empty
 | A-01 | Chests are identified by `sub_type == 'chest'` in Tiled. | LOW |
 | A-02 | The Tiled `element_id` is the primary key for loot lookup. | LOW |
 | A-03 | `propertytypes.json` is the source of truth for `stack_max`. | LOW |
-| A-04 | Chests have a fixed capacity of 20 slots (`Settings.CHEST_MAX_SLOTS`). | LOW |
+| A-04 | Chests have a fixed capacity of 20 slots (Settings.CHEST_MAX_SLOTS). | LOW |
 
 ---
 

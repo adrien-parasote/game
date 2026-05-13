@@ -101,7 +101,7 @@ Rendering layers:
 3. Calculate `max_lines = floor(available_h / (font_linesize * 1.2))`
 4. **Word-wrap**: Split text by spaces, accumulate words per line while `font.size(line) <= max_w`
 5. **Paginate**: Group wrapped lines into chunks of `max_lines`
-6. **Pre-render**: For each page, create a transparent `Surface` with shadow + main text for each line
+6. **Pre-render**: For each page, create a transparent Surface with shadow + main text for each line
 
 **Line spacing**: `1.2 × font.get_linesize()`
 
@@ -121,8 +121,8 @@ This avoids per-frame `font.render()` for already-revealed lines.
 |-------|------|-------|
 | Dialogue box | `assets/images/hud/05-textbox.png` | Background, scaled to 50% |
 | Next arrow | `assets/images/hud/06-cursor.png` | Page-complete indicator |
-| Title font | `Settings.FONT_NOBLE` at `1.5× FONT_SIZE_NOBLE` | Speaker name |
-| Message font | `Settings.FONT_NARRATIVE` at `1.5× FONT_SIZE_NARRATIVE` | Dialogue text |
+| Title font | Settings.FONT_NOBLE at `1.5× FONT_SIZE_NOBLE` | Speaker name |
+| Message font | Settings.FONT_NARRATIVE at `1.5× FONT_SIZE_NARRATIVE` | Dialogue text |
 
 ## 9. Wiring
 

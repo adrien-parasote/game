@@ -74,9 +74,9 @@ Stored on `InteractiveEntity` as `entity.loot_items: list[dict | None]` — fixe
 ```
 - **SlotInfo dataclass**: `{slot_id, saved_at, playtime_seconds, map_name, map_display_name, player_name, level}`
 - **Operations**: `save(slot_id, game)`, `load(slot_id)→SaveData|None`, `delete(slot_id)`, `list_slots()→list[SlotInfo|None]`, `save_thumbnail(slot_id, surface)`, `load_thumbnail(slot_id)→Surface|None`
-- **Validation**: `_validate_slot_id(n)` — raises `ValueError` if `n` not in `1..3`
+- **Validation**: `_validate_slot_id(n)` — raises ValueError if `n` not in `1..3`
 
-## World State Persistence (`WorldState`, `src/engine/world_state.py`)
+## World State Persistence (WorldState, `src/engine/world_state.py`)
 - **Key format**: `f"{map_name}_{tiled_id}"` via `WorldState.make_key(map_name, tiled_id)`
 - **Stored states**:
   - `InteractiveEntity` (chest/lever/door/sign): `{is_on: bool, loot_items: list | None}`

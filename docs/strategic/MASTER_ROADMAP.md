@@ -97,7 +97,7 @@ Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Ref
 ## 🌧️ Phase 3 — Météo & Équipement Contextuel `v0.6→0.7`
 
 ### Développement
-`WeatherSystem` : 5 états météo + 1 état de zone spéciale (`sous_eau`) · malus/bonus · items équipés annulent les malus · `requires_item` dans Tiled
+WeatherSystem : 5 états météo + 1 état de zone spéciale (`sous_eau`) · malus/bonus · items équipés annulent les malus · `requires_item` dans Tiled
 
 | Météo | Malus | Annulé par |
 |---|---|---|
@@ -125,13 +125,13 @@ Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Ref
 
 ### Développement
 - **Building System** : 4 niveaux (ruiné→reconstruit→décoré→restauré)
-- `FurnitureSystem` : placement libre, grille tile-based, effets passifs optionnels
-- `GuildSystem` : 6 guildes · rangs (Apprenti→Grand Maître) · contrats journaliers
-- Chambre extensible : 4×4 → 6×6 → 8×8 → suite royale (selon `KingdomState`)
+- FurnitureSystem : placement libre, grille tile-based, effets passifs optionnels
+- GuildSystem : 6 guildes · rangs (Apprenti→Grand Maître) · contrats journaliers
+- Chambre extensible : 4×4 → 6×6 → 8×8 → suite royale (selon KingdomState)
 - Mobilier acheté **exclusivement aux guildes** (devise : `gold`)
 - Gestion de la ville depuis le **Bureau du Seigneur** (château, pas de mairie)
 
-**`KingdomState`** — Score entier [0–100] représentant l'avancement de la reconstruction :
+**KingdomState** — Score entier [0–100] représentant l'avancement de la reconstruction :
 
 | Score | Seuil | Déverrouillage |
 |-------|-------|----------------|
@@ -141,7 +141,7 @@ Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Ref
 | 50–74 | Restauré | Grande salle, Bibliothèque, Salle du trésor |
 | 75–100 | Suite Royale | Enclos des familiers, tous bâtiments, co-op ready |
 
-**Calcul du score `KingdomState` (cumulatif) :**
+**Calcul du score KingdomState (cumulatif) :**
 | Action | Points | Limite |
 |---|---|---|
 | Reconstruction bâtiment (niv. 2) | +5 | Par bâtiment |
@@ -150,7 +150,7 @@ Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Ref
 | Défaite Boss de zone | +5 | Une fois par boss |
 | Festival réussi | +1 | Par festival |
 
-> Voir [engine-core.md](../specs/engine-core.md#L1) pour l'implémentation de `KingdomState`.
+> Voir [engine-core.md](../specs/engine-core.md#L1) pour l'implémentation de KingdomState.
 
 **Pièces du château :**
 | Pièce | Fonction | Extensible |
@@ -185,7 +185,7 @@ Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Ref
 ## 🌾 Phase 5 — Agriculture, Cuisine & Monstres `v0.8→0.9` ⭐
 
 ### Développement
-- `Harvestable` : 4 états `seed→sprout→grown→ripe` · piloté par `TimeSystem`
+- Harvestable : 4 états `seed→sprout→grown→ripe` · piloté par `TimeSystem`
 - **Gardien Méca** : ordres simples → coffre `jardin_stock` · extensible avec niveau Jardin
 - **Chasseurs** : animaux dans `05-foret` → viande, peaux, captures de familiers
 - **Bûcherons** : arbres abattables → bois · **Mineurs** : veines minerai → pierre, métal
@@ -221,7 +221,7 @@ Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Ref
 
 ### Développement
 - **Familiar System** : apprivoisement (nourrir un animal affaibli) · 5 niveaux d'amitié
-- `FriendshipSystem` : 5 niveaux avec PNJs · cadeaux · accès progressif
+- FriendshipSystem : 5 niveaux avec PNJs · cadeaux · accès progressif
 
 **Familiers :**
 | Familier | Capacité (niv. 4) |
@@ -244,7 +244,7 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 ## 🔮 Phase 7 — Sphérier & Combat `v1.0→1.1`
 
 ### Développement
-- `SphereGrid` : **Éther Cristallisé** comme monnaie exclusive du Sphérier (ne remplace pas l'`gold` des boutiques) · nœuds libres (pas de voie verrouillée)
+- SphereGrid : **Éther Cristallisé** comme monnaie exclusive du Sphérier (ne remplace pas l'`gold` des boutiques) · nœuds libres (pas de voie verrouillée)
 - Tout débloquable en solo · Bibliothèque du château déverrouille les nœuds
 - Sources d'éther (one-time) : quêtes (+3-15) · craft (+1) · recette (+2) · festival (+5) · boss (+10) · bâtiment complété (+5)
 
@@ -266,10 +266,10 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 
 ## 💰 Phase 8 — Économie, Quêtes & Jeu Sans Fin `v1.1→1.5`
 
-- `ShopUI` (dérivée `ChestUI`) · rang guilde → items exclusifs
+- ShopUI (dérivée `ChestUI`) · rang guilde → items exclusifs
 - Quêtes : `collect` · `cook` · `build` · `tame` · `befriend` · `festival` · `weather_challenge` · `serve_monster_dish`
 - Dialogue conditionnel (WorldState + saison + météo + amitié)
-- **Pas d'endgame forcé** — saisons infinies, nouveaux PNJs, `KingdomState` croissant
+- **Pas d'endgame forcé** — saisons infinies, nouveaux PNJs, KingdomState croissant
 
 **Audio :** BGM variations saisonnières · SFX commerce/quête/amitié
 
@@ -293,12 +293,12 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 |-------|-----------|--------|
 | Phase 1.5 | Phase 1 ✅ | Refactoring du code existant |
 | Phase 2 | Phase 1.5 | `game.py` < 400 LOC requis avant d'ajouter NPCs/Seasons |
-| Phase 3 | Phase 2 | `TimeSystem` étendu requis pour `WeatherSystem` |
-| Phase 4 | Phase 2 | `KingdomState` initialisé par les NPCs (Phase 2) |
-| Phase 5 | Phase 3 | Zones aquatiques/montagne nécessitent `WeatherSystem` |
+| Phase 3 | Phase 2 | `TimeSystem` étendu requis pour WeatherSystem |
+| Phase 4 | Phase 2 | KingdomState initialisé par les NPCs (Phase 2) |
+| Phase 5 | Phase 3 | Zones aquatiques/montagne nécessitent WeatherSystem |
 | Phase 5 | Phase 4 | **Crafting System** dépend des bâtiments de guilde |
 | Phase 6 | Phase 5 | Familiers capturés à la chasse (Phase 5) |
-| Phase 7 | Phase 4 | `SphereGrid` déverrouillé par la Bibliothèque (`KingdomState` ≥ 50) |
+| Phase 7 | Phase 4 | SphereGrid déverrouillé par la Bibliothèque (KingdomState ≥ 50) |
 | Phase 8 | Phase 6 | Quêtes et dialogues conditionnels nécessitent amitié PNJ |
 | Phase 9 | Phase 7 + KingdomState ≥ 75 | Co-op nécessite Salle du trésor et Sphérier complets |
 
@@ -313,7 +313,7 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 | 1 | **Scope Creep** | Ajouter des fonctionnalités non listées dans la vision (ex: multijoueur en ligne). | S'en tenir au co-op local (Phase 9) et au design "cozy" actuel. |
 | 2 | **Dissonance de Phase** | Implémenter des éléments de Phase N+1 alors que la Phase N n'est pas terminée. | Suivre strictement le tableau de dépendance des phases. |
 | 3 | **Hardcoding Métier** | Fixer des données de jeu en dur au lieu de les lire depuis `gameplay.json` ou Tiled. | Les définitions des items, quêtes et recettes doivent être pilotées par les données. |
-| 4 | **Surcharge Cognitive UI** | Créer des interfaces complexes pour chaque sous-système. | Réutiliser des paradigmes UI existants (ex: `ShopUI` dérivée de `ChestUI`). |
+| 4 | **Surcharge Cognitive UI** | Créer des interfaces complexes pour chaque sous-système. | Réutiliser des paradigmes UI existants (ex: ShopUI dérivée de `ChestUI`). |
 | 5 | **Endgame Bloquant** | Forcer une fin de jeu qui empêche le joueur de continuer à jouer ou explorer. | Maintenir le principe de saisons infinies et d'évolution non limitante. |
 
 ---

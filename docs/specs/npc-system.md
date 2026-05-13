@@ -6,7 +6,7 @@
 > Document Type: Implementation
 
 
-This document specifies the technical implementation of the Non-Playable Character (NPC) system, extending the existing `BaseEntity` and `SpriteSheet` architecture.
+This document specifies the technical implementation of the Non-Playable Character (NPC) system, extending the existing `BaseEntity` and SpriteSheet architecture.
 
 ## 1. Goal Description
 To populate the world with static and dynamic NPCs using a decoupled architecture, leveraging existing entity bounds and sprite-sheet rendering systems, enabling basic interactions and localized behaviors.
@@ -15,7 +15,7 @@ To populate the world with static and dynamic NPCs using a decoupled architectur
 
 ### [IMPLEMENTED] `src/entities/npc.py`
 The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
-- **Visuals**: Uses `SpriteSheet` for 4x4 grid animations.
+- **Visuals**: Uses SpriteSheet for 4x4 grid animations.
 - **States**: `idle`, `wander`, `interact`.
 - **Wander Radius**: AI logic enforces a distance check (in tiles) from the original `spawn_pos`.
 - **Position Persistence**: Subscribes to `world_state`. NPC coordinates `[x, y]` and `facing` are saved using their `_world_state_key` (if present) upon unspawning or map unloading.
@@ -61,7 +61,7 @@ This section defines the behavior and failure modes for autonomous entities.
 | Hardcode NPC dialogue in `npc.py` | Use external JSON/YAML | Allows localization and scale |
 | Continuous pathfinding | Intermittent grid step randomizer | Reduces CPU overhead per NPC |
 | Move NPCs when off-camera | Freeze distant NPCs (see §3.1.1) | Enlarged viewport (128px) determines `is_visible` |
-| `Player` handles dialogue UI | `Game` or `UI_Manager` handles dialogue | Decouples rendering overlay from input entity |
+| `Player` handles dialogue UI | `Game` or UI_Manager handles dialogue | Decouples rendering overlay from input entity |
 | Manual property parsing in AI logic | Use `TmjParser` properties dict | Centralizes data extraction and simplifies AI classes |
 | Immediate full-text display | Use Paginated Dialogue System | Improves readability for long NPC dialogues |
 
@@ -95,7 +95,7 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 ### 3.2. NPC Animation & Facing
 - **Rows**: 0:Down, 1:Left, 2:Right, 3:Up (Physical sheet offsets: 0, 4, 8, 12).
 - **Animation speed**: Base speed of `8.0` FPS when moving (matched to walking rhythm).
-- **Movement speed**: Defined as `0.4` of `Settings.PLAYER_SPEED`.
+- **Movement speed**: Defined as `0.4` of Settings.PLAYER_SPEED.
 - **Facing**: NPCs automatically rotate to face the player during interaction by calculating the position delta.
 
 ### 3.2. Test Case Specifications

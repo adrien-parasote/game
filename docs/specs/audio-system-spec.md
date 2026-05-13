@@ -69,7 +69,7 @@ def play_bgm(self, name: str, loop: bool = True, fade_ms: int = 500) -> None
 **Behavior**:
 1. If `name == self.current_bgm` AND music is playing → **no-op** (continuum rule)
 2. Load `assets/audio/bgm/{name}.ogg`
-3. Set volume to `Settings.BGM_VOLUME`
+3. Set volume to Settings.BGM_VOLUME
 4. Play with `loops=-1` (infinite) if `loop=True`, else `loops=0`
 5. Apply fade-in of `fade_ms` milliseconds
 6. Update `self.current_bgm = name`
@@ -173,7 +173,7 @@ def toggle_mute(self) -> None
 def update_volumes(self) -> None
 ```
 
-**Behavior**: Re-apply `Settings.BGM_VOLUME` to music, `Settings.SFX_VOLUME` to all preloaded sounds. Does NOT update ambient volumes (handled by `flush_ambient`).
+**Behavior**: Re-apply Settings.BGM_VOLUME to music, Settings.SFX_VOLUME to all preloaded sounds. Does NOT update ambient volumes (handled by `flush_ambient`).
 
 ## 5. Wiring
 

@@ -59,7 +59,7 @@ Parse Tiled-exported map files (`.tmj` JSON + `.tsx` XML tilesets) into internal
 **`TileMapData` dataclass** (defined in `tmj_parser.py:12`):
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `image` | `Surface` | — | Pre-loaded pygame surface |
+| `image` | Surface | — | Pre-loaded pygame surface |
 | `depth` | `int` | — | Render depth (0=background, 1+=foreground) |
 | `collidable` | `bool` | — | Blocks movement |
 | `occluded_image` | `Surface \| None` | `None` | Pre-alpha'd surface for high-depth tiles |
@@ -158,7 +158,7 @@ def __init__(self, map_data: dict, layout: LayoutStrategy) -> None
 
 #### `get_layer_surface(layer_id: int, pygame_module) -> Surface | None`
 
-Pre-renders an entire layer to a single cached `Surface`. Used for background layers.
+Pre-renders an entire layer to a single cached Surface. Used for background layers.
 
 **Behavior**:
 1. Return cached surface if exists

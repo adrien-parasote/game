@@ -22,7 +22,7 @@
 *Urbanization Note: All original 1344x704 coordinates are multiplied by a scale factor of ~0.89x (Target Width 1200px) to fit the screen.*
 
 #### Custom Cursor Scaling
-- **Default Height:** 48px (configurable via `Settings.CURSOR_SIZE`).
+- **Default Height:** 48px (configurable via Settings.CURSOR_SIZE).
 - **Aspect Ratio:** Preserved (original 309x535 -> ~27x48).
 - **Layering:** Absolute top-level (drawn after stats and HUD).
 
@@ -64,7 +64,7 @@
 | Drop Item | Mouse Up | Transfers the item to the new slot (grid or equipment). Swaps if target is occupied. |
 | Hover Grid | Mouse Move | Renders `04-inventory_slot_hover.png` over grid slots. |
 | Hover Equip | Mouse Move | Renders a rounded gold border (78x78) around the equipment slot. |
-| Custom Cursor| Always | Replaces system cursor. Switches to 'select' image on left-click. Size controlled by `Settings.CURSOR_SIZE`. |
+| Custom Cursor| Always | Replaces system cursor. Switches to 'select' image on left-click. Size controlled by Settings.CURSOR_SIZE. |
 
 ## ❌ Anti-Patterns (DO NOT)
 1.  **Do NOT scale** the character preview sprite; use native resolution.

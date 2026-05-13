@@ -28,5 +28,5 @@
 - **Impact on spec:** The specification for tests will be updated to require mocking of `pygame.Surface` and `pygame.font` specifically for testing UI state changes without needing a valid display driver.
 
 ### Discovered Patterns
-- **Mocking Pygame Surfaces:** `tests/ui/test_speech_bubble.py` correctly uses `MagicMock` for `blit_func` to avoid C-level Pygame dependencies. This pattern should be adopted for `DialogueManager`.
+- **Mocking Pygame Surfaces:** `tests/ui/test_speech_bubble.py` correctly uses MagicMock for `blit_func` to avoid C-level Pygame dependencies. This pattern should be adopted for `DialogueManager`.
 - **Test-Driven UI Interaction:** `tests/engine/test_game.py` simulates Pygame events using mocked Event objects. We will reuse this to test `DialogueManager.handle_event()`.

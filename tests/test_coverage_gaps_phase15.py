@@ -78,6 +78,7 @@ class TestGameCoverage:
         game = _make_game()
         game._npc_bubble = None
         game._advance_npc_bubble()  # no raise
+        assert game._npc_bubble is None
 
     @patch("src.engine.game.Game._load_map")
     def test_advance_npc_bubble_no_font_noop(self, _):
@@ -85,6 +86,7 @@ class TestGameCoverage:
         game._npc_bubble = {"npc": MagicMock(), "text": "Hi", "page": 0}
         game.speech_bubble.font = None
         game._advance_npc_bubble()  # no raise
+        assert game._npc_bubble["page"] == 0
 
     @patch("src.engine.game.Game._load_map")
     def test_advance_npc_bubble_increments_page(self, _):

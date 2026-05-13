@@ -5,7 +5,7 @@
 
 > Document Type: Implementation
 > Version: 1.0 — 2026-05-04
-> Audit source: docs/brain/fcb4f254/performance_audit.md
+> Audit source: performance_audit
 
 ## Scope
 
@@ -118,7 +118,7 @@ for key, default in zip(_MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS):
 | `BACKGROUND_LIGHTS` vide | `len == 0` | `_light_halos_scaled = {}` | DEBUG |
 | `MUSHROOM_LIGHTS` vide | `len == 0` | `_mushroom_halos_scaled = {}` | DEBUG |
 | `bucket` hors range | `min(N-1, max(0, bucket))` | Clamp silencieux | None |
-| `gaussian_blur` AttributeError (pygame standard) | `except AttributeError` (existant) | Fallback déjà implémenté | WARNING |
+| `gaussian_blur` AttributeError (pygame standard) | `except` AttributeError (existant) | Fallback déjà implémenté | WARNING |
 
 ---
 

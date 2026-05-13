@@ -15,7 +15,7 @@ Detailed implementation specification for the debug room and visual hitbox debug
 | Render hitboxes in `Game._draw_scene` | Handle it in `CameraGroup.custom_draw` | Ensures hitboxes are correctly aligned with camera offset and Y-sorting. |
 | Use `print()` for debug logs | Use `logging.debug()` | Maintain professional logging standards. |
 | Break existing `is_initial_spawn` logic | Support both `pawn` and `spawn` variants | Backward compatibility with existing maps. |
-| Hardcode map paths in multiple methods | Use `Settings.DEBUG_MAP` or local constant | Centralized configuration management. |
+| Hardcode map paths in multiple methods | Use Settings.DEBUG_MAP or local constant | Centralized configuration management. |
 | Draw hitboxes when `DEBUG` is False | Add a strict conditional check | Avoid unnecessary draw calls and performance hits in production. |
 
 ## 2. Test Case Specifications

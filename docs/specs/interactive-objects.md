@@ -21,7 +21,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `element_id` | string | Unique identifier for communication and dialogue. Falls back to the raw Tiled object `id` (e.g. "61") if absent. |
 | `target_id` | string | Holds the `element_id` of the object that this entity should activate or interact with. |
 | `facing_direction` | string | Optional. Overrides the `position`-based `direction_str`. Useful for signs. |
-| `is_on` | bool | The initial state of the object. Persisted in `WorldState` using `{map}-{element_id}` as key. |
+| `is_on` | bool | The initial state of the object. Persisted in WorldState using `{map}-{element_id}` as key. |
 | `sfx` | string | Optional. Name of the `.ogg` file in `assets/audio/sfx/` to play on interaction. |
 | `sfx_ambient` | string | Optional. Name of the looping `.ogg` file in `assets/audio/sfx/` to play while `is_on` is True. |
 | `off_position` | int | Column index for OFF state (`-1` = no switch, backward-compat default). When ≥ 0, `interact()` switches `col_index` between `on_position` (col 0) and `off_position`. Used by `animated_decor` (e.g. torch ON col 0 / OFF col 1). |
@@ -30,7 +30,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
 ### Animation Logic
 - **Column Mapping**: 
   - The object property `position` (int, 0-3) determines the sprite-sheet column index directly (0-indexed).
-  - Mapping: `0=Down, 1=Left, 2=Right, 3=Up` (matches `InteractiveEntity.POSITION_TO_DIR` in code).
+  - Mapping: `0=Down, 1=Left, 2=Right, 3=Up` (matches InteractiveEntity.POSITION_TO_DIR in code).
   - The engine uses this index to slice the correct vertical strip from the spritesheet.
 - **`off_position` Column Switch** (for `animated_decor`):
   - If `off_position == -1` (default): single-column spritesheet, no switch on toggle (backward compat).
@@ -68,7 +68,7 @@ If `activate_from_anywhere` is `False` (Default):
    - `obj.pos` is the **footprint center** (center of the bottom 32x32 area).
    - Interaction is calculated as **Footprint-to-Footprint** distance.
 2. **Relative Orientation (Physical Front Side Rule)**: 
-   - Uses `InteractiveEntity.POSITION_TO_DIR` standard mapping: `0:Down, 1:Left, 2:Right, 3:Up`.
+   - Uses InteractiveEntity.POSITION_TO_DIR standard mapping: `0:Down, 1:Left, 2:Right, 3:Up`.
    - The direction specifies the object's **front side** (e.g. `down` means it faces the bottom of the screen).
    - The player must stand on the **corresponding physical side**, facing the **opposite way** (towards the object).
    - Object `down` -> Player must be south (`y > obj_y`), facing `up`.
@@ -222,7 +222,7 @@ During `update(dt)`, if `day_night_driven=True`:
 
 #### Persistence
 
-`light_control` is saved in `WorldState` alongside `is_on`:
+`light_control` is saved in WorldState alongside `is_on`:
 ```python
 # Save
 world_state.set(key, {"is_on": self.is_on, "light_control": self.light_control})
@@ -300,7 +300,7 @@ This preserves player overrides across map transitions and save/load cycles.
 | Missing Asset (Sign)| `sub_type == 'sign'` and sheet missing | Use transparent surface | Allows invisible triggers without visual artifacts |
 | Headless Display| `pygame.display.get_surface()` is None | Skip `.convert_alpha()` | Prevents crashes during headless unit testing |
 | Interaction Spam| Timer check | Ignore input | cooldown of 0.5s |
-| Failed Interact | No target found | Show 'question' emote | Optional via `Settings.ENABLE_FAILED_INTERACTION_EMOTE` |
+| Failed Interact | No target found | Show 'question' emote | Optional via Settings.ENABLE_FAILED_INTERACTION_EMOTE |
 
 ## 6. Deep Links
 - **`InteractiveEntity` class**: [interactive.py L11](../../src/entities/interactive.py#L11)
