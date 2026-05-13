@@ -13,7 +13,9 @@ from src.map.project_schema import TiledProject
 class TileMapData:
     image: pygame.Surface
     depth: int
-    collidable: bool
+    walkable: bool
+    direction_flags: set[str] | None = None
+    frames: list[tuple[int, int]] | None = None
     occluded_image: pygame.Surface | None = None
     properties: dict[str, Any] | None = None
 
@@ -176,14 +178,16 @@ class TmjParser:
 
         # Find explicit custom properties for tiles if any
         custom_props = {}
+        animations = {}
         for tile in root.findall("tile"):
             local_id_str = tile.get("id")
             if local_id_str is None:
                 continue
             local_id = int(local_id_str)
             props = {
-                "collidable": tileset_props.get("collidable", False),
+                "walkable": tileset_props.get("walkable", True),
                 "depth": tileset_props.get("depth", 0),
+                "direction": tileset_props.get("direction", "any"),
             }
 
             properties_node = tile.find("properties")
@@ -202,6 +206,16 @@ class TmjParser:
                     else:
                         props[name] = val
             custom_props[local_id] = props
+
+            anim_node = tile.find("animation")
+            if anim_node is not None:
+                frames = []
+                for frame in anim_node.findall("frame"):
+                    frame_tileid = int(frame.get("tileid"))
+                    frame_duration = int(frame.get("duration"))
+                    frames.append((firstgid + frame_tileid, frame_duration))
+                if frames:
+                    animations[local_id] = frames
 
         # Slice image into single tiles based on tilecount.
         # TSX tilecount is present, or inferred
@@ -225,8 +239,8 @@ class TmjParser:
             props.update(custom_props.get(i, {}))
 
             # Ensure required keys exist
-            if "collidable" not in props:
-                props["collidable"] = False
+            if "walkable" not in props:
+                props["walkable"] = True
             if "depth" not in props:
                 props["depth"] = 0
 
@@ -238,10 +252,22 @@ class TmjParser:
                 occluded = surface.copy()
                 occluded.set_alpha(Settings.OCCLUSION_ALPHA)
 
+            if "direction" not in props:
+                props["direction"] = "any"
+            direction_str = str(props["direction"])
+            if not direction_str.strip():
+                direction_str = "any"
+            direction_flags = set(d.strip() for d in direction_str.split(",") if d.strip())
+            if not direction_flags:
+                direction_flags = {"any"}
+
+            # Map to dataclass
             tile_dict[global_id] = TileMapData(
                 image=surface,
                 depth=props["depth"],
-                collidable=props["collidable"],
+                walkable=props["walkable"],
+                direction_flags=direction_flags,
+                frames=animations.get(i),
                 occluded_image=occluded,
                 properties=props,
             )

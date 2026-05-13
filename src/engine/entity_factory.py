@@ -199,7 +199,7 @@ class EntityFactory:
             element_id=str(_get_property(props, "element_id") or str(ent.get("id", ""))),
         )
         npc.name = str(_get_property(props, "name", ent.get("name", "")))
-        npc.collision_func = self.game.interaction_manager.is_collidable
+        npc.walkable_func = self.game.interaction_manager.is_walkable
 
         tiled_id = ent.get("id")
         if tiled_id is not None and self.game._current_map_name:

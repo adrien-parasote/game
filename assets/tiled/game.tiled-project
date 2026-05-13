@@ -16,19 +16,25 @@
             "id": 3,
             "members": [
                 {
-                    "name": "collidable",
-                    "type": "bool",
-                    "value": false
-                },
-                {
                     "name": "depth",
                     "type": "int",
                     "value": 0
                 },
                 {
+                    "name": "direction",
+                    "propertyType": "23-direction",
+                    "type": "string",
+                    "value": "any"
+                },
+                {
                     "name": "type",
                     "type": "string",
                     "value": ""
+                },
+                {
+                    "name": "walkable",
+                    "type": "bool",
+                    "value": true
                 }
             ],
             "name": "00-tileset",
@@ -43,13 +49,30 @@
         {
             "color": "#ffa0a0a4",
             "drawFill": true,
-            "id": 16,
+            "id": 21,
             "members": [
+                {
+                    "name": "material",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "tileset",
+                    "propertyType": "00-tileset",
+                    "type": "class",
+                    "value": {
+                    }
+                }
             ],
-            "name": "01-audio",
+            "name": "01-tileset_ground",
             "type": "class",
             "useAs": [
-                "property"
+                "property",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
             ]
         },
         {
@@ -78,27 +101,18 @@
         {
             "color": "#ffa0a0a4",
             "drawFill": true,
-            "id": 21,
+            "id": 22,
             "members": [
                 {
-                    "name": "material",
-                    "type": "string",
-                    "value": ""
-                },
-                {
-                    "name": "tileset",
-                    "propertyType": "00-tileset",
-                    "type": "class",
-                    "value": {
-                    }
+                    "name": "order",
+                    "type": "int",
+                    "value": 0
                 }
             ],
-            "name": "03-tileset_ground",
+            "name": "04-layers",
             "type": "class",
             "useAs": [
-                "property",
-                "tile",
-                "tileset",
+                "layer",
                 "project"
             ]
         },
@@ -297,7 +311,7 @@
                     "name": "required_direction",
                     "propertyType": "23-direction",
                     "type": "string",
-                    "value": "any"
+                    "value": "right"
                 },
                 {
                     "name": "target_map",
@@ -338,7 +352,7 @@
                     "name": "facing_direction",
                     "propertyType": "23-direction",
                     "type": "string",
-                    "value": "down"
+                    "value": "up"
                 },
                 {
                     "name": "is_initial_spawn",
@@ -397,7 +411,7 @@
                     "name": "facing_direction",
                     "propertyType": "23-direction",
                     "type": "string",
-                    "value": "any"
+                    "value": "right"
                 },
                 {
                     "name": "interactive_object",
@@ -531,7 +545,7 @@
                 "left",
                 "any"
             ],
-            "valuesAsFlags": false
+            "valuesAsFlags": true
         }
     ]
 }

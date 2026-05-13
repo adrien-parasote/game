@@ -70,6 +70,8 @@ class MapManager:
                 for x in range(self.width):
                     tile_id = layer_data[y][x]
                     if tile_id != 0 and tile_id in self.tiles:
+                        if getattr(self.tiles[tile_id], "frames", None):
+                            continue
                         tile_img = self.tiles[tile_id].image
                         px, py = self.layout.to_screen(x, y)
                         surface.blit(tile_img, (px, py))
@@ -82,16 +84,34 @@ class MapManager:
             logging.error(f"Failed to pre-render layer {layer_id}: {e}")
             return None
 
-    def is_collidable(self, x: int, y: int) -> bool:
-        """Check if any layer at the given (x,y) coordinates contains a collidable tile."""
+    def is_walkable(self, x: int, y: int) -> bool:
+        """Check if all layers at the given (x,y) coordinates are walkable."""
         if not (0 <= y < self.height and 0 <= x < self.width):
-            return True  # Out of bounds blocks movement
+            return False  # Out of bounds blocks movement
 
+        has_tile = False
         for layer_data in self.layers.values():
             tile_id = layer_data[y][x]
-            if tile_id in self.tiles and getattr(self.tiles[tile_id], "collidable", False):
-                return True
-        return False
+            if tile_id != 0:
+                has_tile = True
+                if tile_id in self.tiles and not getattr(self.tiles[tile_id], "walkable", True):
+                    return False
+        return has_tile
+
+    def get_direction_flags(self, x: int, y: int) -> set[str]:
+        """Returns the direction_flags of the highest layer tile at (x, y)."""
+        if not (0 <= y < self.height and 0 <= x < self.width):
+            return {"any"}
+
+        top_flags = {"any"}
+        for layer_id in self.layer_order:
+            if layer_id in self.layers:
+                tile_id = self.layers[layer_id][y][x]
+                if tile_id in self.tiles:
+                    tile_data = self.tiles[tile_id]
+                    if tile_data.direction_flags is not None:
+                        top_flags = tile_data.direction_flags
+        return top_flags
 
     def get_visible_chunks(
         self, viewport_rect: pygame.Rect, min_depth: int | None = None
@@ -99,6 +119,7 @@ class MapManager:
         """
         Calculate and return an iterator of (x_px, y_px, tile_id, depth)
         that are currently visible within the viewport_rect (world pixels).
+        Skips animated tiles (which are handled by get_visible_animated_chunks).
         """
         tile_size = getattr(self.layout, "tile_size", 32)  # Fallback to 32
 
@@ -118,9 +139,38 @@ class MapManager:
                 for x in range(start_col, end_col):
                     tile_id = layer_data[y][x]
                     if tile_id != 0:
-                        depth = getattr(self.tiles.get(tile_id), "depth", 0)
+                        tile = self.tiles.get(tile_id)
+                        if tile and tile.frames:
+                            continue
+                        depth = getattr(tile, "depth", 0) if tile else 0
                         px, py = self.layout.to_screen(x, y)
                         yield (int(px), int(py), tile_id, depth)
+
+    def get_visible_animated_chunks(
+        self, viewport_rect: pygame.Rect
+    ) -> Iterator[tuple[int, int, int, int]]:
+        """
+        Yields (x_px, y_px, tile_id, depth) for tiles within viewport
+        that have animation frames.
+        """
+        tile_size = getattr(self.layout, "tile_size", 32)
+
+        start_col = max(0, int(viewport_rect.left // tile_size))
+        end_col = min(self.width, int(math.ceil(viewport_rect.right / tile_size)))
+
+        start_row = max(0, int(viewport_rect.top // tile_size))
+        end_row = min(self.height, int(math.ceil(viewport_rect.bottom / tile_size)))
+
+        for layer_id in self.layer_order:
+            layer_data = self.layers[layer_id]
+            for y in range(start_row, end_row):
+                for x in range(start_col, end_col):
+                    tile_id = layer_data[y][x]
+                    if tile_id != 0 and tile_id in self.tiles:
+                        tile = self.tiles[tile_id]
+                        if tile.frames:
+                            px, py = self.layout.to_screen(x, y)
+                            yield (int(px), int(py), tile_id, getattr(tile, "depth", 0))
 
     def get_window_positions(self) -> list[tuple[int, int, int]]:
         """

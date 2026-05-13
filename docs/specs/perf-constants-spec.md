@@ -1,3 +1,6 @@
+> **Design tokens** – see [design-tokens.md](./design-tokens.md)
+[assumption: "All implicit constants and defaults are documented here – pending detailed entries"] – risk: Low
+
 """
 Implementation Spec — Performance & Constants Hardening
 Type: Implementation

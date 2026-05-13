@@ -19,7 +19,7 @@ from src.engine.collision_checker import CollisionChecker
 def _make_game():
     game = MagicMock()
     game.layout.to_world.return_value = (5, 5)
-    game.map_manager.is_collidable.return_value = False
+    game.map_manager.is_walkable.return_value = True
     game.obstacles_group = []
     game.npcs = []
     game.player.rect = None
@@ -38,9 +38,9 @@ def _make_rect_obj(x=64, y=64, size=32):
 
 
 @pytest.mark.tc("TC-CC-01")
-def test_tile_collidable_returns_true():
+def test_tile_not_walkable_returns_true():
     game = _make_game()
-    game.map_manager.is_collidable.return_value = True
+    game.map_manager.is_walkable.return_value = False
     cc = CollisionChecker(game)
     assert cc.check(80, 80) is True
 
@@ -136,8 +136,8 @@ def test_nothing_blocks_returns_false():
 
 
 @pytest.mark.tc("IT-CC-01")
-def test_is_collidable_delegates_to_collision_checker():
-    """InteractionManager.is_collidable must delegate to CollisionChecker.check."""
+def test_is_walkable_delegates_to_collision_checker():
+    """InteractionManager.is_walkable must delegate to CollisionChecker.check."""
     from src.engine.interaction import InteractionManager
 
     game = _make_game()
@@ -147,7 +147,7 @@ def test_is_collidable_delegates_to_collision_checker():
     im._collision_checker = MagicMock()
     im._collision_checker.check.return_value = True
 
-    result = im.is_collidable(80, 80, requester=None)
+    result = im.is_walkable(80, 80, requester=None)
 
     im._collision_checker.check.assert_called_once_with(80, 80, None)
-    assert result is True
+    assert result is False

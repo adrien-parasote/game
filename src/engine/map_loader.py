@@ -17,6 +17,7 @@ import pygame
 from src.map.layout import OrthogonalLayout
 from src.map.manager import MapManager
 from src.map.tmj_parser import TmjParser
+from src.map.animation import AnimationMapManager
 
 
 class MapLoader:
@@ -60,6 +61,7 @@ class MapLoader:
 
         self.game.layout = OrthogonalLayout(self.game.tile_size)
         self.game.map_manager = MapManager(map_result, self.game.layout)
+        self.game.anim_map_manager = AnimationMapManager(self.game.map_manager)
 
         bgm = map_result.get("properties", {}).get("bgm")
         if bgm:

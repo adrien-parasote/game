@@ -18,8 +18,9 @@ from src.map.tmj_parser import TmjParser
 def map_data():
     tile = MagicMock()
     tile.image = pygame.Surface((32, 32))
-    tile.collidable = True
+    tile.walkable = False
     tile.depth = 1
+    tile.frames = None
     return {
         "layers": {1: [[1, 0], [0, 0]]},
         "tiles": {1: tile},
@@ -115,26 +116,56 @@ def test_layer_recursive_order():
 # ---------------------------------------------------------------------------
 
 
-def test_map_manager_collision_basics():
+def test_map_manager_walkable_basics():
     """Collision detection works across layers using tile coordinates."""
     map_d = {
         "layers": {1: [[1, 0], [0, 0]]},
-        "tiles": {1: MagicMock(collidable=True)},
+        "tiles": {1: MagicMock(walkable=False)},
         "width": 2,
         "height": 2,
         "tile_size": 32,
     }
     manager = MapManager(map_d, OrthogonalLayout(32))
-    assert manager.is_collidable(0, 0) is True
-    assert manager.is_collidable(1, 0) is False
+    assert manager.is_walkable(0, 0) is False
+    assert manager.is_walkable(1, 0) is False
 
 
-def test_map_manager_collision_out_of_bounds(map_data):
+def test_map_manager_walkable_out_of_bounds(map_data):
     layout = MagicMock()
     mm = MapManager(map_data, layout)
-    assert mm.is_collidable(0, 0) is True
-    assert mm.is_collidable(1, 0) is False
-    assert mm.is_collidable(-1, 0) is True  # Out of bounds → collidable
+    assert mm.is_walkable(0, 0) is False
+    assert mm.is_walkable(1, 0) is False
+    assert mm.is_walkable(-1, 0) is False  # Out of bounds → not walkable
+
+
+# ---------------------------------------------------------------------------
+# Directional constraints
+# ---------------------------------------------------------------------------
+
+def test_map_manager_get_direction_flags():
+    """get_direction_flags returns top layer's set or {'any'} if out of bounds."""
+    tile = MagicMock()
+    tile.image = pygame.Surface((32, 32))
+    tile.walkable = True
+    tile.depth = 0
+    tile.direction_flags = {"up", "left"}
+    
+    map_d = {
+        "layers": {1: [[1, 0]]},
+        "tiles": {1: tile},
+        "layer_names": {1: "00-layer"},
+        "layer_order": [1],
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+    
+    layout = MagicMock()
+    manager = MapManager(map_d, layout)
+    
+    assert manager.get_direction_flags(0, 0) == {"up", "left"}
+    assert manager.get_direction_flags(1, 0) == {"any"}  # Empty coordinate defaults to 'any'
+    assert manager.get_direction_flags(-1, 0) == {"any"} # Out of bounds
 
 
 # ---------------------------------------------------------------------------
@@ -229,6 +260,84 @@ def test_get_visible_chunks_partial_viewport(map_manager):
     viewport = MagicMock()
     viewport.left, viewport.right, viewport.top, viewport.bottom = 32, 64, 0, 32
     assert list(map_manager.get_visible_chunks(viewport)) == []
+
+
+# ---------------------------------------------------------------------------
+# MapManager: get_visible_animated_chunks
+# ---------------------------------------------------------------------------
+
+
+def test_get_visible_animated_chunks_static_map(map_manager):
+    """TC-004: get_visible_animated_chunks called on static map yields empty sequence."""
+    viewport = MagicMock()
+    viewport.left, viewport.right, viewport.top, viewport.bottom = 0, 64, 0, 64
+    chunks = list(map_manager.get_visible_animated_chunks(viewport))
+    assert len(chunks) == 0
+
+def test_get_visible_animated_chunks_with_animated_tile(map_data):
+    """Animated chunks should yield animated tiles, while static chunks should ignore them."""
+    layout = MagicMock()
+    layout.tile_size = 32
+    layout.to_screen.side_effect = lambda x, y: (x * 32, y * 32)
+    
+    # Setup tile 1 to be static, tile 2 to be animated
+    static_tile = MagicMock()
+    static_tile.image = pygame.Surface((32, 32))
+    static_tile.frames = None
+    static_tile.depth = 0
+    
+    anim_tile = MagicMock()
+    anim_tile.image = pygame.Surface((32, 32))
+    anim_tile.frames = [(2, 150), (3, 150)]
+    anim_tile.depth = 0
+    
+    map_data["layers"][1] = [[1, 2], [0, 0]]
+    map_data["tiles"] = {1: static_tile, 2: anim_tile}
+    map_data["width"] = 2
+    map_data["height"] = 2
+    
+    manager = MapManager(map_data, layout)
+    viewport = MagicMock()
+    viewport.left, viewport.right, viewport.top, viewport.bottom = 0, 64, 0, 64
+    
+    # Static chunks should yield tile 1
+    static_chunks = list(manager.get_visible_chunks(viewport))
+    assert len(static_chunks) == 1
+    assert static_chunks[0][2] == 1  # tile_id is 1
+    
+    # Animated chunks should yield tile 2
+    anim_chunks = list(manager.get_visible_animated_chunks(viewport))
+    assert len(anim_chunks) == 1
+    assert anim_chunks[0][2] == 2  # tile_id is 2
+
+def test_get_layer_surface_ignores_animated_tiles(map_data):
+    """Static cache rendering should skip animated tiles leaving a transparent hole."""
+    layout = MagicMock()
+    layout.tile_size = 32
+    layout.to_screen.side_effect = lambda x, y: (x * 32, y * 32)
+    
+    # Setup tile 1 to be animated
+    anim_tile = MagicMock()
+    anim_tile.image = pygame.Surface((32, 32))
+    anim_tile.image.fill((255, 0, 0)) # Red
+    anim_tile.frames = [(1, 150), (2, 150)]
+    anim_tile.depth = 0
+    
+    map_data["layers"][1] = [[1, 0], [0, 0]]
+    map_data["tiles"] = {1: anim_tile}
+    map_data["width"] = 2
+    map_data["height"] = 2
+    
+    manager = MapManager(map_data, layout)
+    mock_pygame = MagicMock()
+    mock_pygame.SRCALPHA = pygame.SRCALPHA
+    mock_surface = MagicMock()
+    mock_pygame.Surface.return_value = mock_surface
+    
+    surface = manager.get_layer_surface(1, mock_pygame)
+    
+    # mock_surface should NOT have been blitted on because the only tile is animated
+    mock_surface.blit.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

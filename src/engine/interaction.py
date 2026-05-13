@@ -312,9 +312,9 @@ class InteractionManager:
         self._last_proximity_target = chest
         self._emote_cooldown = 1.0
 
-    def is_collidable(self, px_center: float, py_center: float, requester=None) -> bool:
-        """Collision checking adapter — delegates to CollisionChecker."""
-        return self._collision_checker.check(px_center, py_center, requester)
+    def is_walkable(self, px_center: float, py_center: float, requester=None) -> bool:
+        """Walkability checking adapter — delegates to CollisionChecker."""
+        return not self._collision_checker.check(px_center, py_center, requester)
 
     def check_teleporters(self, was_moving: bool):
         """Active spatial check testing if interaction just resolved over teleport rect."""

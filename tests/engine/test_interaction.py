@@ -509,20 +509,20 @@ class DummySprite(pygame.sprite.Sprite):
         self.interact_called = True
 
 
-def test_interaction_is_collidable():
+def test_interaction_is_walkable():
     game = MagicMock()
     im = InteractionManager(game)
     game.map_manager.check_collision.return_value = True
     game.layout.to_world.return_value = (0, 0)
 
-    assert im.is_collidable(0.0, 0.0) is True
+    assert im.is_walkable(0.0, 0.0) is False
     game.map_manager.check_collision.return_value = False
 
     # Obstacles
     mock_obs = DummySprite()
     mock_obs.rect = pygame.Rect(-10, -10, 20, 20)
     game.obstacles_group = [mock_obs]
-    assert im.is_collidable(0.0, 0.0) is True
+    assert im.is_walkable(0.0, 0.0) is False
 
 
 @pytest.mark.tc("CORE-T-01")

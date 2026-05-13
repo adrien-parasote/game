@@ -156,7 +156,7 @@ class Game:
         self.player.audio_manager = self.audio_manager
         self.player.game = self
         self.player.emote_manager.emote_group = self.emote_group
-        self.player.collision_func = self.interaction_manager.is_collidable
+        self.player.walkable_func = self.interaction_manager.is_walkable
 
         # Inventory System
         self.inventory_ui = InventoryUI(self.player)
@@ -381,6 +381,9 @@ class Game:
 
             # Resolve ambient sound volumes from this frame's proposals.
             self.audio_manager.flush_ambient()
+
+            if getattr(self, "anim_map_manager", None):
+                self.anim_map_manager.update(int(dt * 1000))
 
         now = pygame.time.get_ticks()
         if now - self.last_fps_update > 1000:

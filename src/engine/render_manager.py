@@ -22,6 +22,18 @@ class RenderManager:
                 if surface:
                     self.game.screen.blit(surface, (cam_offset.x, cam_offset.y))
 
+        # Draw animated background tiles
+        if getattr(self.game, "anim_map_manager", None):
+            screen_rect = self.game.screen.get_rect()
+            viewport_world = pygame.Rect(
+                -cam_offset.x, -cam_offset.y, screen_rect.width, screen_rect.height
+            )
+            for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(viewport_world):
+                if depth <= self.game.player.depth:
+                    img = self.game.anim_map_manager.get_current_frame_image(tile_id)
+                    if img:
+                        self.game.screen.blit(img, (px + cam_offset.x, py + cam_offset.y))
+
     def draw_foreground(self):
         """Draw tiles with depth > player depth (in front of player). Use cached occluded versions if needed."""
         cam_offset = self.game.visible_sprites.offset
@@ -49,6 +61,17 @@ class RenderManager:
                     self.game.screen.blit(tile_data.occluded_image or tile_data.image, screen_pos)
                 else:
                     self.game.screen.blit(tile_data.image, screen_pos)
+
+        # Draw animated foreground tiles
+        if getattr(self.game, "anim_map_manager", None):
+            for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(viewport_world):
+                if depth > self.game.player.depth:
+                    img = self.game.anim_map_manager.get_current_frame_image(tile_id)
+                    if img:
+                        screen_pos = (px + cam_offset.x, py + cam_offset.y)
+                        # We don't have pre-cached occlusion frames for dynamic animations yet,
+                        # but we assume animated tiles are depth=0 anyway.
+                        self.game.screen.blit(img, screen_pos)
 
     def draw_hud(self):
         """Draw time and season HUD overlay (top-right, fixed to screen)."""

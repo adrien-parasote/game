@@ -42,7 +42,7 @@ class CollisionChecker:
         """
         # 1. Map tiles
         wx, wy = self.game.layout.to_world(px_center, py_center)
-        if self.game.map_manager.is_collidable(int(wx), int(wy)):
+        if not self.game.map_manager.is_walkable(int(wx), int(wy)):
             return True
 
         # 2. Dynamic obstacles (doors, etc.)

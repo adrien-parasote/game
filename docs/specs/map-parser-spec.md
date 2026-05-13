@@ -1,3 +1,6 @@
+> **Design tokens** – see [design-tokens.md](./design-tokens.md)
+[assumption: "All implicit constants and defaults are documented here – pending detailed entries"] – risk: Low
+
 # Technical Specification - Map Parser & Manager [Implementation]
 
 > Document Type: Implementation
@@ -51,19 +54,20 @@ Parse Tiled-exported map files (`.tmj` JSON + `.tsx` XML tilesets) into internal
 
 **Input**: Path to `.tsx` file (XML tileset), `firstgid` from TMJ.
 
-**Output**: Populates `tile_dict` mapping GIDs to `TileProperty` named tuples.
+**Output**: Populates `tile_dict` mapping GIDs to `TileMapData` dataclass instances.
 
-**TileProperty fields**:
+**`TileMapData` dataclass** (defined in `tmj_parser.py:12`):
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `collidable` | bool | `False` | Blocks movement |
-| `depth` | int | `0` | Render depth (0=background, 1+=foreground) |
-| `material` | str | `""` | Footstep sound material identifier |
-| `is_window` | bool | `False` | Light source for lighting system |
-| `image` | Surface | — | Pre-loaded pygame surface |
-| `occluded_surface` | Surface\|None | `None` | Pre-alpha'd surface for high-depth tiles |
+| `image` | `Surface` | — | Pre-loaded pygame surface |
+| `depth` | `int` | — | Render depth (0=background, 1+=foreground) |
+| `collidable` | `bool` | — | Blocks movement |
+| `occluded_image` | `Surface \| None` | `None` | Pre-alpha'd surface for high-depth tiles |
+| `properties` | `dict[str, Any] \| None` | `None` | Raw Tiled custom properties (contains `material`, `type`, etc.) |
 
-**Occlusion Pre-Cache**: For tiles with `depth > 0`, a copy of the tile surface is created with alpha set to `160/255` (semi-transparent). This is cached as `occluded_surface` to avoid per-frame alpha computation during foreground rendering.
+> **Note**: `material`, `is_window`, and other Tiled custom properties are accessed via `tile.properties["material"]`, NOT as direct dataclass fields. The `MapManager` uses `getattr(tile, "properties", {})` to safely access this dict.
+
+**Occlusion Pre-Cache**: For tiles with `depth > 0`, a copy of the tile surface is created with alpha set to `160/255` (semi-transparent). This is cached as `occluded_image` to avoid per-frame alpha computation during foreground rendering.
 
 ### 3.4. Recursive Layer Processing (`_process_layers`)
 
@@ -115,33 +119,101 @@ File: `assets/tiled/game.tiled-project` (JSON)
 
 ## 5. MapManager — Layer & Tile Management
 
-### 5.1. Layer Management
+**Source**: [manager.py:1](../../src/map/manager.py#L1) (192 LOC)
 
-- **Sorting**: Layers sorted by name prefix (e.g., `00-`, `01-`, `18-`) for render order
-- **Depth extraction**: Parsed from layer name prefix (`int(name.split('-')[0])`)
-- **Pre-rendered surfaces**: Background layers (`depth=0`) are pre-rendered to full-size cached surfaces via `get_layer_surface()`
+### 5.1. Initialization
 
-### 5.2. Depth System
+```python
+def __init__(self, map_data: dict, layout: LayoutStrategy) -> None
+```
+
+**State derived from `map_data`**:
+| Attribute | Type | Source |
+|-----------|------|--------|
+| `layers` | `dict[int, list[list[int]]]` | `map_data["layers"]` — layer_id → 2D tile grid |
+| `tiles` | `dict[int, TileProperty]` | `map_data["tiles"]` — GID → tile properties |
+| `layer_names` | `dict[int, str]` | `map_data["layer_names"]` — layer_id → name string |
+| `layer_order` | `list[int]` | Sorted by layer name (alphabetical → depth order) |
+| `layer_depths` | `dict[int, int]` | Computed: layer_id → depth integer |
+| `width`, `height` | `int` | Map dimensions in tiles |
+| `cached_surfaces` | `dict[int, Surface]` | Layer surface cache (lazily populated) |
+| `_window_cache` | `list \| None` | Window positions cache (lazily computed) |
+| `_entities` | `list[dict]` | Entity objects from parser (used for window detection) |
+
+### 5.2. Layer Depth Extraction
+
+**Algorithm** (per layer):
+1. Parse layer name prefix: if name matches `\d{2}-.*` → `depth = int(name[:2])`
+2. Fallback: sample first non-zero tile in the layer → use its `TileProperty.depth`
+3. Default: `0` if no tile found
+
+### 5.3. Depth System
 
 | Depth | Meaning | Rendering Pass |
 |-------|---------|----------------|
 | 0 | Background (ground, floors) | Pass 1: below entities |
 | 1+ | Foreground (roofs, treetops) | Pass 3: above entities (with occlusion alpha) |
 
-### 5.3. Window Detection
+### 5.4. Interfaces
 
-Priority-based window position extraction for the lighting system:
-1. **Priority 1**: Rectangle objects in `18-light` layer → direct position extraction
-2. **Priority 2**: Tile properties with `is_window=True` → fallback scanning
+#### `get_layer_surface(layer_id: int, pygame_module) -> Surface | None`
 
-Returns: `list[tuple[int, int]]` of window pixel coordinates.
+Pre-renders an entire layer to a single cached `Surface`. Used for background layers.
 
-### 5.4. Terrain Material Lookup (`get_terrain_at`)
+**Behavior**:
+1. Return cached surface if exists
+2. Create `SRCALPHA` surface of `(width * tile_size, height * tile_size)`
+3. Blit all non-zero tiles using `layout.to_screen(x, y)`
+4. Cache result in `self.cached_surfaces`
 
-Top-down layer scan at a given `(x, y)` pixel position:
-- Iterates layers from highest to lowest
-- Returns the `material` property of the first non-empty tile found
-- Used by `Player` for footstep SFX selection
+#### `is_collidable(x: int, y: int) -> bool`
+
+**Input**: Grid coordinates `(col, row)`.
+**Returns**: `True` if any layer contains a collidable tile at `(x, y)`.
+**Edge case**: Out-of-bounds coordinates return `True` (blocks movement).
+
+#### `get_visible_chunks(viewport_rect: Rect, min_depth: int | None) -> Iterator[tuple]`
+
+**Viewport culling algorithm** — yields only tiles visible on screen:
+
+```python
+# O(1) range calculation from viewport
+start_col = max(0, viewport_rect.left // tile_size)
+end_col   = min(width, ceil(viewport_rect.right / tile_size))
+start_row = max(0, viewport_rect.top // tile_size)
+end_row   = min(height, ceil(viewport_rect.bottom / tile_size))
+```
+
+**Yields**: `(x_px, y_px, tile_id, depth)` for each visible non-zero tile.
+
+**Filter**: If `min_depth` is set, skips layers with `depth <= min_depth`. Used by `RenderManager` to render only foreground layers in pass 3.
+
+#### `get_window_positions() -> list[tuple[int, int, int]]`
+
+Returns beam-emitter specs for the lighting system.
+
+**Return type**: `list[tuple[cx, y, width]]` where:
+| Field | Type | Description |
+|-------|------|-------------|
+| `cx` | `int` | Horizontal center of beam origin (pixels) |
+| `y` | `int` | Vertical start of beam (pixels) |
+| `width` | `int` | Beam top width (pixels), matching window width |
+
+**Priority**:
+1. **Rectangle objects** with `type='18-light'` → pixel-precise `(x + w/2, y, w)`
+2. **Tile property fallback**: tiles with `properties.type == "window"` → `(px + tile_size/2, py + tile_size, tile_size)`
+
+**Caching**: Result cached in `_window_cache` on first call.
+
+#### `get_terrain_material_at(pixel_x: int, pixel_y: int) -> str | None`
+
+Top-down layer scan at a given pixel position:
+1. Convert pixel → grid via `layout.to_world()`
+2. Iterate layers from highest to lowest (`reversed(layer_order)`)
+3. Return the `material` property of the first non-empty tile with a material
+4. Return `None` if out of bounds or no material found
+
+**Consumer**: `Player._play_footstep()` for terrain-based SFX selection.
 
 ## 6. OrthogonalLayout — Coordinate Strategy
 
@@ -170,7 +242,7 @@ class LayoutStrategy(ABC):
 | Parse TSX as JSON | Parse TSX as XML (`xml.etree.ElementTree`) | TSX files are XML, not JSON |
 | Hardcode tile properties | Read from TSX `<property>` elements | Supports Tiled editor customization |
 | Flatten group layers | Process recursively | Preserves Tiled layer organization |
-| Calculate occlusion alpha per frame | Pre-cache `occluded_surface` at load | Eliminates per-frame Surface.copy() + set_alpha() |
+| Calculate occlusion alpha per frame | Pre-cache `occluded_image` at load | Eliminates per-frame Surface.copy() + set_alpha() |
 | Assume single tileset per map | Iterate all tilesets with `firstgid` offset | Multi-tileset maps are standard |
 | Access properties directly from TMJ | Resolve via `TiledProject` schema first | Missing defaults cause KeyError |
 

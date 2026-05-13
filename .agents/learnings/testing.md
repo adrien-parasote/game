@@ -514,3 +514,22 @@ game.chest_ui.is_open = False
 ---
 
 *Last optimized: 2026-05-07 — L-TEST-008, A-TEST-008 from Phase 1.5 HARDEN session.*
+
+---
+
+### A-TEST-009 · 2026-05-13 · U · Minor Rework
+**Orphaned dynamic mock assignments during property renames**
+
+Python allows dynamic attribute assignment (`entity.old_name = True`). When renaming a property across the codebase (e.g., `collision_func` to `walkable_func`), standard IDE refactoring or `grep` on `src/` might miss assignments in `tests/` where the property isn't declared but is dynamically added to `MagicMock` or class instances.
+
+```python
+# ❌ The test silently passes dynamic attributes, but the real code checks 'walkable_func'
+entity.collision_func = lambda px, py: True
+
+# ✅ The actual property name the system now expects
+entity.walkable_func = lambda px, py: False
+```
+
+**Anti-pattern:** Renaming a core property without running a workspace-wide `grep` on the old property name, especially in the `tests/` directory.
+**Fix:** Always run a full-text search across the entire project (including `tests/`) for the old property string when executing a rename.
+**Evidence:** `test_start_move_collision_blocks_move` failed after `collision_func` was renamed to `walkable_func` in an earlier step, because the test kept injecting the old name into the entity instance.

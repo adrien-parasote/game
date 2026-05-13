@@ -1,0 +1,13 @@
+{
+    "maps": [
+        {
+            "fileName": "01-castel-ext.tmj",
+            "height": 1920,
+            "width": 1952,
+            "x": 0,
+            "y": 0
+        }
+    ],
+    "onlyShowAdjacentMaps": false,
+    "type": "world"
+}

@@ -24,10 +24,10 @@ class TestBaseEntityCoverage:
         assert not entity.is_moving
 
     def test_start_move_collision_blocks_move(self):
-        """L66-68: collision_func returning True prevents move."""
+        """L66-68: walkable_func returning False prevents move."""
         entity = BaseEntity(pos=(100, 100))
         entity.speed = 200
-        entity.collision_func = lambda px, py, requester=None: True
+        entity.walkable_func = lambda px, py, requester=None: False
         entity.direction = pygame.math.Vector2(1, 0)
         entity.start_move()
         assert not entity.is_moving

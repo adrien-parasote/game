@@ -1,3 +1,6 @@
+> **Design tokens** – see [design-tokens.md](./design-tokens.md)
+[assumption: "All implicit constants and defaults are documented here – pending detailed entries"] – risk: Low
+
 # Technical Spec — Chest UI System [Implementation]
 
 > Document Type: Implementation

@@ -105,3 +105,27 @@ When an auto-generated tile appears as a flat, dark grey block in Tiled, it's ea
 **Anti-pattern:** Spending time debugging TSX Wang ID mappings when an autotile has a visual artifact in Tiled.
 **Rule:** Check the output PNG for transparency first. Tiled's default map background is a dark grey grid. If a crop coordinate is wrong and extracts a transparent section, it looks identical to Tiled "missing" the tile. 
 **Evidence:** A script was cropping `(2,0)` instead of `(4,0)` for an RPG Maker XP inner corner, producing a fully transparent 32x32 tile. Tiled successfully placed the tile, but it was invisible.
+
+---
+
+### L-MAP-004 · 2026-05-13 · U · Perfect
+**Cache Evasion for Dynamic Tile Overlays**
+
+When introducing dynamic visual elements (like animated autotiles) into a heavily cached static system (tilemaps), attempting to rebuild or invalidate the global static cache kills performance.
+
+```python
+# ❌ Draw animated tiles into the global static layer cache
+# Requires invalidating and rebuilding the entire 3200x3200 surface every 150ms.
+def get_layer_surface(self): ...
+
+# ✅ Explicitly skip dynamic elements during static bake, leaving a transparent hole
+if tile.frames is not None:
+    continue # Skip animated tiles
+    
+# Then yield dynamic tiles in a separate pass for RenderManager
+for tile in get_visible_animated_chunks():
+    screen.blit(anim_manager.get_current_frame(tile.id), pos)
+```
+
+**Rule:** Always decouple dynamic elements from static pre-render pipelines by applying "Cache Evasion" — explicitly skip rendering the dynamic element into the cache, and composite it dynamically on top of the static cache during the render loop.
+**Evidence:** Animated autotiles integrated flawlessly into the Tiled parser while maintaining constant 60 FPS without invalidating the static layer cache.

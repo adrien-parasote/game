@@ -54,7 +54,7 @@ def test_tmj_parser_full_load(mock_exists):
         <image source="tiles.png" width="32" height="32"/>
         <tile id="0">
             <properties>
-                <property name="collidable" type="bool" value="true"/>
+                <property name="walkable" type="bool" value="false"/>
             </properties>
         </tile>
     </tileset>
@@ -121,8 +121,8 @@ def test_tmj_parser_tsx_errors_and_properties(mock_exists):
             with pytest.raises(ValueError, match="No <image> tag found"):
                 parser.load_map("dummy.tmj")
 
-    # 2. Properties (bool, int) and depth occlusion
-    good_tsx = '<?xml version="1.0" encoding="UTF-8"?>\n<tileset name="test" tilewidth="32" tileheight="32" tilecount="1" columns="1">\n<image source="tiles.png" width="32" height="32"/>\n<properties>\n<property name="global_bool" type="bool" value="true"/>\n<property name="global_int" type="int" value="42"/>\n</properties>\n<tile id="0">\n<properties>\n<property name="collidable" type="bool" value="true"/>\n<property name="depth" type="int" value="1"/>\n<property name="custom_str" type="string" value="hello"/>\n</properties>\n</tile>\n</tileset>'
+    # 2. Properties (bool, int) and depth occlusion + animation
+    good_tsx = '<?xml version="1.0" encoding="UTF-8"?>\n<tileset name="test" tilewidth="32" tileheight="32" tilecount="2" columns="2">\n<image source="tiles.png" width="64" height="32"/>\n<properties>\n<property name="global_bool" type="bool" value="true"/>\n<property name="global_int" type="int" value="42"/>\n</properties>\n<tile id="0">\n<properties>\n<property name="walkable" type="bool" value="false"/>\n<property name="depth" type="int" value="1"/>\n<property name="direction" type="string" value="up, right"/>\n<property name="custom_str" type="string" value="hello"/>\n</properties>\n<animation>\n<frame tileid="0" duration="150"/>\n<frame tileid="1" duration="150"/>\n</animation>\n</tile>\n<tile id="1"></tile>\n</tileset>'
 
     import io
 
@@ -142,10 +142,12 @@ def test_tmj_parser_tsx_errors_and_properties(mock_exists):
                 # Check tile properties
                 tile_data = result["tiles"][1]  # firstgid is 1
                 assert tile_data.depth == 1
-                assert tile_data.collidable is True
+                assert tile_data.walkable is False
+                assert tile_data.direction_flags == {"up", "right"}
                 assert tile_data.properties["global_bool"] is True
                 assert tile_data.properties["global_int"] == 42
                 assert tile_data.properties["custom_str"] == "hello"
+                assert tile_data.frames == [(1, 150), (2, 150)]
 
 
 def test_tmj_parser_tsx_file_not_found():

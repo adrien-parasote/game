@@ -32,7 +32,7 @@ class BaseEntity(pygame.sprite.Sprite):
         self.target_pos = pygame.math.Vector2(pos)
         from collections.abc import Callable
 
-        self.collision_func: Callable | None = None
+        self.walkable_func: Callable | None = None
         self.depth = 1
         self.name: str = ""
         self._world_state_key: str | None = None
@@ -65,6 +65,22 @@ class BaseEntity(pygame.sprite.Sprite):
         if self.direction.magnitude() == 0:
             return
 
+        current_tx = int(self.pos.x // Settings.TILE_SIZE)
+        current_ty = int(self.pos.y // Settings.TILE_SIZE)
+        if self.game and hasattr(self.game, "map_manager"):
+            allowed_directions = self.game.map_manager.get_direction_flags(current_tx, current_ty)
+            
+            requested_dir = None
+            if abs(self.direction.x) > abs(self.direction.y):
+                if self.direction.x > 0: requested_dir = "right"
+                else: requested_dir = "left"
+            else:
+                if self.direction.y > 0: requested_dir = "down"
+                else: requested_dir = "up"
+            
+            if "any" not in allowed_directions and requested_dir not in allowed_directions:
+                return  # Movement blocked by current tile's exit constraints
+
         # Calculate target
         self.target_pos = self.pos + self.direction * Settings.TILE_SIZE
 
@@ -81,8 +97,8 @@ class BaseEntity(pygame.sprite.Sprite):
         self.target_pos.y = max(half_h, min(self.target_pos.y, world_height - half_h))
 
         # Check custom collisions (e.g. MapManager wall tiles)
-        if self.collision_func is not None:
-            if self.collision_func(self.target_pos.x, self.target_pos.y, requester=self):
+        if self.walkable_func is not None:
+            if not self.walkable_func(self.target_pos.x, self.target_pos.y, requester=self):
                 self.target_pos = pygame.math.Vector2(self.pos)
                 return
 
