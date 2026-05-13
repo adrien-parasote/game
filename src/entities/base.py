@@ -69,15 +69,19 @@ class BaseEntity(pygame.sprite.Sprite):
         current_ty = int(self.pos.y // Settings.TILE_SIZE)
         if self.game and hasattr(self.game, "map_manager"):
             allowed_directions = self.game.map_manager.get_direction_flags(current_tx, current_ty)
-            
+
             requested_dir = None
             if abs(self.direction.x) > abs(self.direction.y):
-                if self.direction.x > 0: requested_dir = "right"
-                else: requested_dir = "left"
+                if self.direction.x > 0:
+                    requested_dir = "right"
+                else:
+                    requested_dir = "left"
             else:
-                if self.direction.y > 0: requested_dir = "down"
-                else: requested_dir = "up"
-            
+                if self.direction.y > 0:
+                    requested_dir = "down"
+                else:
+                    requested_dir = "up"
+
             if "any" not in allowed_directions and requested_dir not in allowed_directions:
                 return  # Movement blocked by current tile's exit constraints
 

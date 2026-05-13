@@ -175,71 +175,64 @@ class InventoryUI(InventoryDrawMixin):
         if not self.is_open:
             return
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # Left click
-                mouse_pos = event.pos
-                logging.debug(f"Inventory click at {mouse_pos}")
-
-                # Check Tabs
-                for i, rect in enumerate(self.tab_rects):
-                    if rect.collidepoint(mouse_pos):
-                        logging.info(f"Tab {i} selected")
-                        self.set_tab(i)
-                        return
-
-                # Drag Start
-                if self.hovered_slot:
-                    slot_type, value = self.hovered_slot
-                    if slot_type == "equipment":
-                        item = self.player.inventory.equipment.get(value)
-                        if item:
-                            self._dragging_item = {
-                                "source": "equipment",
-                                "name": value,
-                                "item_id": item.id,
-                                "quantity": item.quantity,
-                                "icon": item.icon if item.icon else f"{item.id}.png",
-                            }
-                            self._drag_pos = mouse_pos
-                            return
-                    elif slot_type == "grid":
-                        item = self.player.inventory.get_item_at(value)
-                        if item:
-                            self._dragging_item = {
-                                "source": "grid",
-                                "index": value,
-                                "item_id": item.id,
-                                "quantity": item.quantity,
-                                "icon": item.icon if item.icon else f"{item.id}.png",
-                            }
-                            self._drag_pos = mouse_pos
-                            return
-
-        elif event.type == pygame.MOUSEMOTION:
-            if self._dragging_item:
-                self._drag_pos = event.pos
-
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1 and self._dragging_item:
-                self.update_hover(event.pos)  # ensure accurate drop target
-                if self.hovered_slot:
-                    slot_type, value = self.hovered_slot
-                    if slot_type == "equipment" and isinstance(value, str):
-                        self._transfer_dragged_to_equipment(value)
-                    elif slot_type == "grid" and isinstance(value, int):
-                        self._transfer_dragged_to_grid(value)
-                self._dragging_item = None
-
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            self._handle_mouse_down(event.pos)
+        elif event.type == pygame.MOUSEMOTION and self._dragging_item:
+            self._drag_pos = event.pos
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1 and self._dragging_item:
+            self._handle_mouse_up(event.pos)
         elif event.type == pygame.KEYDOWN:
-            # Change character preview direction
-            if event.key == Settings.MOVE_UP:
-                self.preview_state = "up"
-            elif event.key == Settings.MOVE_DOWN:
-                self.preview_state = "down"
-            elif event.key == Settings.MOVE_LEFT:
-                self.preview_state = "left"
-            elif event.key == Settings.MOVE_RIGHT:
-                self.preview_state = "right"
+            self._handle_keydown(event.key)
+
+    def _handle_mouse_down(self, mouse_pos):
+        logging.debug(f"Inventory click at {mouse_pos}")
+        for i, rect in enumerate(self.tab_rects):
+            if rect.collidepoint(mouse_pos):
+                logging.info(f"Tab {i} selected")
+                self.set_tab(i)
+                return
+
+        if self.hovered_slot:
+            slot_type, value = self.hovered_slot
+            if slot_type == "equipment":
+                item = self.player.inventory.equipment.get(value)
+                if item:
+                    self._start_drag("equipment", value, item, mouse_pos)
+            elif slot_type == "grid":
+                item = self.player.inventory.get_item_at(value)
+                if item:
+                    self._start_drag("grid", value, item, mouse_pos)
+
+    def _start_drag(self, source, identifier, item, mouse_pos):
+        self._dragging_item = {
+            "source": source,
+            "name": identifier if source == "equipment" else None,
+            "index": identifier if source == "grid" else None,
+            "item_id": item.id,
+            "quantity": item.quantity,
+            "icon": item.icon if item.icon else f"{item.id}.png",
+        }
+        self._drag_pos = mouse_pos
+
+    def _handle_mouse_up(self, mouse_pos):
+        self.update_hover(mouse_pos)
+        if self.hovered_slot:
+            slot_type, value = self.hovered_slot
+            if slot_type == "equipment" and isinstance(value, str):
+                self._transfer_dragged_to_equipment(value)
+            elif slot_type == "grid" and isinstance(value, int):
+                self._transfer_dragged_to_grid(value)
+        self._dragging_item = None
+
+    def _handle_keydown(self, key):
+        if key == Settings.MOVE_UP:
+            self.preview_state = "up"
+        elif key == Settings.MOVE_DOWN:
+            self.preview_state = "down"
+        elif key == Settings.MOVE_LEFT:
+            self.preview_state = "left"
+        elif key == Settings.MOVE_RIGHT:
+            self.preview_state = "right"
 
     def _transfer_dragged_to_equipment(self, target_name: str) -> None:
         """Transfer dragged item to the equipment slot."""

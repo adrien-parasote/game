@@ -1,5 +1,6 @@
-import pygame
 from typing import TYPE_CHECKING
+
+import pygame
 
 if TYPE_CHECKING:
     from src.map.manager import MapManager
@@ -11,7 +12,7 @@ class AnimationMapManager:
         self.map_manager = map_manager
 
     def update(self, dt_ms: int):
-        """Update any internal animation clocks if necessary. 
+        """Update any internal animation clocks if necessary.
         Currently relying on absolute pygame time for tile cycles."""
         pass
 
@@ -24,7 +25,7 @@ class AnimationMapManager:
 
         current_time = pygame.time.get_ticks()
         total_duration = sum(dur for _, dur in tile_data.frames)
-        
+
         if total_duration <= 0:
             frame_gid = tile_data.frames[0][0]
         else:
@@ -36,10 +37,10 @@ class AnimationMapManager:
                 if time_in_cycle < accumulated:
                     frame_gid = f_gid
                     break
-        
+
         frame_data = self.map_manager.tiles.get(frame_gid)
         if frame_data:
             return frame_data.image
-        
+
         # Fallback to the base image if frame_gid is missing
         return tile_data.image

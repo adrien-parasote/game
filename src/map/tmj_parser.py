@@ -150,16 +150,23 @@ class TmjParser:
             raise ValueError(f"Image tag missing source in TSX: {tsx_path}")
 
         img_path = os.path.normpath(os.path.join(os.path.dirname(tsx_path), img_source))
-
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"Tileset image not found: {img_path}")
 
         from src.engine.asset_manager import AssetManager
+        sheet = AssetManager().get_image(img_path)
 
-        am = AssetManager()
-        sheet = am.get_image(img_path)
+        tileset_props = self._parse_tileset_properties(root)
+        custom_props, animations = self._parse_tile_properties_and_anims(root, firstgid, tileset_props)
 
-        # Parse tileset-level properties
+        tilecount = int(
+            root.get("tilecount", (sheet.get_width() // tilewidth) * (sheet.get_height() // tileheight))
+        )
+
+        for i in range(tilecount):
+            self._process_single_tile(i, columns, tilewidth, tileheight, firstgid, sheet, tileset_props, custom_props, animations, tile_dict)
+
+    def _parse_tileset_properties(self, root: ET.Element) -> dict[str, Any]:
         tileset_props = {}
         ts_properties_node = root.find("properties")
         if ts_properties_node is not None:
@@ -175,8 +182,9 @@ class TmjParser:
                     tileset_props[name] = int(val)
                 else:
                     tileset_props[name] = val
+        return tileset_props
 
-        # Find explicit custom properties for tiles if any
+    def _parse_tile_properties_and_anims(self, root: ET.Element, firstgid: int, tileset_props: dict[str, Any]) -> tuple[dict[int, dict], dict[int, list]]:
         custom_props = {}
         animations = {}
         for tile in root.findall("tile"):
@@ -198,7 +206,6 @@ class TmjParser:
                     if name is None or val is None:
                         continue
                     type_str = p.get("type", "string")
-
                     if type_str == "bool":
                         props[name] = val.lower() == "true"
                     elif type_str == "int":
@@ -211,66 +218,41 @@ class TmjParser:
             if anim_node is not None:
                 frames = []
                 for frame in anim_node.findall("frame"):
-                    frame_tileid = int(frame.get("tileid"))
-                    frame_duration = int(frame.get("duration"))
-                    frames.append((firstgid + frame_tileid, frame_duration))
+                    frames.append((firstgid + int(frame.get("tileid")), int(frame.get("duration"))))
                 if frames:
                     animations[local_id] = frames
+        return custom_props, animations
 
-        # Slice image into single tiles based on tilecount.
-        # TSX tilecount is present, or inferred
-        tilecount = int(
-            root.get(
-                "tilecount", (sheet.get_width() // tilewidth) * (sheet.get_height() // tileheight)
-            )
+    def _process_single_tile(self, i: int, columns: int, tilewidth: int, tileheight: int, firstgid: int, sheet: pygame.Surface, tileset_props: dict, custom_props: dict, animations: dict, tile_dict: dict):
+        global_id = firstgid + i
+        x = (i % columns) * tilewidth
+        y = (i // columns) * tileheight
+        rect = pygame.Rect(x, y, tilewidth, tileheight)
+        surface = sheet.subsurface(rect).copy()
+
+        props = tileset_props.copy()
+        props.update(custom_props.get(i, {}))
+        props.setdefault("walkable", True)
+        props.setdefault("depth", 0)
+
+        occluded = None
+        if props["depth"] > 0:
+            from src.config import Settings
+            occluded = surface.copy()
+            occluded.set_alpha(Settings.OCCLUSION_ALPHA)
+
+        direction_str = str(props.get("direction", "any")).strip() or "any"
+        direction_flags = set(d.strip() for d in direction_str.split(",") if d.strip()) or {"any"}
+
+        tile_dict[global_id] = TileMapData(
+            image=surface,
+            depth=props["depth"],
+            walkable=props["walkable"],
+            direction_flags=direction_flags,
+            frames=animations.get(i),
+            occluded_image=occluded,
+            properties=props,
         )
-
-        for i in range(tilecount):
-            global_id = firstgid + i
-            # Calculate rect bounds
-            x = (i % columns) * tilewidth
-            y = (i // columns) * tileheight
-
-            rect = pygame.Rect(x, y, tilewidth, tileheight)
-            surface = sheet.subsurface(rect).copy()  # isolated copy
-
-            # Fetch properties or defaults
-            props = tileset_props.copy()
-            props.update(custom_props.get(i, {}))
-
-            # Ensure required keys exist
-            if "walkable" not in props:
-                props["walkable"] = True
-            if "depth" not in props:
-                props["depth"] = 0
-
-            # Pre-cache occluded version for high depth tiles
-            occluded = None
-            if props["depth"] > 0:
-                from src.config import Settings
-
-                occluded = surface.copy()
-                occluded.set_alpha(Settings.OCCLUSION_ALPHA)
-
-            if "direction" not in props:
-                props["direction"] = "any"
-            direction_str = str(props["direction"])
-            if not direction_str.strip():
-                direction_str = "any"
-            direction_flags = set(d.strip() for d in direction_str.split(",") if d.strip())
-            if not direction_flags:
-                direction_flags = {"any"}
-
-            # Map to dataclass
-            tile_dict[global_id] = TileMapData(
-                image=surface,
-                depth=props["depth"],
-                walkable=props["walkable"],
-                direction_flags=direction_flags,
-                frames=animations.get(i),
-                occluded_image=occluded,
-                properties=props,
-            )
 
     def _parse_tilelayer(
         self, layer_data: dict[str, Any], map_width: int, layers_dict: dict[int, list]

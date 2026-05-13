@@ -14,10 +14,10 @@ from typing import Any
 
 import pygame
 
+from src.map.animation import AnimationMapManager
 from src.map.layout import OrthogonalLayout
 from src.map.manager import MapManager
 from src.map.tmj_parser import TmjParser
-from src.map.animation import AnimationMapManager
 
 
 class MapLoader:
