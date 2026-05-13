@@ -78,3 +78,30 @@ slant = sun_slant * brightness + moon_slant * (1 - brightness)
 ---
 
 ---
+
+### L-MAP-002 · 2026-05-13 · U · Major Rework
+**Tiled exact wangid array order**
+
+Tiled's terrain auto-painter relies on an exact order for `wangid` values when generating Mixed Wang Sets.
+
+```python
+# ❌ Shifted by 1
+wangid = f"{nw},{n},{ne},{e},{se},{s},{sw},{w}"
+
+# ✅ Exact Tiled Order
+wangid = f"{n},{ne},{e},{se},{s},{sw},{w},{nw}"
+```
+
+**Anti-pattern:** Assuming a standard directional array (e.g., TopLeft first) for Tiled properties without checking the exact API order.
+**Evidence:** Terrain painter failed (left checkerboard gaps) because bitmasks shifted by 1 index didn't map to valid tiles. Reordering to `Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left, TopLeft` fixed it perfectly.
+
+---
+
+### L-MAP-003 · 2026-05-13 · U · Minor Rework
+**Visual artifact debugging (transparent tiles vs missing IDs)**
+
+When an auto-generated tile appears as a flat, dark grey block in Tiled, it's easy to assume Tiled rejected the tile and placed a fallback background. 
+
+**Anti-pattern:** Spending time debugging TSX Wang ID mappings when an autotile has a visual artifact in Tiled.
+**Rule:** Check the output PNG for transparency first. Tiled's default map background is a dark grey grid. If a crop coordinate is wrong and extracts a transparent section, it looks identical to Tiled "missing" the tile. 
+**Evidence:** A script was cropping `(2,0)` instead of `(4,0)` for an RPG Maker XP inner corner, producing a fully transparent 32x32 tile. Tiled successfully placed the tile, but it was invisible.
