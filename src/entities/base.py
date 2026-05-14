@@ -89,8 +89,12 @@ class BaseEntity(pygame.sprite.Sprite):
         self.target_pos = self.pos + self.direction * Settings.TILE_SIZE
 
         # World boundary clamping
-        world_width = Settings.MAP_SIZE * Settings.TILE_SIZE
-        world_height = Settings.MAP_SIZE * Settings.TILE_SIZE
+        if self.game and hasattr(self.game, "map_manager"):
+            world_width = self.game.map_manager.width * Settings.TILE_SIZE
+            world_height = self.game.map_manager.height * Settings.TILE_SIZE
+        else:
+            world_width = Settings.MAP_SIZE * Settings.TILE_SIZE
+            world_height = Settings.MAP_SIZE * Settings.TILE_SIZE
         half_w, half_h = (
             (self.rect.width / 2, self.rect.height / 2)
             if self.rect

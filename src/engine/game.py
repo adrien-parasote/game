@@ -103,7 +103,7 @@ class Game:
         self.time_system = TimeSystem(initial_hour=Settings.INITIAL_HOUR)
         self.hud = GameHUD(self.time_system)
         self.lighting_manager = LightingManager(
-            self.time_system, (Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT)
+            self.time_system, self.screen.get_size()
         )
 
         # World State
@@ -409,7 +409,7 @@ class Game:
             self.screen = pygame.display.set_mode(
                 (Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT), display_flags
             )
-            self.lighting_manager.resize((Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT))
+            self.lighting_manager.resize(self.screen.get_size())
         logging.info(f"Fullscreen toggled: {self.is_fullscreen}")
 
     def _load_property_types(self) -> dict:
