@@ -37,7 +37,10 @@ class RenderManager:
                         self.game.screen.blit(img, (px + cam_offset.x, py + cam_offset.y))
 
     def draw_foreground(self):
-        """Draw tiles with depth > player depth (in front of player). Use cached occluded versions if needed."""
+        """Draw foreground tiles: all tiles from layers with order > player depth,
+        plus tiles with depth > player depth from mixed-depth layers.
+        Applies occluded image when the player overlaps a depth > player.depth tile.
+        """
         cam_offset = self.game.visible_sprites.offset
         screen_rect = self.game.screen.get_rect()
         viewport_world = pygame.Rect(
@@ -51,18 +54,21 @@ class RenderManager:
         for px, py, tile_id, depth in self.game.map_manager.get_visible_chunks(
             viewport_world, min_depth=self.game.player.depth
         ):
+            tile_data = self.game.map_manager.tiles[tile_id]
+            screen_pos = (px + cam_offset.x, py + cam_offset.y)
+
             if depth > self.game.player.depth:
-                tile_data = self.game.map_manager.tiles[tile_id]
-                screen_pos = (px + cam_offset.x, py + cam_offset.y)
+                # Depth-occlusion: use semi-transparent image when player overlaps
                 dest_rect = pygame.Rect(
                     screen_pos[0], screen_pos[1], self.game.tile_size, self.game.tile_size
                 )
-
                 if player_screen_rect.colliderect(dest_rect):
-                    # Use pre-cached occluded image
                     self.game.screen.blit(tile_data.occluded_image or tile_data.image, screen_pos)
                 else:
                     self.game.screen.blit(tile_data.image, screen_pos)
+            else:
+                # Foreground-order layer tile with depth <= player: draw normally (no occlusion)
+                self.game.screen.blit(tile_data.image, screen_pos)
 
         # Draw animated foreground tiles
         if getattr(self.game, "anim_map_manager", None):
@@ -75,6 +81,8 @@ class RenderManager:
                         # but we assume animated tiles are depth=0 anyway.
                         self.game.screen.blit(img, screen_pos)
 
+
+
     def draw_hud(self):
         """Draw time and season HUD overlay (top-right, fixed to screen)."""
         self.game.hud.draw(self.game.screen)
@@ -84,8 +92,9 @@ class RenderManager:
         self.game.screen.fill(Settings.COLOR_BG)
         self.game.visible_sprites.calculate_offset(self.game.player)
         self.draw_background()
-        self.game.visible_sprites.custom_draw(self.game.screen)
+        self.game.visible_sprites.custom_draw(self.game.screen, max_depth=self.game.player.depth)
         self.draw_foreground()
+        self.game.visible_sprites.custom_draw(self.game.screen, min_depth=self.game.player.depth + 1)
 
         night_alpha = self.game.time_system.night_alpha
         window_positions = self.game.map_manager.get_window_positions()

@@ -15,10 +15,11 @@ class MapManager:
         self.layer_names = map_data.get("layer_names", {})
         self._entities = map_data.get("entities", [])
 
-        # Sort layer_order: prioritize name-based ordering (00-, 01-, etc.)
-        # This ensures '00-layer' is always rendered first (at the bottom)
+        # Sort layer_order by the `order` property (int) from Tiled layer properties.
+        # Falls back to 0 if the property is absent (e.g., base layer with no explicit order).
         raw_order = map_data.get("layer_order", [])
-        self.layer_order = sorted(raw_order, key=lambda lid: (self.layer_names.get(lid, "")))
+        order_values = map_data.get("layer_order_values", {})
+        self.layer_order = sorted(raw_order, key=lambda lid: order_values.get(lid, 0))
 
         self.layout = layout
         self.name = map_data.get("properties", {}).get("name", "")
@@ -27,35 +28,19 @@ class MapManager:
         self.height = len(first_layer)
         self.width = len(first_layer[0]) if self.height > 0 else 0
 
-        self.layer_depths = {}
-        for layer_id in self.layer_order:
-            layer_name = self.layer_names.get(layer_id, "")
-            name_depth = None
-            if len(layer_name) >= 3 and layer_name[:2].isdigit() and layer_name[2] == "-":
-                name_depth = int(layer_name[:2])
+        # layer_depths: layer_id -> order value.
+        # Used to decide if the layer is rendered in the background (order <= player.depth)
+        # or foreground (order > player.depth). This is the layer-level Z position.
+        self.layer_depths = {
+            lid: order_values.get(lid, 0) for lid in self.layer_order
+        }
 
-            if name_depth is not None:
-                self.layer_depths[layer_id] = name_depth
-            else:
-                sample_tile_id = 0
-                for row in self.layers.get(layer_id, []):
-                    for tid in row:
-                        if tid != 0:
-                            sample_tile_id = tid
-                            break
-                    if sample_tile_id != 0:
-                        break
-
-                self.layer_depths[layer_id] = (
-                    getattr(self.tiles.get(sample_tile_id), "depth", 0) if sample_tile_id else 0
-                )
-
+        # layer_max_depths: max per-tile depth within each layer.
+        # Used in get_visible_chunks to skip layers that have no foreground tiles.
+        # Intentionally NOT seeded from layer_depths (order) to keep the two concepts separate.
         self.layer_max_depths = {}
         for layer_id in self.layer_order:
-            max_d = self.layer_depths.get(layer_id, 0)
-            if not isinstance(max_d, int):
-                max_d = 0
-                
+            max_d = 0
             if layer_id in self.layers:
                 for row in self.layers[layer_id]:
                     for tid in row:
@@ -139,6 +124,11 @@ class MapManager:
         Calculate and return an iterator of (x_px, y_px, tile_id, depth)
         that are currently visible within the viewport_rect (world pixels).
         Skips animated tiles (which are handled by get_visible_animated_chunks).
+
+        When min_depth is set (used by draw_foreground):
+        - Layers with order > min_depth are included entirely (all their tiles).
+        - Layers with order <= min_depth are included only if they contain tiles
+          with depth > min_depth (per-tile check, for multi-depth layers).
         """
         tile_size = getattr(self.layout, "tile_size", 32)  # Fallback to 32
 
@@ -150,8 +140,14 @@ class MapManager:
         end_row = min(self.height, int(math.ceil(viewport_rect.bottom / tile_size)))
 
         for layer_id in self.layer_order:
-            if min_depth is not None and self.layer_max_depths.get(layer_id, 0) <= min_depth:
-                continue
+            layer_order_val = self.layer_depths.get(layer_id, 0)
+
+            if min_depth is not None:
+                # Pure foreground layer (order > player depth): include all its tiles
+                is_foreground_layer = layer_order_val > min_depth
+                # Mixed layer: include only if it has some tiles with depth > min_depth
+                if not is_foreground_layer and self.layer_max_depths.get(layer_id, 0) <= min_depth:
+                    continue
 
             layer_data = self.layers[layer_id]
             for y in range(start_row, end_row):
@@ -162,10 +158,12 @@ class MapManager:
                         if tile and tile.frames:
                             continue
                         depth = getattr(tile, "depth", 0) if tile else 0
-                        if min_depth is not None and depth <= min_depth:
+                        # For mixed-depth layers (order <= min_depth), skip background tiles
+                        if min_depth is not None and not is_foreground_layer and depth <= min_depth:
                             continue
                         px, py = self.layout.to_screen(x, y)
                         yield (int(px), int(py), tile_id, depth)
+
 
     def get_visible_animated_chunks(
         self, viewport_rect: pygame.Rect

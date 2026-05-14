@@ -44,7 +44,7 @@ def map_manager(map_data):
 
 
 def test_layer_recursive_order():
-    """Nested group layers are found and sorted by name prefix."""
+    """Nested group layers are found and sorted by the 'order' property."""
     parser = TmjParser()
     mock_data = {
         "width": 2,
@@ -66,6 +66,7 @@ def test_layer_recursive_order():
                         "height": 2,
                         "opacity": 1,
                         "visible": True,
+                        "properties": [{"name": "order", "type": "int", "value": 2}],
                     },
                     {
                         "id": 2,
@@ -76,6 +77,7 @@ def test_layer_recursive_order():
                         "height": 2,
                         "opacity": 1,
                         "visible": True,
+                        "properties": [{"name": "order", "type": "int", "value": 1}],
                     },
                     {
                         "id": 1,
@@ -86,6 +88,7 @@ def test_layer_recursive_order():
                         "height": 2,
                         "opacity": 1,
                         "visible": True,
+                        # No 'order' property — defaults to 0
                     },
                 ],
             },
@@ -96,6 +99,7 @@ def test_layer_recursive_order():
         "layers": {},
         "layer_order": [],
         "layer_names": {},
+        "layer_order_values": {},
         "tiles": {},
         "width": 2,
         "height": 2,
@@ -106,8 +110,10 @@ def test_layer_recursive_order():
     assert 1 in result["layer_names"]
     assert 2 in result["layer_names"]
     assert 3 in result["layer_names"]
+    assert result["layer_order_values"] == {1: 0, 2: 1, 3: 2}
 
     manager = MapManager(result, OrthogonalLayout(32))
+    # Sorted by order property: id=1 (order=0), id=2 (order=1), id=3 (order=2)
     assert manager.layer_order == [1, 2, 3]
 
 
@@ -442,3 +448,71 @@ def test_tile_depth_overrides_layer_depth():
     assert mock_surface.blit.call_count == 1
     mock_surface.blit.assert_called_with(map_data["tiles"][1].image, (32, 0))
 
+
+# ---------------------------------------------------------------------------
+# Regression: depth=2 object on depth=2 tile (object must be visible above tile)
+# ---------------------------------------------------------------------------
+
+
+class _MockTile:
+    """Minimal tile stub for rendering tests."""
+
+    def __init__(self, depth, frames=None):
+        self.depth = depth
+        self.frames = frames
+        self.image = pygame.Surface((32, 32))
+        self.occluded_image = None
+
+
+def test_foreground_layer_yields_all_tiles_regardless_of_tile_depth():
+    """
+    Regression: tiles in a foreground-order layer (order=2) must be included in
+    get_visible_chunks(min_depth=1) even if their individual depth property is 0.
+    Previously, the per-tile depth filter would silently drop these tiles.
+    """
+    layout = OrthogonalLayout(32)
+    map_data = {
+        "layer_order": [1, 2],
+        "layer_names": {1: "00-layer", 2: "02-layer"},
+        # Layer 1: order=0 (background), Layer 2: order=2 (foreground)
+        "layer_order_values": {1: 0, 2: 2},
+        "layers": {
+            1: [[1, 0]],   # background tile (depth=0)
+            2: [[2, 0]],   # foreground-order tile but depth=0
+        },
+        "tiles": {
+            1: _MockTile(depth=0),
+            2: _MockTile(depth=0),  # depth=0 but in order=2 layer
+        },
+    }
+    manager = MapManager(map_data, layout)
+    viewport = pygame.Rect(0, 0, 100, 100)
+
+    # With player.depth=1, draw_foreground calls get_visible_chunks(min_depth=1)
+    chunks = list(manager.get_visible_chunks(viewport, min_depth=1))
+
+    # Tile 2 (in order=2 foreground layer) must be yielded even though depth=0
+    tile_ids = [c[2] for c in chunks]
+    assert 2 in tile_ids, "Foreground-order layer tile with depth=0 must be visible in foreground pass"
+    # Tile 1 (in order=0 background layer, depth=0) must NOT be yielded
+    assert 1 not in tile_ids, "Background-order layer tile with depth=0 must not appear in foreground pass"
+
+
+def test_order_property_used_for_layer_sorting():
+    """
+    Regression: layers are sorted by `order` property, NOT by layer name alphabetically.
+    A layer with order=2 inserted before order=0 must appear last after sorting.
+    """
+    layout = OrthogonalLayout(32)
+    # Parsing order: layer id=3 (order=2), id=2 (order=1), id=1 (order=0)
+    map_data = {
+        "layer_order": [3, 2, 1],
+        "layer_names": {1: "ground", 2: "mid", 3: "top"},
+        "layer_order_values": {1: 0, 2: 1, 3: 2},
+        "layers": {1: [[0]], 2: [[0]], 3: [[0]]},
+        "tiles": {},
+    }
+    manager = MapManager(map_data, layout)
+    # After sorting by order value: id=1 (0), id=2 (1), id=3 (2)
+    assert manager.layer_order == [1, 2, 3]
+    assert manager.layer_depths == {1: 0, 2: 1, 3: 2}

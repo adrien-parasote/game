@@ -52,7 +52,8 @@ class TmjParser:
             "layers": {},
             "tiles": {},
             "layer_names": {},  # Store ID -> Name mapping
-            "layer_order": [],  # Store IDs in rendering order
+            "layer_order": [],  # Store IDs in parsing order
+            "layer_order_values": {},  # Store ID -> order property value
             "spawn_player": None,
             "entities": [],  # All objects from Sprites group
             "properties": {p["name"]: p["value"] for p in data.get("properties", [])},
@@ -81,6 +82,9 @@ class TmjParser:
                 l_id = layer.get("id")
                 map_result["layer_names"][l_id] = l_name
                 map_result["layer_order"].append(l_id)
+                # Extract the `order` property (int) — authoritative render order
+                layer_props = {p["name"]: p["value"] for p in layer.get("properties", [])}
+                map_result.setdefault("layer_order_values", {})[l_id] = layer_props.get("order", 0)
                 self._parse_tilelayer(layer, map_width, map_result["layers"])
             elif l_type == "group":
                 self._process_layers(layer.get("layers", []), map_width, map_result)
