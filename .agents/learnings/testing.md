@@ -548,6 +548,17 @@ When tests only assert the static state of a data structure (e.g., parsing outpu
 ---
 
 ### A-TEST-011 · 2026-05-14 · U · Minor Rework
+**TypeError with MagicMock in comparison operations**
+
+`MagicMock` does not support comparison operations like `<` or `<=` with integers, raising a `TypeError`. When an implementation uses duck typing and numeric comparison, passing a `MagicMock` to it without setting the specific property to a numeric value will crash the test.
+
+**Anti-pattern:** Assuming a `MagicMock` will evaluate to `False` or bypass `isinstance(val, int)` checks smoothly without explicitly testing the mock's interaction with comparison operators.
+**Fix:** In the implementation, wrap depth/numeric comparison logic with strict type checks (e.g., `if isinstance(tile.depth, int)`) if the variable could accidentally be a mock from a test suite. Alternatively, and preferably, ensure that the test explicitly sets the property on the mock to an integer (`mock.depth = 1`).
+**Evidence:** The test suite crashed with `TypeError: '<=' not supported between instances of 'MagicMock' and 'int'` during `get_layer_surface` execution until an `isinstance` check was added to `manager.py`.
+
+---
+
+### A-TEST-011 · 2026-05-14 · U · Minor Rework
 **Pure Test Refactoring Breaks TDD Sequence Lock**
 
 When refactoring the test suite (e.g., moving test files to new domain directories or renaming them) without changing any production code, the `verify.py` `P10_TDDSequence` check mechanicaly fails because the newly generated test file hashes no longer match the `.tdd_lock` snapshot created before the initial implementation.
@@ -556,3 +567,51 @@ When refactoring the test suite (e.g., moving test files to new domain directori
 **Fix:** When performing a pure test reorganization, forcefully recreate the `.tdd_lock` using `tdd_check.py --lock` (or a custom script if test coverage isn't fully 100% compliant) before running the verification loop.
 **Evidence:** Reorganizing the `tests/` directory into domain folders (`tests/engine/`, `tests/map/`, etc.) caused `P10_TDDSequence` to fail. Forcefully regenerating the `.tdd_lock` resolved the verification blocker.
 
+---
+
+### A-TEST-012 · 2026-05-14 · U · Major Rework
+**Fixture locale `setup_pygame` qui shadow le conftest → `pygame.quit()` en milieu de session**
+
+Un fichier de test avait son propre fixture `setup_pygame` qui appelait `pygame.quit()` dans le teardown. Ce fixture local a shadowé le fixture session-scoped de `conftest.py`, détruisant le contexte pygame entre deux fichiers de tests — causant 34 echecs en suite complète avec `font not initialized` et `video system not initialized`.
+
+```python
+# ❌ fixture locale qui override conftest.py — détruit pygame après ce fichier
+@pytest.fixture
+def setup_pygame():
+    pygame.init()
+    pygame.display.set_mode((800, 600))
+    yield
+    pygame.quit()  # 💥 tue pygame pour tous les tests suivants
+
+# ✅ supprimer la fixture locale — le conftest.py gère pygame au niveau session
+# conftest.py :
+# @pytest.fixture(scope="session", autouse=True)
+# def pygame_session():
+#     pygame.init()
+#     ...
+#     yield
+#     pygame.quit()
+```
+
+**Règle :** Ne jamais redéfinir `setup_pygame` localement dans un fichier de test si `conftest.py` fournit déjà ce fixture. Les fixtures session-scoped de `conftest.py` sont la seule source de vérité pour l'init/teardown pygame.
+**Détection :** `grep -r "pygame.quit()" tests/` — toute occurrence hors `conftest.py` est suspecte.
+**Evidence :** `tests/ui/test_chest_ui.py` — 34 tests UI échouaient en suite complète mais 0 en isolation. Corrigé en supprimant le fixture local.
+
+---
+
+### L-INFRA-001 · 2026-05-14 · U · Minor Rework
+**`pytest` absent du PATH subprocess → P4_Tests skip dans verify.py**
+
+`verify.py` lance `pytest --tb=short -q` via `subprocess.run`. Sur Mac avec Python installé via Homebrew/python.org, `pytest` n'est pas dans le PATH système mais accessible via `python3 -m pytest`. Le check P4_Tests était donc systématiquement skippé.
+
+**Fix :**
+1. Ajouter `test_cmd_fallback: ["python3", "-m", "pytest"]` dans `BUILD_SYSTEMS` pour les entrées Python.
+2. Dans `check_p4_tests`, si `result.get("skipped")` et `test_cmd_fallback` existe → relancer avec le fallback (même pattern que `type_cmd_fallback` pour pyright).
+3. Ajouter `testpaths = ["tests"]` dans `pyproject.toml` pour éviter que pytest scanne les scripts utilitaires dans `scripts/` (qui ont leur propre `sys.path`).
+
+**Règle :** Toujours tester P4 avec `python3 -m pytest` en fallback sur les projets Python. Ne jamais supposer que `pytest` est dans le PATH système.
+**Evidence :** P4_Tests passait de SKIP à PASS (702 tests) après ces 3 changements.
+
+---
+
+*Last optimized: 2026-05-14 — A-TEST-012, L-INFRA-001 from sprite fix + verify.py HARDEN session.*
