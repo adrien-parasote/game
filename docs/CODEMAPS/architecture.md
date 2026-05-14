@@ -9,7 +9,7 @@
 `GameStateManager._handle_playing(events, dt)` → filters ESC → re-posts events → `Game.run_frame(dt)` → `GameEvent`
 `GameStateManager._handle_paused(events, dt)` → `PauseScreen.handle_event()` → save/resume/goto_title
 `Game._update(dt)` → `Player.update` → `NPC.update` → `TimeSystem.update` → `LightingManager`
-`Game._draw()` → `RenderManager.draw_scene()` → `_draw_background()` → `CameraGroup.custom_draw()` (Y-sorted) → `_draw_foreground()` → `_draw_hud()` → UI overlays
+`Game._draw()` → `RenderManager.draw_scene()` → `_draw_background()` → `CameraGroup.custom_draw(max_depth=player.depth)` (Y-sorted, below-player entities) → `_draw_foreground()` (foreground-order layers + tiles with depth>player) → `CameraGroup.custom_draw(min_depth=player.depth+1)` (above-player entities) → `_draw_hud()` → UI overlays
 
 ## Core Components
 

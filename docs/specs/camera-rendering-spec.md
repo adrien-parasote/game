@@ -52,7 +52,12 @@ Sprites are sorted by `rect.bottom` to simulate depth (entities lower on screen 
 
 ### 3.3. Frustum Culling
 
-In `custom_draw()`, each sprite is tested against the screen rect before blitting:
+In `custom_draw(surface, min_depth=None, max_depth=None)`, each sprite is tested against the screen rect before blitting.
+
+Depth filtering (new in session 2026-05-14):
+- `max_depth`: skip sprites with `depth > max_depth` (pass 2 — entities at or below player depth)
+- `min_depth`: skip sprites with `depth < min_depth` (pass 3b — entities strictly above player depth)
+- When both are `None` (default): all depths drawn (legacy behaviour)
 
 ```python
 visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
@@ -89,8 +94,9 @@ Wrapped in `try-except TypeError` for test compatibility with mock surfaces.
 |------|--------|---------|----------|
 | 0 | `screen.fill()` | Background color clear | — |
 | 1 | `draw_background()` | Map layers with `depth <= player.depth` | Normal |
-| 2 | `visible_sprites.custom_draw()` | Y-sorted entities (player, NPCs, objects) | Normal |
-| 3 | `draw_foreground()` | Map tiles with `depth > player.depth` | Normal (occluded alpha near player) |
+| 2 | `visible_sprites.custom_draw(max_depth=player.depth)` | Y-sorted entities up to player depth | Normal |
+| 3 | `draw_foreground()` | Map tiles from foreground-order layers + tiles with `depth > player.depth` from mixed layers | Normal (occluded alpha near player) |
+| 3b | `visible_sprites.custom_draw(min_depth=player.depth+1)` | Y-sorted entities above player depth (depth > 1) | Normal |
 | 4a | `lighting_manager.draw_additive_window_beams()` | Window light cones | `BLEND_RGB_ADD` |
 | 4b | `lighting_manager.create_overlay()` | Night darkness overlay + torch punch-through | `SRCALPHA` |
 | 5 | `obj.draw_effects()` | Per-object light halos + particles | `BLEND_RGB_ADD` |
@@ -111,12 +117,13 @@ Wrapped in `try-except TypeError` for test compatibility with mock surfaces.
 
 ### 4.3. Foreground Rendering with Occlusion (`draw_foreground`)
 
-For tiles with `depth > player.depth`:
+For tiles from foreground-order layers and tiles with `depth > player.depth`:
 1. Calculate viewport in world coordinates
-2. Get visible tile chunks via `map_manager.get_visible_chunks()`
-3. For each foreground tile:
-   - If tile overlaps player's visual rect → use `occluded_image` (160/255 alpha)
-   - Otherwise → use normal `image`
+2. Get visible tile chunks via `map_manager.get_visible_chunks(min_depth=player.depth)`
+3. For each tile yielded:
+   - If `tile.depth > player.depth` AND overlaps player's visual rect → use `occluded_image` (160/255 alpha)
+   - If `tile.depth > player.depth` AND not overlapping → use normal `image`
+   - If `tile.depth <= player.depth` (foreground-order layer, yielded because layer order > player depth) → blit normally (no occlusion)
 
 This creates a semi-transparent effect where foreground tiles reveal the player underneath.
 
@@ -206,8 +213,9 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 |---------|------|-------|--------------|
 | IT-001 | Full draw_scene | Game with loaded map + entities | No exceptions, correct pass order |
 | IT-002 | Foreground occlusion | Player under depth-1 tile | Occluded surface used for overlapping tile |
-| IT-003 | Layer ordering | Map with `00-layer` | `00-layer` identified as background, rendered first |
-| IT-004 | Multi-layer render | Map with multiple layers | `00-layer` drawn bottom-most |
+| IT-003 | Layer ordering | Map with Tiled `order` property | Layers sorted by `order` int, not name prefix |
+| IT-004 | Multi-layer render | Map with multiple layers | Lowest `order` value drawn bottom-most |
+| IT-005 | Two-pass entity draw | Entity with depth=2 | Absent in pass 2 (max_depth=1), present in pass 3b (min_depth=2) |
 
 ### Linked Test Functions
 | Test ID | Test Function | File |

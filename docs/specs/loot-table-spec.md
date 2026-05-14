@@ -83,6 +83,7 @@ In `Game._spawn_interactive()`:
 | Ignore `stack_max` | Split into multiple stacks | Consistent with inventory mechanics |
 | Exceed chest capacity | Trim excess stacks and log warning | Prevents UI overflow and memory issues |
 | Hardcode loot in Python | Use JSON configuration | Allows designers to modify loot without code changes |
+| Return `list(self._data.get(...))` (shallow copy) from `get_contents` | Return `[item.copy() for item in ...]` | Shallow copy shares item dict references — mutating quantity/state in a caller (e.g., moving an item to inventory) corrupts the master loot table for all subsequent calls. Bug was visible as empty chests on second open. |
 
 ---
 
@@ -122,6 +123,7 @@ In `Game._spawn_interactive()`:
 | TC-LT-08 | `test_known_element_id` | `LootTable.get_contents` | Returns correct item list |
 | TC-LT-09 | `test_unknown_element_id` | `LootTable.get_contents` | Returns `[]` |
 | TC-LT-10 | `test_get_contents_before_load` | `LootTable.get_contents` | Returns `[]` safely |
+| TC-LT-11 | `test_get_contents_returns_copies` | `LootTable.get_contents` | Mutating returned item does not alter master table (isolation) |
 
 ### Linked Test Functions
 
@@ -137,6 +139,7 @@ In `Game._spawn_interactive()`:
 | TC-LT-08 | `test_known_element_id` | `../../tests/engine/test_loot_table.py:L168` |
 | TC-LT-09 | `test_unknown_element_id` | `../../tests/engine/test_loot_table.py:L178` |
 | TC-LT-10 | `test_get_contents_before_load` | `../../tests/engine/test_loot_table.py:L186` |
+| TC-LT-11 | `test_get_contents_deep_copy` | `../../tests/engine/test_loot_table.py:L201` |
 
 
 ## Test Case Specifications
