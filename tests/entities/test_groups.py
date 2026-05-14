@@ -67,7 +67,9 @@ class TestCameraGroupCoverage:
         try:
             with patch.object(cg, "sprites", return_value=[]):
                 with patch.object(cg, "get_sorted_sprites", return_value=[sprite]):
-                    cg.custom_draw(pygame.Surface((800, 600)))
+                    with patch("pygame.draw.rect") as mock_rect:
+                        cg.custom_draw(pygame.Surface((800, 600)))
+                        assert mock_rect.called
         finally:
             Settings.DEBUG = original
 
