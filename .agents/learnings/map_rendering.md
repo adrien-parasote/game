@@ -203,3 +203,45 @@ for tid in layer_tiles:
 
 **Rule:** Derived aggregate metrics (`layer_max_depths`) must only aggregate the values they describe (per-tile depths). Never seed them with a value from a different semantic axis (layer order).
 **Evidence:** Invisible tile bug traced to this seed. Fix: 1 line change + 2 regression tests. commit `1f4e4ae`.
+
+---
+
+### L-SPRITE-001 · 2026-05-14 · U · Major Rework
+**Spritesheet dimensions are the authoritative source for frame height — not Tiled properties**
+
+`sprite_height` declared in Tiled is a grid layout hint for map editors. It is NOT the actual pixel height of each animation frame. The spritesheet file itself defines the real frame height via `sheet_h // (end_row + 1)`.
+
+```python
+# ❌ Bug introduced in commit 73c8f8c — Tiled value used directly
+# Breaks when sheet rows don't align with Tiled's declared height
+real_frame_h = self.sprite_height  # Tiled says 32 → slices 172px sheet into 5 rows of 32px ❌
+
+# ✅ Authoritative: sheet geometry defines the frame height
+sheet_h = self.spritesheet.sheet.get_height()
+real_frame_h = sheet_h // (end_row + 1)  # 172 // 4 = 43px ✅
+self.sprite_height = real_frame_h  # update BEFORE _setup_physics reads it
+```
+
+**Concrete case that triggered the bug:**
+
+| Entity | Sheet dimensions | end_row | Tiled `height` | Real frame_h | Regression |
+|--------|-----------------|---------|----------------|--------------|------------|
+| Torch | 64×128 | 3 | 32px | 128//4=32px ✅ | None (coincidental match) |
+| Chest (01-iron-chests.png) | 128×172 | 3 | 32px | 172//4=**43px** | Misaligned + off-center |
+| Lever (03-levers.png) | 32×128 | 1 | 32px | 128//2=**64px** | Misaligned + off-center |
+
+**Why the torch didn't catch the regression:** Tiled's declared 32px and `128//4=32px` coincidentally matched. The regression was invisible for the torch, masking the bug.
+
+**Centering impact:** `_setup_physics` computes `dummy_rect.midbottom` from `self.sprite_height`. If `sprite_height` is wrong at that point, the entity's logical position is misaligned. `sprite_height` MUST be updated from the sheet BEFORE `_setup_physics` runs.
+
+**Rule:**
+1. Always compute `real_frame_h = sheet_h // (end_row + 1)` when a valid spritesheet is loaded.
+2. Immediately update `self.sprite_height = real_frame_h` so that `_setup_physics` uses the correct height.
+3. Treat Tiled's `height` property as a fallback only when no spritesheet is available (e.g., sign triggers).
+
+**Evidence:** Visual centering regression on chests and levers after commit `73c8f8c`. Restored by reverting to sheet-based calculation. 768/768 tests green after fix + test corrections.
+
+---
+
+*Last updated: 2026-05-14 — L-SPRITE-001 added from interactive entity centering regression session.*
+

@@ -433,13 +433,13 @@ class Game:
         path = os.path.join("assets", "data", "propertytypes.json")
         if not os.path.exists(path):
             logging.error(f"Item property types file not found: {path}")
-            return {}
+            return {}  # noqa: P6 — legitimate error handler (file not found)
         try:
             with open(path, encoding="utf-8") as f:
                 return json.load(f)
         except (OSError, json.JSONDecodeError) as e:
             logging.error(f"Failed to load item property types from {path}: {e}")
-            return {}
+            return {}  # noqa: P6 — legitimate error handler (json parse failure)
 
     def _setup_logging(self):
         """Delegate to game_setup.setup_logging (Phase 1.5 refactoring)."""

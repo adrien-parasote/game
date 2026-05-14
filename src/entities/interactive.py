@@ -207,7 +207,13 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self.sfx_ambient = sfx_ambient
 
     def _load_assets(self, sprite_sheet, width, height):
-        """Load spritesheet and compute frame dimensions."""
+        """Load spritesheet and compute frame dimensions.
+
+        Frame height is derived from the sheet (sheet_h // (end_row + 1)), not
+        the Tiled-declared height, because spritesheets are the authoritative
+        source for frame dimensions. The Tiled `height` property is used only
+        as fallback when no sheet is available.
+        """
         self.sprite_width = width
         self.sprite_height = height
 
@@ -225,8 +231,15 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         )
 
         if sheet and sheet.valid and sheet.sheet is not None:
+            _, sheet_h = sheet.sheet.get_size()
+            total_rows = self.end_row + 1
+            # Authoritative frame height = sheet height divided by total row count.
+            # This is always correct regardless of what Tiled declares as height.
+            real_frame_h = sheet_h // total_rows if total_rows > 0 else height
+            # Update sprite_height so _setup_physics builds the correct-sized rect.
+            self.sprite_height = real_frame_h
             self.frames = sheet.load_grid_by_size(
-                self.sprite_width, self.sprite_height, transparent=is_transparent
+                self.sprite_width, real_frame_h, transparent=is_transparent
             )
             self._sheet_cols = getattr(sheet, "last_cols", 4)
         else:

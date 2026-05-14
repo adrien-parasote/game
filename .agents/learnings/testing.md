@@ -715,3 +715,42 @@ def test_off_entity_resets_values():
 ---
 
 *Last optimized: 2026-05-14 — A-TEST-012 étendu (4 modes), L-TEST-013 ajouté, A-TEST-011b ID dupliqué corrigé.*
+
+---
+
+### A-TEST-013 · 2026-05-14 · U · Major Rework
+**Tests écrits pour "fixer" un bug encodent la mauvaise logique = confirmation-bias tests**
+
+Quand un bug est corrigé en modifiant le comportement attendu (ex: commit `73c8f8c` : `real_frame_h = sprite_height` au lieu de `sheet_h // (end_row+1)`), les tests écrits pour le valider encodent la mauvaise logique comme "correcte". Un futur correctif qui rétablit le bon comportement verra ces tests échouer — et ils sembleront valides car ils décrivent la fix précédente.
+
+**Pattern de détection :**
+- Un test échoue suite à une correction (pas une régression).
+- Les assertions du test correspondent exactement au code bug plutôt qu'à la spec.
+- Le nom du test dit "was returning X before fix" au lieu de "should return Y per spec".
+
+```python
+# ❌ Confirmation-bias test — valide le bug, pas la spec
+def test_torch_frame_height_uses_sprite_height():
+    """Was returning 64px before fix."""
+    # Sheet 32×256, end_row=3 → sheet says 64px, but "fix" forced 32px
+    assert entity._captured["frame_h"] == 32  # ← encode le bug comme correct
+
+# ✅ Spec-driven test — valide la spec, pas le code
+def test_torch_frame_height_computed_from_sheet():
+    """Sheet is the authoritative source: 256 // (3+1) = 64px."""
+    assert entity._captured["frame_h"] == 64  # ← encode la spec correcte
+```
+
+**Règle :**
+1. Tout test dont la doc dit "was returning X before fix" → vérifier si X est le bon comportement selon la spec.
+2. Si un fix cause des tests existants à échouer : vérifier d'abord si les tests encodaient le bug, pas si le fix est mauvais.
+3. Les tests doivent référencer la spec ("Sheet is authoritative source"), jamais le code ("use sprite_height from Tiled").
+
+**Règle TDD :** Les tests viennent de la spec, jamais du code. Si le code change et les tests échouent, et que la spec dit que le code a raison → les tests sont mauvais.
+
+**Evidence :** SPRITE-U-01/-03/-04 dans `test_sprite_frame_loading.py` encodaient l'assertion `frame_h == 32` (valeur Tiled) au lieu de `frame_h == 43` (spec). Après avoir rétabli la logique `sheet_h // (end_row+1)`, ces tests échouaient. En les lisant, il semblait que le fix était mauvais — mais c'était l'inverse. Correction : réécriture des tests depuis la spec. 768/768 verts après.
+
+---
+
+*Last optimized: 2026-05-14 — A-TEST-013 ajouté (confirmation-bias tests from sprite centering regression session).*
+

@@ -257,7 +257,7 @@ This preserves player overrides across map transitions and save/load cycles.
 | Use raw element IDs for dialogue | Prefix keys with `{map_name}-` | Dialogue lookups are composite to prevent cross-map collisions |
 | Access `current_message` on Dialogue | Access `message` | `DialogueManager` uses `message` for raw content and `displayed_text` for visual state |
 | Toggle objects twice in one frame | Call `update(dt)` between interactions | `is_on` toggle is gated by `is_animating`. Animation must finish before toggling back |
-| Infer frame height from `sheet_h // (end_row + 1)` | Use `sprite_height` from Tiled directly | Fails silently when sheet has more rows than `end_row + 1` (e.g. multi-direction sheets). Causes incorrect frame slicing and invisible/corrupted sprites |
+| Use `sprite_height` from Tiled as authoritative frame height | Use `sheet_h // (end_row + 1)` — the spritesheet is the authoritative source | `sprite_height` from Tiled is a grid hint, not the actual frame pixel height. Spritesheets like `01-iron-chests.png` (172px, 4 rows → 43px/row) or `03-levers.png` (128px, 2 rows → 64px/row) have non-standard row heights that only the sheet can provide. Using Tiled's declared height causes incorrect slicing and visual misalignment (centering regression). |
 
 
 ## ✅ Patterns to Reproduce
@@ -282,10 +282,10 @@ This preserves player overrides across map transitions and save/load cycles.
 | INT-U-05 | Pre-calculated Cache | `halo_size=50` | `light_mask_cache` has exactly 10 surfaces (0.97 to 1.03) | `halo_size=0` |
 | INT-U-06 | Particle Spawn | `update(dt)` with `particles=True` & `is_on=True` | Active particles list is populated up to `particle_count` | dt=0 |
 | INT-U-07 | Particle Cleanup| particle life expires | Removed from active particles list | Empty list |
-| SPRITE-U-01 | Frame height — single row | 32×32 sheet, 1 row | `frames[0].get_size() == (32, 32)` | sprite_height matches sheet_h |
-| SPRITE-U-02 | Frame height — multi-row | 32×256 sheet, 8 rows | `frames[0].get_size() == (32, 32)` | Regression for `sheet_h//(end_row+1)` bug |
-| SPRITE-U-03 | Frame height — torch-like | 32×256, end_row=3 | `frames[0].get_height() == 32` | Was returning 64px before fix |
-| SPRITE-U-04 | Frame count — multi-row | 32×256, 8 rows of 1 col | `len(frames) == 8` | All rows correctly extracted |
+| SPRITE-U-01 | Frame height — from sheet | 32×256 sheet, end_row=3 | `frame_h = 256 // 4 = 64` (not Tiled's sprite_height=32) | Sheet is authoritative source |
+| SPRITE-U-02 | Frame height — neutral case | 128×128 sheet, end_row=3 | `frames[0].get_size() == (32, 32)` | sheet_h//(end_row+1) = sprite_height — both logics agree |
+| SPRITE-U-03 | Frame height — chest | 128×172 sheet, end_row=3 | `frame_h = 172 // 4 = 43` | Visual centering regression (was 32px from Tiled) |
+| SPRITE-U-04 | sprite_height updated after load | 128×172 sheet, end_row=3 | `entity.sprite_height == 43` after load | `_setup_physics` must use updated height |
 
 ### Integration Tests Required
 | Test ID | Flow | Setup | Verification | Teardown |
@@ -300,7 +300,7 @@ This preserves player overrides across map transitions and save/load cycles.
 
 | Error Type | Detection | Response | Fallback |
 |------------|-----------|----------|----------|
-| Frame Mismatch| `sheet_h % sprite_height != 0` | Log warning, use `sprite_height` from Tiled | Never infer frame height from `sheet_h / (end_row + 1)` — incorrect for multi-row sheets |
+| Frame Height Mismatch | Spritesheet height not evenly divisible by `(end_row + 1)` | Log warning, truncate to integer (`sheet_h // (end_row + 1)`) | Spritesheet always wins over Tiled declared height |
 | Sheet Layout | `cols != 4` | Detect `last_cols` | Use dynamic indexing |
 | Missing Asset (Sign)| `sub_type == 'sign'` and sheet missing | Use transparent surface | Allows invisible triggers without visual artifacts |
 | Headless Display| `pygame.display.get_surface()` is None | Skip `.convert_alpha()` | Prevents crashes during headless unit testing |

@@ -1,12 +1,12 @@
 """
-TDD — RED tests for sprite frame height bug.
+Tests — sprite frame height calculation in _load_assets.
 
-Symptom: Torches and animated sprites do not display correctly.
-Root cause: _load_assets computes real_frame_h = sheet_h // (end_row + 1),
-            which is wrong when the spritesheet has more rows than end_row + 1.
-            The correct value is sprite_height (declared frame height).
+The authoritative frame height is sheet_h // (end_row + 1).
+The Tiled-declared `height` property is a fallback for when no sheet is available.
 
-Bug file: src/entities/interactive.py — _load_assets()
+Commit 73c8f8c incorrectly switched to using sprite_height (Tiled value) directly,
+breaking chests (128×172 sheet → 32px instead of 43px) and leviers (32×128 → 32px
+instead of 64px). This file validates the correct sheet-based calculation.
 """
 
 import os
@@ -88,36 +88,38 @@ def _make_interactive_with_real_sheet(
 
 
 # ---------------------------------------------------------------------------
-# RED tests — these MUST FAIL before the fix
+# Tests — sheet-based frame height calculation
 # ---------------------------------------------------------------------------
 
 
 class TestSpriteFrameHeightCalculation:
     """
-    Verify that _load_assets passes sprite_height (not sheet_h // (end_row+1))
-    as the frame_h to load_grid_by_size.
+    Verify that _load_assets derives frame_h from the sheet (sheet_h // (end_row+1)),
+    not from the Tiled-declared sprite_height.
+
+    The spritesheet is the authoritative source for frame dimensions.
     """
 
     @pytest.mark.tc("SPRITE-U-01")
-    def test_torch_frame_height_uses_sprite_height(self):
+    def test_torch_frame_height_computed_from_sheet(self):
         """
-        A torch spritesheet 32×256 with sprite_height=32 and end_row=3
-        must call load_grid_by_size with frame_h=32, NOT frame_h=64.
+        A torch spritesheet 32×256 with end_row=3 must call load_grid_by_size
+        with frame_h = 256 // (3+1) = 64, NOT the Tiled-declared sprite_height=32.
 
-        Bug: end_row+1 = 4, sheet_h // 4 = 64 → wrong frame slicing.
-        Fix: use sprite_height=32 directly.
+        The sheet is the authoritative source for frame dimensions.
+        end_row+1 = 4 animation rows → each row = 256 // 4 = 64px.
         """
-        # Sheet is 32px wide × 256px tall → 8 real rows of 32px each
+        # Sheet is 32px wide × 256px tall → 4 rows of 64px each
         sheet = _make_sheet_mock(sheet_width=32, sheet_height=256)
         entity = _make_interactive_with_real_sheet(
             sheet_mock=sheet,
             sprite_width=32,
-            sprite_height=32,
+            sprite_height=32,  # Tiled declares 32px, but sheet overrides
             end_row=3,
         )
-        assert entity._captured["frame_h"] == 32, (
-            f"Expected frame_h=32 (sprite_height), "
-            f"got frame_h={entity._captured['frame_h']} (sheet_h // (end_row+1))"
+        assert entity._captured["frame_h"] == 64, (
+            f"Expected frame_h=64 (sheet_h // (end_row+1)), "
+            f"got frame_h={entity._captured['frame_h']}"
         )
 
     @pytest.mark.tc("SPRITE-U-02")
@@ -126,15 +128,15 @@ class TestSpriteFrameHeightCalculation:
         A 128×128 sheet with 32×32 frames must produce 16 frames (4 cols × 4 rows),
         regardless of end_row.
 
-        Bug: end_row+1=4 → frame_h=128//4=32 → luck! only works when end_row+1 == real rows.
-        But with a 32×256 sheet and end_row=3: frame_h=64 → only 4 frames instead of 8×4=32.
+        This case is neutral: sheet_h // (end_row+1) = 128 // 4 = 32 = sprite_height.
+        Both logics give the same result, so this test still passes.
         """
         sheet = _make_sheet_mock(sheet_width=128, sheet_height=128)
         entity = _make_interactive_with_real_sheet(
             sheet_mock=sheet,
             sprite_width=32,
             sprite_height=32,
-            end_row=3,  # 4 rows expected, matches sheet → would pass even with bug
+            end_row=3,  # 4 rows expected, matches sheet exactly
         )
         # 128 // 32 = 4 cols, 128 // 32 = 4 rows → 16 frames
         assert len(entity.frames) == 16, (
@@ -142,45 +144,44 @@ class TestSpriteFrameHeightCalculation:
         )
 
     @pytest.mark.tc("SPRITE-U-03")
-    def test_multidirectional_sheet_correct_frame_count(self):
+    def test_chest_sheet_correct_frame_height(self):
         """
-        A 128×256 sheet (4 cols × 8 rows of 32px) with end_row=3 must produce
-        32 frames, not 16.
+        A chest spritesheet 128×172 with end_row=3 must produce frames of
+        height 43px (172 // 4), not 32px.
 
-        Bug: end_row+1=4 → frame_h=256//4=64 → 4 rows detected → 16 frames (WRONG).
-        Fix: sprite_height=32 → 8 rows → 32 frames (CORRECT).
+        This was the visual centering regression: with frame_h=32, the coffre sprite
+        was sliced incorrectly and appeared misaligned on the grid.
         """
-        sheet = _make_sheet_mock(sheet_width=128, sheet_height=256)
+        sheet = _make_sheet_mock(sheet_width=128, sheet_height=172)
         entity = _make_interactive_with_real_sheet(
             sheet_mock=sheet,
             sprite_width=32,
-            sprite_height=32,
+            sprite_height=32,  # Tiled declares 32, sheet overrides to 43
             end_row=3,
         )
-        # 128 // 32 = 4 cols, 256 // 32 = 8 rows → 32 frames
-        assert len(entity.frames) == 32, (
-            f"Expected 32 frames (4×8 real rows), got {len(entity.frames)} "
-            f"(frame_h was likely {entity._captured.get('frame_h', '?')} instead of 32)"
+        assert entity._captured["frame_h"] == 43, (
+            f"Expected frame_h=43 (172 // 4), got {entity._captured.get('frame_h', '?')}"
         )
 
     @pytest.mark.tc("SPRITE-U-04")
-    def test_get_frame_returns_non_default_image_after_load(self):
+    def test_get_frame_returns_sheet_height_not_tiled_height(self):
         """
-        After loading a valid sheet, _get_frame(0) must return a Surface with the
-        correct declared dimensions (sprite_width × sprite_height), not arbitrary.
+        After loading a valid sheet (128×172, end_row=3), _get_frame(0) must return
+        a Surface with the computed frame height (43px), not the Tiled-declared 32px.
 
-        Proves that the frames array was sliced at the right height.
+        Validates that self.sprite_height is updated from the sheet, and that
+        _setup_physics uses the correct rect size for centering.
         """
-        sheet = _make_sheet_mock(sheet_width=32, sheet_height=256)
+        sheet = _make_sheet_mock(sheet_width=128, sheet_height=172)
         entity = _make_interactive_with_real_sheet(
             sheet_mock=sheet,
             sprite_width=32,
-            sprite_height=32,
+            sprite_height=32,  # Tiled declares 32, but sheet overrides to 43
             end_row=3,
         )
         frame = entity._get_frame(0)
         assert frame.get_width() == 32
-        assert frame.get_height() == 32, (
-            f"Expected frame height=32, got {frame.get_height()}. "
-            f"Slicing was done with frame_h={entity._captured.get('frame_h', '?')}"
+        assert frame.get_height() == 43, (
+            f"Expected frame height=43 (172 // 4), got {frame.get_height()}. "
+            f"self.sprite_height should have been updated from the sheet."
         )
