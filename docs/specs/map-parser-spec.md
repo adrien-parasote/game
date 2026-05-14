@@ -133,27 +133,48 @@ def __init__(self, map_data: dict, layout: LayoutStrategy) -> None
 | `layers` | `dict[int, list[list[int]]]` | `map_data["layers"]` — layer_id → 2D tile grid |
 | `tiles` | `dict[int, TileProperty]` | `map_data["tiles"]` — GID → tile properties |
 | `layer_names` | `dict[int, str]` | `map_data["layer_names"]` — layer_id → name string |
-| `layer_order` | `list[int]` | Sorted by layer name (alphabetical → depth order) |
-| `layer_depths` | `dict[int, int]` | Computed: layer_id → depth integer |
-| `layer_max_depths` | `dict[int, int]` | Computed: layer_id → max depth integer among all tiles in the layer |
+| `layer_order_values` | `dict[int, int]` | `map_data["layer_order_values"]` — layer_id → `order` property value from Tiled |
+| `layer_order` | `list[int]` | Sorted by `order` property (ascending integer) |
+| `layer_depths` | `dict[int, int]` | layer_id → `order` value (Z bucket for background/foreground split) |
+| `layer_max_depths` | `dict[int, int]` | layer_id → max per-tile `depth` across all tiles in the layer |
 | `width`, `height` | `int` | Map dimensions in tiles |
 | `cached_surfaces` | `dict[int, Surface]` | Layer surface cache (lazily populated) |
 | `_window_cache` | `list \| None` | Window positions cache (lazily computed) |
 | `_entities` | `list[dict]` | Entity objects from parser (used for window detection) |
 
-### 5.2. Layer Depth Extraction
+### 5.2. Layer Order Extraction
 
-**Algorithm** (per layer):
-1. Parse layer name prefix: if name matches `\d{2}-.*` → `depth = int(name[:2])`
-2. Fallback: sample first non-zero tile in the layer → use its `TileProperty.depth`
-3. Default: `0` if no tile found
+**Algorithm**: Sort `layer_order` by the `order` custom property from each Tiled tile layer:
+1. `TmjParser._process_layers()` reads each layer's `properties` array and stores `order` int in `layer_order_values[layer_id]` (defaults to 0 if absent)
+2. `MapManager.__init__` sorts `layer_order` by `order_values.get(lid, 0)`
 
-### 5.3. Depth System
+> ⚠️ **Do NOT use layer name prefix** (`"00-"`, `"02-"`) for ordering — names are decorative. The `order` property is authoritative.
 
-| Depth | Meaning | Rendering Pass |
-|-------|---------|----------------|
-| 0 | Background (ground, floors) | Pass 1: below entities |
-| 1+ | Foreground (roofs, treetops) | Pass 3: above entities (with occlusion alpha) |
+### 5.3. Two-Axis Depth System
+
+The rendering system uses **two independent depth axes** that must never be conflated:
+
+| Axis | Field | Source | Purpose |
+|------|-------|--------|---------|
+| **Layer Z bucket** | `layer_depths[layer_id]` = `order` | Tiled layer `order` property | Which render pass: background (≤ player.depth) vs foreground (> player.depth) |
+| **Tile occlusion depth** | `tile.depth` | TSX tile property | Per-sprite occlusion: 0=under player, 1=same level, 2=above player |
+
+```python
+# ❌ Never conflate — deriving layer Z from tile depth or vice versa
+self.layer_depths[lid] = tile.depth  # WRONG
+
+# ✅ Each axis from its own source
+self.layer_depths = {lid: order_values.get(lid, 0) for lid in layer_order}  # Z bucket
+# tile.depth accessed per-tile in get_visible_chunks / get_layer_surface
+```
+
+**Rendering passes** (player.depth = 1):
+| Pass | Layers included | Tiles included | Entities included |
+|------|-----------------|----------------|-------------------|
+| 1 (background) | `layer_depths ≤ 1` | `tile.depth ≤ 1` | — |
+| 2 (sprites under) | — | — | `entity.depth ≤ 1` |
+| 3 (foreground) | `layer_depths > 1` (all tiles) + `layer_depths ≤ 1` with `tile.depth > 1` | see left | — |
+| 4 (sprites over) | — | — | `entity.depth > 1` ← ALWAYS after all tiles |
 
 ### 5.4. Interfaces
 
@@ -187,7 +208,11 @@ end_row   = min(height, ceil(viewport_rect.bottom / tile_size))
 
 **Yields**: `(x_px, y_px, tile_id, depth)` for each visible non-zero tile.
 
-**Filter**: If `min_depth` is set, skips entire layers where `layer_max_depths <= min_depth`. For layers containing mixed depths, it filters each individual tile, yielding only those where `depth > min_depth`. Used by `RenderManager` to render only foreground tiles in pass 3.
+**Filter**: If `min_depth` is set:
+- Layers where `layer_depths[layer_id] > min_depth` (pure foreground layers): **all tiles included** regardless of per-tile depth
+- Layers where `layer_depths[layer_id] ≤ min_depth` (background/mixed layers): skipped entirely if `layer_max_depths ≤ min_depth`; otherwise yields only tiles where `tile.depth > min_depth`
+
+This ensures tiles from foreground-order layers are always rendered in pass 3, even if their individual `depth` is 0.
 
 #### `get_window_positions() -> list[tuple[int, int, int]]`
 
@@ -246,6 +271,9 @@ class LayoutStrategy(ABC):
 | Calculate occlusion alpha per frame | Pre-cache `occluded_image` at load | Eliminates per-frame Surface.copy() + set_alpha() |
 | Assume single tileset per map | Iterate all tilesets with `firstgid` offset | Multi-tileset maps are standard |
 | Access properties directly from TMJ | Resolve via `TiledProject` schema first | Missing defaults cause KeyError |
+| Sort layers by name prefix (`"00-"`) | Sort by Tiled `order` property | Name is decorative; `order` is authoritative (see L-MAP-006) |
+| Conflate layer Z-order with tile depth | Keep `layer_depths` (from `order`) and `tile.depth` strictly separate | Conflation causes invisible tiles when the two values differ (A-MAP-002) |
+| Seed `layer_max_depths` from `layer_depths` | Start `max_d = 0` and accumulate only per-tile depths | Seeding from order value pollutes the aggregate and triggers false foreground-layer inclusions |
 
 ## 8. Test Case Specifications
 

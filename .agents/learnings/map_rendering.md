@@ -1,16 +1,20 @@
 ## 🗺️ Map & Rendering
 
-### L-MAP-001 · 2026-04-28 · U · Major Rework
+### ~~L-MAP-001~~ · 2026-04-28 · U · Major Rework → **SUPERSEDED by L-MAP-006 · 2026-05-14**
 **Semantic name-based layer ordering**
 
-Tiled JSON layer order is unstable — nested groups reorder silently. Sort layers by semantic name prefix (`00-`, `01-`) in `MapManager` instead.
+⚠️ **Archived — this pattern became an anti-pattern.** Sorting by name prefix worked until the `order` Tiled property was introduced. Using the name as a proxy for Z-order couples naming conventions to rendering logic and breaks silently when names change.
 
 ```python
-# ✅
+# ❌ Superseded — name-based sort
 layer_order = sorted(raw_order, key=lambda lid: self.layer_names.get(lid, ""))
+
+# ✅ Use the explicit 'order' property instead (see L-MAP-006)
+layer_order = sorted(raw_order, key=lambda lid: order_values.get(lid, 0))
 ```
 
-**Evidence:** Background (`00-layer`) disappeared due to group nesting. `tests/test_map.py` confirmed fix.
+**Original Evidence:** Background (`00-layer`) disappeared due to group nesting. `tests/test_map.py` confirmed fix.
+**Superseded Evidence:** Name-based depth derivation caused invisible objects bug (2026-05-14 session).
 
 ---
 
@@ -140,3 +144,62 @@ When parsing map layers, default rendering pass behavior based on the layer's ov
 **Anti-pattern:** Assuming that if a layer's default depth is `0`, all tiles within it can be safely baked into the background cache.
 **Rule:** When optimizing layers by their collective properties, always compute the `layer_max_property` (e.g., `layer_max_depths`) to know if the layer contains exceptions. If an exception exists, use a per-tile check during the render pass to exclude those tiles from the default layer batch and yield them for the correct pass.
 **Evidence:** Tiles with `depth=2` on a background layer `0` were incorrectly drawn behind the player until `MapManager` implemented `layer_max_depths` and explicitly skipped `depth > player.depth` tiles during background surface baking, delegating them to the foreground iterator.
+
+---
+
+### L-MAP-006 · 2026-05-14 · U · Major Rework
+**Two-axis layer rendering model: `order` (Z bucket) ≠ `depth` (occlusion)**
+
+A tile map rendering system has two independent axes that must never be conflated:
+
+| Axis | Property | Source | Purpose |
+|------|----------|--------|---------|
+| **Layer Z bucket** | `order` (int) | Tiled layer custom property | Which render pass draws this layer (background=0..1, foreground=2+) |
+| **Tile occlusion depth** | `depth` (int) | Tile custom property in TSX | Whether a sprite is drawn under/same/above the tile |
+
+```python
+# ❌ Conflated — uses name prefix for both layer order AND depth
+self.layer_depths[layer_id] = int(layer_name[:2])  # "02" → 2 — means BOTH order AND depth
+
+# ✅ Separated: layer_depths = order value, tile.depth = occlusion only
+order_values = map_data.get("layer_order_values", {})  # from Tiled 'order' property
+self.layer_depths = {lid: order_values.get(lid, 0) for lid in self.layer_order}
+# tile.depth is read per-tile from TSX only for occlusion logic
+```
+
+**Rule:**
+1. Store layer render Z in `layer_order_values` (from Tiled `order` property)
+2. Store tile occlusion in `tile.depth` (from TSX tile properties)
+3. Never derive layer Z from tile depth or vice versa
+4. In `get_visible_chunks(min_depth)`: skip per-tile depth filter for layers where `layer_order_val > min_depth` — ALL tiles in a foreground-order layer belong in the foreground pass
+
+**Evidence:** Objects with `depth=2` placed on tiles in a `order=2` layer were invisible. The conflation caused `layer_depths[order=2 layer] = 2` which looked correct, but `layer_max_depths` seeded from it masked tiles that had `tile.depth=0`, making them fall through both background and foreground passes. 3 files changed, 2 regression tests added, 21 tests green. commit `1f4e4ae`.
+
+---
+
+### A-MAP-002 · 2026-05-14 · U · Major Rework
+**Seeding derived metrics from conflated source values causes silent invisible tiles**
+
+`layer_max_depths[layer_id]` was seeded with `max_d = self.layer_depths.get(layer_id, 0)` — using the layer's Z-order value as a floor for per-tile depth. When a tile in an order=2 layer had `depth=0`:
+- `layer_max_depths` was 2 (from order seed)
+- `draw_background` excluded it: `order=2 > player.depth=1` → not in background ✅
+- `draw_foreground` yielded the layer: `layer_max_depths=2 > 1` → layer included ✅
+- But per-tile filter: `depth=0 <= 1` → **tile skipped** ❌
+→ Tile rendered nowhere. Object above it also invisible.
+
+```python
+# ❌ Seeds max_d from layer Z-order — mixes two axes
+max_d = self.layer_depths.get(layer_id, 0)  # order value, not tile depth!
+for tid in layer_tiles:
+    d = tile.depth
+    if d > max_d: max_d = d  # now max_d = max(order, tile_depths) — semantically wrong
+
+# ✅ Start from 0 — layer_max_depths = purely per-tile maximum
+max_d = 0
+for tid in layer_tiles:
+    d = tile.depth
+    if d > max_d: max_d = d
+```
+
+**Rule:** Derived aggregate metrics (`layer_max_depths`) must only aggregate the values they describe (per-tile depths). Never seed them with a value from a different semantic axis (layer order).
+**Evidence:** Invisible tile bug traced to this seed. Fix: 1 line change + 2 regression tests. commit `1f4e4ae`.
