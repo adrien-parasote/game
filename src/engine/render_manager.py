@@ -18,7 +18,9 @@ class RenderManager:
             depth = self.game.map_manager.layer_depths.get(layer_id, 0)
 
             if depth <= self.game.player.depth:
-                surface = self.game.map_manager.get_layer_surface(layer_id, pygame)
+                surface = self.game.map_manager.get_layer_surface(
+                    layer_id, pygame, max_bg_depth=self.game.player.depth
+                )
                 if surface:
                     self.game.screen.blit(surface, (cam_offset.x, cam_offset.y))
 

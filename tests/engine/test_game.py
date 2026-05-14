@@ -509,6 +509,7 @@ def test_toggle_fullscreen_fallback(mock_load):
         patch("pygame.display.toggle_fullscreen", side_effect=pygame.error("no")),
         patch("pygame.display.set_mode") as mock_mode,
     ):
+        mock_mode.return_value.get_size.return_value = (1920, 1080)
         game.toggle_fullscreen()
     assert mock_mode.called
 

@@ -106,7 +106,7 @@ Wrapped in `try-except TypeError` for test compatibility with mock surfaces.
 
 - Iterates `map_manager.layer_order` sorted by depth
 - Layers with `depth <= player.depth` are drawn
-- Uses pre-rendered full-layer surfaces via `map_manager.get_layer_surface()`
+- Uses pre-rendered full-layer surfaces via `map_manager.get_layer_surface(..., max_bg_depth=player.depth)`, which automatically excludes individual tiles that have a depth higher than the player.
 - Single blit per layer at camera offset position
 
 ### 4.3. Foreground Rendering with Occlusion (`draw_foreground`)

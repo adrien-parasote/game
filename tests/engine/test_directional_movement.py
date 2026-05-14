@@ -15,6 +15,8 @@ def entity():
     mock_layout = MagicMock()
     
     mock_game.map_manager = mock_map_manager
+    mock_game.map_manager.width = 50
+    mock_game.map_manager.height = 50
     mock_game.layout = mock_layout
     ent.game = mock_game
     

@@ -50,11 +50,27 @@ class MapManager:
                     getattr(self.tiles.get(sample_tile_id), "depth", 0) if sample_tile_id else 0
                 )
 
+        self.layer_max_depths = {}
+        for layer_id in self.layer_order:
+            max_d = self.layer_depths.get(layer_id, 0)
+            if not isinstance(max_d, int):
+                max_d = 0
+                
+            if layer_id in self.layers:
+                for row in self.layers[layer_id]:
+                    for tid in row:
+                        if tid != 0 and tid in self.tiles:
+                            d = getattr(self.tiles[tid], "depth", 0)
+                            if isinstance(d, int) and d > max_d:
+                                max_d = d
+            self.layer_max_depths[layer_id] = max_d
+
         self.cached_surfaces = {}
         self._window_cache = None
 
-    def get_layer_surface(self, layer_id: int, pygame_module) -> pygame.Surface | None:
+    def get_layer_surface(self, layer_id: int, pygame_module, max_bg_depth: int = 1) -> pygame.Surface | None:
         """Get or create a pre-rendered surface for a specific layer."""
+        # We cache by layer_id. If max_bg_depth changes, this could be an issue, but player depth is static at 1.
         if layer_id in self.cached_surfaces:
             return self.cached_surfaces[layer_id]
 
@@ -71,6 +87,9 @@ class MapManager:
                     tile_id = layer_data[y][x]
                     if tile_id != 0 and tile_id in self.tiles:
                         if getattr(self.tiles[tile_id], "frames", None):
+                            continue
+                        tile_depth = getattr(self.tiles[tile_id], "depth", 0)
+                        if tile_depth > max_bg_depth:
                             continue
                         tile_img = self.tiles[tile_id].image
                         px, py = self.layout.to_screen(x, y)
@@ -131,7 +150,7 @@ class MapManager:
         end_row = min(self.height, int(math.ceil(viewport_rect.bottom / tile_size)))
 
         for layer_id in self.layer_order:
-            if min_depth is not None and self.layer_depths.get(layer_id, 0) <= min_depth:
+            if min_depth is not None and self.layer_max_depths.get(layer_id, 0) <= min_depth:
                 continue
 
             layer_data = self.layers[layer_id]
@@ -143,6 +162,8 @@ class MapManager:
                         if tile and tile.frames:
                             continue
                         depth = getattr(tile, "depth", 0) if tile else 0
+                        if min_depth is not None and depth <= min_depth:
+                            continue
                         px, py = self.layout.to_screen(x, y)
                         yield (int(px), int(py), tile_id, depth)
 

@@ -71,7 +71,7 @@ def test_tile_depth_overrides_layer_depth():
         }
     }
     
-    layout = OrthogonalLayout(32, 32)
+    layout = OrthogonalLayout(32)
     manager = MapManager(map_data, layout)
     
     # 1. get_visible_chunks with min_depth=1 should yield tile 2, despite layer depth being 0
@@ -80,6 +80,18 @@ def test_tile_depth_overrides_layer_depth():
     assert chunks[0][2] == 2  # tile_id
     assert chunks[0][3] == 2  # depth
     
-    # 2. get_layer_surface should NOT include tile 2 (since its depth > 1, assuming it's omitted)
-    # To test this, we can check if it returns a surface, but since it uses a mock tile,
-    # let's modify get_layer_surface to take an optional max_depth parameter, or hardcode > 1 skipping.
+    # 2. get_layer_surface should NOT include tile 2 (since its depth > 1)
+    # The mock surface for get_layer_surface will have a dummy mock object,
+    # but since our mock tiles' images are pygame.Surface, we can't easily assert blit on them without mocking pygame.
+    # We can mock the surface returned by pygame_module.Surface
+    mock_pygame = MagicMock()
+    mock_surface = MagicMock()
+    mock_pygame.Surface.return_value = mock_surface
+    mock_pygame.SRCALPHA = 1
+    
+    manager.get_layer_surface(1, mock_pygame, max_bg_depth=1)
+    
+    # It should have called blit for tile 1 (depth=0) but not for tile 2 (depth=2)
+    assert mock_surface.blit.call_count == 1
+    # Check that it was called with tile 1's image
+    mock_surface.blit.assert_called_with(map_data["tiles"][1].image, (32, 0))

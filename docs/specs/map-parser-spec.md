@@ -135,6 +135,7 @@ def __init__(self, map_data: dict, layout: LayoutStrategy) -> None
 | `layer_names` | `dict[int, str]` | `map_data["layer_names"]` — layer_id → name string |
 | `layer_order` | `list[int]` | Sorted by layer name (alphabetical → depth order) |
 | `layer_depths` | `dict[int, int]` | Computed: layer_id → depth integer |
+| `layer_max_depths` | `dict[int, int]` | Computed: layer_id → max depth integer among all tiles in the layer |
 | `width`, `height` | `int` | Map dimensions in tiles |
 | `cached_surfaces` | `dict[int, Surface]` | Layer surface cache (lazily populated) |
 | `_window_cache` | `list \| None` | Window positions cache (lazily computed) |
@@ -156,14 +157,14 @@ def __init__(self, map_data: dict, layout: LayoutStrategy) -> None
 
 ### 5.4. Interfaces
 
-#### `get_layer_surface(layer_id: int, pygame_module) -> Surface | None`
+#### `get_layer_surface(layer_id: int, max_bg_depth: int = 1, pygame_module=None) -> Surface | None`
 
 Pre-renders an entire layer to a single cached Surface. Used for background layers.
 
 **Behavior**:
 1. Return cached surface if exists
 2. Create `SRCALPHA` surface of `(width * tile_size, height * tile_size)`
-3. Blit all non-zero tiles using `layout.to_screen(x, y)`
+3. Blit all non-zero tiles using `layout.to_screen(x, y)`, skipping tiles where `depth > max_bg_depth` or tiles that are animated (`tile.frames`).
 4. Cache result in `self.cached_surfaces`
 
 #### `is_collidable(x: int, y: int) -> bool`
@@ -186,7 +187,7 @@ end_row   = min(height, ceil(viewport_rect.bottom / tile_size))
 
 **Yields**: `(x_px, y_px, tile_id, depth)` for each visible non-zero tile.
 
-**Filter**: If `min_depth` is set, skips layers with `depth <= min_depth`. Used by `RenderManager` to render only foreground layers in pass 3.
+**Filter**: If `min_depth` is set, skips entire layers where `layer_max_depths <= min_depth`. For layers containing mixed depths, it filters each individual tile, yielding only those where `depth > min_depth`. Used by `RenderManager` to render only foreground tiles in pass 3.
 
 #### `get_window_positions() -> list[tuple[int, int, int]]`
 
