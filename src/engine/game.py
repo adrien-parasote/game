@@ -10,7 +10,6 @@ from src.engine.asset_manager import AssetManager
 from src.engine.audio import AudioManager
 from src.engine.entity_factory import EntityFactory
 from src.engine.game_events import GameEvent
-from src.engine.game_setup import load_property_types as _load_prop_types_fn
 from src.engine.game_setup import setup_logging as _setup_logging_fn
 from src.engine.i18n import I18nManager
 from src.engine.input_handler import InputHandler
@@ -58,6 +57,18 @@ class Game:
     """Main game class that manages the core loop and state."""
 
     def __init__(self, skip_map_load: bool = False):
+        self._init_display()
+        self._init_groups()
+        self._init_systems()
+        self._init_player()
+
+        # First load reads the default map from world.world
+        default_map = self._get_initial_map()
+
+        if not skip_map_load:
+            self._load_map(default_map)
+
+    def _init_display(self):
         # 1. Initialize Localization
         self.i18n = I18nManager()
         self.i18n.load(Settings.LOCALE)
@@ -78,7 +89,10 @@ class Game:
         # Load Constants from Settings
         self.tile_size = Settings.TILE_SIZE
         self.map_size = Settings.MAP_SIZE
+        self.is_fullscreen = Settings.FULLSCREEN
+        self.last_fps_update = 0
 
+    def _init_groups(self):
         # Setup Groups
         self.visible_sprites = CameraGroup()
         self.npcs = pygame.sprite.Group()
@@ -95,10 +109,7 @@ class Game:
         # P6: Set of active torch entities (halos > 0, is_on=True) — updated on state change only
         self._active_torches: set = set()
 
-        # Local state
-        self.is_fullscreen = Settings.FULLSCREEN
-        self.last_fps_update = 0
-
+    def _init_systems(self):
         # Time System
         self.time_system = TimeSystem(initial_hour=Settings.INITIAL_HOUR)
         self.hud = GameHUD(self.time_system)
@@ -149,6 +160,7 @@ class Game:
             f"Screen setup: {Settings.WINDOW_WIDTH}x{Settings.WINDOW_HEIGHT} (Fullscreen: {self.is_fullscreen})"
         )
 
+    def _init_player(self):
         # Player is persisted across maps
         self.player = Player(
             (0, 0), self.visible_sprites, speed=Settings.PLAYER_SPEED, element_id="player"
@@ -162,7 +174,7 @@ class Game:
         self.inventory_ui = InventoryUI(self.player)
         self.chest_ui = ChestUI()
 
-        # First load reads the default map from world.world
+    def _get_initial_map(self) -> str:
         default_map = "00-spawn.tmj"
 
         # Debug Room Priority
@@ -182,9 +194,7 @@ class Game:
                         )
                 except Exception as e:
                     logging.error(f"Failed to read world.world: {e}")
-
-        if not skip_map_load:
-            self._load_map(default_map)
+        return default_map
 
     def _load_map(
         self, map_name: str, target_spawn_id: str | None = None, transition_type: str = "instant"
@@ -335,55 +345,9 @@ class Game:
         elif self.inventory_ui.is_open:
             self.inventory_ui.update(dt)
         elif self.chest_ui.is_open:
-            # Allow player movement and interactions while chest UI open
-            self.interaction_manager.update(dt)
-            self.player.input()
-            self.interaction_manager.handle_interactions()
-
-            was_moving = self.player.is_moving
-            self.visible_sprites.update(dt)
-            self.interaction_manager.check_teleporters(was_moving)
-            # No time_system update or other world updates
-            self.audio_manager.flush_ambient()
+            self._update_chest_state(dt)
         else:
-            # Update Time
-            self.time_system.update(dt)
-
-            # Input & Logic
-            self.interaction_manager.update(dt)
-
-            self.player.input()
-            self.interaction_manager.handle_interactions()
-
-            was_moving = self.player.is_moving
-            self.visible_sprites.update(dt)
-            self.interaction_manager.check_teleporters(was_moving)
-
-            # P12: CPU Freeze optimization for NPCs — reuse pre-allocated rect
-            off_x = int(self.visible_sprites.offset.x)
-            off_y = int(self.visible_sprites.offset.y)
-            self._viewport_world_rect.update(
-                -off_x - 128,
-                -off_y - 128,
-                Settings.WINDOW_WIDTH + 256,
-                Settings.WINDOW_HEIGHT + 256,
-            )
-
-            # P13: One get_ticks() call shared across all interactive entities
-            ticks_ms = pygame.time.get_ticks()
-
-            for npc in self.npcs:
-                npc.is_visible = self._viewport_world_rect.colliderect(npc.rect)
-                npc.update(dt)
-
-            for obj in self.interactives:
-                obj.update(dt, ticks_ms=ticks_ms)
-
-            # Resolve ambient sound volumes from this frame's proposals.
-            self.audio_manager.flush_ambient()
-
-            if getattr(self, "anim_map_manager", None):
-                self.anim_map_manager.update(int(dt * 1000))
+            self._update_core_state(dt)
 
         now = pygame.time.get_ticks()
         if now - self.last_fps_update > 1000:
@@ -392,6 +356,58 @@ class Game:
                 f"{Settings.GAME_TITLE} (v{Settings.VERSION}) - {fps:.1f} FPS"
             )
             self.last_fps_update = now
+
+    def _update_chest_state(self, dt: float):
+        # Allow player movement and interactions while chest UI open
+        self.interaction_manager.update(dt)
+        self.player.input()
+        self.interaction_manager.handle_interactions()
+
+        was_moving = self.player.is_moving
+        self.visible_sprites.update(dt)
+        self.interaction_manager.check_teleporters(was_moving)
+        # No time_system update or other world updates
+        self.audio_manager.flush_ambient()
+
+    def _update_core_state(self, dt: float):
+        # Update Time
+        self.time_system.update(dt)
+
+        # Input & Logic
+        self.interaction_manager.update(dt)
+
+        self.player.input()
+        self.interaction_manager.handle_interactions()
+
+        was_moving = self.player.is_moving
+        self.visible_sprites.update(dt)
+        self.interaction_manager.check_teleporters(was_moving)
+
+        # P12: CPU Freeze optimization for NPCs — reuse pre-allocated rect
+        off_x = int(self.visible_sprites.offset.x)
+        off_y = int(self.visible_sprites.offset.y)
+        self._viewport_world_rect.update(
+            -off_x - 128,
+            -off_y - 128,
+            Settings.WINDOW_WIDTH + 256,
+            Settings.WINDOW_HEIGHT + 256,
+        )
+
+        # P13: One get_ticks() call shared across all interactive entities
+        ticks_ms = pygame.time.get_ticks()
+
+        for npc in self.npcs:
+            npc.is_visible = self._viewport_world_rect.colliderect(npc.rect)
+            npc.update(dt)
+
+        for obj in self.interactives:
+            obj.update(dt, ticks_ms=ticks_ms)
+
+        # Resolve ambient sound volumes from this frame's proposals.
+        self.audio_manager.flush_ambient()
+
+        if getattr(self, "anim_map_manager", None):
+            self.anim_map_manager.update(int(dt * 1000))
 
     def _draw(self):
         """Render complete scene. Display update is owned by the main loop."""
@@ -413,9 +429,17 @@ class Game:
         logging.info(f"Fullscreen toggled: {self.is_fullscreen}")
 
     def _load_property_types(self) -> dict:
-        """Delegate to game_setup.load_property_types (Phase 1.5 refactoring)."""
+        """Load item property types from propertytypes.json."""
         path = os.path.join("assets", "data", "propertytypes.json")
-        return _load_prop_types_fn(path)
+        if not os.path.exists(path):
+            logging.error(f"Item property types file not found: {path}")
+            return {}
+        try:
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            logging.error(f"Failed to load item property types from {path}: {e}")
+            return {}
 
     def _setup_logging(self):
         """Delegate to game_setup.setup_logging (Phase 1.5 refactoring)."""

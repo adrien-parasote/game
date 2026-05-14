@@ -76,6 +76,30 @@ def _sub(frame: Image.Image, col: int, row: int) -> Image.Image:
     return frame.crop((x, y, x + SUBTILE, y + SUBTILE))
 
 
+def _quarter_tl(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
+    if c1 and c2: return (2, 4) if diag else (4, 0)
+    if c1: return (0, 4)
+    if c2: return (2, 2)
+    return (0, 0) if iso else (0, 2)
+
+def _quarter_tr(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
+    if c1 and c2: return (3, 4) if diag else (5, 0)
+    if c1: return (5, 4)
+    if c2: return (3, 2)
+    return (1, 0) if iso else (5, 2)
+
+def _quarter_bl(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
+    if c1 and c2: return (2, 5) if diag else (4, 1)
+    if c1: return (0, 5)
+    if c2: return (2, 7)
+    return (0, 1) if iso else (0, 7)
+
+def _quarter_br(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
+    if c1 and c2: return (3, 5) if diag else (5, 1)
+    if c1: return (5, 5)
+    if c2: return (3, 7)
+    return (1, 1) if iso else (5, 7)
+
 def _quarter(corner: str, c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
     """Return (col, row) sub-tile for one quadrant of a blob tile.
 
@@ -85,34 +109,10 @@ def _quarter(corner: str, c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[in
     diag: diagonal neighbor (NW, NE, SW, SE respectively)
     iso: True when ALL four cardinals are absent (full isolation)
     """
-    if corner == "tl":
-        if c1 and c2:
-            return (2, 4) if diag else (4, 0)   # H-TL or B-TL (inner corner)
-        if c1: return (0, 4)                      # G-TL: left border, top open
-        if c2: return (2, 2)                      # E-TL: top border, left open
-        return (0, 0) if iso else (0, 2)          # A-TL or D-TL (outer corner)
-
-    if corner == "tr":
-        if c1 and c2:
-            return (3, 4) if diag else (5, 0)   # H-TR or B-TR
-        if c1: return (5, 4)                      # I-TR
-        if c2: return (3, 2)                      # E-TR
-        return (1, 0) if iso else (5, 2)          # A-TR or F-TR
-
-    if corner == "bl":
-        if c1 and c2:
-            return (2, 5) if diag else (4, 1)   # H-BL or B-BL
-        if c1: return (0, 5)                      # G-BL
-        if c2: return (2, 7)                      # K-BL
-        return (0, 1) if iso else (0, 7)          # A-BL or J-BL
-
-    if corner == "br":
-        if c1 and c2:
-            return (3, 5) if diag else (5, 1)   # H-BR or B-BR
-        if c1: return (5, 5)                      # I-BR
-        if c2: return (3, 7)                      # K-BR
-        return (1, 1) if iso else (5, 7)          # A-BR or L-BR
-
+    if corner == "tl": return _quarter_tl(c1, c2, diag, iso)
+    if corner == "tr": return _quarter_tr(c1, c2, diag, iso)
+    if corner == "bl": return _quarter_bl(c1, c2, diag, iso)
+    if corner == "br": return _quarter_br(c1, c2, diag, iso)
     raise ValueError(f"Unknown corner: {corner!r}")
 
 

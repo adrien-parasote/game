@@ -59,7 +59,24 @@ def facing_toward(
     return (facing == "down" and dy > 0) or (facing == "up" and dy < 0)
 
 
-# ── Orientation verification ─────────────────────────────────────────────────
+def _is_front_facing(o_dir: str, p_state: str, dx: float, dy: float, x_aligned: bool, y_aligned: bool) -> bool:
+    if x_aligned:
+        if o_dir == "up" and p_state == "down" and dy < 0: return True
+        if o_dir == "down" and p_state == "up" and dy > 0: return True
+    if y_aligned:
+        if o_dir == "left" and p_state == "right" and dx < 0: return True
+        if o_dir == "right" and p_state == "left" and dx > 0: return True
+    return False
+
+
+def _is_back_facing(o_dir: str, p_state: str, dx: float, dy: float, x_aligned: bool, y_aligned: bool) -> bool:
+    if x_aligned:
+        if o_dir == "up" and p_state == "up" and dy > 0: return True
+        if o_dir == "down" and p_state == "down" and dy < 0: return True
+    if y_aligned:
+        if o_dir == "left" and p_state == "left" and dx > 0: return True
+        if o_dir == "right" and p_state == "right" and dx < 0: return True
+    return False
 
 
 def verify_orientation(
@@ -88,26 +105,13 @@ def verify_orientation(
 
     x_aligned = abs(p_pos.x - o_pos.x) < 20
     y_aligned = abs(p_pos.y - o_pos.y) < 20
+    dx = p_pos.x - o_pos.x
+    dy = p_pos.y - o_pos.y
 
-    # Standard directional check (player at the object's front side)
-    if o_dir == "up" and p_state == "down" and p_pos.y < o_pos.y and x_aligned:
-        return True
-    if o_dir == "down" and p_state == "up" and p_pos.y > o_pos.y and x_aligned:
-        return True
-    if o_dir == "left" and p_state == "right" and p_pos.x < o_pos.x and y_aligned:
-        return True
-    if o_dir == "right" and p_state == "left" and p_pos.x > o_pos.x and y_aligned:
+    if _is_front_facing(o_dir, p_state, dx, dy, x_aligned, y_aligned):
         return True
 
-    # Relaxation for open doors (allow closing from back side)
     if obj.sub_type == "door" and getattr(obj, "is_on", False):
-        if o_dir == "up" and p_state == "up" and p_pos.y > o_pos.y and x_aligned:
-            return True
-        if o_dir == "down" and p_state == "down" and p_pos.y < o_pos.y and x_aligned:
-            return True
-        if o_dir == "left" and p_state == "left" and p_pos.x > o_pos.x and y_aligned:
-            return True
-        if o_dir == "right" and p_state == "right" and p_pos.x < o_pos.x and y_aligned:
-            return True
+        return _is_back_facing(o_dir, p_state, dx, dy, x_aligned, y_aligned)
 
     return False

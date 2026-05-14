@@ -80,7 +80,7 @@ class CameraGroup(pygame.sprite.Group):
             self._cache_dirty = False
         return self._sorted_cache
 
-    def custom_draw(self, surface: pygame.Surface):
+    def custom_draw(self, surface: pygame.Surface, min_depth: int | None = None, max_depth: int | None = None):
         """Draw sprites with already calculated camera offset and Y-sorting."""
         # Invalidate sort cache if any sprite is currently moving
         if not self._cache_dirty:
@@ -97,6 +97,13 @@ class CameraGroup(pygame.sprite.Group):
         # Sort and draw
         for sprite in self.get_sorted_sprites():
             if not sprite.image or not sprite.rect:
+                continue
+            
+            # Depth filtering
+            sprite_depth = getattr(sprite, "depth", 1)
+            if min_depth is not None and sprite_depth < min_depth:
+                continue
+            if max_depth is not None and sprite_depth > max_depth:
                 continue
 
             # Align bottom-right of sprite image to bottom-right of logical hitbox

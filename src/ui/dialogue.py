@@ -214,6 +214,50 @@ class DialogueManager:
         else:
             self._is_page_complete = True
 
+    def _draw_typewriter_text(self, screen, message_x, message_y, page_surf):
+        line_spacing = 1.2
+        line_height = self.font_message.get_linesize() * line_spacing
+        current_page_lines = self._pages[self._current_page_index]
+        chars_to_show = len(self.displayed_text)
+        accumulated_chars = 0
+
+        y_offset = 0
+        for line in current_page_lines:
+            if accumulated_chars >= chars_to_show:
+                break
+
+            line_len_with_space = len(line) + 1
+
+            if accumulated_chars + len(line) <= chars_to_show:
+                # Full line is visible: blit this horizontal strip from the pre-rendered page_surf
+                strip_rect = pygame.Rect(
+                    0, int(y_offset), page_surf.get_width(), int(line_height)
+                )
+                screen.blit(page_surf, (message_x, message_y + y_offset), strip_rect)
+                accumulated_chars += line_len_with_space
+            else:
+                # Partial line: render dynamically just for this line
+                chars_in_this_line = chars_to_show - accumulated_chars
+                text_to_draw = line[:chars_in_this_line]
+                if text_to_draw:
+                    shadow_surf = self.font_message.render(
+                        text_to_draw, True, self._shadow_color
+                    )
+                    screen.blit(
+                        shadow_surf,
+                        (
+                            message_x + self._shadow_offset,
+                            message_y + y_offset + self._shadow_offset,
+                        ),
+                    )
+                    line_surf = self.font_message.render(
+                        text_to_draw, True, self._text_color
+                    )
+                    screen.blit(line_surf, (message_x, message_y + y_offset))
+                accumulated_chars = chars_to_show
+
+            y_offset += line_height
+
     def draw(self, screen):
         """Draw the dialogue box and paginated text."""
         if not self.is_active or not self.dialogue_box:
@@ -250,53 +294,7 @@ class DialogueManager:
             if self._is_page_complete:
                 screen.blit(page_surf, (message_x, message_y))
             else:
-                # Typewriter effect: Use a clipping rectangle to only reveal characters typed so far
-                # Wait, clipping by width won't work perfectly for multi-line text because we need to reveal
-                # line by line. Let's do it by rendering only the visible lines from the page_surf,
-                # plus the currently typing line.
-
-                line_spacing = 1.2
-                line_height = self.font_message.get_linesize() * line_spacing
-                current_page_lines = self._pages[self._current_page_index]
-                chars_to_show = len(self.displayed_text)
-                accumulated_chars = 0
-
-                y_offset = 0
-                for line in current_page_lines:
-                    if accumulated_chars >= chars_to_show:
-                        break
-
-                    line_len_with_space = len(line) + 1
-
-                    if accumulated_chars + len(line) <= chars_to_show:
-                        # Full line is visible: blit this horizontal strip from the pre-rendered page_surf
-                        strip_rect = pygame.Rect(
-                            0, int(y_offset), page_surf.get_width(), int(line_height)
-                        )
-                        screen.blit(page_surf, (message_x, message_y + y_offset), strip_rect)
-                        accumulated_chars += line_len_with_space
-                    else:
-                        # Partial line: render dynamically just for this line
-                        chars_in_this_line = chars_to_show - accumulated_chars
-                        text_to_draw = line[:chars_in_this_line]
-                        if text_to_draw:
-                            shadow_surf = self.font_message.render(
-                                text_to_draw, True, self._shadow_color
-                            )
-                            screen.blit(
-                                shadow_surf,
-                                (
-                                    message_x + self._shadow_offset,
-                                    message_y + y_offset + self._shadow_offset,
-                                ),
-                            )
-                            line_surf = self.font_message.render(
-                                text_to_draw, True, self._text_color
-                            )
-                            screen.blit(line_surf, (message_x, message_y + y_offset))
-                        accumulated_chars = chars_to_show
-
-                    y_offset += line_height
+                self._draw_typewriter_text(screen, message_x, message_y, page_surf)
 
         # 4. Draw Next Arrow when page is complete
         if self.next_arrow and self._is_page_complete:

@@ -29,10 +29,11 @@ from src.ui.inventory_constants import (
     INV_TARGET_WIDTH,
 )
 from src.ui.inventory_draw import InventoryDrawMixin
+from src.ui.inventory_input import InventoryInputMixin
 from src.ui.ui_colors import COLOR_DEBUG_MISSING
 
 
-class InventoryUI(InventoryDrawMixin):
+class InventoryUI(InventoryDrawMixin, InventoryInputMixin):
     """
     RPG Inventory UI management.
     Handles rendering of the inventory background, slots, tabs, and character preview.
@@ -41,16 +42,29 @@ class InventoryUI(InventoryDrawMixin):
 
     def __init__(self, player):
         self.player = player
-        self.is_open = False
-        self.active_tab = 0  # 0: Inventory, 1-3: Other
+        self.icon_cache = {}
+        self._init_state()
 
         am = AssetManager()
         self.noble_font = am.get_font(Settings.FONT_NOBLE, Settings.FONT_SIZE_NOBLE)
         self.narrative_font = am.get_font(Settings.FONT_NARRATIVE, Settings.FONT_SIZE_NARRATIVE)
         self.tech_font = am.get_font(Settings.FONT_TECH, Settings.FONT_SIZE_TECH)
 
-        self.icon_cache = {}
+        self._load_and_scale_assets()
+        self._init_layout_constants()
 
+    def _init_state(self):
+        self.is_open = False
+        self.active_tab = 0  # 0: Inventory, 1-3: Other
+        self.anim_timer = 0
+        self.anim_frame = 0
+        self.preview_state = "down"
+        self.hovered_slot = None  # None, ('equipment', name), or ('grid', index)
+        # Drag & Drop State
+        self._dragging_item = None
+        self._drag_pos = (0, 0)
+
+    def _load_and_scale_assets(self):
         # Load and Scale Assets
         self.bg = self._load_asset(INV_ASSET_BG)
         self.slot_img = self._load_asset(INV_ASSET_SLOT)
@@ -63,37 +77,19 @@ class InventoryUI(InventoryDrawMixin):
         original_width = self.bg.get_width()
         self.scale_factor = INV_TARGET_WIDTH / original_width
 
+        def _scale(img, ratio=self.scale_factor):
+            return pygame.transform.smoothscale(img, (int(img.get_width() * ratio), int(img.get_height() * ratio)))
+
         # Rescale all visual assets
-        new_bg_size = (
-            int(self.bg.get_width() * self.scale_factor),
-            int(self.bg.get_height() * self.scale_factor),
-        )
-        self.bg = pygame.transform.smoothscale(self.bg, new_bg_size)
+        self.bg = _scale(self.bg)
         self.bg_rect = self.bg.get_rect(
             center=(Settings.WINDOW_WIDTH // 2, Settings.WINDOW_HEIGHT // 2)
         )
 
-        self.slot_img = pygame.transform.smoothscale(
-            self.slot_img,
-            (
-                int(self.slot_img.get_width() * self.scale_factor),
-                int(self.slot_img.get_height() * self.scale_factor),
-            ),
-        )
-        self.active_tab_img = pygame.transform.smoothscale(
-            self.active_tab_img,
-            (
-                int(self.active_tab_img.get_width() * self.scale_factor),
-                int(self.active_tab_img.get_height() * self.scale_factor),
-            ),
-        )
-        self.hover_img = pygame.transform.smoothscale(
-            self.hover_img,
-            (
-                int(self.hover_img.get_width() * self.scale_factor),
-                int(self.hover_img.get_height() * self.scale_factor),
-            ),
-        )
+        self.slot_img = _scale(self.slot_img)
+        self.active_tab_img = _scale(self.active_tab_img)
+        self.hover_img = _scale(self.hover_img)
+
         # Scale cursors while preserving aspect ratio
         target_h = Settings.CURSOR_SIZE
         ratio = target_h / INV_ORIGINAL_CURSOR_HEIGHT
@@ -104,7 +100,7 @@ class InventoryUI(InventoryDrawMixin):
             self.pointer_select_img, (target_w, target_h)
         )
 
-        # UI Layout Constants
+    def _init_layout_constants(self):
         s = self.scale_factor
 
         # Tabs positions (RED zone)
@@ -142,15 +138,6 @@ class InventoryUI(InventoryDrawMixin):
             self.bg_rect.y + int(INV_CHAR_NAME_POS[1] * s),
         )
 
-        self.anim_timer = 0
-        self.anim_frame = 0
-        self.preview_state = "down"
-        self.hovered_slot = None  # None, ('equipment', name), or ('grid', index)
-
-        # Drag & Drop State
-        self._dragging_item = None
-        self._drag_pos = (0, 0)
-
     def _load_asset(self, filename):
         path = os.path.join("assets", "images", "ui", filename)
         try:
@@ -170,171 +157,6 @@ class InventoryUI(InventoryDrawMixin):
             self.active_tab = index
         else:
             self.active_tab = 0
-
-    def handle_input(self, event):
-        if not self.is_open:
-            return
-
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            self._handle_mouse_down(event.pos)
-        elif event.type == pygame.MOUSEMOTION and self._dragging_item:
-            self._drag_pos = event.pos
-        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1 and self._dragging_item:
-            self._handle_mouse_up(event.pos)
-        elif event.type == pygame.KEYDOWN:
-            self._handle_keydown(event.key)
-
-    def _handle_mouse_down(self, mouse_pos):
-        logging.debug(f"Inventory click at {mouse_pos}")
-        for i, rect in enumerate(self.tab_rects):
-            if rect.collidepoint(mouse_pos):
-                logging.info(f"Tab {i} selected")
-                self.set_tab(i)
-                return
-
-        if self.hovered_slot:
-            slot_type, value = self.hovered_slot
-            if slot_type == "equipment":
-                item = self.player.inventory.equipment.get(value)
-                if item:
-                    self._start_drag("equipment", value, item, mouse_pos)
-            elif slot_type == "grid":
-                item = self.player.inventory.get_item_at(value)
-                if item:
-                    self._start_drag("grid", value, item, mouse_pos)
-
-    def _start_drag(self, source, identifier, item, mouse_pos):
-        self._dragging_item = {
-            "source": source,
-            "name": identifier if source == "equipment" else None,
-            "index": identifier if source == "grid" else None,
-            "item_id": item.id,
-            "quantity": item.quantity,
-            "icon": item.icon if item.icon else f"{item.id}.png",
-        }
-        self._drag_pos = mouse_pos
-
-    def _handle_mouse_up(self, mouse_pos):
-        self.update_hover(mouse_pos)
-        if self.hovered_slot:
-            slot_type, value = self.hovered_slot
-            if slot_type == "equipment" and isinstance(value, str):
-                self._transfer_dragged_to_equipment(value)
-            elif slot_type == "grid" and isinstance(value, int):
-                self._transfer_dragged_to_grid(value)
-        self._dragging_item = None
-
-    def _handle_keydown(self, key):
-        if key == Settings.MOVE_UP:
-            self.preview_state = "up"
-        elif key == Settings.MOVE_DOWN:
-            self.preview_state = "down"
-        elif key == Settings.MOVE_LEFT:
-            self.preview_state = "left"
-        elif key == Settings.MOVE_RIGHT:
-            self.preview_state = "right"
-
-    def _transfer_dragged_to_equipment(self, target_name: str) -> None:
-        """Transfer dragged item to the equipment slot."""
-        if not self._dragging_item or not self.player:
-            return
-
-        source = self._dragging_item["source"]
-        inv = self.player.inventory
-
-        if source == "equipment":
-            src_name = self._dragging_item["name"]
-            if src_name == target_name:
-                return
-
-            src_item = inv.unequip_item(src_name)
-            if not src_item:
-                return
-
-            swapped = inv.equip_item(target_name, src_item)
-            if swapped == src_item:
-                # Failed to equip, put back
-                inv.equip_item(src_name, src_item)
-            elif swapped is not None:
-                # Put swapped item back in source slot if possible
-                swapped_back = inv.equip_item(src_name, swapped)
-                if swapped_back == swapped:
-                    # Couldn't swap back, add to grid as fallback
-                    inv.add_item(swapped.id, swapped.quantity)
-        else:
-            # Source is grid
-            src_idx = self._dragging_item["index"]
-            src_item = inv.slots[src_idx]
-            if not src_item:
-                return
-
-            inv.slots[src_idx] = None
-
-            swapped = inv.equip_item(target_name, src_item)
-            if swapped == src_item:
-                # Failed to equip, return to grid
-                inv.slots[src_idx] = src_item
-            elif swapped is not None:
-                # Equip successful, we got a swapped item. Put it in grid
-                inv.slots[src_idx] = swapped
-
-    def _transfer_dragged_to_grid(self, target_idx: int) -> None:
-        """Transfer dragged item to a grid slot."""
-        if not self._dragging_item or not self.player:
-            return
-
-        item_id = self._dragging_item["item_id"]
-        qty = self._dragging_item["quantity"]
-        source = self._dragging_item["source"]
-
-        inv = self.player.inventory
-        target_slot = inv.slots[target_idx]
-
-        if source == "grid":
-            src_idx = self._dragging_item["index"]
-            if src_idx == target_idx:
-                return
-
-            if target_slot is None:
-                inv.slots[target_idx] = inv.slots[src_idx]
-                inv.slots[src_idx] = None
-            elif target_slot.id == item_id:
-                can_add = min(qty, target_slot.stack_max - target_slot.quantity)
-                target_slot.quantity += can_add
-                inv.slots[src_idx].quantity -= can_add
-                if inv.slots[src_idx].quantity <= 0:
-                    inv.slots[src_idx] = None
-            else:
-                inv.slots[target_idx], inv.slots[src_idx] = (
-                    inv.slots[src_idx],
-                    inv.slots[target_idx],
-                )
-        else:
-            # Source is equipment
-            src_name = self._dragging_item["name"]
-            src_item = inv.equipment.get(src_name)
-            if not src_item:
-                return
-
-            if target_slot is None:
-                inv.slots[target_idx] = src_item
-                inv.equipment[src_name] = None
-            elif target_slot.id == item_id:
-                can_add = min(qty, target_slot.stack_max - target_slot.quantity)
-                target_slot.quantity += can_add
-                src_item.quantity -= can_add
-                if src_item.quantity <= 0:
-                    inv.equipment[src_name] = None
-            else:
-                # Swap target into equipment
-                inv.slots[target_idx] = None
-                swapped = inv.equip_item(src_name, target_slot)
-                if swapped == target_slot:
-                    # Failed to equip target item to this slot, abort transfer
-                    inv.slots[target_idx] = target_slot
-                else:
-                    # Put the previously equipped item into the grid
-                    inv.slots[target_idx] = src_item
 
     def update_hover(self, mouse_pos):
         """Detect which slot is under the mouse."""

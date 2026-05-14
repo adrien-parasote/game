@@ -50,8 +50,26 @@ class ChestLayoutMixin:
         screen_w = _surf.get_width() if _surf else Settings.WINDOW_WIDTH
         screen_h = _surf.get_height() if _surf else Settings.WINDOW_HEIGHT
 
-        # --- Chest panel ---
         bg_w, bg_h = self._bg.get_size()
+        self._compute_panel_rects(screen_w, bg_w, bg_h)
+
+        # Slot dimensions (mirror InventoryUI scale)
+        _INV_SCALE = 1200 / 1344
+        _SLOT_ORIG_PX = 55
+        _STEP_ORIG_PX = 72
+        slot_size = int(_SLOT_ORIG_PX * _INV_SCALE)
+        step = int(_STEP_ORIG_PX * _INV_SCALE)
+
+        self._scale_hover_images(slot_size)
+        self._compute_chest_grid(slot_size, step)
+        self._compute_chest_arrows(bg_w, bg_h)
+
+        # --- Player inventory panel ---
+        chest_scale = _TARGET_WIDTH / 1200
+        self._compute_inv_layout(slot_size, step, screen_w, screen_h, chest_scale)
+        self._layout_computed = True
+
+    def _compute_panel_rects(self: "ChestUIProtocol", screen_w: int, bg_w: int, bg_h: int) -> None:
         self._bg_rect = self._bg.get_rect(midtop=(screen_w // 2, 10))
 
         left, top, right, bottom = _TITLE_ZONE_REL
@@ -70,13 +88,7 @@ class ChestLayoutMixin:
             int((bottom - top) * bg_h),
         )
 
-        # Slot dimensions (mirror InventoryUI scale)
-        _INV_SCALE = 1200 / 1344
-        _SLOT_ORIG_PX = 55
-        _STEP_ORIG_PX = 72
-        slot_size = int(_SLOT_ORIG_PX * _INV_SCALE)
-        step = int(_STEP_ORIG_PX * _INV_SCALE)
-
+    def _scale_hover_images(self: "ChestUIProtocol", slot_size: int) -> None:
         # Scale slot & hover images (use already-loaded attribute — no disk I/O)
         if self._slot_img is not None:
             self._slot_img = pygame.transform.smoothscale(self._slot_img, (slot_size, slot_size))
@@ -87,7 +99,7 @@ class ChestLayoutMixin:
             logging.warning(f"ChestUI hover image load failed: {e}")
             self._hover_img = None
 
-        # Chest grid
+    def _compute_chest_grid(self: "ChestUIProtocol", slot_size: int, step: int) -> None:
         grid_w = step * (_SLOT_COLS - 1) + slot_size
         grid_h = step * (_SLOT_ROWS - 1) + slot_size
         origin_x = self._content_rect.left + (self._content_rect.width - grid_w) // 2
@@ -104,7 +116,7 @@ class ChestLayoutMixin:
                 rect.center = (cx, cy)
                 self._slot_positions.append(rect)
 
-        # Chest arrow zones
+    def _compute_chest_arrows(self: "ChestUIProtocol", bg_w: int, bg_h: int) -> None:
         chest_scale = _TARGET_WIDTH / 1200
 
         def _chest_zone(rel):
@@ -120,14 +132,8 @@ class ChestLayoutMixin:
         self._arrow_up_rect = _chest_zone(_ARROW_UP_ZONE_REL)
         self._arrow_down_rect = _chest_zone(_ARROW_DOWN_ZONE_REL)
 
-        # Scale chest arrow hover images
         self._arrow_down_hover_img = self._load_and_scale_arrow(ASSET_ARROW_DOWN_HOVER, chest_scale)
         self._arrow_up_hover_img = self._load_and_scale_arrow(ASSET_ARROW_UP_HOVER, chest_scale)
-
-        # --- Player inventory panel ---
-        self._compute_inv_layout(slot_size, step, screen_w, screen_h, chest_scale)
-
-        self._layout_computed = True
 
     def _compute_inv_layout(
         self: "ChestUIProtocol",

@@ -198,6 +198,19 @@ class TestGetContents:
         """get_contents before load() → empty list."""
         assert loot_table.get_contents("anything") == []
 
+    def test_get_contents_deep_copy(self, loot_table, property_types, tmp_path):
+        """Ensure get_contents returns a deep copy to prevent global mutation."""
+        loot_data = {"chest_1": [{"item_id": "potion_red", "quantity": 5}]}
+        loot_file = tmp_path / "loot_table.json"
+        loot_file.write_text(json.dumps(loot_data))
+        loot_table.load(str(loot_file), property_types)
+
+        contents1 = loot_table.get_contents("chest_1")
+        contents1[0]["quantity"] -= 1
+
+        contents2 = loot_table.get_contents("chest_1")
+        assert contents2[0]["quantity"] == 5
+
 
 # ---------------------------------------------------------------------------
 # Stack splitting tests

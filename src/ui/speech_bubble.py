@@ -167,6 +167,51 @@ class SpeechBubble:
 
         return bg
 
+    def _build_name_plate(self, speaker_name: str) -> pygame.Surface | None:
+        if not speaker_name or "name_plate_left" not in self.tiles:
+            return None
+
+        # Use name_font if available, else fallback to standard font
+        font_to_use = self.name_font if self.name_font else self.font
+        name_surf = font_to_use.render(speaker_name, True, (255, 255, 255))
+
+        name_w = name_surf.get_width()
+        plate_padding_x = 16
+        target_w = name_w + plate_padding_x * 2
+
+        # Scale down the plate to be less massive (32px high instead of 64px)
+        plate_h = 32
+        edge_w = 16
+
+        left_tile = pygame.transform.smoothscale(
+            self.tiles["name_plate_left"], (edge_w, plate_h)
+        )
+        center_tile = pygame.transform.smoothscale(
+            self.tiles["name_plate_center"], (edge_w, plate_h)
+        )
+        right_tile = pygame.transform.smoothscale(
+            self.tiles["name_plate_right"], (edge_w, plate_h)
+        )
+
+        # Minimum width is left + right
+        target_w = max(edge_w * 2, target_w)
+
+        name_plate_bg = pygame.Surface((target_w, plate_h), pygame.SRCALPHA)
+        name_plate_bg.blit(left_tile, (0, 0))
+
+        center_w = target_w - (edge_w * 2)
+        if center_w > 0:
+            scaled_center = pygame.transform.scale(center_tile, (center_w, plate_h))
+            name_plate_bg.blit(scaled_center, (edge_w, 0))
+
+        name_plate_bg.blit(right_tile, (target_w - edge_w, 0))
+
+        # Center the text inside the plate (adjusted slightly upwards if the bottom has a drop shadow)
+        text_rect = name_surf.get_rect(center=(target_w // 2, plate_h // 2))
+        name_plate_bg.blit(name_surf, text_rect)
+        
+        return name_plate_bg
+
     def draw(
         self,
         surface: pygame.Surface,
@@ -210,7 +255,7 @@ class SpeechBubble:
             bg.blit(txt_surf, (self.pad_x, inner_y))
             inner_y += line_height
 
-        # 5. Pagination arrow: INSIDE the top-left corner of the bottom-right tile, with manual offset
+        # 5. Pagination arrow
         if total_pages > 1:
             arrow = self.tiles["arrow"]
             arrow_x = bubble_w - TILE_SIZE + _ARROW_OFFSET_X
@@ -218,48 +263,8 @@ class SpeechBubble:
             bg.blit(arrow, (arrow_x, arrow_y))
 
         # 6. Build the name plate if speaker_name is provided
-        name_plate_bg = None
+        name_plate_bg = self._build_name_plate(speaker_name)
         name_plate_offset = (_NAME_PLATE_OFFSET_X, _NAME_PLATE_OFFSET_Y)
-
-        if speaker_name and "name_plate_left" in self.tiles:
-            # Use name_font if available, else fallback to standard font
-            font_to_use = self.name_font if self.name_font else self.font
-            name_surf = font_to_use.render(speaker_name, True, (255, 255, 255))
-
-            name_w = name_surf.get_width()
-            plate_padding_x = 16
-            target_w = name_w + plate_padding_x * 2
-
-            # Scale down the plate to be less massive (32px high instead of 64px)
-            plate_h = 32
-            edge_w = 16
-
-            left_tile = pygame.transform.smoothscale(
-                self.tiles["name_plate_left"], (edge_w, plate_h)
-            )
-            center_tile = pygame.transform.smoothscale(
-                self.tiles["name_plate_center"], (edge_w, plate_h)
-            )
-            right_tile = pygame.transform.smoothscale(
-                self.tiles["name_plate_right"], (edge_w, plate_h)
-            )
-
-            # Minimum width is left + right
-            target_w = max(edge_w * 2, target_w)
-
-            name_plate_bg = pygame.Surface((target_w, plate_h), pygame.SRCALPHA)
-            name_plate_bg.blit(left_tile, (0, 0))
-
-            center_w = target_w - (edge_w * 2)
-            if center_w > 0:
-                scaled_center = pygame.transform.scale(center_tile, (center_w, plate_h))
-                name_plate_bg.blit(scaled_center, (edge_w, 0))
-
-            name_plate_bg.blit(right_tile, (target_w - edge_w, 0))
-
-            # Center the text inside the plate (adjusted slightly upwards if the bottom has a drop shadow)
-            text_rect = name_surf.get_rect(center=(target_w // 2, plate_h // 2))
-            name_plate_bg.blit(name_surf, text_rect)
 
         # 7. Final blit: single draw of the fully composed bubble
         # Position bubble so its bottom edge (with tail) is above the character head

@@ -11,7 +11,7 @@
 | Catégorie | Fichiers | Statut |
 |---|---|---|
 | Maps | `00-spawn.tmj`, `01-castel.tmj` | ⚠️ À refaire |
-| Maps | `99-debug_room.tmj` | ⚠️ À refaire |
+| Maps | `99-debug_room.tmj` | ✅ Refaite et validée |
 | Sprites | `01-character.png`, `02-butler.png` | ✅ |
 | Sprites interactifs | portes, coffres, torches, leviers, emotes | ✅ |
 | Tilesets | sol, murs, fenêtres, mobilier intérieur | ✅ (intérieur uniquement) |

@@ -5,7 +5,6 @@ __pycache__/
 .pytest_cache/
 .coverage
 *.cpython*
-*.cpython-313.pyc
 
 # Environnement virtuel (si tu en crées un)
 venv/

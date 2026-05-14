@@ -1,14 +1,12 @@
 {
     "automappingRulesFile": "",
-    "commands": [
-    ],
+    "commands": [],
     "compatibilityVersion": 1100,
     "extensionsPath": "extensions",
     "folders": [
         "."
     ],
-    "properties": [
-    ],
+    "properties": [],
     "propertyTypes": [
         {
             "color": "#ff00f900",
@@ -60,8 +58,7 @@
                     "name": "tileset",
                     "propertyType": "00-tileset",
                     "type": "class",
-                    "value": {
-                    }
+                    "value": {}
                 }
             ],
             "name": "01-tileset_ground",
@@ -226,8 +223,7 @@
                     "name": "sprite",
                     "propertyType": "10-sprite",
                     "type": "class",
-                    "value": {
-                    }
+                    "value": {}
                 },
                 {
                     "name": "target_id",
@@ -276,11 +272,12 @@
                         "is_animated": true,
                         "is_on": true,
                         "sprite": {
-                            "entity_type": {
-                            },
+                            "entity_type": {},
                             "start_frame": 0,
-                            "sub_type": 3
-                        }
+                            "sub_type": 3,
+                            "depth": 2
+                        },
+                        "depth": 2
                     }
                 },
                 {

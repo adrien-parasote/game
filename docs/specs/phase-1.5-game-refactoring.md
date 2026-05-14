@@ -6,7 +6,7 @@
 > Document Type: Implementation  
 > **Version :** 1.3 — 2026-05-07  
 > **Statut :** Delivered ✅ (BUILD terminé, tous tests verts, 93% coverage global)  
-> **Covers :** F1 (`game_setup.py`), F2 (`entity_factory.py`), F3 (`map_loader.py`), F4 (`input_handler.py`), F5 (`test_coverage_gaps_phase15.py`)
+> **Covers :** F1 (`game_setup.py`), F2 (`entity_factory.py`), F3 (`map_loader.py`), F4 (`input_handler.py`)
 > **Réf. Roadmap :** [`docs/strategic/MASTER_ROADMAP.md#phase-15`](../strategic/MASTER_ROADMAP.md#phase-15)  
 > **ADR :** [`docs/ADRs/ADR-004-refactoring-context-injection.md`](../ADRs/ADR-004-refactoring-context-injection.md#L1)
 
@@ -418,7 +418,7 @@ game.py réel:            479 LOC  (thin wrappers conservés pour compat tests)
 
 ### Coverage Gap Tests (Phase 1.5 Hardening)
 
-Pour garantir la résilience du moteur et atteindre le seuil de `>=90% global coverage`, une série de tests ciblés a été ajoutée dans `tests/test_coverage_gaps_phase15.py` :
+Pour garantir la résilience du moteur et atteindre le seuil de `>=90% global coverage`, une série de tests ciblés a été ajoutée. Ces tests ont été distribués dans les dossiers spécifiques à leur domaine (ex. `tests/engine/test_game_coverage.py`, `tests/entities/test_groups.py`) :
 
 | Cible | But |
 |-------|-----|

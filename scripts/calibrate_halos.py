@@ -126,6 +126,55 @@ def _draw_points(screen: pygame.Surface, fire: list, mush: list) -> None:
         pygame.draw.circle(screen, color, (x, y), r, 1)
 
 
+def _handle_event(event, running, mode, fire_pts, mush_pts, screen):
+    if event.type == pygame.QUIT:
+        return False, mode, screen
+
+    if event.type == pygame.KEYDOWN:
+        if event.key in (pygame.K_ESCAPE, pygame.K_q):
+            return False, mode, screen
+        if event.key == pygame.K_m:
+            mode = MODE_MUSH if mode == MODE_FIRE else MODE_FIRE
+        elif event.key == pygame.K_z:
+            if mode == MODE_FIRE and fire_pts:
+                fire_pts.pop()
+            elif mode == MODE_MUSH and mush_pts:
+                mush_pts.pop()
+        elif event.key == pygame.K_s:
+            _save(fire_pts, mush_pts)
+        elif event.key == pygame.K_f:
+            flag = pygame.FULLSCREEN | pygame.SCALED
+            screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), flag)
+
+    elif event.type == pygame.MOUSEBUTTONDOWN:
+        mx, my = event.pos
+        mods = pygame.key.get_mods()
+        if event.button == 1:
+            if mode == MODE_FIRE:
+                r = (
+                    R_FIRE_M
+                    if mods & pygame.KMOD_SHIFT
+                    else (R_FIRE_S if mods & pygame.KMOD_CTRL else R_FIRE_L)
+                )
+                fire_pts.append((mx, my, r))
+            else:
+                r = (
+                    R_MUSH_M
+                    if mods & pygame.KMOD_SHIFT
+                    else (R_MUSH_S if mods & pygame.KMOD_CTRL else R_MUSH_L)
+                )
+                mush_pts.append((mx, my, r, MUSH_COLORS[r]))
+        elif event.button == 3:
+            idx = _nearest([(x, y, 0) for x, y, *_ in fire_pts + mush_pts], mx, my)
+            if idx is not None:
+                if idx < len(fire_pts):
+                    fire_pts.pop(idx)
+                else:
+                    mush_pts.pop(idx - len(fire_pts))
+
+    return running, mode, screen
+
+
 def main() -> None:
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), pygame.FULLSCREEN | pygame.SCALED)
@@ -147,51 +196,7 @@ def main() -> None:
     running = True
     while running:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-            elif event.type == pygame.KEYDOWN:
-                if event.key in (pygame.K_ESCAPE, pygame.K_q):
-                    running = False
-                elif event.key == pygame.K_m:
-                    mode = MODE_MUSH if mode == MODE_FIRE else MODE_FIRE
-                elif event.key == pygame.K_z:
-                    if mode == MODE_FIRE and fire_pts:
-                        fire_pts.pop()
-                    elif mode == MODE_MUSH and mush_pts:
-                        mush_pts.pop()
-                elif event.key == pygame.K_s:
-                    _save(fire_pts, mush_pts)
-                elif event.key == pygame.K_f:
-                    flag = pygame.FULLSCREEN | pygame.SCALED
-                    screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), flag)
-
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                mx, my = event.pos
-                mods = pygame.key.get_mods()
-                if event.button == 1:
-                    if mode == MODE_FIRE:
-                        r = (
-                            R_FIRE_M
-                            if mods & pygame.KMOD_SHIFT
-                            else (R_FIRE_S if mods & pygame.KMOD_CTRL else R_FIRE_L)
-                        )
-                        fire_pts.append((mx, my, r))
-                    else:
-                        r = (
-                            R_MUSH_M
-                            if mods & pygame.KMOD_SHIFT
-                            else (R_MUSH_S if mods & pygame.KMOD_CTRL else R_MUSH_L)
-                        )
-                        mush_pts.append((mx, my, r, MUSH_COLORS[r]))
-                elif event.button == 3:
-                    # Remove from whichever list has the nearest point
-                    idx = _nearest([(x, y, 0) for x, y, *_ in fire_pts + mush_pts], mx, my)
-                    if idx is not None:
-                        if idx < len(fire_pts):
-                            fire_pts.pop(idx)
-                        else:
-                            mush_pts.pop(idx - len(fire_pts))
+            running, mode, screen = _handle_event(event, running, mode, fire_pts, mush_pts, screen)
 
         screen.blit(bg, (0, 0))
         _draw_points(screen, fire_pts, mush_pts)

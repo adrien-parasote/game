@@ -50,7 +50,7 @@ class LootTable:
 
         Returns an empty list if the element_id has no loot entry.
         """
-        return list(self._data.get(element_id, []))
+        return [item.copy() for item in self._data.get(element_id, [])]
 
     # ------------------------------------------------------------------
     # Private helpers
