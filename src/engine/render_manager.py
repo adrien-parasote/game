@@ -92,9 +92,9 @@ class RenderManager:
         self.game.screen.fill(Settings.COLOR_BG)
         self.game.visible_sprites.calculate_offset(self.game.player)
         self.draw_background()
-        self.game.visible_sprites.custom_draw(self.game.screen, max_depth=self.game.player.depth)
+        self.game.visible_sprites.custom_draw(self.game.screen, max_depth=self.game.player.depth - 1)
         self.draw_foreground()
-        self.game.visible_sprites.custom_draw(self.game.screen, min_depth=self.game.player.depth + 1)
+        self.game.visible_sprites.custom_draw(self.game.screen, min_depth=self.game.player.depth)
 
         night_alpha = self.game.time_system.night_alpha
         window_positions = self.game.map_manager.get_window_positions()

@@ -65,24 +65,32 @@ class TestUpdateParticles:
 
 class TestDrawParticles:
     def test_draw_skips_empty_list(self):
-        """Draw is a no-op when particles_list is empty."""
+        """Draw is a no-op when particles_list is empty — surface must be unchanged."""
         ent = _make_mixin()
         ent.particles_list = []
         surface = pygame.Surface((200, 200))
+        surface.fill((0, 0, 0))
         cam = pygame.math.Vector2(0, 0)
-        # Should not raise
         InteractiveParticleMixin._draw_particles(ent, surface, cam)
+        # Surface must remain black — no pixels drawn
+        sample = surface.get_at((10, 10))[:3]
+        assert sample == (0, 0, 0), f"Empty list should not draw anything, got {sample}"
 
     def test_draw_renders_particles(self):
-        """Draw renders at least one particle without error."""
-        # No pygame.display.set_mode here — the session fixture in conftest already
-        # created the display at 1280x720. Calling set_mode here would shrink it and
-        # corrupt other tests that check pixel contents at larger coordinates.
+        """Draw must paint at least one pixel on the surface for a visible particle."""
         ent = _make_mixin()
         ent.particles_list = [
-            {"x": 10.0, "y": 10.0, "vx": 0, "vy": 0, "life": 0.5, "max_life": 1.0, "size": 1, "phase": 0.0},
+            {"x": 10.0, "y": 10.0, "vx": 0, "vy": 0, "life": 0.5, "max_life": 1.0, "size": 3, "phase": 0.0},
         ]
         surface = pygame.Surface((200, 200))
+        surface.fill((0, 0, 0))
         cam = pygame.math.Vector2(0, 0)
         InteractiveParticleMixin._draw_particles(ent, surface, cam)
+        # At least one pixel near (10,10) must have been painted (not black)
+        painted = any(
+            surface.get_at((x, y))[:3] != (0, 0, 0)
+            for x in range(7, 14)
+            for y in range(7, 14)
+        )
+        assert painted, "Expected particle to paint at least one pixel near (10,10) but surface remained black"
 

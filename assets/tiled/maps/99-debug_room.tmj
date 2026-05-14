@@ -203,6 +203,7 @@
                                      "sfx_ambient":"05-fire_crackle",
                                      "sprite":
                                         {
+                                         "depth":2,
                                          "element_id":"actionnable_torche",
                                          "entity_type":"interactive",
                                          "sprite_sheet":"02-torchs.png",
@@ -227,11 +228,6 @@
                                  "name":"day_night_driven",
                                  "type":"bool",
                                  "value":true
-                                }, 
-                                {
-                                 "name":"depth",
-                                 "type":"int",
-                                 "value":2
                                 }, 
                                 {
                                  "name":"halo_alpha",
@@ -260,6 +256,7 @@
                                      "sfx_ambient":"05-fire_crackle",
                                      "sprite":
                                         {
+                                         "depth":2,
                                          "element_id":"actionnable_torche",
                                          "entity_type":"interactive",
                                          "sprite_sheet":"02-torchs.png",
@@ -721,11 +718,6 @@
                                  "value":true
                                 }, 
                                 {
-                                 "name":"depth",
-                                 "type":"int",
-                                 "value":2
-                                }, 
-                                {
                                  "name":"halo_alpha",
                                  "type":"int",
                                  "value":120
@@ -752,6 +744,7 @@
                                      "sfx_ambient":"05-fire_crackle",
                                      "sprite":
                                         {
+                                         "depth":2,
                                          "element_id":"actionnable_torche",
                                          "entity_type":"interactive",
                                          "sprite_sheet":"02-torchs.png",
@@ -763,8 +756,8 @@
                          "type":"12-interactive_object_halo",
                          "visible":true,
                          "width":32,
-                         "x":512,
-                         "y":1024
+                         "x":416,
+                         "y":1216
                         }],
                  "opacity":1,
                  "type":"objectgroup",

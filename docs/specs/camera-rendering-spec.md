@@ -54,9 +54,9 @@ Sprites are sorted by `rect.bottom` to simulate depth (entities lower on screen 
 
 In `custom_draw(surface, min_depth=None, max_depth=None)`, each sprite is tested against the screen rect before blitting.
 
-Depth filtering (new in session 2026-05-14):
-- `max_depth`: skip sprites with `depth > max_depth` (pass 2 — entities at or below player depth)
-- `min_depth`: skip sprites with `depth < min_depth` (pass 3b — entities strictly above player depth)
+Depth filtering (refined in session 2026-05-14 to prevent entity occlusion):
+- `max_depth`: skip sprites with `depth > max_depth` (Pass 2 — entities strictly in background, `max_depth=player.depth - 1`)
+- `min_depth`: skip sprites with `depth < min_depth` (Pass 3b — entities at or above player depth, `min_depth=player.depth`)
 - When both are `None` (default): all depths drawn (legacy behaviour)
 
 ```python
@@ -94,9 +94,9 @@ Wrapped in `try-except TypeError` for test compatibility with mock surfaces.
 |------|--------|---------|----------|
 | 0 | `screen.fill()` | Background color clear | — |
 | 1 | `draw_background()` | Map layers with `depth <= player.depth` | Normal |
-| 2 | `visible_sprites.custom_draw(max_depth=player.depth)` | Y-sorted entities up to player depth | Normal |
+| 2 | `visible_sprites.custom_draw(max_depth=player.depth-1)` | Y-sorted background entities (strictly below player depth) | Normal |
 | 3 | `draw_foreground()` | Map tiles from foreground-order layers + tiles with `depth > player.depth` from mixed layers | Normal (occluded alpha near player) |
-| 3b | `visible_sprites.custom_draw(min_depth=player.depth+1)` | Y-sorted entities above player depth (depth > 1) | Normal |
+| 3b | `visible_sprites.custom_draw(min_depth=player.depth)` | Y-sorted entities at or above player depth (includes chests, levers, player, NPCs) | Normal |
 | 4a | `lighting_manager.draw_additive_window_beams()` | Window light cones | `BLEND_RGB_ADD` |
 | 4b | `lighting_manager.create_overlay()` | Night darkness overlay + torch punch-through | `SRCALPHA` |
 | 5 | `obj.draw_effects()` | Per-object light halos + particles | `BLEND_RGB_ADD` |
@@ -215,7 +215,7 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | IT-002 | Foreground occlusion | Player under depth-1 tile | Occluded surface used for overlapping tile |
 | IT-003 | Layer ordering | Map with Tiled `order` property | Layers sorted by `order` int, not name prefix |
 | IT-004 | Multi-layer render | Map with multiple layers | Lowest `order` value drawn bottom-most |
-| IT-005 | Two-pass entity draw | Entity with depth=2 | Absent in pass 2 (max_depth=1), present in pass 3b (min_depth=2) |
+| IT-005 | Two-pass entity draw | Entity with depth=player.depth | Absent in pass 2 (max_depth=depth-1), present in pass 3b (min_depth=depth) |
 
 ### Linked Test Functions
 | Test ID | Test Function | File |
