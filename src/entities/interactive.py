@@ -128,25 +128,9 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self._static_is_on = value
 
     def _parse_properties(
-        self,
-        sub_type,
-        start_row,
-        end_row,
-        is_on,
-        is_animated,
-        depth,
-        position,
-        off_position,
-        halo_size,
-        halo_color,
-        halo_alpha,
-        particles,
-        particle_count,
-        activate_from_anywhere,
-        sprite_sheet,
-        facing_direction,
-        sfx,
-        sfx_ambient,
+        self, sub_type, start_row, end_row, is_on, is_animated, depth, position,
+        off_position, halo_size, halo_color, halo_alpha, particles, particle_count,
+        activate_from_anywhere, sprite_sheet, facing_direction, sfx, sfx_ambient,
         day_night_driven,
     ):
         """Parse raw properties and initialize basic state."""
@@ -159,29 +143,30 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self.off_position = off_position
         self.col_index = position
 
-        # Day/Night Automation
-        self.day_night_driven = day_night_driven
-        from src.engine.time_system import TimeSystem
+        self._parse_day_night(day_night_driven)
+        self._parse_direction(facing_direction, position)
+        self._parse_state(is_on, is_animated, halo_size)
+        self._parse_halo(halo_size, halo_color, halo_alpha)
+        self._parse_misc(particles, particle_count, activate_from_anywhere, sfx, sfx_ambient)
 
-        self._time_system: TimeSystem | None = None
+    def _parse_day_night(self, day_night_driven):
+        self.day_night_driven = day_night_driven
+        self._time_system = None
         self.light_control = "auto" if day_night_driven else "none"
 
-        # Determine direction_str (Priority: facing_direction > POSITION_TO_DIR)
+    def _parse_direction(self, facing_direction, position):
         if facing_direction:
             self.direction_str = facing_direction
         else:
             self.direction_str = self.POSITION_TO_DIR.get(position, "down")
 
-        # State
-        # If starting ON and not animated, jump to end frame (e.g., open door)
+    def _parse_state(self, is_on, is_animated, halo_size):
         if is_on and not is_animated:
             self.frame_index = float(self.end_row)
         else:
             self.frame_index = float(self.start_row)
 
-        # Determine is_on and specific behaviors
         self.is_light_source = halo_size > 0
-
         if is_on is not None:
             self._static_is_on = is_on
         else:
@@ -189,7 +174,6 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
 
         self._update_col_index()
 
-        # Selective Animation Speed
         if self.is_light_source:
             self.animation_speed = ANIM_SPEED_LIGHT_SOURCE
             if self.is_animated:
@@ -199,7 +183,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
 
         self.is_animating = self.is_on and self.is_animated
 
-        # Halo Props
+    def _parse_halo(self, halo_size, halo_color, halo_alpha):
         self.halo_size = halo_size
         self.halo_alpha = halo_alpha
         try:
@@ -208,20 +192,16 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
             self.halo_color = HALO_DEFAULT_COLOR
 
         if self.halo_size > 0:
-            logging.debug(
-                f"InteractiveEntity {sub_type} halo: alpha={self.halo_alpha}, size={self.halo_size}"
-            )
+            logging.debug(f"InteractiveEntity {self.sub_type} halo: alpha={self.halo_alpha}, size={self.halo_size}")
 
         self.flicker_phase = random.uniform(0, 2 * math.pi)
         self.f_alpha = 1.0
         self.f_scale = 1.0
 
-        # Particle System
+    def _parse_misc(self, particles, particle_count, activate_from_anywhere, sfx, sfx_ambient):
         self.particles = particles
         self.particle_count = particle_count
         self.particles_list = []
-
-        # Interaction
         self.activate_from_anywhere = activate_from_anywhere
         self.sfx = sfx
         self.sfx_ambient = sfx_ambient
@@ -245,11 +225,8 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         )
 
         if sheet and sheet.valid and sheet.sheet is not None:
-            _, sheet_h = sheet.sheet.get_size()
-            total_rows = self.end_row + 1
-            real_frame_h = sheet_h // total_rows if total_rows > 0 else self.sprite_height
             self.frames = sheet.load_grid_by_size(
-                self.sprite_width, real_frame_h, transparent=is_transparent
+                self.sprite_width, self.sprite_height, transparent=is_transparent
             )
             self._sheet_cols = getattr(sheet, "last_cols", 4)
         else:
@@ -358,14 +335,12 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         if getattr(self, "day_night_driven", False):
             self._update_col_index()
 
-        # Ambient Audio — propose model: each entity contributes its distance.
-        # flush_ambient() (called from game loop) picks the nearest source.
+        # Ambient Audio
         has_ambient = bool(self.sfx_ambient) if hasattr(self, "sfx_ambient") else False
         if has_ambient and self.game and self.game.audio_manager:
             if self.is_on and self.game.player:
                 dist = self.pos.distance_to(self.game.player.pos)
                 self.game.audio_manager.propose_ambient(self.sfx_ambient, dist)
-            # If is_on=False: no proposal → flush_ambient stops the channel automatically.
 
         if self.is_on and self.halo_size > 0:
             self._update_flicker(dt, ticks_ms)
@@ -373,6 +348,10 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
             self.f_alpha = 1.0
             self.f_scale = 1.0
 
+        self._update_animation(dt)
+        self._update_particles(dt)
+
+    def _update_animation(self, dt: float):
         if self.is_animated:
             if self.is_on:
                 self.frame_index += self.animation_speed * dt
@@ -398,8 +377,6 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
                         self.obstacles_group.remove(self)
 
         self.image = self._get_frame(int(self.frame_index))
-
-        self._update_particles(dt)
 
     def draw_effects(
         self, surface: pygame.Surface, cam_offset: pygame.math.Vector2, global_darkness: int

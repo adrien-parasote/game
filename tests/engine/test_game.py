@@ -207,6 +207,7 @@ def test_game_draw_loop(mock_load):
     game.player = MagicMock()
     game.player.pos = pygame.math.Vector2(0, 0)
     game.player.rect = pygame.Rect(0, 0, 32, 32)
+    game.player.depth = 1  # custom_draw compares sprite_depth > max_depth (needs int)
     game.inventory_ui = MagicMock()
     game.dialogue_manager = MagicMock()
     game.screen = pygame.Surface((800, 600))
