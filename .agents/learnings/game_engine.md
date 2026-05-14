@@ -310,3 +310,32 @@ elif _get_property(props, "type") == "teleport" or ent_type_field.startswith("15
 **Règle spec :** Quand la spec décrit le type Tiled d'une entité dans les test cases (`TC-EF-06 : type '07-npc'`), elle doit refléter le type exact présent dans les assets Tiled — vérifiable via `python3 -c "import json; ..."` sur le fichier `.tmj`. Un type erroné dans les TCs = bug potentiel non couvert par les tests.
 
 **Evidence :** `entity_factory.py` dispatch corrigé. `Spawned NPC 'npc' at [174, 462]` visible dans les logs après fix. `TC-EF-06` mis à jour dans `phase-1.5-game-refactoring.md` v1.3. 661/661 tests verts.
+---
+
+### L-GE-017 · 2026-05-14 · U · Major Rework
+**`LootTable.get_contents()` retournait une shallow copy → corruption de l'état global**
+
+`get_contents()` retournait `list(self._contents)` — une shallow copy de la liste, mais les items eux-mêmes étaient partagés. Modifier un item après un tirage (ex: décrémenter `quantity`) altérait l'état global de la LootTable, rendant les tirages suivants incorrects.
+
+```python
+# ❌ Shallow copy — les dictionnaires item sont partagés
+def get_contents(self) -> list[dict]:
+    return list(self._contents)  # même références → mutations propagées
+
+# ✅ Deep copy — chaque tirage est une copie indépendante
+import copy
+
+def get_contents(self) -> list[dict]:
+    return copy.deepcopy(self._contents)
+```
+
+**Règle :** Toute méthode `get_X()` qui retourne une collection mutable d'objets mutable DOIT retourner une `copy.deepcopy()`. Une shallow copy est insuffisante si les callers modifient les éléments retournés.
+
+**Détection :** Chercher les méthodes retournant `list(self._X)` ou `dict(self._X)` dans les classes qui gèrent des données de jeu — vérifier si les callers mutent les éléments.
+
+**Evidence :** Bug visible dans la debug room : ouvrir un coffre deux fois retournait des items avec quantity=0 car le premier tirage avait muté les items partagés. Corrigé en `copy.deepcopy`. Tests confirmés : 758/758 verts après fix.
+
+---
+
+*Last updated: 2026-05-14 — L-GE-017 deep copy LootTable, session hardening TDD.*
+

@@ -1,5 +1,35 @@
 ## 🧪 Testing
 
+### L-TEST-014 · 2026-05-14 · U · Minor Rework
+**Tests qui lisent `pygame.display.get_surface()` pour des dimensions → non-déterministes**
+
+Un test qui calcule un résultat attendu à partir de `pygame.display.get_surface().get_size()` (ou qui initialise un objet qui le fait en `__init__`) est non-déterministe : si un autre test a appelé `set_mode()` avant lui, les dimensions sont différentes.
+
+```python
+# ❌ Non-déterministe — dépend de la display_surface de session
+def test_calculate_offset_small_world_centers():
+    cg = CameraGroup()  # CameraGroup.__init__ lit pygame.display.get_surface()
+    cg.world_size = (100, 100)
+    cg.calculate_offset(sprite)
+    assert cg.offset.x >= 0  # passe si display=(1280,720), échoue si display=(1,1)
+
+# ✅ Déterministe — forcer les dimensions explicitement
+def test_calculate_offset_small_world_centers():
+    cg = CameraGroup()
+    cg.half_width = 640   # ← forcer, ne pas dépendre de __init__
+    cg.half_height = 360
+    cg.display_surface = pygame.Surface((1280, 720))
+    cg.world_size = (100, 100)
+    cg.calculate_offset(sprite)
+    assert cg.offset.x >= 0  # toujours vrai si world(100) < screen(1280)
+```
+
+**Règle :** Tout test qui vérifie un résultat dépendant de dimensions d'écran DOIT forcer ces dimensions explicitement via des attributs d'instance. Ne jamais supposer que `pygame.display.get_surface()` retournera une taille cohérente.
+
+**Evidence :** `test_groups.py::test_calculate_offset_small_world_centers` — passait en isolation (display=1280×720) mais échouait en suite complète (display=1×1 après pollution par un autre test). Corrigé en injectant `cg.half_width = 640` et `cg.display_surface = pygame.Surface((1280, 720))`.
+
+---
+
 ### A-TEST-005 · 2026-05-04 · U · Minor Rework
 **Process-wide teardowns in unit tests**
 
@@ -558,44 +588,114 @@ When tests only assert the static state of a data structure (e.g., parsing outpu
 
 ---
 
-### A-TEST-011 · 2026-05-14 · U · Minor Rework
+### A-TEST-011b · 2026-05-14 · U · Minor Rework
 **Pure Test Refactoring Breaks TDD Sequence Lock**
 
-When refactoring the test suite (e.g., moving test files to new domain directories or renaming them) without changing any production code, the `verify.py` `P10_TDDSequence` check mechanicaly fails because the newly generated test file hashes no longer match the `.tdd_lock` snapshot created before the initial implementation.
+When refactoring the test suite (e.g., moving test files to new domain directories or renaming them) without changing any production code, the `verify.py` `P10_TDDSequence` check mechanically fails because the newly generated test file hashes no longer match the `.tdd_lock` snapshot created before the initial implementation.
 
-**Anti-pattern:** Assuming that reorganizing test files will cleanly pass the TDD Sequence gate without updating the lock. 
-**Fix:** When performing a pure test reorganization, forcefully recreate the `.tdd_lock` using `tdd_check.py --lock` (or a custom script if test coverage isn't fully 100% compliant) before running the verification loop.
+**Anti-pattern:** Assuming that reorganizing test files will cleanly pass the TDD Sequence gate without updating the lock.
+**Fix:** When performing a pure test reorganization, forcefully recreate the `.tdd_lock` using `tdd_check.py --lock` before running the verification loop.
 **Evidence:** Reorganizing the `tests/` directory into domain folders (`tests/engine/`, `tests/map/`, etc.) caused `P10_TDDSequence` to fail. Forcefully regenerating the `.tdd_lock` resolved the verification blocker.
 
 ---
 
-### A-TEST-012 · 2026-05-14 · U · Major Rework
-**Fixture locale `setup_pygame` qui shadow le conftest → `pygame.quit()` en milieu de session**
+### A-TEST-012 · 2026-05-14 · U · Major Rework *(updated 2026-05-14 — occurrences: 4)*
+**`pygame.display.set_mode()` dans les tests pollue la surface partagée de session**
 
-Un fichier de test avait son propre fixture `setup_pygame` qui appelait `pygame.quit()` dans le teardown. Ce fixture local a shadowé le fixture session-scoped de `conftest.py`, détruisant le contexte pygame entre deux fichiers de tests — causant 34 echecs en suite complète avec `font not initialized` et `video system not initialized`.
+Appeler `pygame.display.set_mode()` dans un test (quelle que soit la forme) change la surface partagée pour TOUTE la session pytest — causant des assertions pixel incorrectes dans les tests suivants (e.g. `assert screen.get_at((x,y)) == (255,0,0)` → `(0,0,0)`).
+
+**4 modes de contamination découverts (ordre de dangerosité décroissante) :**
 
 ```python
-# ❌ fixture locale qui override conftest.py — détruit pygame après ce fichier
+# ❌ MODE 1 — Plus vicieux : au niveau MODULE (s'exécute à l'import)
+# tests/ui/test_speech_bubble.py:29
+pygame.display.set_mode((1, 1))  # s'exécute à l'import du fichier
+
+# ❌ MODE 2 — Fixture locale avec pygame.quit() (shadow du conftest)
 @pytest.fixture
 def setup_pygame():
     pygame.init()
     pygame.display.set_mode((800, 600))
     yield
-    pygame.quit()  # 💥 tue pygame pour tous les tests suivants
+    pygame.quit()  # 💥 tue pygame pour TOUTE la session
 
-# ✅ supprimer la fixture locale — le conftest.py gère pygame au niveau session
+# ❌ MODE 3 — Fixture locale sans quit() mais avec set_mode() resize
+@pytest.fixture(autouse=True)
+def pygame_init():
+    pygame.init()
+    pygame.display.set_mode((1, 1), pygame.NOFRAME)  # rétrécit la surface
+    yield  # pas de quit() — mais le resize persiste
+
+# ❌ MODE 4 — Dans le corps d'un test
+def test_draw_renders_particles():
+    pygame.display.set_mode((1, 1), pygame.NOFRAME)  # contamine les tests suivants
+    ...
+
+# ✅ RÈGLE : aucun set_mode() hors conftest.py
 # conftest.py :
 # @pytest.fixture(scope="session", autouse=True)
-# def pygame_session():
+# def setup_pygame():
+#     os.environ["SDL_VIDEODRIVER"] = "dummy"
 #     pygame.init()
-#     ...
+#     pygame.display.set_mode((1280, 720), pygame.HIDDEN)  # TAILLE RÉELLE
 #     yield
 #     pygame.quit()
 ```
 
-**Règle :** Ne jamais redéfinir `setup_pygame` localement dans un fichier de test si `conftest.py` fournit déjà ce fixture. Les fixtures session-scoped de `conftest.py` sont la seule source de vérité pour l'init/teardown pygame.
-**Détection :** `grep -r "pygame.quit()" tests/` — toute occurrence hors `conftest.py` est suspecte.
-**Evidence :** `tests/ui/test_chest_ui.py` — 34 tests UI échouaient en suite complète mais 0 en isolation. Corrigé en supprimant le fixture local.
+**Règle absolue :** `pygame.display.set_mode()` et `pygame.quit()` sont **interdits** dans tout fichier de test sauf `conftest.py`. Le conftest est le seul owner du cycle de vie pygame.
+
+**Détection avant commit :**
+```bash
+grep -rn "pygame.quit()\|display.set_mode" tests/ --include="*.py" | grep -v conftest
+# Toute ligne = violation → à corriger avant commit
+```
+
+**Evidence :**
+- Occurrence 1 (2026-05-14) : `test_chest_ui.py` — 34 tests UI cassés via fixture qui shadow le conftest. Corrigé en supprimant fixture local.
+- Occurrence 2 (2026-05-14) : `test_speech_bubble.py` — `set_mode((1,1))` au niveau module, causait 60 failures en session complète. Corrigé en supprimant les 2 lignes module-level.
+- Occurrence 3 (2026-05-14) : `test_teleport.py` / `test_emote.py` — fixtures locales avec `set_mode((1,1))` sans quit. Corrigé en supprimant les fixtures entières.
+- Occurrence 4 (2026-05-14) : `test_interactive_particles.py` — `set_mode` dans le corps d'un test. Corrigé en supprimant la ligne.
+
+---
+
+### L-TEST-013 · 2026-05-14 · U · Perfect
+**Pattern duck-type mixin via MagicMock pour tester les mixins sans instanciation réelle**
+
+Tester des mixins pygame (ex: `InteractiveLightingMixin`, `InteractiveParticleMixin`) sans instancier l'entité réelle en construisant un `MagicMock(spec=TheMixin)` avec tous les attributs de l'interface duck-type explicitement assignés.
+
+```python
+# ✅ Pattern : duck-type mixin helper
+def _make_mixin(is_on: bool = True, halo_size: int = 48) -> object:
+    """Build a minimal duck-type object satisfying the mixin interface."""
+    from unittest.mock import MagicMock
+    from src.entities.interactive_lighting import InteractiveLightingMixin
+
+    ent = MagicMock(spec=InteractiveLightingMixin)
+    ent.is_on = is_on
+    ent.halo_size = halo_size
+    ent.halo_alpha = 180
+    ent.halo_color = pygame.Color(255, 200, 100)
+    ent.f_scale = 1.0
+    ent.f_alpha = 1.0
+    # ... tous les attributs duck-type du mixin
+    return ent
+
+# Test : appel direct de la méthode mixin sur le mock
+def test_off_entity_resets_values():
+    ent = _make_mixin(is_on=False)
+    InteractiveLightingMixin._update_flicker(ent, dt=0.016, ticks_ms=1000)
+    assert ent.f_alpha == 1.0
+```
+
+**Pourquoi ça marche :** Les mixins Python définissent leurs méthodes avec `self` normal — appeler `Mixin.method(mock_instance)` passe le mock comme `self`. Tant que le mock satisfait le duck-type (attributs assignés), les méthodes fonctionnent sans la hiérarchie d'héritage.
+
+**Avantages :**
+- Aucun besoin d'assets fichiers (spritesheets, images)
+- Aucune dépendance sur l'ordre d'init de l'entité composite
+- Tests 10-50x plus rapides qu'une instanciation réelle
+- Isole exactement la logique du mixin (pas d'effets de bord de `__init__`)
+
+**Evidence :** 57 tests créés (particles, lighting, emote, player, teleport, NPC) — tous verts en 0.68s sans assets disques. commit `e26a192`.
 
 ---
 
@@ -614,4 +714,4 @@ def setup_pygame():
 
 ---
 
-*Last optimized: 2026-05-14 — A-TEST-012, L-INFRA-001 from sprite fix + verify.py HARDEN session.*
+*Last optimized: 2026-05-14 — A-TEST-012 étendu (4 modes), L-TEST-013 ajouté, A-TEST-011b ID dupliqué corrigé.*
