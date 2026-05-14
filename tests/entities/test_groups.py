@@ -20,8 +20,17 @@ class TestCameraGroupCoverage:
         assert cg.calculate_offset(sprite) == cg.offset
 
     def test_calculate_offset_small_world_centers(self):
+        """When world is smaller than screen, offset should center the map (>= 0).
+
+        Force explicit screen dimensions so the test is independent of pygame
+        display state across the test session.
+        """
         from src.entities.groups import CameraGroup
         cg = CameraGroup()
+        # Force deterministic screen size — avoids dependency on pygame display state
+        cg.half_width = 640
+        cg.half_height = 360
+        cg.display_surface = pygame.Surface((1280, 720))
         cg.world_size = (100, 100)
         sprite = MagicMock()
         sprite.rect = pygame.Rect(50, 50, 32, 32)

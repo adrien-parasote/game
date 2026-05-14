@@ -7,14 +7,6 @@ import pygame
 import pytest
 
 
-@pytest.fixture(autouse=True)
-def pygame_init():
-    pygame.init()
-    pygame.display.set_mode((1, 1), pygame.NOFRAME)
-    yield
-    pygame.quit()
-
-
 def _make_manager_with_frames():
     """Return an EmoteManager with mocked spritesheet frames."""
     from src.entities.emote import EmoteManager

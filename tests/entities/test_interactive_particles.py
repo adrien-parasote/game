@@ -75,8 +75,9 @@ class TestDrawParticles:
 
     def test_draw_renders_particles(self):
         """Draw renders at least one particle without error."""
-        pygame.init()
-        pygame.display.set_mode((1, 1), pygame.NOFRAME)
+        # No pygame.display.set_mode here — the session fixture in conftest already
+        # created the display at 1280x720. Calling set_mode here would shrink it and
+        # corrupt other tests that check pixel contents at larger coordinates.
         ent = _make_mixin()
         ent.particles_list = [
             {"x": 10.0, "y": 10.0, "vx": 0, "vy": 0, "life": 0.5, "max_life": 1.0, "size": 1, "phase": 0.0},
@@ -84,3 +85,4 @@ class TestDrawParticles:
         surface = pygame.Surface((200, 200))
         cam = pygame.math.Vector2(0, 0)
         InteractiveParticleMixin._draw_particles(ent, surface, cam)
+

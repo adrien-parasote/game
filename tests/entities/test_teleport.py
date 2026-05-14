@@ -4,13 +4,6 @@ import pygame
 import pytest
 
 
-@pytest.fixture(autouse=True)
-def pygame_init():
-    pygame.init()
-    pygame.display.set_mode((1, 1), pygame.NOFRAME)
-    yield
-    pygame.quit()
-
 
 class TestTeleportInit:
     def test_stores_target_map(self):

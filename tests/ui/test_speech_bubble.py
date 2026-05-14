@@ -14,6 +14,9 @@ Covers:
 - Pagination arrow appears when text exceeds a single page.
 - Correct page is rendered when a non-zero page index is passed.
 - RuntimeError raised when font is not set before drawing.
+
+NOTE: All pygame init is handled by the session-scoped conftest fixture.
+      Do NOT call pygame.display.set_mode() or pygame.quit() in this file.
 """
 
 import os
@@ -21,14 +24,11 @@ import unittest
 from unittest import mock
 from unittest.mock import MagicMock
 
-os.environ["SDL_VIDEODRIVER"] = "dummy"
 import pygame
+import pytest
 
-# Initialise display so surfaces can be created
-pygame.display.init()
-pygame.display.set_mode((1, 1))
-
-# Import after pygame is ready; mock image loading to avoid filesystem hits
+# Import after pygame is ready (session conftest initialises it);
+# mock image loading to avoid filesystem hits.
 with mock.patch("pygame.image.load") as _mock_load:
     _fake_tile = pygame.Surface((32, 32))
     _mock_load.return_value = _fake_tile
