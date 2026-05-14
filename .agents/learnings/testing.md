@@ -544,3 +544,15 @@ When tests only assert the static state of a data structure (e.g., parsing outpu
 **Anti-pattern:** Writing tests that only assert structural data equality (e.g., `assert parsed_data == expected_dict`).
 **Fix:** Migrate static tests to integration-based behavioral tests. Assert how the system *behaves* with the parsed data (e.g., checking state changes, correct method delegations).
 **Evidence:** P9_TestQuality failures resolved by migrating static data-only tests to integration-based behavioral tests in the verification pipeline.
+
+---
+
+### A-TEST-011 · 2026-05-14 · U · Minor Rework
+**Pure Test Refactoring Breaks TDD Sequence Lock**
+
+When refactoring the test suite (e.g., moving test files to new domain directories or renaming them) without changing any production code, the `verify.py` `P10_TDDSequence` check mechanicaly fails because the newly generated test file hashes no longer match the `.tdd_lock` snapshot created before the initial implementation.
+
+**Anti-pattern:** Assuming that reorganizing test files will cleanly pass the TDD Sequence gate without updating the lock. 
+**Fix:** When performing a pure test reorganization, forcefully recreate the `.tdd_lock` using `tdd_check.py --lock` (or a custom script if test coverage isn't fully 100% compliant) before running the verification loop.
+**Evidence:** Reorganizing the `tests/` directory into domain folders (`tests/engine/`, `tests/map/`, etc.) caused `P10_TDDSequence` to fail. Forcefully regenerating the `.tdd_lock` resolved the verification blocker.
+

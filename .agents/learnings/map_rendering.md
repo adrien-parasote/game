@@ -129,3 +129,14 @@ for tile in get_visible_animated_chunks():
 
 **Rule:** Always decouple dynamic elements from static pre-render pipelines by applying "Cache Evasion" — explicitly skip rendering the dynamic element into the cache, and composite it dynamically on top of the static cache during the render loop.
 **Evidence:** Animated autotiles integrated flawlessly into the Tiled parser while maintaining constant 60 FPS without invalidating the static layer cache.
+
+---
+
+### L-MAP-005 · 2026-05-14 · U · Minor Rework
+**Per-tile property overrides of layer properties**
+
+When parsing map layers, default rendering pass behavior based on the layer's overall property (e.g., depth) must explicitly account for individual tiles that override that property.
+
+**Anti-pattern:** Assuming that if a layer's default depth is `0`, all tiles within it can be safely baked into the background cache.
+**Rule:** When optimizing layers by their collective properties, always compute the `layer_max_property` (e.g., `layer_max_depths`) to know if the layer contains exceptions. If an exception exists, use a per-tile check during the render pass to exclude those tiles from the default layer batch and yield them for the correct pass.
+**Evidence:** Tiles with `depth=2` on a background layer `0` were incorrectly drawn behind the player until `MapManager` implemented `layer_max_depths` and explicitly skipped `depth > player.depth` tiles during background surface baking, delegating them to the foreground iterator.
