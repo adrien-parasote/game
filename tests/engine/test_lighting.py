@@ -360,3 +360,74 @@ def test_torch_mask_cached():
     m1 = lm._get_torch_mask(40, 0.8)
     m2 = lm._get_torch_mask(40, 0.8)
     assert m1 is m2
+
+
+from unittest.mock import MagicMock, patch
+from src.engine.game import Game
+import pygame
+
+@patch("pygame.display.toggle_fullscreen")
+@patch("pygame.display.set_mode")
+def test_lighting_manager_uses_actual_screen_size(mock_set_mode, mock_toggle_fullscreen):
+    mock_set_mode.return_value = pygame.Surface((1920, 1080))
+    game = Game(skip_map_load=True)
+    assert game.lighting_manager.screen_size == (1920, 1080)
+    
+    mock_toggle_fullscreen.side_effect = pygame.error("Failed")
+    mock_set_mode.return_value = pygame.Surface((2560, 1440))
+    game.toggle_fullscreen()
+    assert game.lighting_manager.screen_size == (2560, 1440)
+
+
+
+class TestLightingCoverage:
+
+    def _lm(self):
+        from src.engine.lighting import LightingManager
+        ts = MagicMock()
+        ts.brightness = 0.5
+        ts.hour = 12.0
+        ts.night_alpha = 200
+        return LightingManager(ts, screen_size=(800, 600))
+
+    def test_create_overlay_zero_alpha_returns_early(self):
+        lm = self._lm()
+        lm.time_system.night_alpha = 0
+        result = lm.create_overlay([], [], pygame.math.Vector2(0, 0))
+        assert isinstance(result, pygame.Surface)
+
+    def test_create_overlay_with_torch(self):
+        lm = self._lm()
+        torch = MagicMock()
+        torch.is_on = True
+        torch.halo_size = 48
+        torch.f_scale = 1.0
+        torch.f_alpha = 200
+        torch.rect = pygame.Rect(100, 100, 32, 32)
+        result = lm.create_overlay([], [torch], pygame.math.Vector2(0, 0))
+        assert isinstance(result, pygame.Surface)
+
+    def test_create_overlay_window_3tuple(self):
+        lm = self._lm()
+        result = lm.create_overlay([(200, 100, 60)], [], pygame.math.Vector2(0, 0))
+        assert isinstance(result, pygame.Surface)
+
+    def test_create_overlay_window_2tuple(self):
+        lm = self._lm()
+        result = lm.create_overlay([(200, 100)], [], pygame.math.Vector2(0, 0))
+        assert isinstance(result, pygame.Surface)
+
+    def test_beam_cache_eviction(self):
+        lm = self._lm()
+        for i in range(66):
+            lm._get_beam_surface_for_time(top_w=i + 10)
+        assert len(lm._beam_surf_cache) <= 64
+
+    def test_torch_off_is_skipped(self):
+        lm = self._lm()
+        torch = MagicMock()
+        torch.is_on = False
+        torch.halo_size = 0
+        result = lm.create_overlay([], [torch], pygame.math.Vector2(0, 0))
+        assert isinstance(result, pygame.Surface)
+

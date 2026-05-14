@@ -275,3 +275,15 @@ def test_resolve_default_map(gsm):
         # Exception during world.world reading
         mock_open.side_effect = Exception("File read error")
         assert gsm._resolve_default_map() == "00-spawn.tmj"
+
+
+from unittest.mock import MagicMock, patch
+import pygame
+from src.engine.game_state_manager import GameStateManager
+
+@patch("pygame.mouse.set_visible")
+def test_cursor_is_hidden_during_gameplay(mock_mouse):
+    gsm = GameStateManager()
+    gsm._transition_to_playing(slot_id=None)
+    mock_mouse.assert_called_with(False)
+

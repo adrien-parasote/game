@@ -398,3 +398,47 @@ def test_get_terrain_material_at(map_manager):
 
     # Empty tile returns None
     assert map_manager.get_terrain_material_at(32, 0) is None  # x=1, y=0 is 0 in the mock map_data
+
+
+from unittest.mock import MagicMock, patch
+import pygame
+
+def test_tile_depth_overrides_layer_depth():
+    from src.map.manager import MapManager
+    from src.map.layout import OrthogonalLayout
+    
+    class MockTile:
+        def __init__(self, depth, frames=None):
+            self.depth = depth
+            self.frames = frames
+            self.image = pygame.Surface((32, 32))
+    
+    map_data = {
+        "layer_order": [1],
+        "layer_names": {1: "00-ground"},
+        "layers": {
+            1: [[0, 1, 2]]
+        },
+        "tiles": {
+            1: MockTile(depth=0),
+            2: MockTile(depth=2),
+        }
+    }
+    
+    layout = OrthogonalLayout(32)
+    manager = MapManager(map_data, layout)
+    
+    chunks = list(manager.get_visible_chunks(pygame.Rect(0, 0, 100, 100), min_depth=1))
+    assert len(chunks) == 1
+    assert chunks[0][2] == 2
+    assert chunks[0][3] == 2
+    
+    mock_pygame = MagicMock()
+    mock_surface = MagicMock()
+    mock_pygame.Surface.return_value = mock_surface
+    mock_pygame.SRCALPHA = 1
+    
+    manager.get_layer_surface(1, mock_pygame, max_bg_depth=1)
+    assert mock_surface.blit.call_count == 1
+    mock_surface.blit.assert_called_with(map_data["tiles"][1].image, (32, 0))
+

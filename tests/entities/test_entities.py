@@ -489,3 +489,24 @@ def test_pickup_logic():
     pickup = PickupItem((100, 100), [], "potion_red", "potion_red.png", 5)
     assert pickup.item_id == "potion_red"
     assert pickup.quantity == 5
+
+
+from unittest.mock import MagicMock, patch
+import pygame
+from src.entities.player import Player
+
+def test_player_can_move_on_large_map():
+    game_mock = MagicMock()
+    game_mock.map_manager.width = 50
+    game_mock.map_manager.height = 50
+    game_mock.map_manager.get_direction_flags.return_value = {"any"}
+    
+    player = Player((0, 0))
+    player.game = game_mock
+    
+    player.pos = pygame.math.Vector2(1010, 1010)
+    player.direction = pygame.math.Vector2(1, 0)
+    player.start_move()
+    
+    assert player.target_pos.x > 1024
+

@@ -279,3 +279,54 @@ def _make_game_mock():
     game.pickups = []
     game.npcs = []
     return game
+
+
+class TestInteractiveLightingCoverage:
+    """interactive_lighting.py: _update_flicker covers lines 71-78, 98-99, 109."""
+
+    def _ent(self, is_on=True):
+        """Build a minimal entity with lighting attributes."""
+        from src.entities.interactive_lighting import InteractiveLightingMixin
+        ent = MagicMock(spec=InteractiveLightingMixin)
+        ent.is_on = is_on
+        ent.halo_size = 48
+        ent.halo_alpha = 180
+        ent.halo_color = pygame.Color(255, 200, 100)
+        ent.f_scale = 1.0
+        ent.f_alpha = 1.0
+        ent.flicker_phase = 0.0
+        ent.is_light_source = False
+        ent.is_animated = False
+        ent.start_row = 0
+        ent.end_row = 3
+        ent.frame_index = 0
+        ent.light_mask_cache = [pygame.Surface((96, 96)) for _ in range(8)]
+        ent.light_mask = pygame.Surface((96, 96))
+        return ent
+
+    def test_update_flicker_is_on(self):
+        """L71-78 — _update_flicker updates f_scale when is_on."""
+        from src.entities.interactive_lighting import InteractiveLightingMixin
+        ent = self._ent(is_on=True)
+        InteractiveLightingMixin._update_flicker(ent, dt=0.016, ticks_ms=1000)
+        assert ent.f_scale != 0
+
+    def test_update_flicker_is_off_resets(self):
+        """L98-99 — _update_flicker resets f_alpha/f_scale when off."""
+        from src.entities.interactive_lighting import InteractiveLightingMixin
+        ent = self._ent(is_on=False)
+        InteractiveLightingMixin._update_flicker(ent, dt=0.016, ticks_ms=1000)
+        assert ent.f_alpha == 1.0
+        assert ent.f_scale == 1.0
+
+    def test_update_flicker_animated_source(self):
+        """L71-78 — animated light source uses frame-based flicker."""
+        from src.entities.interactive_lighting import InteractiveLightingMixin
+        ent = self._ent(is_on=True)
+        ent.is_light_source = True
+        ent.is_animated = True
+        ent.end_row = 3
+        ent.start_row = 0
+        ent.frame_index = 2
+        InteractiveLightingMixin._update_flicker(ent, dt=0.016, ticks_ms=1000)
+

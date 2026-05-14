@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pygame
 import pytest
+import logging
 
 from src.config import Settings
 from src.engine.asset_manager import AssetManager
@@ -580,3 +581,124 @@ def test_font_tiers_exist():
     assert Settings.FONT_NOBLE.endswith(".ttf")
     assert Settings.FONT_NARRATIVE.endswith(".ttf")
     assert Settings.FONT_TECH.endswith(".ttf")
+
+
+def _make_game():
+    with patch("src.engine.game.Game._load_map"):
+        from src.engine.game import Game
+        return Game()
+
+
+def _make_ef():
+    from src.engine.entity_factory import EntityFactory
+    game = MagicMock()
+    game.visible_sprites = MagicMock()
+    game.interactives = MagicMock()
+    game.npcs = MagicMock()
+    game.teleports_group = MagicMock()
+    game.pickups = MagicMock()
+    game.obstacles_group = MagicMock()
+    game.world_state.get.return_value = None
+    game.loot_table = MagicMock()
+    game.audio_manager = MagicMock()
+    game.tile_size = 32
+    game.time_system = MagicMock()
+    return EntityFactory(game)
+
+
+
+
+class TestGameCoverage:
+
+    @patch("src.engine.game.Game._load_map")
+    def test_start_initial_ambients_delegates(self, _):
+        from src.engine.game import Game
+        game = Game()
+        game._map_loader._start_initial_ambients = MagicMock()
+        pos = pygame.math.Vector2(100, 100)
+        game._start_initial_ambients(pos)
+        game._map_loader._start_initial_ambients.assert_called_once_with(pos)
+
+    @patch("src.engine.game.Game._load_map")
+    def test_trigger_npc_bubble_no_msg_warns(self, _, caplog):
+        game = _make_game()
+        game._current_map_name = "00-map.tmj"
+        game.i18n.get = MagicMock(return_value=None)
+        with caplog.at_level(logging.WARNING):
+            game._trigger_npc_bubble(MagicMock(), "k")
+        assert "NPC bubble key not found" in caplog.text
+        assert game._npc_bubble is None
+
+    @patch("src.engine.game.Game._load_map")
+    def test_trigger_npc_bubble_sets_state(self, _):
+        game = _make_game()
+        game._current_map_name = "00-map.tmj"
+        game.i18n.get = MagicMock(return_value="Hello!")
+        npc = MagicMock()
+        game._trigger_npc_bubble(npc, "key")
+        assert game._npc_bubble["npc"] == npc
+        assert game._npc_bubble["page"] == 0
+
+    @patch("src.engine.game.Game._load_map")
+    def test_advance_npc_bubble_none_noop(self, _):
+        game = _make_game()
+        game._npc_bubble = None
+        game._advance_npc_bubble()  # no raise
+        assert game._npc_bubble is None
+
+    @patch("src.engine.game.Game._load_map")
+    def test_advance_npc_bubble_no_font_noop(self, _):
+        game = _make_game()
+        game._npc_bubble = {"npc": MagicMock(), "text": "Hi", "page": 0}
+        game.speech_bubble.font = None
+        game._advance_npc_bubble()  # no raise
+        assert game._npc_bubble["page"] == 0
+
+    @patch("src.engine.game.Game._load_map")
+    def test_advance_npc_bubble_increments_page(self, _):
+        game = _make_game()
+        game._npc_bubble = {"npc": MagicMock(), "text": "Hi", "page": 0}
+        game.speech_bubble.font = MagicMock()
+        game.speech_bubble.get_total_pages = MagicMock(return_value=3)
+        game._advance_npc_bubble()
+        assert game._npc_bubble["page"] == 1
+
+    @patch("src.engine.game.Game._load_map")
+    def test_advance_npc_bubble_closes_on_last(self, _):
+        game = _make_game()
+        npc = MagicMock()
+        npc.state = "interact"
+        game.npcs = [npc]
+        game._npc_bubble = {"npc": npc, "text": "Hi", "page": 0}
+        game.speech_bubble.font = MagicMock()
+        game.speech_bubble.get_total_pages = MagicMock(return_value=1)
+        game._advance_npc_bubble()
+        assert game._npc_bubble is None
+        assert npc.state == "idle"
+
+    @patch("src.engine.game.Game._load_map")
+    def test_get_state_has_keys(self, _):
+        game = _make_game()
+        s = game.get_state()
+        assert "map_name" in s and "player_pos" in s
+
+    @patch("src.engine.game.Game._load_map")
+    def test_run_frame_returns_game_event(self, _):
+        from src.engine.game_events import GameEvent
+        game = _make_game()
+        game._handle_events = MagicMock()
+        game._update = MagicMock()
+        game._draw = MagicMock()
+        assert isinstance(game.run_frame(0.016), GameEvent)
+
+    @patch("src.engine.game.Game._load_map")
+    def test_update_resolves_pending_npc_stopped(self, _):
+        game = _make_game()
+        npc = MagicMock()
+        npc.is_moving = False
+        game._pending_npc_dialogue = (npc, "elem")
+        game._trigger_npc_bubble = MagicMock()
+        game._update(0.016)
+        game._trigger_npc_bubble.assert_called_once_with(npc, "elem")
+        assert game._pending_npc_dialogue is None
+
