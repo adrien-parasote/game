@@ -1,4 +1,3 @@
-> **Design tokens** – see [design-tokens.md](./design-tokens.md)
 [assumption: "All implicit constants and defaults are documented here – pending detailed entries"] – risk: Low
 
 # Spec — Phase 1.5 : Refactoring `game.py` [Implementation]

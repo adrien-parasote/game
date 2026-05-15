@@ -1,9 +1,8 @@
-"""
-STRATEGY — Performance & Constants Hardening
-Type: Strategic
-Covers: P-PERF-01, P-CONST-01, P-FR-01
-Status: COMPLETED (2026-05-07, commit `perf-constants`)
-"""
+# ~~Strategic Blueprint — Performance & Constants Hardening~~
+
+> ⚠️ **ARCHIVÉ — 2026-05-15**  
+> Le contenu de ce document a été promu en **[ADR-006](../ADRs/ADR-006-perf-constants-pre-render-cache.md)** (décision architecturale validée).  
+> Conservation à titre de traçabilité historique uniquement. **Référencer ADR-006 à la place.**
 
 > ✅ **Ce document est TERMINÉ.** Toutes les implémentations décrites ont été complétées dans la session 2026-05-07.  
 > Conservation à titre de référence historique. Ne pas ré-implémenter.

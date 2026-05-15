@@ -308,7 +308,7 @@ for i, rect in enumerate(self._inv_slot_positions[:visible_count]):
 
 ---
 
-*Last optimized: 2026-04-30 — added A-UI-006, A-UI-007, A-UI-004, L-UI-006 from ChestUI paged inventory session. (IDs A-UI-006/007 corrected 2026-05-15 — were erroneously assigned A-UI-002/003)*
+*Last updated: 2026-04-30 — added A-UI-006, A-UI-007, A-UI-004, L-UI-006 from ChestUI paged inventory session. (IDs A-UI-006/007 corrected 2026-05-15 — were erroneously assigned A-UI-002/003)*
 
 ---
 
@@ -343,7 +343,7 @@ if res:
 
 ---
 
-*Last optimized: 2026-05-01 — optimization session: A-UI-005.*
+*Last updated: 2026-05-01 — optimization session: A-UI-005.*
 
 ---
 
@@ -425,4 +425,4 @@ mock_font.render.return_value = pygame.Surface((10, 10), pygame.SRCALPHA)
 
 ---
 
-*Last optimized: 2026-05-07 — added L-UI-011, L-UI-012 from perf-constants-spec session.*
+*Last updated: 2026-05-07 — added L-UI-011, L-UI-012 from perf-constants-spec session.*

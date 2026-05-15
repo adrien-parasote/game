@@ -1,10 +1,8 @@
-> **Design tokens** – see [design-tokens.md](./design-tokens.md)
-[assumption: "All implicit constants and defaults are documented here – pending detailed entries"] – risk: Low
-
 # Technical Specification - Directional Movement & Animated Autotiles
 
-> Document Type: Implementation
-> Status: IMPLEMENTED
+> Document Type: Implementation  
+> Status: IMPLEMENTED  
+> Blueprint stratégique : [autotile_direction_blueprint.md](../strategic/autotile_direction_blueprint.md) — 7 Questions + Gap Discovery
 
 ## 1. Goal Description
 

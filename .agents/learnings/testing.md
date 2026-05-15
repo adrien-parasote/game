@@ -158,7 +158,7 @@ except SyntaxError as e:
 
 ---
 
-*Last optimized: 2026-05-01 — added L-TEST-006, A-TEST-007 from test suite urbanization session.*
+*Last updated: 2026-05-01 — added L-TEST-006, A-TEST-007 from test suite urbanization session.*
 
 ---
 
@@ -400,7 +400,7 @@ Generic prefixes like `TC-U-01`, `TC-I-01`, `TC-T-01` collided across 3 specs (c
 
 ---
 
-*Last optimized: 2026-05-04 — L-TRACE-001, A-TRACE-001 from spec↔test traceability session.*
+*Last updated: 2026-05-04 — L-TRACE-001, A-TRACE-001 from spec↔test traceability session.*
 
 ---
 
@@ -435,7 +435,7 @@ The `@pytest.mark.tc` decorator requires `[tool.pytest.ini_options] markers = [.
 
 ---
 
-*Last optimized: 2026-05-04 — L-TRACE-002, A-TRACE-002 from traceability HARDEN session.*
+*Last updated: 2026-05-04 — L-TRACE-002, A-TRACE-002 from traceability HARDEN session.*
 
 ---
 
@@ -494,7 +494,7 @@ class DummySprite:
 
 ---
 
-*Last optimized: 2026-05-04 — L-STATIC-001, L-STATIC-002 from Pyright hardening HARDEN session.*
+*Last updated: 2026-05-04 — L-STATIC-001, L-STATIC-002 from Pyright hardening HARDEN session.*
 
 ---
 
@@ -539,7 +539,7 @@ game.chest_ui.is_open = False
 
 ---
 
-*Last optimized: 2026-05-07 — L-TEST-008, A-TEST-008 from Phase 1.5 HARDEN session.*
+*Last updated: 2026-05-07 — L-TEST-008, A-TEST-008 from Phase 1.5 HARDEN session.*
 
 ---
 
@@ -573,7 +573,7 @@ When tests only assert the static state of a data structure (e.g., parsing outpu
 
 ---
 
-### L-TEST-014 · 2026-05-14 · U · Minor Rework
+### L-TEST-015 · 2026-05-14 · U · Minor Rework
 **Overly strict equality assertions on dictionaries cause brittle tests**
 
 `MagicMock` does not support comparison operations like `<` or `<=` with integers, raising a `TypeError`. When an implementation uses duck typing and numeric comparison, passing a `MagicMock` to it without setting the specific property to a numeric value will crash the test.
@@ -709,7 +709,7 @@ def test_off_entity_resets_values():
 
 ---
 
-*Last optimized: 2026-05-14 — A-TEST-012 étendu (4 modes), L-TEST-013 ajouté, L-TEST-014 (ex A-TEST-011b) ID dupliqué corrigé.*
+*Last updated: 2026-05-14 — A-TEST-012 étendu (4 modes), L-TEST-013 ajouté, L-TEST-014 (ex A-TEST-011b) ID dupliqué corrigé.*
 
 ---
 
@@ -747,5 +747,5 @@ def test_torch_frame_height_computed_from_sheet():
 
 ---
 
-*Last optimized: 2026-05-14 — A-TEST-013 ajouté (confirmation-bias tests from sprite centering regression session).*
+*Last updated: 2026-05-14 — A-TEST-013 ajouté (confirmation-bias tests from sprite centering regression session).*
 

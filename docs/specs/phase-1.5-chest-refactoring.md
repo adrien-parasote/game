@@ -1,5 +1,3 @@
-> **Design tokens** – see [design-tokens.md](../design-tokens.md)
-
 # Spec — Phase 1.5 : Refactoring `chest.py` [Implementation]
 
 > Document Type: Implementation  

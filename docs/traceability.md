@@ -249,6 +249,9 @@
 
 ## Orphan Markers (no spec)
 
+> [!NOTE]
+> Ces markers sont des tests **valides et verts** dont les TCs ne sont pas encore enregistrés dans une spec formelle (specs évoluées, ou TCs écrits avant la spec). Ils sont couverts par `verify.py`. Aucune action requise sauf si vous travaillez spécifiquement à améliorer la traçabilité d'une de ces specs.
+
 | TC ID | Test |
 |-------|------|
 | GF-001 | `tests/engine/test_save_manager.py::test_save_creates_file` |
