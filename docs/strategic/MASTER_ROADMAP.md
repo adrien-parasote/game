@@ -81,7 +81,7 @@ Remplacement du modèle binaire `collidable` par `walkable` + `direction_flags`.
 
 ---
 
-## ✅ Phase 1.7 — Hardening & Urbanization `v0.7.1` TERMINÉE
+## ✅ Phase 1.7 — Hardening & Urbanization `v0.7.0` TERMINÉE
 
 Achèvement de l'intégrité technique et documentaire. 100% de traçabilité TDD.
 
@@ -351,7 +351,7 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 | Version | Dev | Assets prioritaires |
 |---|---|---|
 | `0.5.x` | Phase 1-1.6 (Game Flow, Refactor, Autotiles) | — |
-| `0.7.1` | Hardening & Urbanization (Traceability, 100% verify) | ✅ |
+| `0.7.0` | Hardening & Urbanization (Traceability, 100% verify) | ✅ |
 | `0.6.0` | Monde + Saisons + PNJs + Customisation | Château maps · NPCs · tileset extérieur · BGM jardin/village |
 | `0.7.0` | Météo + Équipement contextuel | Overlays météo · tileset forêt · BGM forêt/orage |
 | `0.8.0` | Château + Guildes + Bâtiments + Mobilier | Bâtiments sprites · tileset village/mines · BGM mines |
