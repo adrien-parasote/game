@@ -2,7 +2,11 @@
 STRATEGY — Performance & Constants Hardening
 Type: Strategic
 Covers: P-PERF-01, P-CONST-01, P-FR-01
+Status: COMPLETED (2026-05-07, commit `perf-constants`)
 """
+
+> ✅ **Ce document est TERMINÉ.** Toutes les implémentations décrites ont été complétées dans la session 2026-05-07.  
+> Conservation à titre de référence historique. Ne pas ré-implémenter.
 
 # Strategic Blueprint — Performance & Constants Hardening
 

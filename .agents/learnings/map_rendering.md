@@ -243,5 +243,32 @@ self.sprite_height = real_frame_h  # update BEFORE _setup_physics reads it
 
 ---
 
-*Last updated: 2026-05-14 — L-SPRITE-001 added from interactive entity centering regression session.*
+### L-REND-004 · 2026-05-14 · U · Major Rework
+**RenderManager draw_scene() : pivot point player.depth-1 pour éviter l'occlusion des entités interactives**
+
+Une régression dans `RenderManager.draw_scene()` rendait les objets interactifs (coffres, leviers, NPCs) avec `depth=1` invisibles car occultés par les tuiles foreground `depth=2`.
+
+| Pass | Split (avant) | Split (après — correct) | Contenu |
+|------|--------------|--------------------------|---------|
+| Pass 2 | `max_depth=player.depth` (1) | `max_depth=player.depth-1` (0) | Uniquement les sprites ground-level (pickups) |
+| Pass 3 | `draw_foreground()` depth=2 | inchangé | Tuiles foreground (murs) |
+| Pass 3b | `min_depth=2` | `min_depth=player.depth` (1) | Joueur, NPCs, coffres, leviers, torches |
+
+```python
+# ❌ Pivot trop haut — coffres/NPCs (depth=1) dessinés AVANT les murs (depth=2)
+render_manager.draw_background(max_depth=player.depth)   # depth <= 1 → inclut coffres
+
+# ✅ Pivot à player.depth-1 — coffres/NPCs dessinés APRÈS les murs
+render_manager.draw_background(max_depth=player.depth - 1)  # depth <= 0 → sol uniquement
+render_manager.draw_foreground()                             # murs (depth=2)
+render_manager.draw_entities(min_depth=player.depth)         # coffres, NPCs, joueur (depth >= 1)
+```
+
+**Anti-pattern :** Dessiner les entités interactibles (coffres, NPCs) dans le background pass si elles partagent un depth égal ou inférieur aux murs qu'elles chevauchent. La "couche interactable" doit presque toujours être rendue après la "couche géométrie statique".
+
+**Evidence :** Coffres et leviers invisibles contre les murs dans `99-debug_room.tmj`. TC-04 dans `tests/engine/test_bug_depth2_sprite_invisible.py` corrigé. Vérification visuelle confirmée.
+
+---
+
+*Last updated: 2026-05-15 — L-REND-004 migré depuis `.agents/learnings/rendering_depth_regression.md` (fichier orphelin).*
 

@@ -324,29 +324,25 @@ assert isinstance(ui.bg, pygame.Surface)
 
 ---
 
-## Learning: Mock Dependency Drift
+### L-TEST-009 · 2026-05-03 · U · Minor Rework
+**Mock Dependency Drift — Ajouter une propriété à une classe core sans mettre à jour les mocks**
 
-**Date:** 2026-05-03
-**Spec:** Performance Optimization Plan
-**Outcome:** Minor Rework
-**Project:** Python Pygame Engine
+Ajouter `layer_depths` au `MapManager` et l'utiliser dans `RenderManager` a cassé les tests `RenderManager` : `game.map_manager` était un `MagicMock` et `layer_depths` retournait un mock object au lieu d'un dict, causant un `TypeError` à la comparaison.
 
-### What happened
-Added `layer_depths` caching to `MapManager` and used it in `RenderManager`. The implementation code was perfect, but the unit tests for `RenderManager` failed because `game.map_manager` was a `MagicMock` and `layer_depths` evaluated to a mock object instead of a dict, causing a `TypeError` on comparison.
+```python
+# ❌ Don't: add properties to Class A without updating Class B's mock setup
+game.map_manager = MagicMock()  # layer_depths → MagicMock → TypeError
 
-### Root cause
-Adding a new property to a core dependency (`MapManager`) without simultaneously updating the test mocks in dependent classes (`test_render_manager.py`).
+# ✅ Do: assign the new property explicitly on the mock
+game.map_manager = MagicMock()
+game.map_manager.layer_depths = {}  # type réel attendu par RenderManager
+```
 
-### Anti-pattern (what to avoid)
-❌ **Don't**: Add properties to a class without updating the `MagicMock` setups in the test files of other classes that depend on it.
+**Règle :** Quand une propriété est ajoutée à la Classe A, chercher dans la test suite tous les `MagicMock()` de la Classe A dans les tests des classes dépendantes et assigner la nouvelle propriété explicitement.
 
-✅ **Do Instead**: When adding a property to Class A, search the test suite for `MagicMock()` setups of Class A and explicitly assign the new property to the mock.
+**Evidence :** `test_render_manager_draw_background` — `TypeError: '<=' not supported between instances of 'MagicMock' and 'int'`.
 
-### Evidence
-- Test failure in `test_render_manager_draw_background`: `TypeError: \'<=\' not supported between instances of \'MagicMock\' and \'int\'`
-
-### Scope
-- [x] Universal (applies across projects)
+**Scope :** Universal
 
 ---
 

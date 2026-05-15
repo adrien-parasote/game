@@ -28,7 +28,7 @@ To maintain a 10-20x velocity multiplier, all contributions must pass through th
     - **Static Analysis**: Zero high-risk findings (`bandit`).
     - **Tests**: 100% pass rate in the full test suite.
     - **Coverage**: >= 90% line coverage overall; 100% on `inventory_system.py`, `npc.py`, `audio.py`, `map/manager.py`, `spritesheet.py`, `emote_sprite.py`, `teleport.py`.
-    - **Current status (2026-05-01):** 92% global, **436 tests passing** — domain-based layout: `../../tests/{engine,entities,map,ui,graphics}/`.
+    - **Current status (2026-05-15):** ~93% global, **768 tests passing** — domain-based layout: `../../tests/{engine,entities,map,ui,graphics}/`.
 
 ## 2. Technical Standards
 
@@ -67,16 +67,10 @@ To maintain a 10-20x velocity multiplier, all contributions must pass through th
 | 3 | Components interact seamlessly | Low | Integration tests |
 
 ## Test Case Specifications
-| ID | Description | Type |
-|---|---|---|
-| TC-001 | Validate initialization | Unit |
-| TC-002 | Validate state transition | Unit |
-| TC-003 | Validate edge case handling | Unit |
-| TC-004 | Validate error raising | Unit |
-| TC-005 | Validate boundary conditions | Unit |
-| IT-001 | Validate module integration | Integration |
-| IT-002 | Validate state persistence | Integration |
-| IT-003 | Validate system flow | Integration |
+
+> **Note :** Ce document de référence n'a pas de Test Cases propres. Les TCs concrets sont dans chaque spec d'implémentation avec préfixes domaine (ex: `CHEST-U-01`, `INT-I-03`). Voir [traceability.md](../traceability.md) pour la matrice de couverture complète.
+> 
+> Règle L-TRACE-001 : tout TC doit utiliser un préfixe de domaine unique — jamais de `TC-001` générique.
 
 ## Error Handling
 | Error | Response | Fallback | Logging |

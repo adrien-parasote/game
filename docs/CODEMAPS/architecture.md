@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-07 | Files scanned: 66 | Token estimate: ~600 -->
+<!-- Generated: 2026-05-07 | Last doc-update: 2026-05-15 | Files scanned: 66 | Token estimate: ~600 -->
 
 # Game Engine Architecture
 
@@ -86,6 +86,6 @@ scripts/
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
-- **Test Suite**: Pytest 9.0.3, **661 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (5 domains)
+- **Test Suite**: Pytest 9.0.3, **768 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (5 domains)
 - **Traceability**: `@pytest.mark.tc("TC-ID")` markers — voir `docs/traceability.md` (auto-généré). Registered in `pyproject.toml`.
 - **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), **Pre-render cache pattern** (static button/label surfaces pre-computed at init, zero allocation in draw loop), ChestUI mixin decomposition, GameEvent dataclass factory pattern, Context Injection (`SomeManager(game: Any)`) pour sous-managers Phase 1.5

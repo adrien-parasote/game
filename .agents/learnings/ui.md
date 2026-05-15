@@ -215,7 +215,7 @@ if event.key == Settings.INTERACT_KEY:
 
 ---
 
-### A-UI-002 · 2026-04-30 · U · Major Rework
+### A-UI-006 · 2026-04-30 · U · Major Rework
 **Missing event dispatch for new UI components in game loop**
 
 Adding `handle_event()` to a UI class does nothing unless the game loop explicitly calls it. The absence is silent — clicks register in pygame but reach no handler.
@@ -244,7 +244,7 @@ def _handle_events(self):
 
 ---
 
-### A-UI-003 · 2026-04-30 · U · Major Rework
+### A-UI-007 · 2026-04-30 · U · Major Rework
 **Page-based vs window-based offset clamping are different formulas**
 
 For **window-based** scrolling (slide 1 slot at a time), max_offset = `capacity - visible`. For **page-based** scrolling (jump a full page at a time), max_offset = `capacity - 1`.
@@ -308,7 +308,7 @@ for i, rect in enumerate(self._inv_slot_positions[:visible_count]):
 
 ---
 
-*Last optimized: 2026-04-30 — added A-UI-002, A-UI-003, A-UI-004, L-UI-006 from ChestUI paged inventory session.*
+*Last optimized: 2026-04-30 — added A-UI-006, A-UI-007, A-UI-004, L-UI-006 from ChestUI paged inventory session. (IDs A-UI-006/007 corrected 2026-05-15 — were erroneously assigned A-UI-002/003)*
 
 ---
 

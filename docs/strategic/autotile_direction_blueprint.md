@@ -1,9 +1,14 @@
 ---
-status: PROPOSED
+status: PROMOTED_TO_SPEC
 date: 2026-05-13
+promoted: 2026-05-15
 ---
 
 # Blueprint: Directional Movement and Autotiles
+
+> **Spec d'implémentation :** [`docs/specs/phase-1.6-directional-autotiles.md`](../specs/phase-1.6-directional-autotiles.md)  
+> **Plan d'exécution :** [`docs/specs/phase-1.6-plan.md`](../specs/phase-1.6-plan.md)  
+> Ce blueprint a été promu en spec le 2026-05-15. Les gaps ci-dessous ont été résolus.
 
 ## 7 Questions Strategy
 
@@ -35,8 +40,10 @@ date: 2026-05-13
 
 ## Gap Discovery
 
-| # | Gap | Impact if unresolved | Owner |
-|---|-----|---------------------|-------|
-| 1 | **Movement Constraint Semantics**: Does `direction=up` restrict *entering* the tile, *exiting* the tile, or both? (Assume exiting based on prompt, but need confirmation). | Movement behavior (one-way walls vs conveyor belts) will be implemented incorrectly. | User |
-| 2 | **Autotile Pipeline Support**: Do the current scripts fully support animated 4-frame RPG Maker XP water autotiles, or do we need to expand the script logic? | `01-water` will not convert correctly, delaying asset integration. | User |
-| 3 | **Backwards Compatibility**: Do we need to migrate existing maps from `collidable` to `walkable`, or handle `collidable` gracefully as a fallback? | Older maps will crash or have completely broken collision (defaulting to walkable). | User |
+> Tous les gaps ont été résolus avant la promotion en spec (2026-05-15).
+
+| # | Gap | Résolution |
+|---|-----|------------|
+| 1 | **Movement Constraint Semantics**: Does `direction=up` restrict *entering* or *exiting* the tile? | **Résolu :** Exiting. La contrainte s'applique sur la tuile de **départ** — voir spec phase-1.6, Q4. |
+| 2 | **Autotile Pipeline Support**: Support des 4-frame RPG Maker XP water autotiles? | **Résolu :** Oui, `rpgmaker_blob_autotile_to_tiled.py` supporte les frames animées — voir research `autotile_directional_movement_research.md`. |
+| 3 | **Backwards Compatibility**: Migration depuis `collidable` vers `walkable`? | **Résolu :** `collidable` est géré comme fallback (`walkable = not collidable` si `walkable` absent) — voir spec phase-1.6, section Assumptions. |

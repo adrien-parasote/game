@@ -1,11 +1,10 @@
-> **Design tokens** – see [design-tokens.md](./design-tokens.md)
-[assumption: "All implicit constants and defaults are documented here – pending detailed entries"] – risk: Low
+> **Design tokens** – see [design-tokens.md](../design-tokens.md)
 
 # Spec — Phase 1.5 : Refactoring `interaction.py` [Implementation]
 
 > Document Type: Implementation  
 > **Version :** 1.0 — 2026-05-07  
-> **Statut :** Draft  
+> **Statut :** Delivered ✅ (BUILD terminé, Phase 1.5 complète)  
 > **Covers :** F5 (`spatial_utils.py`), F6 (`collision_checker.py`)  
 > **Réf. Roadmap :** [`docs/strategic/MASTER_ROADMAP.md#phase-15`](../strategic/MASTER_ROADMAP.md#phase-15)  
 

@@ -339,3 +339,36 @@ def get_contents(self) -> list[dict]:
 
 *Last updated: 2026-05-14 — L-GE-017 deep copy LootTable, session hardening TDD.*
 
+---
+
+### L-ARCH-008 · 2026-05-07 · U · Major Rework
+**Pattern context injection `SomeManager(game: Any)` pour les refactorings "God Object"**
+
+Quand `game.py` dépasse 800 LOC, extraire des classes en les alimentant via `game: Any` (context injection) :
+
+```python
+# Pattern : EntityFactory, MapLoader, InputHandler, CollisionChecker
+from typing import Any
+
+class EntityFactory:
+    def __init__(self, game: Any) -> None:
+        self.game = game  # accès via self.game.sprites, self.game.audio_manager, etc.
+```
+
+**Règles :**
+1. Utiliser `game: Any` — pas `TYPE_CHECKING` (crée des cycles, détectés par sentrux DSM)
+2. Instancier dans `Game.__init__` : `self._entity_factory = EntityFactory(self)`
+3. `_load_map()`, `_handle_events()` deviennent des thin wrappers (3 LOC max) — signature inchangée pour les appelants externes
+4. L'ordre d'instanciation dans `__init__` est critique : `_entity_factory` avant `_map_loader` (qui l'utilise)
+
+**Résultats Phase 1.5 :**
+- `game.py` : 732 → 420 LOC
+- `interaction.py` : 474 → 400 LOC
+- Suite : 647 tests, tous verts
+
+**Evidence :** [`docs/specs/phase-1.5-game-refactoring.md`](../../docs/specs/phase-1.5-game-refactoring.md), ADR-004.
+
+**Scope :** Project-specific (pattern général Python)
+
+> *Migré depuis `.agents/learnings/methodology_and_docs.md` le 2026-05-15 (audit documentation — L-DOC-005 : un learning = un seul fichier domaine).*
+

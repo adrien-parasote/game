@@ -1,5 +1,4 @@
-> **Design tokens** – see [design-tokens.md](./design-tokens.md)
-[assumption: "All implicit constants and defaults are documented here – pending detailed entries"] – risk: Low
+> **Design tokens** – see [design-tokens.md](../design-tokens.md)
 
 # Master Specification Index [Strategic]
 
@@ -66,6 +65,8 @@ This document is the master index for all technical specifications in the RPG en
 | Phase 1.5 — Game Refactoring | [phase-1.5-game-refactoring.md](./phase-1.5-game-refactoring.md#L1) | Core extraction |
 | Phase 1.5 — Interaction Refactoring | [phase-1.5-interaction-refactoring.md](./phase-1.5-interaction-refactoring.md#L1) | Interaction overhaul |
 | Phase 1.5 — Chest Refactoring | [phase-1.5-chest-refactoring.md](./phase-1.5-chest-refactoring.md#L1) | Chest mixin extraction |
+| Phase 1.6 — Directional Autotiles | [phase-1.6-directional-autotiles.md](./phase-1.6-directional-autotiles.md#L1) | Walkability, autotile pipeline |
+| Phase 1.6 — Plan exécution | [phase-1.6-plan.md](./phase-1.6-plan.md#L1) | Plan implémentation (détaille phase-1.6-directional-autotiles.md) |
 
 ## 2. Global Registry
 
@@ -106,8 +107,10 @@ This document is the master index for all technical specifications in the RPG en
 
 | ADR | Decision | Rationale |
 |-----|----------|-----------|
-| ADR-001 | Mixin-based UI (ChestUI = 4 mixins) | Keeps file size <400 LOC per file |
-| ADR-002 | Propose/flush ambient audio model | Multiple entities can emit same sound; closest wins |
-| ADR-003 | Pre-cached light mask buckets (10 scales) | Avoids `rotozoom()` per frame in entity lighting |
-| ADR-004 | Duck-typing for `Game` instance (`Any`) | Loose coupling between subsystems; avoids circular imports |
-| ADR-005 | `__new__` singleton for AssetManager/I18nManager | Zero-config access from any module |
+| [ADR-001](../ADRs/ADR-001-gamestate-architecture.md) | Mixin-based UI (ChestUI = 4 mixins) | Keeps file size <400 LOC per file |
+| [ADR-002](../ADRs/ADR-002-save-format.md) | Propose/flush ambient audio model | Multiple entities can emit same sound; closest wins |
+| [ADR-003](../ADRs/ADR-003-key-mapping.md) | Pre-cached light mask buckets (10 scales) | Avoids `rotozoom()` per frame in entity lighting |
+| [ADR-004](../ADRs/ADR-004-refactoring-context-injection.md) | Duck-typing for `Game` instance (`Any`) | Loose coupling between subsystems; avoids circular imports |
+| [ADR-005](../ADRs/ADR-005-singleton-new.md) | `__new__` singleton for AssetManager/I18nManager | Zero-config access from any module |
+
+> **Note :** ADR-005 a été créé le 2026-05-15. Si le lien est rouge, le fichier ADR est en cours de création.
