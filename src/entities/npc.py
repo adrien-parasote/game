@@ -86,8 +86,9 @@ class NPC(BaseEntity):
         # Call base move logic (which handles collisions)
         super().start_move()
 
-        # If move was blocked by collision, revert state
+        # If move was blocked by collision, revert state and clear direction
         if not self.is_moving:
+            self.direction = pygame.math.Vector2(0, 0)
             self.state = "idle"
 
     def process_ai(self, dt: float):
