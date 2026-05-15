@@ -116,7 +116,9 @@
 | TC-028 | ❌ MISSING | — |
 | TC-029 | ❌ MISSING | — |
 | TC-030 | ❌ MISSING | — |
-| TC-031 | ❌ MISSING | — |
+| TC-031 | ✅ | `tests/engine/test_game_state_manager.py::test_load_game_time_restored` |
+| TC-031 | ✅ | `tests/engine/test_game_state_time.py::test_load_game_time_restored` |
+| TC-031b | ✅ | `tests/engine/test_game_state_time.py::test_new_game_time_reset` |
 | TC-032 | ❌ MISSING | — |
 | TC-036 | ❌ MISSING | — |
 | TC-033 | ❌ MISSING | — |
@@ -272,6 +274,8 @@
 | GF-029 | `tests/engine/test_game_state_manager.py::test_on_escape` |
 | GF-030 | `tests/engine/test_game_state_manager.py::test_on_escape` |
 | GF-031 | `tests/engine/test_game_state_manager.py::test_load_game_time_restored` |
+| GF-031 | `tests/engine/test_game_state_time.py::test_load_game_time_restored` |
+| GF-031b | `tests/engine/test_game_state_time.py::test_new_game_time_reset` |
 | GF-032 | `tests/engine/test_game_state_manager.py::test_handle_events_filtering` |
 | GF-033 | `tests/engine/test_game_state_manager.py::test_transition_to_title_resets_inventory_and_chest_ui` |
 | GF-034 | `tests/ui/test_title_screen.py::test_title_screen_light_scale_factors` |

@@ -389,6 +389,7 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | Écrire dans `saves/` sans `os.makedirs(exist_ok=True)` | Toujours créer le dossier d'abord | `saves/` peut ne pas exister au 1er lancement |
 | `open(path, "w")` sans `try/except` sur les saves | Wrapper dans `try/except IOError` | Disque plein, permissions, etc. |
 | Tester les coordonnées de boutons avec des valeurs hardcodées | Tester les `GameEvent` retournés | Les positions changent avec la résolution |
+| Dans les tests: sauvegarder dans `tmp_saves_dir` mais laisser `GameStateManager` lire le dossier `saves/` réel | Patcher `gsm._save_manager.load` avec `side_effect=sm.load` | Le GSM crée son propre `SaveManager("saves/")` — sans patch, il lit des saves de production (BUG-GSM-002). |
 
 ---
 
@@ -442,6 +443,7 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | TC-029 | `_on_escape()` depuis PLAYING | state = PLAYING | `state == GameState.PAUSED` |
 | TC-030 | `_on_escape()` depuis PAUSED | state = PAUSED | `state == GameState.PLAYING` |
 | TC-031 | `_transition_to_playing(1)` | `save_manager.load(1)` retourne None | `game._load_map()` appelé avec default_map |
+| TC-031b | `_transition_to_playing(1)` — time restore | Sauvegarde avec `total_minutes=480`, load via GSM patchant `_save_manager.load` | `time_system._total_minutes == 480.0 ± 1e-5` (BUG-GSM-002) |
 | TC-032 | ESC filtering dans `_handle_playing()` | Liste d'events avec K_ESCAPE | K_ESCAPE non posté dans la queue pygame |
 | TC-036 | `_transition_to_title()` — reset UI | Inventory UI ouverte avant retour menu | `inventory_ui._init_state()` ET `chest_ui.close()` appelés (BUG-GSM-001) |
 

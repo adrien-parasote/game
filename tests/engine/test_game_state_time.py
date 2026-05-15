@@ -8,6 +8,7 @@ Ensures that:
 import os
 import pytest
 import pygame
+from unittest.mock import patch
 
 from src.engine.game_state_manager import GameStateManager
 from src.engine.game import Game
@@ -56,10 +57,10 @@ def _make_mock_game(tmp_saves_dir):
     inv.slots[3] = Item(id="sword_iron", name="Épée", description="", quantity=1, stack_max=1)
     inv.equipment["LEFT_HAND"] = Item(id="sword_iron", name="Épée", description="", quantity=1, stack_max=1)
     game.player.inventory = inv
-    # TimeSystem stub
+    # TimeSystem stub: initial_hour=6, advance by 120 game-minutes
     ts = TimeSystem(initial_hour=6)
-    # advance time to a known value (e.g., 2 hours)
-    ts.update(120 * Settings.MINUTE_DURATION)  # 120 minutes
+    # update() takes real seconds: 120 game-minutes * MINUTE_DURATION sec/min = 12 real seconds
+    ts.update(120 * Settings.MINUTE_DURATION)
     game.time_system = ts
     # WorldState stub
     from src.engine.world_state import WorldState
@@ -76,7 +77,7 @@ def test_new_game_time_reset(manager, tmp_saves_dir):
     gsm = GameStateManager()
     # Start a new game (should load default map)
     gsm._transition_to_playing(slot_id=None)
-    # Advance time by 120 minutes (2 hours)
+    # Advance time by 120 game-minutes
     gsm._game.time_system.update(120 * Settings.MINUTE_DURATION)
     # Capture time after advancement
     advanced_minutes = gsm._game.time_system._total_minutes
@@ -87,7 +88,6 @@ def test_new_game_time_reset(manager, tmp_saves_dir):
     gsm._transition_to_playing(slot_id=None)
     # Time should be reset to the initial value defined by Settings
     reset_minutes = gsm._game.time_system._total_minutes
-    # The initial total minutes is based on Settings.INITIAL_SEASON and hour
     expected_initial = (
         Settings.INITIAL_SEASON * Settings.DAYS_PER_SEASON * 24 * 60
         + Settings.INITIAL_HOUR * 60
@@ -95,21 +95,22 @@ def test_new_game_time_reset(manager, tmp_saves_dir):
     assert reset_minutes == expected_initial
 
 def test_load_game_time_restored(manager, tmp_saves_dir):
-    # Save a mock game with a known time value
+    """Regression TC-GF-031: loaded game time must exactly match saved time."""
+    # Build and save a mock game with known time
     mock_game = _make_mock_game(tmp_saves_dir)
+    saved_minutes = mock_game.time_system._total_minutes
     manager.save(1, mock_game)
-    # Capture expected time from the mock (accounts for MAX_DT_CLAMP)
-    expected = mock_game.time_system._total_minutes
-    # Load the saved data via GameStateManager transition
-    gsm = GameStateManager()
-    # Redirect GSM's save manager to the tmp dir so load finds our save
-    gsm._save_manager = manager
-    # Transition to title first to ensure fresh state before loading
-    gsm._transition_to_title()
-    # Load slot 1
-    gsm._transition_to_playing(slot_id=1)
-    # Verify that the loaded game's time matches the saved time
-    loaded_minutes = gsm._game.time_system._total_minutes
-    # Use approx because of float arithmetic
-    assert loaded_minutes == pytest.approx(expected, rel=1e-5)
 
+    # Load via GameStateManager — patch its internal SaveManager to use tmp_saves_dir
+    gsm = GameStateManager()
+    gsm._transition_to_title()
+
+    with patch.object(gsm._save_manager, "load", side_effect=manager.load):
+        gsm._transition_to_playing(slot_id=1)
+
+    loaded_minutes = gsm._game.time_system._total_minutes
+
+    # loaded_minutes must exactly equal what was serialised
+    assert loaded_minutes == pytest.approx(saved_minutes, rel=1e-5), (
+        f"Time mismatch: loaded={loaded_minutes}, saved={saved_minutes}"
+    )

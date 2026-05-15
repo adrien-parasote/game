@@ -192,42 +192,53 @@ def test_on_escape(gsm):
     assert gsm.state == GameState.PLAYING
 
 
-@pytest.mark.tc("GF-031")
-def test_load_game_time_restored(tmp_path):
-    """Time system is correctly restored when loading a saved game."""
-    tmp_saves_dir = str(tmp_path / "saves")
-    manager = SaveManager(saves_dir=tmp_saves_dir)
+@pytest.fixture
+def tmp_saves_dir(tmp_path):
+    return str(tmp_path / "saves")
 
-    # Build a mock game with concrete JSON-serializable attributes
-    mock_game = MagicMock()
-    mock_game._current_map_name = "00-spawn.tmj"
-    mock_game.map_manager.name = "Test Map"  # prevent MagicMock from failing JSON
-    mock_game.player.name = "Hero"           # getattr fallback doesn't work on MagicMock
-    mock_game.player.pos = pygame.math.Vector2(320.0, 480.0)
-    mock_game.player.current_state = "down"
-    mock_game.player.level = 1
-    mock_game.player.hp = 100
-    mock_game.player.max_hp = 100
-    mock_game.player.gold = 0
-    inv = Inventory(capacity=20)
-    mock_game.player.inventory = inv
+
+def _make_gsm_mock_game(tmp_saves_dir):
+    """Minimal mock Game with real TimeSystem for save/load time tests."""
+    from src.engine.time_system import TimeSystem
+    from src.engine.inventory_system import Inventory
+    from src.engine.world_state import WorldState
+
+    game = MagicMock()
+    game._current_map_name = "00-spawn.tmj"
+    game.map_manager.name = "Mocked Map"
+    game.player.name = "Hero"
+    game.player.pos = pygame.math.Vector2(320.0, 480.0)
+    game.player.current_state = "down"
+    game.player.level = 1
+    game.player.hp = 100
+    game.player.max_hp = 100
+    game.player.gold = 0
+    game.player.inventory = Inventory(capacity=28)
     ts = TimeSystem(initial_hour=6)
-    ts.update(5.0)  # 5 real-seconds → 5/MINUTE_DURATION game-minutes (clamped to MAX_DT_CLAMP=10)
-    mock_game.time_system = ts
-    mock_game.world_state = WorldState()
-    manager.save(1, mock_game)
+    ts.update(120 * Settings.MINUTE_DURATION)  # advance 120 game-minutes
+    game.time_system = ts
+    game.world_state = WorldState()
+    return game
 
-    # Capture expected time from the mock (accounts for MAX_DT_CLAMP)
-    expected = ts._total_minutes
 
-    # GSM with its save_manager redirected to tmp dir
+@pytest.mark.tc("GF-031")
+def test_load_game_time_restored(tmp_saves_dir):
+    """Regression: loaded game time must exactly match saved time."""
+    sm = SaveManager(saves_dir=tmp_saves_dir)
+    mock_game = _make_gsm_mock_game(tmp_saves_dir)
+    saved_minutes = mock_game.time_system._total_minutes
+    sm.save(1, mock_game)
+
     gsm = GameStateManager()
-    gsm._save_manager = manager
     gsm._transition_to_title()
-    gsm._transition_to_playing(slot_id=1)
+
+    with patch.object(gsm._save_manager, "load", side_effect=sm.load):
+        gsm._transition_to_playing(slot_id=1)
 
     loaded_minutes = gsm._game.time_system._total_minutes
-    assert loaded_minutes == pytest.approx(expected, rel=1e-5)
+    assert loaded_minutes == pytest.approx(saved_minutes, rel=1e-5), (
+        f"Time mismatch: loaded={loaded_minutes}, saved={saved_minutes}"
+    )
 
 
 @pytest.mark.tc("GF-032")
@@ -334,9 +345,7 @@ def test_resolve_default_map(gsm):
         assert gsm._resolve_default_map() == "00-spawn.tmj"
 
 
-from unittest.mock import MagicMock, patch
-import pygame
-from src.engine.game_state_manager import GameStateManager
+# (imports already at top of file)
 
 @patch("pygame.mouse.set_visible")
 def test_cursor_is_hidden_during_gameplay(mock_mouse):
