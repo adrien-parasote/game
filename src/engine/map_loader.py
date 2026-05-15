@@ -76,6 +76,7 @@ class MapLoader:
         self.game.visible_sprites.set_world_size(world_width_px, world_height_px)
 
         self._save_npc_states()
+        self._save_interactive_states()
         self._clear_groups()
 
         self.game._current_map_name = map_name
@@ -104,6 +105,22 @@ class MapLoader:
                     npc._world_state_key,
                     {"pos": (npc.pos.x, npc.pos.y), "facing": npc.current_facing},
                 )
+
+    def _save_interactive_states(self) -> None:
+        """Persist interactive entity states (is_on, light_control) before unloading the map.
+
+        Called before _clear_groups() so that chest/lever/door states survive
+        map transitions via teleport.
+        """
+        for entity in self.game.interactives:
+            key = getattr(entity, "_world_state_key", None)
+            if key is None:
+                continue
+            state: dict = {"is_on": entity.is_on}
+            light_control = getattr(entity, "light_control", None)
+            if light_control is not None:
+                state["light_control"] = light_control
+            self.game.world_state.set(key, state)
 
     def _clear_groups(self) -> None:
         """Empty all entity groups and keep only the player in visible_sprites."""

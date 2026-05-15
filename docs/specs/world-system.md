@@ -51,12 +51,13 @@ Teleporters support dual-triggering mechanisms to balance convenience and contro
 - **Logic**: This allows a teleport to fire even if the move is physically blocked (e.g., trying to walk "into" a wall that is actually a portal).
 - **'Any' Exception**: Portals with `required_direction="any"` **ignore Intent triggers**. This is a critical safety feature to prevent players from getting stuck in an infinite loop (teleporting, then immediately teleporting back when trying to walk away).
 
-### 3.3 Map Loading Pipeline (`_load_map`)
-1. **Clean Slate**: Disposes of all current entities except the persistent `Player`.
-2. **Data Fetch**: `TmjParser` resolves the JSON/TMJ file and applies Project Resolver logic.
-3. **WorldState Query**: Before spawning, the engine checks for saved states using `{map}_{id}` keys.
-4. **Placement**: Player is moved to the target `00-spawn_point`.
-5. **Finalization**: SFX is played, and the screen fade is cleared.
+### 3.3 Map Loading Pipeline (`MapLoader.load()`)
+1. **State Snapshot**: Before clearing entities, `_save_npc_states()` writes NPC positions and `_save_interactive_states()` writes `is_on` (and `light_control` when present) for every interactive entity to WorldState. **This step must happen BEFORE `_clear_groups()`** — otherwise the snapshot overwrites nothing (groups are already empty).
+2. **Clean Slate**: Disposes of all current entities except the persistent `Player`.
+3. **Data Fetch**: `TmjParser` resolves the JSON/TMJ file and applies Project Resolver logic.
+4. **WorldState Query**: Before spawning, the engine checks for saved states using `{map}_{id}` keys.
+5. **Placement**: Player is moved to the target `00-spawn_point`.
+6. **Finalization**: SFX is played, and the screen fade is cleared.
 
 
 ## 5. WorldState Persistence
@@ -99,6 +100,7 @@ Pickups use the same `{map_basename}_{tiled_id}` key format.
 | Save WorldState per-frame | Save only in `interact()` or toggles | Avoiding excessive state writes preserves 60FPS target. |
 | Call `pickup.kill()` without a WorldState write | Always `world_state.set(key, {"collected": True})` before `kill()` | Without persistence, item respawns at full quantity on next map load. |
 | Omit `_world_state_key` from spawned `PickupItem` | Always attach `item._world_state_key = state_key` in `_spawn_pickup` | Key must be on the entity to be accessible at collection time in `InteractionManager`. |
+| Call `_clear_groups()` before saving interactive state | Always call `_save_interactive_states()` BEFORE `_clear_groups()` in `MapLoader.load()` | **BUG-001**: If groups are cleared first, the snapshot loop finds no entities — states are silently lost and chests/levers reset to Tiled defaults on every teleport. |
 
 ## 7. Test Case Specifications
 
@@ -126,6 +128,14 @@ Pickups use the same `{map_basename}_{tiled_id}` key format.
 | WS-010 | Partial pickup persists remaining quantity | `world_state.set(key, {"quantity": N})` written when inventory full |
 | WS-011 | Spawn skips collected item | No `PickupItem` spawned when `world_state` has `collected: True` |
 | WS-012 | Spawn restores partial quantity | `PickupItem` spawned with `quantity=N` from `world_state` |
+
+### 7.3 Regression Tests — Interactive State Persistence (`../../tests/engine/test_map_loader.py`)
+| Test ID | Scenario | Expected Result |
+|---------|----------|-----------------|
+| TC-ML-01 | `_save_interactive_states()` — entities with key | `world_state.set` called with `{"is_on": <value>}` for each entity |
+| TC-ML-02 | `_save_interactive_states()` — entity without key | `world_state.set` NOT called (silently skipped) |
+| TC-ML-03 | `_save_interactive_states()` — entity with `light_control` | `{"is_on": ..., "light_control": ...}` persisted |
+| TC-ML-04 | `_save_npc_states()` still works after adding interactive save | NPC pos/facing still written to `world_state` |
 
 ## 8. Error Handling Matrix
 

@@ -337,7 +337,7 @@ def get_contents(self) -> list[dict]:
 
 ---
 
-*Last updated: 2026-05-15 — A-EF-002 factory game propagation, A-GAME-003 direction clear on blocked move.*
+*Last updated: 2026-05-15 — A-EF-002 factory game propagation, A-GAME-003 direction clear on blocked move, A-ML-001 interactive state not saved before map unload.*
 
 ---
 
@@ -419,4 +419,31 @@ class EntityFactory:
 **Scope :** Project-specific (pattern général Python)
 
 > *Migré depuis `.agents/learnings/methodology_and_docs.md` le 2026-05-15 (audit documentation — L-DOC-005 : un learning = un seul fichier domaine).*
+
+---
+
+### A-ML-001 · 2026-05-15 · U · Major Rework (silent bug)
+**`MapLoader` ne sauvegardait que les NPCs avant le déchargement — états interactifs silencieusement perdus**
+
+`MapLoader.load()` appelait `_save_npc_states()` puis `_clear_groups()`. Les entités interactives (coffres, leviers, portes) n'avaient **aucune sauvegarde pre-unload** : leurs `is_on` étaient silencieusement écrasés par le clear, et elles re-spawnaient avec les valeurs par défaut Tiled à chaque téléport.
+
+```python
+# ❌ Seuls les NPCs étaient sauvegardés — les entités interactives perdaient leur état
+self._save_npc_states()
+self._clear_groups()   # interactives.empty() → états perdus
+
+# ✅ Snapshot complet AVANT le clear
+self._save_npc_states()
+self._save_interactive_states()  # ← NEW — coffres, leviers, portes
+self._clear_groups()
+```
+
+**Règle (MapLoader) :** Tout appel à `_clear_groups()` DOIT être précédé de la sauvegarde **complète** de tous les groupes qui ont un état persistable (`_world_state_key`). Pas seulement les NPCs.
+
+**Règle (spec) :** La section "Map Loading Pipeline" dans `world-system.md` DOIT lister explicitement chaque snapshot de groupe et son ordre relatif par rapport à `_clear_groups()`. L'absence dans la spec = anti-pattern non documenté = bug potentiel à la prochaine régénération.
+
+**Détection :** Chercher dans `MapLoader` toute méthode `_save_*` manquante pour un groupe qui expose `_world_state_key`. Vérifier que la spec liste tous les snapshots.
+
+**Evidence :** Coffres revenant à `is_on=False` après chaque téléport en debug room. `_save_interactive_states()` ajoutée. 4 tests TC-ML-01→04 RED → GREEN. 777/777 tests verts.
+
 
