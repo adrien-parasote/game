@@ -94,6 +94,7 @@ class TestLootTableLoad:
         assert "unknown_sword" in caplog.text
 
     @pytest.mark.tc("TC-LT-03")
+    @pytest.mark.tc("TC-LT-11")
     def test_load_missing_file(self, loot_table, property_types, caplog):
         """TC-LT-03: Missing file → error logged, empty data."""
         with caplog.at_level(logging.ERROR):

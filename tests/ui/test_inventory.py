@@ -261,6 +261,7 @@ def test_dialogue_manager_draw():
     assert dm.is_active
 
 
+@pytest.mark.tc("TC-DLG-01")
 def test_dialogue_pagination():
     """Verify that long text is paginated."""
     dm = DialogueManager()

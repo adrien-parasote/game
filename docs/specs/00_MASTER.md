@@ -61,9 +61,6 @@ This document is the master index for all technical specifications in the RPG en
 ### Refactoring Phases
 | Spec | File | Modules Covered |
 |------|------|-----------------|
-| Phase 1.5 — Game Refactoring | [phase-1.5-game-refactoring.md](./phase-1.5-game-refactoring.md#L1) | Core extraction |
-| Phase 1.5 — Interaction Refactoring | [phase-1.5-interaction-refactoring.md](./phase-1.5-interaction-refactoring.md#L1) | Interaction overhaul |
-| Phase 1.5 — Chest Refactoring | [phase-1.5-chest-refactoring.md](./phase-1.5-chest-refactoring.md#L1) | Chest mixin extraction |
 | Phase 1.6 — Autotiles directionnels | [map-parser-spec.md](./map-parser-spec.md#L1) | Walkability + direction_flags (intégré dans map-parser-spec) |
 
 ## 2. Global Registry
@@ -113,3 +110,4 @@ This document is the master index for all technical specifications in the RPG en
 | [ADR-006](../ADRs/ADR-006-perf-constants-pre-render-cache.md) | Pre-render cache pour les surfaces UI statiques | Zéro allocation `Surface` dans les hot paths de draw |
 
 > **Note :** ADR-005 a été créé le 2026-05-15. Si le lien est rouge, le fichier ADR est en cours de création.
+| Phase 1.7 — Urbanisation & Traçabilité | [quality-gates.md](./quality-gates.md) | Traçabilité 100% TC/IT, IDs normalisés (SAVE-/PERF-) |

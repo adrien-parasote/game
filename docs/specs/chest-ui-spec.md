@@ -491,6 +491,19 @@ Residual ambiguity: exact pixel fractions for the image zones (Assumption A-04).
 | CHEST-I-10 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
 | CHEST-I-11 | `test_interaction_cooldown` | `../../tests/engine/test_interaction.py:L33` |
 | CHEST-I-12 | `test_interaction_cooldown` | `../../tests/engine/test_interaction.py:L33` |
+| TC-CA-01 | `test_load_background_missing_asset_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-CA-02 | `test_load_inv_background_missing_asset_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-CA-03 | `test_load_slot_image_missing_asset_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-CA-04 | `test_load_cursor_invalid_path_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-CA-05 | `test_load_and_scale_arrow_invalid_path_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-CA-06 | `test_get_item_icon_cache_hit_no_second_io` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-CA-07 | `test_get_item_icon_absent_file_caches_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-CA-08 | `test_get_item_icon_appends_png_extension` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| IT-CA-01 | `test_load_background_accessible_via_chest_ui` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| IT-CA-02 | `test_chest_ui_instantiation_no_error` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| IT-CA-03 | `test_get_item_icon_accessible_via_mixin` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| IT-CA-04 | `test_asset_methods_not_defined_in_chest_ui_class` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| IT-CA-05 | `test_asset_methods_present_on_chest_draw_mixin` | `../../tests/ui/test_chest_draw_assets.py:L1` |
 
 
 ## Test Case Specifications
@@ -504,3 +517,6 @@ Residual ambiguity: exact pixel fractions for the image zones (Assumption A-04).
 | IT-001 | Validate module integration | Integration |
 | IT-002 | Validate state persistence | Integration |
 | IT-003 | Validate system flow | Integration |
+| TC-CA-01 | Asset Load Fallback | Missing background | Returns None |
+| TC-CA-08 | Icon Extension | Icon filename | Appends .png if missing |
+| IT-CA-01 | Asset Access | ChestUI instance | Mixin methods accessible |

@@ -290,42 +290,6 @@ class SaveMenuOverlay:
         text_cx = start_x + icon_w + gap + label_w // 2
         self._screen.blit(label_surf, label_surf.get_rect(center=(text_cx, cy)))
 
-    def _blit_halo_text(
-        self,
-        label: str,
-        cx: int,
-        cy: int,
-        font: pygame.font.Font,
-        text_color: tuple[int, int, int],
-        halo_color: tuple[int, int, int],
-    ) -> None:
-        """Draw text with a soft, spreading glowing halo effect."""
-        base_surf = font.render(label, True, halo_color)
-        w, h = base_surf.get_size()
-        pad = SAVE_HALO_BLUR_PADDING
-        padded = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
-        padded.blit(base_surf, (pad, pad))
-        try:
-            blurred = pygame.transform.gaussian_blur(padded, SAVE_HALO_BLUR_RADIUS)
-            rect = blurred.get_rect(center=(cx, cy))
-            self._screen.blit(blurred, rect)
-            self._screen.blit(blurred, rect)
-        except AttributeError:
-            pass
-
-        main_surf = font.render(label, True, text_color)
-        self._screen.blit(main_surf, main_surf.get_rect(center=(cx, cy)))
-
-    def _blit_engraved(self, label: str, cx: int, cy: int, font: pygame.font.Font) -> None:
-        """3-pass stone engraving: shadow | light | text."""
-        shadow = font.render(label, True, ENGRAVE_SHADOW)
-        light = font.render(label, True, ENGRAVE_LIGHT)
-        text = font.render(label, True, ENGRAVE_TEXT)
-        r = text.get_rect(center=(cx, cy))
-        self._screen.blit(shadow, r.move(-1, -1))
-        self._screen.blit(light, r.move(1, 1))
-        self._screen.blit(text, r)
-
     def is_back_clicked(self, event: pygame.Event) -> bool:
         """Return True if the Back button was clicked."""
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:

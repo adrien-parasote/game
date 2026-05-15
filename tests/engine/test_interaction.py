@@ -151,6 +151,7 @@ def test_handle_interaction_pickup():
 
 
 @pytest.mark.tc("IT-PICK-002")
+@pytest.mark.tc("IT-005")
 def test_handle_interaction_pickup_partial():
     """Partial pickup updates quantity and triggers frustration emote."""
     game = MagicMock()
@@ -182,6 +183,7 @@ def test_handle_interaction_pickup_partial():
 
 @pytest.mark.tc("CHEST-I-10")
 @pytest.mark.tc("IT-N-01")
+@pytest.mark.tc("IT-INT-01")
 def test_handle_interaction_npc():
     game = MagicMock()
     im = InteractionManager(game)
@@ -549,6 +551,7 @@ def test_interaction_check_teleporters():
 
 
 @pytest.mark.tc("INT-I-05")
+@pytest.mark.tc("IT-INT-02")
 def test_interaction_toggle_entity_by_id():
     game = MagicMock()
     im = InteractionManager(game)

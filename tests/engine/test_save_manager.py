@@ -89,7 +89,7 @@ def test_list_slots_empty(manager):
 # ── TC-001 : save_thumbnail ───────────────────────────────────────────────────
 
 
-@pytest.mark.tc("TC-001")
+@pytest.mark.tc("SAVE-U-001")
 def test_save_thumbnail_creates_file(manager, tmp_saves_dir, mock_surface):
     """TC-001 : save_thumbnail crée saves/slot_1_thumb.png"""
     manager.save_thumbnail(1, mock_surface)
@@ -100,7 +100,7 @@ def test_save_thumbnail_creates_file(manager, tmp_saves_dir, mock_surface):
 # ── TC-002 : load_thumbnail ───────────────────────────────────────────────────
 
 
-@pytest.mark.tc("TC-002")
+@pytest.mark.tc("SAVE-U-002")
 def test_load_thumbnail_returns_surface(manager, tmp_saves_dir, mock_surface):
     """TC-002 : load_thumbnail retourne une Surface si elle existe"""
     import pygame
@@ -113,7 +113,7 @@ def test_load_thumbnail_returns_surface(manager, tmp_saves_dir, mock_surface):
     assert surf.get_size() == (120, 120)
 
 
-@pytest.mark.tc("TC-002")
+@pytest.mark.tc("SAVE-U-002")
 def test_load_thumbnail_returns_none_if_missing(manager):
     """TC-002 : load_thumbnail retourne None si le fichier n'existe pas"""
     assert manager.load_thumbnail(1) is None
@@ -123,7 +123,7 @@ def test_load_thumbnail_returns_none_if_missing(manager):
 
 
 @pytest.mark.tc("GF-001")
-@pytest.mark.tc("IT-001")
+@pytest.mark.tc("SAVE-I-001")
 def test_save_creates_file(manager, tmp_saves_dir):
     """TC-002 : save(1, game) crée saves/slot_1.json avec version correcte."""
     game = _make_mock_game(tmp_saves_dir)
@@ -260,7 +260,7 @@ def test_slot_id_out_of_range_raises(manager):
 
 
 @pytest.mark.tc("GF-008")
-@pytest.mark.tc("TC-003")
+@pytest.mark.tc("SAVE-U-003")
 def test_list_slots_reflects_saved(manager, tmp_saves_dir):
     """TC-003 : list_slots() / _read_slot_info retourne SlotInfo avec level."""
     game = _make_mock_game(tmp_saves_dir)

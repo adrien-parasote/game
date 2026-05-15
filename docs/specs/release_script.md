@@ -4,9 +4,9 @@
 The `release.py` script simplifies the release process by automating the version update in `settings.json`, committing the change, tagging the commit, and pushing both to the remote repository.
 
 ## 2. Deep Links
-- **Configuration**: [settings.json](file:///Users/adrien.parasote/Documents/perso/game/settings.json)
-- **Reference Script**: [scripts/get_version.py](file:///Users/adrien.parasote/Documents/perso/game/scripts/get_version.py)
-- **Strategy**: [release_automation_strategy.md](file:///Users/adrien.parasote/Documents/perso/game/docs/research/release_automation_strategy.md)
+- **Configuration**: [settings.json](../../settings.json)
+- **Reference Script**: [scripts/get_version.py](../../scripts/get_version.py)
+- **Strategy**: [release_automation_strategy.md](../../docs/research/release_automation_strategy.md)
 
 ## 3. Interface
 ```bash

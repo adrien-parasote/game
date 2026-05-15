@@ -106,7 +106,7 @@ def test_pause_screen_handle_event_click_reprendre(pause_screen):
     assert result.type == GameEventType.RESUME
 
 
-@pytest.mark.tc("IT-002")
+@pytest.mark.tc("SAVE-I-002")
 def test_pause_screen_handle_event_click_sauvegarder(pause_screen):
     event = MagicMock()
     event.type = pygame.MOUSEBUTTONDOWN

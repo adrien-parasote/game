@@ -72,25 +72,25 @@ Le `SaveMenuOverlay` inclut un bouton "Retour" positionné en bas à gauche du p
 
 | Test ID | Component | Input | Expected Output | Edge Cases |
 |---------|-----------|-------|-----------------|------------|
-| TC-001 | SaveManager | `save_thumbnail(1, valid_surf)` | Crée `saves/slot_1_thumb.png` | Le dossier `saves` n'existe pas |
-| TC-002 | SaveManager | `load_thumbnail(1)` (existe) | Retourne la `pygame.Surface` | Fichier corrompu ou illisible |
-| TC-003 | SaveManager | `_read_slot_info` | Retourne `SlotInfo` complet avec `level` | `level` ou `player_name` manquant dans les vieux JSON |
-| TC-004 | SaveMenuOverlay | `update(dt)` avec souris sur Slot 2 | `_hovered_slot == 1` | Souris en dehors du menu |
-| TC-005 | SaveSlotUI | Rendu avec `info=None` | Affiche le texte "Emplacement X — Vide" | Slot sans thumbnail (fallback icon) |
-| TC-006 | SaveSlotUI | `draw(surface, rect, 1, None, None, False)` | Rendu sans crash | — |
-| TC-007 | SaveSlotUI | `draw(surface, rect, 1, info, thumb, True)` | Rendu avec thumbnail et halo | Thumbnail non carré |
-| TC-008 | SaveMenuOverlay | `__init__` + `refresh()` | `_slots_info[0].map_name` correct | SlotInfo None pour slots vides |
-| TC-009 | SaveMenuOverlay | `get_clicked_slot(event)` | Retourne l'index du slot cliqué | Clic hors des rects → None |
-| TC-010 | SaveMenuOverlay | `update(dt)` + `draw()` | `_hovered_slot` mis à jour, `screen.blit` appelé | — |
-| TC-011 | SaveMenuOverlay | `is_back_clicked(event)` | Retourne True si clic sur bouton retour | Clic hors bouton retour → False |
+| SAVE-U-001 | SaveManager | `save_thumbnail(1, valid_surf)` | Crée `saves/slot_1_thumb.png` | Le dossier `saves` n'existe pas |
+| SAVE-U-002 | SaveManager | `load_thumbnail(1)` (existe) | Retourne la `pygame.Surface` | Fichier corrompu ou illisible |
+| SAVE-U-003 | SaveManager | `_read_slot_info` | Retourne `SlotInfo` complet avec `level` | `level` ou `player_name` manquant dans les vieux JSON |
+| SAVE-U-004 | SaveMenuOverlay | `update(dt)` avec souris sur Slot 2 | `_hovered_slot == 1` | Souris en dehors du menu |
+| SAVE-U-005 | SaveSlotUI | Rendu avec `info=None` | Affiche le texte "Emplacement X — Vide" | Slot sans thumbnail (fallback icon) |
+| SAVE-U-006 | SaveSlotUI | `draw(surface, rect, 1, None, None, False)` | Rendu sans crash | — |
+| SAVE-U-007 | SaveSlotUI | `draw(surface, rect, 1, info, thumb, True)` | Rendu avec thumbnail et halo | Thumbnail non carré |
+| SAVE-U-008 | SaveMenuOverlay | `__init__` + `refresh()` | `_slots_info[0].map_name` correct | SlotInfo None pour slots vides |
+| SAVE-U-009 | SaveMenuOverlay | `get_clicked_slot(event)` | Retourne l'index du slot cliqué | Clic hors des rects → None |
+| SAVE-U-010 | SaveMenuOverlay | `update(dt)` + `draw()` | `_hovered_slot` mis à jour, `screen.blit` appelé | — |
+| SAVE-U-011 | SaveMenuOverlay | `is_back_clicked(event)` | Retourne True si clic sur bouton retour | Clic hors bouton retour → False |
 
 ### Integration Tests Required
 
 | Test ID | Flow | Setup | Verification | Teardown |
 |---------|------|-------|--------------|----------|
-| IT-001 | Cycle de Sauvegarde | Joueur dans la map `spawn` niveau 2 | Fichier JSON contient le `level=2` et `thumbnail` existe | Delete `saves/slot_X` |
-| IT-002 | Click sur Sauvegarder dans Pause | Ouvrir Pause, cliquer sur "Sauvegarder" | Le menu `SAVE_MENU` overlay s'affiche, les 3 slots sont visibles | Fermer Pause |
-| IT-003 | Hover sur Slot | `SaveMenuOverlay` ouvert | La méthode de rendu des halos additifs est appelée sur `TitleScreen` | Fermer |
+| SAVE-I-001 | Cycle de Sauvegarde | Joueur dans la map `spawn` niveau 2 | Fichier JSON contient le `level=2` et `thumbnail` existe | Delete `saves/slot_X` |
+| SAVE-I-002 | Click sur Sauvegarder dans Pause | Ouvrir Pause, cliquer sur "Sauvegarder" | Le menu `SAVE_MENU` overlay s'affiche, les 3 slots sont visibles | Fermer Pause |
+| SAVE-I-003 | Hover sur Slot | `SaveMenuOverlay` ouvert | La méthode de rendu des halos additifs est appelée sur `TitleScreen` | Fermer |
 
 ## 4. Error Handling Matrix
 
@@ -110,17 +110,17 @@ Le `SaveMenuOverlay` inclut un bouton "Retour" positionné en bas à gauche du p
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-001 | `test_save_thumbnail_creates_file` | `../../tests/engine/test_save_manager.py` |
-| TC-002 | `test_load_thumbnail_returns_surface` | `../../tests/engine/test_save_manager.py` |
-| TC-003 | `test_list_slots_reflects_saved` | `../../tests/engine/test_save_manager.py` |
-| TC-004 | `test_title_screen_update` | `../../tests/ui/test_title_screen.py` |
-| TC-005 | `test_title_screen_draw_load_menu` | `../../tests/ui/test_title_screen.py` |
-| TC-006 | `test_save_slot_ui_draw_empty` | `../../tests/ui/test_save_menu.py:L24` |
-| TC-007 | `test_save_slot_ui_draw_filled` | `../../tests/ui/test_save_menu.py:L35` |
-| TC-008 | `test_save_menu_overlay_init` | `../../tests/ui/test_save_menu.py:L48` |
-| TC-009 | `test_save_menu_overlay_get_clicked_slot` | `../../tests/ui/test_save_menu.py:L57` |
-| TC-010 | `test_save_menu_overlay_update_and_draw` | `../../tests/ui/test_save_menu.py:L73` |
-| TC-011 | `test_save_menu_overlay_back_clicked` | `../../tests/ui/test_save_menu.py` |
-| IT-001 | `test_save_creates_file` | `../../tests/engine/test_save_manager.py` |
-| IT-002 | `test_pause_screen_handle_event_click_sauvegarder` | `../../tests/ui/test_pause_screen.py` |
-| IT-003 | `test_title_screen_update` | `../../tests/ui/test_title_screen.py` |
+| SAVE-U-001 | `test_save_thumbnail_creates_file` | `../../tests/engine/test_save_manager.py` |
+| SAVE-U-002 | `test_load_thumbnail_returns_surface` | `../../tests/engine/test_save_manager.py` |
+| SAVE-U-003 | `test_list_slots_reflects_saved` | `../../tests/engine/test_save_manager.py` |
+| SAVE-U-004 | `test_title_screen_update` | `../../tests/ui/test_title_screen.py` |
+| SAVE-U-005 | `test_title_screen_draw_load_menu` | `../../tests/ui/test_title_screen.py` |
+| SAVE-U-006 | `test_save_slot_ui_draw_empty` | `../../tests/ui/test_save_menu.py:L24` |
+| SAVE-U-007 | `test_save_slot_ui_draw_filled` | `../../tests/ui/test_save_menu.py:L35` |
+| SAVE-U-008 | `test_save_menu_overlay_init` | `../../tests/ui/test_save_menu.py:L48` |
+| SAVE-U-009 | `test_save_menu_overlay_get_clicked_slot` | `../../tests/ui/test_save_menu.py:L57` |
+| SAVE-U-010 | `test_save_menu_overlay_update_and_draw` | `../../tests/ui/test_save_menu.py:L73` |
+| SAVE-U-011 | `test_save_menu_overlay_back_clicked` | `../../tests/ui/test_save_menu.py` |
+| SAVE-I-001 | `test_save_creates_file` | `../../tests/engine/test_save_manager.py` |
+| SAVE-I-002 | `test_pause_screen_handle_event_click_sauvegarder` | `../../tests/ui/test_pause_screen.py` |
+| SAVE-I-003 | `test_title_screen_update` | `../../tests/ui/test_title_screen.py` |

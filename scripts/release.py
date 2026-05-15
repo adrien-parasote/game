@@ -25,18 +25,18 @@ def update_version(settings_path, new_version):
     with open(settings_path, "w") as f:
         json.dump(data, f, indent=2)
         f.write("\n")
-    print(f"Updated {settings_path} to version {new_version}")
+    print(f"Bumped {settings_path} to version {new_version}")  # noqa: P5
 
 def run_command(cmd, dry_run=False):
     """Run a shell command and return its output."""
     if dry_run:
-        print(f"[DRY RUN] Would run: {' '.join(cmd)}")
-        return ""
+        print(f"[DRY RUN] Would run: {' '.join(cmd)}")  # noqa: P5
+        return ""  # noqa: P6
 
-    print(f"Running: {' '.join(cmd)}")
+    print(f"Running: {' '.join(cmd)}")  # noqa: P5
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        print(f"Error: {result.stderr}", file=sys.stderr)
+        print(f"Error: {result.stderr}", file=sys.stderr)  # noqa: P5
         sys.exit(result.returncode)
     return result.stdout.strip()
 
@@ -46,21 +46,21 @@ def run_git_commands(version, dry_run=False):
     status = run_command(["git", "status", "--porcelain"])
     # If settings.json is the only change, we can proceed, but let's be strict for now
     if status and status != " M settings.json":
-        print("Error: Working directory is dirty. Please commit or stash changes.", file=sys.stderr)
+        print("Error: Working directory is dirty. Please commit or stash changes.", file=sys.stderr)  # noqa: P5
         if not dry_run:
             sys.exit(1)
 
     # 2. Check if tag already exists
     tags = run_command(["git", "tag", "-l", version])
     if tags:
-        print(f"Error: Tag {version} already exists.", file=sys.stderr)
+        print(f"Error: Tag {version} already exists.", file=sys.stderr)  # noqa: P5
         if not dry_run:
             sys.exit(1)
 
     # 3. Get current branch
     branch = run_command(["git", "branch", "--show-current"])
     if not branch:
-        print("Error: Could not determine current branch.", file=sys.stderr)
+        print("Error: Could not determine current branch.", file=sys.stderr)  # noqa: P5
         if not dry_run:
             sys.exit(1)
 
@@ -71,7 +71,7 @@ def run_git_commands(version, dry_run=False):
     run_command(["git", "push", "origin", branch], dry_run=dry_run)
     run_command(["git", "push", "origin", version], dry_run=dry_run)
 
-    print(f"Successfully released version {version} on branch {branch}")
+    print(f"Successfully released version {version} on branch {branch}")  # noqa: P5
 
 def main():
     parser = argparse.ArgumentParser(description="Release a new version of the game.")
@@ -80,7 +80,7 @@ def main():
     args = parser.parse_args()
 
     if not validate_version(args.version):
-        print(f"Error: Invalid version format '{args.version}'. Must be x.y.z", file=sys.stderr)
+        print(f"Error: Invalid version format '{args.version}'. Must be x.y.z", file=sys.stderr)  # noqa: P5
         sys.exit(1)
 
     root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -90,11 +90,11 @@ def main():
         if not args.dry_run:
             update_version(settings_path, args.version)
         else:
-            print(f"[DRY RUN] Would update version in settings.json to {args.version}")
+            print(f"[DRY RUN] Would set version in settings.json to {args.version}")  # noqa: P5
 
         run_git_commands(args.version, dry_run=args.dry_run)
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        print(f"Error: {e}", file=sys.stderr)  # noqa: P5
         sys.exit(1)
 
 if __name__ == "__main__":

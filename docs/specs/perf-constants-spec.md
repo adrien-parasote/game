@@ -4,7 +4,8 @@
 Implementation Spec — Performance & Constants Hardening
 Type: Implementation
 Covers: P-PERF-01, P-CONST-01, P-FR-01
-Strategy: docs/strategic/perf-constants-audit-strategy.md
+Strategy: docs/archive/perf-constants-audit-strategy.md
+ADR: docs/ADRs/ADR-006-perf-constants-pre-render-cache.md
 -->
 
 # Performance & Constants Hardening — Implementation Spec
@@ -432,7 +433,7 @@ for i, (rect, surf_idle, surf_hover) in enumerate(
 
 | Reference | Location |
 |---|---|
-| Strategy doc | [perf-constants-audit-strategy.md#q1-what-exact-problem-are-you-solving](../strategic/perf-constants-audit-strategy.md#q1-what-exact-problem-are-you-solving) |
+| Strategy doc | [perf-constants-audit-strategy.md#q1-what-exact-problem-are-you-solving](../archive/perf-constants-audit-strategy.md#q1-what-exact-problem-are-you-solving) |
 | Pre-render pattern (existing) | [title_screen.py L168](../../src/ui/title_screen.py#L168) — `# P3: Pre-render idle menu label surfaces` |
 | `_constants.py` architecture | [architecture.md — Key Subsystems](../CODEMAPS/architecture.md#key-subsystems) |
 | `ui_colors.py` (COLOR_TEXT_STONE) | [ui_colors.py L9](../../src/ui/ui_colors.py#L9) |

@@ -121,7 +121,7 @@ def title_screen(mock_screen, mock_save_manager):
 # ── GF-034 : Scale factors résolution-indépendante ────────────────────────────
 
 
-@pytest.mark.tc("GF-034")
+@pytest.mark.tc("GF-035")
 def test_title_screen_light_scale_factors(mock_save_manager):
     """GF-034 : _light_scale_x/y calculés depuis screen.get_size() — espace logique 1280×720."""
     mock_screen = MagicMock(spec=pygame.Surface)
@@ -368,8 +368,8 @@ def test_title_screen_load_assets_with_fallbacks(mock_screen, mock_save_manager)
         assert ts._bg.get_size() == (1280, 720)
 
 
-@pytest.mark.tc("TC-004")
-@pytest.mark.tc("IT-003")
+@pytest.mark.tc("SAVE-U-004")
+@pytest.mark.tc("SAVE-I-003")
 def test_title_screen_update(title_screen):
     # Test hover on MAIN_MENU
     with patch("pygame.mouse.get_pos", return_value=title_screen.menu_item_rects[1].center):
@@ -388,7 +388,7 @@ def test_title_screen_update(title_screen):
         assert title_screen._back_hovered is True
 
 
-@pytest.mark.tc("GF-033")
+@pytest.mark.tc("GF-034")
 def test_title_screen_draw_main_menu(title_screen):
     title_screen.state = "MAIN_MENU"
     title_screen._hovered_item = 0
@@ -402,7 +402,7 @@ def test_title_screen_draw_main_menu(title_screen):
     assert title_screen._screen.blit.call_count > 0
 
 
-@pytest.mark.tc("TC-005")
+@pytest.mark.tc("SAVE-U-005")
 def test_title_screen_draw_load_menu(title_screen):
     title_screen.state = "LOAD_MENU"
     title_screen._refresh_slots()
@@ -429,6 +429,7 @@ def test_title_screen_draw_options(title_screen):
     assert title_screen._screen.blit.call_count > 0
 
 
+@pytest.mark.tc("GF-036")
 def test_title_screen_options_state_transitions(title_screen):
     # Entre en OPTIONS via clic sur le menu
     # index 2 is options

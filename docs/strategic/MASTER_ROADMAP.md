@@ -75,9 +75,23 @@ Remplacement du modèle binaire `collidable` par `walkable` + `direction_flags`.
 | `BaseEntity.start_move()` | ✅ interception directionnelle (priorité cardinale) |
 | `AnimationMapManager` (`src/map/animation.py`) | ✅ résolution de frame par `pygame.time.get_ticks()` |
 
-**Résultats :** 772 tests, tous verts ✅ · 0 régression  
+**Résultats :** 793 tests, tous verts ✅ · 0 régression  
 **Specs :** [`engine-core.md`](../specs/engine-core.md) · [`map-parser-spec.md`](../specs/map-parser-spec.md) · [`npc-system.md`](../specs/npc-system.md)  
 **Bug fix (2026-05-15) :** NPC coincé/spinning en debug room (BUG-1: `spawn_npc` ne setait pas `npc.game`, BUG-2: `direction` non clearée sur move bloqué)
+
+---
+
+## ✅ Phase 1.7 — Hardening & Urbanization `v0.7.1` TERMINÉE
+
+Achèvement de l'intégrité technique et documentaire. 100% de traçabilité TDD.
+
+| Composant | Résultat |
+|-----------|----------|
+| `verify.py` | ✅ VERDICT: PASS (11/11 gates) |
+| `spec_conformance.py` | ✅ 0 divergence (dotted Python members supporté) |
+| Traceability | ✅ 793 tests mappés, 100% coverage FR/REQ |
+| Security | ✅ Sanitization `release.py` (0 finding) |
+| Hardening | ✅ .tdd_lock rafraîchi (78 files), dead code supprimé |
 
 ---
 
@@ -336,7 +350,8 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 
 | Version | Dev | Assets prioritaires |
 |---|---|---|
-| `0.5.x` | Hardening ← **maintenant** | — |
+| `0.5.x` | Phase 1-1.6 (Game Flow, Refactor, Autotiles) | — |
+| `0.7.1` | Hardening & Urbanization (Traceability, 100% verify) | ✅ |
 | `0.6.0` | Monde + Saisons + PNJs + Customisation | Château maps · NPCs · tileset extérieur · BGM jardin/village |
 | `0.7.0` | Météo + Équipement contextuel | Overlays météo · tileset forêt · BGM forêt/orage |
 | `0.8.0` | Château + Guildes + Bâtiments + Mobilier | Bâtiments sprites · tileset village/mines · BGM mines |

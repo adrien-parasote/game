@@ -267,12 +267,13 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 ### Unit Tests
 | ID | Topic | Input | Expected Output | Edge Cases |
 |----|-------|-------|-----------------|------------|
-| TC-001 | Y-Sorting | [Y=100, Y=50] | Rendered [50, 100] | Same Y |
-| TC-002 | Culling | Viewport at (0,0) | Only first tiles rendered | Out of bounds |
-| TC-003 | Cam Clamp | Player at (0,0) | Offset = 0 | Map < screen |
-| TC-004 | Visual Anchor | Image 32x48 | Topleft extends 16px up | Image smaller than tile |
-| TC-005 | HUD | Dialogue started | Text paginated and typing initiated | Missing title |
-| TC-006 | HUD | Skip request | `displayed_text` immediately filled | Skipped at end |
+| CORE-R-01 | Y-Sorting | [Y=100, Y=50] | Rendered [50, 100] | Same Y |
+| CORE-R-02 | Culling | Viewport at (0,0) | Only first tiles rendered | Out of bounds |
+| CORE-R-03 | Custom Draw Pipeline | Game loop cycle | Pipeline from Pass 0 to 11 runs without exceptions | Out of range depth |
+| CORE-H-01 | Dialogue Update | Dialogue started | `update()` logic advances typewriter | Dialogue closed mid-frame |
+| CORE-H-02 | Dialogue Input | SKIP request | Typing immediately fills | Multi-page skip |
+| CORE-C-01 | Game Init | Default config | Objects initialized (Player, I18n) | Missing settings.json |
+| WS-006 | Entity Spawning | Tiled object list | Entities created via Factory | Duplicate IDs |
 
 ### Integration Tests
 | Test ID | Flow | Setup | Verification |
@@ -302,29 +303,70 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 | **State Snapshot Restoration** | Objects must restore their state *before* the first frame of map display. | Prevents "flicker" where an object starts in default state before snapping to saved state. |
 
 ## 6. Deep Links
-- **Map Recursive Parsing**: [tmj_parser.py - _process_layers](src/map/tmj_parser.py#L55)
-- **World State Logic**: [world_state.py](src/engine/world_state.py#L1)
-- **Interaction Logic**: [interaction.py](src/engine/interaction.py#L1)
-- **Dialogue Paging Logic**: [dialogue.py - _paginate](src/ui/dialogue.py#L74)
-- **Teleport Logic**: [game.py - _check_teleporters](src/engine/game.py#L517)
-- **SFX Overlap Guard**: [audio.py - play_sfx](src/engine/audio.py#L111)
-- **Hitbox Debugging**: [groups.py - custom_draw](src/entities/groups.py#L65)
+- **Map Recursive Parsing**: [tmj_parser.py - _process_layers](../../src/map/tmj_parser.py#L55)
+- **World State Logic**: [world_state.py](../../src/engine/world_state.py#L1)
+- **Interaction Logic**: [interaction.py](../../src/engine/interaction.py#L1)
+- **Dialogue Paging Logic**: [dialogue.py - _paginate](../../src/ui/dialogue.py#L74)
+- **Teleport Logic**: [game.py - _check_teleporters](../../src/engine/game.py#L517)
+- **SFX Overlap Guard**: [audio.py - play_sfx](../../src/engine/audio.py#L111)
+- **Hitbox Debugging**: [groups.py - custom_draw](../../src/entities/groups.py#L65)
 - **Loot Table Integration**: [loot-table-spec.md](./loot-table-spec.md#L1)
 
 ### Linked Test Functions
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-001 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
-| TC-002 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
-| TC-003 | `test_game_initialization` | `../../tests/engine/test_game.py:L10` |
-| TC-004 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
-| TC-005 | `test_update_dialogue_branch` | `../../tests/engine/test_game.py:L339` |
-| TC-006 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py:L403` |
-| IT-001 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py:L162` |
-| IT-002 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
-| IT-003 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L496` |
-| IT-004 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L162` |
+| CORE-R-01 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L202` |
+| CORE-R-02 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L202` |
+| CORE-R-03 | `test_game_draw_loop` | `../../tests/engine/test_game.py:L202` |
+| CORE-H-01 | `test_update_dialogue_branch` | `../../tests/engine/test_game.py:L389` |
+| CORE-H-02 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py:L455` |
+| CORE-C-01 | `test_game_initialization` | `../../tests/engine/test_game.py:L15` |
+| WS-006 | `test_game_entity_spawning` | `../../tests/engine/test_game.py:L111` |
+| TC-CC-01 | `test_tile_not_walkable_returns_true` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-CC-02 | `test_obstacle_blocks` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-CC-03 | `test_obstacle_skipped_if_requester` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-CC-04 | `test_npc_blocks` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-CC-05 | `test_npc_skipped_if_requester` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-CC-06 | `test_player_blocks_npc` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-CC-07 | `test_nothing_blocks_returns_false` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-EF-01 | `test_get_property_root_level` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-EF-02 | `test_get_property_nested` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-EF-03 | `test_get_property_absent_returns_default` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-EF-04 | `test_spawn_interactive_adds_to_groups` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-EF-05 | `test_spawn_teleport_adds_to_teleports_group` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-EF-06 | `test_spawn_npc_adds_to_visible_and_npcs` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-EF-07 | `test_spawn_pickup_adds_to_pickups` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-EF-08 | `test_spawn_entities_unknown_type_no_exception` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-EF-09 | `test_spawn_interactive_restores_world_state` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-SU-01 | `test_get_facing_vector_down` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-SU-02 | `test_get_facing_vector_up` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-SU-03 | `test_get_facing_vector_left` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-SU-04 | `test_get_facing_vector_right` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-SU-05 | `test_get_facing_vector_unknown_state` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-SU-06 | `test_facing_toward_right_horizontal` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-SU-07 | `test_facing_toward_left_horizontal` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-SU-08 | `test_facing_toward_down_vertical` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-SU-09 | `test_facing_toward_wrong_direction` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-SU-10 | `test_verify_orientation_standard_up_down` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-SU-11 | `test_verify_orientation_not_aligned` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-SU-12 | `test_verify_orientation_door_relaxation` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-SU-13 | `test_verify_orientation_default_false` | `../../tests/engine/test_spatial_utils.py:L1` |
+| TC-GS-01 | `test_load_property_types_valid_file` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-GS-02 | `test_load_property_types_missing_file` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-GS-03 | `test_load_property_types_invalid_json` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-GS-04 | `test_setup_logging_adds_handlers` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-GS-05 | `test_load_property_types_missing_key` | `../../tests/engine/test_phase15_game.py:L1` |
+| SPRITE-U-01 | `test_torch_frame_height_computed_from_sheet` | `../../tests/entities/test_sprite_frame_loading.py:L1` |
+| SPRITE-U-02 | `test_frame_count_matches_real_sheet_layout` | `../../tests/entities/test_sprite_frame_loading.py:L1` |
+| SPRITE-U-03 | `test_chest_sheet_correct_frame_height` | `../../tests/entities/test_sprite_frame_loading.py:L1` |
+| SPRITE-U-04 | `test_get_frame_returns_sheet_height_not_tiled_height` | `../../tests/entities/test_sprite_frame_loading.py:L1` |
+| CORE-T-01 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L1` |
+| CORE-W-01 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py:L1` |
+| CORE-T-02 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py:L1` |
+| IT-CC-01 | `test_is_walkable_delegates_to_collision_checker` | `../../tests/engine/test_collision_checker.py:L1` |
+| IT-EF-01 | `test_game_has_entity_factory_map_loader_input_handler` | `../../tests/engine/test_phase15_game.py:L1` |
+| IT-GS-01 | `test_game_setup_logging_importable` | `../../tests/engine/test_phase15_game.py:L1` |
 
 
 ## Assumptions

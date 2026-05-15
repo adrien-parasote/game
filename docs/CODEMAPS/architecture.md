@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-15 | Last doc-update: 2026-05-15 | Files scanned: 70 | Token estimate: ~610 -->
+<!-- Generated: 2026-05-15 | Last doc-update: 2026-05-15 | Files scanned: 75 | Token estimate: ~650 -->
 
 # Game Engine Architecture
 
@@ -18,7 +18,7 @@
 | **GameStateManager** | `src/engine/game_state_manager.py` | 309 | Top-level state machine (TITLE/PLAYING/PAUSED), global event routing, save/load orchestration |
 | **Game** | `src/engine/game.py` | 420 | Gameplay orchestrator, thin wrappers delegating to sub-managers. Phase 1.5 refactored. |
 | **RenderManager** | `src/engine/render_manager.py` | 109 | Scene rendering pipeline (background, foreground, HUD, overlays) |
-| **InteractionManager** | `src/engine/interaction.py` | 400 | Proximity/facing checks for objects, NPCs, pickups, chests, emotes, teleporters. Typed `game: Any` (no hard coupling to `Game`) |
+| **InteractionManager** | `src/engine/interaction.py` | 400 | Proximity/facing checks for objects, NPCs, pickups, chests, emotes, teleporters. Uses `distance_squared_to` for performance. |
 | **EntityFactory** | `src/engine/entity_factory.py` | 265 | Entity spawning (interactive, teleport, NPC, pickup). Extracted from `Game` in Phase 1.5. Pattern: `EntityFactory(game: Any)`. |
 | **MapLoader** | `src/engine/map_loader.py` | ~115 | Map loading pipeline (parse, BGM, cleanup, spawn, player position). Extracted from `Game` in Phase 1.5. |
 | **InputHandler** | `src/engine/input_handler.py` | ~55 | Pygame event dispatch (interact, inventory, dialogue). Extracted from `Game` in Phase 1.5. |
@@ -79,6 +79,7 @@ scripts/
   release.py            Repository release automation (SemVer, tag, push)
   get_version.py        Version bumping utility
   profile_game.py       Performance profiling
+  verify.py             Integrity pipeline (lint, typecheck, tests)
 .agents/
   learnings/        6 domain learning files (methodology_and_docs, game_engine, audio_engine, ui, testing, map_rendering)
   rules/            coding-standards.md + language rules
@@ -88,6 +89,6 @@ scripts/
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
-- **Test Suite**: Pytest 9.0.3, **783 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui,scripts}/` (6 domains)
-- **Traceability**: `@pytest.mark.tc("TC-ID")` markers — voir `docs/traceability.md` (auto-généré). Registered in `pyproject.toml`.
+- **Test Suite**: Pytest 9.0.3, **794 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui,scripts}/` (6 domains)
+- **Traceability**: `@pytest.mark.tc("DOMAIN-TYPE-ID")` markers — voir `docs/traceability.md` (auto-généré). Registered in `pyproject.toml`.
 - **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), **Pre-render cache pattern** (static button/label surfaces pre-computed at init, zero allocation in draw loop), ChestUI mixin decomposition, GameEvent dataclass factory pattern, Context Injection (`SomeManager(game: Any)`) pour sous-managers Phase 1.5

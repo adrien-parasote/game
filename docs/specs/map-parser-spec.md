@@ -312,6 +312,19 @@ class LayoutStrategy(ABC):
 - **Unit tests**: [test_parser.py L1](../../tests/map/test_parser.py#L1)
 - **Integration tests**: [test_map.py L1](../../tests/map/test_map.py#L1)
 
+### Linked Test Functions
+
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-ML-01 | `test_save_interactive_states_persists_is_on` | `../../tests/engine/test_map_loader.py:L1` |
+| TC-ML-02 | `test_save_interactive_states_skips_entities_without_key` | `../../tests/engine/test_map_loader.py:L1` |
+| TC-ML-03 | `test_save_interactive_states_includes_light_control` | `../../tests/engine/test_map_loader.py:L1` |
+| TC-ML-04 | `test_save_npc_states_not_broken_by_interactive_save` | `../../tests/engine/test_map_loader.py:L1` |
+| TC-ML-05 | `test_load_fallback_spawn_player_root` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-ML-06 | `test_load_fallback_center_logs_warning` | `../../tests/engine/test_phase15_game.py:L1` |
+| TC-ML-07 | `test_load_empties_groups_before_spawn` | `../../tests/engine/test_phase15_game.py:L1` |
+| IT-ML-01 | `test_game_load_map_delegates_to_map_loader` | `../../tests/engine/test_phase15_game.py:L1` |
+
 
 ## Assumptions
 | # | Assumption | Risk | Validation |

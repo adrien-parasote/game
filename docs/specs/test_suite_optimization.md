@@ -59,7 +59,7 @@ tests/
 | `npc.py`, `audio.py`, `teleport.py`, `emote.py` | 100% | No UI rendering dependencies |
 | `map/manager.py`, `spritesheet.py` | 100% | No asset I/O in hot paths |
 | `ui/inventory.py`, `ui/chest.py` | ~85-90% | Render-only branches require display; see A-TEST-006 |
-| `engine/game.py` | ~90% | Complex init; some branches need real map files (see [engine-core.md](../engine-core.md#L1)) |
+| `engine/game.py` | ~90% | Complex init; some branches need real map files (see [engine-core.md](./engine-core.md#L1)) |
 | **Global floor** | **92%** | Validated on 2026-05-01 |
 
 ## Anti-Patterns (DO NOT)
@@ -94,10 +94,10 @@ When adding a new domain:
 ## Test Case Specifications
 | ID | Description | Type |
 |---|---|---|
-| TC-001 | Validate initialization | Unit |
-| TC-002 | Validate state transition | Unit |
-| TC-003 | Validate edge case handling | Unit |
-| TC-004 | Validate error raising | Unit |
+| TEST-U-001 | Validate initialization | Unit |
+| TEST-U-002 | Validate state transition | Unit |
+| TEST-U-003 | Validate edge case handling | Unit |
+| TEST-U-004 | Validate error raising | Unit |
 | TC-005 | Validate boundary conditions | Unit |
 | IT-001 | Validate module integration | Integration |
 | IT-002 | Validate state persistence | Integration |

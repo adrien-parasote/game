@@ -34,7 +34,7 @@ def mock_save_manager():
     return sm
 
 
-@pytest.mark.tc("TC-006")
+@pytest.mark.tc("SAVE-U-006")
 def test_save_slot_ui_draw_empty():
     pygame.font.init()
     mock_am = Mock()
@@ -47,7 +47,7 @@ def test_save_slot_ui_draw_empty():
     # The draw logic completes without crashing
 
 
-@pytest.mark.tc("TC-007")
+@pytest.mark.tc("SAVE-U-007")
 def test_save_slot_ui_draw_filled():
     pygame.font.init()
     mock_am = Mock()
@@ -70,7 +70,7 @@ def test_save_slot_ui_draw_filled():
     # The draw logic completes without crashing
 
 
-@pytest.mark.tc("TC-008")
+@pytest.mark.tc("SAVE-U-008")
 def test_save_menu_overlay_init(mock_screen, mock_save_manager):
     pygame.font.init()
     with patch("src.ui.save_menu.SaveSlotUI") as mock_slot_ui:
@@ -82,7 +82,7 @@ def test_save_menu_overlay_init(mock_screen, mock_save_manager):
         assert menu._slots_info[0].map_name == "Test Map"
 
 
-@pytest.mark.tc("TC-009")
+@pytest.mark.tc("SAVE-U-009")
 def test_save_menu_overlay_get_clicked_slot(mock_screen, mock_save_manager):
     pygame.font.init()
     with patch("src.ui.save_menu.SaveSlotUI") as mock_slot_ui:
@@ -100,7 +100,7 @@ def test_save_menu_overlay_get_clicked_slot(mock_screen, mock_save_manager):
         assert menu.get_clicked_slot(event) == 0
 
 
-@pytest.mark.tc("TC-010")
+@pytest.mark.tc("SAVE-U-010")
 def test_save_menu_overlay_update_and_draw(mock_screen, mock_save_manager):
     pygame.font.init()
     with patch("src.ui.save_menu.SaveSlotUI") as mock_slot_ui:
@@ -117,7 +117,7 @@ def test_save_menu_overlay_update_and_draw(mock_screen, mock_save_manager):
         mock_screen.blit.assert_called()
 
 
-@pytest.mark.tc("TC-011")
+@pytest.mark.tc("SAVE-U-011")
 def test_save_menu_overlay_back_clicked(mock_screen, mock_save_manager):
     pygame.font.init()
     with patch("src.ui.save_menu.SaveSlotUI") as mock_slot_ui:

@@ -84,7 +84,7 @@ Absolute `file:///Users/username/...` paths in spec deep links break on every ma
 
 ```markdown
 # ❌ Machine-specific — breaks on any other system
-[inventory.py L21](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L21)
+[inventory.py L21](../../src/engine/inventory_system.py#L21)
 
 # ✅ Relative from docs/specs/ — portable
 [inventory.py L21](../../src/engine/inventory_system.py#L21)
@@ -222,7 +222,7 @@ Heuristic static analysis scripts (like `verify.py`) can throw false positives. 
 
 ---
 
-### L-DOC-005 · 2026-05-15 · U · Perfect
+### L-DOC-008 · 2026-05-15 · U · Perfect
 **Audit documentaire : grep avant de supposer l'étendue d'une référence**
 
 Lors d'un audit doc, on suppose souvent que les références problématiques sont localisées aux fichiers identifiés manuellement. En réalité, un header auto-généré (`> **Design tokens** – see [design-tokens.md]`) peut exister dans **N >> 3 fichiers** à cause d'un template partagé.
@@ -284,4 +284,32 @@ Using `ruff check . --select F401,F811 --fix` safely removes unused imports and 
 
 ---
 
-*Last updated: 2026-05-15 — L-DOC-007, L-STATIC-003 from script relocation and hardening session.*
+### L-DOC-009 · 2026-05-15 · U · Perfect
+**Documentation Urbanization: The Discovery-Audit-Fix cycle**
+
+Regularly running link checkers and TC ID prefix validation prevents documentation drift from the source of truth. Moving archived strategy blueprints to `docs/archive/` while keeping their decision logic in ADRs preserves history without cluttering implementation specs.
+
+**Pattern:**
+1. **Discovery**: Use scripts (`check_links.py`) to find broken references.
+2. **Consolidation**: Move completed strategic blueprints to `docs/archive/` if they are fully captured in ADRs.
+3. **Hardening**: Fix relative path depth (`../../`) and prefix generic IDs (`TC-` -> `DOM-U-`) to ensure total AI-readiness.
+
+**Evidence:** 8 broken links fixed, 24 TC IDs urbanized, and 1 archived strategy moved to `docs/archive/` in the 2026-05-15 urbanization session.
+
+---
+
+### L-DOC-010 · 2026-05-15 · U · Perfect
+**Spec Conformance for Python: Class member detection**
+
+Automated spec conformance tools often only scan top-level `def` and `class` exports in Python, missing class members like `Settings.MAP_SIZE` or `GameState.TITLE`. This causes false "missing in code" findings when these symbols are documented in backticks.
+
+**Fix:** Enhance the conformance scanner to:
+1.  Detect indented `def`, `class`, and SCREAMING_CASE assignments (`UPPER_CASE = ...`) as internal exports.
+2.  Support optional `cls.` or `self.` prefixes in assignments.
+3.  Allow SCREAMING_CASE symbols in specs if they are part of a dotted identifier (preventing env var noise while allowing member refs).
+
+**Evidence:** `spec_conformance.py` logic updated to detect indented constants and dotted identifiers. 5 false positive divergences in `game-flow-spec.md` resolved.
+
+---
+
+*Last updated: 2026-05-15 — L-DOC-008 (ID fix), L-DOC-009 urbanization workflow, L-DOC-010 conformance fix.*

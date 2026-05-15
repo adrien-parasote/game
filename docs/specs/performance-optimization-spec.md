@@ -100,16 +100,16 @@ for key, default in zip(_MENU_ITEM_KEYS, _MENU_ITEM_DEFAULTS):
 
 | TC ID | Composant | Input | Expected Output | Edge Case |
 |-------|-----------|-------|-----------------|-----------|
-| TC-001 | `_load_assets` | init TitleScreen | `_light_halos_scaled` contient 10 surfaces par rayon | rayon = 0 : skip |
-| TC-002 | `_load_assets` | init TitleScreen | `_mushroom_halos_scaled` contient 10 surfaces par (color, radius) | MUSHROOM_LIGHTS vide : dict vide |
-| TC-003 | `draw()` | `_light_time=0.0` | `rotozoom` n'est PAS appelé | flicker min/max boundaries |
-| TC-004 | `draw()` | `_hovered_item=None` (no change) | `gaussian_blur` n'est PAS appelé | premier frame : forcer le rendu |
-| TC-005 | `draw()` | `_hovered_item=0` → `_hovered_item=1` | cache invalidé pour item 0 et 1 | `_hovered_item=None` → no cache needed |
-| TC-006 | `_render_halo_text` | label str, font, colors | Retourne Surface avec alpha > 0 | label vide : Surface valide |
-| TC-007 | `_render_engraved` | label str | Retourne Surface avec dimensions > 0 | label vide : Surface valide |
-| TC-008 | `_menu_label_surfaces` | post-init | len == len(_MENU_ITEM_KEYS) | items ajoutés dynamiquement |
-| TC-009 | bucket calc | `display_scale=_HALO_SCALE_MIN` | bucket_idx = 0 | scale < min → clamp à 0 |
-| TC-010 | bucket calc | `display_scale=_HALO_SCALE_MAX` | bucket_idx = N_BUCKETS-1 | scale > max → clamp à N-1 |
+| PERF-U-001 | `_load_assets` | init TitleScreen | `_light_halos_scaled` contient 10 surfaces par rayon | rayon = 0 : skip |
+| PERF-U-002 | `_load_assets` | init TitleScreen | `_mushroom_halos_scaled` contient 10 surfaces par (color, radius) | MUSHROOM_LIGHTS vide : dict vide |
+| PERF-U-003 | `draw()` | `_light_time=0.0` | `rotozoom` n'est PAS appelé | flicker min/max boundaries |
+| PERF-U-004 | `draw()` | `_hovered_item=None` (no change) | `gaussian_blur` n'est PAS appelé | premier frame : forcer le rendu |
+| PERF-U-005 | `draw()` | `_hovered_item=0` → `_hovered_item=1` | cache invalidé pour item 0 et 1 | `_hovered_item=None` → no cache needed |
+| PERF-U-006 | `_render_halo_text` | label str, font, colors | Retourne Surface avec alpha > 0 | label vide : Surface valide |
+| PERF-U-007 | `_render_engraved` | label str | Retourne Surface avec dimensions > 0 | label vide : Surface valide |
+| PERF-U-008 | `_menu_label_surfaces` | post-init | len == len(_MENU_ITEM_KEYS) | items ajoutés dynamiquement |
+| PERF-U-009 | bucket calc | `display_scale=_HALO_SCALE_MIN` | bucket_idx = 0 | scale < min → clamp à 0 |
+| PERF-U-010 | bucket calc | `display_scale=_HALO_SCALE_MAX` | bucket_idx = N_BUCKETS-1 | scale > max → clamp à N-1 |
 
 ### Error Handling Matrix (P1-P3)
 
@@ -151,12 +151,12 @@ Override de `add()` et `remove()` pour auto-invalider le cache.
 
 | TC ID | Composant | Input | Expected Output | Edge Case |
 |-------|-----------|-------|-----------------|-----------|
-| TC-011 | `get_sorted_sprites()` | groupe vide | `[]` | aucun sprite |
-| TC-012 | cache | 2e appel sans ajout/retrait | même objet liste (pas recalculé) | single sprite |
-| TC-013 | dirty flag | `add(sprite)` | `_cache_dirty = True` | ajout multiple |
-| TC-014 | dirty flag | `remove(sprite)` | `_cache_dirty = True` | retrait absent |
-| TC-015 | `mark_dirty()` | appel manuel | `_cache_dirty = True` | appel répété |
-| TC-016 | Y-sort | sprites à Y différents | retournés triés par `rect.bottom` croissant | Y identiques |
+| PERF-U-011 | `get_sorted_sprites()` | groupe vide | `[]` | aucun sprite |
+| PERF-U-012 | cache | 2e appel sans ajout/retrait | même objet liste (pas recalculé) | single sprite |
+| PERF-U-013 | dirty flag | `add(sprite)` | `_cache_dirty = True` | ajout multiple |
+| PERF-U-014 | dirty flag | `remove(sprite)` | `_cache_dirty = True` | retrait absent |
+| PERF-U-015 | `mark_dirty()` | appel manuel | `_cache_dirty = True` | appel répété |
+| PERF-U-016 | Y-sort | sprites à Y différents | retournés triés par `rect.bottom` croissant | Y identiques |
 
 ### Error Handling Matrix (P4)
 
@@ -213,11 +213,11 @@ active_torches = self.game._active_torches
 
 | TC ID | Composant | Input | Expected Output | Edge Case |
 |-------|-----------|-------|-----------------|-----------|
-| TC-017 | `draw_foreground` | player hors foreground | `colliderect` appelé avec tuple | tile au bord écran |
-| TC-018 | `_active_torches` | `interact()` torch on | entity ajoutée au set | halo_size=0 → non ajoutée |
-| TC-019 | `_active_torches` | `interact()` torch off | entity retirée du set | entité absente → no error |
-| TC-020 | `draw_scene()` | nuit active | `create_overlay` reçoit `_active_torches` | set vide → overlay sans trous |
-| TC-021 | `restore_state` | is_on=True, halo_size>0 | entity dans `_active_torches` | game=None → no-op |
+| PERF-U-017 | `draw_foreground` | player hors foreground | `colliderect` appelé avec tuple | tile au bord écran |
+| PERF-U-018 | `_active_torches` | `interact()` torch on | entity ajoutée au set | halo_size=0 → non ajoutée |
+| PERF-U-019 | `_active_torches` | `interact()` torch off | entity retirée du set | entité absente → no error |
+| PERF-U-020 | `draw_scene()` | nuit active | `create_overlay` reçoit `_active_torches` | set vide → overlay sans trous |
+| PERF-U-021 | `restore_state` | is_on=True, halo_size>0 | entity dans `_active_torches` | game=None → no-op |
 
 ### Error Handling Matrix (P5-P6)
 
@@ -266,12 +266,12 @@ L'utilisation de `distance_to()` pour le `vol_mult` de l'audio RESTE inchangée 
 
 | TC ID | Composant | Input | Expected Output | Edge Case |
 |-------|-----------|-------|-----------------|-----------|
-| TC-022 | `_check_interactive_emote` | obj à dist=47 | emote déclenchée | dist exactement = 48 : pas d'emote |
-| TC-023 | `_check_interactive_emote` | obj à dist=49 | pas d'emote | dist=0 : is_on_top |
-| TC-024 | `_check_pickup_emote` | pickup à dist=15 | emote déclenchée (is_on_top) | dist=16 : alignement requis |
-| TC-025 | `_check_object_interactions` | obj à dist=44 | interaction valide | dist=45 : invalide |
-| TC-026 | `_check_chest_auto_close` | dist=46 | chest fermé | dist=44 : chest reste ouvert |
-| TC-027 | audio vol_mult | dist calculé | vol_mult entre 0.4 et 1.0 | utilise `distance_to()` (pas sq) |
+| PERF-U-022 | `_check_interactive_emote` | obj à dist=47 | emote déclenchée | dist exactement = 48 : pas d'emote |
+| PERF-U-023 | `_check_interactive_emote` | obj à dist=49 | pas d'emote | dist=0 : is_on_top |
+| PERF-U-024 | `_check_pickup_emote` | pickup à dist=15 | emote déclenchée (is_on_top) | dist=16 : alignement requis |
+| PERF-U-025 | `_check_object_interactions` | obj à dist=44 | interaction valide | dist=45 : invalide |
+| PERF-U-026 | `_check_chest_auto_close` | dist=46 | chest fermé | dist=44 : chest reste ouvert |
+| PERF-U-027 | audio vol_mult | dist calculé | vol_mult entre 0.4 et 1.0 | utilise `distance_to()` (pas sq) |
 
 ### Error Handling Matrix (P7)
 
@@ -340,11 +340,11 @@ La ligne `surface.blit(pygame.Surface(...))` blit une surface noire sans blend f
 
 | TC ID | Composant | Input | Expected Output | Edge Case |
 |-------|-----------|-------|-----------------|-----------|
-| TC-028 | `draw_effects` | entité lumineuse, dark_factor=1.0 | `set_alpha(255)` appelé, pas de `.copy()` | m=255 : set_alpha(255) |
-| TC-029 | `draw_effects` | `global_darkness=0` | `set_alpha` avec m=`int(0.15*255)` | dark_factor=0 → 0.15 floor |
-| TC-030 | `update(dt, ticks_ms=500)` | entité lumineuse non-animée | `ticks_ms` utilisé pour `time_sec` | ticks_ms=None → get_ticks() |
-| TC-031 | `draw_effects` | particules actives | `pygame.Surface` non alloué dans la boucle particules | 0 particules : pas d'appel |
-| TC-032 | `update(dt)` | appel sans ticks_ms | fallback sur `get_ticks()` | signature rétrocompatible |
+| PERF-U-028 | `draw_effects` | entité lumineuse, dark_factor=1.0 | `set_alpha(255)` appelé, pas de `.copy()` | m=255 : set_alpha(255) |
+| PERF-U-029 | `draw_effects` | `global_darkness=0` | `set_alpha` avec m=`int(0.15*255)` | dark_factor=0 → 0.15 floor |
+| PERF-U-030 | `update(dt, ticks_ms=500)` | entité lumineuse non-animée | `ticks_ms` utilisé pour `time_sec` | ticks_ms=None → get_ticks() |
+| PERF-U-031 | `draw_effects` | particules actives | `pygame.Surface` non alloué dans la boucle particules | 0 particules : pas d'appel |
+| PERF-U-032 | `update(dt)` | appel sans ticks_ms | fallback sur `get_ticks()` | signature rétrocompatible |
 
 ### Error Handling Matrix (P9, P13, P14)
 
@@ -396,10 +396,10 @@ self._viewport_world_rect.height = self.screen.get_height() + 256
 
 | TC ID | Composant | Input | Expected Output | Edge Case |
 |-------|-----------|-------|-----------------|-----------|
-| TC-033 | `Game.__init__` | init sans map | `_viewport_world_rect` existe | `skip_map_load=True` |
-| TC-034 | `_update()` | offset=(−100, −50) | `_viewport_world_rect.x == -28, y == 22` (−(−100)−128=−28) | offset=0 |
-| TC-035 | méthodes supprimées | `hasattr(game, '_draw_background')` | `False` | N/A |
-| TC-036 | `_active_torches` | init | `set()` vide | N/A |
+| PERF-U-033 | `Game.__init__` | init sans map | `_viewport_world_rect` existe | `skip_map_load=True` |
+| PERF-U-034 | `_update()` | offset=(−100, −50) | `_viewport_world_rect.x == -28, y == 22` (−(−100)−128=−28) | offset=0 |
+| PERF-U-035 | méthodes supprimées | `hasattr(game, '_draw_background')` | `False` | N/A |
+| PERF-U-036 | `_active_torches` | init | `set()` vide | N/A |
 
 ### Error Handling Matrix (P11-P12)
 
@@ -413,9 +413,9 @@ self._viewport_world_rect.height = self.screen.get_height() + 256
 
 | TC ID | Flow | Setup | Verification | Teardown |
 |-------|------|-------|--------------|----------|
-| IT-001 | TitleScreen draw loop sans transform | Init TitleScreen avec BACKGROUND_LIGHTS non vide, appeler `draw()` 10× | `pygame.transform.rotozoom` n'est PAS appelé ; `_light_halos_scaled` utilisé | N/A |
-| IT-002 | Interaction distance_squared vs distance_to sémantique équivalente | Configurer obj à dist=45 et dist=47 du player, appeler `_check_interactive_emote()` | dist=47 → emote ; dist=45+ → no emote (même comportement qu'avant migration) | N/A |
-| IT-003 | Game._update NPC visibility avec rect pré-alloué | Créer Game mocké avec 3 NPCs à positions variées, appeler `_update()` 2× avec offset différent | `_viewport_world_rect` réutilisé (même objet id), `npc.is_visible` mis à jour correctement | N/A |
+| PERF-I-001 | TitleScreen draw loop sans transform | Init TitleScreen avec BACKGROUND_LIGHTS non vide, appeler `draw()` 10× | `pygame.transform.rotozoom` n'est PAS appelé ; `_light_halos_scaled` utilisé | N/A |
+| PERF-I-002 | Interaction distance_squared vs distance_to sémantique équivalente | Configurer obj à dist=45 et dist=47 du player, appeler `_check_interactive_emote()` | dist=47 → emote ; dist=45+ → no emote (même comportement qu'avant migration) | N/A |
+| PERF-I-003 | Game._update NPC visibility avec rect pré-alloué | Créer Game mocké avec 3 NPCs à positions variées, appeler `_update()` 2× avec offset différent | `_viewport_world_rect` réutilisé (même objet id), `npc.is_visible` mis à jour correctement | N/A |
 
 ---
 
@@ -454,7 +454,30 @@ self._viewport_world_rect.height = self.screen.get_height() + 256
 |---------|---------------|------|
 | TC-DLG-01 | `test_dialogue_pagination` | `../../tests/ui/test_inventory.py:L238` |
 | IT-INT-01 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
-| IT-INT-02 | `test_interaction_toggle_entity_by_id` | `../../tests/engine/test_interaction.py:L513` |
+### Linked Test Functions
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| PERF-I-001 | `test_title_screen_draw_no_rotozoom` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-I-002 | `test_interaction_distance_sq_semantics_match_original` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-I-003 | `test_game_viewport_rect_reused_across_updates` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-011 | `test_get_sorted_sprites_empty` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-012 | `test_get_sorted_sprites_cache_reused` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-013 | `test_cache_dirty_on_add` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-014 | `test_cache_dirty_on_remove` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-015 | `test_mark_dirty_sets_flag` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-016 | `test_sorted_sprites_y_order` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-022 | `test_interactive_emote_at_dist_47` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-023 | `test_interactive_emote_at_dist_49_not_triggered` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-024 | `test_pickup_emote_at_dist_15` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-025 | `test_object_interaction_at_dist_44` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-026 | `test_chest_auto_close_at_dist_46` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-027 | `test_audio_vol_mult_uses_real_distance` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-033 | `test_game_has_viewport_world_rect` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-035 | `test_game_no_dead_draw_methods` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-036 | `test_game_active_torches_initialized` | `../../tests/engine/test_performance_optimizations.py` |
+| TC-DLG-01 | `test_dialogue_pagination` | `../../tests/ui/test_inventory.py` |
+| IT-INT-01 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py` |
+| IT-INT-02 | `test_interaction_toggle_entity_by_id` | `../../tests/engine/test_interaction.py` |
 
 ---
 

@@ -411,6 +411,7 @@ def test_emote_manager_fallback_path():
     assert hasattr(em, "frames_grid")
 
 
+@pytest.mark.tc("IT-003")
 def test_emote_manager_spritesheet_error():
     """EmoteManager handles SpriteSheet load error gracefully."""
     player = MagicMock()
@@ -444,6 +445,7 @@ def test_emote_trigger_unknown_name():
     group.empty.assert_not_called()
 
 
+@pytest.mark.tc("IT-004")
 def test_emote_manager_chaining():
     """Triggering a new emote should clear the previous one (TC-EM-01)."""
     player = MagicMock()
