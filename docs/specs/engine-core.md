@@ -219,7 +219,7 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 
 **Logic**:
 - If `ChestUI` is open, pressing the `INVENTORY_KEY` is ignored.
-- If `InventoryUI` is open, interaction with chests is ignored as `interaction_manager.handle_interactions()` is bypassed in the main loop.
+- If `InventoryUI` is open, pressing the `INTERACT_KEY` is ignored — `InputHandler._handle_interact_key()` returns early before reaching `interaction_manager.handle_interactions()`. (Bug fix: previously only dialogue/npc_bubble were checked — BUG-IH-01, TC-IH-06)
 
 ### S. Dynamic Effect Specifications
 

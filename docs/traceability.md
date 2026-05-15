@@ -328,6 +328,7 @@
 | TC-IH-03 | `tests/engine/test_phase15_game.py::test_interact_key_with_dialogue_advances_dialogue` |
 | TC-IH-04 | `tests/engine/test_phase15_game.py::test_inventory_key_chest_closed_toggles_inventory` |
 | TC-IH-05 | `tests/engine/test_phase15_game.py::test_inventory_key_chest_open_does_not_toggle` |
+| TC-IH-06 | `tests/engine/test_phase15_game.py::test_interact_key_inventory_open_does_not_trigger_interaction` |
 | TC-ML-01 | `tests/engine/test_phase15_game.py::test_load_absent_map_logs_error_no_exception` |
 | TC-ML-02 | `tests/engine/test_phase15_game.py::test_load_normalizes_tjm_to_tmj` |
 | TC-ML-03 | `tests/engine/test_phase15_game.py::test_load_resolves_spawn_by_target_id` |
