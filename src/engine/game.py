@@ -108,6 +108,8 @@ class Game:
         )
         # P6: Set of active torch entities (halos > 0, is_on=True) — updated on state change only
         self._active_torches: set = set()
+        # Initialized to None; set by MapLoader.load() on each map transition
+        self.anim_map_manager = None
 
     def _init_systems(self):
         # Time System
@@ -406,7 +408,7 @@ class Game:
         # Resolve ambient sound volumes from this frame's proposals.
         self.audio_manager.flush_ambient()
 
-        if getattr(self, "anim_map_manager", None):
+        if self.anim_map_manager:
             self.anim_map_manager.update(int(dt * 1000))
 
     def _draw(self):

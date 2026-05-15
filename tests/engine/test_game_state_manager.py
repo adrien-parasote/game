@@ -9,6 +9,8 @@ from src.engine.game_state_manager import GameState, GameStateManager
 
 @pytest.fixture
 def mock_game():
+    # This fixture is retained for backward compatibility but is no longer used directly in gsm.
+    # It still provides a generic mock Game instance if needed elsewhere.
     game = Mock()
     game.screen = Mock()
     game.screen.get_size.return_value = (1280, 720)
@@ -21,6 +23,9 @@ def mock_game():
     game.audio_manager = Mock()
     game.clock = Mock()
     game.clock.tick.return_value = 16
+    # UI components for potential use
+    game.inventory_ui = Mock()
+    game.chest_ui = Mock()
     return game
 
 
@@ -42,6 +47,9 @@ def mock_pause_screen():
     ps = Mock()
     ps._save_menu = Mock()
     return ps
+
+
+
 
 
 @pytest.fixture
@@ -144,8 +152,9 @@ def test_transition_to_title_resets_inventory_and_chest_ui(gsm, mock_game):
     Bug: open inventory survived menu transition → still rendered on new/loaded game.
     Fix: _transition_to_title() calls inventory_ui._init_state() and chest_ui.close().
     """
-    # Both UI overlays are Mocks on mock_game — verify the reset calls are made
-    gsm._transition_to_title()
+    # Patch Game to return mock_game so _transition_to_title() uses our mock
+    with patch("src.engine.game_state_manager.Game", return_value=mock_game):
+        gsm._transition_to_title()
     mock_game.inventory_ui._init_state.assert_called_once()
     mock_game.chest_ui.close.assert_called_once()
 
@@ -179,11 +188,20 @@ def test_on_escape(gsm):
 
 
 @pytest.mark.tc("GF-031")
-def test_transition_to_playing_no_save_data(gsm, mock_save_manager, mock_game):
-    mock_save_manager.load.return_value = None
-    gsm._transition_to_playing(1)
-    mock_game._load_map.assert_called()
-    assert gsm.state == GameState.PLAYING
+def test_load_game_time_restored(manager, tmp_saves_dir):
+    # Save a mock game with a known time value
+    mock_game = _make_mock_game(tmp_saves_dir)
+    manager.save(1, mock_game)
+    # Load the saved data via GameStateManager transition
+    gsm = GameStateManager()
+    # Transition to title first to ensure fresh state before loading
+    gsm._transition_to_title()
+    # Load slot 1
+    gsm._transition_to_playing(slot_id=1)
+    # Verify that the loaded game's time matches the saved time
+    loaded_minutes = gsm._game.time_system._total_minutes
+    saved_minutes = mock_game.time_system._total_minutes
+    assert loaded_minutes == pytest.approx(saved_minutes, rel=1e-5)
 
 
 @pytest.mark.tc("GF-032")

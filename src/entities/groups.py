@@ -1,5 +1,7 @@
 import pygame
 
+from src.config import Settings
+
 
 class CameraGroup(pygame.sprite.Group):
     """
@@ -91,8 +93,6 @@ class CameraGroup(pygame.sprite.Group):
 
         # Get screen rect for culling
         screen_rect = surface.get_rect()
-
-        from src.config import Settings
 
         # Sort and draw
         for sprite in self.get_sorted_sprites():

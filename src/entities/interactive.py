@@ -345,11 +345,11 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
             ticks_ms: Current pygame.time.get_ticks() value (passed from Game to avoid
                       one get_ticks() call per entity). Falls back to get_ticks() if None.
         """
-        if getattr(self, "day_night_driven", False):
+        if self.day_night_driven:
             self._update_col_index()
 
         # Ambient Audio
-        has_ambient = bool(self.sfx_ambient) if hasattr(self, "sfx_ambient") else False
+        has_ambient = bool(self.sfx_ambient)
         if has_ambient and self.game and self.game.audio_manager:
             if self.is_on and self.game.player:
                 dist = self.pos.distance_to(self.game.player.pos)

@@ -8,6 +8,10 @@ class RenderManager:
 
     def __init__(self, game):
         self.game = game
+        # Pre-allocated reusable Rects — updated in-place to avoid per-frame allocations
+        self._tile_rect = pygame.Rect(0, 0, game.tile_size, game.tile_size)
+        self._screen_rect = pygame.Rect(0, 0, game.screen.get_width(), game.screen.get_height())
+        self._viewport_world = pygame.Rect(0, 0, 0, 0)
 
     def draw_background(self):
         """Draw tiles with depth <= player depth (behind player) using pre-rendered surfaces."""
@@ -25,12 +29,12 @@ class RenderManager:
                     self.game.screen.blit(surface, (cam_offset.x, cam_offset.y))
 
         # Draw animated background tiles
-        if getattr(self.game, "anim_map_manager", None):
-            screen_rect = self.game.screen.get_rect()
-            viewport_world = pygame.Rect(
-                -cam_offset.x, -cam_offset.y, screen_rect.width, screen_rect.height
+        if self.game.anim_map_manager:
+            self._viewport_world.update(
+                -cam_offset.x, -cam_offset.y,
+                self._screen_rect.width, self._screen_rect.height,
             )
-            for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(viewport_world):
+            for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(self._viewport_world):
                 if depth <= self.game.player.depth:
                     img = self.game.anim_map_manager.get_current_frame_image(tile_id)
                     if img:
@@ -42,9 +46,11 @@ class RenderManager:
         Applies occluded image when the player overlaps a depth > player.depth tile.
         """
         cam_offset = self.game.visible_sprites.offset
-        screen_rect = self.game.screen.get_rect()
-        viewport_world = pygame.Rect(
-            -cam_offset.x, -cam_offset.y, screen_rect.width, screen_rect.height
+        self._viewport_world.update(
+            -cam_offset.x,
+            -cam_offset.y,
+            self._screen_rect.width,
+            self._screen_rect.height,
         )
 
         # Get visual rect anchored bottomright to physical rect for correct occlusion testing
@@ -52,17 +58,15 @@ class RenderManager:
         player_screen_rect = visual_rect.move(cam_offset.x, cam_offset.y)
 
         for px, py, tile_id, depth in self.game.map_manager.get_visible_chunks(
-            viewport_world, min_depth=self.game.player.depth
+            self._viewport_world, min_depth=self.game.player.depth
         ):
             tile_data = self.game.map_manager.tiles[tile_id]
             screen_pos = (px + cam_offset.x, py + cam_offset.y)
 
             if depth > self.game.player.depth:
                 # Depth-occlusion: use semi-transparent image when player overlaps
-                dest_rect = pygame.Rect(
-                    screen_pos[0], screen_pos[1], self.game.tile_size, self.game.tile_size
-                )
-                if player_screen_rect.colliderect(dest_rect):
+                self._tile_rect.topleft = screen_pos
+                if player_screen_rect.colliderect(self._tile_rect):
                     self.game.screen.blit(tile_data.occluded_image or tile_data.image, screen_pos)
                 else:
                     self.game.screen.blit(tile_data.image, screen_pos)
@@ -71,8 +75,8 @@ class RenderManager:
                 self.game.screen.blit(tile_data.image, screen_pos)
 
         # Draw animated foreground tiles
-        if getattr(self.game, "anim_map_manager", None):
-            for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(viewport_world):
+        if self.game.anim_map_manager:
+            for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(self._viewport_world):
                 if depth > self.game.player.depth:
                     img = self.game.anim_map_manager.get_current_frame_image(tile_id)
                     if img:

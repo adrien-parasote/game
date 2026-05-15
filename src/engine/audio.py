@@ -152,7 +152,8 @@ class AudioManager:
         # Stop the sound if it's currently playing to prevent flanging / overlapping from rapid triggers
         # By default, a Sound play() uses an available channel, but we can stop it first.
         sound.stop()
-        sound.set_volume(Settings.SFX_VOLUME * volume_multiplier)
+        if volume_multiplier != 1.0:
+            sound.set_volume(Settings.SFX_VOLUME * volume_multiplier)
         sound.play()
         logging.debug(f"Playing SFX: {name} (source: {source_id})")
         return True
@@ -190,6 +191,15 @@ class AudioManager:
         """
         if not self.is_enabled:
             self._ambient_proposals.clear()
+            return
+
+        # Early exit: no proposals this frame — stop all active ambients
+        if not self._ambient_proposals:
+            if self.ambient_sounds:
+                for channel in self.ambient_channels.values():
+                    channel.stop()
+                self.ambient_channels.clear()
+                self.ambient_sounds.clear()
             return
 
         active_names = set(self._ambient_proposals.keys())
