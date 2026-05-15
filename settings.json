@@ -1,10 +1,10 @@
 {
-  "version": "0.7.0",
+  "version": "0.6.0",
   "display": {
     "width": 1280,
     "height": 720,
     "fps": 60,
-    "title": "L'\u00c9veil de l'H\u00e9ritier",
+    "title": "L'Éveil de l'Héritier",
     "fullscreen": true
   },
   "map": {
