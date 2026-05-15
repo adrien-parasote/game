@@ -10,7 +10,7 @@ instead of 64px). This file validates the correct sheet-based calculation.
 """
 
 import os
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pygame
 import pytest
@@ -20,7 +20,6 @@ pygame.display.init()
 pygame.font.init()
 
 from src.entities.interactive import InteractiveEntity
-
 
 # ---------------------------------------------------------------------------
 # Helpers

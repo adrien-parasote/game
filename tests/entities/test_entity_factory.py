@@ -1,9 +1,12 @@
-import pytest
-import pygame
 import json
 import logging
 from unittest.mock import MagicMock, patch
+
+import pygame
+import pytest
+
 from src.config import Settings
+
 
 def _make_game():
     with patch("src.engine.game.Game._load_map"):

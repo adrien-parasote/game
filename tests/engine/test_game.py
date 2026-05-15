@@ -1,10 +1,10 @@
 """Tests for Game engine: init, loading, events, drawing, transitions + config."""
 
+import logging
 from unittest.mock import MagicMock, patch
 
 import pygame
 import pytest
-import logging
 
 from src.config import Settings
 from src.engine.asset_manager import AssetManager

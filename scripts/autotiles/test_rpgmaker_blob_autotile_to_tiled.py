@@ -5,10 +5,11 @@ Tests derived from scripts/docs/specs/blob_autotile_pipeline_spec.md
 """
 
 import sys
-import pytest
-from pathlib import Path
-from PIL import Image
 import xml.etree.ElementTree as ET
+from pathlib import Path
+
+import pytest
+from PIL import Image
 
 SCRIPTS_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPTS_DIR))

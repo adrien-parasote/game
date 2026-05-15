@@ -7,7 +7,6 @@ import pygame
 import pytest
 
 
-
 def _make_frames(n: int = 4) -> list[pygame.Surface]:
     return [pygame.Surface((16, 16)) for _ in range(n)]
 

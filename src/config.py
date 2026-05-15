@@ -91,7 +91,7 @@ class Settings:
     @classmethod
     def _apply_core(cls, data: dict):
         cls.VERSION: str = data.get("version", "0.0.0")
-        
+
         # Display
         cls.WINDOW_WIDTH: int = data["display"]["width"]
         cls.WINDOW_HEIGHT: int = data["display"]["height"]
@@ -138,7 +138,7 @@ class Settings:
         cls.TEXT_SPEED: float = ui_data.get("text_speed", 0.05)
         cls.CURSOR_SIZE: int = ui_data.get("cursor_size", 48)
         cls.ENABLE_FAILED_INTERACTION_EMOTE: bool = ui_data.get("enable_failed_interaction_emote", True)
-        
+
         npc_data = data.get("npc", {})
         cls.NPC_SPEED: float = npc_data.get("speed", 40)
         cls.NPC_ANIMATION_SPEED: float = npc_data.get("animation_speed", 8.0)

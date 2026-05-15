@@ -20,7 +20,6 @@ from unittest.mock import MagicMock, call, patch
 import pygame
 import pytest
 
-
 # ── UT-004 ─────────────────────────────────────────────────────────────────
 
 def test_save_menu_refresh_populates_cached_title_surfs():

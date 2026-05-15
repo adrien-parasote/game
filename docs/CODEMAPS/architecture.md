@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-15 | Last doc-update: 2026-05-15 | Files scanned: 66 | Token estimate: ~600 -->
+<!-- Generated: 2026-05-15 | Last doc-update: 2026-05-15 | Files scanned: 70 | Token estimate: ~610 -->
 
 # Game Engine Architecture
 
@@ -73,9 +73,10 @@ docs/
   research/         Research docs (unit_test_optimization.md)
 scripts/
   autotiles/            Autotile pipeline scripts (blob/animated/static)
+  assets/               Asset processing (banners, sprites)
+  calibration/          Interactive halo calibration tools
   tc_report.py          Spec↔Test traceability report (CLI + --markdown export)
-  calibrate_halos.py    Outil interactif calibration halos (FULLSCREEN|SCALED) → calibration_result.py
-  apply_calibration.py  Inject calibration_result.py → title_screen_constants.py
+  release.py            Repository release automation (SemVer, tag, push)
   get_version.py        Version bumping utility
   profile_game.py       Performance profiling
 .agents/
@@ -87,6 +88,6 @@ scripts/
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
-- **Test Suite**: Pytest 9.0.3, **768 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui}/` (5 domains)
+- **Test Suite**: Pytest 9.0.3, **783 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui,scripts}/` (6 domains)
 - **Traceability**: `@pytest.mark.tc("TC-ID")` markers — voir `docs/traceability.md` (auto-généré). Registered in `pyproject.toml`.
 - **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), **Pre-render cache pattern** (static button/label surfaces pre-computed at init, zero allocation in draw loop), ChestUI mixin decomposition, GameEvent dataclass factory pattern, Context Injection (`SomeManager(game: Any)`) pour sous-managers Phase 1.5

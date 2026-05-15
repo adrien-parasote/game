@@ -16,7 +16,7 @@ def test_lighting_uses_beam_color_constants():
 
     def capture_lerp(c1, c2, t):
         captured_colors.append((c1, c2, t))
-        return tuple(int(a + (b - a) * t) for a, b in zip(c1, c2))
+        return tuple(int(a + (b - a) * t) for a, b in zip(c1, c2, strict=False))
 
     from src.engine.lighting import LightingManager
 

@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-15 | Last doc-update: 2026-05-15 | Files scanned: 62 | Token estimate: ~420 -->
+<!-- Generated: 2026-05-15 | Last doc-update: 2026-05-15 | Files scanned: 70 | Token estimate: ~430 -->
 
 # Data & Dependencies Architecture
 
@@ -87,7 +87,7 @@ Stored on `InteractiveEntity` as `entity.loot_items: list[dict | None]` — fixe
 ## Dependencies
 - **Python 3.13+** (Type-hinting, Dataclasses, IntEnum)
 - **Pygame-CE 2.5.7** (Renderer, Event Loop, Audio Mixer, SDL 2.32.10)
-- **Pytest 9.0.3 + pytest-cov 7.1.0**: 768 tests, ~93%+ overall coverage
+- **Pytest 9.0.3 + pytest-cov 7.1.0**: 783 tests, ~93%+ overall coverage
 
 ## Asset Directory Map
 ```

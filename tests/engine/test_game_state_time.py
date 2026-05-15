@@ -6,15 +6,16 @@ Ensures that:
 """
 
 import os
-import pytest
-import pygame
 from unittest.mock import patch
 
-from src.engine.game_state_manager import GameStateManager
-from src.engine.game import Game
-from src.engine.time_system import TimeSystem
-from src.engine.save_manager import SaveManager
+import pygame
+import pytest
+
 from src.config import Settings
+from src.engine.game import Game
+from src.engine.game_state_manager import GameStateManager
+from src.engine.save_manager import SaveManager
+from src.engine.time_system import TimeSystem
 
 # ---------------------------------------------------------------------------
 # Fixtures

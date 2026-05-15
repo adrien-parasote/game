@@ -1,15 +1,15 @@
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pygame
 import pytest
 
+from src.config import Settings
 from src.engine.game_events import GameEvent
 from src.engine.game_state_manager import GameState, GameStateManager
-from src.engine.save_manager import SaveManager
 from src.engine.inventory_system import Inventory, Item
+from src.engine.save_manager import SaveManager
 from src.engine.time_system import TimeSystem
 from src.engine.world_state import WorldState
-from src.config import Settings
 
 
 @pytest.fixture
@@ -199,9 +199,6 @@ def tmp_saves_dir(tmp_path):
 
 def _make_gsm_mock_game(tmp_saves_dir):
     """Minimal mock Game with real TimeSystem for save/load time tests."""
-    from src.engine.time_system import TimeSystem
-    from src.engine.inventory_system import Inventory
-    from src.engine.world_state import WorldState
 
     game = MagicMock()
     game._current_map_name = "00-spawn.tmj"

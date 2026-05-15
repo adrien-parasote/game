@@ -3,7 +3,6 @@ Save Menu UI Components.
 Spec: docs/specs/save-system.md
 """
 
-import logging
 import os
 
 import pygame
@@ -27,9 +26,6 @@ from src.ui.save_menu_constants import (
     ENGRAVE_SHADOW,
     ENGRAVE_TEXT,
     SAVE_DETAIL_COLOR,
-    SAVE_DETAIL_LINE_SPACING,
-    SAVE_DETAIL_TEXT_X_OFFSET,
-    SAVE_DETAIL_TEXT_Y_OFFSET,
     SAVE_FONT_TITLE_FALLBACK_SIZE,
     SAVE_HALO_BLUR_PADDING,
     SAVE_HALO_BLUR_RADIUS,
@@ -37,21 +33,9 @@ from src.ui.save_menu_constants import (
     SAVE_PANEL_H,
     SAVE_PANEL_W,
     SAVE_PANEL_Y_OFFSET,
-    SAVE_SLOT_BG_H,
-    SAVE_SLOT_BG_W,
-    SAVE_SLOT_FALLBACK_BG,
-    SAVE_SLOT_FALLBACK_BORDER,
-    SAVE_SLOT_GEM_COORDS,
-    SAVE_SLOT_HALO_RADIUS,
     SAVE_SLOT_SPACING,
-    SAVE_THUMB_BG_COLOR,
-    SAVE_THUMB_BORDER_COLOR,
-    SAVE_THUMB_SIZE,
-    SAVE_THUMB_X,
-    SAVE_THUMB_Y,
     SAVE_TITLE_COLOR,
 )
-
 from src.ui.save_slot import SaveSlotUI
 
 

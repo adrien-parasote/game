@@ -6,11 +6,11 @@ Test IDs: UT-001..UT-009, IT-001..IT-003
 """
 
 import sys
-import pytest
-from io import BytesIO
-from pathlib import Path
-from PIL import Image
 import xml.etree.ElementTree as ET
+from pathlib import Path
+
+import pytest
+from PIL import Image
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -21,16 +21,11 @@ SCRIPTS_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from rpgmaker_autotile_to_tiled import (  # noqa: E402
-    TILED_VERSION,
-    WANG_COLOR,
-    TILE_SIZE,
-    TILE_COUNT,
     _Q,
-    _half_tile,
+    TILE_COUNT,
+    TILE_SIZE,
     _quarter_source,
-    _build_tile,
     _wang_id,
-    _generate_tsx,
     convert,
 )
 

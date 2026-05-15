@@ -4,7 +4,6 @@ import pygame
 import pytest
 
 
-
 class TestTeleportInit:
     def test_stores_target_map(self):
         """Teleport stores target_map on creation."""

@@ -98,7 +98,7 @@ class CameraGroup(pygame.sprite.Group):
         for sprite in self.get_sorted_sprites():
             if not sprite.image or not sprite.rect:
                 continue
-            
+
             # Depth filtering
             sprite_depth = getattr(sprite, "depth", 1)
             if min_depth is not None and sprite_depth < min_depth:

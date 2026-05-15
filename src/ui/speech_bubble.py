@@ -209,7 +209,7 @@ class SpeechBubble:
         # Center the text inside the plate (adjusted slightly upwards if the bottom has a drop shadow)
         text_rect = name_surf.get_rect(center=(target_w // 2, plate_h // 2))
         name_plate_bg.blit(name_surf, text_rect)
-        
+
         return name_plate_bg
 
     def draw(

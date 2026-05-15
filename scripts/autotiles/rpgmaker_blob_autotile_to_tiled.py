@@ -11,9 +11,9 @@ Usage:
             [--tsx PATH] [--png PATH] [--frame-duration MS]
 """
 
-import sys
-import os
 import argparse
+import os
+import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 

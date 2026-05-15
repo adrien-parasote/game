@@ -10,7 +10,6 @@ import pytest
 
 from src.engine.spatial_utils import facing_toward, get_facing_vector, verify_orientation
 
-
 # ---------------------------------------------------------------------------
 # TC-SU-01..05 — get_facing_vector
 # ---------------------------------------------------------------------------

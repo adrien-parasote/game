@@ -2,10 +2,12 @@ import json
 import logging
 import os
 from unittest.mock import patch
+
 import pytest
 
-from src.engine.game import Game
 from src.config import Settings
+from src.engine.game import Game
+
 
 @pytest.fixture(autouse=True)
 def skip_display_init():
@@ -26,7 +28,7 @@ def test_chest_loot_is_loaded_correctly(tmp_path):
     prop_file.write_text(json.dumps({
         "potion_red": {"name": "Potion Rouge", "stack_max": 10}
     }))
-    
+
     # Create fake loot_table.json
     loot_file = tmp_path / "loot_table.json"
     loot_file.write_text(json.dumps({
@@ -48,7 +50,7 @@ def test_chest_loot_is_loaded_correctly(tmp_path):
     with patch("os.path.join", side_effect=fake_join):
         # Prevent actually loading the map so we only test initialization
         game = Game(skip_map_load=True)
-        
+
         # The loot table should have successfully parsed the chest
         chest_loot = game.loot_table.get_contents("chest_debug_1")
         assert len(chest_loot) == 1, f"Expected 1 item in chest, got {len(chest_loot)}"

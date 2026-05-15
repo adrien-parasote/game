@@ -1,5 +1,6 @@
 import logging
 import os
+
 import pygame
 
 from src.config import Settings
@@ -23,6 +24,7 @@ from src.ui.save_menu_constants import (
     SAVE_THUMB_Y,
     SAVE_TITLE_COLOR,
 )
+
 
 class SaveSlotUI:
     """Renders a single save slot: background, thumbnail, text, and hover glow."""

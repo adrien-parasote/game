@@ -14,7 +14,6 @@ import pytest
 from src.engine import map_loader
 from src.engine.map_loader import MapLoader
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

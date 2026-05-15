@@ -16,7 +16,6 @@ pygame.display.init()
 from src.ui.chest import ChestUI
 from src.ui.chest_draw import ChestDrawMixin
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

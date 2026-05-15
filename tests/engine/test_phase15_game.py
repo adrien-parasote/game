@@ -54,9 +54,9 @@ class TestGameSetup:
     def test_setup_logging_adds_handlers(self):
         """setup_logging must configure root logger with handlers."""
         import logging
-        from src.engine.game_setup import setup_logging
 
         from src.config import Settings
+        from src.engine.game_setup import setup_logging
 
         root_logger = logging.getLogger()
         initial_handlers = list(root_logger.handlers)
@@ -472,8 +472,8 @@ class TestInputHandler:
 
     @pytest.mark.tc("TC-IH-02")
     def test_interact_key_no_dialogue_calls_handle_interactions(self):
-        from src.engine.input_handler import InputHandler
         from src.config import Settings
+        from src.engine.input_handler import InputHandler
 
         game = _make_game_for_input()
         ih = InputHandler(game)
@@ -483,8 +483,8 @@ class TestInputHandler:
 
     @pytest.mark.tc("TC-IH-03")
     def test_interact_key_with_dialogue_advances_dialogue(self):
-        from src.engine.input_handler import InputHandler
         from src.config import Settings
+        from src.engine.input_handler import InputHandler
 
         game = _make_game_for_input()
         game.dialogue_manager.is_active = True
@@ -496,8 +496,8 @@ class TestInputHandler:
 
     @pytest.mark.tc("TC-IH-04")
     def test_inventory_key_chest_closed_toggles_inventory(self):
-        from src.engine.input_handler import InputHandler
         from src.config import Settings
+        from src.engine.input_handler import InputHandler
 
         game = _make_game_for_input()
         game.chest_ui.is_open = False
@@ -508,8 +508,8 @@ class TestInputHandler:
 
     @pytest.mark.tc("TC-IH-05")
     def test_inventory_key_chest_open_does_not_toggle(self):
-        from src.engine.input_handler import InputHandler
         from src.config import Settings
+        from src.engine.input_handler import InputHandler
 
         game = _make_game_for_input()
         game.chest_ui.is_open = True
@@ -521,8 +521,8 @@ class TestInputHandler:
     @pytest.mark.tc("TC-IH-06")
     def test_interact_key_inventory_open_does_not_trigger_interaction(self):
         """Regression: pressing INTERACT while inventory is open must not open chests."""
-        from src.engine.input_handler import InputHandler
         from src.config import Settings
+        from src.engine.input_handler import InputHandler
 
         game = _make_game_for_input()
         game.inventory_ui.is_open = True
@@ -541,9 +541,9 @@ class TestInputHandler:
 def test_game_has_entity_factory_map_loader_input_handler():
     """After refactoring, Game must expose _entity_factory, _map_loader, _input_handler."""
     from src.engine.entity_factory import EntityFactory
+    from src.engine.game import Game
     from src.engine.input_handler import InputHandler
     from src.engine.map_loader import MapLoader
-    from src.engine.game import Game
 
     with patch.object(Game, "__init__", lambda self, skip_map_load=True: None):
         g = Game.__new__(Game)

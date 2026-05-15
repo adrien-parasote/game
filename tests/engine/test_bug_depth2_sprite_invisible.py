@@ -24,11 +24,10 @@ from unittest.mock import MagicMock, patch
 import pygame
 import pytest
 
-from src.entities.groups import CameraGroup
 from src.engine.render_manager import RenderManager
+from src.entities.groups import CameraGroup
 from src.map.layout import LayoutStrategy
 from src.map.manager import MapManager
-
 
 # ---------------------------------------------------------------------------
 # Helpers

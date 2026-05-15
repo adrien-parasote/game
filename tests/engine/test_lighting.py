@@ -362,9 +362,10 @@ def test_torch_mask_cached():
     assert m1 is m2
 
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+
 from src.engine.game import Game
-import pygame
+
 
 @patch("pygame.display.toggle_fullscreen")
 @patch("pygame.display.set_mode")
@@ -372,7 +373,7 @@ def test_lighting_manager_uses_actual_screen_size(mock_set_mode, mock_toggle_ful
     mock_set_mode.return_value = pygame.Surface((1920, 1080))
     game = Game(skip_map_load=True)
     assert game.lighting_manager.screen_size == (1920, 1080)
-    
+
     mock_toggle_fullscreen.side_effect = pygame.error("Failed")
     mock_set_mode.return_value = pygame.Surface((2560, 1440))
     game.toggle_fullscreen()

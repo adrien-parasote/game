@@ -48,7 +48,7 @@ GameStateManager · Save/Load 3 slots · TitleScreen · PauseScreen · SaveMenuO
 
 ---
 
-## ✅ Phase 1.5/1.6 — Refactoring Technique & Autotiles Directionnels `v0.5.1` TERMINÉE
+## ✅ Phase 1.5/1.6 — Refactoring Technique & Autotiles Directionnels `v0.7.0` TERMINÉE
 
 ### Refactoring (1.5)
 
@@ -81,7 +81,7 @@ Remplacement du modèle binaire `collidable` par `walkable` + `direction_flags`.
 
 ---
 
-## 🌿 Phase 2 — Fondations du Monde `v0.5→0.6`
+## 🌿 Phase 2 — Fondations du Monde `v0.7→0.8`
 
 ### Développement
 - **`gameplay.json`** : items (ressources, ingrédients, drops monstres, équipements météo, mobilier, `gold`, `ether_crystal`)
@@ -108,7 +108,7 @@ Remplacement du modèle binaire `collidable` par `walkable` + `direction_flags`.
 
 ---
 
-## 🌧️ Phase 3 — Météo & Équipement Contextuel `v0.6→0.7`
+## 🌧️ Phase 3 — Météo & Équipement Contextuel `v0.8→0.9`
 
 ### Développement
 WeatherSystem : 5 états météo + 1 état de zone spéciale (`sous_eau`) · malus/bonus · items équipés annulent les malus · `requires_item` dans Tiled
@@ -135,7 +135,7 @@ WeatherSystem : 5 états météo + 1 état de zone spéciale (`sous_eau`) · mal
 
 ---
 
-## 🏗️ Phase 4 — Château, Bâtiments & Guildes `v0.7→0.8`
+## 🏗️ Phase 4 — Château, Bâtiments & Guildes `v0.9→0.10`
 
 ### Développement
 - **Building System** : 4 niveaux (ruiné→reconstruit→décoré→restauré)
@@ -196,7 +196,7 @@ WeatherSystem : 5 états météo + 1 état de zone spéciale (`sous_eau`) · mal
 
 ---
 
-## 🌾 Phase 5 — Agriculture, Cuisine & Monstres `v0.8→0.9` ⭐
+## 🌾 Phase 5 — Agriculture, Cuisine & Monstres `v0.10→0.11` ⭐
 
 ### Développement
 - Harvestable : 4 états `seed→sprout→grown→ripe` · piloté par `TimeSystem`
@@ -231,7 +231,7 @@ WeatherSystem : 5 états météo + 1 état de zone spéciale (`sous_eau`) · mal
 
 ---
 
-## 🐾 Phase 6 — Familiers & Amitié `v0.9→1.0`
+## 🐾 Phase 6 — Familiers & Amitié `v0.11→0.12`
 
 ### Développement
 - **Familiar System** : apprivoisement (nourrir un animal affaibli) · 5 niveaux d'amitié
@@ -255,7 +255,7 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 
 ---
 
-## 🔮 Phase 7 — Sphérier & Combat `v1.0→1.1`
+## 🔮 Phase 7 — Sphérier & Combat `v0.12→0.13`
 
 ### Développement
 - SphereGrid : **Éther Cristallisé** comme monnaie exclusive du Sphérier (ne remplace pas l'`gold` des boutiques) · nœuds libres (pas de voie verrouillée)
@@ -278,7 +278,7 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 
 ---
 
-## 💰 Phase 8 — Économie, Quêtes & Jeu Sans Fin `v1.1→1.5`
+## 💰 Phase 8 — Économie, Quêtes & Jeu Sans Fin `v0.13→0.14`
 
 - ShopUI (dérivée `ChestUI`) · rang guilde → items exclusifs
 - Quêtes : `collect` · `cook` · `build` · `tame` · `befriend` · `festival` · `weather_challenge` · `serve_monster_dish`
@@ -289,7 +289,7 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 
 ---
 
-## 👥 Phase 9 — Co-op Local `v1.5→2.0`
+## 👥 Phase 9 — Co-op Local `v0.14→1.0`
 
 - 2-3 joueurs · **Écran partagé** (shared screen, la caméra dezoome, pas de split-screen) · WorldState + KingdomState + **Salle du trésor** partagés
 - **Verrouillage interaction** : Le premier joueur à interagir avec un PNJ ou un déclencheur d'événement verrouille l'action pour les autres jusqu'à la fin du dialogue/cinématique.

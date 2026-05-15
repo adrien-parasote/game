@@ -255,4 +255,33 @@ Un fichier `design-tokens.md` contenant des tokens CSS (`--primary: #3A7BD5`, `I
 
 ---
 
-*Last updated: 2026-05-15 — L-DOC-005, L-DOC-006 from documentation urbanization audit session.*
+### L-DOC-007 · 2026-05-15 · U · Perfect
+**Script relocation: grep for all hardcoded call sites across docs and config**
+
+When moving scripts to subdirectories (e.g. `scripts/` -> `scripts/calibration/`), assuming only `ARCHITECTURE.md` needs updates is an anti-pattern. Hardcoded paths often exist in `docs/specs/`, `README.md`, and metadata-generating scripts (e.g. `tc_report.py`).
+
+**Pattern:**
+1. Move files.
+2. `grep -rn "old_script_name.py" .` across the entire project (not just `docs/`).
+3. Update `ARCHITECTURE.md` and any identified specs.
+4. Verify by running the script from its new location if applicable.
+
+**Evidence:** Relocation of `calibrate_halos.py` and `process_banners.py` identified 4 hidden references in `docs/specs/game-flow-spec.md` and 1 in `tc_report.py` that would have otherwise broken traceability reporting.
+
+---
+
+### L-STATIC-003 · 2026-05-15 · U · Perfect
+**Automated dead code cleanup: `ruff --fix --select F401,F811`**
+
+Using `ruff check . --select F401,F811 --fix` safely removes unused imports and redefinitions across the entire project in seconds. This is significantly faster and more reliable than manual cleanup, especially in large test suites with duplicate mocks or UI components with complex dependency chains.
+
+**Pattern:**
+1. Identify linting issues via `verify.py` or `ruff check .`.
+2. Run `ruff check . --select F401,F811 --fix`.
+3. Verify remaining issues.
+
+**Evidence:** 34 dead code/import violations in `src/ui/save_menu.py` and `tests/` resolved in 3s with zero regressions in the 777-test suite.
+
+---
+
+*Last updated: 2026-05-15 — L-DOC-007, L-STATIC-003 from script relocation and hardening session.*

@@ -155,7 +155,7 @@ def test_map_manager_get_direction_flags():
     tile.walkable = True
     tile.depth = 0
     tile.direction_flags = {"up", "left"}
-    
+
     map_d = {
         "layers": {1: [[1, 0]]},
         "tiles": {1: tile},
@@ -165,10 +165,10 @@ def test_map_manager_get_direction_flags():
         "height": 1,
         "tile_size": 32,
     }
-    
+
     layout = MagicMock()
     manager = MapManager(map_d, layout)
-    
+
     assert manager.get_direction_flags(0, 0) == {"up", "left"}
     assert manager.get_direction_flags(1, 0) == {"any"}  # Empty coordinate defaults to 'any'
     assert manager.get_direction_flags(-1, 0) == {"any"} # Out of bounds
@@ -285,32 +285,32 @@ def test_get_visible_animated_chunks_with_animated_tile(map_data):
     layout = MagicMock()
     layout.tile_size = 32
     layout.to_screen.side_effect = lambda x, y: (x * 32, y * 32)
-    
+
     # Setup tile 1 to be static, tile 2 to be animated
     static_tile = MagicMock()
     static_tile.image = pygame.Surface((32, 32))
     static_tile.frames = None
     static_tile.depth = 0
-    
+
     anim_tile = MagicMock()
     anim_tile.image = pygame.Surface((32, 32))
     anim_tile.frames = [(2, 150), (3, 150)]
     anim_tile.depth = 0
-    
+
     map_data["layers"][1] = [[1, 2], [0, 0]]
     map_data["tiles"] = {1: static_tile, 2: anim_tile}
     map_data["width"] = 2
     map_data["height"] = 2
-    
+
     manager = MapManager(map_data, layout)
     viewport = MagicMock()
     viewport.left, viewport.right, viewport.top, viewport.bottom = 0, 64, 0, 64
-    
+
     # Static chunks should yield tile 1
     static_chunks = list(manager.get_visible_chunks(viewport))
     assert len(static_chunks) == 1
     assert static_chunks[0][2] == 1  # tile_id is 1
-    
+
     # Animated chunks should yield tile 2
     anim_chunks = list(manager.get_visible_animated_chunks(viewport))
     assert len(anim_chunks) == 1
@@ -321,27 +321,27 @@ def test_get_layer_surface_ignores_animated_tiles(map_data):
     layout = MagicMock()
     layout.tile_size = 32
     layout.to_screen.side_effect = lambda x, y: (x * 32, y * 32)
-    
+
     # Setup tile 1 to be animated
     anim_tile = MagicMock()
     anim_tile.image = pygame.Surface((32, 32))
     anim_tile.image.fill((255, 0, 0)) # Red
     anim_tile.frames = [(1, 150), (2, 150)]
     anim_tile.depth = 0
-    
+
     map_data["layers"][1] = [[1, 0], [0, 0]]
     map_data["tiles"] = {1: anim_tile}
     map_data["width"] = 2
     map_data["height"] = 2
-    
+
     manager = MapManager(map_data, layout)
     mock_pygame = MagicMock()
     mock_pygame.SRCALPHA = pygame.SRCALPHA
     mock_surface = MagicMock()
     mock_pygame.Surface.return_value = mock_surface
-    
+
     surface = manager.get_layer_surface(1, mock_pygame)
-    
+
     # mock_surface should NOT have been blitted on because the only tile is animated
     mock_surface.blit.assert_not_called()
 
@@ -406,19 +406,17 @@ def test_get_terrain_material_at(map_manager):
     assert map_manager.get_terrain_material_at(32, 0) is None  # x=1, y=0 is 0 in the mock map_data
 
 
-from unittest.mock import MagicMock, patch
-import pygame
 
 def test_tile_depth_overrides_layer_depth():
-    from src.map.manager import MapManager
     from src.map.layout import OrthogonalLayout
-    
+    from src.map.manager import MapManager
+
     class MockTile:
         def __init__(self, depth, frames=None):
             self.depth = depth
             self.frames = frames
             self.image = pygame.Surface((32, 32))
-    
+
     map_data = {
         "layer_order": [1],
         "layer_names": {1: "00-ground"},
@@ -430,20 +428,20 @@ def test_tile_depth_overrides_layer_depth():
             2: MockTile(depth=2),
         }
     }
-    
+
     layout = OrthogonalLayout(32)
     manager = MapManager(map_data, layout)
-    
+
     chunks = list(manager.get_visible_chunks(pygame.Rect(0, 0, 100, 100), min_depth=1))
     assert len(chunks) == 1
     assert chunks[0][2] == 2
     assert chunks[0][3] == 2
-    
+
     mock_pygame = MagicMock()
     mock_surface = MagicMock()
     mock_pygame.Surface.return_value = mock_surface
     mock_pygame.SRCALPHA = 1
-    
+
     manager.get_layer_surface(1, mock_pygame, max_bg_depth=1)
     assert mock_surface.blit.call_count == 1
     mock_surface.blit.assert_called_with(map_data["tiles"][1].image, (32, 0))
