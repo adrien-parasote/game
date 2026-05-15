@@ -1,0 +1,258 @@
+## 🔧 Spec, Agent & Workflow Documentation
+
+### L-SPEC-001 · 2026-04-28 · U · Minor Rework
+**Define procedural assets by boundary values**
+
+In implementation specs, describe generated geometry/textures by **Start, End, Step/Falloff** values — not prose. Eliminates ambiguity in generation loops (e.g., center-to-edge alpha gradients).
+
+---
+
+### A-AGENT-001 · 2026-04-28 · U · Major Rework
+**Blind file overwrites with stale context**
+
+Replacing large file chunks from outdated memory destroys working code (I18n, UI scaling, etc.) and starts endless `AttributeError` loops.
+
+✅ Always `view_file` before editing. Use targeted `multi_replace_file_content`. On accidental corruption: `git checkout -- <file>` immediately.
+
+---
+
+### A-AGENT-002 · 2026-04-28 · U · Major Rework
+**Skipping Stream Coding pipeline stages**
+
+Jumping to BUILD without SPEC, or skipping VERIFY/HARDEN, generates vibe-coded output that diverges from spec and requires expensive rework.
+
+✅ Never write implementation code without RED tests (TDD Gate). Never commit without `/learn-eval` + `/doc-update`.
+
+---
+
+### A-SPEC-001 · 2026-04-28 · U · Minor Rework
+**Ambiguous spritesheet definitions**
+
+Describing an asset as "animated" without stating grid layout (rows × columns) and frame mapping causes incorrect slicing (4×1 instead of 4×8).
+
+✅ Always specify: `rows=4, cols=8, frame_duration=0.1s, animation_row={state: row_index}`.
+
+---
+
+### A-SPEC-002 · 2026-04-30 · P · Spec Wrong
+**POSITION_TO_DIR inversé dans la spec vs code**
+
+`interactive-objects.md` documentait `0=Up, 1=Right, 2=Left, 3=Down`. Le code (`InteractiveEntity.POSITION_TO_DIR`) implémentait `0=Down, 1=Left, 2=Right, 3=Up`. La spec et le code divergeaient depuis la création du module.
+
+**Cause :** Le mapping a été défini dans le code avant d'être documenté. La spec a été écrite de mémoire, inversée.
+
+**Règle :** Pour tout mapping constant (enum-like), toujours extraire la valeur depuis le code source avec `grep` avant de documenter. Ne jamais documenter de mémoire.
+
+```bash
+# ✅ vérifier avant de documenter
+grep -n "POSITION_TO_DIR" src/entities/interactive.py
+```
+
+**Scope :** Project-specific mais le pattern est universel — voir L-SPEC-001.
+
+**Evidence :** `interactive-objects.md` ligne 24 corrigée. Confirmé avec `InteractiveEntity.POSITION_TO_DIR` dans `interactive.py`.
+
+---
+
+### A-AGENT-003 · 2026-05-01 · U · Spec Wrong
+**Verify @property vs method before calling**
+
+Generated `self.time_system.world_time()` with parentheses, but `world_time` is a `@property`. Runtime crash: `'WorldTime' object is not callable`.
+
+```python
+# ❌ Assumes world_time is a method
+wt = self.time_system.world_time()
+
+# ✅ Verify first — it's a property
+wt = self.time_system.world_time
+```
+
+**Rule:** Before calling any attribute from an external module, verify whether it's a property or method:
+```bash
+grep -n "def world_time\|world_time = " src/engine/time_system.py
+```
+
+**Scope:** Universal — Python @property vs method mixups cause `TypeError: 'X' object is not callable`.
+**Evidence:** Runtime crash on `_compute_slant()` first call. Fixed by removing parentheses.
+
+---
+
+### L-DOC-001 · 2026-05-03 · U · Perfect
+**Relative paths in spec deep links for portability**
+
+Absolute `file:///Users/username/...` paths in spec deep links break on every machine change or team handoff. Relative paths from the spec's directory work universally.
+
+```markdown
+# ❌ Machine-specific — breaks on any other system
+[inventory.py L21](file:///Users/adrien.parasote/Documents/perso/game/src/engine/inventory_system.py#L21)
+
+# ✅ Relative from docs/specs/ — portable
+[inventory.py L21](../../src/engine/inventory_system.py#L21)
+```
+
+**Convention from docs/specs/:**
+- `../../src/` → source files
+- `../../tests/` → test files
+- `./` → other spec files in docs/specs/
+- `../` → other docs/ files
+
+**Evidence:** 87 links converted in 13 spec files. Script: `re.sub(r'file:///Users/[^/]+/Documents/perso/game/', '../../', content)`. commit `a7be023`.
+
+---
+
+### L-DOC-002 · 2026-05-03 · U · Minor Rework
+**Two-pass cleaning required for specs: placeholder removal then deep link fix**
+
+Spec generation often creates a full "Linked Test Functions" table stub AND retains the generic placeholder at the bottom. A single-pass cleanup missed the bare `tests/` paths inside backticks (which are not Markdown links and thus not caught by link-specific regex).
+
+**Two-pass strategy:**
+1. Remove generic placeholder blocks (`| TC-001 | [Component] |...`)
+2. Separately fix bare paths in backticks inside tables: `` `tests/foo` `` → `` `../../tests/foo` ``
+
+```python
+# Pass 1 — structural placeholders
+content = content.replace(PLACEHOLDER_BLOCK, '')
+
+# Pass 2 — bare paths in backticks (Linked Test Functions tables)
+content = re.sub(r'`(tests/)', r'`../../\1', content)
+```
+
+**Evidence:** 54 additional paths corrected across 11 files after pass 1 was believed complete. commit `fb4b039`.
+
+---
+
+### L-DOC-003 · 2026-05-03 · U · Perfect
+**Automated spec audit script catches 100% of formatting violations**
+
+A Python audit script checking (1) absolute paths, (2) bare `tests/` in backticks, (3) missing linked-file existence, (4) function name existence, (5) line number accuracy — caught every issue in one run. Zero false negatives when function names verified via `grep -n def func tests/file.py`.
+
+**Pattern to reproduce:**
+```python
+# For each spec, in the Linked Test Functions table:
+for tc_id, func_name, file_ref in re.findall(
+    r'\|\s*([\w-]+)\s*\|\s*`(test_[^`]+)`\s*\|\s*`(\.\./\.\./[^`]+)`',
+    content
+):
+    # verify file exists, verify function exists, verify line number
+```
+
+**Evidence:** 0 errors, 0 warnings final audit run. All 492 test functions validated. commit `fb4b039`.
+
+---
+
+### A-DOC-001 · 2026-05-03 · U · Minor Rework
+**"Linked Test Functions" added in multiple passes creates inconsistent path formats**
+
+When "Linked Test Functions" sections are added iteratively (some in session N, some in session N+1), the first batch uses one path convention (`tests/`) and the second uses another (`../../tests/`). The audit script cannot catch this until both conventions co-exist in the same file.
+
+**Rule:** When adding "Linked Test Functions" to any spec, immediately run the audit script:
+```bash
+python3 audit_spec_links.py  # verifies all paths are ../../ relative
+```
+Never add linked test tables without running the audit immediately after.
+
+**Evidence:** 5 spec files had inconsistent path formats discovered only in a second pass. 54 paths corrected.
+
+---
+
+*Last updated: 2026-05-07 — documentation urbanization session: L-DOC-001..L-DOC-003, A-DOC-001. L-ARCH-008 migré vers `game_engine.md` (audit 2026-05-15).*
+
+---
+
+> **Note :** `L-ARCH-008` a été migré vers `.agents/learnings/game_engine.md` le 2026-05-15 (audit documentation).
+> Cause : ce learning concerne le pattern d'architecture `SomeManager(game: Any)`, domaine `game_engine` et non `methodology_and_docs`.
+> Voir directement `game_engine.md#L-ARCH-008` pour le contenu.
+
+---
+
+### L-DOC-004 · 2026-05-07 · P · Minor Rework
+**Suppression en cascade de variables interdépendantes**
+
+Supprimer une variable non utilisée peut rendre sa dépendante elle-même orpheline. Dans `entity_factory.py`, supprimer `e_pos` a rendu `half_tile` orphelin à son tour.
+
+**Règle :** Avant de supprimer une variable locale, scanner toutes les variables calculées en amont. Utiliser `ruff check --fix --unsafe-fixes` pour les suppressions en cascade — ruff résout la chaîne complète en une passe.
+
+**Evidence :** `entity_factory.py::spawn_entities()` — 2 passes de lint nécessaires. Résolu en une fois avec `ruff --fix --unsafe-fixes`.
+
+**Scope :** Universal (Python)
+
+---
+
+### L-DOC-005 · 2026-05-07 · U · Major Rework
+**Learnings écrits dans le mauvais fichier domaine = duplicatas cachés**
+
+`map_rendering.md` contenait `L-UI-007`, `L-UI-008` (→ `ui.md`) et `A-AUDIO-001` (→ `audio_engine.md`) — copiés par un agent sans vérifier le domaine cible.
+
+**Détection :** En HARDEN, toujours `grep -rn "L-ID" .agents/learnings/` avant d'ajouter — si présent dans 2 fichiers → supprimer le duplicata.
+
+**Règle :** Un learning = un seul fichier domaine. `map_rendering.md` = uniquement les patterns map/rendering pipeline.
+
+**Evidence :** `map_rendering.md` nettoyé de 3 learnings hors-domaine en session 2026-05-07.
+
+**Scope :** Project-specific
+
+---
+
+*Last updated: 2026-05-13 — HARDEN session: L-SPEC-002 added.*
+
+---
+
+### L-SPEC-002 · 2026-05-13 · U · Perfect
+**Adversarial Review with Epistemic Pre-scan hardens specifications**
+
+Conducting an epistemic pre-scan (checking cross-doc consistency, externally verifiable claims, hidden assumptions) followed by an adversarial review (hostile critic stress-test) identifies and resolves logical gaps that would otherwise cause implementation failure.
+
+**Pattern:**
+1. Run epistemic pre-scan to find unsupported claims.
+2. Insert mandatory assumption markers (`> [assumption: ...]`) to track unverified claims for the BUILD phase.
+3. Run adversarial review to find missing failure states.
+
+**Evidence:** 31 engine specifications reached 10/10 AI-readiness score by systematically resolving logical contradictions and missing failure states before writing any code.
+
+---
+
+### A-DOC-002 · 2026-05-14 · U · Minor Rework
+**Overly Strict Verification Tooling Produces False Positives**
+
+Heuristic static analysis scripts (like `verify.py`) can throw false positives. For example, `P8_SpecConformance` checking for undocumented symbols might flag standard library exceptions (e.g., `AttributeError`, `FileNotFoundError`). `P9_TestQuality` might flag tests as lacking behavioral delegations if the test relies entirely on dependency injection or `unittest.mock.patch` for Pygame objects without directly importing the production module.
+
+**Anti-pattern:** The agent plowing ahead to modify correct code or specs in a futile attempt to "fix" false positives reported by automated checks.
+**Fix:** Use the "Radical Honesty" and "Push Back" behaviors. If a verification step fails due to a verifiable false positive, do not modify the codebase. Instead, explicitly present the false positives to the user and request permission to override and proceed to the HARDEN phase.
+**Evidence:** `verify.py` flagged `test_save_menu.py` for "no delegation" due to heavy mocking, and flagged `AttributeError` as an undocumented export. Explicitly notifying the user prevented unnecessary code churn and allowed a successful bypass.
+
+---
+
+### L-DOC-005 · 2026-05-15 · U · Perfect
+**Audit documentaire : grep avant de supposer l'étendue d'une référence**
+
+Lors d'un audit doc, on suppose souvent que les références problématiques sont localisées aux fichiers identifiés manuellement. En réalité, un header auto-généré (`> **Design tokens** – see [design-tokens.md]`) peut exister dans **N >> 3 fichiers** à cause d'un template partagé.
+
+```bash
+# ❌ Corriger manuellement 3 fichiers identifiés → 28 autres restent cassés
+# ✅ Toujours grep d'abord pour connaître l'étendue réelle
+grep -rl "design-tokens.md" docs/ .agents/
+# → 31 fichiers identifiés d'un coup
+# Puis supprimer en masse :
+for f in docs/specs/*.md; do sed -i '' '1{/design-tokens/d;}' "$f"; done
+```
+
+**Règle :** Avant de corriger manuellement N occurrences d'un pattern problématique, lancer `grep -rl "pattern" .` pour connaître l'étendue réelle. Si N > 5 → script sed one-liner au lieu de corrections manuelles.
+
+**Evidence :** `design-tokens.md` référencé dans 31 fichiers (vs 3 identifiés manuellement). Nettoyage en 1 commande. commit `b312f8e`.
+
+---
+
+### L-DOC-006 · 2026-05-15 · P · Minor Rework
+**Placeholder CSS dans un projet Python : suppression > transformation**
+
+Un fichier `design-tokens.md` contenant des tokens CSS (`--primary: #3A7BD5`, `Inter, sans-serif`) dans un projet pygame-CE est **activement trompeur** pour les agents IA — ils peuvent inférer que le projet est un projet web.
+
+**Anti-pattern :** Garder un fichier "placeholder" avec contenu générique en se disant "on le remplira plus tard". Un placeholder vide ou générique pollue le corpus documentaire sans valeur.
+
+**Règle :** Supprimer immédiatement tout fichier dont le contenu est générique ou hors-domaine. Documenter la suppression dans `learnings.md` (Note historique). Si le besoin réel existe → créer un fichier avec du vrai contenu projet, pas un template.
+
+**Evidence :** `design-tokens.md` référencé dans 31 spec headers générait une ambiguïté CSS/pygame. Suppression + nettoyage = zéro impact fonctionnel, clarté maximale. commit `b312f8e`.
+
+---
+
+*Last updated: 2026-05-15 — L-DOC-005, L-DOC-006 from documentation urbanization audit session.*
