@@ -3,12 +3,13 @@
 # Performance Optimization Spec
 
 > Document Type: Implementation
-> Version: 1.0 — 2026-05-04
+> Version: 2.0 — 2026-05-15
 > Audit source: performance_audit
 
 ## Scope
 
-14 optimisations réparties sur 6 modules. Aucun changement architectural.
+**Phase 1** (v1.0, 2026-05-04): 14 optimisations réparties sur 6 modules. Aucun changement architectural.
+**Phase 2** (v2.0, 2026-05-15): 3 batches de micro-optimisations ciblant le hot path de rendu.
 Toutes les modifications sont rétrocompatibles avec la suite de tests existante.
 
 ---
@@ -454,3 +455,51 @@ self._viewport_world_rect.height = self.screen.get_height() + 256
 | TC-DLG-01 | `test_dialogue_pagination` | `../../tests/ui/test_inventory.py:L238` |
 | IT-INT-01 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
 | IT-INT-02 | `test_interaction_toggle_entity_by_id` | `../../tests/engine/test_interaction.py:L513` |
+
+---
+
+## Phase 2 — Batch Performance Optimizations (2026-05-15)
+
+> Profiling baseline: 600-frame cProfile run. Commits: `8940440` (Batch 1), `f0aab8c` (Batch 2), `c743c42` (Batch 3).
+
+### Batch 1 — Import & Attribute Lookup Cleanup (✅ DONE)
+
+| File | Change | Impact |
+|------|--------|--------|
+| `src/entities/groups.py` | `from src.config import Settings` moved to module top | Eliminates per-frame `sys.modules` dict lookup in 120Hz `custom_draw` |
+| `src/entities/interactive.py` | Removed `hasattr`/`getattr` guards in `update()` | Direct attr access — attrs always set in `__init__` |
+| `src/engine/game.py` | `anim_map_manager = None` in `_init_groups()` | Eliminates 2× `getattr` per frame |
+| `src/engine/render_manager.py` | Pre-allocated `_tile_rect`, `_screen_rect`, `_viewport_world` in `__init__` | Eliminated ~54K `Rect()` allocations/sec |
+| `src/engine/audio.py` | Early-exit in `flush_ambient()` when no sources; volume guard in `play_sfx` | Avoids set allocation and SDL audio write |
+
+**Measured result**: 8.38ms → 8.25ms avg frame time (600-frame run).
+
+### Batch 2 — `fblits` Batch Rendering + Inline `to_screen` (✅ DONE)
+
+| File | Change | Impact |
+|------|--------|--------|
+| `src/map/manager.py` | Inlined `layout.to_screen()` (`x * ts, y * ts`) in tile generators | Eliminated 199K method calls/600 frames |
+| `src/engine/render_manager.py` | `draw_foreground`: non-occluded tiles → list → `screen.fblits()` | `blit()` calls: 212K → 23K (−89%) |
+| `src/engine/render_manager.py` | `draw_background`: animated tiles → `screen.fblits()` | Further blit reduction |
+| `src/engine/render_manager.py` | Cache `player_depth`, `tiles`, `screen` as locals | Reduces `self.game.*` chain lookups per tile |
+
+**Measured result**: `blit()` calls −89%; `draw_foreground` cumtime −14%; total calls 3.40M → 3.24M (−4.7%).
+
+> **Rule**: Tiles needing `colliderect` check (occluded) MUST remain individual `blit()`. All others MUST use `fblits()`.
+
+### Batch 3 — Eliminate `getattr` on `TileMapData` (✅ DONE)
+
+`TileMapData` is a `@dataclass` — `depth` (required) and `frames` (default `None`) are always set at parse time. All `getattr(tile, 'depth', 0)` and `getattr(tile, 'frames', None)` replaced with direct `tile.depth` / `tile.frames`.
+
+Affected: `layer_max_depths` init, `get_layer_surface()`, `get_visible_chunks()`, `get_visible_animated_chunks()` in `src/map/manager.py`.
+
+**Measured result**: 3.24M → 2.46M function calls (−24%); `get_visible_chunks` −32% (0.208s → 0.141s).
+
+### Phase 2 Cumulative Results
+
+| Metric | Before Batch 1 | After All Batches | Delta |
+|--------|---------------|-------------------|-------|
+| Total function calls (600 frames) | ~3.40M | 2.46M | −28% |
+| `blit()` calls | 212K | 23K | −89% |
+| `get_visible_chunks` tottime | 0.208s | 0.141s | −32% |
+| Avg frame time | 8.38ms | ~7.96ms | −5% |

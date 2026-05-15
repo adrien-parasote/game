@@ -162,6 +162,9 @@ class GameStateManager:
             save_data = self._save_manager.load(slot_id)
             if save_data is not None:
                 self._apply_save_data(save_data)
+                # Re-apply saved time after full load to override any time changes during map loading
+                game = self._game
+                game.time_system._total_minutes = save_data.time_system.get("total_minutes", 0.0)
             else:
                 logging.warning(f"GSM: Slot {slot_id} not found, starting new game")
                 self._game._load_map(self._resolve_default_map())
@@ -180,7 +183,16 @@ class GameStateManager:
         pygame.mouse.set_visible(False)  # custom cursor takes over
         self._title_screen.state = "MAIN_MENU"
         self._pause_screen.state = "MAIN"
-        # Reset UI overlays so they are never open on game re-entry
+
+        # Create a fresh Game instance to reset time, season, and UI state
+        # Preserve the current screen dimensions by reusing the existing display
+        # (Game.__init__ will reinitialize pygame display, which is acceptable)
+        self._game = Game(skip_map_load=True)
+        # Re‑create UI screens with the new game's screen reference
+        self._title_screen = TitleScreen(self._game.screen, self._save_manager)
+        self._pause_screen = PauseScreen(self._game.screen, self._save_manager)
+
+        # Ensure UI overlays are in a clean state (inventory & chest)
         self._game.inventory_ui._init_state()
         self._game.chest_ui.close()
         self.state = GameState.TITLE
@@ -264,6 +276,8 @@ class GameStateManager:
         game.player.target_pos = _pg.math.Vector2(x, y)
         if game.player.rect:
             game.player.rect.center = (int(x), int(y))
+        # Re-apply saved time after map load to override any time changes during loading
+        game.time_system._total_minutes = data.time_system.get("total_minutes", 0.0)
 
     def _restore_inventory(self, game, inv_data: dict) -> None:
         """Rebuild Inventory from save dict."""
