@@ -68,6 +68,11 @@ Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Ref
 
 ---
 
+## 🏃 Phase 1.6 — Directional Autotiles `v0.5.1` [EN COURS]
+
+> **Objectif :** Remplacer le modèle binaire de collision par un système de walkability directionnelle et intégrer les autotiles animés sans régression de performance.
+
+---
 
 ## 🌿 Phase 2 — Fondations du Monde `v0.5→0.6`
 

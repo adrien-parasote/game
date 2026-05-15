@@ -573,14 +573,13 @@ When tests only assert the static state of a data structure (e.g., parsing outpu
 
 ---
 
-### A-TEST-011 · 2026-05-14 · U · Minor Rework
-**TypeError with MagicMock in comparison operations**
+### L-TEST-014 · 2026-05-14 · U · Minor Rework
+**Overly strict equality assertions on dictionaries cause brittle tests**
 
 `MagicMock` does not support comparison operations like `<` or `<=` with integers, raising a `TypeError`. When an implementation uses duck typing and numeric comparison, passing a `MagicMock` to it without setting the specific property to a numeric value will crash the test.
 
 **Anti-pattern:** Assuming a `MagicMock` will evaluate to `False` or bypass `isinstance(val, int)` checks smoothly without explicitly testing the mock's interaction with comparison operators.
 **Fix:** In the implementation, wrap depth/numeric comparison logic with strict type checks (e.g., `if isinstance(tile.depth, int)`) if the variable could accidentally be a mock from a test suite. Alternatively, and preferably, ensure that the test explicitly sets the property on the mock to an integer (`mock.depth = 1`).
-**Evidence:** The test suite crashed with `TypeError: '<=' not supported between instances of 'MagicMock' and 'int'` during `get_layer_surface` execution until an `isinstance` check was added to `manager.py`.
 
 ---
 
@@ -710,7 +709,7 @@ def test_off_entity_resets_values():
 
 ---
 
-*Last optimized: 2026-05-14 — A-TEST-012 étendu (4 modes), L-TEST-013 ajouté, A-TEST-011b ID dupliqué corrigé.*
+*Last optimized: 2026-05-14 — A-TEST-012 étendu (4 modes), L-TEST-013 ajouté, L-TEST-014 (ex A-TEST-011b) ID dupliqué corrigé.*
 
 ---
 

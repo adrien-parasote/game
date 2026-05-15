@@ -12,6 +12,8 @@ Strategy: docs/strategic/perf-constants-audit-strategy.md
 
 ## Document Type: Implementation
 
+> **Statut :** Delivered ✅ (BUILD terminé, tests passés)
+
 **Covers:** P-FR-01, P-CONST-01a/b/c/d/e, P-PERF-01a/b/c/d
 
 ## Assumptions

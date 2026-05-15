@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-07 | Last doc-update: 2026-05-15 | Files scanned: 66 | Token estimate: ~500 -->
+<!-- Generated: 2026-05-15 | Last doc-update: 2026-05-15 | Files scanned: 66 | Token estimate: ~500 -->
 
 # Engine Logic Flow
 
