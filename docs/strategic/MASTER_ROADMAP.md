@@ -2,7 +2,7 @@
 
 > Document Type: Strategic  
 > **Évolutif** — rien n'est définitif. Vision complète : [game_vision.md](./game_vision.md#gameplay-loop)  
-> Dernière mise à jour : 2026-05-07
+> Dernière mise à jour : 2026-05-15
 
 ---
 
@@ -48,29 +48,35 @@ GameStateManager · Save/Load 3 slots · TitleScreen · PauseScreen · SaveMenuO
 
 ---
 
-## 🚧 Phase 1.5 — Refactoring Technique `EN COURS` (pré-requis Phase 2)
+## ✅ Phase 1.5/1.6 — Refactoring Technique & Autotiles Directionnels `v0.5.1` TERMINÉE
 
-> **Note :** En cours tant que la refonte des maps n'est pas terminée.
+### Refactoring (1.5)
 
-Fichiers dépassant la limite de 400 lignes identifiés par le reverse-spec. Refactorisés avant l'ajout de nouvelles fonctionnalités.
+Fichiers dépassant la limite de 400 lignes refactorisés. Extraction par domaine selon le pattern `Manager(game: Any)`.
 
 | Fichier | LOC avant | LOC après | Résultat |
 |---------|-----------|-----------|---------|
-| `src/engine/game.py` | 732 | 420 | ✅ `EntityFactory` + `MapLoader` + `InputHandler` extraits |
+| `src/engine/game.py` | 732 | 446 | ✅ `EntityFactory` + `MapLoader` + `InputHandler` extraits |
 | `src/engine/interaction.py` | 474 | 400 | ✅ `CollisionChecker` extrait |
 | `src/ui/chest.py` | 421 | 343 | ✅ Mixins `chest_draw`, `chest_transfer`, `chest_layout` |
 
-> [!NOTE]
-> Les 3 autres fichiers hors-limite (`inventory.py`, `interactive.py`, `title_screen.py`) sont refactorés dans le cadre du reverse-spec en cours (extraction mixins).
+### Autotiles Directionnels & Animés (1.6)
 
-**Résultats :** `game.py` → 420 LOC · `interaction.py` → 400 LOC · `chest.py` → 343 LOC · Suite 647 tests, tous verts ✅  
-**Spec :** [`docs/specs/phase-1.5-game-refactoring.md`](../specs/phase-1.5-game-refactoring.md)
+Remplacement du modèle binaire `collidable` par `walkable` + `direction_flags`. Intégration des autotiles animés Tiled via Dynamic Batching.
 
----
+| Composant | Résultat |
+|-----------|----------|
+| `TileMapData` | ✅ `walkable`, `direction_flags`, `frames` |
+| `TmjParser` | ✅ parse `<animation>`, `direction`, `walkable` |
+| `MapManager.is_walkable()` | ✅ remplace `is_collidable` |
+| `MapManager.get_direction_flags()` | ✅ contraintes directionnelles par tile |
+| `MapManager.get_visible_animated_chunks()` | ✅ Dynamic Batching — cache statique préservé |
+| `CollisionChecker` | ✅ migré vers `is_walkable` |
+| `BaseEntity.start_move()` | ✅ interception directionnelle (priorité cardinale) |
+| `AnimationMapManager` (`src/map/animation.py`) | ✅ résolution de frame par `pygame.time.get_ticks()` |
 
-## 🏃 Phase 1.6 — Directional Autotiles `v0.5.1` [EN COURS]
-
-> **Objectif :** Remplacer le modèle binaire de collision par un système de walkability directionnelle et intégrer les autotiles animés sans régression de performance.
+**Résultats :** 768 tests, tous verts ✅ · 0 régression  
+**Specs :** [`engine-core.md`](../specs/engine-core.md) · [`map-parser-spec.md`](../specs/map-parser-spec.md) · [`chest-ui-spec.md`](../specs/chest-ui-spec.md)
 
 ---
 
@@ -298,8 +304,8 @@ Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
 
 | Phase | Dépend de | Raison |
 |-------|-----------|--------|
-| Phase 1.5 | Phase 1 ✅ | Refactoring du code existant |
-| Phase 2 | Phase 1.5 | `game.py` < 400 LOC requis avant d'ajouter NPCs/Seasons |
+| Phase 1.5/1.6 | Phase 1 ✅ | Refactoring + autotiles directionnels (livrés ensemble) |
+| Phase 2 | Phase 1.5/1.6 ✅ | Moteur nettoyé + walkability directionnelle requis avant NPCs/Seasons |
 | Phase 3 | Phase 2 | `TimeSystem` étendu requis pour WeatherSystem |
 | Phase 4 | Phase 2 | KingdomState initialisé par les NPCs (Phase 2) |
 | Phase 5 | Phase 3 | Zones aquatiques/montagne nécessitent WeatherSystem |

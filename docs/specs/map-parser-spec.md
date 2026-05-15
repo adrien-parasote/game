@@ -60,9 +60,11 @@ Parse Tiled-exported map files (`.tmj` JSON + `.tsx` XML tilesets) into internal
 |-------|------|---------|-------------|
 | `image` | Surface | — | Pre-loaded pygame surface |
 | `depth` | `int` | — | Render depth (0=background, 1+=foreground) |
-| `collidable` | `bool` | — | Blocks movement |
+| `walkable` | `bool` | `True` | Blocks movement (replaces `collidable`) |
+| `direction_flags`| `set[str]` | `{"any"}` | Allowed exit directions (`up`, `down`, `left`, `right`) |
+| `frames` | `list[dict]` | `None` | List of `{tileid, duration}` for animations |
 | `occluded_image` | `Surface \| None` | `None` | Pre-alpha'd surface for high-depth tiles |
-| `properties` | `dict[str, Any] \| None` | `None` | Raw Tiled custom properties (contains `material`, `type`, etc.) |
+| `properties` | `dict[str, Any] \| None` | `None` | Raw Tiled custom properties |
 
 > **Note**: `material`, `is_window`, and other Tiled custom properties are accessed via `tile.properties["material"]`, NOT as direct dataclass fields. The `MapManager` uses `getattr(tile, "properties", {})` to safely access this dict.
 
@@ -129,17 +131,13 @@ def __init__(self, map_data: dict, layout: LayoutStrategy) -> None
 **State derived from `map_data`**:
 | Attribute | Type | Source |
 |-----------|------|--------|
-| `layers` | `dict[int, list[list[int]]]` | `map_data["layers"]` — layer_id → 2D tile grid |
-| `tiles` | `dict[int, TileProperty]` | `map_data["tiles"]` — GID → tile properties |
-| `layer_names` | `dict[int, str]` | `map_data["layer_names"]` — layer_id → name string |
-| `layer_order_values` | `dict[int, int]` | `map_data["layer_order_values"]` — layer_id → `order` property value from Tiled |
-| `layer_order` | `list[int]` | Sorted by `order` property (ascending integer) |
-| `layer_depths` | `dict[int, int]` | layer_id → `order` value (Z bucket for background/foreground split) |
-| `layer_max_depths` | `dict[int, int]` | layer_id → max per-tile `depth` across all tiles in the layer |
+| `layers` | `dict[int, list[list[int]]]` | `map_data["layers"]` |
+| `tiles` | `dict[int, TileMapData]` | `map_data["tiles"]` — GID → tile properties |
+| `layer_names` | `dict[int, str]` | `map_data["layer_names"]` |
+| `layer_order` | `list[int]` | Sorted by `order` property |
 | `width`, `height` | `int` | Map dimensions in tiles |
 | `cached_surfaces` | `dict[int, Surface]` | Layer surface cache (lazily populated) |
-| `_window_cache` | `list \| None` | Window positions cache (lazily computed) |
-| `_entities` | `list[dict]` | Entity objects from parser (used for window detection) |
+| `animation_manager`| `AnimationMapManager` | Handles frame resolution for animated tiles |
 
 ### 5.2. Layer Order Extraction
 
@@ -187,11 +185,15 @@ Pre-renders an entire layer to a single cached Surface. Used for background laye
 3. Blit all non-zero tiles using `layout.to_screen(x, y)`, skipping tiles where `depth > max_bg_depth` or tiles that are animated (`tile.frames`).
 4. Cache result in `self.cached_surfaces`
 
-#### `is_collidable(x: int, y: int) -> bool`
+#### `is_walkable(x: int, y: int) -> bool`
 
 **Input**: Grid coordinates `(col, row)`.
-**Returns**: `True` if any layer contains a collidable tile at `(x, y)`.
-**Edge case**: Out-of-bounds coordinates return `True` (blocks movement).
+**Returns**: `True` if all layers at `(x, y)` are walkable. 
+**Logic**: Checks `tile.walkable` property. 
+**Edge case**: Out-of-bounds coordinates return `False` (blocks movement).
+
+#### `get_direction_flags(x: int, y: int) -> set[str]`
+Returns the union of `direction_flags` for all tiles at the given coordinate. Defaults to `{"any"}` if no constraints are found. Used by `BaseEntity` to restrict movement.
 
 #### `get_visible_chunks(viewport_rect: Rect, min_depth: int | None) -> Iterator[tuple]`
 

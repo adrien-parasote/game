@@ -11,22 +11,22 @@ This document consolidates all rendering, logic, and optimization specifications
 
 | Module | Responsibility | Primary Classes |
 |--------|----------------|-----------------|
-| **Engine** | Lifecycle, Config, Events | `Game`, `Settings`, Logger |
-| **Map** | Data, Culling, Layout | `MapManager`, `LayoutStrategy` |
+| **Engine** | Lifecycle, Orchestration | `Game`, `MapLoader`, `EntityFactory`, `InputHandler`, `Settings` |
+| **Map** | Data, Culling, Layout | `MapManager`, `AnimationMapManager`, `TmjParser`, `LayoutStrategy` |
 | **Entity** | Sprites, Sorting, Movement | `BaseEntity`, `Player`, `CameraGroup`, `Teleport` |
-| **Logic** | Interaction gating, Proximity | `InteractionManager` |
-| **System** | Persistence, State, Loot | WorldState, `LootTable` |
+| **Logic** | Gating, Proximity, Collision | `InteractionManager`, `CollisionChecker`, `spatial_utils` |
+| **System** | Persistence, State, Loot | `SaveManager`, `WorldState`, `LootTable` |
 
 ## 2. Context Stack (AI Prompting Guide)
 
 Before performing any code changes, an AI agent MUST load the following "Context Stack" to understand the interconnected logic:
 
-1.  **Strategic**: `ENGINE_CORE.md` (This document) - High-level architectural rules.
-2.  **Implementation**: `INTERACTIVE_OBJECTS.md` - If touching any map objects.
-3.  **Core Logic**: `src/engine/game.py` - The main coordination loop.
-4.  **Spatial Logic**: `src/engine/interaction.py` - How entities see each other.
+1.  **Strategic**: `MASTER_ROADMAP.md` - Status and high-level milestones.
+2.  **Architecture**: `ENGINE_CORE.md` (This document) - High-level architectural rules.
+3.  **Map Logic**: `MAP_PARSER_SPEC.md` - Tiled integration and spatial querying.
+4.  **Spatial Logic**: `src/engine/interaction.py` & `src/engine/spatial_utils.py`.
 5.  **Global State**: `src/config.py` - All thresholds and constants.
-6.  **Data Driven**: `LOOT_TABLE_SPEC.md` - For chest content management.
+6.  **UI Systems**: `CHEST_UI_SPEC.md`, `INVENTORY_SPEC.md`.
 
 ## 3. Implementation Details
 
@@ -56,6 +56,10 @@ All entities move in discrete steps of `TILE_SIZE`.
 ### D. World Boundaries (Player/Entity)
 All entities are physically restricted to map dimensions.
 - **Logic**: Clamping is applied to `target_pos` to prevent choosing a target outside the world.
+- **Directional Constraints (Phase 1.6)**: 
+  - `BaseEntity.start_move()` checks `MapManager.get_direction_flags(tx, ty)` for the current tile.
+  - Movement is only allowed if the requested cardinal direction is in the allowed flags (or if the tile allows `"any"`).
+  - **Cardinal Priority**: If input is diagonal, the axis with the largest magnitude defines the intent.
 - **Placement**: Integrated into the Grid Movement controller in `BaseEntity`.
 
 ### E. Visual Anchoring vs Physical Hitbox
@@ -85,9 +89,11 @@ To optimize performance in large worlds, entity updates are intelligently skippe
 - **Behavior**: If an entity's rect is outside this enlarged viewport, its `is_visible` flag is set to `False`, and its `update()` logic (AI, movement, animation) is bypassed.
 
 ### I. Spatial Interaction Logic
-Decoupled logic in `InteractionManager` handles all entity/player spatial triggers.
+Decoupled logic in `InteractionManager` and `spatial_utils` handles all entity/player spatial triggers.
+- **Separation of Concerns**: `InteractionManager` manages state; `spatial_utils` (pure functions) manages geometry.
 - **NPCs**: Project a 32x32 `target_rect` one tile ahead of the player.
-- **Objects**: Proximity (<45px) and orientation checks defined by object type.
+- **Objects**: Proximity (<45px) and orientation checks defined by `spatial_utils.verify_orientation`.
+- **Directional Check**: `facing_toward(p_pos, p_facing, obj_pos)` uses dominant axis (horizontal if `abs(dx) >= abs(dy)`).
 - **Door Relaxation**: Open doors (`is_on=True`) allow interaction from the "wrong" side to enable closing after passing through.
 - **Cooldown**: A 0.5s interaction cooldown prevents input spamming.
 - **Unified Key**: The E key (Settings.INTERACT_KEY) is the universal trigger.
@@ -107,11 +113,16 @@ To maintain modularity, the engine decouples map parsing from rendering logic.
   - **Resolution**: Spawning logic uses a generic nested search helper (`_get_property`) to find logical markers across resolved structures.
 
 ### K. Entity Collision Logic
-In addition to map tile collisions, the engine supports blocking player movement through dynamic entities.
-- **Mechanism**: The `_is_collidable` check in `Game` iterates through the `interactives` and `npcs` sprite groups.
+In addition to map tile collisions, the engine supports blocking movement through dynamic entities via the `CollisionChecker`.
+- **Mechanism**: `CollisionChecker.check(px, py, requester)` iterates through layers and groups.
+- **Séquence de check (Autoritaire)**:
+    1. **Map tiles**: `map_manager.is_walkable(int(wx), int(wy))` (inverted logic: walkable=False blocks).
+    2. **Dynamic Obstacles**: `obstacles_group` (collidepoint).
+    3. **NPCs**: `npcs` group (collidepoint).
+    4. **Player**: `game.player` (collidepoint) if not requester.
 - **Detection**: Uses `collidepoint` check on the entity's physical hitbox (`obj.rect`).
 - **Signature**: Adapters must accept `(px_center, py_center, requester=None)` to support coordinate-based collision querying.
-- **Scope**: Applied to `interactives` (Doors, etc.) and `npcs` to ensure physical consistency.
+- **Delegation**: `InteractionManager.is_collidable` is a thin wrapper around `CollisionChecker.check`.
 
 ### L. GameHUD (Visual UI)
 The HUD provides information about the current time, day, and season.
@@ -187,11 +198,14 @@ To maintain consistency across map transitions, the engine uses a session-persis
 
 The engine uses a multi-pass rendering pipeline to combine layers, entities, and environmental effects. The authoritative list is maintained in `camera-rendering-spec.md`, but generally follows:
 
-1.  **Pass 0-3: World**: Background layers, Y-Sorted entities, Foreground layers (Occlusion).
-2.  **Pass 4-5: Environmental Overlay**: Additive window beams, Night Surface (`SRCALPHA`), and Light Halos (`BLEND_RGB_ADD`).
-3.  **Pass 6: Base HUD**: Clock, season.
-4.  **Pass 7: Player Emotes**: Rendered manually from `emote_group` with camera offset.
-5.  **Pass 8-12: Top-level UI**: Dialogue boxes, Speech bubbles, Inventory, Chest UI, and Custom Cursor (Pass 12).
+1.  **Pass 0: Static World**: Background layers (rendered once and cached). Skips animated tiles.
+2.  **Pass 1: Animated Tiles**: Tiled autotiles (`01-water`, etc.) rendered via `AnimationMapManager`.
+3.  **Pass 2: Y-Sorted entities**: NPCs, Player, Interactive objects.
+4.  **Pass 3: Foreground World**: Layers with `order > player.depth` or tiles with `depth > 0`. Includes occlusion alpha (160/255).
+5.  **Pass 4-5: Environmental Overlay**: Additive window beams, Night Surface (`SRCALPHA`), and Light Halos (`BLEND_RGB_ADD`).
+6.  **Pass 6: Base HUD**: Clock, season.
+7.  **Pass 7: Player Emotes**: Rendered manually from `emote_group` with camera offset.
+8.  **Pass 8-12: Top-level UI**: Dialogue boxes, Speech bubbles, Inventory, Chest UI, and Custom Cursor (Pass 12).
 
 ### T. UI Hierarchy & Input Blocking
 

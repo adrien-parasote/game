@@ -216,9 +216,19 @@ State machine managed by `_dragging_item: dict | None`:
 
 ---
 
-## 6. Module: `src/ui/chest.py`
+## 6. Architecture & Modules
 
-### Class: `ChestUI`
+### 6.1. Component Breakdown
+The `ChestUI` system is split into multiple mixins to maintain a clean `src/ui/chest.py` (< 400 LOC).
+
+| Module | Purpose |
+|--------|---------|
+| `chest.py` | Main orchestrator, event dispatcher, state holder. |
+| `chest_layout.py` | Mixin for coordinate computation, grid alignment, and area mapping. |
+| `chest_draw.py` | Mixin for rendering logic (background, slots, hovers, items). |
+| `chest_transfer.py`| Mixin for data logic (drag & drop resolution, auto-transfer buttons). |
+
+### 6.2. Class: `ChestUI`
 
 **Public interface:**
 ```python
@@ -277,10 +287,11 @@ class ChestUI:
 ```
 
 **Constraints:**
-- File < 900 lines (dual-panel + transfer system, v1.2).
+- File `chest.py` < 400 lines (delegates logic to mixins).
 - All methods < 50 lines.
 - No state mutation after `_compute_layout()` except `is_open`, `_chest_entity`, `_player`, hover state, `_inv_offset`, and `_dragging_item` / `_drag_pos`.
 - No assets loaded in `draw()`.
+- **Mixin Pattern**: Mixins are inherited by `ChestUI` but logic is logically isolated by domain.
 
 ---
 
