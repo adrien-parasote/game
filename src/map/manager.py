@@ -45,7 +45,7 @@ class MapManager:
                 for row in self.layers[layer_id]:
                     for tid in row:
                         if tid != 0 and tid in self.tiles:
-                            d = getattr(self.tiles[tid], "depth", 0)
+                            d = self.tiles[tid].depth
                             if isinstance(d, int) and d > max_d:
                                 max_d = d
             self.layer_max_depths[layer_id] = max_d
@@ -71,9 +71,9 @@ class MapManager:
                 for x in range(self.width):
                     tile_id = layer_data[y][x]
                     if tile_id != 0 and tile_id in self.tiles:
-                        if getattr(self.tiles[tile_id], "frames", None):
+                        if self.tiles[tile_id].frames:
                             continue
-                        tile_depth = getattr(self.tiles[tile_id], "depth", 0)
+                        tile_depth = self.tiles[tile_id].depth
                         if tile_depth > max_bg_depth:
                             continue
                         tile_img = self.tiles[tile_id].image
@@ -159,7 +159,7 @@ class MapManager:
                         tile = self.tiles.get(tile_id)
                         if tile and tile.frames:
                             continue
-                        depth = getattr(tile, "depth", 0) if tile else 0
+                        depth = tile.depth if tile else 0
                         # For mixed-depth layers (order <= min_depth), skip background tiles
                         if min_depth is not None and not is_foreground_layer and depth <= min_depth:
                             continue
@@ -191,7 +191,7 @@ class MapManager:
                     if tile_id != 0 and tile_id in self.tiles:
                         tile = self.tiles[tile_id]
                         if tile.frames:
-                            yield (x * ts, py, tile_id, getattr(tile, "depth", 0))
+                            yield (x * ts, py, tile_id, tile.depth)
 
     def get_window_positions(self) -> list[tuple[int, int, int]]:
         """
