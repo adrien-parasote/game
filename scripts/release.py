@@ -44,9 +44,9 @@ def run_git_commands(version, dry_run=False):
     """Run git add, commit, tag, and push."""
     # 1. Check if working directory is clean
     status = run_command(["git", "status", "--porcelain"])
-    # If settings.json is the only change, we can proceed, but let's be strict for now
-    if status and status != " M settings.json":
-        print("Error: Working directory is dirty. Please commit or stash changes.", file=sys.stderr)  # noqa: P5
+    # If settings.json is the only change, we can proceed
+    if status and status.strip() != "M settings.json":
+        print(f"Error: Working directory is dirty:\n{status}", file=sys.stderr)  # noqa: P5
         if not dry_run:
             sys.exit(1)
 
