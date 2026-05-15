@@ -1,10 +1,10 @@
 > Document Type: Implementation
 
-# SPEC: `scripts/rpgmaker_autotile_to_tiled.py`
+# SPEC: `scripts/autotiles/rpgmaker_autotile_to_tiled.py`
 
 **Covers:** F1 (PNG strip), F2 (TSX Wang), F3 (CLI)
 **Source files read:** 1 / 1 (100%)
-**Script:** `scripts/rpgmaker_autotile_to_tiled.py` (239 lines)
+**Script:** `scripts/autotiles/rpgmaker_autotile_to_tiled.py` (239 lines)
 
 ---
 
@@ -21,7 +21,7 @@ Single-file Python CLI utility that converts one RPG Maker XP autotile (96×128 
 ### CLI
 
 ```
-python3 scripts/rpgmaker_autotile_to_tiled.py <input.png> [tsx_path] [png_path]
+python3 scripts/autotiles/rpgmaker_autotile_to_tiled.py <input.png> [tsx_path] [png_path]
 ```
 
 | Positional | Required | Type | Behaviour |
@@ -147,7 +147,7 @@ For each of the 4 corners (`tl`, `tr`, `bl`, `br`), the rule is:
 
 Not wired into any game module. Executed manually from the project root:
 ```bash
-python3 scripts/rpgmaker_autotile_to_tiled.py <input> [tsx] [png]
+python3 scripts/autotiles/rpgmaker_autotile_to_tiled.py <input> [tsx] [png]
 ```
 
 ---

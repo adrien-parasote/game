@@ -450,6 +450,7 @@ def _make_game_for_input():
     game._npc_bubble = None
     game.chest_ui.is_open = False
     game.inventory_ui = MagicMock()
+    game.inventory_ui.is_open = False
     game.interaction_manager = MagicMock()
     game._current_interactive_target = None
     game.player = MagicMock()
@@ -516,6 +517,19 @@ class TestInputHandler:
         event = pygame.event.Event(pygame.KEYDOWN, key=Settings.INVENTORY_KEY)
         ih.handle_events([event])
         game.inventory_ui.toggle.assert_not_called()
+
+    @pytest.mark.tc("TC-IH-06")
+    def test_interact_key_inventory_open_does_not_trigger_interaction(self):
+        """Regression: pressing INTERACT while inventory is open must not open chests."""
+        from src.engine.input_handler import InputHandler
+        from src.config import Settings
+
+        game = _make_game_for_input()
+        game.inventory_ui.is_open = True
+        ih = InputHandler(game)
+        event = pygame.event.Event(pygame.KEYDOWN, key=Settings.INTERACT_KEY)
+        ih.handle_events([event])
+        game.interaction_manager.handle_interactions.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

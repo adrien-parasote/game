@@ -11,7 +11,7 @@ status: VALIDATED
 | 1 | `collidable` to `walkable` migration | Identify all impacted engine systems | Codebase search, `tmj_parser`, `manager.py`, `collision_checker.py` |
 | 2 | `23-direction` property parsing | Understand how Tiled exports `valuesAsFlags` enum | Tiled documentation, `game.tiled-project` |
 | 3 | Directional movement constraint logic | Define the exact algorithm for restricting movement | Codebase `base.py`, `player.py` |
-| 4 | Autotile integration (`00-grass-1`, `01-water`) | Ensure asset pipeline supports simple and animated Wangsets | Existing python scripts (`rpgmaker_blob_autotile_to_tiled.py`) |
+| 4 | Autotile integration (`00-grass-1`, `01-water`) | Ensure asset pipeline supports simple and animated Wangsets | Existing python scripts (`scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py`) |
 
 ## Source Evaluation
 | Source | Type | Date | Credibility | Key Findings | Conflicts? |
@@ -30,7 +30,7 @@ status: VALIDATED
 ## Gaps Identified
 | Gap | Why It Matters | What Research Would Fill It |
 |-----|---------------|---------------------------|
-| Animated Autotile Pipeline | We need to generate `01-water` (animated). | Existing `rpgmaker_blob_autotile_to_tiled.py` handles blob autotiles. Needs to verify if it supports animated RPG Maker XP frames (which use 4 frames per tile). |
+| Animated Autotile Pipeline | We need to generate `01-water` (animated). | Existing `scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py` handles blob autotiles. Needs to verify if it supports animated RPG Maker XP frames (which use 4 frames per tile). |
 
 ## Recommendation
 - **Chosen approach:** Adapt existing map parsing to use `walkable` (default `True`), and augment `start_move()` in `BaseEntity` to restrict movement based on the current tile's `direction` string.

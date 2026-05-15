@@ -67,6 +67,9 @@ class InputHandler:
 
     def _handle_interact_key(self) -> None:
         """Route INTERACT_KEY press based on current UI state."""
+        if self.game.inventory_ui.is_open:
+            return
+
         if self.game._npc_bubble is not None:
             self.game._advance_npc_bubble()
             return

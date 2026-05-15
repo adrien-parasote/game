@@ -2,8 +2,8 @@
 
 # Spec : Blob Autotile Pipeline (47 tiles)
 
-**Script :** `scripts/rpgmaker_blob_autotile_to_tiled.py`
-**Remplace :** `rpgmaker_autotile_to_tiled.py` (16 tiles edge-only → coin artefacts)
+**Script :** `scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py`
+**Remplace :** `scripts/autotiles/rpgmaker_autotile_to_tiled.py` (16 tiles edge-only → coin artefacts)
 **Research :** [devium/tiled-autotile](https://github.com/devium/tiled-autotile)
 
 ---
@@ -130,7 +130,7 @@ def _blob_wang_id(bitmask: int) -> str:
 ## Interface CLI
 
 ```
-python3 scripts/rpgmaker_blob_autotile_to_tiled.py <input.png>
+python3 scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py <input.png>
         [--tsx PATH] [--png PATH] [--frame-duration MS]
 ```
 
@@ -265,5 +265,4 @@ def _assemble_tile(frame, combo):
 
 - Tiled mixed Wang : https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#wangset
 - devium/tiled-autotile : https://github.com/devium/tiled-autotile
-- Script statique actuel : [rpgmaker_autotile_to_tiled.py](../../rpgmaker_autotile_to_tiled.py#L1)
-- Script animé actuel : [rpgmaker_animated_autotile_to_tiled.py](../../rpgmaker_animated_autotile_to_tiled.py#L1)
+- Script Blob : [rpgmaker_blob_autotile_to_tiled.py](../../autotiles/rpgmaker_blob_autotile_to_tiled.py#L1)

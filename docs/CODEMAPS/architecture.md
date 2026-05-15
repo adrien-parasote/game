@@ -72,6 +72,7 @@ docs/
   ADRs/             6 Architecture Decision Records (ADR-001 à ADR-006)
   research/         Research docs (unit_test_optimization.md)
 scripts/
+  autotiles/            Autotile pipeline scripts (blob/animated/static)
   tc_report.py          Spec↔Test traceability report (CLI + --markdown export)
   calibrate_halos.py    Outil interactif calibration halos (FULLSCREEN|SCALED) → calibration_result.py
   apply_calibration.py  Inject calibration_result.py → title_screen_constants.py

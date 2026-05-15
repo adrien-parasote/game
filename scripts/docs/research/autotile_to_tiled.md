@@ -18,7 +18,7 @@ The sequence is:
 8. Top-Left Corner
 
 ### Current Script Issue
-In `scripts/rpgmaker_autotile_to_tiled.py`, the `_wang_id` function outputs:
+In `scripts/autotiles/rpgmaker_autotile_to_tiled.py`, the `_wang_id` function outputs:
 `0,{t},0,{r},0,{b},0,{l}`
 This assigns the Wang colors to the **corners** (indices 1, 3, 5, 7) instead of the **edges** (indices 0, 2, 4, 6), which completely breaks the `type="edge"` matching logic in Tiled. 
 
@@ -44,4 +44,4 @@ To construct the 16 combinations for an edge-based matching set, we iterate from
 The script already implements a `_build_tile` function that uses a 4-bit mask to assemble the 16 tiles by picking the correct 16x16px quarters. By fixing the `_wang_id` output, the generated TSX will correctly label these 16 tiles as edge Wang tiles.
 
 ## Decision: Adopt / Adapt / Build
-**Adapt:** We will modify the existing `scripts/rpgmaker_autotile_to_tiled.py` script to correct the `_wang_id` return value. By shifting the values to the edge indices, Tiled will correctly recognize the terrain edges and allow seamless auto-painting.
+**Adapt:** We will modify the existing `scripts/autotiles/rpgmaker_autotile_to_tiled.py` script to correct the `_wang_id` return value. By shifting the values to the edge indices, Tiled will correctly recognize the terrain edges and allow seamless auto-painting.

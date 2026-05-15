@@ -11,6 +11,7 @@ class Settings:
     Centralized game configuration settings.
     Loads data from settings.json if available, otherwise uses defaults.
     """
+    MAP_SIZE = 32
 
     # Internal Defaults (Fallback)
     _DEFAULTS = {
