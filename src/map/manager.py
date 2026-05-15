@@ -130,7 +130,8 @@ class MapManager:
         - Layers with order <= min_depth are included only if they contain tiles
           with depth > min_depth (per-tile check, for multi-depth layers).
         """
-        tile_size = getattr(self.layout, "tile_size", 32)  # Fallback to 32
+        tile_size = self.layout.tile_size  # direct attr — always OrthogonalLayout
+        ts = tile_size  # local alias for tight loop
 
         # Calculate start and end indices using math boundaries (O(1) range calculation)
         start_col = max(0, int(viewport_rect.left // tile_size))
@@ -151,6 +152,7 @@ class MapManager:
 
             layer_data = self.layers[layer_id]
             for y in range(start_row, end_row):
+                py = y * ts  # inline to_screen — eliminates method call per tile
                 for x in range(start_col, end_col):
                     tile_id = layer_data[y][x]
                     if tile_id != 0:
@@ -161,8 +163,7 @@ class MapManager:
                         # For mixed-depth layers (order <= min_depth), skip background tiles
                         if min_depth is not None and not is_foreground_layer and depth <= min_depth:
                             continue
-                        px, py = self.layout.to_screen(x, y)
-                        yield (int(px), int(py), tile_id, depth)
+                        yield (x * ts, py, tile_id, depth)
 
 
     def get_visible_animated_chunks(
@@ -172,7 +173,8 @@ class MapManager:
         Yields (x_px, y_px, tile_id, depth) for tiles within viewport
         that have animation frames.
         """
-        tile_size = getattr(self.layout, "tile_size", 32)
+        tile_size = self.layout.tile_size
+        ts = tile_size
 
         start_col = max(0, int(viewport_rect.left // tile_size))
         end_col = min(self.width, int(math.ceil(viewport_rect.right / tile_size)))
@@ -183,13 +185,13 @@ class MapManager:
         for layer_id in self.layer_order:
             layer_data = self.layers[layer_id]
             for y in range(start_row, end_row):
+                py = y * ts
                 for x in range(start_col, end_col):
                     tile_id = layer_data[y][x]
                     if tile_id != 0 and tile_id in self.tiles:
                         tile = self.tiles[tile_id]
                         if tile.frames:
-                            px, py = self.layout.to_screen(x, y)
-                            yield (int(px), int(py), tile_id, getattr(tile, "depth", 0))
+                            yield (x * ts, py, tile_id, getattr(tile, "depth", 0))
 
     def get_window_positions(self) -> list[tuple[int, int, int]]:
         """

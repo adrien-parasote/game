@@ -28,17 +28,20 @@ class RenderManager:
                 if surface:
                     self.game.screen.blit(surface, (cam_offset.x, cam_offset.y))
 
-        # Draw animated background tiles
+        # Draw animated background tiles using fblits for batch efficiency
         if self.game.anim_map_manager:
             self._viewport_world.update(
                 -cam_offset.x, -cam_offset.y,
                 self._screen_rect.width, self._screen_rect.height,
             )
+            anim_blits = []
             for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(self._viewport_world):
                 if depth <= self.game.player.depth:
                     img = self.game.anim_map_manager.get_current_frame_image(tile_id)
                     if img:
-                        self.game.screen.blit(img, (px + cam_offset.x, py + cam_offset.y))
+                        anim_blits.append((img, (px + cam_offset.x, py + cam_offset.y)))
+            if anim_blits:
+                self.game.screen.fblits(anim_blits)
 
     def draw_foreground(self):
         """Draw foreground tiles: all tiles from layers with order > player depth,
@@ -57,33 +60,42 @@ class RenderManager:
         visual_rect = self.game.player.image.get_rect(bottomright=self.game.player.rect.bottomright)
         player_screen_rect = visual_rect.move(cam_offset.x, cam_offset.y)
 
+        # Split tiles: occluded tiles (need per-tile colliderect) vs normal tiles (batch)
+        normal_blits = []
+        player_depth = self.game.player.depth
+        tiles = self.game.map_manager.tiles
+        screen = self.game.screen
+
         for px, py, tile_id, depth in self.game.map_manager.get_visible_chunks(
-            self._viewport_world, min_depth=self.game.player.depth
+            self._viewport_world, min_depth=player_depth
         ):
-            tile_data = self.game.map_manager.tiles[tile_id]
+            tile_data = tiles[tile_id]
             screen_pos = (px + cam_offset.x, py + cam_offset.y)
 
-            if depth > self.game.player.depth:
+            if depth > player_depth:
                 # Depth-occlusion: use semi-transparent image when player overlaps
                 self._tile_rect.topleft = screen_pos
                 if player_screen_rect.colliderect(self._tile_rect):
-                    self.game.screen.blit(tile_data.occluded_image or tile_data.image, screen_pos)
+                    screen.blit(tile_data.occluded_image or tile_data.image, screen_pos)
                 else:
-                    self.game.screen.blit(tile_data.image, screen_pos)
+                    normal_blits.append((tile_data.image, screen_pos))
             else:
-                # Foreground-order layer tile with depth <= player: draw normally (no occlusion)
-                self.game.screen.blit(tile_data.image, screen_pos)
+                # Foreground-order layer tile with depth <= player: no occlusion needed
+                normal_blits.append((tile_data.image, screen_pos))
+
+        if normal_blits:
+            screen.fblits(normal_blits)
 
         # Draw animated foreground tiles
         if self.game.anim_map_manager:
+            anim_fg_blits = []
             for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(self._viewport_world):
-                if depth > self.game.player.depth:
+                if depth > player_depth:
                     img = self.game.anim_map_manager.get_current_frame_image(tile_id)
                     if img:
-                        screen_pos = (px + cam_offset.x, py + cam_offset.y)
-                        # We don't have pre-cached occlusion frames for dynamic animations yet,
-                        # but we assume animated tiles are depth=0 anyway.
-                        self.game.screen.blit(img, screen_pos)
+                        anim_fg_blits.append((img, (px + cam_offset.x, py + cam_offset.y)))
+            if anim_fg_blits:
+                screen.fblits(anim_fg_blits)
 
 
 
