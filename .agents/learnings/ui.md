@@ -426,3 +426,32 @@ mock_font.render.return_value = pygame.Surface((10, 10), pygame.SRCALPHA)
 ---
 
 *Last updated: 2026-05-07 — added L-UI-011, L-UI-012 from perf-constants-spec session.*
+
+---
+
+### A-UI-008 · 2026-05-15 · U · Bug Fixed
+**Persistent UI objects must be explicitly reset on game-state transitions**
+
+`InventoryUI` et `ChestUI` sont des objets persistants créés une seule fois dans `Game._init_player()`. Leur état (`is_open`, drag state, etc.) survit à tous les changements de carte. Si le joueur ouvre l'inventaire puis retourne au menu sans que `_transition_to_title()` ne réinitialise ces objets, l'inventaire reste `is_open = True` pour la nouvelle partie ou le chargement suivant.
+
+```python
+# ❌ _transition_to_title() sans reset → inventaire visible sur nouvelle partie
+def _transition_to_title(self):
+    self._game.audio_manager.stop_bgm()
+    self.state = GameState.TITLE  # inventory_ui.is_open still True!
+
+# ✅ Réinitialiser explicitement tout objet UI persistant
+def _transition_to_title(self):
+    self._game.audio_manager.stop_bgm()
+    self._game.inventory_ui._init_state()   # is_open=False, drag reset
+    self._game.chest_ui.close()             # is_open=False, entity detached
+    self.state = GameState.TITLE
+```
+
+**Règle :** Tout objet UI persistant (non recréé entre les parties) DOIT avoir une méthode de reset (`_init_state()`, `close()`, `reset()`) appelée systématiquement dans `_transition_to_title()`. Documenter dans la spec les resets obligatoires avec la mention `# MUST call`.
+
+**Evidence :** BUG-GSM-001 — inventaire ouvert + contenu stale visible au démarrage d'une nouvelle partie après retour menu. TC-036. commit `fix/inventory-state-reset-on-title`.
+
+---
+
+*Last updated: 2026-05-15 — added A-UI-008 from BUG-GSM-001 inventory state reset fix.*

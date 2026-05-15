@@ -137,6 +137,19 @@ def test_handle_paused_goto_title(gsm, mock_pause_screen, mock_title_screen, moc
     mock_game.audio_manager.stop_bgm.assert_called()
 
 
+@pytest.mark.tc("GF-033")
+def test_transition_to_title_resets_inventory_and_chest_ui(gsm, mock_game):
+    """Regression: inventory_ui and chest_ui must be closed when returning to title.
+
+    Bug: open inventory survived menu transition → still rendered on new/loaded game.
+    Fix: _transition_to_title() calls inventory_ui._init_state() and chest_ui.close().
+    """
+    # Both UI overlays are Mocks on mock_game — verify the reset calls are made
+    gsm._transition_to_title()
+    mock_game.inventory_ui._init_state.assert_called_once()
+    mock_game.chest_ui.close.assert_called_once()
+
+
 @pytest.mark.tc("GF-027")
 def test_save_to_first_free_slot(gsm, mock_save_manager, mock_game):
     mock_save_manager.list_slots.return_value = [Mock(), None, Mock()]

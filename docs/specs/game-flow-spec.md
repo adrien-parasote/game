@@ -230,6 +230,10 @@ class GameStateManager:
     def _transition_to_playing(self, slot_id: int | None) -> None
         # slot_id=None → nouvelle partie, slot_id=1..3 → chargement
     def _transition_to_title(self) -> None
+        # MUST call: game.inventory_ui._init_state() + game.chest_ui.close()
+        # Raison: les deux UI sont des objets persistants — si ouverts en jeu,
+        # ils doivent être réinitialisés avant toute nouvelle partie ou chargement.
+        # (BUG-GSM-001 : inventaire ouvert après retour au menu)
     def _transition_to_paused(self) -> None
 ```
 
@@ -439,6 +443,7 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | TC-030 | `_on_escape()` depuis PAUSED | state = PAUSED | `state == GameState.PLAYING` |
 | TC-031 | `_transition_to_playing(1)` | `save_manager.load(1)` retourne None | `game._load_map()` appelé avec default_map |
 | TC-032 | ESC filtering dans `_handle_playing()` | Liste d'events avec K_ESCAPE | K_ESCAPE non posté dans la queue pygame |
+| TC-036 | `_transition_to_title()` — reset UI | Inventory UI ouverte avant retour menu | `inventory_ui._init_state()` ET `chest_ui.close()` appelés (BUG-GSM-001) |
 
 ### Integration Tests
 
@@ -516,6 +521,7 @@ Et dans `src/config.py` : supprimer `QUIT_KEY` de la classe `Settings`.
 | TC-030 | `test_on_escape` | `../../tests/engine/test_game_state_manager.py:L119` |
 | TC-031 | `test_transition_to_playing_no_save_data` | `../../tests/engine/test_game_state_manager.py:L127` |
 | TC-032 | `test_handle_events_filtering` | `../../tests/engine/test_game_state_manager.py:L133` |
+| TC-036 | `test_transition_to_title_resets_inventory_and_chest_ui` | `../../tests/engine/test_game_state_manager.py` |
 | TC-033 | `test_title_screen_draw_main_menu` | `../../tests/ui/test_title_screen.py` |
 | TC-034 | `test_title_screen_light_scale_factors` | `../../tests/ui/test_title_screen.py` |
 | TC-035 | `test_title_screen_options_state_transitions` | `../../tests/ui/test_title_screen.py` |

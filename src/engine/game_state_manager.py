@@ -180,6 +180,9 @@ class GameStateManager:
         pygame.mouse.set_visible(False)  # custom cursor takes over
         self._title_screen.state = "MAIN_MENU"
         self._pause_screen.state = "MAIN"
+        # Reset UI overlays so they are never open on game re-entry
+        self._game.inventory_ui._init_state()
+        self._game.chest_ui.close()
         self.state = GameState.TITLE
 
     # ── Save / Load helpers ───────────────────────────────────────────────────
