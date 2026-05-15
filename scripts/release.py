@@ -1,0 +1,101 @@
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+
+
+def validate_version(version):
+    """Validate version format (SemVer-ish)."""
+    # Simple regex for SemVer: x.y.z(-suffix)?
+    pattern = r"^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$"
+    return re.match(pattern, version) is not None
+
+def update_version(settings_path, new_version):
+    """Update version in settings.json."""
+    if not os.path.exists(settings_path):
+        raise FileNotFoundError(f"Settings file not found: {settings_path}")
+
+    with open(settings_path) as f:
+        data = json.load(f)
+
+    data["version"] = new_version
+
+    with open(settings_path, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+    print(f"Updated {settings_path} to version {new_version}")
+
+def run_command(cmd, dry_run=False):
+    """Run a shell command and return its output."""
+    if dry_run:
+        print(f"[DRY RUN] Would run: {' '.join(cmd)}")
+        return ""
+
+    print(f"Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"Error: {result.stderr}", file=sys.stderr)
+        sys.exit(result.returncode)
+    return result.stdout.strip()
+
+def run_git_commands(version, dry_run=False):
+    """Run git add, commit, tag, and push."""
+    # 1. Check if working directory is clean
+    status = run_command(["git", "status", "--porcelain"])
+    # If settings.json is the only change, we can proceed, but let's be strict for now
+    if status and status != " M settings.json":
+        print("Error: Working directory is dirty. Please commit or stash changes.", file=sys.stderr)
+        if not dry_run:
+            sys.exit(1)
+
+    # 2. Check if tag already exists
+    tags = run_command(["git", "tag", "-l", version])
+    if tags:
+        print(f"Error: Tag {version} already exists.", file=sys.stderr)
+        if not dry_run:
+            sys.exit(1)
+
+    # 3. Get current branch
+    branch = run_command(["git", "branch", "--show-current"])
+    if not branch:
+        print("Error: Could not determine current branch.", file=sys.stderr)
+        if not dry_run:
+            sys.exit(1)
+
+    # 4. Git operations
+    run_command(["git", "add", "settings.json"], dry_run=dry_run)
+    run_command(["git", "commit", "-m", f"chore: bump version to {version}"], dry_run=dry_run)
+    run_command(["git", "tag", version], dry_run=dry_run)
+    run_command(["git", "push", "origin", branch], dry_run=dry_run)
+    run_command(["git", "push", "origin", version], dry_run=dry_run)
+
+    print(f"Successfully released version {version} on branch {branch}")
+
+def main():
+    parser = argparse.ArgumentParser(description="Release a new version of the game.")
+    parser.add_argument("version", help="The new version string (e.g., 0.6.1)")
+    parser.add_argument("--dry-run", action="store_true", help="Show what would be done without doing it")
+    args = parser.parse_args()
+
+    if not validate_version(args.version):
+        print(f"Error: Invalid version format '{args.version}'. Must be x.y.z", file=sys.stderr)
+        sys.exit(1)
+
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    settings_path = os.path.join(root_dir, "settings.json")
+
+    try:
+        if not args.dry_run:
+            update_version(settings_path, args.version)
+        else:
+            print(f"[DRY RUN] Would update version in settings.json to {args.version}")
+
+        run_git_commands(args.version, dry_run=args.dry_run)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

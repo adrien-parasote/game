@@ -2,7 +2,7 @@
 
 # Spec↔Test Traceability Matrix
 
-**Coverage:** 88/125 (70%)
+**Coverage:** 91/128 (71%)
 
 ## camera-rendering-spec.md
 
@@ -116,9 +116,7 @@
 | TC-028 | ❌ MISSING | — |
 | TC-029 | ❌ MISSING | — |
 | TC-030 | ❌ MISSING | — |
-| TC-031 | ✅ | `tests/engine/test_game_state_manager.py::test_load_game_time_restored` |
-| TC-031 | ✅ | `tests/engine/test_game_state_time.py::test_load_game_time_restored` |
-| TC-031b | ✅ | `tests/engine/test_game_state_time.py::test_new_game_time_reset` |
+| TC-031 | ❌ MISSING | — |
 | TC-032 | ❌ MISSING | — |
 | TC-036 | ❌ MISSING | — |
 | TC-033 | ❌ MISSING | — |
@@ -201,6 +199,14 @@
 | IT-INT-01 | ❌ MISSING | — |
 | IT-INT-02 | ❌ MISSING | — |
 
+## release_script.md
+
+| TC ID | Status | Test |
+|-------|--------|------|
+| TC-REL-01 | ✅ | `tests/scripts/test_release.py::test_validate_version` |
+| TC-REL-02 | ✅ | `tests/scripts/test_release.py::test_update_version` |
+| TC-REL-03 | ✅ | `tests/scripts/test_release.py::test_run_git_commands` |
+
 ## save-system.md
 
 | TC ID | Status | Test |
@@ -274,8 +280,6 @@
 | GF-029 | `tests/engine/test_game_state_manager.py::test_on_escape` |
 | GF-030 | `tests/engine/test_game_state_manager.py::test_on_escape` |
 | GF-031 | `tests/engine/test_game_state_manager.py::test_load_game_time_restored` |
-| GF-031 | `tests/engine/test_game_state_time.py::test_load_game_time_restored` |
-| GF-031b | `tests/engine/test_game_state_time.py::test_new_game_time_reset` |
 | GF-032 | `tests/engine/test_game_state_manager.py::test_handle_events_filtering` |
 | GF-033 | `tests/engine/test_game_state_manager.py::test_transition_to_title_resets_inventory_and_chest_ui` |
 | GF-034 | `tests/ui/test_title_screen.py::test_title_screen_light_scale_factors` |
