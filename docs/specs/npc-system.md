@@ -19,6 +19,7 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 - **Wander Radius**: AI logic enforces a distance check (in tiles) from the original `spawn_pos`.
 - **Position Persistence**: Subscribes to `world_state`. NPC coordinates `[x, y]` and `facing` are saved using their `_world_state_key` (if present) upon unspawning or map unloading.
 - **Name**: Mapped from the `name` property in Tiled, used for the UI name plate.
+- **game reference**: The `game` attribute MUST be set by `EntityFactory.spawn_npc()`. Without it, `BaseEntity.start_move()` uses `Settings.MAP_SIZE` (default 32) for boundary clamping, which traps NPCs placed beyond pixel 1024 on larger maps.
 
 ### [IMPLEMENTED] `src/entities/base.py`
 - Provided `interact(initiator)` method stub for subclass overrides.
@@ -63,6 +64,8 @@ This section defines the behavior and failure modes for autonomous entities.
 | `Player` handles dialogue UI | `Game` or UI_Manager handles dialogue | Decouples rendering overlay from input entity |
 | Manual property parsing in AI logic | Use `TmjParser` properties dict | Centralizes data extraction and simplifies AI classes |
 | Immediate full-text display | Use Paginated Dialogue System | Improves readability for long NPC dialogues |
+| Call `start_move()` without `game` set | Always ensure `npc.game = self.game` before `walkable_func` is used | Without `game`, boundary clamping uses wrong map size (BUG-1 regression) |
+| Leave `direction` set after a blocked move | Clear `self.direction = Vector2(0,0)` in `start_move()` on block | Causes `move()` to retry every frame → visual "spinning" (BUG-2 regression) |
 
 #### 3.1.1. CPU Freeze Optimization (Detail)
 
@@ -118,7 +121,8 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 | Error Type | Detection | Response | Fallback |
 |------------|-----------|----------|----------|
 | Missing Spritesheet | FileNotFoundError | Use generic blue rectangle (via existing logic) | `is_moving` set false to prevent visual artifacts |
-| Invalid Path/Wander | Wall collision returned | Cancel current wander vector | Re-eval after 2s cooldown |
+| Invalid Path/Wander | Wall collision returned by `walkable_func` | Cancel wander: clear `direction = Vector2(0,0)`, set `state = "idle"` | Re-eval after AI cooldown (2–5s). Direction MUST be cleared to prevent spin-in-place (BUG-2). |
+| Wrong boundary clamping | `npc.game` is `None` → `MAP_SIZE` fallback used | All movement targets clamped to wrong world_height → NPC stuck | `spawn_npc()` MUST set `npc.game = self.game` before any movement (BUG-1). |
 | Missing Dialogue Key | i18n lookup returns `None` | Log warning, no bubble shown | NPC stays in `interact` state until player moves away |
 | Missing Map Properties | `props.get()` returns `None` | Use engine defaults (NPC speed, etc.) | Log Warning |
 
@@ -130,6 +134,8 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 - **NPC-related game logic**: [game.py L1](../../src/engine/game.py#L1)
 - **Unit tests (entities)**: [test_entities.py L26](../../tests/entities/test_entities.py#L26)
 - **Integration tests (interaction)**: [test_interaction.py L169](../../tests/engine/test_interaction.py#L169)
+- **Regression tests (NPC stuck bug)**: [test_npc_stuck_bug.py](../../tests/entities/test_npc_stuck_bug.py)
+- **EntityFactory tests**: [test_entity_factory.py](../../tests/entities/test_entity_factory.py)
 
 ### Linked Test Functions
 

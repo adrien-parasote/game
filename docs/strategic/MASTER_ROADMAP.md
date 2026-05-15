@@ -75,8 +75,9 @@ Remplacement du modèle binaire `collidable` par `walkable` + `direction_flags`.
 | `BaseEntity.start_move()` | ✅ interception directionnelle (priorité cardinale) |
 | `AnimationMapManager` (`src/map/animation.py`) | ✅ résolution de frame par `pygame.time.get_ticks()` |
 
-**Résultats :** 768 tests, tous verts ✅ · 0 régression  
-**Specs :** [`engine-core.md`](../specs/engine-core.md) · [`map-parser-spec.md`](../specs/map-parser-spec.md) · [`chest-ui-spec.md`](../specs/chest-ui-spec.md)
+**Résultats :** 772 tests, tous verts ✅ · 0 régression  
+**Specs :** [`engine-core.md`](../specs/engine-core.md) · [`map-parser-spec.md`](../specs/map-parser-spec.md) · [`npc-system.md`](../specs/npc-system.md)  
+**Bug fix (2026-05-15) :** NPC coincé/spinning en debug room (BUG-1: `spawn_npc` ne setait pas `npc.game`, BUG-2: `direction` non clearée sur move bloqué)
 
 ---
 

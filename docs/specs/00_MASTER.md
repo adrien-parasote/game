@@ -21,7 +21,7 @@ This document is the master index for all technical specifications in the RPG en
 |------|------|-----------------|
 | Map Parser | [map-parser-spec.md](./map-parser-spec.md#L1) | `TmjParser`, `TiledProject`, `MapManager`, `OrthogonalLayout` |
 | World System | [world-system.md](./world-system.md#L1) | WorldManager, map transitions |
-| Directional Autotiles | [phase-1.6-directional-autotiles.md](./phase-1.6-directional-autotiles.md#L1) | Walkability directionnelle, animated autotile pipeline |
+| Directional Autotiles | [map-parser-spec.md](./map-parser-spec.md#walkability--directional-flags) | Walkability directionnelle, animated autotile pipeline |
 
 ### Entities
 | Spec | File | Modules Covered |
@@ -64,7 +64,7 @@ This document is the master index for all technical specifications in the RPG en
 | Phase 1.5 — Game Refactoring | [phase-1.5-game-refactoring.md](./phase-1.5-game-refactoring.md#L1) | Core extraction |
 | Phase 1.5 — Interaction Refactoring | [phase-1.5-interaction-refactoring.md](./phase-1.5-interaction-refactoring.md#L1) | Interaction overhaul |
 | Phase 1.5 — Chest Refactoring | [phase-1.5-chest-refactoring.md](./phase-1.5-chest-refactoring.md#L1) | Chest mixin extraction |
-| Phase 1.6 — Plan exécution | [phase-1.6-plan.md](./phase-1.6-plan.md#L1) | Plan implémentation (détaille [phase-1.6-directional-autotiles.md](./phase-1.6-directional-autotiles.md#L1)) |
+| Phase 1.6 — Autotiles directionnels | [map-parser-spec.md](./map-parser-spec.md#L1) | Walkability + direction_flags (intégré dans map-parser-spec) |
 
 ## 2. Global Registry
 

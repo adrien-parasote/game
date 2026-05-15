@@ -337,7 +337,55 @@ def get_contents(self) -> list[dict]:
 
 ---
 
-*Last updated: 2026-05-14 — L-GE-017 deep copy LootTable, session hardening TDD.*
+*Last updated: 2026-05-15 — A-EF-002 factory game propagation, A-GAME-003 direction clear on blocked move.*
+
+---
+
+### A-EF-002 · 2026-05-15 · P · Major Rework (silent bug)
+**Factory `spawn_*` doit propager `entity.game = self.game` — omission = boundary clamping silencieux**
+
+Lors du refactoring Phase 1.5 (L-ARCH-008), `EntityFactory` a été extrait de `game.py`. La méthode `spawn_npc()` n'a pas été mise à jour pour propager `npc.game = self.game`. Résultat : `BaseEntity.start_move()` utilisait `Settings.MAP_SIZE=32` (fallback par défaut) pour calculer la boundary monde → 32×32=1024px. Le NPC ID 23 en debug room est à y=1168px (map 40 tiles = 1280px). Tous les targets y étaient clampés à 1008px (zone de murs) → walkable check échoue → NPC bloqué.
+
+```python
+# ❌ game jamais assigné → boundary = MAP_SIZE fallback
+npc = NPC(...)
+npc.name = ...
+npc.walkable_func = self.game.interaction_manager.is_walkable
+
+# ✅ TOUJOURS assigner game avant walkable_func
+npc.game = self.game        # ← obligatoire
+npc.walkable_func = self.game.interaction_manager.is_walkable
+```
+
+**Règle :** Toute méthode `spawn_*` dans une factory extraite via le pattern L-ARCH-008 DOIT contenir `entity.game = self.game` avant toute utilisation de `self.game.*` sur l'entité. La spec doit lister `game` dans les attributs requis de l'entité.
+
+**Contrôle :** Chercher `spawn_npc\|spawn_interactive\|spawn_` dans `entity_factory.py` et vérifier que chaque méthode propage `.game`.
+
+**Evidence :** NPC ID 23 coincé en debug room. 3 tests RED → 4 GREEN. commit `c88d996`.
+
+---
+
+### A-GAME-003 · 2026-05-15 · U · Minor Rework (visual bug)
+**Direction non clearée après move bloqué → retry infini + "spinning" visuel**
+
+`NPC.start_move()` setait `self.state = "idle"` quand `super().start_move()` échouait (pas `is_moving`), mais laissait `self.direction != Vector2(0,0)`. `BaseEntity.move()` détecte `direction != 0` → appelle `start_move()` de nouveau à la prochaine frame. L'IA met à jour `current_facing` à chaque cooldown → le NPC tourne sur lui-même sans se déplacer.
+
+```python
+# ❌ State corrigé mais direction laissée → retry chaque frame
+if not self.is_moving:
+    self.state = "idle"
+
+# ✅ Toujours synchroniser l'état complet de mouvement
+if not self.is_moving:
+    self.direction = pygame.math.Vector2(0, 0)  # ← empêche le retry
+    self.state = "idle"
+```
+
+**Règle générale :** Après toute transition d'état échouée dans une state machine de mouvement, TOUS les champs qui contrôlent la re-entrée doivent être réinitialisés (pas seulement le state label). Un state `idle` avec `direction != 0` est un état invalide.
+
+**Règle spec :** Documenter dans l'Error Handling Matrix la réponse exacte à "Invalid Path/Wander" : "clear `direction`, set `state = idle`" — pas juste "cancel wander".
+
+**Evidence :** NPC spinning visible en debug room. `test_move_does_not_retry_start_move_after_blocked` RED → GREEN. commit `c88d996`.
 
 ---
 

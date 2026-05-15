@@ -6,8 +6,8 @@ promoted: 2026-05-15
 
 # Blueprint: Directional Movement and Autotiles
 
-> **Spec d'implémentation :** [`docs/specs/phase-1.6-directional-autotiles.md`](../specs/phase-1.6-directional-autotiles.md)  
-> **Plan d'exécution :** [`docs/specs/phase-1.6-plan.md`](../specs/phase-1.6-plan.md)  
+> **Spec d'implémentation :** [`docs/specs/map-parser-spec.md`](../specs/map-parser-spec.md) (sections `walkable`, `direction_flags`, `TileMapData`)  
+> ~~Spec phase-1.6 consolidée dans map-parser-spec.md le 2026-05-15~~ — voir aussi [`engine-core.md`](../specs/engine-core.md)  
 > Ce blueprint a été promu en spec le 2026-05-15. Les gaps ci-dessous ont été résolus.
 
 ## 7 Questions Strategy
@@ -33,7 +33,7 @@ promoted: 2026-05-15
    - Parser update: Extract `walkable` (default `True`) and `direction` (default `"any"`).
    - Engine update: `MapManager.is_walkable(x, y)` and `MapManager.get_allowed_directions(x, y)`.
    - Physics update: `BaseEntity.start_move()` validation.
-   - Asset pipeline: Ensure `rpgmaker_blob_autotile_to_tiled.py` handles the new autotiles.
+   - Asset pipeline: Ensure `scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py` handles the new autotiles.
 
 7. **What are you NOT building?**
    We are not building complex A* pathfinding modifications for NPCs yet; NPCs will simply fail to move if constrained. We are not implementing z-axis jumping over constrained tiles.
@@ -44,6 +44,6 @@ promoted: 2026-05-15
 
 | # | Gap | Résolution |
 |---|-----|------------|
-| 1 | **Movement Constraint Semantics**: Does `direction=up` restrict *entering* or *exiting* the tile? | **Résolu :** Exiting. La contrainte s'applique sur la tuile de **départ** — voir spec phase-1.6, Q4. |
-| 2 | **Autotile Pipeline Support**: Support des 4-frame RPG Maker XP water autotiles? | **Résolu :** Oui, `rpgmaker_blob_autotile_to_tiled.py` supporte les frames animées — voir research `autotile_directional_movement_research.md`. |
-| 3 | **Backwards Compatibility**: Migration depuis `collidable` vers `walkable`? | **Résolu :** `collidable` est géré comme fallback (`walkable = not collidable` si `walkable` absent) — voir spec phase-1.6, section Assumptions. |
+| 1 | **Movement Constraint Semantics**: Does `direction=up` restrict *entering* or *exiting* the tile? | **Résolu :** Exiting. La contrainte s'applique sur la tuile de **départ** — voir `map-parser-spec.md` § direction_flags. |
+| 2 | **Autotile Pipeline Support**: Support des 4-frame RPG Maker XP water autotiles? | **Résolu :** Oui, `scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py` supporte les frames animées — voir research `autotile_directional_movement_research.md`. |
+| 3 | **Backwards Compatibility**: Migration depuis `collidable` vers `walkable`? | **Résolu :** `collidable` est géré comme fallback (`walkable = not collidable` si `walkable` absent) — voir `map-parser-spec.md` § TileMapData Assumptions. |
