@@ -270,5 +270,134 @@ render_manager.draw_entities(min_depth=player.depth)         # coffres, NPCs, jo
 
 ---
 
-*Last updated: 2026-05-15 — L-REND-004 migré depuis `.agents/learnings/rendering_depth_regression.md` (fichier orphelin).*
+### L-MAP-007 · 2026-05-17 · U · Major Rework
+**Le `depth` d'un tile encode son rôle physique — pas seulement son rendu**
 
+La propriété `depth` d'un tile a deux significations distinctes qui doivent toutes deux être respectées :
+
+| `depth` | Rôle rendu | Rôle physique |
+|---------|-----------|---------------|
+| 0 | Sol/fond — rendu derrière le joueur | **Sol** — définit si le joueur peut se trouver ici (`is_walkable`) |
+| ≥1 | Décor/mur — rendu devant le joueur | **Décor visuel** — n'affecte PAS `is_walkable`, peut affecter `get_direction_flags` |
+
+```python
+# ❌ is_walkable AND de tous les layers → décors depth=2 bloquent le sol
+def is_walkable(self, x, y):
+    return all(tile.walkable for tile in tiles_at(x, y))  # bloque le pont
+
+# ❌ topmost tile wins (sans filtre depth) → tuile décorative la plus haute gagne
+def is_walkable(self, x, y):
+    return tiles_at(x, y)[-1].walkable  # rebord pont (depth=2) > sol (depth=0)
+
+# ✅ Seuls les tiles depth=0 participent à la walkabilité
+def is_walkable(self, x, y):
+    for tile in reversed_layers(x, y):
+        if tile.depth == 0:  # sol uniquement
+            return tile.walkable
+    return False
+```
+
+**Architecture résultante — deux fonctions complémentaires :**
+```
+is_walkable(x, y)         → depth=0 uniquement   "Puis-je me trouver ici ?"
+get_direction_flags(x, y) → TOUS les depths       "Par où puis-je sortir ?"
+```
+
+Un tile `depth=2` avec `direction={up,left,right}` contraint les sorties via `get_direction_flags` (garde-corps, rebord de pont directionnel) sans bloquer la walkabilité.
+
+**Root cause de la confusion :** La carte de debug contenait un pont avec :
+- Layer 0 : sol pierre `walkable=True, depth=0` ← sol franchissable
+- Layer 1 : rebords visuels `walkable=False, depth=2` ← décor affiché devant le joueur
+
+Les deux fixes successifs (AND-all-layers → topmost-wins) échouaient car ils ne modélisaient pas le rôle physique de `depth`.
+
+**Evidence :** 7 tests de régression (`test_is_walkable_*` + `test_depth1_tile_*`) — tous verts. Validation manuelle sur le pont de la debug room. ADR `BUG-WALK-001-002-is-walkable-depth-semantics.md`. commit `2fbf06c`.
+
+---
+
+### A-MAP-003 · 2026-05-17 · U · Major Rework
+**is_walkable sur tous les layers sans filtre depth — 2 itérations pour converger**
+
+Deux implémentations successives de `is_walkable` ont échoué avant de trouver la bonne sémantique :
+
+```python
+# ❌ Itération 1 — AND de tous les layers
+# Un seul tile non-walkable dans N'IMPORTE quel layer → bloque
+return all(tile.walkable for tile in all_tiles_at(x, y))
+# Fail : ravin non-walkable bloque même avec pont walkable au-dessus
+
+# ❌ Itération 2 — Topmost tile wins (sans filtre depth)
+# La tuile sur le layer le plus haut gagne
+for layer in reversed(layer_order):
+    tile = get_tile(layer, x, y)
+    if tile:
+        return tile.walkable  # rebord de pont (depth=2) masque le sol
+# Fail : décor depth=2 walkable=False sur le layer le plus haut → bloque
+
+# ✅ Itération 3 — depth=0 only, topmost depth=0 wins
+for layer in reversed(layer_order):
+    tile = get_tile(layer, x, y)
+    if tile and tile.depth == 0:  # ignorer les décors depth≥1
+        return tile.walkable
+return False
+```
+
+**Anti-pattern :** Traiter `is_walkable` comme une propriété aggregée de tous les layers, sans tenir compte de la sémantique physique de `depth`. Le `depth` n'est pas un tri de rendu — c'est une classification de rôle.
+
+**Fix pour les futures specs de walkabilité :**
+> « `is_walkable` ne doit consulter que les tiles `depth=0`. Les tiles `depth≥1` sont des décors visuels qui s'affichent devant le joueur mais n'appartiennent pas au sol. Seul le sol (`depth=0`) définit si le joueur peut se trouver sur une case. »
+
+**Signe d'alerte :** Si une correction de `is_walkable` nécessite plus d'une itération, vérifier que le modèle mental du `depth` est correct — la cause est presque toujours une confusion entre rendu et physique.
+
+**Evidence :** 2 itérations de fix (BUG-WALK-001, BUG-WALK-002) nécessaires. Human enforcement : le user a dû tester en jeu pour révéler l'insuffisance du fix 1. commit `2fbf06c`.
+
+---
+
+
+### L-MAP-008 · 2026-05-17 · U · Bug Fix
+**Le filtre `depth≤1` s'applique à TOUTES les requêtes spatiales "qu'est-ce qui est sous le joueur"**
+
+`get_terrain_material_at()` avait le même bug structurel qu'`is_walkable` (A-MAP-003) : elle retournait le tile le plus haut sans filtrer par `depth`. Un toit `depth=2, walkable=True` écrasait le matériau de la planche `depth=1` en-dessous, forçant un son de "toit" au lieu de "bois".
+
+**Règle générale :** Toute fonction qui répond à « qu'est-ce qui est sous les pieds du joueur ? » doit ignorer les tiles avec `depth > 1`.
+
+```python
+# ❌ topmost tile wins (sans filtre depth) → toit depth=2 écrase planche depth=1
+for layer in reversed(layer_order):
+    tile = get_tile(layer, x, y)
+    if tile and tile.properties.get("material"):
+        return tile.properties["material"]  # retourne "roof" au lieu de "wood"
+
+# ✅ Seulement les tiles depth≤1 (sol et plancher)
+for layer in reversed(layer_order):
+    tile = get_tile(layer, x, y)
+    if tile and tile.depth <= 1 and tile.properties.get("material"):
+        return tile.properties["material"]  # retourne "wood" ✓
+```
+
+**Fonctions soumises à cette règle :**
+| Fonction | Sémantique | Filtre depth |
+|----------|------------|--------------|
+| `is_walkable(x, y)` | « Puis-je me trouver ici ? » | `depth == 0` seulement |
+| `get_terrain_material_at(x, y)` | « Sur quoi est-ce que je marche ? » | `depth <= 1` |
+| `get_direction_flags(x, y)` | « Par où puis-je sortir ? » | **TOUS** les depths |
+
+**Evidence :** BUG-SFX-001 — son de pas "roof" joué sur une planche. Fix 1 ligne + 3 tests. 825/825 verts. commit suivant.
+
+---
+
+### A-MAP-004 · 2026-05-17 · U · Bug Fix
+**Assumer que "topmost tile" = "tile sous le joueur" ignore la sémantique du depth**
+
+Le tile le plus haut dans la pile des layers n'est PAS nécessairement le tile sur lequel le joueur marche. Un toit `depth=2` est physiquement AU-DESSUS du joueur, pas sous lui.
+
+**Check rapide avant d'écrire une query spatiale :**
+> « Est-ce que la fonction répond à une question du point de vue du joueur (physique) ou du rendu (visuel) ? »
+> - Physique (is_walkable, material, son) → filtrer `depth ≤ N` selon le rôle
+> - Visuel (rendu foreground, occlusion) → tous les depths
+
+**Evidence :** Même anti-pattern déclenché 3 fois : `is_walkable` (BUG-WALK-001), `is_walkable` (BUG-WALK-002), `get_terrain_material_at` (BUG-SFX-001).
+
+---
+
+*Last updated: 2026-05-17 — L-MAP-008 (depth filter for all "under the player" queries), A-MAP-004 (topmost ≠ underfoot).*

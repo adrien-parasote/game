@@ -270,25 +270,34 @@ class MapManager:
         return self._window_cache
 
     def get_terrain_material_at(self, pixel_x: int, pixel_y: int) -> str | None:
-        """Return the material property of the highest non-empty tile at the given pixel coordinates."""
-        # Convert pixel to grid coordinates
-        # to_world typically returns float, so we cast to int
+        """Return the material of the highest depth≤1 tile at the given pixel position.
+
+        Tiles with depth>1 (roofs, ceilings, elevated decorations) are ignored —
+        only ground-level tiles (depth=0) and floor-level tiles (depth=1, e.g. planks,
+        bridges) contribute to the terrain material used for footstep audio (BUG-SFX-001).
+        """
         grid_pos = self.layout.to_world(pixel_x, pixel_y)
         tx, ty = int(grid_pos[0]), int(grid_pos[1])
 
         if not (0 <= ty < self.height and 0 <= tx < self.width):
             return None
 
-        # Iterate layers from top to bottom
+        # Scan layers top-to-bottom, skip tiles with depth>1
         for layer_id in reversed(self.layer_order):
             layer_data = self.layers.get(layer_id)
             if not layer_data:
                 continue
 
             tile_id = layer_data[ty][tx]
-            if tile_id != 0 and tile_id in self.tiles:
-                props = getattr(self.tiles[tile_id], "properties", {}) or {}
-                if "material" in props:
-                    return props["material"]
+            if tile_id == 0 or tile_id not in self.tiles:
+                continue
+
+            tile = self.tiles[tile_id]
+            if getattr(tile, "depth", 0) > 1:
+                continue  # Roof/ceiling tiles don't determine the sound underfoot
+
+            props = getattr(tile, "properties", {}) or {}
+            if "material" in props:
+                return props["material"]
 
         return None

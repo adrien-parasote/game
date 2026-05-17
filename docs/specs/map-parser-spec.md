@@ -277,10 +277,23 @@ Returns beam-emitter specs for the lighting system.
 Top-down layer scan at a given pixel position:
 1. Convert pixel → grid via `layout.to_world()`
 2. Iterate layers from highest to lowest (`reversed(layer_order)`)
-3. Return the `material` property of the first non-empty tile with a material
-4. Return `None` if out of bounds or no material found
+3. **Skip tiles with `depth > 1`** (roofs, ceilings, elevated decorations — BUG-SFX-001)
+4. Return the `material` property of the first non-empty tile with `depth ≤ 1` that has a material
+5. Return `None` if out of bounds or no matching tile found
 
 **Consumer**: `Player._play_footstep()` for terrain-based SFX selection.
+
+**Depth filter rationale**: A tile with `depth=2` (e.g. a roof above a walkable plank) floats
+above the player and must not override the floor material. Only `depth=0` (ground) and `depth=1`
+(floor-level objects like planks or bridges) define what the player is actually stepping on.
+
+| Scenario | Expected material |
+|----------|------------------|
+| grass (depth=0) alone | `"grass"` |
+| grass (depth=0) + plank (depth=1) | `"wood"` |
+| grass (depth=0) + plank (depth=1) + roof (depth=2) | `"wood"` (roof ignored) |
+| out of bounds | `None` |
+
 
 ## 6. OrthogonalLayout — Coordinate Strategy
 

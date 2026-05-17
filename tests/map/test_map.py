@@ -796,6 +796,109 @@ def test_get_terrain_material_at(map_manager):
     assert map_manager.get_terrain_material_at(32, 0) is None  # x=1, y=0 is 0 in the mock map_data
 
 
+def _make_material_tile(depth, material=None):
+    """Helper: create a MagicMock tile with given depth and optional material."""
+    tile = MagicMock()
+    tile.depth = depth
+    tile.properties = {"material": material} if material else {}
+    tile.frames = None
+    tile.walkable = True
+    return tile
+
+
+def test_get_terrain_material_at_skips_depth_above_1():
+    """
+    BUG-SFX-001: get_terrain_material_at must skip tiles with depth>1.
+
+    Scenario: grass (depth=0, material=grass) + plank (depth=1, material=wood)
+              + roof (depth=2, walkable=True, material=roof).
+
+    Expected: 'wood' — the roof (depth=2) must be ignored; the plank (depth=1)
+    is the highest tile with depth<=1 and carries the material underfoot.
+    """
+    layout = OrthogonalLayout(32)
+    grass = _make_material_tile(depth=0, material="grass")
+    plank = _make_material_tile(depth=1, material="wood")
+    roof = _make_material_tile(depth=2, material="roof")
+
+    map_data = {
+        "layers": {
+            1: [[1, 0]],  # grass  (order=0, depth=0)
+            2: [[2, 0]],  # plank  (order=1, depth=1)
+            3: [[3, 0]],  # roof   (order=2, depth=2)
+        },
+        "tiles": {1: grass, 2: plank, 3: roof},
+        "layer_names": {1: "00-ground", 2: "01-plank", 3: "02-roof"},
+        "layer_order": [1, 2, 3],
+        "layer_order_values": {1: 0, 2: 1, 3: 2},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    manager = MapManager(map_data, layout)
+    result = manager.get_terrain_material_at(15, 0)
+    assert result == "wood", (
+        f"Expected 'wood' (plank depth=1) but got '{result}'. "
+        "Tiles with depth>1 must not contribute to terrain material (BUG-SFX-001)."
+    )
+
+
+def test_get_terrain_material_at_grass_only_no_overlay():
+    """
+    BUG-SFX-001 baseline: single grass tile (depth=0) returns 'grass'.
+    """
+    layout = OrthogonalLayout(32)
+    grass = _make_material_tile(depth=0, material="grass")
+
+    map_data = {
+        "layers": {1: [[1, 0]]},
+        "tiles": {1: grass},
+        "layer_names": {1: "00-ground"},
+        "layer_order": [1],
+        "layer_order_values": {1: 0},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    manager = MapManager(map_data, layout)
+    result = manager.get_terrain_material_at(15, 0)
+    assert result == "grass", (
+        f"Expected 'grass' but got '{result}'. Single ground tile must return its material."
+    )
+
+
+def test_get_terrain_material_at_plank_over_grass_no_roof():
+    """
+    BUG-SFX-001 intermediate: grass (depth=0) under plank (depth=1), no roof.
+    Expected: 'wood' (plank is highest depth<=1 tile with a material).
+    """
+    layout = OrthogonalLayout(32)
+    grass = _make_material_tile(depth=0, material="grass")
+    plank = _make_material_tile(depth=1, material="wood")
+
+    map_data = {
+        "layers": {
+            1: [[1, 0]],  # grass (order=0, depth=0)
+            2: [[2, 0]],  # plank (order=1, depth=1)
+        },
+        "tiles": {1: grass, 2: plank},
+        "layer_names": {1: "00-ground", 2: "01-plank"},
+        "layer_order": [1, 2],
+        "layer_order_values": {1: 0, 2: 1},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    manager = MapManager(map_data, layout)
+    result = manager.get_terrain_material_at(15, 0)
+    assert result == "wood", (
+        f"Expected 'wood' (plank depth=1 over grass) but got '{result}'."
+    )
+
+
 
 def test_tile_depth_overrides_layer_depth():
     from src.map.layout import OrthogonalLayout
