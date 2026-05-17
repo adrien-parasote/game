@@ -334,6 +334,8 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 | TC-CC-08 | `test_open_bridge_overrides_non_walkable_tile` | `../../tests/engine/test_collision_checker.py:L1` |
 | TC-CC-09 | `test_no_override_non_walkable_tile_still_blocks` | `../../tests/engine/test_collision_checker.py:L1` |
 | TC-CC-10 | `test_override_rect_miss_still_blocks` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-CC-11 | `test_animating_override_does_not_override_tile` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-CC-12 | `test_override_tile_still_checks_obstacles_and_npcs` | `../../tests/engine/test_collision_checker.py:L1` |
 | TC-ML-05 | `test_clear_groups_empties_walkable_override_entities` | `../../tests/engine/test_map_loader.py:L1` |
 | TC-EF-01 | `test_get_property_root_level` | `../../tests/engine/test_phase15_game.py:L1` |
 | TC-EF-02 | `test_get_property_nested` | `../../tests/engine/test_phase15_game.py:L1` |

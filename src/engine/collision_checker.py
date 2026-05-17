@@ -41,14 +41,19 @@ class CollisionChecker:
             requester: Entity requesting the check — skipped in all group checks.
         """
         # 0. Walkable overrides (passable bridges/drawbridges open above non-walkable tiles)
+        tile_overridden = False
         for entity in getattr(self.game, "walkable_override_entities", ()):
             if entity.rect and entity.rect.collidepoint(px_center, py_center):
-                return False  # Tile beneath is overridden — free to walk
+                # Only override if not animating (drawbridges and doors block while animating)
+                if not getattr(entity, "is_animating", False):
+                    tile_overridden = True
+                    break
 
         # 1. Map tiles
-        wx, wy = self.game.layout.to_world(px_center, py_center)
-        if not self.game.map_manager.is_walkable(int(wx), int(wy)):
-            return True
+        if not tile_overridden:
+            wx, wy = self.game.layout.to_world(px_center, py_center)
+            if not self.game.map_manager.is_walkable(int(wx), int(wy)):
+                return True
 
         # 2. Dynamic obstacles (doors, etc.)
         for obj in self.game.obstacles_group:

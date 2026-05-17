@@ -29,7 +29,9 @@ def _make_game():
 def _make_rect_obj(x=64, y=64, size=32):
     obj = MagicMock()
     obj.rect = pygame.Rect(x, y, size, size)
+    obj.is_animating = False
     return obj
+
 
 
 # ---------------------------------------------------------------------------
@@ -205,4 +207,50 @@ def test_override_rect_miss_still_blocks():
 
     cc = CollisionChecker(game)
     # Point at (80, 80) is outside the bridge rect → still blocked by tile
+    assert cc.check(80, 80) is True
+
+
+# ---------------------------------------------------------------------------
+# TC-CC-11 — walkable override: animating entity does NOT override tile
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.tc("TC-CC-11")
+def test_animating_override_does_not_override_tile():
+    """An open passable door that is still animating MUST NOT short-circuit
+    the tile check."""
+    game = _make_game()
+    game.map_manager.is_walkable.return_value = False
+
+    bridge = _make_rect_obj(64, 64, 64)
+    bridge.is_animating = True  # Still animating!
+    game.walkable_override_entities = {bridge}
+
+    cc = CollisionChecker(game)
+    # Because it is animating, it does not override the non-walkable tile
+    assert cc.check(80, 80) is True
+
+
+# ---------------------------------------------------------------------------
+# TC-CC-12 — walkable override: overridden tile still checks obstacles
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.tc("TC-CC-12")
+def test_override_tile_still_checks_obstacles_and_npcs():
+    """If the tile check is overridden by a fully open bridge, the check must
+    still proceed to check dynamic obstacles and NPCs."""
+    game = _make_game()
+    game.map_manager.is_walkable.return_value = False  # Overridden by bridge
+
+    bridge = _make_rect_obj(64, 64, 64)
+    bridge.is_animating = False
+    game.walkable_override_entities = {bridge}
+
+    # Put an NPC on the bridge
+    npc = _make_rect_obj(64, 64, 32)
+    game.npcs = [npc]
+
+    cc = CollisionChecker(game)
+    # The bridge overrides the tile, but the NPC is there, so it blocks
     assert cc.check(80, 80) is True
