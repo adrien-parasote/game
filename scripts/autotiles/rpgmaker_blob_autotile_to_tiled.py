@@ -31,7 +31,7 @@ SUBTILE = 16
 TILE_SIZE = 32
 FRAME_W = 96
 FRAME_H = 128
-DEFAULT_MS = 200
+DEFAULT_MS = 400
 
 # ── 47 valid blob bitmasks ────────────────────────────────────────────────────
 # Bit layout: NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, SE=128
