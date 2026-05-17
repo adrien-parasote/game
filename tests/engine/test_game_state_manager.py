@@ -327,6 +327,7 @@ def test_resolve_default_map(gsm):
     # Test world.world logic when NOT in DEBUG or debug room missing
     with (
         patch("src.config.Settings.DEBUG", False),
+        patch("src.config.Settings.DEFAULT_MAP", "00-spawn.tmj"),
         patch("os.path.exists", return_value=True),
         patch("builtins.open") as mock_open,
     ):
@@ -342,6 +343,16 @@ def test_resolve_default_map(gsm):
         assert gsm._resolve_default_map() == "00-spawn.tmj"
 
 
+
+def test_resolve_default_map_with_custom_default(gsm):
+    # Test custom default map from Settings when NOT in DEBUG
+    with (
+        patch("src.config.Settings.DEBUG", False),
+        patch("src.config.Settings.DEFAULT_MAP", "custom_map.tmj"),
+    ):
+        assert gsm._resolve_default_map() == "custom_map.tmj"
+
+
 # (imports already at top of file)
 
 @patch("pygame.mouse.set_visible")
@@ -349,4 +360,5 @@ def test_cursor_is_hidden_during_gameplay(mock_mouse):
     gsm = GameStateManager()
     gsm._transition_to_playing(slot_id=None)
     mock_mouse.assert_called_with(False)
+
 

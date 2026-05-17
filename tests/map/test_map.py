@@ -144,6 +144,180 @@ def test_map_manager_walkable_out_of_bounds(map_data):
     assert mm.is_walkable(-1, 0) is False  # Out of bounds → not walkable
 
 
+def test_is_walkable_bridge_over_ravine():
+    """
+    BUG REGRESSION BUG-WALK-001:
+    Layer 0: ravine  (walkable=False, depth=0)  ← sol non-franchissable
+    Layer 1: bridge  (walkable=True, depth=0)   ← sol franchissable, plus haut
+    Expected: True — le pont (sol depth=0) couvre le ravin ; le joueur marche dessus.
+
+    Seuls les tiles depth=0 (sol) participent à la walkabilité.
+    Le sol le plus haut (layer_order le plus élevé) détermine la walkabilité.
+    """
+    ravine = MagicMock()
+    ravine.walkable = False
+    ravine.depth = 0
+    bridge = MagicMock()
+    bridge.walkable = True
+    bridge.depth = 0
+
+    map_d = {
+        "layers": {
+            1: [[1, 0]],  # Layer 0: ravine (non-walkable, depth=0)
+            2: [[2, 0]],  # Layer 1: bridge (walkable, depth=0)
+        },
+        "tiles": {1: ravine, 2: bridge},
+        "layer_names": {1: "00-ground", 2: "01-bridge"},
+        "layer_order": [1, 2],
+        "layer_order_values": {1: 0, 2: 1},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    layout = MagicMock()
+    manager = MapManager(map_d, layout)
+
+    result = manager.is_walkable(0, 0)
+    assert result is True, (
+        f"Expected True (bridge depth=0 covers ravine) but got {result}. "
+        "The topmost depth=0 tile must determine walkability."
+    )
+
+
+def test_is_walkable_ravine_without_bridge():
+    """
+    Sans pont par dessus, le ravin (walkable=False) bloque le joueur.
+    Layer 0: ravine (walkable=False) — seul layer
+    Expected: False.
+    """
+    ravine = MagicMock()
+    ravine.walkable = False
+
+    map_d = {
+        "layers": {1: [[1, 0]]},
+        "tiles": {1: ravine},
+        "layer_names": {1: "00-ground"},
+        "layer_order": [1],
+        "layer_order_values": {1: 0},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    layout = MagicMock()
+    manager = MapManager(map_d, layout)
+
+    assert manager.is_walkable(0, 0) is False, "A lone non-walkable tile must block movement."
+
+
+def test_is_walkable_depth0_ground_blocks_when_not_walkable():
+    """
+    Un tile de SOL (depth=0) non-walkable bloque le joueur même si c'est la couche la plus haute.
+    Layer 0: walkable=False, depth=0 (ravin seul, pas de pont)
+    Expected: False.
+    """
+    ground = MagicMock()
+    ground.walkable = False
+    ground.depth = 0
+
+    map_d = {
+        "layers": {1: [[1, 0]]},
+        "tiles": {1: ground},
+        "layer_names": {1: "00-ground"},
+        "layer_order": [1],
+        "layer_order_values": {1: 0},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    layout = MagicMock()
+    manager = MapManager(map_d, layout)
+
+    assert manager.is_walkable(0, 0) is False, "Un sol non-walkable depth=0 doit bloquer."
+
+
+def test_is_walkable_decor_depth2_does_not_block_walkable_ground():
+    """
+    BUG-WALK-002 (cas réel debug room) :
+    Le pont est constitué de :
+    - Layer 0 (order=0): sol stone  walkable=True,  depth=0   ← sol franchissable
+    - Layer 1 (order=1): rebords   walkable=False, depth=2   ← décor visuel (depth≥1)
+
+    Le décor (depth≥1) NE doit PAS participer à la walkabilité.
+    Seuls les tiles depth=0 (sol) déterminent si on peut marcher.
+    Expected: True — le sol depth=0 est walkable, le décor depth=2 est ignoré.
+    """
+    ground = MagicMock()
+    ground.walkable = True
+    ground.depth = 0
+    bridge_edge = MagicMock()  # rebord visuel du pont
+    bridge_edge.walkable = False
+    bridge_edge.depth = 2
+
+    map_d = {
+        "layers": {
+            1: [[1, 0]],  # Layer 0: sol walkable depth=0
+            2: [[2, 0]],  # Layer 1: rebord du pont walkable=False depth=2
+        },
+        "tiles": {1: ground, 2: bridge_edge},
+        "layer_names": {1: "00-ground", 2: "01-bridge-edge"},
+        "layer_order": [1, 2],
+        "layer_order_values": {1: 0, 2: 1},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    layout = MagicMock()
+    manager = MapManager(map_d, layout)
+
+    result = manager.is_walkable(0, 0)
+    assert result is True, (
+        f"Expected True (decor depth=2 must not block walkable ground depth=0) but got {result}. "
+        "Only depth=0 tiles participate in walkability."
+    )
+
+
+def test_is_walkable_non_walkable_depth0_on_top_blocks():
+    """
+    Un tile de SOL (depth=0) non-walkable sur le layer le plus haut bloque,
+    même si le layer dessous est walkable.
+    Layer 0: walkable=True, depth=0
+    Layer 1: walkable=False, depth=0  ← sol non-franchissable le plus haut
+    Expected: False.
+    """
+    ground = MagicMock()
+    ground.walkable = True
+    ground.depth = 0
+    wall_ground = MagicMock()
+    wall_ground.walkable = False
+    wall_ground.depth = 0
+
+    map_d = {
+        "layers": {
+            1: [[1, 0]],  # Layer 0: sol walkable depth=0
+            2: [[2, 0]],  # Layer 1: sol non-walkable depth=0
+        },
+        "tiles": {1: ground, 2: wall_ground},
+        "layer_names": {1: "00-ground", 2: "01-objects"},
+        "layer_order": [1, 2],
+        "layer_order_values": {1: 0, 2: 1},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    layout = MagicMock()
+    manager = MapManager(map_d, layout)
+
+    assert manager.is_walkable(0, 0) is False, (
+        "Un sol depth=0 non-walkable sur le layer le plus haut doit bloquer le mouvement."
+    )
+
+
+
 # ---------------------------------------------------------------------------
 # Directional constraints
 # ---------------------------------------------------------------------------
@@ -280,6 +454,114 @@ def test_direction_flags_all_any_returns_any():
 
     result = manager.get_direction_flags(0, 0)
     assert result == {"any"}, f"Expected {{any}} but got {result}"
+
+
+# ---------------------------------------------------------------------------
+# Architecture: is_walkable (depth=0) + get_direction_flags (all depths)
+# ---------------------------------------------------------------------------
+
+
+def test_depth1_tile_contributes_direction_but_not_walkability():
+    """
+    Architecture du système de mouvement — les deux fonctions se complètent :
+
+      is_walkable      → seuls les tiles depth=0 (sol) participent
+      get_direction_flags → TOUS les tiles (depth=0 ET depth≥1) participent
+
+    Scénario utilisateur :
+      Layer 0 (order=0): sol          depth=0, walkable=True,  direction=any
+      Layer 1 (order=1): garde-corps  depth=2, walkable=True,  direction={up,left,right}
+
+    Attendu :
+      - is_walkable       = True  (sol depth=0 est walkable)
+      - get_direction_flags = {up, left, right}  (garde-corps depth=2 contraint les sorties)
+      - 'down' est bloqué (le garde-corps empêche de tomber)
+    """
+    ground = MagicMock()
+    ground.walkable = True
+    ground.depth = 0
+    ground.direction_flags = {"any"}
+
+    guardrail = MagicMock()
+    guardrail.walkable = True
+    guardrail.depth = 2
+    guardrail.direction_flags = {"up", "left", "right"}
+
+    map_d = {
+        "layers": {
+            1: [[1, 0]],  # Layer 0 (order=0): sol
+            2: [[2, 0]],  # Layer 1 (order=1): garde-corps
+        },
+        "tiles": {1: ground, 2: guardrail},
+        "layer_names": {1: "00-ground", 2: "01-guardrail"},
+        "layer_order": [1, 2],
+        "layer_order_values": {1: 0, 2: 1},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    layout = MagicMock()
+    manager = MapManager(map_d, layout)
+
+    # La case est franchissable (sol depth=0 walkable=True)
+    assert manager.is_walkable(0, 0) is True, (
+        "Le sol depth=0 walkable=True doit rendre la case franchissable, "
+        "même si un décor depth=2 est au-dessus."
+    )
+
+    # Les directions sont contraintes par le garde-corps depth=2
+    direction_result = manager.get_direction_flags(0, 0)
+    assert direction_result == {"up", "left", "right"}, (
+        f"Expected {{up, left, right}} but got {direction_result}. "
+        "get_direction_flags doit inclure les tiles depth≥1."
+    )
+    assert "down" not in direction_result, (
+        "'down' doit être bloqué par le garde-corps depth=2."
+    )
+
+
+def test_decor_depth2_walkable_false_no_direction_does_not_constrain():
+    """
+    Un décor depth=2 avec walkable=False et direction=any (cas des rebords du pont) :
+    - N'affecte PAS is_walkable (ignoré)
+    - N'affecte PAS get_direction_flags (direction=any = joker neutre)
+
+    Scénario : rebord du pont sur une case franchissable.
+    """
+    ground = MagicMock()
+    ground.walkable = True
+    ground.depth = 0
+    ground.direction_flags = {"any"}
+
+    bridge_edge = MagicMock()  # rebord de pont
+    bridge_edge.walkable = False
+    bridge_edge.depth = 2
+    bridge_edge.direction_flags = {"any"}
+
+    map_d = {
+        "layers": {
+            1: [[1, 0]],
+            2: [[2, 0]],
+        },
+        "tiles": {1: ground, 2: bridge_edge},
+        "layer_names": {1: "00-ground", 2: "01-edge"},
+        "layer_order": [1, 2],
+        "layer_order_values": {1: 0, 2: 1},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    layout = MagicMock()
+    manager = MapManager(map_d, layout)
+
+    assert manager.is_walkable(0, 0) is True, (
+        "Le rebord (depth=2, walkable=False, direction=any) ne doit pas bloquer le sol."
+    )
+    assert manager.get_direction_flags(0, 0) == {"any"}, (
+        "Le rebord avec direction=any ne doit pas contraindre les directions."
+    )
 
 
 # ---------------------------------------------------------------------------

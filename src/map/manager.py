@@ -89,18 +89,34 @@ class MapManager:
             return None
 
     def is_walkable(self, x: int, y: int) -> bool:
-        """Check if all layers at the given (x,y) coordinates are walkable."""
-        if not (0 <= y < self.height and 0 <= x < self.width):
-            return False  # Out of bounds blocks movement
+        """Check walkability at (x, y).
 
-        has_tile = False
-        for layer_data in self.layers.values():
-            tile_id = layer_data[y][x]
-            if tile_id != 0:
-                has_tile = True
-                if tile_id in self.tiles and not getattr(self.tiles[tile_id], "walkable", True):
-                    return False
-        return has_tile
+        Only depth=0 tiles (ground/floor tiles) determine walkability.
+        Depth≥1 tiles are visual decorations or foreground walls; they are
+        rendered above/over the player but must not influence movement collision.
+
+        Algorithm: scan layers from highest to lowest order, find the first
+        non-empty depth=0 tile, and return its walkable property.
+
+        Returns False if out of bounds or if no depth=0 tile exists at (x, y).
+        """
+        if not (0 <= y < self.height and 0 <= x < self.width):
+            return False
+
+        for layer_id in reversed(self.layer_order):
+            if layer_id not in self.layers:
+                continue
+            tile_id = self.layers[layer_id][y][x]
+            if tile_id == 0 or tile_id not in self.tiles:
+                continue
+            tile = self.tiles[tile_id]
+            if getattr(tile, "depth", 0) != 0:
+                continue  # Skip visual/foreground decorations
+            return bool(tile.walkable)
+
+        return False  # No depth=0 ground tile at this position
+
+
 
     def get_direction_flags(self, x: int, y: int) -> set[str]:
         """Return the intersection of direction_flags across all layers at (x, y).

@@ -188,9 +188,31 @@ Pre-renders an entire layer to a single cached Surface. Used for background laye
 #### `is_walkable(x: int, y: int) -> bool`
 
 **Input**: Grid coordinates `(col, row)`.
-**Returns**: `True` if all layers at `(x, y)` are walkable. 
-**Logic**: Checks `tile.walkable` property. 
-**Edge case**: Out-of-bounds coordinates return `False` (blocks movement).
+
+**Returns**: `True` if the player can stand at `(x, y)`.
+
+**Logic** — only `depth=0` tiles (ground/floor) participate:
+1. Scan layers from highest to lowest order.
+2. Find the first non-empty tile with `depth=0`.
+3. Return its `walkable` property.
+4. If no `depth=0` tile exists → return `False`.
+
+**Why depth=0 only**: Tiles with `depth≥1` are visual decorations or foreground walls rendered above the player. They must not influence movement collision (BUG-WALK-002: bridge edges `walkable=False, depth=2` were blocking the walkable floor beneath them).
+
+**Edge cases**:
+- Out-of-bounds coordinates → `False`
+- No depth=0 tile at position → `False`
+
+> ⚠️ `is_walkable` answers **"can I be here?"**. For directional exit constraints, see `get_direction_flags` which includes **all** depths.
+
+**Combined movement check** (used by `BaseEntity.start_move()`):
+```
+can_exit  = get_direction_flags(current_tile) contains target_direction
+can_enter = is_walkable(target_tile)
+can_move  = can_exit AND can_enter
+```
+
+
 
 #### `get_direction_flags(x: int, y: int) -> set[str]`
 
@@ -294,6 +316,8 @@ class LayoutStrategy(ABC):
 | Conflate layer Z-order with tile depth | Keep `layer_depths` (from `order`) and `tile.depth` strictly separate | Conflation causes invisible tiles when the two values differ (A-MAP-002) |
 | Seed `layer_max_depths` from `layer_depths` | Start `max_d = 0` and accumulate only per-tile depths | Seeding from order value pollutes the aggregate and triggers false foreground-layer inclusions |
 | Use last-write-wins for `get_direction_flags` across layers | **Intersect** all non-`any` constrained layers; treat `{"any"}` as a neutral joker | Last-write-wins lets an upper `any` layer silently erase a restrictive constraint below it (BUG-DIR-001) |
+| Use AND of all layers for `is_walkable` | Use **depth=0 tiles only** (topmost depth=0 wins) | AND logic blocks walkable floors when a foreground decoration (`walkable=False, depth=2`) is stacked on top (BUG-WALK-001 / BUG-WALK-002) |
+| Use `is_walkable` to check directional constraints | Use `get_direction_flags` for exit direction checks | `is_walkable` only answers "can I stand here?". Direction logic requires `get_direction_flags` which includes all depths |
 
 ## 8. Test Case Specifications
 
