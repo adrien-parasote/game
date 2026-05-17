@@ -16,7 +16,10 @@ To populate the world with static and dynamic NPCs using a decoupled architectur
 The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 - **Visuals**: Uses SpriteSheet with a configurable grid. Default is `4×4` (4 cols × 4 rows, frames 32×48px). Override via `sheet_cols` / `sheet_rows` Tiled properties (e.g. guards: `2×4`, frames 32×96px). `frames_per_dir = sheet_cols` drives animation cycling.
 - **States**: `idle`, `wander`, `interact`.
-- **Wander Radius**: AI logic enforces a distance check (in tiles) from the original `spawn_pos`.
+- **Sub-type**: Controlled by the `sub_type` Tiled property (enum `21-sub_type`):
+  - `npc` (default): wandering AI active, `process_ai()` runs normally.
+  - `static_npc`: AI fully disabled — `process_ai()` is skipped every frame. NPC stays at spawn position, faces `down` by default, and remains interagissable via `interact()`. _TODO: support configurable `facing_direction` read from Tiled property._
+- **Wander Radius**: AI logic enforces a distance check (in tiles) from the original `spawn_pos`. Unused for `static_npc`.
 - **Position Persistence**: Subscribes to `world_state`. NPC coordinates `[x, y]` and `facing` are saved using their `_world_state_key` (if present) upon unspawning or map unloading.
 - **Name**: Mapped from the `name` property in Tiled, used for the UI name plate.
 - **game reference**: The `game` attribute MUST be set by `EntityFactory.spawn_npc()`. Without it, `BaseEntity.start_move()` uses `Settings.MAP_SIZE` (default 32) for boundary clamping, which traps NPCs placed beyond pixel 1024 on larger maps.
@@ -111,6 +114,7 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 | TC-N-02 | NPC Wander | Wander radius=1 on a 10x10 map | `NPC.pos` never exceeds radius from spawn |
 | TC-N-03 | CPU Freeze | `is_visible`=False passed from `Game` | NPC bypasses `move()` logic |
 | TC-N-04 | AI State | Trigger interaction | NPC enters `interact` state and faces player |
+| TC-N-05 | Static NPC | `sub_type='static_npc'` | `process_ai()` skipped, `_action_timer` frozen, `state` stays `idle`, `interact()` still returns element_id |
 
 #### Integration Tests (`../../tests/test_interactions.py`)
 | Test ID | Flow | Setup | Verification | Teardown |
@@ -148,6 +152,7 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 | TC-N-02 | `test_npc_ai_state_machine` | `../../tests/entities/test_entities.py:L115` |
 | TC-N-03 | `test_npc_update_invisible_skips` | `../../tests/entities/test_entities.py:L255` |
 | TC-N-04 | `test_npc_interact_faces_initiator_horizontal` | `../../tests/entities/test_entities.py:L126` |
+| TC-N-05 | `TestStaticNPC` (6 tests) | `../../tests/entities/test_npc.py` |
 | IT-N-01 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
 | IT-N-02 | `test_npc_interact_freezes_ai` | `../../tests/entities/test_entities.py:L165` |
 

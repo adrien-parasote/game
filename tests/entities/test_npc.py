@@ -14,13 +14,13 @@ def pygame_init(setup_pygame):
     yield
 
 
-def _make_npc(pos=(100, 100), wander_radius=2):
+def _make_npc(pos=(100, 100), wander_radius=2, sub_type="npc"):
     """Build an NPC without real disk assets."""
     from src.entities.npc import NPC
 
     with patch("src.entities.npc.SpriteSheet") as mock_ss:
         mock_ss.return_value.load_grid.return_value = [pygame.Surface((32, 32)) for _ in range(16)]
-        npc = NPC(pos=pos, wander_radius=wander_radius)
+        npc = NPC(pos=pos, wander_radius=wander_radius, sub_type=sub_type)
     return npc
 
 
@@ -113,3 +113,44 @@ class TestNPCUpdate:
         npc._action_cooldown = 0.1
         npc.update(0.5)
         assert npc.state == "idle"
+
+
+class TestStaticNPC:
+    """TC-N-05: static_npc sub_type — NPC immobile qui reste interagissable."""
+
+    def test_static_npc_sub_type_stored(self):
+        """NPC stores sub_type passed at construction."""
+        npc = _make_npc(sub_type="static_npc")
+        assert npc.sub_type == "static_npc"
+
+    def test_default_sub_type_is_npc(self):
+        """Default sub_type is 'npc' when not specified."""
+        npc = _make_npc()
+        assert npc.sub_type == "npc"
+
+    def test_static_npc_process_ai_skipped(self):
+        """static_npc never runs AI: _action_timer must not increment."""
+        npc = _make_npc(sub_type="static_npc")
+        npc._action_timer = 0.0
+        npc.update(2.0)
+        assert npc._action_timer == 0.0
+
+    def test_static_npc_does_not_change_state(self):
+        """static_npc stays in idle after update — AI does not trigger wander."""
+        npc = _make_npc(sub_type="static_npc")
+        npc.update(10.0)  # force past any cooldown
+        assert npc.state == "idle"
+
+    def test_static_npc_default_facing_is_down(self):
+        """static_npc starts facing down."""
+        npc = _make_npc(sub_type="static_npc")
+        assert npc.current_facing == "down"
+
+    def test_static_npc_can_interact(self):
+        """static_npc responds to interact() and returns element_id."""
+        npc = _make_npc(sub_type="static_npc")
+        npc.element_id = "castel-guard"
+        initiator = MagicMock()
+        initiator.pos = pygame.math.Vector2(100, 200)  # player below (approaching from down)
+        result = npc.interact(initiator)
+        assert result == "castel-guard"

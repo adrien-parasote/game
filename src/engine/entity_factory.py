@@ -199,6 +199,7 @@ class EntityFactory:
             element_id=str(_get_property(props, "element_id") or str(ent.get("id", ""))),
             sheet_cols=int(str(_get_property(props, "sheet_cols", 4))),
             sheet_rows=int(str(_get_property(props, "sheet_rows", 4))),
+            sub_type=str(_get_property(props, "sub_type", "npc")),
         )
         npc.name = str(_get_property(props, "name", ent.get("name", "")))
         npc.game = self.game

@@ -22,10 +22,12 @@ class NPC(BaseEntity):
         element_id: str | None = None,
         sheet_cols: int = 4,
         sheet_rows: int = 4,
+        sub_type: str = "npc",
     ):
         super().__init__(pos, groups, element_id=element_id)
         self.spawn_pos = pygame.math.Vector2(pos)
         self.wander_radius = wander_radius
+        self.sub_type = sub_type  # 'npc' | 'static_npc'
         self.state = "idle"  # 'idle', 'wander', 'interact'
         self.speed = getattr(Settings, "NPC_SPEED", 40)
 
@@ -95,7 +97,14 @@ class NPC(BaseEntity):
             self.state = "idle"
 
     def process_ai(self, dt: float):
-        """Process wandering AI restricted by radius."""
+        """Process wandering AI restricted by radius.
+
+        Skipped entirely for sub_type='static_npc'.
+        # TODO: allow configurable facing_direction for static_npc (read from Tiled property)
+        """
+        if self.sub_type == "static_npc":
+            return  # Static NPCs have no AI — they never wander
+
         if self.state == "interact":
             return  # Frozen during interaction
 
