@@ -182,6 +182,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
             self.animation_speed = ANIM_SPEED_OBJECT
 
         self.is_animating = self.is_on and self.is_animated
+        self.is_closing = False
 
     def _parse_halo(self, halo_size, halo_color, halo_alpha):
         self.halo_size = halo_size
@@ -313,6 +314,9 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
                 self.is_animating = True
                 if not getattr(self, "is_animated", False):
                     self.is_closing = not self.is_on
+                    if self.is_closing:
+                        # Fermeture : partir de end_row pour jouer l'anim à l'envers
+                        self.frame_index = float(self.end_row)
                 logging.info(f"Object {self.sub_type} toggled to {'ON' if self.is_on else 'OFF'}")
 
         return None
@@ -374,7 +378,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
                 self.frame_index = float(self.start_row)
                 self.is_animating = False
         elif self.is_animating:
-            if getattr(self, "is_closing", False):
+            if self.is_closing:
                 self.frame_index -= self.animation_speed * dt
                 if self.frame_index <= self.start_row:
                     self.frame_index = float(self.start_row)

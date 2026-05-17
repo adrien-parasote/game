@@ -44,7 +44,9 @@ This document defines the requirements for fixed interactive objects (chests, sw
 - **Doors (sub_type: door)**:
   - Doors support toggle behavior.
   - Open (ON): Animate from `start_frame` to `end_frame`.
-  - Close (OFF): Animate from `end_frame` back to `start_frame`.
+  - Close (OFF): Animate from `end_frame` back to `start_frame` (reverse playback).
+  - **`is_closing` Initialization invariant**: `is_closing` is initialized to `False` in `_parse_state()` — it must never be a dynamic attribute created only on first toggle. Accessing it via `getattr(self, 'is_closing', False)` is a bug magnet.
+  - **`frame_index` at toggle-OFF invariant**: When `interact()` sets `is_closing=True`, it MUST immediately set `frame_index = float(end_row)`. This guarantees the reverse animation always plays from the fully-open frame regardless of whether the opening animation had completed.
 
 ## 2. Spatial Interaction & Physics
 
@@ -278,6 +280,7 @@ This preserves player overrides across map transitions and save/load cycles.
 | INT-U-02 | Animation Step | `update(dt)` when `is_animating=True` | `frame_index` increments based on speed and `dt` | Time step > animation duration |
 | INT-U-03 | Animation Loop | `update(dt)` past `end_frame` for looping obj | `frame_index` resets to `start_frame` | High frame rate |
 | INT-U-04 | Animation Reverse | `update(dt)` when closing door | `frame_index` decrements towards `start_row` | None |
+| INT-U-04b | Close from end_row | `interact()` on open door (is_on=True) | `is_closing=True`, `frame_index == end_row`, `is_animating=True` | Interrupted opening animation |
 | INT-U-05 | Pre-calculated Cache | `halo_size=50` | `light_mask_cache` has exactly 10 surfaces (0.97 to 1.03) | `halo_size=0` |
 | INT-U-06 | Particle Spawn | `update(dt)` with `particles=True` & `is_on=True` | Active particles list is populated up to `particle_count` | dt=0 |
 | INT-U-07 | Particle Cleanup| particle life expires | Removed from active particles list | Empty list |
@@ -323,9 +326,10 @@ This preserves player overrides across map transitions and save/load cycles.
 | Spec ID | Test Function | File |
 |---------|---------------|------|
 | INT-U-01 | `test_interact_sign_returns_element_id` | `../../tests/entities/test_interactive.py:L97` |
-| INT-U-02 | `test_update_animated_looping_wraps_frame` | `../../tests/entities/test_interactive.py:L116` |
-| INT-U-03 | `test_update_animated_off_resets_frame` | `../../tests/entities/test_interactive.py:L123` |
-| INT-U-04 | `test_update_closing_door_decrements_frame` | `../../tests/entities/test_interactive.py:L130` |
+| INT-U-02 | `test_update_animated_looping_wraps_frame` | `../../tests/entities/test_interactive.py:L121` |
+| INT-U-03 | `test_update_animated_off_resets_frame` | `../../tests/entities/test_interactive.py:L129` |
+| INT-U-04 | `test_update_closing_door_decrements_frame` | `../../tests/entities/test_interactive.py:L137` |
+| INT-U-04b | `test_interact_close_sets_frame_index_to_end_row` | `../../tests/entities/test_interactive.py:L157` |
 | INT-I-01 | `test_interaction_orientation` | `../../tests/engine/test_interaction.py:L68` |
 | INT-I-02 | `test_pickup_diagonal_rejection` | `../../tests/engine/test_interaction.py:L354` |
 | INT-I-03 | `test_verify_orientation_door_relaxed` | `../../tests/engine/test_interaction.py:L102` |

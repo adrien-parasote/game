@@ -144,6 +144,25 @@ class TestInteractiveCoverage:
         entity.update(0.5)  # Large enough dt to reach start_row
         assert entity.frame_index <= entity.start_row + 0.1
 
+    def test_is_closing_initialized_to_false(self):
+        """is_closing must be False on init — not a dynamic attribute risk."""
+        entity, _ = _make_interactive(sub_type="door")
+        assert entity.is_closing is False
+
+    @pytest.mark.tc("INT-U-04b")
+    def test_interact_close_sets_frame_index_to_end_row(self):
+        """Closing a door via interact() must start animation from end_row."""
+        entity, _ = _make_interactive(sub_type="door", is_on=True, is_passable=True)
+        # Simulate door fully open (animation ended at end_row)
+        entity.frame_index = float(entity.end_row)
+        entity.is_animating = False
+        # Close the door
+        entity.interact(MagicMock())
+        assert entity.is_on is False
+        assert entity.is_closing is True
+        assert entity.is_animating is True
+        assert entity.frame_index == float(entity.end_row)
+
     def test_update_door_open_removes_from_obstacles(self):
         """L300-301: door reaching end_row removes itself from obstacles if passable."""
         entity, obstacles = _make_interactive(sub_type="door", is_passable=True, is_on=True)
