@@ -313,3 +313,37 @@ Automated spec conformance tools often only scan top-level `def` and `class` exp
 ---
 
 *Last updated: 2026-05-15 — L-DOC-008 (ID fix), L-DOC-009 urbanization workflow, L-DOC-010 conformance fix.*
+
+---
+
+### A-AGENT-004 · 2026-05-17 · U · Minor Rework
+**Proposer `sheet_cols`/`sheet_rows` sans vérifier les dimensions réelles de la sheet**
+
+Premier fix du bug `05-guards.png` : proposé `sheet_cols=2, sheet_rows=12` (12 lignes) sans avoir vérifié que l'image fait 64×384px avec 4 lignes de 96px. L'utilisateur a dû intervenir pour corriger `sheet_rows=4`.
+
+**Diagnostic manqué :**
+```bash
+# ✅ TOUJOURS exécuter avant de proposer des cols/rows
+python3 -c "
+import pygame; pygame.init(); pygame.display.set_mode((1,1))
+s = pygame.image.load('assets/images/characters/05-guards.png')
+w, h = s.get_size()
+print(f'Size: {w}x{h}')
+print(f'-> cols=2: {w//2}x{h//4} per frame (4 rows)')
+print(f'-> cols=4: {w//4}x{h//4} per frame (4 rows)')
+"
+# Output: Size: 64x384 -> cols=2: 32x96 ✅  cols=4: 16x96 ❌
+```
+
+**Règle :** Avant de proposer un fix sur les paramètres `load_grid(cols, rows)` d'un NPC, TOUJOURS :
+1. Charger l'image avec `pygame.image.load` et afficher ses dimensions réelles
+2. Calculer `frame_w = sheet_w // cols` et `frame_h = sheet_h // rows` pour chaque hypothèse
+3. Vérifier visuellement que `frame_w` est logique (≥ 16px, multiple de 8)
+
+**Lien avec L-SPRITE-001 :** Même anti-pattern racine — assumer le layout d'une spritesheet sans mesurer. L-SPRITE-001 s'applique à `frame_height`, A-AGENT-004 à `cols/rows`.
+
+**Evidence :** First fix `sheet_rows=12` → frames 32×32px incorrects. Human enforcement requis. Corrigé en `sheet_rows=4` → frames 32×96px. commit `9fac11b`.
+
+---
+
+*Last updated: 2026-05-17 — A-AGENT-004 (mesurer les dimensions sprite avant de proposer cols/rows).*

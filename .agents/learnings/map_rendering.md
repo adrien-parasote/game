@@ -401,3 +401,35 @@ Le tile le plus haut dans la pile des layers n'est PAS nécessairement le tile s
 ---
 
 *Last updated: 2026-05-17 — L-MAP-008 (depth filter for all "under the player" queries), A-MAP-004 (topmost ≠ underfoot).*
+
+---
+
+### A-SPRITE-002 · 2026-05-17 · U · Minor Rework
+**Grille spritesheet hardcodée `load_grid(cols, rows)` dans le code NPC — frames coupées silencieusement**
+
+`NPC.__init__` hardcodait `sheet.load_grid(4, 4)` pour toutes les spritesheets. Une sheet non-standard (`05-guards.png` : 64×384px) produit des frames 16×96px (64/4=16) au lieu de 32×96px (64/2=32) → moitié du sprite coupée sans erreur ni warning.
+
+```python
+# ❌ Hardcode → toute sheet non-4×4 donne des frames coupées
+self.frames = sheet.load_grid(4, 4)
+# offsets animation: {"down":0, "left":4, "right":8, "up":12} — hardcodés aussi
+
+# ✅ Configurable depuis les props Tiled — default 4/4 rétrocompat
+self.frames = sheet.load_grid(sheet_cols, sheet_rows)
+self.frames_per_dir = sheet_cols
+fpd = self.frames_per_dir
+row_offsets = {"down": 0, "left": fpd, "right": fpd * 2, "up": fpd * 3}
+```
+
+**Règle — NPC avec spritesheet :**
+1. `sheet_cols` / `sheet_rows` doivent être passables depuis la config (props Tiled)
+2. `frames_per_dir = sheet_cols` — offsets d'animation dynamiques, jamais hardcodés
+3. Pour chaque NPC utilisant une sheet non-default, le `.tmj` DOIT spécifier `sheet_cols` + `sheet_rows`
+
+**Règle spec :** La spec NPC DOIT documenter la formule `(sheet_cols × sheet_rows = total_frames)` et les offsets par direction. Un bug de frame silencieux est garanti si la sheet s'écarte du layout par défaut sans que le code le sache.
+
+**Evidence :** `05-guards.png` (64×384px, 2×4) → frames coupées à 16px. Fix : `sheet_cols=2, sheet_rows=4` dans props Tiled obj 15 & 18. `frames_per_dir=2` → offsets `0,2,4,6`. commit `9fac11b`. 830/830 tests verts.
+
+---
+
+*Last updated: 2026-05-17 — A-SPRITE-002 (NPC spritesheet grid hardcoded → silent cropped frames).*
