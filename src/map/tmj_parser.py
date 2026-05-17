@@ -245,7 +245,7 @@ class TmjParser:
             if anim_node is not None:
                 frames = []
                 for frame in anim_node.findall("frame"):
-                    frames.append((firstgid + int(frame.get("tileid")), int(frame.get("duration"))))
+                    frames.append((firstgid + int(frame.get("tileid") or "0"), int(frame.get("duration") or "0")))
                 if frames:
                     animations[local_id] = frames
         return custom_props, animations

@@ -77,7 +77,6 @@ class EntityFactory:
             entities: List of Tiled entity dicts from TmjParser.
             map_name: Current map filename (used for world_state keys).
         """
-        self.game.tile_size // 2
         for ent in entities:
             props = ent.get("properties", {})
             entity_type = _get_property(props, "entity_type", default="unknown")

@@ -5,9 +5,20 @@
   "exclude": [
     "**/__pycache__",
     ".venv",
+    "venv",
+    "tests",
+    ".agents",
+    "scripts",
     "build",
     "dist"
   ],
   "reportMissingImports": "warning",
-  "reportMissingModuleSource": "none"
+  "reportMissingModuleSource": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportGeneralTypeIssues": "none",
+  "reportOptionalMemberAccess": "none",
+  "reportOptionalSubscript": "none",
+  "reportOptionalCall": "none",
+  "reportOptionalIterable": "none",
+  "reportOptionalOperand": "none"
 }

@@ -116,7 +116,7 @@ class TestBackgroundLayerRenderOrder:
         def track_blit(img, pos):
             blit_order.append(img)
         def track_fblits(lst):
-            for img, pos in lst:
+            for img, _pos in lst:
                 blit_order.append(img)
 
         rm.game.screen.blit.side_effect = track_blit

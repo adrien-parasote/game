@@ -16,7 +16,7 @@ class AnimationMapManager:
         Currently relying on absolute pygame time for tile cycles."""
         pass
 
-    def get_current_frame_image(self, tile_id: int) -> pygame.Surface:
+    def get_current_frame_image(self, tile_id: int) -> pygame.Surface | None:
         """Resolves the current frame's image for a given animated tile_id based on absolute time."""
         tile_data = self.map_manager.tiles.get(tile_id)
         if not tile_data or not tile_data.frames:

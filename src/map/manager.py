@@ -174,6 +174,7 @@ class MapManager:
 
         for layer_id in self.layer_order:
             layer_order_val = self.layer_depths.get(layer_id, 0)
+            is_foreground_layer = False
 
             if min_depth is not None:
                 # Pure foreground layer (order > player depth): include all its tiles

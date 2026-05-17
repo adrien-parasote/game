@@ -61,21 +61,29 @@ def facing_toward(
 
 def _is_front_facing(o_dir: str, p_state: str, dx: float, dy: float, x_aligned: bool, y_aligned: bool) -> bool:
     if x_aligned:
-        if o_dir == "up" and p_state == "down" and dy < 0: return True
-        if o_dir == "down" and p_state == "up" and dy > 0: return True
+        if o_dir == "up" and p_state == "down" and dy < 0:
+            return True
+        if o_dir == "down" and p_state == "up" and dy > 0:
+            return True
     if y_aligned:
-        if o_dir == "left" and p_state == "right" and dx < 0: return True
-        if o_dir == "right" and p_state == "left" and dx > 0: return True
+        if o_dir == "left" and p_state == "right" and dx < 0:
+            return True
+        if o_dir == "right" and p_state == "left" and dx > 0:
+            return True
     return False
 
 
 def _is_back_facing(o_dir: str, p_state: str, dx: float, dy: float, x_aligned: bool, y_aligned: bool) -> bool:
     if x_aligned:
-        if o_dir == "up" and p_state == "up" and dy > 0: return True
-        if o_dir == "down" and p_state == "down" and dy < 0: return True
+        if o_dir == "up" and p_state == "up" and dy > 0:
+            return True
+        if o_dir == "down" and p_state == "down" and dy < 0:
+            return True
     if y_aligned:
-        if o_dir == "left" and p_state == "left" and dx > 0: return True
-        if o_dir == "right" and p_state == "right" and dx < 0: return True
+        if o_dir == "left" and p_state == "left" and dx > 0:
+            return True
+        if o_dir == "right" and p_state == "right" and dx < 0:
+            return True
     return False
 
 

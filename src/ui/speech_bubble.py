@@ -167,7 +167,7 @@ class SpeechBubble:
 
         return bg
 
-    def _build_name_plate(self, speaker_name: str) -> pygame.Surface | None:
+    def _build_name_plate(self, speaker_name: str | None) -> pygame.Surface | None:
         if not speaker_name or "name_plate_left" not in self.tiles:
             return None
 

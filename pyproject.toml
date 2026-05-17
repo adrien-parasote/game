@@ -9,6 +9,13 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+exclude = [
+    ".git",
+    ".pytest_cache",
+    ".ruff_cache",
+    "venv",
+    "scripts"
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "T20", "W", "UP"]

@@ -1,13 +1,13 @@
 {
   "project": "/Users/adrien.parasote/Documents/perso/game",
   "build_system": "Python",
-  "total_duration_s": 2.1,
+  "total_duration_s": 9.3,
   "results": [
     {
       "check": "P0_Security",
       "priority": "P0",
       "passed": true,
-      "scanned_files": 135,
+      "scanned_files": 184,
       "findings_count": 0,
       "critical": 0,
       "high": 0,
@@ -24,142 +24,107 @@
       "check": "P2_Types",
       "priority": "P2",
       "build_system": "Python",
-      "passed": null,
-      "exit_code": -1,
-      "stdout": "",
-      "stderr": "Command not found: pyright",
-      "duration_s": 0,
-      "command": "pyright .",
-      "skipped": true
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "0 errors, 0 warnings, 0 informations \n",
+      "stderr": "",
+      "duration_s": 1.0,
+      "command": "pyright ."
     },
     {
       "check": "P3_Lint",
       "priority": "P3",
       "build_system": "Python",
-      "passed": null,
-      "exit_code": -1,
-      "stdout": "",
-      "stderr": "Command not found: ruff",
-      "duration_s": 0,
-      "command": "ruff check .",
-      "skipped": true
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": "",
+      "duration_s": 0.0,
+      "command": "ruff check ."
     },
     {
       "check": "P4_Tests",
       "priority": "P4",
       "build_system": "Python",
-      "passed": null,
-      "exit_code": -1,
-      "stdout": "",
-      "stderr": "Command not found: pytest",
-      "duration_s": 0,
-      "command": "pytest --tb=short -q",
-      "skipped": true
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "........................................................................ [  8%]\n........................................................................ [ 17%]\n........................................................................ [ 25%]\n........................................................................ [ 34%]\n........................................................................ [ 42%]\n........................................................................ [ 51%]\n........................................................................ [ 59%]\n........................................................................ [ 68%]\n........................................................................ [ 76%]\n........................................................................ [ 85%]\n........................................................................ [ 94%]\n..................................................                       [100%]\n842 passed in 5.26s\n",
+      "stderr": "",
+      "duration_s": 5.6,
+      "command": "pytest --tb=short -q"
     },
     {
       "check": "P5_DebugArtifacts",
       "priority": "P5",
-      "passed": false,
-      "scanned_files": 94,
-      "findings_count": 1,
-      "findings": [
-        {
-          "file": "scripts/process_banners.py",
-          "line": "133",
-          "type": "debug_artifact",
-          "name": "print()",
-          "severity": "medium",
-          "snippet": "print(f\"Saved processed image to {output_path}\")"
-        }
-      ]
+      "passed": true,
+      "scanned_files": 100,
+      "findings_count": 0,
+      "findings": []
     },
     {
       "check": "P6_StubDetection",
       "priority": "P6",
       "passed": true,
-      "scanned_files": 94,
+      "scanned_files": 100,
       "findings_count": 0,
       "findings": []
     },
     {
       "check": "P7_Architecture",
       "priority": "P7",
-      "passed": false,
-      "quality_signal": "6454",
+      "passed": true,
+      "quality_signal": "6566",
       "rules_pass": false,
-      "gate_pass": false,
-      "violation_count": 4,
+      "gate_pass": true,
+      "violation_count": 1,
       "violations": [
         {
           "type": "architectural_violation",
           "severity": "error",
-          "message": "min_quality: Quality signal 0.65 below minimum required 0.65"
-        },
-        {
-          "type": "architectural_violation",
-          "severity": "error",
-          "message": "max_cc: 7 function(s) exceed max cyclomatic complexity of 20"
-        },
-        {
-          "type": "architectural_violation",
-          "severity": "error",
-          "message": "max_fn_lines: 8 function(s) exceed max length of 80 lines"
-        },
-        {
-          "type": "regression",
-          "severity": "error",
-          "message": "Structural regression detected. Quality:      6447 -> 6454"
+          "message": "max_fn_lines: 1 function(s) exceed max length of 80 lines"
         }
       ],
-      "gate_info": "Quality:      6447 -> 6454",
-      "duration_s": 0.8
+      "gate_info": "Quality:      6447 -> 6566",
+      "duration_s": 0.9
     },
     {
       "check": "P8_SpecConformance",
       "priority": "P8",
-      "passed": false,
-      "status": "DIVERGENCE",
-      "divergence_count": 15,
-      "divergences": [
-        "exports: AttributeError",
-        "exports: BuildingSystem",
-        "exports: ChestAssetsMixin",
-        "exports: ChestTransfer",
-        "exports: CoordinateSystem",
-        "exports: CraftingSystem",
-        "exports: E",
-        "exports: Enemy",
-        "exports: FamiliarSystem",
-        "exports: FileNotFoundError",
-        "files: assets/fonts/vcr_osd_mono.ttf",
-        "files: docs/brain/fcb4f254/performance_audit.md",
-        "files: docs/strategic/blueprint.md",
-        "files: saves/slot_N.json",
-        "files: saves/slot_N_thumb.png"
-      ],
+      "passed": true,
+      "status": "CONFORMS",
+      "divergence_count": 0,
+      "divergences": [],
       "spec_files": [
         "docs/traceability.md",
+        "docs/traceability_report.md",
+        "docs/task.md",
+        "docs/research/autotile_directional_movement_research.md",
+        "docs/research/release_automation_strategy.md",
         "docs/research/unit_test_optimization.md",
+        "docs/archive/perf-constants-audit-strategy.md",
         "docs/specs/save-system.md",
-        "docs/specs/phase-1.5-game-refactoring.md",
+        "docs/specs/inventory-data-spec.md",
         "docs/specs/game-flow-spec.md",
         "docs/specs/00_MASTER.md",
         "docs/specs/speech-bubble-spec.md",
         "docs/specs/quality-gates.md",
         "docs/specs/perf-constants-spec.md",
-        "docs/specs/phase-1.5-chest-refactoring.md",
         "docs/specs/debug-features-spec.md",
+        "docs/specs/release_script.md",
         "docs/specs/npc-system.md",
+        "docs/specs/audio-system-spec.md",
+        "docs/specs/asset-i18n-spec.md",
         "docs/specs/interactive-objects.md",
         "docs/specs/chest-ui-spec.md",
         "docs/specs/test_suite_optimization.md",
         "docs/specs/world-system.md",
+        "docs/specs/dialogue-spec.md",
         "docs/specs/performance-optimization-spec.md",
         "docs/specs/map-parser-spec.md",
         "docs/specs/lighting-system.md",
         "docs/specs/localization_font_urbanization.md",
         "docs/specs/engine-core.md",
-        "docs/specs/phase-1.5-interaction-refactoring.md",
+        "docs/specs/interactive-lighting-spec.md",
         "docs/specs/item_pickup_spec.md",
         "docs/specs/loot-table-spec.md",
         "docs/specs/inventory-spec.md",
@@ -168,152 +133,34 @@
         "docs/codemaps/architecture.md",
         "docs/codemaps/data.md",
         "docs/codemaps/logic.md",
-        "docs/strategic/perf-constants-audit-strategy.md",
         "docs/strategic/MASTER_ROADMAP.md",
+        "docs/strategic/autotile_direction_blueprint.md",
         "docs/strategic/game_vision.md",
         "docs/ADRs/ADR-003-key-mapping.md",
+        "docs/ADRs/BUG-WALK-001-002-is-walkable-depth-semantics.md",
         "docs/ADRs/ADR-001-gamestate-architecture.md",
+        "docs/ADRs/ADR-005-singleton-new.md",
+        "docs/ADRs/ADR-006-perf-constants-pre-render-cache.md",
         "docs/ADRs/ADR-002-save-format.md",
+        "docs/ADRs/BUG-DIR-001-direction-flags-intersection.md",
         "docs/ADRs/ADR-004-refactoring-context-injection.md"
       ],
-      "duration_s": 0.2
+      "duration_s": 0.3
     },
     {
       "check": "P9_TestQuality",
       "priority": "P9",
-      "passed": false,
-      "scanned_test_files": 41,
-      "findings_count": 37,
-      "findings": [
-        {
-          "file": "tests/conftest.py",
-          "type": "no_assertions",
-          "severity": "high",
-          "message": "Test file contains no behavioral assertions",
-          "density": "0.0"
-        },
-        {
-          "file": "tests/test_coverage_gaps_phase15.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (38 test cases)"
-        },
-        {
-          "file": "tests/ui/test_inventory_equipment.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (7 test cases)"
-        },
-        {
-          "file": "tests/ui/test_title_screen.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (21 test cases)"
-        },
-        {
-          "file": "tests/ui/test_chest_draw_assets.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (13 test cases)"
-        },
-        {
-          "file": "tests/ui/test_inventory.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (40 test cases)"
-        },
-        {
-          "file": "tests/ui/test_perf_hud.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (2 test cases)"
-        },
-        {
-          "file": "tests/ui/test_chest.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (84 test cases)"
-        },
-        {
-          "file": "tests/ui/test_inventory_removal.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (3 test cases)"
-        },
-        {
-          "file": "tests/ui/test_inventory_coverage.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (38 test cases)"
-        },
-        {
-          "file": "tests/ui/test_pause_screen.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (12 test cases)"
-        },
-        {
-          "file": "tests/ui/test_save_menu.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (6 test cases)"
-        },
-        {
-          "file": "tests/ui/test_inventory_chest_interaction.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (3 test cases)"
-        },
-        {
-          "file": "tests/ui/test_perf_pause_screen.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (4 test cases)"
-        },
-        {
-          "file": "tests/ui/test_dialogue.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (3 test cases)"
-        },
-        {
-          "file": "tests/map/test_parser.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (6 test cases)"
-        },
-        {
-          "file": "tests/map/test_map.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (14 test cases)"
-        },
-        {
-          "file": "tests/graphics/test_graphics.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (10 test cases)"
-        },
-        {
-          "file": "tests/engine/test_render_manager.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (4 test cases)"
-        },
-        {
-          "file": "tests/engine/test_game_coverage.py",
-          "type": "no_delegation",
-          "severity": "high",
-          "message": "Test file imports nothing from production code \u2014 tests inline data only (7 test cases)"
-        }
-      ]
+      "passed": true,
+      "scanned_test_files": 83,
+      "findings_count": 0,
+      "findings": []
     },
     {
       "check": "P10_TDDSequence",
       "priority": "P10",
       "passed": true,
-      "lock_timestamp": "2026-05-07T21:25:33+0200",
-      "locked_test_files": 34,
+      "lock_timestamp": "2026-05-17T22:10:04+0200",
+      "locked_test_files": 81,
       "modified_count": 0,
       "missing_count": 0,
       "findings": [],
@@ -322,9 +169,9 @@
   ],
   "summary": {
     "total": 11,
-    "passed": 3,
-    "failed": 4,
-    "skipped": 4
+    "passed": 10,
+    "failed": 0,
+    "skipped": 1
   },
-  "verdict": "FAIL"
+  "verdict": "PASS"
 }
