@@ -171,7 +171,115 @@ def test_map_manager_get_direction_flags():
 
     assert manager.get_direction_flags(0, 0) == {"up", "left"}
     assert manager.get_direction_flags(1, 0) == {"any"}  # Empty coordinate defaults to 'any'
-    assert manager.get_direction_flags(-1, 0) == {"any"} # Out of bounds
+    assert manager.get_direction_flags(-1, 0) == {"any"}  # Out of bounds
+
+
+def _make_tile(direction_flags, walkable=True, depth=0):
+    """Helper: create a MagicMock tile with the given direction_flags."""
+    tile = MagicMock()
+    tile.image = pygame.Surface((32, 32))
+    tile.walkable = walkable
+    tile.depth = depth
+    tile.direction_flags = direction_flags
+    return tile
+
+
+def test_direction_flags_multilayer_any_does_not_override_constraint():
+    """
+    BUG REGRESSION: Layer 0=any, Layer 1={down,left,right}, Layer 2=any.
+    La couche 'any' ne doit PAS effacer la contrainte {down,left,right} de la couche 1.
+    Résultat attendu : {down, left, right} — la direction 'up' doit être bloquée.
+    """
+    tile_any = _make_tile({"any"})
+    tile_restricted = _make_tile({"down", "left", "right"})
+
+    map_d = {
+        "layers": {
+            1: [[1, 0]],  # Layer 0: any
+            2: [[2, 0]],  # Layer 1: down, left, right
+            3: [[3, 0]],  # Layer 2: any
+        },
+        "tiles": {
+            1: tile_any,
+            2: tile_restricted,
+            3: tile_any,
+        },
+        "layer_names": {1: "00-layer", 2: "01-layer", 3: "02-layer"},
+        "layer_order": [1, 2, 3],
+        "layer_order_values": {1: 0, 2: 1, 3: 2},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    layout = MagicMock()
+    manager = MapManager(map_d, layout)
+
+    result = manager.get_direction_flags(0, 0)
+    assert result == {"down", "left", "right"}, (
+        f"Expected {{down, left, right}} but got {result}. "
+        "A layer with 'any' must not override a constrained layer."
+    )
+    assert "up" not in result, "'up' must be blocked when a layer restricts to {down, left, right}"
+
+
+def test_direction_flags_multilayer_intersection():
+    """
+    Deux couches avec des contraintes différentes : l'intersection doit être retournée.
+    Layer 0: {down, left, right, up}, Layer 1: {down, left}.
+    Résultat attendu : {down, left} (intersection).
+    """
+    tile_a = _make_tile({"down", "left", "right", "up"})
+    tile_b = _make_tile({"down", "left"})
+
+    map_d = {
+        "layers": {
+            1: [[1, 0]],  # Layer 0: {down,left,right,up}
+            2: [[2, 0]],  # Layer 1: {down,left}
+        },
+        "tiles": {1: tile_a, 2: tile_b},
+        "layer_names": {1: "00-layer", 2: "01-layer"},
+        "layer_order": [1, 2],
+        "layer_order_values": {1: 0, 2: 1},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    layout = MagicMock()
+    manager = MapManager(map_d, layout)
+
+    result = manager.get_direction_flags(0, 0)
+    assert result == {"down", "left"}, (
+        f"Expected {{down, left}} but got {result}. Intersection of two constrained layers must be applied."
+    )
+
+
+def test_direction_flags_all_any_returns_any():
+    """
+    Toutes les couches avec 'any' → résultat doit être {'any'}.
+    """
+    tile_any = _make_tile({"any"})
+
+    map_d = {
+        "layers": {
+            1: [[1, 0]],
+            2: [[2, 0]],
+        },
+        "tiles": {1: tile_any, 2: tile_any},
+        "layer_names": {1: "00-layer", 2: "01-layer"},
+        "layer_order": [1, 2],
+        "layer_order_values": {1: 0, 2: 1},
+        "width": 2,
+        "height": 1,
+        "tile_size": 32,
+    }
+
+    layout = MagicMock()
+    manager = MapManager(map_d, layout)
+
+    result = manager.get_direction_flags(0, 0)
+    assert result == {"any"}, f"Expected {{any}} but got {result}"
 
 
 # ---------------------------------------------------------------------------

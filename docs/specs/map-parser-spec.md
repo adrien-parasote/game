@@ -193,7 +193,25 @@ Pre-renders an entire layer to a single cached Surface. Used for background laye
 **Edge case**: Out-of-bounds coordinates return `False` (blocks movement).
 
 #### `get_direction_flags(x: int, y: int) -> set[str]`
-Returns the union of `direction_flags` for all tiles at the given coordinate. Defaults to `{"any"}` if no constraints are found. Used by `BaseEntity` to restrict movement.
+
+Returns the **intersection** of `direction_flags` across all layers at the given coordinate.
+
+**Semantics**:
+- A layer whose tile has `{"any"}` is a **neutral joker** — it imposes no constraint and is ignored in the accumulation.
+- A layer with specific directions (e.g. `{"down", "left", "right"}`) **restricts** movement.
+- The result is the intersection of all non-`any` constrained layers.
+- If no layer carries a specific constraint (all are `any` or empty), returns `{"any"}`.
+
+**Multi-layer example** (the bug that triggered this spec update — BUG-DIR-001):
+```
+Layer 0: {"any"}              → ignored (neutral)
+Layer 1: {"down","left","right"} → constraint collected
+Layer 2: {"any"}              → ignored (neutral)
+
+Result: {"down","left","right"}  ✓   ("up" is blocked)
+```
+
+Used by `BaseEntity.start_move()` to restrict movement exit direction from the current tile.
 
 #### `get_visible_chunks(viewport_rect: Rect, min_depth: int | None) -> Iterator[tuple]`
 
@@ -275,6 +293,7 @@ class LayoutStrategy(ABC):
 | Sort layers by name prefix (`"00-"`) | Sort by Tiled `order` property | Name is decorative; `order` is authoritative (see L-MAP-006) |
 | Conflate layer Z-order with tile depth | Keep `layer_depths` (from `order`) and `tile.depth` strictly separate | Conflation causes invisible tiles when the two values differ (A-MAP-002) |
 | Seed `layer_max_depths` from `layer_depths` | Start `max_d = 0` and accumulate only per-tile depths | Seeding from order value pollutes the aggregate and triggers false foreground-layer inclusions |
+| Use last-write-wins for `get_direction_flags` across layers | **Intersect** all non-`any` constrained layers; treat `{"any"}` as a neutral joker | Last-write-wins lets an upper `any` layer silently erase a restrictive constraint below it (BUG-DIR-001) |
 
 ## 8. Test Case Specifications
 

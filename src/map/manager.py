@@ -103,19 +103,35 @@ class MapManager:
         return has_tile
 
     def get_direction_flags(self, x: int, y: int) -> set[str]:
-        """Returns the direction_flags of the highest layer tile at (x, y)."""
+        """Return the intersection of direction_flags across all layers at (x, y).
+
+        Rules:
+        - A layer with ``{"any"}`` imposes no constraint (neutral joker).
+        - A layer with specific directions (e.g. ``{"down", "left"}``) restricts movement.
+        - The result is the intersection of all constrained layers.
+        - If no layer has a specific constraint, returns ``{"any"}``.
+        """
         if not (0 <= y < self.height and 0 <= x < self.width):
             return {"any"}
 
-        top_flags = {"any"}
+        constrained: list[set[str]] = []
         for layer_id in self.layer_order:
-            if layer_id in self.layers:
-                tile_id = self.layers[layer_id][y][x]
-                if tile_id in self.tiles:
-                    tile_data = self.tiles[tile_id]
-                    if tile_data.direction_flags is not None:
-                        top_flags = tile_data.direction_flags
-        return top_flags
+            if layer_id not in self.layers:
+                continue
+            tile_id = self.layers[layer_id][y][x]
+            if tile_id not in self.tiles:
+                continue
+            flags = self.tiles[tile_id].direction_flags
+            if flags is not None and "any" not in flags:
+                constrained.append(flags)
+
+        if not constrained:
+            return {"any"}
+
+        result = constrained[0].copy()
+        for flags in constrained[1:]:
+            result &= flags
+        return result if result else set()
 
     def get_visible_chunks(
         self, viewport_rect: pygame.Rect, min_depth: int | None = None
