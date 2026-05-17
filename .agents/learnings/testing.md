@@ -539,7 +539,7 @@ from src.map.tmj_parser import TmjParser
 
 ---
 
-### A-TEST-008 · 2026-05-07 · U · Minor Rework
+### A-TEST-008 · 2026-05-07 · U · Minor Rework *(updated 2026-05-17 — occurrences: 2)*
 **`MagicMock()` attributs booléens sont truthy — setter explicite requis**
 
 `MagicMock()` auto-crée chaque attribut comme un `MagicMock()` truthy. Les gardes `if x.is_active:` sont toujours `True` sans assignation explicite.
@@ -554,11 +554,25 @@ game.chest_ui.is_open = False
 ```
 
 **Règle :** Pour tout fixture `MagicMock`, assigner explicitement tous les attributs booléens critiques.
-**Evidence :** TC-IH-02 : `AssertionError: Expected 'handle_interactions' to have been called once. Called 0 times.` (Phase 1.5).
+
+**Occurrence 2 (2026-05-17) — Omission in test defaults:** `CollisionChecker.check` added an `is_animating` check on override entities. Since the test mock bridge was a `MagicMock`, accessing `bridge.is_animating` returned a truthy mock object, causing the animated override condition `if not getattr(entity, "is_animating", False)` to evaluate to `False` (since `not <MagicMock>` is `False`).
+
+```python
+# ❌ bridge.is_animating is undefined -> returns truthy mock -> 'not mock' is False
+bridge = _make_rect_obj()
+
+# ✅ explicitly initialize to False
+bridge = _make_rect_obj()
+bridge.is_animating = False
+```
+
+**Evidence :**
+- Occurrence 1 : TC-IH-02 : `AssertionError: Expected 'handle_interactions' to have been called once. Called 0 times.` (Phase 1.5).
+- Occurrence 2 : `test_open_bridge_overrides_non_walkable_tile` in `tests/engine/test_collision_checker.py` failed with `AssertionError: assert True is False` (2026-05-17).
 
 ---
 
-*Last updated: 2026-05-07 — L-TEST-008, A-TEST-008 from Phase 1.5 HARDEN session.*
+*Last updated: 2026-05-17 — Absorbed second occurrence of MagicMock boolean truthiness in A-TEST-008 during targeted coverage session.*
 
 ---
 
