@@ -18,7 +18,7 @@
   },
   "debug": {
     "log_level": "INFO",
-    "enabled": false
+    "enabled": true
   },
   "ui": {
     "cursor_size": 32,

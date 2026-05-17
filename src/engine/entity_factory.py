@@ -149,6 +149,7 @@ class EntityFactory:
         )
         entity._time_system = self.game.time_system
         entity.game = self.game
+        entity._sync_walkable_override()  # Register bridge override if open at spawn
 
         if _get_property(props, "sub_type", "unknown") == "chest":
             entity.contents = self.game.loot_table.get_contents(element_id)

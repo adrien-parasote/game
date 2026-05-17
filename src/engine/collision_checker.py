@@ -40,6 +40,11 @@ class CollisionChecker:
             py_center: Y pixel coordinate of the target position.
             requester: Entity requesting the check — skipped in all group checks.
         """
+        # 0. Walkable overrides (passable bridges/drawbridges open above non-walkable tiles)
+        for entity in getattr(self.game, "walkable_override_entities", ()):
+            if entity.rect and entity.rect.collidepoint(px_center, py_center):
+                return False  # Tile beneath is overridden — free to walk
+
         # 1. Map tiles
         wx, wy = self.game.layout.to_world(px_center, py_center)
         if not self.game.map_manager.is_walkable(int(wx), int(wy)):

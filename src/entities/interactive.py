@@ -99,6 +99,10 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         t_h = tiled_height if tiled_height is not None else height
         self._setup_physics(pos, t_w, t_h, is_passable, obstacles_group, groups, element_id)
 
+        # Restore depth from Tiled: BaseEntity.__init__ (called inside _setup_physics via
+        # super().__init__) resets self.depth = 1. We must re-apply the Tiled value here.
+        self.depth = depth
+
         # 4. Lighting Initialization
         self.light_mask_cache = []
         if self.halo_size > 0:
@@ -295,6 +299,26 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         else:
             self.col_index = self.on_position
 
+    def _sync_walkable_override(self) -> None:
+        """Register or unregister self in game.walkable_override_entities.
+
+        An entity is a walkable override when it is passable (is_passable=True)
+        and currently open (is_on=True). This lets CollisionChecker skip the
+        tile walkability check beneath the entity's rect — enabling bridges and
+        drawbridges to allow crossing non-walkable tiles such as water.
+
+        Safe to call before self.game is set (entity_factory assigns it after
+        __init__); in that case the call is a no-op.
+        """
+        game = getattr(self, "game", None)
+        override_set = getattr(game, "walkable_override_entities", None)
+        if override_set is None:
+            return
+        if self.is_passable and self.is_on:
+            override_set.add(self)
+        else:
+            override_set.discard(self)
+
     def interact(self, initiator) -> str | None:
         """Toggle state or return dialogue key."""
         if self.sub_type == "sign":
@@ -311,6 +335,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
             if not getattr(self, "is_animating", False) or getattr(self, "is_animated", False):
                 self.is_on = not self.is_on
                 self._update_col_index()
+                self._sync_walkable_override()
                 self.is_animating = True
                 if not getattr(self, "is_animated", False):
                     self.is_closing = not self.is_on
@@ -327,6 +352,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
             is_on = state["is_on"]
             self.is_on = is_on
             self._update_col_index()
+            self._sync_walkable_override()
             if is_on and not getattr(self, "is_animated", False):
                 self.frame_index = float(self.end_row)
             elif not is_on:

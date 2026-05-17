@@ -349,3 +349,159 @@ class TestInteractiveLightingCoverage:
         ent.frame_index = 2
         InteractiveLightingMixin._update_flicker(ent, dt=0.016, ticks_ms=1000)
 
+
+# ---------------------------------------------------------------------------
+# TC-INT-DEPTH — depth value from Tiled must survive BaseEntity.__init__ reset
+# ---------------------------------------------------------------------------
+
+
+def _make_interactive_with_depth(depth: int):
+    """Build a minimal InteractiveEntity with a specific depth value."""
+    group = pygame.sprite.Group()
+    obstacles = pygame.sprite.Group()
+    with patch("src.entities.interactive.SpriteSheet") as mock_ss:
+        mock_ss.return_value.valid = False
+        entity = InteractiveEntity(
+            pos=(100, 100),
+            groups=[group],
+            sub_type="door",
+            sprite_sheet="",
+            position=0,
+            depth=depth,
+            start_row=0,
+            end_row=3,
+            width=32,
+            height=32,
+            tiled_width=32,
+            tiled_height=32,
+            obstacles_group=obstacles,
+            is_passable=True,
+            is_animated=False,
+            is_on=False,
+            halo_size=0,
+            halo_color="[255, 200, 100]",
+            halo_alpha=130,
+            particles=False,
+            particle_count=0,
+            element_id="door_1",
+            target_id=None,
+            activate_from_anywhere=False,
+            facing_direction=None,
+            sfx="",
+            day_night_driven=False,
+        )
+    return entity
+
+
+class TestInteractiveDepth:
+    """Regression tests for the depth-override bug.
+
+    BaseEntity.__init__ (called inside _setup_physics) was resetting self.depth=1
+    after _parse_properties had correctly set the Tiled value. The fix re-applies
+    depth after _setup_physics completes.
+    """
+
+    @pytest.mark.tc("TC-INT-DEPTH-01")
+    def test_depth_zero_preserved_after_init(self):
+        """depth=0 from Tiled must not be reset to 1 by BaseEntity.__init__."""
+        entity = _make_interactive_with_depth(0)
+        assert entity.depth == 0
+
+    @pytest.mark.tc("TC-INT-DEPTH-02")
+    def test_depth_one_unchanged(self):
+        """depth=1 (default) is the same as BaseEntity default — must still be 1."""
+        entity = _make_interactive_with_depth(1)
+        assert entity.depth == 1
+
+    @pytest.mark.tc("TC-INT-DEPTH-03")
+    def test_depth_two_preserved_after_init(self):
+        """depth=2 (foreground entity) must survive __init__ without being reset."""
+        entity = _make_interactive_with_depth(2)
+        assert entity.depth == 2
+
+
+# ---------------------------------------------------------------------------
+# TC-INT-WO — _sync_walkable_override() keeps walkable_override_entities in sync
+# ---------------------------------------------------------------------------
+
+
+class TestWalkableOverride:
+    """Tests for InteractiveEntity._sync_walkable_override().
+
+    The system allows CollisionChecker to bypass tile walkability under open
+    passable bridges. Preconditions: entity.game.walkable_override_entities is a set.
+    """
+
+    def _bridge(self, is_on=True, is_passable=True):
+        """Build a passable door entity and attach a mock game."""
+        entity, _ = _make_interactive(sub_type="door", is_on=is_on, is_passable=is_passable)
+        mock_game = MagicMock()
+        mock_game.walkable_override_entities = set()
+        entity.game = mock_game
+        return entity, mock_game.walkable_override_entities
+
+    @pytest.mark.tc("TC-INT-WO-01")
+    def test_open_passable_door_registers_in_override_set(self):
+        """Open passable door must be added to walkable_override_entities."""
+        entity, override_set = self._bridge(is_on=True, is_passable=True)
+        entity._sync_walkable_override()
+        assert entity in override_set
+
+    @pytest.mark.tc("TC-INT-WO-02")
+    def test_closed_passable_door_removed_from_override_set(self):
+        """Closed passable door must be discarded from walkable_override_entities."""
+        entity, override_set = self._bridge(is_on=True, is_passable=True)
+        override_set.add(entity)  # Pre-add as if it was open
+
+        entity._static_is_on = False  # Close it
+        entity._sync_walkable_override()
+
+        assert entity not in override_set
+
+    @pytest.mark.tc("TC-INT-WO-03")
+    def test_open_non_passable_door_not_registered(self):
+        """A non-passable open door must NOT be added (only bridges need override)."""
+        entity, override_set = self._bridge(is_on=True, is_passable=False)
+        entity._sync_walkable_override()
+        assert entity not in override_set
+
+    @pytest.mark.tc("TC-INT-WO-04")
+    def test_sync_is_noop_when_no_game(self):
+        """_sync_walkable_override must be safe when entity.game is None."""
+        entity, _ = _make_interactive(sub_type="door", is_on=True, is_passable=True)
+        entity.game = None
+        entity._sync_walkable_override()  # Must not raise
+
+    @pytest.mark.tc("TC-INT-WO-05")
+    def test_interact_open_registers_in_override(self):
+        """Opening a passable door via interact() must register it in override_set."""
+        entity, override_set = self._bridge(is_on=False, is_passable=True)
+        entity.is_animating = False
+        entity.interact(MagicMock())
+        # After interact, is_on toggled to True → should be in override_set
+        assert entity in override_set
+
+    @pytest.mark.tc("TC-INT-WO-06")
+    def test_interact_close_removes_from_override(self):
+        """Closing an open passable door via interact() must remove it from override_set."""
+        entity, override_set = self._bridge(is_on=True, is_passable=True)
+        override_set.add(entity)  # Was open
+        entity.is_animating = False
+        entity.interact(MagicMock())
+        # After interact, is_on toggled to False → must be removed
+        assert entity not in override_set
+
+    @pytest.mark.tc("TC-INT-WO-07")
+    def test_restore_state_open_registers_in_override(self):
+        """restore_state(is_on=True) on passable door registers it in override_set."""
+        entity, override_set = self._bridge(is_on=False, is_passable=True)
+        entity.restore_state({"is_on": True})
+        assert entity in override_set
+
+    @pytest.mark.tc("TC-INT-WO-08")
+    def test_restore_state_closed_removes_from_override(self):
+        """restore_state(is_on=False) on passable door removes it from override_set."""
+        entity, override_set = self._bridge(is_on=True, is_passable=True)
+        override_set.add(entity)
+        entity.restore_state({"is_on": False})
+        assert entity not in override_set

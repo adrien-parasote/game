@@ -41,7 +41,15 @@ def setup_logging(settings: Any) -> None:
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
 
-    if not logger.handlers:
+    # Check if we already have our TimedRotatingFileHandler
+    has_file_handler = any(
+        isinstance(h, logging.handlers.TimedRotatingFileHandler) for h in logger.handlers
+    )
+
+    if not has_file_handler:
+        # Remove any existing handlers (e.g. default StreamHandler) to prevent duplicate or unformatted logs
+        for handler in list(logger.handlers):
+            logger.removeHandler(handler)
         logger.addHandler(file_handler)
         logger.addHandler(console_handler)
 

@@ -22,6 +22,7 @@ def _make_game():
     game.obstacles_group = []
     game.npcs = []
     game.player.rect = None
+    game.walkable_override_entities = set()
     return game
 
 
@@ -150,3 +151,58 @@ def test_is_walkable_delegates_to_collision_checker():
 
     im._collision_checker.check.assert_called_once_with(80, 80, None)
     assert result is False
+
+
+# ---------------------------------------------------------------------------
+# TC-CC-08 — walkable override: open bridge above non-walkable tile → not blocked
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.tc("TC-CC-08")
+def test_open_bridge_overrides_non_walkable_tile():
+    """An open passable door (bridge) registered in walkable_override_entities
+    must short-circuit the tile check and return False (not blocked)."""
+    game = _make_game()
+    game.map_manager.is_walkable.return_value = False  # Water tile — normally blocks
+
+    bridge = _make_rect_obj(64, 64, 64)  # Bridge covers (64..128, 64..128)
+    game.walkable_override_entities = {bridge}
+
+    cc = CollisionChecker(game)
+    # Point inside bridge rect → should be free despite non-walkable tile
+    assert cc.check(80, 80) is False
+
+
+# ---------------------------------------------------------------------------
+# TC-CC-09 — walkable override absent: non-walkable tile still blocks
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.tc("TC-CC-09")
+def test_no_override_non_walkable_tile_still_blocks():
+    """Without a walkable override, a non-walkable tile (water) must still block."""
+    game = _make_game()
+    game.map_manager.is_walkable.return_value = False
+    game.walkable_override_entities = set()  # No bridge registered
+
+    cc = CollisionChecker(game)
+    assert cc.check(80, 80) is True
+
+
+# ---------------------------------------------------------------------------
+# TC-CC-10 — walkable override: point outside bridge rect still blocked
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.tc("TC-CC-10")
+def test_override_rect_miss_still_blocks():
+    """A walkable override only covers its own rect; points outside remain blocked."""
+    game = _make_game()
+    game.map_manager.is_walkable.return_value = False
+
+    bridge = _make_rect_obj(200, 200, 64)  # Bridge far away at (200..264, 200..264)
+    game.walkable_override_entities = {bridge}
+
+    cc = CollisionChecker(game)
+    # Point at (80, 80) is outside the bridge rect → still blocked by tile
+    assert cc.check(80, 80) is True

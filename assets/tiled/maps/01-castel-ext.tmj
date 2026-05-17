@@ -154,6 +154,38 @@
                          "width":32,
                          "x":800,
                          "y":1536
+                        }, 
+                        {
+                         "height":32,
+                         "id":19,
+                         "name":"drawbridge",
+                         "opacity":1,
+                         "properties":[
+                                {
+                                 "name":"is_passable",
+                                 "type":"bool",
+                                 "value":true
+                                }, 
+                                {
+                                 "name":"sprite",
+                                 "propertytype":"10-sprite",
+                                 "type":"class",
+                                 "value":
+                                    {
+                                     "depth":0,
+                                     "entity_type":"interactive",
+                                     "height":224,
+                                     "sprite_sheet":"05-drawbridge.png",
+                                     "sub_type":"door",
+                                     "width":128
+                                    }
+                                }],
+                         "rotation":0,
+                         "type":"11-interactive_object",
+                         "visible":true,
+                         "width":128,
+                         "x":736,
+                         "y":992
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -331,7 +363,7 @@
                                 {
                                  "name":"target_spawn_id",
                                  "type":"string",
-                                 "value":"castel_door_7"
+                                 "value":"castel_door_3"
                                 }],
                          "rotation":0,
                          "type":"13-teleport",
@@ -658,7 +690,7 @@
          "y":0
         }],
  "nextlayerid":9,
- "nextobjectid":19,
+ "nextobjectid":20,
  "orientation":"orthogonal",
  "properties":[
         {

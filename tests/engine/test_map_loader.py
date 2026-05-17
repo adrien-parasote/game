@@ -129,3 +129,23 @@ def test_save_npc_states_not_broken_by_interactive_save():
 
 def test_map_loader_import():
     assert True
+
+
+# ---------------------------------------------------------------------------
+# TC-ML-05: _clear_groups empties walkable_override_entities on map transition
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.tc("TC-ML-05")
+def test_clear_groups_empties_walkable_override_entities():
+    """_clear_groups must clear walkable_override_entities to prevent ghost bridge
+    overrides persisting from a previous map (stale open-bridge state)."""
+    game = MagicMock()
+    game.walkable_override_entities = {"bridge_entity_from_prev_map"}
+    # MagicMock auto-creates .empty(), .add(), etc. for sprite group attributes
+
+    loader = MapLoader(game)
+    loader._clear_groups()
+
+    assert len(game.walkable_override_entities) == 0
+

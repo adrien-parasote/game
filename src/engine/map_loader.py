@@ -132,6 +132,9 @@ class MapLoader:
         self.game._npc_bubble = None
         self.game.visible_sprites.empty()
         self.game.visible_sprites.add(self.game.player)
+        # Clear bridge/passable door overrides from previous map
+        if hasattr(self.game, "walkable_override_entities"):
+            self.game.walkable_override_entities.clear()
 
     def _resolve_spawn(
         self,

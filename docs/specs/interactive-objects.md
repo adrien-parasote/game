@@ -97,7 +97,8 @@ When an object is successfully interacted with, it checks its `target_id`.
 - **Trigger**: The target's `interact()` method is called automatically.
 
 ### 2.1. Rendering & Alignment
-- **Y-Sort**: Sprites are sorted by their `rect.bottom`. All `interactive_objects` use depth 1.
+- **Y-Sort**: Sprites are sorted by their `rect.bottom`.
+- **Depth**: `interactive_objects` default to `depth=1` (rendered in the same pass as the player, Y-sorted). Objects can override this via the Tiled `sprite.depth` property. For example, a drawbridge uses `depth=0` to be rendered as a floor tile (pass before the player). **Note**: The Tiled `depth` value is authoritative — it is re-applied after `BaseEntity.__init__` to prevent the base class default from silently overwriting it (bug fix TC-INT-DEPTH).
 - **Alignment**: Sprites are centered horizontally on the Tiled rectangle and aligned by `rect.bottom`.
 
 ### 2.2. Collision & Barriers
@@ -115,6 +116,27 @@ The `is_passable` property controls **open-state traversability**, not initial c
   - On `open` (animation reaches `end_frame`): removed from `obstacles_group` **only if** `is_passable: true`.
   - On `close` (animation returns to `start_frame`): **always** re-added to `obstacles_group`.
 - **Non-door objects**: Added to `obstacles_group` at spawn **only if** `is_passable: false`.
+
+### 2.2.1. Walkable Override Zones (Bridges)
+
+Some passable interactive objects (e.g. drawbridges) must allow the player to walk **over non-walkable tiles** (e.g. water) when open. The `obstacles_group` alone cannot model this because water is blocked at the **tile** layer, not the entity layer.
+
+**Mechanism:** `Game.walkable_override_entities` — a `set` of open passable entities. `CollisionChecker` checks this set as **step 0** (highest priority) before any tile or entity check. If the target point falls inside such an entity's rect, the check immediately returns `False` (not blocked).
+
+**Lifecycle:**
+- `_sync_walkable_override()` is called inside `interact()`, `restore_state()`, and at factory spawn to keep the set in sync.
+- `MapLoader._clear_groups()` calls `.clear()` on this set at every map transition to prevent ghost overrides from a previous map.
+
+**Tiled setup for a bridge:**
+- `sub_type: door`
+- `is_passable: True`
+- `depth: 0` (rendered as floor, player walks over)
+- `is_on: True` (bridge starts open — or controlled by lever)
+
+**Rules:**
+- Only entities with `is_passable=True` AND `is_on=True` are registered.
+- Non-passable entities are never added, even if open.
+- `game` must be set before `_sync_walkable_override()` is meaningful (safe to call when `game=None`).
 
 ### 2.3. Dynamic Lighting (Halos)
 If `halo_size > 0`, a dynamic radial gradient halo is generated and rendered.
@@ -288,6 +310,17 @@ This preserves player overrides across map transitions and save/load cycles.
 | SPRITE-U-02 | Frame height — neutral case | 128×128 sheet, end_row=3 | `frames[0].get_size() == (32, 32)` | sheet_h//(end_row+1) = sprite_height — both logics agree |
 | SPRITE-U-03 | Frame height — chest | 128×172 sheet, end_row=3 | `frame_h = 172 // 4 = 43` | Visual centering regression (was 32px from Tiled) |
 | SPRITE-U-04 | sprite_height updated after load | 128×172 sheet, end_row=3 | `entity.sprite_height == 43` after load | `_setup_physics` must use updated height |
+| TC-INT-DEPTH-01 | Depth preservation | `InteractiveEntity(depth=0)` | `entity.depth == 0` after `__init__` | `BaseEntity.__init__` must not reset |
+| TC-INT-DEPTH-02 | Depth default | `InteractiveEntity(depth=1)` | `entity.depth == 1` | No regression on default |
+| TC-INT-DEPTH-03 | Depth foreground | `InteractiveEntity(depth=2)` | `entity.depth == 2` | Foreground entity |
+| TC-INT-WO-01 | Walkable override — open | `is_on=True, is_passable=True` + `_sync_walkable_override()` | Entity in `walkable_override_entities` | — |
+| TC-INT-WO-02 | Walkable override — close | `is_on → False` + `_sync_walkable_override()` | Entity removed from set | Was previously open |
+| TC-INT-WO-03 | Walkable override — non-passable | `is_on=True, is_passable=False` | Entity NOT added | Passable gate |
+| TC-INT-WO-04 | Walkable override — no game | `game=None` + `_sync_walkable_override()` | No exception raised | Safe guard |
+| TC-INT-WO-05 | Walkable override — interact open | `interact()` on closed bridge | Entity added to set | Via toggle |
+| TC-INT-WO-06 | Walkable override — interact close | `interact()` on open bridge | Entity removed from set | Via toggle |
+| TC-INT-WO-07 | Walkable override — restore open | `restore_state({is_on: True})` | Entity added to set | Map reload |
+| TC-INT-WO-08 | Walkable override — restore close | `restore_state({is_on: False})` | Entity removed from set | Map reload |
 
 ### Integration Tests Required
 | Test ID | Flow | Setup | Verification | Teardown |

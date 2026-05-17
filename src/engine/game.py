@@ -69,11 +69,11 @@ class Game:
             self._load_map(default_map)
 
     def _init_display(self):
+        self._setup_logging()
+
         # 1. Initialize Localization
         self.i18n = I18nManager()
         self.i18n.load(Settings.LOCALE)
-
-        self._setup_logging()
         pygame.init()
         logging.info(f"Initializing Game Engine v{Settings.VERSION}...")
 
@@ -101,6 +101,10 @@ class Game:
         self.teleports_group = pygame.sprite.Group()
         self.emote_group = pygame.sprite.Group()
         self.pickups = pygame.sprite.Group()
+        # Entities whose open state overrides tile walkability beneath them.
+        # Used by CollisionChecker to allow crossing non-walkable tiles (e.g. water)
+        # when a passable bridge/drawbridge entity is open (is_on=True, is_passable=True).
+        self.walkable_override_entities: set = set()
 
         # P12: Pre-allocated viewport rect (avoids 2 Rect allocs per frame in _update)
         self._viewport_world_rect = pygame.Rect(

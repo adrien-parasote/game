@@ -116,6 +116,7 @@ To maintain modularity, the engine decouples map parsing from rendering logic.
 In addition to map tile collisions, the engine supports blocking movement through dynamic entities via the `CollisionChecker`.
 - **Mechanism**: `CollisionChecker.check(px, py, requester)` iterates through layers and groups.
 - **Séquence de check (Autoritaire)**:
+    0. **Walkable Override (prioritaire)**: Si le point testé se situe dans le `rect` d'une entité présente dans `game.walkable_override_entities`, retourne immédiatement `False` (non bloqué). Permet aux ponts ouverts (`is_passable=True, is_on=True`) de court-circuiter la vérification des tuiles non-walkables (eau).
     1. **Map tiles**: `map_manager.is_walkable(int(wx), int(wy))` (inverted logic: walkable=False blocks).
     2. **Dynamic Obstacles**: `obstacles_group` (collidepoint).
     3. **NPCs**: `npcs` group (collidepoint).
@@ -330,6 +331,10 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 | TC-CC-05 | `test_npc_skipped_if_requester` | `../../tests/engine/test_collision_checker.py:L1` |
 | TC-CC-06 | `test_player_blocks_npc` | `../../tests/engine/test_collision_checker.py:L1` |
 | TC-CC-07 | `test_nothing_blocks_returns_false` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-CC-08 | `test_open_bridge_overrides_non_walkable_tile` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-CC-09 | `test_no_override_non_walkable_tile_still_blocks` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-CC-10 | `test_override_rect_miss_still_blocks` | `../../tests/engine/test_collision_checker.py:L1` |
+| TC-ML-05 | `test_clear_groups_empties_walkable_override_entities` | `../../tests/engine/test_map_loader.py:L1` |
 | TC-EF-01 | `test_get_property_root_level` | `../../tests/engine/test_phase15_game.py:L1` |
 | TC-EF-02 | `test_get_property_nested` | `../../tests/engine/test_phase15_game.py:L1` |
 | TC-EF-03 | `test_get_property_absent_returns_default` | `../../tests/engine/test_phase15_game.py:L1` |
