@@ -433,23 +433,23 @@ class TestWalkableOverride:
     """
 
     def _bridge(self, is_on=True, is_passable=True):
-        """Build a passable door entity and attach a mock game."""
-        entity, _ = _make_interactive(sub_type="door", is_on=is_on, is_passable=is_passable)
+        """Build a passable bridge entity and attach a mock game."""
+        entity, _ = _make_interactive(sub_type="bridge", is_on=is_on, is_passable=is_passable)
         mock_game = MagicMock()
         mock_game.walkable_override_entities = set()
         entity.game = mock_game
         return entity, mock_game.walkable_override_entities
 
     @pytest.mark.tc("TC-INT-WO-01")
-    def test_open_passable_door_registers_in_override_set(self):
-        """Open passable door must be added to walkable_override_entities."""
+    def test_open_passable_bridge_registers_in_override_set(self):
+        """Open passable bridge must be added to walkable_override_entities."""
         entity, override_set = self._bridge(is_on=True, is_passable=True)
         entity._sync_walkable_override()
         assert entity in override_set
 
     @pytest.mark.tc("TC-INT-WO-02")
-    def test_closed_passable_door_removed_from_override_set(self):
-        """Closed passable door must be discarded from walkable_override_entities."""
+    def test_closed_passable_bridge_removed_from_override_set(self):
+        """Closed passable bridge must be discarded from walkable_override_entities."""
         entity, override_set = self._bridge(is_on=True, is_passable=True)
         override_set.add(entity)  # Pre-add as if it was open
 
@@ -459,8 +459,8 @@ class TestWalkableOverride:
         assert entity not in override_set
 
     @pytest.mark.tc("TC-INT-WO-03")
-    def test_open_non_passable_door_not_registered(self):
-        """A non-passable open door must NOT be added (only bridges need override)."""
+    def test_open_non_passable_bridge_not_registered(self):
+        """A non-passable open bridge must NOT be added (only passable bridges need override)."""
         entity, override_set = self._bridge(is_on=True, is_passable=False)
         entity._sync_walkable_override()
         assert entity not in override_set
@@ -468,13 +468,13 @@ class TestWalkableOverride:
     @pytest.mark.tc("TC-INT-WO-04")
     def test_sync_is_noop_when_no_game(self):
         """_sync_walkable_override must be safe when entity.game is None."""
-        entity, _ = _make_interactive(sub_type="door", is_on=True, is_passable=True)
+        entity, _ = _make_interactive(sub_type="bridge", is_on=True, is_passable=True)
         entity.game = None
         entity._sync_walkable_override()  # Must not raise
 
     @pytest.mark.tc("TC-INT-WO-05")
     def test_interact_open_registers_in_override(self):
-        """Opening a passable door via interact() must register it in override_set."""
+        """Opening a passable bridge via interact() must register it in override_set."""
         entity, override_set = self._bridge(is_on=False, is_passable=True)
         entity.is_animating = False
         entity.interact(MagicMock())
@@ -483,7 +483,7 @@ class TestWalkableOverride:
 
     @pytest.mark.tc("TC-INT-WO-06")
     def test_interact_close_removes_from_override(self):
-        """Closing an open passable door via interact() must remove it from override_set."""
+        """Closing an open passable bridge via interact() must remove it from override_set."""
         entity, override_set = self._bridge(is_on=True, is_passable=True)
         override_set.add(entity)  # Was open
         entity.is_animating = False
@@ -493,15 +493,108 @@ class TestWalkableOverride:
 
     @pytest.mark.tc("TC-INT-WO-07")
     def test_restore_state_open_registers_in_override(self):
-        """restore_state(is_on=True) on passable door registers it in override_set."""
+        """restore_state(is_on=True) on passable bridge registers it in override_set."""
         entity, override_set = self._bridge(is_on=False, is_passable=True)
         entity.restore_state({"is_on": True})
         assert entity in override_set
 
     @pytest.mark.tc("TC-INT-WO-08")
     def test_restore_state_closed_removes_from_override(self):
-        """restore_state(is_on=False) on passable door removes it from override_set."""
+        """restore_state(is_on=False) on passable bridge removes it from override_set."""
         entity, override_set = self._bridge(is_on=True, is_passable=True)
         override_set.add(entity)
         entity.restore_state({"is_on": False})
         assert entity not in override_set
+
+
+# ---------------------------------------------------------------------------
+# TC-BRIDGE — sub_type="bridge" collision lifecycle
+# ---------------------------------------------------------------------------
+
+
+class TestBridgeSubtype:
+    """Tests for sub_type='bridge' collision behavior.
+
+    A bridge differs from a door in that it never enters obstacles_group.
+    When raised (is_on=False), the water tiles beneath handle blocking.
+    When lowered (is_on=True), walkable_override_entities enables crossing.
+
+    Spec: docs/specs/bridge-subtype-spec.md
+    """
+
+    def _make_bridge(self, is_on=False, is_passable=True):
+        """Build a passable bridge entity with a mock game."""
+        entity, obstacles = _make_interactive(
+            sub_type="bridge", is_on=is_on, is_passable=is_passable
+        )
+        mock_game = MagicMock()
+        mock_game.walkable_override_entities = set()
+        entity.game = mock_game
+        return entity, obstacles, mock_game.walkable_override_entities
+
+    @pytest.mark.tc("UT-001")
+    def test_bridge_raised_not_in_obstacles_at_spawn(self):
+        """UT-001: Bridge spawned raised (is_on=False) must NOT be in obstacles_group."""
+        entity, obstacles, _ = self._make_bridge(is_on=False)
+        assert entity not in obstacles.sprites()
+
+    @pytest.mark.tc("UT-002")
+    def test_bridge_lowered_not_in_obstacles_at_spawn(self):
+        """UT-002: Bridge spawned lowered (is_on=True) must NOT be in obstacles_group."""
+        entity, obstacles, _ = self._make_bridge(is_on=True)
+        assert entity not in obstacles.sprites()
+
+    @pytest.mark.tc("UT-003")
+    def test_bridge_lowered_registers_in_walkable_override(self):
+        """UT-003: Lowered bridge registers in walkable_override_entities."""
+        entity, _, override_set = self._make_bridge(is_on=True, is_passable=True)
+        entity._sync_walkable_override()
+        assert entity in override_set
+
+    @pytest.mark.tc("UT-004")
+    def test_bridge_raised_not_in_walkable_override(self):
+        """UT-004: Raised bridge must NOT be in walkable_override_entities."""
+        entity, _, override_set = self._make_bridge(is_on=False, is_passable=True)
+        entity._sync_walkable_override()
+        assert entity not in override_set
+
+    @pytest.mark.tc("UT-005")
+    def test_bridge_restore_state_open_not_in_obstacles(self):
+        """UT-005: restore_state(is_on=True) on bridge must NOT put it in obstacles."""
+        entity, obstacles, _ = self._make_bridge(is_on=False)
+        entity.restore_state({"is_on": True})
+        assert entity not in obstacles.sprites()
+
+    @pytest.mark.tc("UT-006")
+    def test_bridge_restore_state_closed_not_in_obstacles(self):
+        """UT-006: restore_state(is_on=False) on bridge must NOT put it in obstacles."""
+        entity, obstacles, _ = self._make_bridge(is_on=True)
+        obstacles.add(entity)  # Simulate a bug where it ended up in obstacles
+        entity.restore_state({"is_on": False})
+        assert entity not in obstacles.sprites()
+
+    @pytest.mark.tc("UT-007")
+    def test_door_spawn_still_blocked_regression_guard(self):
+        """UT-007: Regression — door with is_on=False must still be in obstacles."""
+        entity, obstacles = _make_interactive(sub_type="door", is_on=False, is_passable=True)
+        assert entity in obstacles.sprites()
+
+    @pytest.mark.tc("UT-008")
+    def test_should_start_in_obstacles_bridge_always_false(self):
+        """UT-008: _should_start_in_obstacles returns False for bridge regardless of is_on."""
+        entity_off, _ = _make_interactive(sub_type="bridge", is_on=False, is_passable=True)
+        entity_on, _ = _make_interactive(sub_type="bridge", is_on=True, is_passable=True)
+        assert entity_off._should_start_in_obstacles() is False
+        assert entity_on._should_start_in_obstacles() is False
+
+    @pytest.mark.tc("UT-009")
+    def test_should_start_in_obstacles_door_closed(self):
+        """UT-009: _should_start_in_obstacles returns True for closed door."""
+        entity, _ = _make_interactive(sub_type="door", is_on=False, is_passable=True)
+        assert entity._should_start_in_obstacles() is True
+
+    @pytest.mark.tc("UT-010")
+    def test_should_start_in_obstacles_door_open_passable(self):
+        """UT-010: _should_start_in_obstacles returns False for open passable door."""
+        entity, _ = _make_interactive(sub_type="door", is_on=True, is_passable=True)
+        assert entity._should_start_in_obstacles() is False

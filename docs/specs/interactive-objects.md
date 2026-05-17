@@ -110,12 +110,16 @@ The `is_passable` property controls **open-state traversability**, not initial c
 | Standard chest | `false` | Solid (in obstacles) | Solid |
 | Traversable door | `true` | Solid (in obstacles) | Traversable (removed from obstacles) |
 | Floor decor | `true` | Traversable (not in obstacles) | Traversable |
+| Drawbridge (`bridge`) | `true` | **Never in obstacles** | **Never in obstacles** (walkable_override handles crossing) |
 
 **Rules:**
 - **Doors (`sub_type: door`)**: Always added to `obstacles_group` at spawn, regardless of `is_passable`. This ensures all doors start closed and blocking.
   - On `open` (animation reaches `end_frame`): removed from `obstacles_group` **only if** `is_passable: true`.
   - On `close` (animation returns to `start_frame`): **always** re-added to `obstacles_group`.
-- **Non-door objects**: Added to `obstacles_group` at spawn **only if** `is_passable: false`.
+- **Bridges (`sub_type: bridge`)**: **Never** added to `obstacles_group` at any point. When raised (`is_on=False`), water tiles block the player at the tile layer. When lowered (`is_on=True`), `walkable_override_entities` enables crossing.
+  - `restore_state` defensively removes from `obstacles_group` if present (guards against data corruption).
+- **Non-door/bridge objects**: Added to `obstacles_group` at spawn **only if** `is_passable: false`.
+- **`_should_start_in_obstacles()`**: Internal method centralizing spawn collision logic. Returns `False` for `bridge`, conditional for `door`, `not is_passable` otherwise.
 
 ### 2.2.1. Walkable Override Zones (Bridges)
 
@@ -127,11 +131,13 @@ Some passable interactive objects (e.g. drawbridges) must allow the player to wa
 - `_sync_walkable_override()` is called inside `interact()`, `restore_state()`, and at factory spawn to keep the set in sync.
 - `MapLoader._clear_groups()` calls `.clear()` on this set at every map transition to prevent ghost overrides from a previous map.
 
-**Tiled setup for a bridge:**
-- `sub_type: door`
+**Tiled setup for a drawbridge:**
+- `sub_type: bridge`
 - `is_passable: True`
 - `depth: 0` (rendered as floor, player walks over)
-- `is_on: True` (bridge starts open — or controlled by lever)
+- `is_on: True` (bridge starts lowered — or controlled by lever)
+
+> ⚠️ Do NOT use `sub_type: door` for bridges. Doors always start in `obstacles_group`; bridges must never enter it. See [bridge-subtype-spec.md](./bridge-subtype-spec.md) for the full behavioral contract.
 
 **Rules:**
 - Only entities with `is_passable=True` AND `is_on=True` are registered.
@@ -321,6 +327,16 @@ This preserves player overrides across map transitions and save/load cycles.
 | TC-INT-WO-06 | Walkable override — interact close | `interact()` on open bridge | Entity removed from set | Via toggle |
 | TC-INT-WO-07 | Walkable override — restore open | `restore_state({is_on: True})` | Entity added to set | Map reload |
 | TC-INT-WO-08 | Walkable override — restore close | `restore_state({is_on: False})` | Entity removed from set | Map reload |
+| UT-001 | Bridge raised — not in obstacles | `sub_type="bridge", is_on=False, is_passable=True` | `entity NOT in obstacles` | Never in obstacles |
+| UT-002 | Bridge lowered — not in obstacles | `sub_type="bridge", is_on=True, is_passable=True` | `entity NOT in obstacles` | Never in obstacles |
+| UT-003 | Bridge lowered — in walkable_override | `is_on=True` + `_sync_walkable_override()` | Entity in override set | |
+| UT-004 | Bridge raised — not in walkable_override | `is_on=False` + `_sync_walkable_override()` | Entity NOT in override set | |
+| UT-005 | Bridge restore open — not in obstacles | `restore_state({is_on: True})` | NOT in obstacles | |
+| UT-006 | Bridge restore closed — defensive cleanup | `restore_state({is_on: False})`, was in obstacles | Removed from obstacles | Corruption guard |
+| UT-007 | Door spawn regression guard | `sub_type="door", is_on=False` | Entity IN obstacles | No regression |
+| UT-008 | `_should_start_in_obstacles` bridge | `sub_type="bridge"`, any `is_on` | Returns `False` | |
+| UT-009 | `_should_start_in_obstacles` door closed | `sub_type="door", is_on=False` | Returns `True` | |
+| UT-010 | `_should_start_in_obstacles` door open | `sub_type="door", is_on=True, is_passable=True` | Returns `False` | |
 
 ### Integration Tests Required
 | Test ID | Flow | Setup | Verification | Teardown |

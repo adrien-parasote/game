@@ -521,7 +521,8 @@
                 "npc",
                 "sign",
                 "consumable",
-                "static_npc"
+                "static_npc",
+                "bridge"
             ],
             "valuesAsFlags": false
         },

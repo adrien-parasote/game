@@ -279,9 +279,21 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         )
 
         if self.obstacles_group is not None:
-            if self.sub_type == "door" or not self.is_passable:
-                if not (self.is_on and self.is_passable):
-                    self.obstacles_group.add(self)
+            if self._should_start_in_obstacles():
+                self.obstacles_group.add(self)
+
+    def _should_start_in_obstacles(self) -> bool:
+        """Return True if this entity must be in obstacles_group at spawn.
+
+        bridge: never in obstacles — water tiles handle blocking when raised.
+        door:   in obstacles unless already open and passable.
+        other:  in obstacles only if not passable.
+        """
+        if self.sub_type == "bridge":
+            return False
+        if self.sub_type == "door":
+            return not (self.is_on and self.is_passable)
+        return not self.is_passable
 
     def _get_frame(self, row_index: int) -> pygame.Surface:
         """Get frame for current animation state."""
@@ -357,7 +369,11 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
                 self.frame_index = float(self.end_row)
             elif not is_on:
                 self.frame_index = float(self.start_row)
-            if self.sub_type == "door" and getattr(self, "obstacles_group", None) is not None:
+            if self.sub_type == "bridge" and getattr(self, "obstacles_group", None) is not None:
+                # Defensive: bridge must never be in obstacles_group regardless of state
+                if self in self.obstacles_group:
+                    self.obstacles_group.remove(self)
+            elif self.sub_type == "door" and getattr(self, "obstacles_group", None) is not None:
                 if is_on and getattr(self, "is_passable", False):
                     self.obstacles_group.remove(self)
                 else:

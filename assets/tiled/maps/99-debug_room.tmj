@@ -775,7 +775,7 @@
                                      "entity_type":"interactive",
                                      "height":224,
                                      "sprite_sheet":"05-drawbridge.png",
-                                     "sub_type":"door",
+                                     "sub_type":"bridge",
                                      "width":128
                                     }
                                 }],
