@@ -354,13 +354,13 @@
  </tile>
  <tile id="60" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="depth" type="int" value="0"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="61" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="depth" type="int" value="0"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
@@ -406,7 +406,7 @@
  <tile id="69" type="00-tileset">
   <properties>
    <property name="depth" type="int" value="0"/>
-   <property name="walkable" type="bool" value="true"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="70" type="00-tileset"/>
@@ -517,19 +517,19 @@
  </tile>
  <tile id="94" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="0"/>
+   <property name="depth" type="int" value="2"/>
    <property name="direction" propertytype="23-direction" value="up,right,left"/>
   </properties>
  </tile>
  <tile id="95" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="0"/>
+   <property name="depth" type="int" value="2"/>
    <property name="direction" propertytype="23-direction" value="up,right,left"/>
   </properties>
  </tile>
  <tile id="96" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="0"/>
+   <property name="depth" type="int" value="2"/>
    <property name="direction" propertytype="23-direction" value="up,right,left"/>
   </properties>
  </tile>

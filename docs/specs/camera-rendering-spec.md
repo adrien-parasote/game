@@ -109,10 +109,13 @@ Wrapped in `try-except TypeError` for test compatibility with mock surfaces.
 
 ### 4.2. Background Rendering (`draw_background`)
 
-- Iterates `map_manager.layer_order` sorted by depth
-- Layers with `depth <= player.depth` are drawn
-- Uses pre-rendered full-layer surfaces via `map_manager.get_layer_surface(..., max_bg_depth=player.depth)`, which automatically excludes individual tiles that have a depth higher than the player.
-- Single blit per layer at camera offset position
+- Iterates `map_manager.layer_order` sorted by ascending order value
+- Layers with `depth <= player.depth` are rendered
+- For **each layer**, in order:
+  1. **Static tiles**: blit the pre-rendered full-layer surface via `map_manager.get_layer_surface(..., max_bg_depth=player.depth)` — single blit at camera offset
+  2. **Animated tiles**: batch-blit only animated tiles from **that same layer** via `get_visible_animated_chunks(viewport, layer_id=layer_id)` → `screen.fblits()`
+
+> **Critical ordering invariant (TC-RENDER-001)**: Animated tiles from layer L must be drawn AFTER static tiles of layer L, and BEFORE static or animated tiles of layer L+1. The previous implementation drew ALL static surfaces first then ALL animated tiles in one batch — this caused animated tiles (e.g. water) to overdraw static tiles from higher-order layers (e.g. bridge planks), making the bridge invisible.
 
 ### 4.3. Foreground Rendering with Occlusion (`draw_foreground`)
 
@@ -122,7 +125,7 @@ For tiles from foreground-order layers and tiles with `depth > player.depth`:
 3. Tiles are split into two tracks:
    - **Occluded tiles** (`tile.depth > player.depth` AND overlaps player) → individual `screen.blit(occluded_image)` (must be per-tile due to `colliderect` check)
    - **Normal tiles** (all others, including foreground-order layer tiles with `depth <= player.depth`) → accumulated in list, drawn in single `screen.fblits()` call
-4. Animated foreground tiles from `get_visible_animated_chunks` are batched separately via `screen.fblits()`.
+4. Animated foreground tiles are handled by `draw_background` per-layer (not in `draw_foreground`).
 
 > **Performance**: batching reduces individual `blit()` calls by ~89% vs. the pre-optimization baseline (23K vs 212K calls per 600 frames).
 
@@ -199,6 +202,7 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | Use `sprite.image.get_rect()` for physical position | Use `sprite.rect` (logical hitbox) | Prevents visual/physical desync |
 | Call `screen.blit()` per-tile in loops | Accumulate in list, call `screen.fblits()` once | Individual blit calls have high Python overhead; fblits is ~5× faster for bulk ops |
 | `getattr(tile, 'depth', 0)` on `TileMapData` | `tile.depth` direct access | `TileMapData.depth` always set; getattr adds 847K unnecessary calls/600 frames |
+| Draw ALL background static surfaces, then ALL animated tiles | Draw static + animated per-layer in order (TC-RENDER-001) | Animated tiles from lower-order layers (e.g. water) overdraw static tiles from higher-order layers (e.g. bridge planks), making the bridge invisible |
 
 ## 7. Test Case Specifications
 

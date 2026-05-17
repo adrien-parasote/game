@@ -199,11 +199,12 @@ class MapManager:
 
 
     def get_visible_animated_chunks(
-        self, viewport_rect: pygame.Rect
+        self, viewport_rect: pygame.Rect, layer_id: int | None = None
     ) -> Iterator[tuple[int, int, int, int]]:
         """
         Yields (x_px, y_px, tile_id, depth) for tiles within viewport
         that have animation frames.
+        If layer_id is given, only yields tiles from that specific layer.
         """
         tile_size = self.layout.tile_size
         ts = tile_size
@@ -214,8 +215,11 @@ class MapManager:
         start_row = max(0, int(viewport_rect.top // tile_size))
         end_row = min(self.height, int(math.ceil(viewport_rect.bottom / tile_size)))
 
-        for layer_id in self.layer_order:
-            layer_data = self.layers[layer_id]
+        layers_to_scan = [layer_id] if layer_id is not None else self.layer_order
+        for lid in layers_to_scan:
+            if lid not in self.layers:
+                continue
+            layer_data = self.layers[lid]
             for y in range(start_row, end_row):
                 py = y * ts
                 for x in range(start_col, end_col):

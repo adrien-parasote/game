@@ -14,34 +14,42 @@ class RenderManager:
         self._viewport_world = pygame.Rect(0, 0, 0, 0)
 
     def draw_background(self):
-        """Draw tiles with depth <= player depth (behind player) using pre-rendered surfaces."""
+        """Draw tiles with depth <= player depth (behind player).
+        Static and animated tiles are rendered per-layer in order so that
+        a higher-order layer always appears on top regardless of animation.
+        """
         cam_offset = self.game.visible_sprites.offset
 
-        # Get all layers that should be behind the player
-        for layer_id in self.game.map_manager.layer_order:
-            depth = self.game.map_manager.layer_depths.get(layer_id, 0)
-
-            if depth <= self.game.player.depth:
-                surface = self.game.map_manager.get_layer_surface(
-                    layer_id, pygame, max_bg_depth=self.game.player.depth
-                )
-                if surface:
-                    self.game.screen.blit(surface, (cam_offset.x, cam_offset.y))
-
-        # Draw animated background tiles using fblits for batch efficiency
         if self.game.anim_map_manager:
             self._viewport_world.update(
                 -cam_offset.x, -cam_offset.y,
                 self._screen_rect.width, self._screen_rect.height,
             )
-            anim_blits = []
-            for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(self._viewport_world):
-                if depth <= self.game.player.depth:
-                    img = self.game.anim_map_manager.get_current_frame_image(tile_id)
-                    if img:
-                        anim_blits.append((img, (px + cam_offset.x, py + cam_offset.y)))
-            if anim_blits:
-                self.game.screen.fblits(anim_blits)
+
+        for layer_id in self.game.map_manager.layer_order:
+            layer_order_val = self.game.map_manager.layer_depths.get(layer_id, 0)
+            if layer_order_val > self.game.player.depth:
+                continue
+
+            # 1. Static tiles for this layer
+            surface = self.game.map_manager.get_layer_surface(
+                layer_id, pygame, max_bg_depth=self.game.player.depth
+            )
+            if surface:
+                self.game.screen.blit(surface, (cam_offset.x, cam_offset.y))
+
+            # 2. Animated tiles for this layer (drawn on top of static)
+            if self.game.anim_map_manager:
+                anim_blits = []
+                for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(
+                    self._viewport_world, layer_id=layer_id
+                ):
+                    if depth <= self.game.player.depth:
+                        img = self.game.anim_map_manager.get_current_frame_image(tile_id)
+                        if img:
+                            anim_blits.append((img, (px + cam_offset.x, py + cam_offset.y)))
+                if anim_blits:
+                    self.game.screen.fblits(anim_blits)
 
     def draw_foreground(self):
         """Draw foreground tiles: all tiles from layers with order > player depth,

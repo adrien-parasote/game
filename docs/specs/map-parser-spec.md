@@ -251,9 +251,18 @@ end_row   = min(height, ceil(viewport_rect.bottom / tile_size))
 
 **Filter**: If `min_depth` is set:
 - Layers where `layer_depths[layer_id] > min_depth` (pure foreground layers): **all tiles included** regardless of per-tile depth
-- Layers where `layer_depths[layer_id] ≤ min_depth` (background/mixed layers): skipped entirely if `layer_max_depths ≤ min_depth`; otherwise yields only tiles where `tile.depth > min_depth`
+- Layers where `layer_depths[layer_id] <= min_depth` (background/mixed layers): skipped entirely if `layer_max_depths <= min_depth`; otherwise yields only tiles where `tile.depth > min_depth`
 
 This ensures tiles from foreground-order layers are always rendered in pass 3, even if their individual `depth` is 0.
+
+#### `get_visible_animated_chunks(viewport_rect: Rect, layer_id: int | None = None) -> Iterator[tuple]`
+
+Yields `(x_px, y_px, tile_id, depth)` for animated tiles (tiles with `frames`) within the viewport.
+
+- **`layer_id=None`** (default): scans all layers in `layer_order` — backward-compatible
+- **`layer_id=<int>`**: scans only that specific layer — used by `draw_background` for per-layer interleaved rendering (TC-RENDER-001)
+
+> **Why layer_id matters**: Without filtering by layer, `draw_background` had to batch all animated tiles across all layers into a single pass AFTER all static surfaces, breaking the layer Z-order invariant for animated tiles.
 
 #### `get_window_positions() -> list[tuple[int, int, int]]`
 
@@ -331,6 +340,7 @@ class LayoutStrategy(ABC):
 | Use last-write-wins for `get_direction_flags` across layers | **Intersect** all non-`any` constrained layers; treat `{"any"}` as a neutral joker | Last-write-wins lets an upper `any` layer silently erase a restrictive constraint below it (BUG-DIR-001) |
 | Use AND of all layers for `is_walkable` | Use **depth=0 tiles only** (topmost depth=0 wins) | AND logic blocks walkable floors when a foreground decoration (`walkable=False, depth=2`) is stacked on top (BUG-WALK-001 / BUG-WALK-002) |
 | Use `is_walkable` to check directional constraints | Use `get_direction_flags` for exit direction checks | `is_walkable` only answers "can I stand here?". Direction logic requires `get_direction_flags` which includes all depths |
+| Read only flat `<property>` elements in `_parse_tileset_properties` | Also flatten `<property type="class">` children into the result dict | Tiled 1.10+ stores walkable/depth inside nested class properties (e.g. `00-tileset`). Without flattening, the hard default `walkable=True` applies and tiles like water become walkable (BUG-WATER-001) |
 
 ## 8. Test Case Specifications
 

@@ -18,7 +18,7 @@ PAUSED → GameEvent.goto_title()        → _transition_to_title()        → T
 ## Movement Chain
 `Player.input()` (WASD/Arrows) → `BaseEntity.move(dt)` → `CollisionChecker.is_collidable()` (tile check via MapManager + obstacle group) → `rect` update + animation frame
 - **CollisionChecker** (`src/engine/collision_checker.py`, ~80L): extracted from `Game._is_collidable()` in Phase 1.5. Uses `game: Any` context injection.
-- **Footsteps**: Triggered on frames 1 and 3. `MapManager.get_terrain_material_at()` resolves surface. `AudioManager.play_sfx(footstep_{material})` falls back to base footstep if specific file is missing.
+- **Footsteps**: Triggered on frames 1 and 3. `MapManager.get_terrain_material_at()` resolves surface **using only depth≤1 tiles** (depth>1 roofs/ceilings are ignored — BUG-SFX-001). `AudioManager.play_sfx(footstep_{material})` falls back to base footstep if specific file is missing.
 
 ## Interaction Chain
 `INTERACT_KEY (E)` → `InteractionManager.handle_interactions()`  *(typed `game: Any` — uses `distance_squared_to` with module-level `_RANGE_SQ_*` constants for O(1) performance)*

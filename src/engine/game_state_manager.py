@@ -303,24 +303,32 @@ class GameStateManager:
                     logging.warning(f"GSM: Could not restore equipment {slot_name}: {e}")
 
     def _resolve_default_map(self) -> str:
-        """Return the initial map: debug room if Settings.DEBUG, else world.world first entry."""
+        """Return the initial map: debug room if Settings.DEBUG, else Settings.DEFAULT_MAP or world.world first entry."""
         import json
         import os
 
         from src.config import Settings
 
-        # Debug room takes priority over world.world
+        # Debug room takes priority
         debug_room = "99-debug_room.tmj"
         debug_path = os.path.join("assets", "tiled", "maps", debug_room)
         if Settings.DEBUG and os.path.exists(debug_path):
             return debug_room
 
+        default_map = getattr(Settings, "DEFAULT_MAP", "00-spawn.tmj")
+
+        # If a custom default map is configured (different from the default spawn), use it
+        if default_map != "00-spawn.tmj":
+            return default_map
+
+        # Otherwise, fall back to parsing world.world's first entry
         world_path = os.path.join("assets", "tiled", "maps", "world.world")
         if os.path.exists(world_path):
             try:
                 with open(world_path, encoding="utf-8") as f:
                     world_data = json.load(f)
-                    return world_data.get("maps", [{}])[0].get("fileName", "00-spawn.tmj")
+                    return world_data.get("maps", [{}])[0].get("fileName", default_map)
             except Exception as e:
                 logging.error(f"GSM: Could not read world.world: {e}")
-        return "00-spawn.tmj"
+        return default_map
+

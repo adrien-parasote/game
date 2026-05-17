@@ -259,7 +259,7 @@ with patch.object(MyClass, '__init__', return_value=None):
 
 ---
 
-### A-TEST-002 · 2026-04-28 · U · Major Rework
+### A-TEST-002 · 2026-04-28 · U · Major Rework *(updated 2026-05-17 — occurrences: 2)*
 **Singleton state pollution (Settings)**
 
 Modifying `src.config.Settings` in a test without restoring causes non-deterministic failures in unrelated tests depending on execution order.
@@ -276,6 +276,25 @@ try:
 finally:
     Settings.DEBUG = original
 ```
+
+**Occurrence 2 (2026-05-17) — Omission variant :** A test that reads `Settings.DEFAULT_MAP` without patching it becomes stale when the user changes `settings.json`. The test assumed `DEFAULT_MAP == "00-spawn.tmj"` but the user had set it to `"01-castel-ext.tmj"`.
+
+```python
+# ❌ reads real Settings.DEFAULT_MAP — breaks when user edits settings.json
+def test_resolve_default_map(gsm):
+    with patch("src.config.Settings.DEBUG", False):
+        ...  # no patch for DEFAULT_MAP → reads live value from settings.json
+
+# ✅ always patch every Settings attribute the test depends on
+def test_resolve_default_map(gsm):
+    with (
+        patch("src.config.Settings.DEBUG", False),
+        patch("src.config.Settings.DEFAULT_MAP", "00-spawn.tmj"),  # ← isolate
+    ):
+        ...
+```
+
+**Extended rule:** Any test that reads a `Settings` class attribute must patch it, even if the current `settings.json` value happens to match the expected value. The test must own its expected values — never inherit them from the live config file.
 
 ---
 
@@ -789,3 +808,70 @@ print("Pushing tag {}...".format(version))
 
 *Last updated: 2026-05-15 — L-TEST-016 (utility traceability), L-SEC-001 (f-string false positives).*
 
+---
+
+### L-MAP-002 · 2026-05-17 · U · Major Rework
+**Tiled `<property type="class">` — les propriétés enfants sont imbriquées, pas plates**
+
+Tiled 1.10+ peut exporter les propriétés de tileset via une structure imbriquée :
+```xml
+<property name="tileset" type="class">
+  <properties>
+    <property name="walkable" type="bool" value="false"/>
+    <property name="depth"    type="int"  value="0"/>
+  </properties>
+</property>
+```
+
+Un parseur qui itère seulement les `<property>` du premier niveau ignore entièrement ces enfants. Le hard-default `walkable=True` s'applique alors — les tiles d'eau deviennent marchables (BUG-WATER-001).
+
+**Fix :** Dans `_parse_tileset_properties`, détecter `type="class"`, itérer les `<properties>` enfants, et les fusionner dans le dict résultat avec `setdefault` (les props plates déclarées avant ont priorité).
+
+**Règle :** Ne jamais modifier les fichiers `.tsx` Tiled pour contourner un bug parseur — corriger le parseur. Les fichiers Tiled sont générés par l'éditeur et seront écrasés.
+
+**Evidence :** `01-water.tsx` — `walkable=False` dans une class property ignorée → eau marchable. Corrigé dans `tmj_parser.py::_parse_tileset_properties`. Tests : `TC-PARSER-CLASS-001`, `TC-WATER-001`.
+
+---
+
+### A-MAP-003 · 2026-05-17 · U · Major Rework
+**Changer `tile.depth` change la pass de rendu → peut rendre la tile invisible**
+
+Quand on corrige la `depth` d'une tile (ex: pont bridge `depth=2→depth=0`), la tile migre de la **foreground pass** vers la **background pass**. Si la background pass souffre d'un bug d'ordre de rendu (animés après statiques), la tile peut devenir invisible bien que techniquement dessinée.
+
+```
+Avant : tile.depth=2 → draw_foreground → visible au-dessus du water animé ✅
+Après : tile.depth=0 → draw_background (statique) → water animé dessiné après → tile cachée ❌
+```
+
+**Pattern de détection :** Après tout correctif de `depth`, vérifier visuellement en jeu que la tile est toujours rendue. Un test unitaire ne détecte pas ce type de régression de rendu inter-pass.
+
+**Règle :** Tout fix de propriété `depth` sur une tile doit être accompagné d'une vérification visuelle en jeu, car il implique une migration de pass de rendu avec des interactions potentielles sur l'ordonnancement.
+
+**Evidence :** Bridge tile corrigée `depth=2→0` (BUG-BRIDGE-001) → cachée par le water animé → nécessité de fix TC-RENDER-001 sur l'ordre de rendu.
+
+---
+
+### L-RENDER-001 · 2026-05-17 · U · Perfect
+**Ordre de rendu background : les animés doivent être entrelacés par layer, pas en masse**
+
+L'ancien pattern dessinait toutes les surfaces statiques de toutes les layers, PUIS toutes les tiles animées en une seule passe finale. Cette approche brise l'invariant Z-order dès qu'une layer inférieure contient des tiles animées et une layer supérieure contient des tiles statiques.
+
+```python
+# ❌ Ancien pattern (brisait le pont) :
+for layer in layers:   # static surfaces first
+    screen.blit(layer_surface)
+screen.fblits(ALL_animated)  # water (layer 0) overdraws bridge (layer 1)
+
+# ✅ Nouveau pattern (TC-RENDER-001) :
+for layer in layers:
+    screen.blit(layer_surface)           # static tiles for this layer
+    screen.fblits(anim_tiles[layer])     # animated tiles for THIS layer only
+```
+
+**Fix :** Ajouter `layer_id: int | None = None` à `get_visible_animated_chunks`. Dans `draw_background`, intégrer les animés dans la boucle layer (passer `layer_id=layer_id`).
+
+**Règle :** Tout système de rendu multi-layer doit traiter static+animé par layer dans l'ordre. Jamais de passe globale animée après toutes les passes statiques.
+
+**Evidence :** Bridge statique sur 01-layer (order=1) invisible car water animé 00-layer (order=0) était dessiné après. Corrigé via entrelacement par layer dans `render_manager.py::draw_background`. Test : TC-RENDER-001.
+
+*Last updated: 2026-05-17 — L-MAP-002, A-MAP-003, L-RENDER-001 depuis session tileset inheritance + rendering order.*

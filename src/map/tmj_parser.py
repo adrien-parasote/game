@@ -173,19 +173,42 @@ class TmjParser:
     def _parse_tileset_properties(self, root: ET.Element) -> dict[str, Any]:
         tileset_props = {}
         ts_properties_node = root.find("properties")
-        if ts_properties_node is not None:
-            for p in ts_properties_node.findall("property"):
-                name = p.get("name")
-                val = p.get("value")
-                if name is None or val is None:
-                    continue
-                type_str = p.get("type", "string")
-                if type_str == "bool":
-                    tileset_props[name] = val.lower() == "true"
-                elif type_str == "int":
-                    tileset_props[name] = int(val)
-                else:
-                    tileset_props[name] = val
+        if ts_properties_node is None:
+            return tileset_props
+
+        for p in ts_properties_node.findall("property"):
+            name = p.get("name")
+            type_str = p.get("type", "string")
+
+            if type_str == "class":
+                # Flatten child properties — do not overwrite already-set flat props
+                child_props_node = p.find("properties")
+                if child_props_node is not None:
+                    for child in child_props_node.findall("property"):
+                        child_name = child.get("name")
+                        child_val = child.get("value")
+                        if child_name is None or child_val is None:
+                            continue
+                        child_type = child.get("type", "string")
+                        if child_name not in tileset_props:
+                            if child_type == "bool":
+                                tileset_props[child_name] = child_val.lower() == "true"
+                            elif child_type == "int":
+                                tileset_props[child_name] = int(child_val)
+                            else:
+                                tileset_props[child_name] = child_val
+                continue  # class property itself is not a flat value
+
+            val = p.get("value")
+            if name is None or val is None:
+                continue
+            if type_str == "bool":
+                tileset_props[name] = val.lower() == "true"
+            elif type_str == "int":
+                tileset_props[name] = int(val)
+            else:
+                tileset_props[name] = val
+
         return tileset_props
 
     def _parse_tile_properties_and_anims(self, root: ET.Element, firstgid: int, tileset_props: dict[str, Any]) -> tuple[dict[int, dict], dict[int, list]]:

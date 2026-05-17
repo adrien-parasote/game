@@ -10,14 +10,15 @@
   "map": {
     "tile_size": 32,
     "map_size": 32,
-    "initial_hour": 22
+    "initial_hour": 22,
+    "default_map": "01-castel-ext.tmj"
   },
   "colors": {
     "background": "#000000"
   },
   "debug": {
     "log_level": "INFO",
-    "enabled": true
+    "enabled": false
   },
   "ui": {
     "cursor_size": 32,

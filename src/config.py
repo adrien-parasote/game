@@ -23,7 +23,12 @@ class Settings:
             "title": "RPG Tile Engine",
             "fullscreen": False,
         },
-        "map": {"tile_size": 32, "map_size": 32, "initial_hour": 16},
+        "map": {
+            "tile_size": 32,
+            "map_size": 32,
+            "initial_hour": 16,
+            "default_map": "00-spawn.tmj",
+        },
         "colors": {"background": "#1a1a1a"},
         "player": {"speed": 150, "size": 32},
         "controls": {
@@ -103,6 +108,7 @@ class Settings:
         cls.TILE_SIZE: int = data["map"]["tile_size"]
         cls.MAP_SIZE: int = data["map"]["map_size"]
         cls.INITIAL_HOUR: int = data["map"].get("initial_hour", 16)
+        cls.DEFAULT_MAP: str = data["map"].get("default_map", "00-spawn.tmj")
         cls.COLOR_BG = data["colors"]["background"]
 
         # Player
