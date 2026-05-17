@@ -521,7 +521,7 @@
                 "npc",
                 "sign",
                 "consumable",
-                "static"
+                "static_npc"
             ],
             "valuesAsFlags": false
         },

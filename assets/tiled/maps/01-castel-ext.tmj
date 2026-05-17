@@ -360,9 +360,9 @@
                                      "element_id":"castel-guard",
                                      "entity_type":"npc",
                                      "height":96,
-                                     "sheet_cols":2,
+                                     "sheet_cols":4,
                                      "sheet_rows":4,
-                                     "sprite_sheet":"05-guards.png",
+                                     "sprite_sheet":"05-guard_left.png",
                                      "sub_type":"static_npc"
                                     }
                                 }],
@@ -393,10 +393,9 @@
                                      "element_id":"castel-guard",
                                      "entity_type":"npc",
                                      "height":96,
-                                     "position":1,
-                                     "sheet_cols":2,
+                                     "sheet_cols":4,
                                      "sheet_rows":4,
-                                     "sprite_sheet":"05-guards.png",
+                                     "sprite_sheet":"05-guard_right.png",
                                      "sub_type":"static_npc"
                                     }
                                 }],

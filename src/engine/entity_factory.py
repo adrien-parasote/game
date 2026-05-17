@@ -88,7 +88,11 @@ class EntityFactory:
             ent_type_field = ent.get("type", "")
             if entity_type == "interactive" or ent_type_field.startswith("03-"):
                 self.spawn_interactive(ent, props, map_name)
-            elif entity_type == "npc" or ent_type_field == "15-npc" or ent_type_field.startswith("07-"):
+            elif (
+                entity_type == "npc"
+                or ent_type_field == "15-npc"
+                or ent_type_field.startswith("07-")
+            ):
                 self.spawn_npc(ent, props)
             elif _get_property(props, "type") == "teleport" or ent_type_field.startswith("15-"):
                 self.spawn_teleport(ent, props)
@@ -191,6 +195,9 @@ class EntityFactory:
         half_tile = self.game.tile_size // 2
         e_pos = (ent["x"] + half_tile, ent["y"] + half_tile)
 
+        facing_dir = _get_property(props, "facing_direction")
+        facing_dir_str = str(facing_dir) if facing_dir is not None else None
+
         npc = NPC(
             pos=e_pos,
             groups=[self.game.visible_sprites, self.game.npcs],
@@ -200,6 +207,7 @@ class EntityFactory:
             sheet_cols=int(str(_get_property(props, "sheet_cols", 4))),
             sheet_rows=int(str(_get_property(props, "sheet_rows", 4))),
             sub_type=str(_get_property(props, "sub_type", "npc")),
+            facing_direction=facing_dir_str,
         )
         npc.name = str(_get_property(props, "name", ent.get("name", "")))
         npc.game = self.game
@@ -239,11 +247,7 @@ class EntityFactory:
             return
 
         tiled_id = ent.get("id")
-        state_key = (
-            WorldState.make_key(self.game._current_map_name, tiled_id)
-            if tiled_id
-            else None
-        )
+        state_key = WorldState.make_key(self.game._current_map_name, tiled_id) if tiled_id else None
         if state_key:
             saved = self.game.world_state.get(state_key)
             if saved and saved.get("collected"):

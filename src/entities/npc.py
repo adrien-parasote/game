@@ -23,6 +23,7 @@ class NPC(BaseEntity):
         sheet_cols: int = 4,
         sheet_rows: int = 4,
         sub_type: str = "npc",
+        facing_direction: str | None = None,
     ):
         super().__init__(pos, groups, element_id=element_id)
         self.spawn_pos = pygame.math.Vector2(pos)
@@ -44,7 +45,7 @@ class NPC(BaseEntity):
         # player uses 1.0/0.15 fps at PLAYER_SPEED → same ratio applied to NPC speed.
         _player_anim = 1.0 / 0.15
         self.animation_speed = _player_anim * self.speed / Settings.PLAYER_SPEED
-        self.current_facing = "down"
+        self.current_facing = facing_direction if facing_direction else "down"
         self._was_moving = False  # tracks previous frame's movement to avoid per-tile reset
 
         self.image = self.frames[0]
@@ -100,7 +101,6 @@ class NPC(BaseEntity):
         """Process wandering AI restricted by radius.
 
         Skipped entirely for sub_type='static_npc'.
-        # TODO: allow configurable facing_direction for static_npc (read from Tiled property)
         """
         if self.sub_type == "static_npc":
             return  # Static NPCs have no AI — they never wander
@@ -150,12 +150,13 @@ class NPC(BaseEntity):
         row_offsets = {"down": 0, "left": fpd, "right": fpd * 2, "up": fpd * 3}
         offset = row_offsets.get(self.current_facing, 0)
 
-        if self.is_moving:
-            self.frame_index += self.animation_speed * dt
-            self.frame_index %= fpd
-        elif not self._was_moving:
-            # Only reset to idle after 2+ consecutive stopped frames (absorbs tile-arrival frame).
-            self.frame_index = 0.0
+        if self.state != "interact":
+            if self.sub_type == "static_npc" or self.is_moving:
+                self.frame_index += self.animation_speed * dt
+                self.frame_index %= fpd
+            elif not self._was_moving:
+                # Only reset to idle after 2+ consecutive stopped frames (absorbs tile-arrival frame).
+                self.frame_index = 0.0
 
         self._was_moving = self.is_moving
 

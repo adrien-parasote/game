@@ -14,13 +14,18 @@ def pygame_init(setup_pygame):
     yield
 
 
-def _make_npc(pos=(100, 100), wander_radius=2, sub_type="npc"):
+def _make_npc(pos=(100, 100), wander_radius=2, sub_type="npc", facing_direction=None):
     """Build an NPC without real disk assets."""
     from src.entities.npc import NPC
 
     with patch("src.entities.npc.SpriteSheet") as mock_ss:
         mock_ss.return_value.load_grid.return_value = [pygame.Surface((32, 32)) for _ in range(16)]
-        npc = NPC(pos=pos, wander_radius=wander_radius, sub_type=sub_type)
+        npc = NPC(
+            pos=pos,
+            wander_radius=wander_radius,
+            sub_type=sub_type,
+            facing_direction=facing_direction,
+        )
     return npc
 
 
@@ -154,3 +159,37 @@ class TestStaticNPC:
         initiator.pos = pygame.math.Vector2(100, 200)  # player below (approaching from down)
         result = npc.interact(initiator)
         assert result == "castel-guard"
+
+    def test_static_npc_animates_when_idle(self):
+        """TC-006: static_npc cycles frame_index even when not moving."""
+        npc = _make_npc(sub_type="static_npc")
+        assert npc.frame_index == 0.0
+        npc.update(0.1)
+        assert npc.frame_index > 0.0
+
+    def test_static_npc_anim_continues_when_idle(self):
+        """TC-007: static_npc does not reset frame_index to 0 when not moving."""
+        npc = _make_npc(sub_type="static_npc")
+        npc.update(0.1)
+        prev_idx = npc.frame_index
+        assert prev_idx > 0.0
+        npc.update(0.1)
+        assert npc.frame_index > prev_idx
+
+    def test_static_npc_facing_direction_init(self):
+        """TC-008: static_npc respects facing_direction at construction."""
+        npc = _make_npc(sub_type="static_npc", facing_direction="left")
+        assert npc.current_facing == "left"
+
+    def test_npc_facing_direction_init(self):
+        """TC-009: dynamic npc also respects facing_direction at construction."""
+        npc = _make_npc(sub_type="npc", facing_direction="left")
+        assert npc.current_facing == "left"
+
+    def test_static_npc_anim_frozen_during_interaction(self):
+        """TC-010: static_npc animation is frozen when state is 'interact'."""
+        npc = _make_npc(sub_type="static_npc")
+        npc.state = "interact"
+        npc.frame_index = 1.0
+        npc.update(0.1)
+        assert npc.frame_index == 1.0
