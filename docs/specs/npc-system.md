@@ -14,7 +14,7 @@ To populate the world with static and dynamic NPCs using a decoupled architectur
 
 ### [IMPLEMENTED] `src/entities/npc.py`
 The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
-- **Visuals**: Uses SpriteSheet for 4x4 grid animations.
+- **Visuals**: Uses SpriteSheet with a configurable grid. Default is `4×4` (4 cols × 4 rows, frames 32×48px). Override via `sheet_cols` / `sheet_rows` Tiled properties (e.g. guards: `2×4`, frames 32×96px). `frames_per_dir = sheet_cols` drives animation cycling.
 - **States**: `idle`, `wander`, `interact`.
 - **Wander Radius**: AI logic enforces a distance check (in tiles) from the original `spawn_pos`.
 - **Position Persistence**: Subscribes to `world_state`. NPC coordinates `[x, y]` and `facing` are saved using their `_world_state_key` (if present) upon unspawning or map unloading.
@@ -95,7 +95,9 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 
 
 ### 3.2. NPC Animation & Facing
-- **Rows**: 0:Down, 1:Left, 2:Right, 3:Up (Physical sheet offsets: 0, 4, 8, 12).
+- **Rows**: 0:Down, 1:Left, 2:Right, 3:Up. Direction offsets are computed dynamically as `0, fpd, fpd*2, fpd*3` where `fpd = sheet_cols` (frames per direction).
+- **Default** (`sheet_cols=4`): offsets `0, 4, 8, 12` — unchanged for `01-character.png` and `02-butler.png`.
+- **Custom** (e.g. `sheet_cols=2`): offsets `0, 2, 4, 6` — for `05-guards.png` (64×384px, 2 cols × 4 rows = 32×96px frames).
 - **Animation speed**: Base speed of `8.0` FPS when moving (matched to walking rhythm).
 - **Movement speed**: Defined as `0.4` of Settings.PLAYER_SPEED.
 - **Facing**: NPCs automatically rotate to face the player during interaction by calculating the position delta.
@@ -123,6 +125,7 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 | Missing Spritesheet | FileNotFoundError | Use generic blue rectangle (via existing logic) | `is_moving` set false to prevent visual artifacts |
 | Invalid Path/Wander | Wall collision returned by `walkable_func` | Cancel wander: clear `direction = Vector2(0,0)`, set `state = "idle"` | Re-eval after AI cooldown (2–5s). Direction MUST be cleared to prevent spin-in-place (BUG-2). |
 | Wrong boundary clamping | `npc.game` is `None` → `MAP_SIZE` fallback used | All movement targets clamped to wrong world_height → NPC stuck | `spawn_npc()` MUST set `npc.game = self.game` before any movement (BUG-1). |
+| Incorrect sprite grid | `sheet_cols`/`sheet_rows` not set for non-default sheet | Sprite frames sliced with wrong dimensions → image cropped | Always set `sheet_cols` + `sheet_rows` in Tiled object props when using non-standard spritesheet layout. |
 | Missing Dialogue Key | i18n lookup returns `None` | Log warning, no bubble shown | NPC stays in `interact` state until player moves away |
 | Missing Map Properties | `props.get()` returns `None` | Use engine defaults (NPC speed, etc.) | Log Warning |
 

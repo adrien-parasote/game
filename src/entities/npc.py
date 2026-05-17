@@ -20,6 +20,8 @@ class NPC(BaseEntity):
         wander_radius: int = 1,
         sheet_name: str = "01-character.png",
         element_id: str | None = None,
+        sheet_cols: int = 4,
+        sheet_rows: int = 4,
     ):
         super().__init__(pos, groups, element_id=element_id)
         self.spawn_pos = pygame.math.Vector2(pos)
@@ -32,7 +34,8 @@ class NPC(BaseEntity):
             os.path.dirname(__file__), "..", "..", "assets", "images", "characters", sheet_name
         )
         sheet = SpriteSheet(sheet_path)
-        self.frames = sheet.load_grid(4, 4)
+        self.frames = sheet.load_grid(sheet_cols, sheet_rows)
+        self.frames_per_dir = sheet_cols  # columns = frames per direction
 
         self.frame_index = 0.0
         # Scale animation to movement speed so frames-per-tile matches the player's ratio:
@@ -134,19 +137,20 @@ class NPC(BaseEntity):
                     self.state = "idle"
 
     def _update_animation(self, dt: float):
-        row_offsets = {"down": 0, "left": 4, "right": 8, "up": 12}
+        fpd = self.frames_per_dir  # frames per direction
+        row_offsets = {"down": 0, "left": fpd, "right": fpd * 2, "up": fpd * 3}
         offset = row_offsets.get(self.current_facing, 0)
 
         if self.is_moving:
             self.frame_index += self.animation_speed * dt
-            self.frame_index %= 4
+            self.frame_index %= fpd
         elif not self._was_moving:
             # Only reset to idle after 2+ consecutive stopped frames (absorbs tile-arrival frame).
             self.frame_index = 0.0
 
         self._was_moving = self.is_moving
 
-        current_frame = int(self.frame_index) % 4
+        current_frame = int(self.frame_index) % fpd
         self.image = self.frames[offset + current_frame]
 
     def update(self, dt: float):

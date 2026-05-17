@@ -197,6 +197,8 @@ class EntityFactory:
             wander_radius=int(str(_get_property(props, "wander_radius", 1))),
             sheet_name=str(_get_property(props, "sprite_sheet", "01-character.png")),
             element_id=str(_get_property(props, "element_id") or str(ent.get("id", ""))),
+            sheet_cols=int(str(_get_property(props, "sheet_cols", 4))),
+            sheet_rows=int(str(_get_property(props, "sheet_rows", 4))),
         )
         npc.name = str(_get_property(props, "name", ent.get("name", "")))
         npc.game = self.game
