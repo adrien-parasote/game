@@ -219,13 +219,14 @@ class InteractionManager(InteractionEmoteMixin):
             self._close_chest(chest, chest_ui)
 
     def _close_chest(self, chest, chest_ui) -> None:
-        """Trigger chest closing animation, play sfx, persist state, and hide UI."""
+        """Trigger chest closing animation, play sfx_close, persist state, and hide UI."""
         chest.interact(self.game.player)  # toggles is_on=False + starts animation
-        if getattr(chest, "sfx", None):
+        sfx_name = self._resolve_sfx(chest)  # is_on=False → resolves sfx_close
+        if sfx_name:
             dist = self.game.player.pos.distance_to(chest.pos)
             vol_mult = max(0.4, 1.0 - dist / 120.0)
             self.game.audio_manager.play_sfx(
-                str(chest.sfx), str(getattr(chest, "element_id", "")), volume_multiplier=vol_mult
+                sfx_name, str(getattr(chest, "element_id", "")), volume_multiplier=vol_mult
             )
         if hasattr(chest, "_world_state_key"):
             self.game.world_state.set(chest._world_state_key, {"is_on": chest.is_on})
@@ -317,6 +318,11 @@ class InteractionManager(InteractionEmoteMixin):
             for entity in group:
                 if getattr(entity, "element_id", None) == target_id:
                     if hasattr(entity, "interact"):
+                        if getattr(entity, "sub_type", "") == "bridge" and getattr(entity, "is_on", False):
+                            if self.game.player.rect and entity.rect and self.game.player.rect.colliderect(entity.rect):
+                                logging.warning(f"Cannot remote-toggle bridge {target_id}: player is on it.")
+                                continue
+
                         entity.interact(self.game.player)
 
                         sfx_name = self._resolve_sfx(entity)

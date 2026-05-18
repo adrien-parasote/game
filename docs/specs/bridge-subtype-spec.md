@@ -140,7 +140,21 @@ if obj.sub_type == "door" and getattr(obj, "is_on", False):
 **No change needed** — `bridge` will not match `"door"`, so back-facing relaxation
 is correctly excluded for bridges. ✅
 
-### 3.3. Tiled Map — `01-castel-ext.tmj`
+### 3.3. `src/engine/interaction.py`
+
+#### 3.3.1. `toggle_entity_by_id`
+
+To prevent the player from being trapped on a blocking tile, we must prevent remote toggling of a lowered bridge if the player is currently standing on it.
+
+**New Logic (inside the `entity` loop, before `entity.interact(self.game.player)`):**
+```python
+if getattr(entity, "sub_type", "") == "bridge" and getattr(entity, "is_on", False):
+    if self.game.player.rect and entity.rect and self.game.player.rect.colliderect(entity.rect):
+        logging.warning(f"Cannot remote-toggle bridge {target_id}: player is on it.")
+        continue
+```
+
+### 3.4. Tiled Map — `01-castel-ext.tmj`
 
 The drawbridge entity (id=19) must change `sub_type` from `"door"` to `"bridge"`:
 
@@ -157,7 +171,6 @@ The drawbridge entity (id=19) must change `sub_type` from `"door"` to `"bridge"`
 | File | Reason |
 |------|--------|
 | `collision_checker.py` | `walkable_override_entities` logic already correct |
-| `interaction.py` | No `door`-specific path for bridges |
 | `entity_factory.py` | `spawn_interactive` is sub_type-agnostic |
 | `interactive_constants.py` | No bridge-specific constants needed |
 
@@ -182,6 +195,7 @@ The drawbridge entity (id=19) must change `sub_type` from `"door"` to `"bridge"`
 | IT-001 | Player collides with lowered bridge | Player moves into bridge `rect` | Movement allowed (walkable override) |
 | IT-002 | Player collides with raised bridge | Player moves towards water tile at bridge | Movement blocked (water tile) |
 | IT-003 | Map transition cleanup | Bridge lowered, player leaves map | Bridge walkable override is cleared from CollisionChecker |
+| IT-004 | Remote toggle guard | Remote switch targets lowered bridge while player is on it | Bridge does not raise, logs warning |
 
 ### 5.2. Tests to Update
 

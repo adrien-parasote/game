@@ -278,7 +278,12 @@
                                  "value":true
                                 }, 
                                 {
-                                 "name":"sfx",
+                                 "name":"sfx_close",
+                                 "type":"string",
+                                 "value":"01-lever"
+                                }, 
+                                {
+                                 "name":"sfx_open",
                                  "type":"string",
                                  "value":"01-lever"
                                 }, 
@@ -320,7 +325,12 @@
                                  "value":false
                                 }, 
                                 {
-                                 "name":"sfx",
+                                 "name":"sfx_close",
+                                 "type":"string",
+                                 "value":"02-open_chest"
+                                }, 
+                                {
+                                 "name":"sfx_open",
                                  "type":"string",
                                  "value":"02-open_chest"
                                 }, 
@@ -351,7 +361,12 @@
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"sfx",
+                                 "name":"sfx_close",
+                                 "type":"string",
+                                 "value":"02-open_chest"
+                                }, 
+                                {
+                                 "name":"sfx_open",
                                  "type":"string",
                                  "value":"02-open_chest"
                                 }, 
@@ -387,7 +402,12 @@
                                  "value":false
                                 }, 
                                 {
-                                 "name":"sfx",
+                                 "name":"sfx_close",
+                                 "type":"string",
+                                 "value":"02-open_chest"
+                                }, 
+                                {
+                                 "name":"sfx_open",
                                  "type":"string",
                                  "value":"02-open_chest"
                                 }, 
@@ -423,7 +443,12 @@
                                  "value":true
                                 }, 
                                 {
-                                 "name":"sfx",
+                                 "name":"sfx_close",
+                                 "type":"string",
+                                 "value":"00-wooden_door"
+                                }, 
+                                {
+                                 "name":"sfx_open",
                                  "type":"string",
                                  "value":"00-wooden_door"
                                 }, 
@@ -483,7 +508,12 @@
                          "opacity":1,
                          "properties":[
                                 {
-                                 "name":"sfx",
+                                 "name":"sfx_close",
+                                 "type":"string",
+                                 "value":"02-open_chest"
+                                }, 
+                                {
+                                 "name":"sfx_open",
                                  "type":"string",
                                  "value":"02-open_chest"
                                 }, 
