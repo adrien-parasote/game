@@ -68,21 +68,30 @@ An interactive bridge has 4 states (as defined in `src/entities/interactive.py`)
 
 | Test ID | Component | Input | Expected Output | Edge Cases |
 |---------|-----------|-------|-----------------|------------|
-| BRIDGE-U-001 | Footstep System | Player stands on grass tile (`footstep_material="grass"`) | Footstep sound loaded is `footstep_grass_X.ogg` | Property is absent (falls back to default) |
-| BRIDGE-U-002 | Interaction | Player stands on `EXTENDED` drawbridge | Traversal allowed (`walkable=True`), footstep overrides to `wood` | Bridge is `RETRACTED` (traversal blocked) |
-| BRIDGE-U-003 | State Machine | Lever triggers Drawbridge state to `EXTENDING` | transitional sound `sfx_bridge_gears.ogg` plays | Lever is triggered multiple times in rapid succession |
-| BRIDGE-U-004 | Audio Manager | Play transitional sound `sfx_bridge_gears.ogg` | Sound plays on dedicated channel | Channel allocation failure (handles gracefully) |
-| BRIDGE-U-005 | Collision | Player overlaps bridge boundary in `EXTENDED` state | `has_overlap` returns `True`, footsteps override to `wood` | Partial boundary overlap |
-| BRIDGE-U-006 | State Transitions | Bridge transitions from `EXTENDING` to `EXTENDED` | Transitional gear SFX stops, `walkable` set to `True` | Bridge gets blocked mid-transition |
-| BRIDGE-U-007 | Sound Cache | Footstep material requested twice in succession | Sound loaded from cache, no duplicate disk read | Cache gets cleared under low memory |
-| BRIDGE-U-008 | Asset Validation | All footstep materials defined in `gameplay.json` | Files exist under `assets/audio/sfx/` | A material has no matching audio file (throws warning) |
+| BRIDGE-U-001 | Bridge SFX | `sfx_open="bridge_open"` | `entity.sfx_open == "bridge_open"` | — |
+| BRIDGE-U-002 | Bridge SFX | `sfx_close="bridge_close"` | `entity.sfx_close == "bridge_close"` | — |
+| BRIDGE-U-003 | Bridge SFX | `material="wood"` | `entity.material == "wood"` | — |
+| BRIDGE-U-004 | Bridge SFX | No `sfx_open` provided | `entity.sfx_open == ""` | — |
+| BRIDGE-U-005 | Bridge SFX | No `sfx_close` provided | `entity.sfx_close == ""` | — |
+| BRIDGE-U-006 | Bridge SFX | No `material` provided | `entity.material == ""` | — |
+| BRIDGE-U-007 | Interaction | `is_on=True`, `sfx_open` set | `_resolve_sfx` returns `sfx_open` | — |
+| BRIDGE-U-008 | Interaction | `is_on=False`, `sfx_close` set | `_resolve_sfx` returns `sfx_close` | — |
+| BRIDGE-U-009 | Interaction | `is_on=True`, `sfx_open=""` | `_resolve_sfx` falls back to `sfx` | — |
+| BRIDGE-U-010 | Interaction | `is_on=False`, `sfx_close=""` | `_resolve_sfx` falls back to `sfx` | — |
+| BRIDGE-U-011 | Interaction | `sfx`, `sfx_open`, `sfx_close` empty | `_resolve_sfx` returns `""` | — |
+| BRIDGE-U-012 | Interaction | Legacy entity (no `sfx_open`/`sfx_close` attrs) | `_resolve_sfx` returns `sfx` | Backward-compatibility guard |
+| BRIDGE-U-013 | Player SFX | Override entity with `material="wood"` at player pos | `_resolve_footstep_material` returns `wood` | — |
+| BRIDGE-U-014 | Player SFX | Override entity with `material=""` at player pos | `_resolve_footstep_material` falls back to map terrain | — |
+| BRIDGE-U-015 | Player SFX | No override entities on map | `_resolve_footstep_material` uses map terrain | — |
+| BRIDGE-U-016 | Player SFX | Player not on override entity | `_resolve_footstep_material` uses map terrain | Regression check |
 
 ### Integration Tests Required
 
 | Test ID | Flow | Setup | Verification | Teardown |
 |---------|------|-------|--------------|----------|
-| BRIDGE-I-001 | Complete Lever & Drawbridge Cycle | Player triggers lever → Drawbridge extends → Player crosses | Transitional gear SFX plays, stops, footstep switches to `wood`, crossing is successful | Reset entities states |
-| BRIDGE-I-002 | Quick Crossing Rejection | Player attempts to cross during `EXTENDING` state | Traversal is blocked, player collision stops movement | Reset player position |
+| BRIDGE-I-001 | Lever triggers bridge ON | Lever target is bridge; pull lever | Bridge toggled ON, plays `sfx_open` | Reset |
+| BRIDGE-I-002 | Lever triggers bridge OFF | Lever target is bridge; pull lever again | Bridge toggled OFF, plays `sfx_close` | Reset |
+| BRIDGE-I-003 | Footsteps on lowered bridge | Bridge lowered (`is_on=True`, `material="wood"`); player walks on it | Plays `04-footstep_wood` instead of water sound | — |
 
 ---
 
@@ -105,13 +114,22 @@ An interactive bridge has 4 states (as defined in `src/entities/interactive.py`)
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| BRIDGE-U-001 | `test_footstep_material_resolution` | `../../tests/entities/test_player.py` |
-| BRIDGE-U-002 | `test_bridge_traversal_when_extended` | `../../tests/entities/test_bridge_sfx.py` |
-| BRIDGE-U-003 | `test_bridge_extending_plays_gears` | `../../tests/entities/test_bridge_sfx.py` |
-| BRIDGE-U-004 | `test_audio_manager_channel_allocation` | `../../tests/engine/test_audio.py` |
-| BRIDGE-U-005 | `test_player_overlap_bridge_triggers_material` | `../../tests/engine/test_bridge_sfx_interaction.py` |
-| BRIDGE-U-006 | `test_bridge_transitions_to_extended` | `../../tests/entities/test_bridge_sfx_player.py` |
-| BRIDGE-U-007 | `test_footstep_sound_caching` | `../../tests/engine/test_audio.py` |
-| BRIDGE-U-008 | `test_all_materials_exist_on_disk` | `../../tests/engine/test_audio.py` |
-| BRIDGE-I-001 | `test_complete_lever_bridge_cycle` | `../../tests/engine/test_bridge_sfx_interaction.py` |
-| BRIDGE-I-002 | `test_crossing_rejected_during_transition` | `../../tests/engine/test_bridge_sfx_interaction.py` |
+| BRIDGE-U-001 | `test_sfx_open_stored_on_entity` | `../../tests/entities/test_bridge_sfx.py` |
+| BRIDGE-U-002 | `test_sfx_close_stored_on_entity` | `../../tests/entities/test_bridge_sfx.py` |
+| BRIDGE-U-003 | `test_material_stored_on_entity` | `../../tests/entities/test_bridge_sfx.py` |
+| BRIDGE-U-004 | `test_sfx_open_defaults_to_empty_string` | `../../tests/entities/test_bridge_sfx.py` |
+| BRIDGE-U-005 | `test_sfx_close_defaults_to_empty_string` | `../../tests/entities/test_bridge_sfx.py` |
+| BRIDGE-U-006 | `test_material_defaults_to_empty_string` | `../../tests/entities/test_bridge_sfx.py` |
+| BRIDGE-U-007 | `test_sfx_open_used_when_on` | `../../tests/engine/test_bridge_sfx_interaction.py` |
+| BRIDGE-U-008 | `test_sfx_close_used_when_off` | `../../tests/engine/test_bridge_sfx_interaction.py` |
+| BRIDGE-U-009 | `test_fallback_to_sfx_when_sfx_open_empty_and_on` | `../../tests/engine/test_bridge_sfx_interaction.py` |
+| BRIDGE-U-010 | `test_fallback_to_sfx_when_sfx_close_empty_and_off` | `../../tests/engine/test_bridge_sfx_interaction.py` |
+| BRIDGE-U-011 | `test_returns_empty_when_all_sfx_empty` | `../../tests/engine/test_bridge_sfx_interaction.py` |
+| BRIDGE-U-012 | `test_legacy_entity_without_sfx_open_close_uses_sfx` | `../../tests/engine/test_bridge_sfx_interaction.py` |
+| BRIDGE-U-013 | `test_override_entity_with_material_returns_material` | `../../tests/entities/test_bridge_sfx_player.py` |
+| BRIDGE-U-014 | `test_override_entity_with_empty_material_falls_back_to_map` | `../../tests/entities/test_bridge_sfx_player.py` |
+| BRIDGE-U-015 | `test_no_override_entity_uses_map_manager` | `../../tests/entities/test_bridge_sfx_player.py` |
+| BRIDGE-U-016 | `test_regression_tile_material_returned_when_no_override` | `../../tests/entities/test_bridge_sfx_player.py` |
+| BRIDGE-I-001 | `test_trigger_object_plays_sfx_open_when_toggled_on` | `../../tests/engine/test_bridge_sfx_interaction.py` |
+| BRIDGE-I-002 | `test_trigger_object_plays_sfx_close_when_toggled_off` | `../../tests/engine/test_bridge_sfx_interaction.py` |
+| BRIDGE-I-003 | `test_footstep_uses_bridge_material_wood` | `../../tests/entities/test_bridge_sfx_player.py` |

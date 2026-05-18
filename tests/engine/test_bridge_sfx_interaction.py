@@ -39,46 +39,46 @@ def _make_entity(sfx="", sfx_open="", sfx_close="", is_on=True):
 
 
 class TestResolveSfx:
-    """UT-010 → UT-015 — _resolve_sfx() directional SFX selection logic."""
+    """BRIDGE-U-007 → BRIDGE-U-012 — _resolve_sfx() directional SFX selection logic."""
 
-    @pytest.mark.tc("UT-010")
+    @pytest.mark.tc("BRIDGE-U-007")
     def test_sfx_open_used_when_on(self):
-        """UT-010: _resolve_sfx returns sfx_open when is_on=True and sfx_open is set."""
+        """BRIDGE-U-007: _resolve_sfx returns sfx_open when is_on=True and sfx_open is set."""
         entity = _make_entity(sfx_open="o", sfx="g", is_on=True)
         result = InteractionManager._resolve_sfx(entity)
         assert result == "o"
 
-    @pytest.mark.tc("UT-011")
+    @pytest.mark.tc("BRIDGE-U-008")
     def test_sfx_close_used_when_off(self):
-        """UT-011: _resolve_sfx returns sfx_close when is_on=False and sfx_close is set."""
+        """BRIDGE-U-008: _resolve_sfx returns sfx_close when is_on=False and sfx_close is set."""
         entity = _make_entity(sfx_close="c", sfx="g", is_on=False)
         result = InteractionManager._resolve_sfx(entity)
         assert result == "c"
 
-    @pytest.mark.tc("UT-012")
+    @pytest.mark.tc("BRIDGE-U-009")
     def test_fallback_to_sfx_when_sfx_open_empty_and_on(self):
-        """UT-012: _resolve_sfx falls back to sfx when sfx_open is '' and is_on=True."""
+        """BRIDGE-U-009: _resolve_sfx falls back to sfx when sfx_open is '' and is_on=True."""
         entity = _make_entity(sfx_open="", sfx="g", is_on=True)
         result = InteractionManager._resolve_sfx(entity)
         assert result == "g"
 
-    @pytest.mark.tc("UT-013")
+    @pytest.mark.tc("BRIDGE-U-010")
     def test_fallback_to_sfx_when_sfx_close_empty_and_off(self):
-        """UT-013: _resolve_sfx falls back to sfx when sfx_close is '' and is_on=False."""
+        """BRIDGE-U-010: _resolve_sfx falls back to sfx when sfx_close is '' and is_on=False."""
         entity = _make_entity(sfx_close="", sfx="g", is_on=False)
         result = InteractionManager._resolve_sfx(entity)
         assert result == "g"
 
-    @pytest.mark.tc("UT-014")
+    @pytest.mark.tc("BRIDGE-U-011")
     def test_returns_empty_when_all_sfx_empty(self):
-        """UT-014: _resolve_sfx returns '' when sfx, sfx_open, sfx_close are all empty."""
+        """BRIDGE-U-011: _resolve_sfx returns '' when sfx, sfx_open, sfx_close are all empty."""
         entity = _make_entity(sfx="", sfx_open="", sfx_close="", is_on=True)
         result = InteractionManager._resolve_sfx(entity)
         assert result == ""
 
-    @pytest.mark.tc("UT-015")
+    @pytest.mark.tc("BRIDGE-U-012")
     def test_legacy_entity_without_sfx_open_close_uses_sfx(self):
-        """UT-015: Entities without sfx_open/sfx_close fall back to sfx (rétrocompat)."""
+        """BRIDGE-U-012: Entities without sfx_open/sfx_close fall back to sfx (rétrocompat)."""
         entity = MagicMock(spec=["sfx", "is_on"])
         entity.sfx = "01-lever"
         entity.is_on = True
@@ -87,11 +87,11 @@ class TestResolveSfx:
 
 
 class TestResolveSfxIntegration:
-    """IT-001 → IT-002 — _resolve_sfx used in _trigger_object_interaction and toggle_entity_by_id."""
+    """BRIDGE-I-001 → BRIDGE-I-002 — _resolve_sfx used in _trigger_object_interaction and toggle_entity_by_id."""
 
-    @pytest.mark.tc("IT-001")
+    @pytest.mark.tc("BRIDGE-I-001")
     def test_trigger_object_plays_sfx_open_when_toggled_on(self):
-        """IT-001: Bridge toggled ON via toggle_entity_by_id plays sfx_open."""
+        """BRIDGE-I-001: Bridge toggled ON via toggle_entity_by_id plays sfx_open."""
         game = MagicMock()
 
         bridge = _SfxEntity(
@@ -111,9 +111,9 @@ class TestResolveSfxIntegration:
             "bridge_open", "drawbridge"
         )
 
-    @pytest.mark.tc("IT-002")
+    @pytest.mark.tc("BRIDGE-I-002")
     def test_trigger_object_plays_sfx_close_when_toggled_off(self):
-        """IT-002: Bridge toggled OFF via toggle_entity_by_id plays sfx_close."""
+        """BRIDGE-I-002: Bridge toggled OFF via toggle_entity_by_id plays sfx_close."""
         game = MagicMock()
 
         bridge = _SfxEntity(

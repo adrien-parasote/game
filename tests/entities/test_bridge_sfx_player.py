@@ -39,11 +39,11 @@ def _make_override_entity(material="wood", pos=(100, 100), rect=None):
 
 
 class TestResolveFootstepMaterial:
-    """UT-020 → UT-023 — _resolve_footstep_material() priority logic."""
+    """BRIDGE-U-013 → BRIDGE-U-016 — _resolve_footstep_material() priority logic."""
 
-    @pytest.mark.tc("UT-020")
+    @pytest.mark.tc("BRIDGE-U-013")
     def test_override_entity_with_material_returns_material(self):
-        """UT-020: Override entity with material='wood' at player pos → returns 'wood'."""
+        """BRIDGE-U-013: Override entity with material='wood' at player pos → returns 'wood'."""
         p = _make_player()
         p.pos = pygame.math.Vector2(100, 100)
 
@@ -59,9 +59,9 @@ class TestResolveFootstepMaterial:
         assert result == "wood"
         mock_game.map_manager.get_terrain_material_at.assert_not_called()
 
-    @pytest.mark.tc("UT-021")
+    @pytest.mark.tc("BRIDGE-U-014")
     def test_override_entity_with_empty_material_falls_back_to_map(self):
-        """UT-021: Override entity with material='' → fallback to map_manager."""
+        """BRIDGE-U-014: Override entity with material='' → fallback to map_manager."""
         p = _make_player()
         p.pos = pygame.math.Vector2(100, 100)
 
@@ -77,9 +77,9 @@ class TestResolveFootstepMaterial:
         assert result == "stone"
         mock_game.map_manager.get_terrain_material_at.assert_called_once()
 
-    @pytest.mark.tc("UT-022")
+    @pytest.mark.tc("BRIDGE-U-015")
     def test_no_override_entity_uses_map_manager(self):
-        """UT-022: No override entities → map_manager.get_terrain_material_at() called."""
+        """BRIDGE-U-015: No override entities → map_manager.get_terrain_material_at() called."""
         p = _make_player()
         p.pos = pygame.math.Vector2(100, 100)
 
@@ -93,9 +93,9 @@ class TestResolveFootstepMaterial:
         assert result == "stone"
         mock_game.map_manager.get_terrain_material_at.assert_called_once_with(100, 100)
 
-    @pytest.mark.tc("UT-023")
+    @pytest.mark.tc("BRIDGE-U-016")
     def test_regression_tile_material_returned_when_no_override(self):
-        """UT-023: No bridge override → tile 'stone' returned, same as before."""
+        """BRIDGE-U-016: No bridge override → tile 'stone' returned, same as before."""
         p = _make_player()
         p.pos = pygame.math.Vector2(200, 300)
 
@@ -140,9 +140,9 @@ class TestResolveFootstepMaterial:
 
 
 class TestFootstepIntegration:
-    """IT-003 — Footstep SFX 'wood' played when walking on lowered bridge."""
+    """BRIDGE-I-003 — Footstep SFX 'wood' played when walking on lowered bridge."""
 
-    @pytest.mark.tc("IT-003")
+    @pytest.mark.tc("BRIDGE-I-003")
     def test_footstep_uses_bridge_material_wood(self):
         """IT-003: Player walks on bridge with material='wood' → plays '04-footstep_wood'."""
         p = _make_player()

@@ -68,41 +68,41 @@ def _make_bridge(
 
 
 class TestBridgeSFXAttributes:
-    """UT-001 → UT-004 — New properties are stored on the entity."""
+    """BRIDGE-U-001 → BRIDGE-U-006 — New properties are stored on the entity."""
 
-    @pytest.mark.tc("UT-001")
+    @pytest.mark.tc("BRIDGE-U-001")
     def test_sfx_open_stored_on_entity(self):
-        """UT-001: sfx_open passed to constructor is accessible as entity.sfx_open."""
+        """BRIDGE-U-001: sfx_open passed to constructor is accessible as entity.sfx_open."""
         entity = _make_bridge(sfx_open="bridge_open")
         assert entity.sfx_open == "bridge_open"
 
-    @pytest.mark.tc("UT-002")
+    @pytest.mark.tc("BRIDGE-U-002")
     def test_sfx_close_stored_on_entity(self):
-        """UT-002: sfx_close passed to constructor is accessible as entity.sfx_close."""
+        """BRIDGE-U-002: sfx_close passed to constructor is accessible as entity.sfx_close."""
         entity = _make_bridge(sfx_close="bridge_close")
         assert entity.sfx_close == "bridge_close"
 
-    @pytest.mark.tc("UT-003")
+    @pytest.mark.tc("BRIDGE-U-003")
     def test_material_stored_on_entity(self):
-        """UT-003: material passed to constructor is accessible as entity.material."""
+        """BRIDGE-U-003: material passed to constructor is accessible as entity.material."""
         entity = _make_bridge(material="wood")
         assert entity.material == "wood"
 
-    @pytest.mark.tc("UT-004")
+    @pytest.mark.tc("BRIDGE-U-004")
     def test_sfx_open_defaults_to_empty_string(self):
-        """UT-004: When sfx_open is not provided, entity.sfx_open defaults to ''."""
+        """BRIDGE-U-004: When sfx_open is not provided, entity.sfx_open defaults to ''."""
         entity = _make_bridge()
         assert entity.sfx_open == ""
 
-    @pytest.mark.tc("UT-004b")
+    @pytest.mark.tc("BRIDGE-U-005")
     def test_sfx_close_defaults_to_empty_string(self):
-        """UT-004b: When sfx_close is not provided, entity.sfx_close defaults to ''."""
+        """BRIDGE-U-005: When sfx_close is not provided, entity.sfx_close defaults to ''."""
         entity = _make_bridge()
         assert entity.sfx_close == ""
 
-    @pytest.mark.tc("UT-004c")
+    @pytest.mark.tc("BRIDGE-U-006")
     def test_material_defaults_to_empty_string(self):
-        """UT-004c: When material is not provided, entity.material defaults to ''."""
+        """BRIDGE-U-006: When material is not provided, entity.material defaults to ''."""
         entity = _make_bridge()
         assert entity.material == ""
 

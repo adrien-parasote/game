@@ -160,6 +160,7 @@ class TestStaticNPC:
         result = npc.interact(initiator)
         assert result == "castel-guard"
 
+    @pytest.mark.tc("TC-006")
     def test_static_npc_animates_when_idle(self):
         """TC-006: static_npc cycles frame_index even when not moving."""
         npc = _make_npc(sub_type="static_npc")
@@ -167,6 +168,7 @@ class TestStaticNPC:
         npc.update(0.1)
         assert npc.frame_index > 0.0
 
+    @pytest.mark.tc("TC-007")
     def test_static_npc_anim_continues_when_idle(self):
         """TC-007: static_npc does not reset frame_index to 0 when not moving."""
         npc = _make_npc(sub_type="static_npc")
@@ -176,16 +178,19 @@ class TestStaticNPC:
         npc.update(0.1)
         assert npc.frame_index > prev_idx
 
+    @pytest.mark.tc("TC-008")
     def test_static_npc_facing_direction_init(self):
         """TC-008: static_npc respects facing_direction at construction."""
         npc = _make_npc(sub_type="static_npc", facing_direction="left")
         assert npc.current_facing == "left"
 
+    @pytest.mark.tc("TC-009")
     def test_npc_facing_direction_init(self):
         """TC-009: dynamic npc also respects facing_direction at construction."""
         npc = _make_npc(sub_type="npc", facing_direction="left")
         assert npc.current_facing == "left"
 
+    @pytest.mark.tc("TC-010")
     def test_static_npc_anim_frozen_during_interaction(self):
         """TC-010: static_npc animation is frozen when state is 'interact'."""
         npc = _make_npc(sub_type="static_npc")

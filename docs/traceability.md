@@ -2,14 +2,29 @@
 
 # Spec↔Test Traceability Matrix
 
-**Coverage:** 217/217 (100%)
+**Coverage:** 200/214 (93%)
+
+## bridge-sfx-spec.md
+
+| TC ID | Status | Test |
+|-------|--------|------|
+| BRIDGE-U-001 | ❌ MISSING | — |
+| BRIDGE-U-002 | ❌ MISSING | — |
+| BRIDGE-U-003 | ❌ MISSING | — |
+| BRIDGE-U-004 | ❌ MISSING | — |
+| BRIDGE-U-005 | ❌ MISSING | — |
+| BRIDGE-U-006 | ❌ MISSING | — |
+| BRIDGE-U-007 | ❌ MISSING | — |
+| BRIDGE-U-008 | ❌ MISSING | — |
+| BRIDGE-I-001 | ❌ MISSING | — |
+| BRIDGE-I-002 | ❌ MISSING | — |
 
 ## camera-rendering-spec.md
 
 | TC ID | Status | Test |
 |-------|--------|------|
-| IT-003 | ✅ | `tests/engine/test_performance_optimizations.py::test_game_viewport_rect_reused_across_updates` |
-| IT-004 | ✅ | `tests/entities/test_entities.py::test_emote_manager_chaining` |
+| IT-003 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_emote_suppressed_in_proximity_check` |
+| IT-004 | ✅ | `tests/engine/test_interaction.py::test_interaction_toggle_bridge_guard` |
 
 ## chest-ui-spec.md
 
@@ -76,8 +91,8 @@
 
 | TC ID | Status | Test |
 |-------|--------|------|
-| IT-003 | ✅ | `tests/engine/test_performance_optimizations.py::test_game_viewport_rect_reused_across_updates` |
-| IT-004 | ✅ | `tests/entities/test_entities.py::test_emote_manager_chaining` |
+| IT-003 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_emote_suppressed_in_proximity_check` |
+| IT-004 | ✅ | `tests/engine/test_interaction.py::test_interaction_toggle_bridge_guard` |
 | IT-005 | ✅ | `tests/engine/test_interaction.py::test_handle_interaction_pickup_partial` |
 
 ## engine-core.md
@@ -98,6 +113,12 @@
 | TC-CC-05 | ✅ | `tests/engine/test_collision_checker.py::test_npc_skipped_if_requester` |
 | TC-CC-06 | ✅ | `tests/engine/test_collision_checker.py::test_player_blocks_npc` |
 | TC-CC-07 | ✅ | `tests/engine/test_collision_checker.py::test_nothing_blocks_returns_false` |
+| TC-CC-08 | ✅ | `tests/engine/test_collision_checker.py::test_open_bridge_overrides_non_walkable_tile` |
+| TC-CC-09 | ✅ | `tests/engine/test_collision_checker.py::test_no_override_non_walkable_tile_still_blocks` |
+| TC-CC-10 | ✅ | `tests/engine/test_collision_checker.py::test_override_rect_miss_still_blocks` |
+| TC-CC-11 | ✅ | `tests/engine/test_collision_checker.py::test_animating_override_does_not_override_tile` |
+| TC-CC-12 | ✅ | `tests/engine/test_collision_checker.py::test_override_tile_still_checks_obstacles_and_npcs` |
+| TC-ML-05 | ✅ | `tests/engine/test_map_loader.py::test_clear_groups_empties_walkable_override_entities` |
 | TC-EF-01 | ✅ | `tests/engine/test_phase15_game.py::test_get_property_root_level` |
 | TC-EF-02 | ✅ | `tests/engine/test_phase15_game.py::test_get_property_nested` |
 | TC-EF-03 | ✅ | `tests/engine/test_phase15_game.py::test_get_property_absent_returns_default` |
@@ -136,54 +157,6 @@
 | IT-EF-01 | ✅ | `tests/engine/test_phase15_game.py::test_game_has_entity_factory_map_loader_input_handler` |
 | IT-GS-01 | ✅ | `tests/engine/test_phase15_game.py::test_game_setup_logging_importable` |
 
-## game-flow-spec.md
-
-| TC ID | Status | Test |
-|-------|--------|------|
-| GF-001 | ✅ | `tests/engine/test_save_manager.py::test_save_creates_file` |
-| GF-002 | ✅ | `tests/engine/test_save_manager.py::test_load_existing_slot` |
-| GF-003 | ✅ | `tests/engine/test_save_manager.py::test_load_empty_slot_returns_none` |
-| GF-004 | ✅ | `tests/engine/test_save_manager.py::test_load_corrupted_json_returns_none` |
-| GF-005 | ✅ | `tests/engine/test_save_manager.py::test_delete_slot` |
-| GF-006 | ✅ | `tests/engine/test_save_manager.py::test_slot_id_out_of_range_raises` |
-| GF-007 | ✅ | `tests/engine/test_save_manager.py::test_list_slots_empty` |
-| GF-008 | ✅ | `tests/engine/test_save_manager.py::test_list_slots_reflects_saved` |
-| GF-009 | ✅ | `tests/engine/test_save_manager.py::test_inventory_roundtrip` |
-| GF-010 | ✅ | `tests/engine/test_save_manager.py::test_world_state_roundtrip` |
-| GF-011 | ✅ | `tests/engine/test_save_manager.py::test_save_io_error_does_not_crash` |
-| GF-012 | ✅ | `tests/engine/test_game.py::test_game_ui_toggles` |
-| GF-013 | ✅ | `tests/engine/test_game.py::test_game_update_loop` |
-| GF-014 | ✅ | `tests/engine/test_game.py::test_update_dialogue_branch` |
-| GF-015 | ✅ | `tests/engine/test_game.py::test_update_inventory_branch` |
-| GF-016 | ✅ | `tests/engine/test_game.py::test_update_chest_branch` |
-| GF-017 | ✅ | `tests/engine/test_game.py::test_handle_events_dialogue_advance` |
-| GF-018 | ✅ | `tests/engine/test_game.py::test_game_transition_map_fade` |
-| GF-019 | ✅ | `tests/engine/test_game_state_manager.py::test_initial_state` |
-| GF-020 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_title_new_game` |
-| GF-021 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_title_load_game` |
-| GF-022 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_title_quit` |
-| GF-023 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_playing_pause_requested` |
-| GF-024 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_paused_resume` |
-| GF-025 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_paused_save_requested` |
-| GF-026 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_paused_goto_title` |
-| GF-027 | ✅ | `tests/engine/test_game_state_manager.py::test_save_to_first_free_slot` |
-| GF-028 | ✅ | `tests/engine/test_game_state_manager.py::test_save_to_first_free_slot_all_full` |
-| GF-029 | ✅ | `tests/engine/test_game_state_manager.py::test_on_escape` |
-| GF-030 | ✅ | `tests/engine/test_game_state_manager.py::test_on_escape` |
-| GF-031 | ✅ | `tests/engine/test_game_state_manager.py::test_load_game_time_restored` |
-| GF-032 | ✅ | `tests/engine/test_game_state_manager.py::test_handle_events_filtering` |
-| GF-033 | ✅ | `tests/engine/test_game_state_manager.py::test_transition_to_title_resets_inventory_and_chest_ui` |
-| GF-034 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_draw_main_menu` |
-| GF-035 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_light_scale_factors` |
-| GF-036 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_options_state_transitions` |
-| TC-IH-01 | ✅ | `tests/engine/test_phase15_game.py::test_quit_event_calls_sys_exit` |
-| TC-IH-02 | ✅ | `tests/engine/test_phase15_game.py::test_interact_key_no_dialogue_calls_handle_interactions` |
-| TC-IH-03 | ✅ | `tests/engine/test_phase15_game.py::test_interact_key_with_dialogue_advances_dialogue` |
-| TC-IH-04 | ✅ | `tests/engine/test_phase15_game.py::test_inventory_key_chest_closed_toggles_inventory` |
-| TC-IH-05 | ✅ | `tests/engine/test_phase15_game.py::test_inventory_key_chest_open_does_not_toggle` |
-| TC-IH-06 | ✅ | `tests/engine/test_phase15_game.py::test_interact_key_inventory_open_does_not_trigger_interaction` |
-| IT-IH-01 | ✅ | `tests/engine/test_phase15_game.py::test_game_handle_events_delegates_to_input_handler` |
-
 ## interactive-objects.md
 
 | TC ID | Status | Test |
@@ -192,6 +165,7 @@
 | INT-U-02 | ✅ | `tests/entities/test_interactive.py::test_update_animated_looping_wraps_frame` |
 | INT-U-03 | ✅ | `tests/entities/test_interactive.py::test_update_animated_off_resets_frame` |
 | INT-U-04 | ✅ | `tests/entities/test_interactive.py::test_update_closing_door_decrements_frame` |
+| INT-U-04b | ✅ | `tests/entities/test_interactive.py::test_interact_close_sets_frame_index_to_end_row` |
 | INT-I-01 | ✅ | `tests/engine/test_interaction.py::test_interaction_orientation` |
 | INT-I-02 | ✅ | `tests/engine/test_interaction.py::test_pickup_diagonal_rejection` |
 | INT-I-03 | ✅ | `tests/engine/test_interaction.py::test_verify_orientation_door_relaxed` |
@@ -249,7 +223,7 @@
 | TC-ML-02 | ✅ | `tests/engine/test_map_loader.py::test_save_interactive_states_skips_entities_without_key` |
 | TC-ML-03 | ✅ | `tests/engine/test_map_loader.py::test_save_interactive_states_includes_light_control` |
 | TC-ML-04 | ✅ | `tests/engine/test_map_loader.py::test_save_npc_states_not_broken_by_interactive_save` |
-| TC-ML-05 | ✅ | `tests/engine/test_phase15_game.py::test_load_fallback_spawn_player_root` |
+| TC-ML-05 | ✅ | `tests/engine/test_map_loader.py::test_clear_groups_empties_walkable_override_entities` |
 | TC-ML-06 | ✅ | `tests/engine/test_phase15_game.py::test_load_fallback_center_logs_warning` |
 | TC-ML-07 | ✅ | `tests/engine/test_phase15_game.py::test_load_empties_groups_before_spawn` |
 | IT-ML-01 | ✅ | `tests/engine/test_phase15_game.py::test_game_load_map_delegates_to_map_loader` |
@@ -258,17 +232,42 @@
 
 | TC ID | Status | Test |
 |-------|--------|------|
-| TC-N-01 | ✅ | `tests/entities/test_entities.py::test_entity_initialization` |
-| TC-N-02 | ✅ | `tests/entities/test_entities.py::test_npc_ai_state_machine` |
-| TC-N-03 | ✅ | `tests/entities/test_entities.py::test_npc_update_invisible_skips` |
-| TC-N-04 | ✅ | `tests/entities/test_entities.py::test_npc_interact_faces_initiator_horizontal` |
-| IT-N-01 | ✅ | `tests/engine/test_interaction.py::test_handle_interaction_npc` |
-| IT-N-02 | ✅ | `tests/entities/test_entities.py::test_npc_interact_freezes_ai` |
+| TC-001 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_blocks_direct_player_interaction` |
+| TC-002 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_false_allows_direct_interaction` |
+| TC-003 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_suppresses_proximity_emote` |
+| TC-004 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_false_does_not_suppress_emote` |
+| TC-006 | ✅ | `tests/entities/test_interactive.py::test_trigger_only_defaults_to_false` |
+| TC-007 | ❌ MISSING | — |
+| TC-008 | ❌ MISSING | — |
+| TC-009 | ❌ MISSING | — |
+| TC-010 | ❌ MISSING | — |
+| IT-001 | ✅ | `tests/engine/test_bridge_sfx_interaction.py::test_trigger_object_plays_sfx_open_when_toggled_on` |
+| IT-002 | ✅ | `tests/engine/test_bridge_sfx_interaction.py::test_trigger_object_plays_sfx_close_when_toggled_off` |
 
 ## performance-optimization-spec.md
 
 | TC ID | Status | Test |
 |-------|--------|------|
+| TC-DLG-01 | ✅ | `tests/ui/test_inventory.py::test_dialogue_pagination` |
+| IT-INT-01 | ✅ | `tests/engine/test_interaction.py::test_handle_interaction_npc` |
+| PERF-I-001 | ✅ | `tests/engine/test_performance_optimizations.py::test_title_screen_draw_no_rotozoom` |
+| PERF-I-002 | ✅ | `tests/engine/test_performance_optimizations.py::test_interaction_distance_sq_semantics_match_original` |
+| PERF-I-003 | ✅ | `tests/engine/test_performance_optimizations.py::test_game_viewport_rect_reused_across_updates` |
+| PERF-U-011 | ✅ | `tests/engine/test_performance_optimizations.py::test_get_sorted_sprites_empty` |
+| PERF-U-012 | ✅ | `tests/engine/test_performance_optimizations.py::test_get_sorted_sprites_cache_reused` |
+| PERF-U-013 | ✅ | `tests/engine/test_performance_optimizations.py::test_cache_dirty_on_add` |
+| PERF-U-014 | ✅ | `tests/engine/test_performance_optimizations.py::test_cache_dirty_on_remove` |
+| PERF-U-015 | ✅ | `tests/engine/test_performance_optimizations.py::test_mark_dirty_sets_flag` |
+| PERF-U-016 | ✅ | `tests/engine/test_performance_optimizations.py::test_sorted_sprites_y_order` |
+| PERF-U-022 | ✅ | `tests/engine/test_performance_optimizations.py::test_interactive_emote_at_dist_47` |
+| PERF-U-023 | ✅ | `tests/engine/test_performance_optimizations.py::test_interactive_emote_at_dist_49_not_triggered` |
+| PERF-U-024 | ✅ | `tests/engine/test_performance_optimizations.py::test_pickup_emote_at_dist_15` |
+| PERF-U-025 | ✅ | `tests/engine/test_performance_optimizations.py::test_object_interaction_at_dist_44` |
+| PERF-U-026 | ✅ | `tests/engine/test_performance_optimizations.py::test_chest_auto_close_at_dist_46` |
+| PERF-U-027 | ✅ | `tests/engine/test_performance_optimizations.py::test_audio_vol_mult_uses_real_distance` |
+| PERF-U-033 | ✅ | `tests/engine/test_performance_optimizations.py::test_game_has_viewport_world_rect` |
+| PERF-U-035 | ✅ | `tests/engine/test_performance_optimizations.py::test_game_no_dead_draw_methods` |
+| PERF-U-036 | ✅ | `tests/engine/test_performance_optimizations.py::test_game_active_torches_initialized` |
 | TC-DLG-01 | ✅ | `tests/ui/test_inventory.py::test_dialogue_pagination` |
 | IT-INT-01 | ✅ | `tests/engine/test_interaction.py::test_handle_interaction_npc` |
 | IT-INT-02 | ✅ | `tests/engine/test_interaction.py::test_interaction_toggle_entity_by_id` |
@@ -285,20 +284,20 @@
 
 | TC ID | Status | Test |
 |-------|--------|------|
-| TC-001 | ✅ | `tests/engine/test_save_manager.py::test_save_thumbnail_creates_file` |
-| TC-002 | ✅ | `tests/engine/test_save_manager.py::test_load_thumbnail_returns_surface` |
-| TC-003 | ✅ | `tests/engine/test_save_manager.py::test_list_slots_reflects_saved` |
-| TC-004 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_update` |
-| TC-005 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_draw_load_menu` |
-| TC-006 | ✅ | `tests/ui/test_save_menu.py::test_save_slot_ui_draw_empty` |
-| TC-007 | ✅ | `tests/ui/test_save_menu.py::test_save_slot_ui_draw_filled` |
-| TC-008 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_init` |
-| TC-009 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_get_clicked_slot` |
-| TC-010 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_update_and_draw` |
-| TC-011 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_back_clicked` |
-| IT-001 | ✅ | `tests/engine/test_performance_optimizations.py::test_title_screen_draw_no_rotozoom` |
-| IT-002 | ✅ | `tests/engine/test_performance_optimizations.py::test_interaction_distance_sq_semantics_match_original` |
-| IT-003 | ✅ | `tests/engine/test_performance_optimizations.py::test_game_viewport_rect_reused_across_updates` |
+| SAVE-U-001 | ✅ | `tests/engine/test_save_manager.py::test_save_thumbnail_creates_file` |
+| SAVE-U-002 | ✅ | `tests/engine/test_save_manager.py::test_load_thumbnail_returns_surface` |
+| SAVE-U-003 | ✅ | `tests/engine/test_save_manager.py::test_list_slots_reflects_saved` |
+| SAVE-U-004 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_update` |
+| SAVE-U-005 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_draw_load_menu` |
+| SAVE-U-006 | ✅ | `tests/ui/test_save_menu.py::test_save_slot_ui_draw_empty` |
+| SAVE-U-007 | ✅ | `tests/ui/test_save_menu.py::test_save_slot_ui_draw_filled` |
+| SAVE-U-008 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_init` |
+| SAVE-U-009 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_get_clicked_slot` |
+| SAVE-U-010 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_update_and_draw` |
+| SAVE-U-011 | ✅ | `tests/ui/test_save_menu.py::test_save_menu_overlay_back_clicked` |
+| SAVE-I-001 | ✅ | `tests/engine/test_save_manager.py::test_save_creates_file` |
+| SAVE-I-002 | ✅ | `tests/ui/test_pause_screen.py::test_pause_screen_handle_event_click_sauvegarder` |
+| SAVE-I-003 | ✅ | `tests/ui/test_title_screen.py::test_title_screen_update` |
 
 ## world-system.md
 
@@ -309,4 +308,95 @@
 | WS-008 | ✅ | `tests/engine/test_interaction.py::test_interaction_check_teleporters` |
 | WS-009 | ✅ | `tests/engine/test_interaction.py::test_interaction_check_teleporters` |
 | WS-010 | ✅ | `tests/engine/test_interaction.py::test_interaction_check_teleporters` |
+
+## Orphan Markers (no spec)
+
+| TC ID | Test |
+|-------|------|
+| GF-001 | `tests/engine/test_save_manager.py::test_save_creates_file` |
+| GF-002 | `tests/engine/test_save_manager.py::test_load_existing_slot` |
+| GF-003 | `tests/engine/test_save_manager.py::test_load_empty_slot_returns_none` |
+| GF-004 | `tests/engine/test_save_manager.py::test_load_corrupted_json_returns_none` |
+| GF-005 | `tests/engine/test_save_manager.py::test_delete_slot` |
+| GF-006 | `tests/engine/test_save_manager.py::test_slot_id_out_of_range_raises` |
+| GF-007 | `tests/engine/test_save_manager.py::test_list_slots_empty` |
+| GF-008 | `tests/engine/test_save_manager.py::test_list_slots_reflects_saved` |
+| GF-009 | `tests/engine/test_save_manager.py::test_inventory_roundtrip` |
+| GF-010 | `tests/engine/test_save_manager.py::test_world_state_roundtrip` |
+| GF-011 | `tests/engine/test_save_manager.py::test_save_io_error_does_not_crash` |
+| GF-012 | `tests/engine/test_game.py::test_game_ui_toggles` |
+| GF-013 | `tests/engine/test_game.py::test_game_update_loop` |
+| GF-014 | `tests/engine/test_game.py::test_update_dialogue_branch` |
+| GF-015 | `tests/engine/test_game.py::test_update_inventory_branch` |
+| GF-016 | `tests/engine/test_game.py::test_update_chest_branch` |
+| GF-017 | `tests/engine/test_game.py::test_handle_events_dialogue_advance` |
+| GF-018 | `tests/engine/test_game.py::test_game_transition_map_fade` |
+| GF-019 | `tests/engine/test_game_state_manager.py::test_initial_state` |
+| GF-020 | `tests/engine/test_game_state_manager.py::test_handle_title_new_game` |
+| GF-021 | `tests/engine/test_game_state_manager.py::test_handle_title_load_game` |
+| GF-022 | `tests/engine/test_game_state_manager.py::test_handle_title_quit` |
+| GF-023 | `tests/engine/test_game_state_manager.py::test_handle_playing_pause_requested` |
+| GF-024 | `tests/engine/test_game_state_manager.py::test_handle_paused_resume` |
+| GF-025 | `tests/engine/test_game_state_manager.py::test_handle_paused_save_requested` |
+| GF-026 | `tests/engine/test_game_state_manager.py::test_handle_paused_goto_title` |
+| GF-027 | `tests/engine/test_game_state_manager.py::test_save_to_first_free_slot` |
+| GF-028 | `tests/engine/test_game_state_manager.py::test_save_to_first_free_slot_all_full` |
+| GF-029 | `tests/engine/test_game_state_manager.py::test_on_escape` |
+| GF-030 | `tests/engine/test_game_state_manager.py::test_on_escape` |
+| GF-031 | `tests/engine/test_game_state_manager.py::test_load_game_time_restored` |
+| GF-032 | `tests/engine/test_game_state_manager.py::test_handle_events_filtering` |
+| GF-033 | `tests/engine/test_game_state_manager.py::test_transition_to_title_resets_inventory_and_chest_ui` |
+| GF-034 | `tests/ui/test_title_screen.py::test_title_screen_draw_main_menu` |
+| GF-035 | `tests/ui/test_title_screen.py::test_title_screen_light_scale_factors` |
+| GF-036 | `tests/ui/test_title_screen.py::test_title_screen_options_state_transitions` |
+| IT-IH-01 | `tests/engine/test_phase15_game.py::test_game_handle_events_delegates_to_input_handler` |
+| IT-N-01 | `tests/engine/test_interaction.py::test_handle_interaction_npc` |
+| IT-N-02 | `tests/entities/test_entities.py::test_npc_interact_freezes_ai` |
+| TC-005 | `tests/entities/test_interactive.py::test_trigger_only_true_stored_on_entity` |
+| TC-BRIDGE-SORT-01 | `tests/entities/test_interactive.py::test_bridge_has_sort_y_attribute` |
+| TC-BRIDGE-SORT-02 | `tests/entities/test_interactive.py::test_bridge_sort_y_equals_rect_top` |
+| TC-BRIDGE-SORT-03 | `tests/entities/test_interactive.py::test_bridge_sort_y_less_than_rect_bottom` |
+| TC-BRIDGE-SORT-04 | `tests/entities/test_interactive.py::test_non_bridge_entity_has_no_sort_y` |
+| TC-IH-01 | `tests/engine/test_phase15_game.py::test_quit_event_calls_sys_exit` |
+| TC-IH-02 | `tests/engine/test_phase15_game.py::test_interact_key_no_dialogue_calls_handle_interactions` |
+| TC-IH-03 | `tests/engine/test_phase15_game.py::test_interact_key_with_dialogue_advances_dialogue` |
+| TC-IH-04 | `tests/engine/test_phase15_game.py::test_inventory_key_chest_closed_toggles_inventory` |
+| TC-IH-05 | `tests/engine/test_phase15_game.py::test_inventory_key_chest_open_does_not_toggle` |
+| TC-IH-06 | `tests/engine/test_phase15_game.py::test_interact_key_inventory_open_does_not_trigger_interaction` |
+| TC-INT-DEPTH-01 | `tests/entities/test_interactive.py::test_depth_zero_preserved_after_init` |
+| TC-INT-DEPTH-02 | `tests/entities/test_interactive.py::test_depth_one_unchanged` |
+| TC-INT-DEPTH-03 | `tests/entities/test_interactive.py::test_depth_two_preserved_after_init` |
+| TC-INT-WO-01 | `tests/entities/test_interactive.py::test_open_passable_bridge_registers_in_override_set` |
+| TC-INT-WO-02 | `tests/entities/test_interactive.py::test_closed_passable_bridge_removed_from_override_set` |
+| TC-INT-WO-03 | `tests/entities/test_interactive.py::test_open_non_passable_bridge_not_registered` |
+| TC-INT-WO-04 | `tests/entities/test_interactive.py::test_sync_is_noop_when_no_game` |
+| TC-INT-WO-05 | `tests/entities/test_interactive.py::test_interact_open_registers_in_override` |
+| TC-INT-WO-06 | `tests/entities/test_interactive.py::test_interact_close_removes_from_override` |
+| TC-INT-WO-07 | `tests/entities/test_interactive.py::test_restore_state_open_registers_in_override` |
+| TC-INT-WO-08 | `tests/entities/test_interactive.py::test_restore_state_closed_removes_from_override` |
+| TC-N-01 | `tests/entities/test_entities.py::test_entity_initialization` |
+| TC-N-02 | `tests/entities/test_entities.py::test_npc_ai_state_machine` |
+| TC-N-03 | `tests/entities/test_entities.py::test_npc_update_invisible_skips` |
+| TC-N-04 | `tests/entities/test_entities.py::test_npc_interact_faces_initiator_horizontal` |
+| UT-001 | `tests/entities/test_bridge_sfx.py::test_sfx_open_stored_on_entity` |
+| UT-002 | `tests/entities/test_bridge_sfx.py::test_sfx_close_stored_on_entity` |
+| UT-003 | `tests/entities/test_bridge_sfx.py::test_material_stored_on_entity` |
+| UT-004 | `tests/entities/test_bridge_sfx.py::test_sfx_open_defaults_to_empty_string` |
+| UT-004b | `tests/entities/test_bridge_sfx.py::test_sfx_close_defaults_to_empty_string` |
+| UT-004c | `tests/entities/test_bridge_sfx.py::test_material_defaults_to_empty_string` |
+| UT-005 | `tests/entities/test_interactive.py::test_bridge_restore_state_open_not_in_obstacles` |
+| UT-006 | `tests/entities/test_interactive.py::test_bridge_restore_state_closed_not_in_obstacles` |
+| UT-007 | `tests/entities/test_interactive.py::test_door_spawn_still_blocked_regression_guard` |
+| UT-008 | `tests/entities/test_interactive.py::test_should_start_in_obstacles_bridge_always_false` |
+| UT-009 | `tests/entities/test_interactive.py::test_should_start_in_obstacles_door_closed` |
+| UT-010 | `tests/engine/test_bridge_sfx_interaction.py::test_sfx_open_used_when_on` |
+| UT-011 | `tests/engine/test_bridge_sfx_interaction.py::test_sfx_close_used_when_off` |
+| UT-012 | `tests/engine/test_bridge_sfx_interaction.py::test_fallback_to_sfx_when_sfx_open_empty_and_on` |
+| UT-013 | `tests/engine/test_bridge_sfx_interaction.py::test_fallback_to_sfx_when_sfx_close_empty_and_off` |
+| UT-014 | `tests/engine/test_bridge_sfx_interaction.py::test_returns_empty_when_all_sfx_empty` |
+| UT-015 | `tests/engine/test_bridge_sfx_interaction.py::test_legacy_entity_without_sfx_open_close_uses_sfx` |
+| UT-020 | `tests/entities/test_bridge_sfx_player.py::test_override_entity_with_material_returns_material` |
+| UT-021 | `tests/entities/test_bridge_sfx_player.py::test_override_entity_with_empty_material_falls_back_to_map` |
+| UT-022 | `tests/entities/test_bridge_sfx_player.py::test_no_override_entity_uses_map_manager` |
+| UT-023 | `tests/entities/test_bridge_sfx_player.py::test_regression_tile_material_returned_when_no_override` |
 
