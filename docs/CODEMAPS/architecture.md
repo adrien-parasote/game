@@ -68,7 +68,7 @@ docs/
   specs/            32 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
   traceability.md   Auto-generated spec↔test coverage matrix (scripts/tc_report.py — run to refresh)
   codemaps/         Architecture maps (this directory)
-  strategic/        MASTER_ROADMAP.md, game_vision.md, perf-constants-audit-strategy.md (archived → ADR-006)
+  strategic/        MASTER_ROADMAP.md, game_vision.md, perf-constants-audit-strategy (archived → ADR-006)
   ADRs/             6 Architecture Decision Records (ADR-001 to ADR-006)
   research/         Research docs (unit_test_optimization.md)
 scripts/

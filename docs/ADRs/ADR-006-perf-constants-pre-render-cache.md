@@ -64,4 +64,4 @@ The game engine suffered from three categories of technical debt that impacted r
 
 - Learning `L-UI-011` — Pre-render cache pattern (`.agents/learnings/ui.md`).
 - Learning `L-UI-012` — Constants-first refactor order (`.agents/learnings/ui.md`).
-- Original Strategic Spec: `docs/strategic/perf-constants-audit-strategy.md` *(archived — this ADR represents its canonical form)*.
+- Original Strategic Spec: docs/strategic/perf-constants-audit-strategy.md *(archived — this ADR represents its canonical form)*.

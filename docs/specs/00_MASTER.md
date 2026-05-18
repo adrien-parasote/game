@@ -1,112 +1,93 @@
 # Master Specification Index [Strategic]
 
-> Document Type: Strategic
+> **Document Type:** Strategic
 
-This document is the master index for all technical specifications in the RPG engine project. It provides cross-references, a global registry, shared constants, and anti-patterns that apply across all modules.
+This document serves as the Master Index and Architectural Registry for the 15 consolidated technical specifications of the RPG Tile Engine. It lists all active specification maps, global singletons, shared constant definitions, and general architectural standards.
 
-## 1. Specification Index
+---
 
-### Engine Core
+## 1. Active Specification Index
+
+### 1.1 Core Engine Systems
 | Spec | File | Modules Covered |
 |------|------|-----------------|
-| Engine Core | [engine-core.md](./engine-core.md#L1) | `Game`, `GameStateManager`, `InputHandler` |
-| Game Flow | [game-flow-spec.md](./game-flow-spec.md#L1) | State transitions, game loop |
-| Save System | [save-system.md](./save-system.md#L1) | `SaveManager`, persistence |
-| Audio System | [audio-system-spec.md](./audio-system-spec.md#L1) | `AudioManager` (BGM, SFX, ambient) |
-| Asset & I18n | [asset-i18n-spec.md](./asset-i18n-spec.md#L1) | `AssetManager`, `I18nManager` |
+| **Engine Core** | [engine-core.md](./engine-core.md#L1) | `Game` core loop, `GameStateManager`, `InputHandler` |
+| **Save System** | [save-system.md](./save-system.md#L1) | `SaveManager` serialization, screenshot thumbnail pipelines |
+| **Audio System** | [audio-system.md](./audio-system.md#L1) | `AudioManager` channels, spatial volume calculations, ambient fades |
+| **Asset & I18n** | [asset-i18n.md](./asset-i18n.md#L1) | `AssetManager` loaders, `I18nManager` JSON dictionaries |
 
-### Map & World
+### 1.2 Map, World & Navigation
 | Spec | File | Modules Covered |
 |------|------|-----------------|
-| Map Parser | [map-parser-spec.md](./map-parser-spec.md#L1) | `TmjParser`, `TiledProject`, `MapManager`, `OrthogonalLayout` |
-| World System | [world-system.md](./world-system.md#L1) | WorldManager, map transitions |
-| Directional Autotiles | [map-parser-spec.md](./map-parser-spec.md#walkability--directional-flags) | Directional walkability, animated autotile pipeline |
+| **Map & World** | [map-world-system.md](./map-world-system.md#L1) | `TmjParser`, `MapManager` chunks, coordinate conversions, teleport triggers |
+| **NPC System** | [npc-system.md](./npc-system.md#L1) | `NPC` base, navigation pathways, patrol patterns, collision avoidance |
 
-### Entities
+### 1.3 Entities & Lighting
 | Spec | File | Modules Covered |
 |------|------|-----------------|
-| Interactive Objects | [interactive-objects.md](./interactive-objects.md#L1) | `InteractiveEntity`, `BaseEntity` |
-| Interactive Lighting | [interactive-lighting-spec.md](./interactive-lighting-spec.md#L1) | `InteractiveLightingMixin`, `InteractiveParticleMixin` |
-| NPC System | [npc-system.md](./npc-system.md#L1) | `NPC`, patrol, dialogue triggers |
-| Emotes | [emote-spec.md](./emote-spec.md#L1) | EmoteSystem |
-| Item Pickup | [item_pickup_spec.md](./item_pickup_spec.md#L1) | `PickupItem`, ground drops |
+| **Entities System** | [entities-system.md](./entities-system.md#L1) | `BaseEntity`, `PickupItem` drops, emote bubble loops, bridge gates |
+| **Lighting System** | [lighting-system.md](./lighting-system.md#L1) | Subtractive dark overlays, window beam projection, flicker mixins |
 
-### UI
+### 1.4 User Interface (UI)
 | Spec | File | Modules Covered |
 |------|------|-----------------|
-| Inventory UI | [inventory-spec.md](./inventory-spec.md#L1) | `InventoryUI`, grid, equipment panel |
-| Inventory Data | [inventory-data-spec.md](./inventory-data-spec.md#L1) | `Inventory`, `Item`, stacking |
-| Chest UI | [chest-ui-spec.md](./chest-ui-spec.md#L1) | `ChestUI`, transfer mixins |
-| Dialogue | [dialogue-spec.md](./dialogue-spec.md#L1) | `DialogueManager`, typewriter |
-| Speech Bubbles | [speech-bubble-spec.md](./speech-bubble-spec.md#L1) | `SpeechBubble`, NPC overhead text |
-| Loot Table | [loot-table-spec.md](./loot-table-spec.md#L1) | `LootTable`, chest initialization |
-| Localization & Fonts | [localization_font_urbanization.md](./localization_font_urbanization.md#L1) | Font pipeline, i18n |
+| **Inventory System** | [inventory-system.md](./inventory-system.md#L1) | `Inventory` data, slot drag-and-drop, character equipment sheets |
+| **Chest UI** | [chest-ui.md](./chest-ui.md#L1) | `ChestUI` layout cards, transaction mixers, scroll panels |
+| **Dialogue System** | [dialogue-system.md](./dialogue-system.md#L1) | `DialogueManager` typewriters, pagination, overhead speech bubbles |
 
-### Systems
+### 1.5 Quality, Optimization & Diagnostics
 | Spec | File | Modules Covered |
 |------|------|-----------------|
-| Lighting System | [lighting-system.md](./lighting-system.md#L1) | `LightingManager`, day/night, window beams |
-| Camera & Rendering | [camera-rendering-spec.md](./camera-rendering-spec.md#L1) | Camera, `RenderManager` |
-| Debug Features | [debug-features-spec.md](./debug-features-spec.md#L1) | Debug overlay, console |
+| **Camera & Rendering** | [camera-rendering.md](./camera-rendering.md#L1) | Camera viewport coordinates tracking, `RenderManager` batching |
+| **Performance System** | [performance-system.md](./performance-system.md#L1) | Y-sorting dirty cache flags, inlined tuples, distance-squared math |
+| **Development & Quality** | [development-quality.md](./development-quality.md#L1) | Automated quality gates, test layouts, release scripts, debug room |
 
-### Performance & Quality
-| Spec | File | Modules Covered |
-|------|------|-----------------|
-| Performance Optimization | [performance-optimization-spec.md](./performance-optimization-spec.md#L1) | Frame budget, profiling |
-| Performance Constants | [perf-constants-spec.md](./perf-constants-spec.md#L1) | Tuned thresholds |
-| Quality Gates | [quality-gates.md](./quality-gates.md#L1) | CI/test coverage |
-| Test Suite Optimization | [test_suite_optimization.md](./test_suite_optimization.md#L1) | Test infrastructure |
+---
 
-### Refactoring Phases
-| Spec | File | Modules Covered |
-|------|------|-----------------|
-| Phase 1.6 — Directional Autotiles | [map-parser-spec.md](./map-parser-spec.md#L1) | Walkability + direction_flags (integrated into map-parser-spec) |
-
-## 2. Global Registry
+## 2. Global Subsystem Registry
 
 | Singleton / Global | Instantiation | Access Pattern |
 |--------------------|---------------|----------------|
-| `Game` | `GameStateManager.run()` | Passed as `self` to subsystems |
-| `AssetManager` | `__new__` singleton | `AssetManager()` anywhere |
-| `I18nManager` | `__new__` singleton | `I18nManager()` anywhere |
-| `InteractionManager` | `Game.__init__()` | `game.interaction_manager` |
-| `AudioManager` | `Game.__init__()` | `game.audio` |
-| `DialogueManager` | `Game.__init__()` | `game.dialogue` |
-| `MapManager` | Per map load | `game.map_manager` |
-| `Settings` | Module-level constants | `from src.config import Settings` |
+| `Game` | `GameStateManager.run()` | Passed as context parameter `game: Any` |
+| `AssetManager` | `__new__` singleton | Class invocation `AssetManager()` |
+| `I18nManager` | `__new__` singleton | Class invocation `I18nManager()` |
+| `InteractionManager` | `Game.__init__()` | Engine context mapping `game.interaction_manager` |
+| `AudioManager` | `Game.__init__()` | Engine context mapping `game.audio` |
+| `DialogueManager` | `Game.__init__()` | Engine context mapping `game.dialogue` |
+| `MapManager` | Managed per map load | Engine context mapping `game.map_manager` |
+| `Settings` | Module-level class constants | `from src.config import Settings` |
 
-## 3. Shared Constants
+---
 
-| Constant | Source | Value | Used By |
-|----------|--------|-------|---------|
-| `TILE_SIZE` | `config.py` | `32` | Map, entities, collision |
-| `WINDOW_WIDTH` | `config.py` | `1280` | All UI, camera |
-| `WINDOW_HEIGHT` | `config.py` | `720` | All UI, camera |
-| `BGM_VOLUME` | `config.py` | `0.5` | AudioManager |
-| `SFX_VOLUME` | `config.py` | `0.7` | AudioManager |
-| `TEXT_SPEED` | `config.py` | `0.05` | DialogueManager |
+## 3. Shared Architectural Constants
 
-## 4. Anti-Patterns (DO NOT — Global)
+| Constant | Source | Value | Applied Subsystems |
+|----------|--------|-------|--------------------|
+| `TILE_SIZE` | `config.py` | `32` | Chunks, boundaries, entity collisions |
+| `WINDOW_WIDTH` | `config.py` | `1280` | Viewport dimensions, UI overlays |
+| `WINDOW_HEIGHT` | `config.py` | `720` | Viewport dimensions, UI overlays |
+| `MAX_DT_CLAMP` | `config.py` | `10.0` | Physics framerate delta clamping |
+
+---
+
+## 4. General Development Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
-| Use `__import__()` to break circular deps | Constructor injection or lazy attribute | Fragile, hides dependencies |
-| Bare `except Exception` without logging | Catch specific exceptions, log with context | Silent failures mask bugs |
-| Hardcode constants in multiple files | Import from single source (config, constants module) | Configuration drift |
-| Access game subsystems via `game.` without type hints | Use `TYPE_CHECKING` + type annotations | IDE support, documentation |
-| Create pygame Surfaces in the game loop | Pre-cache at init time, use `set_alpha()` over `.copy()` | Frame budget (16ms @ 60fps) |
-| Use `os.path.join()` with hardcoded segments | Define paths as constants in config | Path duplication across modules |
+| Load assets directly in game updates | Queue assets at boot using `AssetManager` | Mid-game disk I/O causes severe stuttering |
+| Capture generic `except:` without logs | Specify exception types and log warnings | Silencing exceptions creates invisible, untraceable bugs |
+| Concatenate filesystem path chunks | Standardize routing with `os.path.join` | Platform-specific slash directions break portability |
+| Bypass the TDD fail-first gate | Create a RED test before the logic fix | Bypassing TDD increases regression rates on release |
 
-## 5. Architecture Decision Records
+---
 
-| ADR | Decision | Rationale |
-|-----|----------|-----------|
-| [ADR-001](../ADRs/ADR-001-gamestate-architecture.md) | External `GameStateManager` orchestrating `Game` | `game.py` at 854 LOC — separation of state/logic without regression on existing tests |
-| [ADR-002](../ADRs/ADR-002-save-format.md) | Versioned JSON format for saves | 3 slots, `version: "0.4.0"`, PNG thumbnails |
-| [ADR-003](../ADRs/ADR-003-key-mapping.md) | Map ESC key to Pause Screen | ESC opens Pause Overlay instead of exiting |
-| [ADR-004](../ADRs/ADR-004-refactoring-context-injection.md) | Duck-typing `game: Any` for context injection | Weak coupling between subsystems, avoids circular imports |
-| [ADR-005](../ADRs/ADR-005-singleton-new.md) | `__new__` singleton for AssetManager/I18nManager | Zero-config access from any module without circular imports |
-| [ADR-006](../ADRs/ADR-006-perf-constants-pre-render-cache.md) | Pre-render cache for static UI surfaces | Zero Surface allocations in draw hot paths |
+## 5. Architectural Decision Records (ADRs)
 
-> **Note:** ADR-005 was created on 2026-05-15. If the link is red, the ADR file is being created.
-| Phase 1.7 — Urbanization & Traceability | [quality-gates.md](./quality-gates.md) | 100% TC/IT traceability, normalized IDs (SAVE-/PERF-) |
+| ADR | Summary | Rationale |
+|-----|---------|-----------|
+| [ADR-001](../ADRs/ADR-001-gamestate-architecture.md) | External State Management | Deconstructs `game.py` loops into an independent state controller |
+| [ADR-002](../ADRs/ADR-002-save-format.md) | Persistent JSON Schema | Standardizes a 3-slot JSON save structure containing thumbnails |
+| [ADR-003](../ADRs/ADR-003-key-mapping.md) | Escape UI Interceptor | Map ESC key triggers to the Pause overlay instead of exit |
+| [ADR-004](../ADRs/ADR-004-refactoring-context-injection.md) | Loose coupling context injection | Uses duck-typed `game` parameters to eliminate circular module imports |
+| [ADR-005](../ADRs/ADR-005-singleton-new.md) | Singleton loaders | Applies `__new__` singleton patterns to core asset & language managers |
+| [ADR-006](../ADRs/ADR-006-perf-constants-pre-render-cache.md) | Composite graphics caching | Pre-renders button and font assets to eliminate drawing allocations |
