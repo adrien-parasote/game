@@ -766,6 +766,11 @@
                                  "value":true
                                 }, 
                                 {
+                                 "name":"material",
+                                 "type":"string",
+                                 "value":"wood"
+                                }, 
+                                {
                                  "name":"sprite",
                                  "propertytype":"10-sprite",
                                  "type":"class",
@@ -776,14 +781,14 @@
                                      "height":224,
                                      "sprite_sheet":"05-drawbridge.png",
                                      "sub_type":"bridge",
-                                     "width":128
+                                     "width":160
                                     }
                                 }],
                          "rotation":0,
                          "type":"11-interactive_object",
                          "visible":true,
-                         "width":128,
-                         "x":320,
+                         "width":160,
+                         "x":288,
                          "y":449
                         }],
                  "opacity":1,

@@ -208,6 +208,11 @@
                     "value": false
                 },
                 {
+                    "name": "material",
+                    "type": "string",
+                    "value": ""
+                },
+                {
                     "name": "off_position",
                     "type": "int",
                     "value": -1
@@ -219,6 +224,16 @@
                 },
                 {
                     "name": "sfx_ambient",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "sfx_close",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "sfx_open",
                     "type": "string",
                     "value": ""
                 },
