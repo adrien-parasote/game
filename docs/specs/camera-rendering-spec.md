@@ -40,7 +40,11 @@ offset.y = half_screen_height - target.rect.centery
 
 ### 3.2. Y-Sort Rendering (`get_sorted_sprites`)
 
-Sprites are sorted by `rect.bottom` to simulate depth (entities lower on screen appear in front).
+Sprites are sorted to simulate depth (entities lower on screen appear in front). The sort key is:
+- `sprite.sort_y` — when the attribute is defined (explicit override)
+- `sprite.rect.bottom` — fallback for all standard sprites
+
+The `sort_y` override exists for tall multi-tile entities (e.g. the drawbridge, 224px high) where `rect.bottom` would incorrectly place them after the player. Setting `sort_y = rect.top` causes the entity to sort by its **top edge**, so any sprite walking on or past the entity renders in front.
 
 **Caching optimization**:
 - Sorted result cached in `_sorted_cache`
@@ -212,6 +216,8 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | TC-001 | calculate_offset | Player at center | offset = (0, 0) | Map smaller than screen |
 | TC-002 | calculate_offset | Player at (0, 0) | offset clamped to (0, 0) | Edge of world |
 | TC-003 | get_sorted_sprites | Sprites at Y=100, Y=50 | Sorted [Y=50, Y=100] | All at same Y |
+| TC-SORT-001 | get_sorted_sprites — sort_y override | Bridge sort_y=100, player rect.bottom=300 | Bridge before player in result | bridge.rect.bottom=500 |
+| TC-SORT-002 | get_sorted_sprites — mixed sort keys | Bridge sort_y=50, NPC bottom=150, player bottom=300 | [bridge, npc, player] order | |
 | TC-004 | Frustum culling | Sprite at (-100, -100) | Not blitted | Partially on-screen |
 | TC-005 | SpriteSheet.load_grid | 4×4, valid file | 16 surfaces | Missing file |
 | TC-006 | SpriteSheet.load_grid_by_size | 32×48 frames | Correct frame count + last_cols/rows | Sheet not divisible |

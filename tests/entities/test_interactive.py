@@ -598,3 +598,86 @@ class TestBridgeSubtype:
         """UT-010: _should_start_in_obstacles returns False for open passable door."""
         entity, _ = _make_interactive(sub_type="door", is_on=True, is_passable=True)
         assert entity._should_start_in_obstacles() is False
+
+
+# ---------------------------------------------------------------------------
+# TC-BRIDGE-SORT — bridge sort_y rendering fix
+# ---------------------------------------------------------------------------
+
+
+def _make_bridge_entity(tiled_width: int = 160, tiled_height: int = 224):
+    """Build a bridge entity using realistic Tiled dimensions (160×224 px)."""
+    group = pygame.sprite.Group()
+    obstacles = pygame.sprite.Group()
+    with patch("src.entities.interactive.SpriteSheet") as mock_ss:
+        mock_ss.return_value.valid = False
+        entity = InteractiveEntity(
+            pos=(704, 1728),
+            groups=[group],
+            sub_type="bridge",
+            sprite_sheet="",
+            position=0,
+            depth=1,
+            start_row=0,
+            end_row=3,
+            width=tiled_width,
+            height=tiled_height,
+            tiled_width=tiled_width,
+            tiled_height=tiled_height,
+            obstacles_group=obstacles,
+            is_passable=True,
+            is_animated=False,
+            is_on=True,
+            halo_size=0,
+            halo_color="[255, 255, 255]",
+            halo_alpha=130,
+            particles=False,
+            particle_count=0,
+            element_id="bridge_1",
+            target_id=None,
+            activate_from_anywhere=False,
+            facing_direction=None,
+            sfx="",
+            day_night_driven=False,
+        )
+    return entity
+
+
+class TestBridgeSortY:
+    """Regression tests for the bridge Y-sort fix.
+
+    Root cause: bridge depth=1 put it in the same custom_draw pass as the
+    player; its large rect.bottom (top+height) caused it to render after the
+    player, hiding the player.  Fix: bridge.sort_y = rect.top so any sprite
+    south of the bridge top renders in front.
+
+    TC-BRIDGE-SORT-01 … TC-BRIDGE-SORT-04
+    """
+
+    @pytest.mark.tc("TC-BRIDGE-SORT-01")
+    def test_bridge_has_sort_y_attribute(self):
+        """TC-BRIDGE-SORT-01: Bridge entity must expose a sort_y attribute."""
+        entity = _make_bridge_entity()
+        assert hasattr(entity, "sort_y"), "bridge must define sort_y"
+
+    @pytest.mark.tc("TC-BRIDGE-SORT-02")
+    def test_bridge_sort_y_equals_rect_top(self):
+        """TC-BRIDGE-SORT-02: bridge.sort_y must equal bridge.rect.top."""
+        entity = _make_bridge_entity()
+        assert entity.sort_y == entity.rect.top
+
+    @pytest.mark.tc("TC-BRIDGE-SORT-03")
+    def test_bridge_sort_y_less_than_rect_bottom(self):
+        """TC-BRIDGE-SORT-03: sort_y < rect.bottom ensures player walking on
+        bridge (rect.bottom > bridge.sort_y) sorts after bridge."""
+        entity = _make_bridge_entity()
+        assert entity.sort_y < entity.rect.bottom
+
+    @pytest.mark.tc("TC-BRIDGE-SORT-04")
+    def test_non_bridge_entity_has_no_sort_y(self):
+        """TC-BRIDGE-SORT-04: Non-bridge entities must NOT define sort_y
+        (their Y-sort falls back to rect.bottom as usual)."""
+        door, _ = _make_interactive(sub_type="door")
+        chest, _ = _make_interactive(sub_type="chest")
+        assert not hasattr(door, "sort_y"), "door must not have sort_y"
+        assert not hasattr(chest, "sort_y"), "chest must not have sort_y"

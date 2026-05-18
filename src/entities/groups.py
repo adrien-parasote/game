@@ -74,10 +74,16 @@ class CameraGroup(pygame.sprite.Group):
         self._cache_dirty = True
 
     def get_sorted_sprites(self) -> list[pygame.sprite.Sprite]:
-        """Return sprites sorted by Y-coordinate (bottom). Result is cached until dirty."""
+        """Return sprites sorted by Y-coordinate.
+
+        Uses `sort_y` attribute when available (e.g. bridge uses rect.top so
+        that sprites walking on it always render in front). Falls back to
+        rect.bottom for standard depth-sorted entities.
+        """
         if self._cache_dirty:
             self._sorted_cache = sorted(
-                self.sprites(), key=lambda s: s.rect.bottom if s.rect else 0
+                self.sprites(),
+                key=lambda s: getattr(s, "sort_y", s.rect.bottom if s.rect else 0),
             )
             self._cache_dirty = False
         return self._sorted_cache

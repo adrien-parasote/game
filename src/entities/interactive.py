@@ -109,6 +109,12 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         # super().__init__) resets self.depth = 1. We must re-apply the Tiled value here.
         self.depth = depth
 
+        # Bridge Y-sort override: sort by rect.top instead of rect.bottom so that any
+        # sprite whose rect.bottom is south of the bridge top (i.e. standing on or past
+        # the bridge) renders after (in front of) the bridge sprite.
+        if self.sub_type == "bridge" and self.rect:
+            self.sort_y = self.rect.top
+
         # 4. Lighting Initialization
         self.light_mask_cache = []
         if self.halo_size > 0:

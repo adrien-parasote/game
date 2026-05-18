@@ -469,7 +469,7 @@
                                  "type":"class",
                                  "value":
                                     {
-                                     "depth":0,
+                                     "depth":1,
                                      "entity_type":"interactive",
                                      "height":224,
                                      "sprite_sheet":"05-drawbridge.png",
@@ -482,7 +482,7 @@
                          "visible":true,
                          "width":160,
                          "x":704,
-                         "y":1760
+                         "y":1728
                         }],
                  "opacity":1,
                  "type":"objectgroup",

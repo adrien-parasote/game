@@ -97,8 +97,9 @@ When an object is successfully interacted with, it checks its `target_id`.
 - **Trigger**: The target's `interact()` method is called automatically.
 
 ### 2.1. Rendering & Alignment
-- **Y-Sort**: Sprites are sorted by their `rect.bottom`.
-- **Depth**: `interactive_objects` default to `depth=1` (rendered in the same pass as the player, Y-sorted). Objects can override this via the Tiled `sprite.depth` property. For example, a drawbridge uses `depth=0` to be rendered as a floor tile (pass before the player). **Note**: The Tiled `depth` value is authoritative — it is re-applied after `BaseEntity.__init__` to prevent the base class default from silently overwriting it (bug fix TC-INT-DEPTH).
+- **Y-Sort**: Sprites are sorted by their `sort_y` attribute when present, falling back to `rect.bottom`. See `CameraGroup.get_sorted_sprites()`.
+- **Depth**: `interactive_objects` default to `depth=1` (rendered in the same pass as the player, Y-sorted). Objects can override this via the Tiled `sprite.depth` property. **Note**: The Tiled `depth` value is authoritative — it is re-applied after `BaseEntity.__init__` to prevent the base class default from silently overwriting it (bug fix TC-INT-DEPTH).
+- **Bridge Y-sort override**: The drawbridge uses `depth=1` so it renders after foreground tiles (castle walls). However, with a 224px sprite and `rect.bottom` at the bottom of the sprite, a naive Y-sort would put the bridge after the player, hiding the player. To fix this, `InteractiveEntity.__init__` sets `self.sort_y = self.rect.top` for `sub_type="bridge"`. This causes the bridge to sort by its **top edge**, so any sprite whose `rect.bottom` is south of the bridge top (i.e. standing on or past the bridge) renders after (in front of) the bridge.
 - **Alignment**: Sprites are centered horizontally on the Tiled rectangle and aligned by `rect.bottom`.
 
 ### 2.2. Collision & Barriers
@@ -134,7 +135,7 @@ Some passable interactive objects (e.g. drawbridges) must allow the player to wa
 **Tiled setup for a drawbridge:**
 - `sub_type: bridge`
 - `is_passable: True`
-- `depth: 0` (rendered as floor, player walks over)
+- `depth: 1` (rendered in the player pass; `sort_y=rect.top` ensures the player appears in front when on the bridge)
 - `is_on: True` (bridge starts lowered — or controlled by lever)
 
 > ⚠️ Do NOT use `sub_type: door` for bridges. Doors always start in `obstacles_group`; bridges must never enter it. See [bridge-subtype-spec.md](./bridge-subtype-spec.md) for the full behavioral contract.
@@ -337,6 +338,10 @@ This preserves player overrides across map transitions and save/load cycles.
 | UT-008 | `_should_start_in_obstacles` bridge | `sub_type="bridge"`, any `is_on` | Returns `False` | |
 | UT-009 | `_should_start_in_obstacles` door closed | `sub_type="door", is_on=False` | Returns `True` | |
 | UT-010 | `_should_start_in_obstacles` door open | `sub_type="door", is_on=True, is_passable=True` | Returns `False` | |
+| TC-BRIDGE-SORT-01 | Bridge has sort_y attribute | `sub_type="bridge"` spawned | `hasattr(entity, 'sort_y')` is True | |
+| TC-BRIDGE-SORT-02 | bridge.sort_y == rect.top | `sub_type="bridge"` spawned | `entity.sort_y == entity.rect.top` | Ensures correct sort key |
+| TC-BRIDGE-SORT-03 | sort_y < rect.bottom | `sub_type="bridge"`, height=224 | `entity.sort_y < entity.rect.bottom` | Player on bridge renders in front |
+| TC-BRIDGE-SORT-04 | Non-bridge entities have no sort_y | `sub_type="door"`, `sub_type="chest"` | `not hasattr(entity, 'sort_y')` | No regression |
 
 ### Integration Tests Required
 | Test ID | Flow | Setup | Verification | Teardown |
