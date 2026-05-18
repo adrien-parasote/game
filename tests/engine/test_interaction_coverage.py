@@ -254,17 +254,17 @@ class TestInteractionManagerCoverage:
         """L81: _pending_npc_dialogue is set when NPC is moving and has dialogue."""
         game = _make_game_mock()
         im = InteractionManager(game)
-        
+
         npc = MagicMock()
         npc.rect = pygame.Rect(100, 100, 32, 32)
         npc.is_moving = True
         npc.interact.return_value = "hello NPC"
         game.npcs = [npc]
-        
+
         # Setup player facing & position to collide with NPC
         game.player.pos = pygame.math.Vector2(100, 68)  # facing down, target pos at 100, 100
         game.player.current_state = "down"
-        
+
         res = im._check_npc_interactions()
         assert res is True
         assert game._pending_npc_dialogue == (npc, "hello NPC")
@@ -273,12 +273,12 @@ class TestInteractionManagerCoverage:
         """L112: _is_object_interactable returns False when no conditions are met."""
         game = _make_game_mock()
         im = InteractionManager(game)
-        
+
         obj = MagicMock()
         obj.pos = pygame.math.Vector2(300, 300) # way out of range
         obj.is_passable = False
         obj.activate_from_anywhere = False
-        
+
         p_pos = pygame.math.Vector2(100, 100)
         res = im._is_object_interactable(obj, p_pos, "down")
         assert res is False
@@ -287,14 +287,14 @@ class TestInteractionManagerCoverage:
         """L157: _check_pickup_interactions skips pickup when out of range."""
         game = _make_game_mock()
         im = InteractionManager(game)
-        
+
         pickup = MagicMock()
         pickup.pos = pygame.math.Vector2(300, 300) # way out of range
         game.pickups = [pickup]
-        
+
         game.player.pos = pygame.math.Vector2(100, 100)
         game.player.current_state = "down"
-        
+
         res = im._check_pickup_interactions()
         assert res is False
 
@@ -302,12 +302,12 @@ class TestInteractionManagerCoverage:
         """L210: _check_chest_auto_close returns early when open chest lacks pos."""
         game = _make_game_mock()
         im = InteractionManager(game)
-        
+
         chest = MagicMock()
         chest.pos = None
         im._open_chest_entity = chest
         game.chest_ui.is_open = True
-        
+
         im._check_chest_auto_close() # should return early without errors
         chest.interact.assert_not_called()
 
@@ -317,7 +317,7 @@ class TestInteractionManagerCoverage:
         game.player.direction = pygame.math.Vector2(0, 0)
         game.player.is_moving = False
         im = InteractionManager(game)
-        
+
         # If it didn't return early, it would try to access teleports_group and raise an AttributeError or similar
         del game.teleports_group # ensure it doesn't even access it
         im.check_teleporters(was_moving=False)
@@ -327,16 +327,16 @@ class TestInteractionManagerCoverage:
         game = _make_game_mock()
         game.player.rect = pygame.Rect(100, 100, 32, 32)
         game.player.is_moving = False
-        
+
         tp_no_rect = MagicMock()
         tp_no_rect.rect = None
-        
+
         tp_no_coll = MagicMock()
         tp_no_coll.rect = pygame.Rect(300, 300, 32, 32) # no collision
-        
+
         game.teleports_group = [tp_no_rect, tp_no_coll]
         im = InteractionManager(game)
-        
+
         im.check_teleporters(was_moving=True) # just_arrived is True
         game.transition_map.assert_not_called()
 
@@ -344,19 +344,19 @@ class TestInteractionManagerCoverage:
         """L267-279: check_teleporters skipped based on required direction guards."""
         game = _make_game_mock()
         game.player.rect = pygame.Rect(100, 100, 32, 32)
-        
+
         # 1. Skip on arrival when direction mismatch
         game.player.is_moving = False
         game.player.current_state = "up"
         tp_arrival = MagicMock()
         tp_arrival.rect = pygame.Rect(100, 100, 32, 32)
         tp_arrival.required_direction = "down"
-        
+
         game.teleports_group = [tp_arrival]
         im = InteractionManager(game)
         im.check_teleporters(was_moving=True) # just_arrived is True
         game.transition_map.assert_not_called()
-        
+
         # 2. Skip on intent when required_direction is "any" (prevent trapping player)
         game.player.is_moving = False
         game.player.direction = pygame.math.Vector2(0, -1)
@@ -364,16 +364,16 @@ class TestInteractionManagerCoverage:
         tp_intent_any = MagicMock()
         tp_intent_any.rect = pygame.Rect(100, 100, 32, 32)
         tp_intent_any.required_direction = "any"
-        
+
         game.teleports_group = [tp_intent_any]
         im.check_teleporters(was_moving=False) # intent_active is True
         game.transition_map.assert_not_called()
-        
+
         # 3. Skip on intent when direction mismatch
         tp_intent_mismatch = MagicMock()
         tp_intent_mismatch.rect = pygame.Rect(100, 100, 32, 32)
         tp_intent_mismatch.required_direction = "down"
-        
+
         game.teleports_group = [tp_intent_mismatch]
         im.check_teleporters(was_moving=False) # intent_active is True
         game.transition_map.assert_not_called()
@@ -384,7 +384,7 @@ class TestInteractionManagerCoverage:
         game.player.rect = pygame.Rect(100, 100, 32, 32)
         game.player.is_moving = False
         game.player.current_state = "down"
-        
+
         tp = MagicMock()
         tp.rect = pygame.Rect(100, 100, 32, 32)
         tp.required_direction = "down"
@@ -392,11 +392,11 @@ class TestInteractionManagerCoverage:
         tp.target_spawn_id = "dungeon_entrance"
         tp.transition_type = "fade"
         tp.sfx = "portal_sfx"
-        
+
         game.teleports_group = [tp]
         im = InteractionManager(game)
         im.check_teleporters(was_moving=True)
-        
+
         game.audio_manager.play_sfx.assert_called_with("portal_sfx", str(id(tp)))
         game.transition_map.assert_called_with("dungeon.tmj", "dungeon_entrance", "fade")
 
@@ -404,7 +404,7 @@ class TestInteractionManagerCoverage:
         """L291: toggle_entity_by_id returns early with empty target_id."""
         game = _make_game_mock()
         im = InteractionManager(game)
-        
+
         # If it didn't return, it would access interactive / npcs groups
         del game.interactives
         im.toggle_entity_by_id("")
@@ -414,7 +414,7 @@ class TestInteractionManagerCoverage:
         """L294-297: toggle_entity_by_id warns and returns early if depth > 1."""
         game = _make_game_mock()
         im = InteractionManager(game)
-        
+
         with patch("logging.warning") as mock_warn:
             im.toggle_entity_by_id("some_id", depth=2)
             mock_warn.assert_called_once()
@@ -428,10 +428,10 @@ class TestInteractionManagerCoverage:
         entity._world_state_key = "map_lever_1"
         entity.is_on = True
         entity.light_control = "manual"
-        
+
         game.interactives = [entity]
         im = InteractionManager(game)
-        
+
         im.toggle_entity_by_id("lever_1")
         entity.interact.assert_called_with(game.player)
         game.audio_manager.play_sfx.assert_called_with("click", "lever_1")
