@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-15 | Last doc-update: 2026-05-15 | Files scanned: 75 | Token estimate: ~650 -->
+<!-- Generated: 2026-05-18 | Last doc-update: 2026-05-18 | Files scanned: 66 | Token estimate: ~2600 -->
 
 # Game Engine Architecture
 
@@ -9,7 +9,7 @@
 `GameStateManager._handle_playing(events, dt)` → filters ESC → re-posts events → `Game.run_frame(dt)` → `GameEvent`
 `GameStateManager._handle_paused(events, dt)` → `PauseScreen.handle_event()` → save/resume/goto_title
 `Game._update(dt)` → `Player.update` → `NPC.update` → `TimeSystem.update` → `LightingManager`
-`Game._draw()` → `RenderManager.draw_scene()` → `_draw_background()` → `CameraGroup.custom_draw(max_depth=player.depth)` (Y-sorted, below-player entities) → `_draw_foreground()` (foreground-order layers + tiles with depth>player) → `CameraGroup.custom_draw(min_depth=player.depth+1)` (above-player entities) → `_draw_hud()` → UI overlays
+`Game._draw()` → `RenderManager.draw_scene()` → `_draw_background()` → `CameraGroup.custom_draw(max_depth=player.depth)` (Y-sorted, below-player entities; `depth=1` items like bridges use `sort_y=rect.top` to prevent occlusion) → `_draw_foreground()` (foreground-order layers + tiles with depth>player) → `CameraGroup.custom_draw(min_depth=player.depth+1)` (above-player entities) → `_draw_hud()` → UI overlays
 
 ## Core Components
 
@@ -18,7 +18,7 @@
 | **GameStateManager** | `src/engine/game_state_manager.py` | 309 | Top-level state machine (TITLE/PLAYING/PAUSED), global event routing, save/load orchestration |
 | **Game** | `src/engine/game.py` | 420 | Gameplay orchestrator, thin wrappers delegating to sub-managers. Phase 1.5 refactored. |
 | **RenderManager** | `src/engine/render_manager.py` | 109 | Scene rendering pipeline (background, foreground, HUD, overlays) |
-| **InteractionManager** | `src/engine/interaction.py` | 400 | Proximity/facing checks for objects, NPCs, pickups, chests, emotes, teleporters. Uses `distance_squared_to` for performance. |
+| **InteractionManager** | `src/engine/interaction.py` | 400 | Proximity/facing checks for objects, NPCs, pickups, chests, emotes, teleporters. Uses `distance_squared_to` for performance. Implements `trigger_only` guards to suppress direct interaction. |
 | **EntityFactory** | `src/engine/entity_factory.py` | 265 | Entity spawning (interactive, teleport, NPC, pickup). Extracted from `Game` in Phase 1.5. Pattern: `EntityFactory(game: Any)`. |
 | **MapLoader** | `src/engine/map_loader.py` | ~115 | Map loading pipeline (parse, BGM, cleanup, spawn, player position). Extracted from `Game` in Phase 1.5. |
 | **InputHandler** | `src/engine/input_handler.py` | ~55 | Pygame event dispatch (interact, inventory, dialogue). Extracted from `Game` in Phase 1.5. |
@@ -49,7 +49,7 @@
 - **SpeechBubble** (`src/ui/speech_bubble.py`, 263L): NPC nine-patch bubble, name plate, paginated text, auto-wrap 224px.
 
 ### Entities
-- **InteractiveEntity** (`src/entities/interactive.py`, 429L): Chests, levers, doors, signs, animated decor. Animated state machine (`is_on`), `day_night_driven` auto-lighting, halo lighting, `restore_state` from WorldState. Uses `interactive_constants.py`.
+- **InteractiveEntity** (`src/entities/interactive.py`, 429L): Chests, levers, doors, signs, animated decor. Animated state machine (`is_on`), `day_night_driven` auto-lighting, halo lighting, `restore_state` from WorldState. Implements `sfx_open`/`sfx_close` and `trigger_only` properties. Uses `interactive_constants.py`.
 - **NPC** (`src/entities/npc.py`, 148L): Random AI patrol, interact trigger, pending dialogue queue (waits for movement to finish).
 - **Player** (`src/entities/player.py`, 122L): Input, directional animation, emote trigger.
 - **PickupItem** (`src/entities/pickup.py`, 45L): Static collectible, looted state synced to WorldState.

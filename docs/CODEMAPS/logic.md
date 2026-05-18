@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-15 | Last doc-update: 2026-05-15 | Files scanned: 70 | Token estimate: ~520 -->
+<!-- Generated: 2026-05-18 | Last doc-update: 2026-05-18 | Files scanned: 66 | Token estimate: ~1800 -->
 
 # Engine Logic Flow
 
@@ -23,9 +23,9 @@ PAUSED → GameEvent.goto_title()        → _transition_to_title()        → T
 ## Interaction Chain
 `INTERACT_KEY (E)` → `InteractionManager.handle_interactions()`  *(typed `game: Any` — uses `distance_squared_to` with module-level `_RANGE_SQ_*` constants for O(1) performance)*
 - `_check_npc_interactions()`: `sq_dist < _RANGE_SQ_48` (48px) + facing → `NPC.interact()` → `Game._trigger_npc_bubble()`
-- `_check_object_interactions()`: orthogonal `sq_dist < _RANGE_SQ_16` (16px) or range `sq_dist < _RANGE_SQ_48` (48px) + facing within 45° → `InteractiveEntity.interact()` → toggle `is_on` + SFX → `WorldState.set()` → `Game._trigger_dialogue()` / `chest_ui.open()`
+- `_check_object_interactions()`: orthogonal `sq_dist < _RANGE_SQ_16` (16px) or range `sq_dist < _RANGE_SQ_48` (48px) + facing within 45° → respects `trigger_only` to suppress player interaction → `InteractiveEntity.interact()` → toggle `is_on` + SFX → `WorldState.set()` → `Game._trigger_dialogue()` / `chest_ui.open()`
 - `_check_pickup_interactions()`: `sq_dist < _RANGE_SQ_48` → `Inventory.add_item()` → `WorldState.set({looted:True})` → `pickup.kill()`
-- `toggle_entity_by_id(target_id)`: lever chains to linked doors/events (depth-limited recursion, max 5)
+- `toggle_entity_by_id(target_id)`: lever chains to linked doors/events (depth-limited recursion, max 5). Safe remote toggle.
 
 ## Inventory UI State Machine (`src/ui/inventory.py`)
 ```
@@ -48,7 +48,7 @@ IDLE → MOUSE_DOWN on chest/inv slot → DRAGGING → MOUSE_UP
   INV_ARROW_RIGHT/LEFT     → _scroll_right() / _scroll_left() (page = 18 slots)
 ```
 - Chest storage: fixed-size `list[dict | None]` padded to `CHEST_MAX_SLOTS (20)`.
-- Auto-close: `InteractionManager._check_chest_auto_close()` when player dist > threshold.
+- Auto-close: `InteractionManager._check_chest_auto_close()` when player dist > threshold, routing through `_resolve_sfx`.
 
 ## InteractiveEntity Animated State Machine (`src/entities/interactive.py`)
 ```
@@ -60,6 +60,7 @@ sub_types: chest | lever | door | sign | animated_decor
   - `off_position=-1` (default) → single-column, no switch (backward compat).
   - `off_position=N` → `col_index=N` when `is_on=False`, `col_index=on_position` when `True`.
   - `restore_state({'is_on': bool})` also updates `col_index` via `_update_col_index()`. Auto day/night toggle also respects this.
+- **Directional Audio**: Uses `sfx_open`/`sfx_close` with fallback support (`_resolve_sfx`).
 - **Ambient Audio**: `sfx_ambient` triggers looping spatial audio when `is_on=True`. Volume scales via distance (`update_ambient`) with a 20% floor volume threshold for consistent background presence.
 - Linked entities (levers→doors): toggled via `Game.toggle_entity_by_id(target_id)`.
 
