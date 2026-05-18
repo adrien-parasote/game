@@ -14,7 +14,7 @@ approaching the water, because the door collision logic **always** starts with t
 `obstacles_group` and only removes it when the entity becomes open (ON).
 
 A true door should block when closed — that is correct.
-A bridge/drawbridge should block when **lowered** (traversable), and **not block** when raised —
+A bridge/drawbridge should **allow passage** when **lowered** (traversable), and rely on water tiles to **block passage** when **raised** —
 because the water tiles beneath handle spatial exclusion in the raised state.
 
 These are two fundamentally different semantic contracts. They must be separate `sub_type`s.
@@ -29,7 +29,8 @@ These are two fundamentally different semantic contracts. They must be separate 
 |-------|-------------------|------------------------------|-------------------------|
 | **Raised** (`is_on=False`) | **NOT in group** | NOT in set | ✅ Yes (water tiles block at map layer) |
 | **Lowered** (`is_on=True`) | NOT in group | **IN set** | ✅ Yes (bridge overrides water walkability) |
-| **Animating** (either direction) | NOT in group | NOT in set | ❌ Blocked by `is_animating` guard in `CollisionChecker` |
+| **Lowering (Animating)** | NOT in group | **IN set** | ❌ Blocked by `is_animating` guard in `CollisionChecker` |
+| **Raising (Animating)** | NOT in group | NOT in set | ❌ Blocked by `is_animating` guard in `CollisionChecker` |
 
 Compare with `sub_type: door`:
 
