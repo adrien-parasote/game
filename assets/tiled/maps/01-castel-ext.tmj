@@ -476,6 +476,11 @@
                                      "sub_type":"bridge",
                                      "width":160
                                     }
+                                }, 
+                                {
+                                 "name":"trigger_only",
+                                 "type":"bool",
+                                 "value":true
                                 }],
                          "rotation":0,
                          "type":"11-interactive_object",

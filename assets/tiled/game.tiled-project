@@ -243,6 +243,11 @@
                     "name": "target_id",
                     "type": "string",
                     "value": ""
+                },
+                {
+                    "name": "trigger_only",
+                    "type": "bool",
+                    "value": false
                 }
             ],
             "name": "11-interactive_object",
