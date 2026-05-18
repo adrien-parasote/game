@@ -1,27 +1,27 @@
-# ADR-003 — Mapping des touches : ESC → Pause
+# ADR-003 — Key Mapping: ESC → Pause Menu
 
-**Date :** 2026-05-02  
-**Status :** ✅ Accepté (révisé)
+**Date:** 2026-05-02  
+**Status:** ✅ Accepted (Revised)
 
-## Contexte
+## Context
 
-`ESC` (`K_ESCAPE`) était mappé comme `quit_key` dans `gameplay.json` — il quittait le jeu immédiatement. Avec l'introduction du menu Pause, `ESC` doit ouvrir ce menu au lieu de quitter brutalement.
+`ESC` (`K_ESCAPE`) was originally mapped as the `quit_key` in `gameplay.json` — it terminated the game immediately on press. With the introduction of the Pause Menu, `ESC` must trigger the pause overlay instead of abruptly exiting.
 
-La question d'une touche dédiée "Quitter" (`F4`) a été évaluée et **rejetée** : ce n'est pas le standard sur macOS. L'utilisateur quitte via `Cmd+Q` ou le bouton de fermeture de fenêtre — pygame gère déjà cela nativement via `pygame.QUIT`.
+The introduction of a dedicated "Quit" key (`F4`) was evaluated and **rejected**: it is not the standard convention on macOS. The user exits the game via the standard OS shortcuts `Cmd+Q` or the window close button — which Pygame natively handles via `pygame.QUIT`.
 
-## Décision
+## Decision
 
-| Touche / Action | Pygame Constant | Rôle |
+| Key / Action | Pygame Constant | Role |
 |---|---|---|
-| `ESC` | `K_ESCAPE` | Ouvrir menu Pause (en jeu) / Retour menu principal (en Pause) |
-| Fermeture fenêtre / `Cmd+Q` | `pygame.QUIT` | Quitter le jeu (géré par l'OS, déjà supporté) |
+| `ESC` | `K_ESCAPE` | Open Pause Menu (in-game) / Return to Main Menu (in Pause) |
+| Close Window / `Cmd+Q` | `pygame.QUIT` | Close the game (OS-level handling, natively supported) |
 
-`quit_key` est **supprimé** de `gameplay.json` — la fermeture passe par le standard OS.
+The `quit_key` property is **removed** from `gameplay.json` — window closure delegates to standard OS behaviors.
 
-## Conséquences
+## Consequences
 
-- `gameplay.json` : clé `quit_key` supprimée
-- `GameStateManager._handle_events()` intercepte `K_ESCAPE` globalement et bascule `PLAYING → PAUSED`
-- `pygame.QUIT` (fermeture fenêtre) est intercepté dans `GameStateManager` pour arrêter proprement la boucle
-- `Game._handle_events()` ne gère plus `K_ESCAPE` directement
-- Les tests existants restent valides — ils instancient `Game` en isolation
+- `gameplay.json`: `quit_key` property deleted.
+- `GameStateManager._handle_events()` intercepts `K_ESCAPE` globally and handles state transition `PLAYING → PAUSED`.
+- `pygame.QUIT` (closing the window) is intercepted in `GameStateManager` to cleanly shut down the event loop.
+- `Game._handle_events()` no longer handles `K_ESCAPE` directly.
+- Existing unit tests remain fully valid — they instantiate `Game` in isolation.

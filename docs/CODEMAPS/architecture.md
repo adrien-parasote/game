@@ -68,8 +68,8 @@ docs/
   specs/            32 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
   traceability.md   Auto-generated spec↔test coverage matrix (scripts/tc_report.py — run to refresh)
   codemaps/         Architecture maps (this directory)
-  strategic/        MASTER_ROADMAP.md, game_vision.md, perf-constants-audit-strategy.md (archivé→ ADR-006)
-  ADRs/             6 Architecture Decision Records (ADR-001 à ADR-006)
+  strategic/        MASTER_ROADMAP.md, game_vision.md, perf-constants-audit-strategy.md (archived → ADR-006)
+  ADRs/             6 Architecture Decision Records (ADR-001 to ADR-006)
   research/         Research docs (unit_test_optimization.md)
 scripts/
   autotiles/            Autotile pipeline scripts (blob/animated/static)
@@ -83,12 +83,12 @@ scripts/
 .agents/
   learnings/        6 domain learning files (methodology_and_docs, game_engine, audio_engine, ui, testing, map_rendering)
   rules/            coding-standards.md + language rules
-  learnings.md      Index des learnings par domaine
+  learnings.md      Learnings index by domain
 ```
 
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
 - **Test Suite**: Pytest 9.0.3, **794 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui,scripts}/` (6 domains)
-- **Traceability**: `@pytest.mark.tc("DOMAIN-TYPE-ID")` markers — voir `docs/traceability.md` (auto-généré). Registered in `pyproject.toml`.
-- **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), **Pre-render cache pattern** (static button/label surfaces pre-computed at init, zero allocation in draw loop), ChestUI mixin decomposition, GameEvent dataclass factory pattern, Context Injection (`SomeManager(game: Any)`) pour sous-managers Phase 1.5
+- **Traceability**: `@pytest.mark.tc("DOMAIN-TYPE-ID")` markers — see `docs/traceability.md` (auto-generated). Registered in `pyproject.toml`.
+- **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), **Pre-render cache pattern** (static button/label surfaces pre-computed at init, zero allocation in draw loop), ChestUI mixin decomposition, GameEvent dataclass factory pattern, Context Injection (`SomeManager(game: Any)`) for sub-managers in Phase 1.5

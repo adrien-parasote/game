@@ -112,36 +112,36 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 
 `fpd = sheet_cols` (frames per direction). Direction offsets: `0, fpd, fpd*2, fpd*3`.
 
-#### Comportement d'animation par sub_type
-| sub_type | Cycle actif quand | Reset frame 0 |
+#### Animation behavior by sub_type
+| sub_type | Active cycle when | Frame 0 Reset |
 |----------|-------------------|---------------|
-| `npc` | `is_moving == True` uniquement (et `state != 'interact'`) | Oui, à l'arrêt (après 2 frames consécutives stopped) |
-| `static_npc` | **Toujours** hors dialogue (cycle permanent si `state != 'interact'`, indépendant de `is_moving`. Le bloc conditionnel d'animation DOIT explicitement incrémenter `frame_index` si `sub_type == 'static_npc'` et `state != 'interact'`, ou si `is_moving`) | Non (ignorer le reset à l'arrêt normal ; figer le frame actuel en interaction) |
+| `npc` | `is_moving == True` only (and `state != 'interact'`) | Yes, when stopped (after 2 consecutive stopped frames) |
+| `static_npc` | **Always** outside dialogue (continuous cycle if `state != 'interact'`, independent of `is_moving`. The conditional animation block MUST explicitly increment `frame_index` if `sub_type == 'static_npc'` and `state != 'interact'`, or if `is_moving`) | No (ignore normal stopped reset; freeze the current frame in dialogue) |
 
-#### Vitesses
-- **Animation speed**: Mêmes règles de calcul pour les deux subtypes, basées sur la vitesse de l'entité : `self.animation_speed = (1.0 / 0.15) * self.speed / Settings.PLAYER_SPEED`.
-- **Movement speed** (`npc` uniquement): `0.4 × Settings.PLAYER_SPEED`.
+#### Speeds
+- **Animation speed**: Same calculation rules for both subtypes, based on entity speed: `self.animation_speed = (1.0 / 0.15) * self.speed / Settings.PLAYER_SPEED`.
+- **Movement speed** (`npc` only): `0.4 × Settings.PLAYER_SPEED`.
 
 #### Facing
-- `interact()` calcule `diff = initiator.pos - self.pos` et met à jour `current_facing` (horizontal prioritaire si `|dx| > |dy|`).
-- Le `static_npc` utilise `current_facing` pour sélectionner la bonne row d'animation, même sans bouger.
-- `facing_direction` au constructeur initialise `current_facing` pour tous les NPCs (dynamic et static) avant le premier frame.
+- `interact()` calculates `diff = initiator.pos - self.pos` and updates `current_facing` (horizontal takes priority if `|dx| > |dy|`).
+- The `static_npc` uses `current_facing` to select the correct animation row, even when not moving.
+- `facing_direction` in the constructor initializes `current_facing` for all NPCs (dynamic and static) before the first frame.
 
 ### 3.3. Test Case Specifications
 
 #### Unit & Behavior Tests
-| Test ID | Fichier | Component | Input | Expected Output |
-|---------|---------|-----------|-------|-----------------|
+| Test ID | File | Component | Input | Expected Output |
+|---------|------|-----------|-------|-----------------|
 | TC-001 | `test_entities.py:L26` | NPC Init | Spawn at (16,16) | `NPC.rect.size` == (32,32), anchored correctly |
 | TC-002 | `test_entities.py:L115` | NPC Wander | Wander radius=1 | `NPC.pos` never exceeds radius from spawn |
 | TC-003 | `test_entities.py:L255` | CPU Freeze | `is_visible=False` | NPC bypasses `move()` logic |
 | TC-004 | `test_entities.py:L126` | AI State | Trigger interaction | NPC enters `interact` state and faces player |
-| TC-005 | `test_npc.py:L118` | Static NPC base | `sub_type='static_npc'` | `process_ai()` skipped, `_action_timer` frozen, `state` stays `idle`, `interact()` retourne `element_id` |
-| TC-006 | `test_npc.py` | Static NPC animation | `sub_type='static_npc'`, `update(dt=1.0)` | `frame_index > 0.0` (cycle permanent sans `is_moving`) |
-| TC-007 | `test_npc.py` | Static NPC anim idle | `sub_type='static_npc'`, pas de mouvement, 2 frames | `frame_index` continue d'avancer (ne reset PAS à 0) |
+| TC-005 | `test_npc.py:L118` | Static NPC base | `sub_type='static_npc'` | `process_ai()` skipped, `_action_timer` frozen, `state` stays `idle`, `interact()` returns `element_id` |
+| TC-006 | `test_npc.py` | Static NPC animation | `sub_type='static_npc'`, `update(dt=1.0)` | `frame_index > 0.0` (continuous cycle without `is_moving`) |
+| TC-007 | `test_npc.py` | Static NPC anim idle | `sub_type='static_npc'`, no movement, 2 frames | `frame_index` continues to advance (does NOT reset to 0) |
 | TC-008 | `test_npc.py` | facing_direction init static | `NPC(sub_type='static_npc', facing_direction='left')` | `current_facing == 'left'` |
-| TC-009 | `test_npc.py` | facing_direction init dynamic | `NPC(sub_type='npc', facing_direction='left')` | `current_facing == 'left'` (applicable à tous les NPCs) |
-| TC-010 | `test_npc.py` | Static NPC interaction freeze | `sub_type='static_npc'`, `state='interact'`, `update(dt)` | `frame_index` reste figé (ne cycle pas en dialogue) |
+| TC-009 | `test_npc.py` | facing_direction init dynamic | `NPC(sub_type='npc', facing_direction='left')` | `current_facing == 'left'` (applicable to all NPCs) |
+| TC-010 | `test_npc.py` | Static NPC interaction freeze | `sub_type='static_npc'`, `state='interact'`, `update(dt)` | `frame_index` remains frozen (does not cycle in dialogue) |
 
 #### Integration Tests
 | Test ID | Flow | Setup | Verification | Teardown |
@@ -164,11 +164,11 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 
 | ❌ Anti-Pattern | Impact | ✅ Correct Behavior |
 |---|---|---|
-| Animer un `static_npc` uniquement si `is_moving` | Frame_index reste à 0 → sprite figé | Brancher sur `sub_type == 'static_npc' or is_moving` pour incrémenter `frame_index` et cycler en permanence. |
-| Appliquer `facing_direction` au `sub_type='npc'` | Le NPC wandering change de direction via l'AI — override silencieux trompeur | `facing_direction` ne s'applique qu'aux `static_npc` |
-| Déplacer `05-guard_*.png` dans `sprites/` | `InteractiveEntity._load_assets()` cherche dans `sprites/`, `NPC.__init__` cherche dans `characters/` — mauvais dossier → FileNotFoundError | Garder tous les spritesheets NPC dans `assets/images/characters/` |
-| Utiliser un layout sprite (rows=frames, cols=variants) pour un static_npc | `_update_animation` utilise rows=directions → mauvaises frames affichées | Toujours utiliser le layout character (rows=directions, cols=frames) pour les spritesheets NPC |
-| Réinitialiser `frame_index = 0` quand `not is_moving` pour un `static_npc` | Coupe l'animation en boucle à chaque frame d'arrêt | Ignorer le bloc `elif not self._was_moving` pour les `static_npc` |
+| Animate a `static_npc` only if `is_moving` | `frame_index` stays at 0 → sprite frozen | Check if `sub_type == 'static_npc' or is_moving` to increment `frame_index` and cycle continuously. |
+| Apply `facing_direction` to `sub_type='npc'` | The wandering NPC changes direction via AI — silent deceptive override | `facing_direction` only applies to `static_npc` |
+| Move `05-guard_*.png` to `sprites/` | `InteractiveEntity._load_assets()` searches in `sprites/`, `NPC.__init__` searches in `characters/` — wrong folder → FileNotFoundError | Keep all NPC spritesheets in `assets/images/characters/` |
+| Use a sprite layout (rows=frames, cols=variants) for a static_npc | `_update_animation` uses rows=directions → wrong frames displayed | Always use the character layout (rows=directions, cols=frames) for NPC spritesheets |
+| Reset `frame_index = 0` when `not is_moving` for a `static_npc` | Cuts the looping animation on every stopped frame | Ignore the `elif not self._was_moving` block for `static_npc` |
 
 ## 4. Deep Links
 - **`NPC` class**: [npc.py L8](../../src/entities/npc.py#L8)
@@ -201,8 +201,8 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 ## Assumptions
 | # | Assumption | Risk | Validation |
 |---|---|---|---|
-| 1 | Le spritesheet d'un `static_npc` suit le layout character (rows=directions, cols=frames) | Low | Visuel in-game + test TC-006 |
-| 2 | `facing_direction` est pris en compte pour tous les NPCs (dynamic et static) | Low | TC-009 |
-| 3 | `animation_speed` utilise la même formule de scaling pour tous les NPCs | Low | TC-006 |
-| 4 | Un `static_npc` avec un seul fichier sprite (une direction fixe) ne changera jamais de row — `interact()` met à jour `current_facing` mais l'image affichée est contrainte par les frames disponibles | Medium | Test visuel in-game |
-| 5 | `_action_timer` reste à 0 pour un `static_npc` (l'AI ne s'exécute jamais) | Low | TC-005 existant |
+| 1 | The spritesheet of a `static_npc` follows the character layout (rows=directions, cols=frames) | Low | In-game visual + test TC-006 |
+| 2 | `facing_direction` is taken into account for all NPCs (dynamic and static) | Low | TC-009 |
+| 3 | `animation_speed` uses the same scaling formula for all NPCs | Low | TC-006 |
+| 4 | A `static_npc` with a single sprite file (a fixed direction) will never change row — `interact()` updates `current_facing` but the displayed image is constrained by the available frames | Medium | In-game visual test |
+| 5 | `_action_timer` remains 0 for a `static_npc` (AI never executes) | Low | Existing TC-005 |

@@ -1,88 +1,90 @@
-# 📜 Vision Stratégique — L'Éveil de l'Héritier
+# 📜 Strategic Vision — The Heir's Awakening
 
-**Titre :** L'Éveil de l'Héritier : Un Royaume en Ruines  
-**Roadmap :** `docs/strategic/MASTER_ROADMAP.md`
-
----
-
-## 📖 Pitch et Contexte Narratif
-
-Après un sommeil millénaire, vous vous éveillez dans les tréfonds d'un château oublié, le **« Castel »**. Son architecture figée témoigne d'une gloire passée où les rouages mécaniques servaient la noblesse.
-
-Votre seul compagnon est votre **Majordome**, un méca sympathique et protecteur, dernier vestige technologique de votre lignée encore fonctionnel. Si vous tombez au combat, il vous retrouve et vous ramène dans votre lit.
-
-**Votre mission** : Reconstruire ce royaume, brique par brique, au sein d'une nature qui a repris ses droits — et tisser des liens avec les peuples qui s'y sont installés.
+**Title:** The Heir's Awakening: A Kingdom in Ruins  
+**Roadmap:** `docs/strategic/MASTER_ROADMAP.md`
 
 ---
 
-## 🎨 Direction Artistique
+## 📖 Pitch and Narrative Context
 
-*Une rencontre entre technologie rétro, magie et nature sauvage.*
+After a thousand-year slumber, you awaken in the depths of a forgotten castle, the **"Castel"**. Its frozen architecture bears witness to a past glory where mechanical gears served the nobility.
 
-- **L'Esthétique (Lindblum × Treno)** : Majesté industrielle de Lindblum (FFIX) + atmosphère nocturne et mélancolique de Treno. Structures de laiton, mécanismes de précision, fenêtres projetant des rayons de lumière bleutés dans l'obscurité.
-- **La Bande Son** : Inspirée des RPG classiques. Confort et sécurité dans le Castel. Mystère dans les forêts. Tension dans les grottes. Fête lors des festivals.
-- **Les Races** : Humains, Elfes, Nains, Hommes-bêtes, Méca (petits automates). Chaque race a son style visuel et son guilde d'appartenance.
+Your sole companion is your **Butler**, a friendly and protective mechanical golem, the last functional technological vestige of your lineage. If you fall in battle, he will rescue you and carry you back to your bed.
+
+**Your Mission**: Rebuild this kingdom, brick by brick, within a wilderness that has reclaimed its rights — and forge bonds with the peoples who have settled here.
 
 ---
 
-## ⚙️ La Symbiose : Technologie, Éther et Nature
+## 🎨 Artistic Direction
 
-1. **La Technologie** : Mécanismes de laiton et engrenages intégrés au milieu des racines. Les coffres laissent échapper un jet de vapeur. Le Gardien Méca gère la ferme sur ordre du joueur.
-2. **L'Éther** : Énergie magique qui anime les sources lumineuses et le **Sphérier** de progression. Les cristaux d'éther se récoltent en accomplissant des quêtes et des festivals.
-3. **La Flore** : Humains, elfes, nains et hommes-bêtes collaborent avec la nature. Agriculture, récolte, cuisine — le royaume renaît par la culture autant que par l'épée.
+*A junction of retro technology, magic, and wild nature.*
+
+- **The Aesthetic (Lindblum × Treno)**: The industrial majesty of Lindblum (FFIX) combined with the nocturnal, melancholic atmosphere of Treno. Brass structures, precision gears, and windows casting blue shafts of light into the darkness.
+- **The Soundtrack**: Inspired by classic RPGs. Comfort and safety in the Castel. Mystery in the forests. Tension in the caves. Celebration during festivals.
+- **The Races**: Humans, Elves, Dwarves, Beastmen, and Mecha (small automatons). Each race has its own visual style and guild affiliation.
+
+---
+
+## ⚙️ The Symbiosis: Technology, Ether, and Nature
+
+1. **Technology**: Brass mechanisms and gears integrated amidst tree roots. Chests hiss with released steam. The Guardian Mecha manages the farm under the player's command.
+2. **Ether**: Magical energy that powers light sources and the progression **Sphere Grid**. Ether crystals are harvested by completing quests and hosting festivals.
+3. **Flora**: Humans, elves, dwarves, and beastmen collaborating with nature. Agriculture, harvesting, cooking — the kingdom is reborn through cultivation as much as through the sword.
 
 ---
 
 ## 🎮 Gameplay Loop
 
-Style **Cozy RPG** (Stardew Valley × Dungeon Meshi). Pas de fin imposée — les saisons défilent.
+Cozy RPG style (Stardew Valley × Dungeon Meshi). No forced endgame — seasons cycle infinitely.
 
 ```
-Explorer → Récolter/Chasser → Cuisiner (même les monstres !)
-     ↓                                      ↓
-  Guildes                            Reconstuire le Castel
-(délèguent ce                       Décorer la chambre
-qu'on ne veut                       Déclencher des festivals
-pas faire)                                  ↓
-                                  Tisser des amitiés (PNJs + familiers)
-                                            ↓
-                                  Sphérier → grandir à son rythme
+Explore → Gather/Hunt → Cook (even monsters!)
+    ↓                               ↓
+  Guilds                   Rebuild the Castel
+(delegate what             Decorate the bedroom
+we don't want              Trigger festivals
+   to do)                           ↓
+                     Forge friendships (NPCs + Familiars)
+                                    ↓
+                     Sphere Grid → grow at your own pace
 ```
 
-### Pilliers
-- **Liberté de style** : Sphérier à nœuds libres (Cozy, Combat, ou mix)
-- **Jamais bloqué** : les Guildes fournissent ce que le joueur ne veut pas faire
-- **Monstres cuisinables** : chaque ennemi est une recette (style Dungeon Meshi)
-- **Familiers** : animaux/monstres apprivoisés, amitié qui grandit → capacités uniques
-- **Amitié PNJs** : 5 niveaux → accès progressif à du contenu exclusif
-- **Météo contextuelle** : pluie, orage, neige → malus/bonus · équipement l'annule
-- **Jeu sans fin** : saisons infinies, nouvelles zones, nouveaux PNJs
+### Pillars
+- **Playstyle Freedom**: Free-node Sphere Grid (Cozy, Combat, or a mix).
+- **Never Stuck**: Guilds provide resources for gameplay elements the player prefers to bypass.
+- **Cookable Monsters**: Every enemy yields a recipe (Dungeon Meshi style).
+- **Familiars**: Tamed animals/monsters with growing friendship levels leading to unique abilities.
+- **NPC Friendship**: 5 levels yielding progressive access to exclusive content.
+- **Contextual Weather**: Rain, storms, and snow applying buffs/debuffs that can be negated by correct equipment.
+- **Endless Game**: Infinite seasons, new areas, and incoming NPCs.
 
 ---
 
-## 🤝 Vision Co-op (v2.0)
+## 🤝 Co-op Vision (v2.0)
 
-2-3 joueurs, même machine. Esprit de coopération fort.
+2-3 players, same machine. Strong spirit of cooperation.
 
 ```
-🗡️ Guerrier  → chasse monstres → drop viande rare
-🍳 Cuisinier → cuisine Festin de Bête → déclenche Festival
-Festival     → bonus combat (Guerrier) + bonus récolte (Cozy)
-             → spirale positive partagée
+🗡️ Warrior  → hunts monsters → drops rare meat
+🍳 Cook     → cooks Beast Feast → triggers Festival
+Festival    → combat bonus (Warrior) + harvest bonus (Cozy)
+            → positive shared spiral
 ```
 
-- Salle du trésor partagée dans le château
-- Sphérier indépendant par joueur → spécialisation naturelle
-- Nœud **Synergiste** (sphérier) : bonus ×2 en co-op
+- Shared treasury room in the castle.
+- Independent Sphere Grid per player, allowing natural specialization.
+- **Synergist** node in the Sphere Grid: 2× bonus during co-op play.
 
 ---
 
-## 🏰 Le Château — Hub Central
+## 🏰 The Castle — Central Hub
 
-Le Castel est le seul espace pleinement aménageable. Pas de mairie — le joueur gère la ville depuis son **Bureau du Seigneur**.
+The Castel is the only fully customizable space. There is no town hall — the player manages the city directly from the **Lord's Study**.
 
-La **Chambre du joueur** s'étend selon le KingdomState (score de reconstruction). Le mobilier s'achète aux guildes.
+The **Player's Bedroom** expands based on the KingdomState (reconstruction progress score). Furniture is purchased exclusively from the guilds.
 
 ---
 
-> *Ce projet est un hommage à la nostalgie des RPG classiques — un monde vivant où chaque graine plantée, chaque mécanisme réparé, chaque monstre cuisiné et chaque lien noué rapproche le royaume de sa renaissance.*
+## 📜 Epic Conclusion
+
+> *This project is a tribute to the nostalgia of classic RPGs — a living world where every seed planted, every gear repaired, every monster cooked, and every bond forged brings the kingdom one step closer to its rebirth.*

@@ -1,362 +1,362 @@
-# 🗺️ Roadmap — L'Éveil de l'Héritier v0.5+
+# 🗺️ Roadmap — The Heir's Awakening v0.5+
 
 > Document Type: Strategic  
-> **Évolutif** — rien n'est définitif. Vision complète : [game_vision.md](./game_vision.md#gameplay-loop)  
-> Dernière mise à jour : 2026-05-15
+> **Evolving** — nothing is set in stone. Full vision: [game_vision.md](./game_vision.md#gameplay-loop)  
+> Last Update: 2026-05-15
 
 ---
 
-## 📦 Audit Assets Existants
+## 📦 Existing Assets Audit
 
-| Catégorie | Fichiers | Statut |
+| Category | Files | Status |
 |---|---|---|
-| Maps | `00-spawn.tmj`, `01-castel.tmj` | ⚠️ À refaire |
-| Maps | `99-debug_room.tmj` | ✅ Refaite et validée |
+| Maps | `00-spawn.tmj`, `01-castel.tmj` | ⚠️ Needs rework |
+| Maps | `99-debug_room.tmj` | ✅ Reworked and validated |
 | Sprites | `01-character.png`, `02-butler.png` | ✅ |
-| Sprites interactifs | portes, coffres, torches, leviers, emotes | ✅ |
-| Tilesets | sol, murs, fenêtres, mobilier intérieur | ✅ (intérieur uniquement) |
-| BGM | `00-castel.ogg` | ✅ 1 piste |
-| SFX | porte, levier, coffre, emote, footstep ×2, feu | ✅ 6 effets |
+| Interactive Sprites | doors, chests, torches, levers, emotes | ✅ |
+| Tilesets | floor, walls, windows, indoor furniture | ✅ (indoor only) |
+| BGM | `00-castel.ogg` | ✅ 1 track |
+| SFX | door, lever, chest, emote, footstep ×2, fire | ✅ 6 effects |
 
-**Manque :** tilesets extérieurs · sprites ennemis/NPCs/familiers · BGM zones · SFX météo/cuisine/nature
+**Missing:** outdoor tilesets · enemy/NPC/familiar sprites · area BGMs · weather/cooking/nature SFXs
 
 ---
 
 ## 🎯 Vision
 
-**Solo v1.0 :** Cozy RPG sans fin. Saisons, météo, amitié, familiers, ville vivante.  
-**Co-op local v2.0 :** 2-3 joueurs. Trésor partagé. Synergies amplifiées.
+**Solo v1.0:** Endless Cozy RPG. Seasons, weather, friendship, familiars, and a living town.  
+**Local Co-op v2.0:** 2-3 players. Shared treasury. Amplified synergies.
 
-### Boucle de synergie complète
+### Complete Synergy Loop
 ```
-🪓 Bûcherons + ⛏️ Mineurs + 🏹 Chasseurs
-          ↓ ressources brutes
-🔨 Artisans  → armes, armures, mobilier, ornements
-🌾 Semeurs   → récoltes + monstres cuisinés → festins
-⚙️ Ingénieurs → Gardien Méca, automatisation
+🪓 Lumberjacks + ⛏️ Miners + 🏹 Hunters
+          ↓ raw resources
+🔨 Crafters  → weapons, armor, furniture, ornaments
+🌾 Sowers    → crops + cooked monsters → feasts
+⚙️ Engineers → Guardian Mecha, automation
           ↓
-💰 Commerce + 🔮 Éthéristes → sphérier, enchantements
+💰 Commerce + 🔮 Etherists → Sphere Grid, enchantements
           ↓
-🏰 Château → gestion ville, familiers, amitié PNJs
+🏰 Castle → town management, familiars, NPC friendship
 ```
 
 ---
 
-## ✅ Phase 1 — Game Flow & Persistance `v0.5` TERMINÉE
+## ✅ Phase 1 — Game Flow & Persistence `v0.5` COMPLETED
 
 GameStateManager · Save/Load 3 slots · TitleScreen · PauseScreen · SaveMenuOverlay
 
 ---
 
-## ✅ Phase 1.5/1.6 — Refactoring Technique & Autotiles Directionnels `v0.7.0` TERMINÉE
+## ✅ Phase 1.5/1.6 — Technical Refactoring & Directional Autotiles `v0.7.0` COMPLETED
 
 ### Refactoring (1.5)
 
-Fichiers dépassant la limite de 400 lignes refactorisés. Extraction par domaine selon le pattern `Manager(game: Any)`.
+Files exceeding the 400-line limit were refactored. Extracted by domain following the `Manager(game: Any)` pattern.
 
-| Fichier | LOC avant | LOC après | Résultat |
+| File | LOC Before | LOC After | Result |
 |---------|-----------|-----------|---------|
-| `src/engine/game.py` | 732 | 446 | ✅ `EntityFactory` + `MapLoader` + `InputHandler` extraits |
-| `src/engine/interaction.py` | 474 | 400 | ✅ `CollisionChecker` extrait |
-| `src/ui/chest.py` | 421 | 343 | ✅ Mixins `chest_draw`, `chest_transfer`, `chest_layout` |
+| `src/engine/game.py` | 732 | 446 | ✅ `EntityFactory` + `MapLoader` + `InputHandler` extracted |
+| `src/engine/interaction.py` | 474 | 400 | ✅ `CollisionChecker` extracted |
+| `src/ui/chest.py` | 421 | 343 | ✅ `chest_draw`, `chest_transfer`, `chest_layout` mixins |
 
-### Autotiles Directionnels & Animés (1.6)
+### Directional & Animated Autotiles (1.6)
 
-Remplacement du modèle binaire `collidable` par `walkable` + `direction_flags`. Intégration des autotiles animés Tiled via Dynamic Batching.
+Replaced the binary `collidable` model with `walkable` + `direction_flags`. Integrated Tiled animated autotiles using Dynamic Batching.
 
-| Composant | Résultat |
-|-----------|----------|
+| Component | Result |
+|-----------|--------|
 | `TileMapData` | ✅ `walkable`, `direction_flags`, `frames` |
-| `TmjParser` | ✅ parse `<animation>`, `direction`, `walkable` |
-| `MapManager.is_walkable()` | ✅ remplace `is_collidable` |
-| `MapManager.get_direction_flags()` | ✅ contraintes directionnelles par tile |
-| `MapManager.get_visible_animated_chunks()` | ✅ Dynamic Batching — cache statique préservé |
-| `CollisionChecker` | ✅ migré vers `is_walkable` |
-| `BaseEntity.start_move()` | ✅ interception directionnelle (priorité cardinale) |
-| `AnimationMapManager` (`src/map/animation.py`) | ✅ résolution de frame par `pygame.time.get_ticks()` |
+| `TmjParser` | ✅ parses `<animation>`, `direction`, `walkable` |
+| `MapManager.is_walkable()` | ✅ replaces `is_collidable` |
+| `MapManager.get_direction_flags()` | ✅ directional constraints per tile |
+| `MapManager.get_visible_animated_chunks()` | ✅ Dynamic Batching — static cache preserved |
+| `CollisionChecker` | ✅ migrated to `is_walkable` |
+| `BaseEntity.start_move()` | ✅ directional interception (cardinal priority) |
+| `AnimationMapManager` (`src/map/animation.py`) | ✅ frame resolution via `pygame.time.get_ticks()` |
 
-**Résultats :** 793 tests, tous verts ✅ · 0 régression  
-**Specs :** [`engine-core.md`](../specs/engine-core.md) · [`map-parser-spec.md`](../specs/map-parser-spec.md) · [`npc-system.md`](../specs/npc-system.md)  
-**Bug fix (2026-05-15) :** NPC coincé/spinning en debug room (BUG-1: `spawn_npc` ne setait pas `npc.game`, BUG-2: `direction` non clearée sur move bloqué)
+**Results:** 793 tests, all passing ✅ · 0 regressions  
+**Specs:** [`engine-core.md`](../specs/engine-core.md) · [`map-parser-spec.md`](../specs/map-parser-spec.md) · [`npc-system.md`](../specs/npc-system.md)  
+**Bug Fix (2026-05-15):** NPC stuck/spinning in debug room resolved (BUG-1: `spawn_npc` did not set `npc.game`, BUG-2: `direction` not cleared on blocked move).
 
 ---
 
-## ✅ Phase 1.7 — Hardening & Urbanization `v0.7.0` TERMINÉE
+## ✅ Phase 1.7 — Hardening & Urbanization `v0.7.0` COMPLETED
 
-Achèvement de l'intégrité technique et documentaire. 100% de traçabilité TDD.
+Technical and documentation integrity finalized. 100% TDD traceability.
 
-| Composant | Résultat |
-|-----------|----------|
+| Component | Result |
+|-----------|--------|
 | `verify.py` | ✅ VERDICT: PASS (11/11 gates) |
-| `spec_conformance.py` | ✅ 0 divergence (dotted Python members supporté) |
-| Traceability | ✅ 793 tests mappés, 100% coverage FR/REQ |
-| Security | ✅ Sanitization `release.py` (0 finding) |
-| Hardening | ✅ .tdd_lock rafraîchi (78 files), dead code supprimé |
+| `spec_conformance.py` | ✅ 0 divergence (dotted Python members supported) |
+| Traceability | ✅ 793 tests mapped, 100% coverage FR/REQ |
+| Security | ✅ Sanitization `release.py` (0 findings) |
+| Hardening | ✅ `.tdd_lock` refreshed (78 files), dead code removed |
 
 ---
 
-## 🌿 Phase 2 — Fondations du Monde `v0.7→0.8`
+## 🌿 Phase 2 — Foundations of the World `v0.7→0.8`
 
-### Développement
-- **`gameplay.json`** : items (ressources, ingrédients, drops monstres, équipements météo, mobilier, `gold`, `ether_crystal`)
-- **Stats joueur** : `hp, max_hp, attack, defense, speed`
-- **Customisation personnage** : silhouette, couleur, tenue · équipements visibles sur sprite
-- **Saisons** : `TimeSystem` étendu → 4 saisons · durée jour/nuit variable
-- **PNJs multi-races** : `race`, `guild`, `home_tile`, `work_tile`, `leisure_spots[]`
-- **Routine IA PNJ** : lever (6h) · déjeuner (8h) · travail (9h-18h) · taverne (18-21h) · sommeil (23h)
-- **Races disponibles** : Humains · Elfes · Nains · Hommes-bêtes · Méca
+### Development
+- **`gameplay.json`**: items (resources, ingredients, monster drops, weather equipment, furniture, `gold`, `ether_crystal`).
+- **Player Stats**: `hp, max_hp, attack, defense, speed`.
+- **Character Customization**: silhouette, color, outfit · equipment visible on sprite.
+- **Seasons**: `TimeSystem` extended → 4 seasons · variable day/night duration.
+- **Multi-race NPCs**: `race`, `guild`, `home_tile`, `work_tile`, `leisure_spots[]`.
+- **NPC AI Routine**: wake up (6:00) · breakfast (8:00) · work (9:00-18:00) · tavern (18:00-21:00) · sleep (23:00).
+- **Available Races**: Humans · Elves · Dwarves · Beastmen · Mecha.
 
-### 🎨 Assets à produire
-**Maps (construites ensemble) :**
+### 🎨 Assets to Produce
+**Maps (constructed together):**
 | Map | Zone | Tilesets |
 |---|---|---|
-| `01-chateau_chambre.tmj` | Chambre du joueur (hub respawn) | mobilier intérieur ✅ |
-| `02-chateau_salon.tmj` | Grande salle, bâtiments ruinés | murs/sol pierre ✅ |
-| `03-jardin.tmj` | Jardin extérieur, parcelles agricoles | **tileset-exterieur** ❌ |
+| `01-chateau_chambre.tmj` | Player's Bedroom (respawn hub) | indoor furniture ✅ |
+| `02-chateau_salon.tmj` | Great hall, ruined buildings | stone walls/floor ✅ |
+| `03-jardin.tmj` | Outdoor garden, agricultural plots | **outdoor-tileset** ❌ |
 
-**Sprites :** NPCs 4 races · 4 directions · emotes étendues  
-**Tilesets :** `tileset-exterieur.png` (herbe, chemin, haies, fleurs, murs pierre)  
-**Audio :** BGM `01-jardin.ogg` · BGM `02-village.ogg` · SFX footstep herbe/terre · ambiance jardin
+**Sprites:** NPCs 4 races · 4 directions · extended emotes.  
+**Tilesets:** `tileset-exterieur.png` (grass, path, hedges, flowers, stone walls).  
+**Audio:** BGM `01-jardin.ogg` · BGM `02-village.ogg` · grass/dirt footstep SFXs · garden ambient.
 
-**Livrable :** Château jouable, jardin accessible, monde saisonnier et peuplé.
+**Deliverable:** Playable castle, accessible garden, seasonal and populated world.
 
 ---
 
-## 🌧️ Phase 3 — Météo & Équipement Contextuel `v0.8→0.9`
+## 🌧️ Phase 3 — Weather & Contextual Equipment `v0.8→0.9`
 
-### Développement
-WeatherSystem : 5 états météo + 1 état de zone spéciale (`sous_eau`) · malus/bonus · items équipés annulent les malus · `requires_item` dans Tiled
+### Development
+WeatherSystem: 5 weather states + 1 special zone state (`underwater`) · buffs/debuffs · equipped items negate debuffs · `requires_item` in Tiled.
 
-| Météo | Malus | Annulé par |
+| Weather | Debuff | Negated by |
 |---|---|---|
-| Pluie | Marche -20% · Agriculture +10% | `parapluie` |
-| Orage | Marche -40% | `manteau_tempête` |
-| Neige | Marche -15% | `manteau_hiver` |
-| Brouillard | Vision -50% | `lunettes_ether` |
-| Zone aquatique *(zone spéciale)* | Nage lente / accès bloqué | `tuba` |
+| Rain | Walking -20% · Agriculture +10% | `umbrella` |
+| Storm | Walking -40% | `storm_coat` |
+| Snow | Walking -15% | `winter_coat` |
+| Fog | Vision -50% | `ether_goggles` |
+| Aquatic Zone *(special zone)* | Slow swimming / blocked access | `snorkel` |
 
-> **Note :** La zone aquatique est un type de terrain (tileset `08-sous_eau`), pas une météo. Elle partage le même système `requires_item` que les états météo.
+> **Note:** The aquatic zone is a terrain type (tileset `08-sous_eau`), not a weather condition. It shares the same `requires_item` mechanism as weather states.
 
-`requires_item` dans Tiled : `08-sous_eau` → `tuba` · `09-montagne` → `manteau_hiver`
+`requires_item` in Tiled: `08-sous_eau` → `snorkel` · `09-montagne` → `winter_coat`.
 
-### 🎨 Assets à produire
-**Maps :** `04-village.tmj` · `05-foret.tmj`  
-**Sprites :** overlays météo (pluie, neige, brouillard) · équipements visibles (parapluie, manteau)  
-**Tilesets :** `tileset-foret.png` (arbres, sous-bois, racines, clairière)  
-**Audio :** BGM `03-foret.ogg` · BGM `04-orage.ogg` · SFX pluie/orage/vent neige
+### 🎨 Assets to Produce
+**Maps:** `04-village.tmj` · `05-foret.tmj`  
+**Sprites:** weather overlays (rain, snow, fog) · visible equipment (umbrella, coat)  
+**Tilesets:** `tileset-foret.png` (trees, undergrowth, roots, clearing)  
+**Audio:** BGM `03-foret.ogg` · BGM `04-orage.ogg` · rain/storm/snow SFXs.
 
-**Livrable :** Météo dynamique, équipement contextuel, zone forêt jouable.
+**Deliverable:** Dynamic weather, contextual equipment, playable forest zone.
 
 ---
 
-## 🏗️ Phase 4 — Château, Bâtiments & Guildes `v0.9→0.10`
+## 🏗️ Phase 4 — Castle, Buildings & Guilds `v0.9→0.10`
 
-### Développement
-- **Building System** : 4 niveaux (ruiné→reconstruit→décoré→restauré)
-- FurnitureSystem : placement libre, grille tile-based, effets passifs optionnels
-- GuildSystem : 6 guildes · rangs (Apprenti→Grand Maître) · contrats journaliers
-- Chambre extensible : 4×4 → 6×6 → 8×8 → suite royale (selon KingdomState)
-- Mobilier acheté **exclusivement aux guildes** (devise : `gold`)
-- Gestion de la ville depuis le **Bureau du Seigneur** (château, pas de mairie)
+### Development
+- **Building System**: 4 levels (ruined→rebuilt→decorated→restored).
+- **FurnitureSystem**: free placement, tile-based grid, optional passive effects.
+- **GuildSystem**: 6 guilds · ranks (Apprentice→Grand Master) · daily contracts.
+- **Extendable Bedroom**: 4×4 → 6×6 → 8×8 → royal suite (based on KingdomState).
+- **Furniture purchased exclusively from guilds** (currency: `gold`).
+- **Town management managed from the Lord's Study** (castle, no town hall).
 
-**KingdomState** — Score entier [0–100] représentant l'avancement de la reconstruction :
+**KingdomState** — Integer score [0–100] representing reconstruction progress:
 
-| Score | Seuil | Déverrouillage |
+| Score | Threshold | Unlock |
 |-------|-------|----------------|
-| 0–9 | Ruines | Chambre 4×4, coffre de base |
-| 10–24 | Fondations | Grange, Taverne, chambre 6×6 |
-| 25–49 | Reconstruction | Armurerie, Tour de Magie, chambre 8×8 |
-| 50–74 | Restauré | Grande salle, Bibliothèque, Salle du trésor |
-| 75–100 | Suite Royale | Enclos des familiers, tous bâtiments, co-op ready |
+| 0–9 | Ruins | Bedroom 4×4, basic chest |
+| 10–24 | Foundations | Barn, Tavern, bedroom 6×6 |
+| 25–49 | Reconstruction | Armory, Magic Tour, bedroom 8×8 |
+| 50–74 | Restored | Great hall, Library, Treasury room |
+| 75–100 | Royal Suite | Pets pen, all buildings, co-op ready |
 
-**Calcul du score KingdomState (cumulatif) :**
-| Action | Points | Limite |
+**KingdomState score calculation (cumulative):**
+| Action | Points | Limit |
 |---|---|---|
-| Reconstruction bâtiment (niv. 2) | +5 | Par bâtiment |
-| Restauration bâtiment (niv. 4) | +10 | Par bâtiment |
-| Quête de guilde majeure | +2 | - |
-| Défaite Boss de zone | +5 | Une fois par boss |
-| Festival réussi | +1 | Par festival |
+| Rebuild building (lvl 2) | +5 | Per building |
+| Restore building (lvl 4) | +10 | Per building |
+| Major guild quest | +2 | - |
+| Defeat Area Boss | +5 | Once per boss |
+| Successful festival | +1 | Per festival |
 
-> Voir [engine-core.md](../specs/engine-core.md#L1) pour l'implémentation de KingdomState.
+> See [engine-core.md](../specs/engine-core.md#L1) for KingdomState implementation.
 
-**Pièces du château :**
-| Pièce | Fonction | Extensible |
+**Castle Rooms:**
+| Room | Function | Extendable |
 |---|---|---|
-| Bureau du Seigneur | Gestion ville, contrats guildes | Non |
-| Chambre | Lit de respawn, aménageable | ✅ |
-| Grande salle | Festins, festivals intérieurs | Selon KingdomState |
-| Salle du trésor | Stock partagé (co-op) | Selon reconstruction |
-| Bibliothèque | Sphérier, lore, quêtes | Selon reconstruction |
-| Enclos des familiers | Héberge les animaux apprivoisés | ✅ |
+| Lord's Study | Town management, guild contracts | No |
+| Bedroom | Respawn bed, customizable | ✅ |
+| Great Hall | Feasts, indoor festivals | Based on KingdomState |
+| Treasury Room | Shared stock (co-op) | Based on reconstruction |
+| Library | Sphere Grid, lore, quests | Based on reconstruction |
+| Pets Pen | Houses tamed animals | ✅ |
 
-**Guildes & Bâtiments :**
-| Guilde | Bâtiments | Mobilier vendu |
+**Guilds & Buildings:**
+| Guild | Buildings | Furniture Sold |
 |---|---|---|
-| ⚔️ Aventuriers | Taverne · Armurerie · Salle d'entraînement | Trophées, armures déco |
-| 💰 Commerce | Comptoir · Entrepôt · Marché couvert | Comptoirs, coffres décorés |
-| 🔮 Éthéristes | Tour de Magie · Cristallerie · Labo | Cristaux lumineux, tapis runiques |
-| 🌾 Semeurs | Grange · Serre · Cuisine communale | Jardinières, râteliers |
-| 🔨 Artisans | Atelier · Forge · Couture · Menuiserie | Meubles artisanaux, outils déco |
-| ⚙️ Ingénieurs | Atelier Méca · Fonderie · Dépôt | Automates déco, engrenages muraux |
+| ⚔️ Adventurers | Tavern · Armory · Training Hall | Trophies, decorative armor |
+| 💰 Commerce | Trading Post · Warehouse · Covered Market | Counters, decorated chests |
+| 🔮 Etherists | Magic Tower · Crystal Works · Lab | Glowing crystals, runic carpets |
+| 🌾 Sowers | Barn · Greenhouse · Communal Kitchen | Planters, racks |
+| 🔨 Crafters | Workshop · Forge · Tailor · Carpentry | Crafted furniture, decorative tools |
+| ⚙️ Engineers | Mecha Workshop · Foundry · Depot | Decorative automates, wall gears |
 
-### 🎨 Assets à produire
-**Maps :** `06-mines.tmj` · `07-marais.tmj`  
-**Sprites :** bâtiments 4 états visuels par guilde  
-**Tilesets :** `tileset-village.png` · `tileset-mines.png`  
-**Audio :** BGM `05-village-jour.ogg` · BGM `06-village-nuit.ogg` · BGM `07-mines.ogg` · SFX forge/couture/mécanismes
+### 🎨 Assets to Produce
+**Maps:** `06-mines.tmj` · `07-marais.tmj`  
+**Sprites:** buildings 4 visual states per guild  
+**Tilesets:** `tileset-village.png` · `tileset-mines.png`  
+**Audio:** BGM `05-village-jour.ogg` · BGM `06-village-nuit.ogg` · BGM `07-mines.ogg` · forge/tailoring/mechanisms SFXs.
 
-**Livrable :** La ville se reconstruit guilde par guilde. Le château s'aménage.
+**Deliverable:** The town is rebuilt guild by guild. The castle is customizable.
 
 ---
 
-## 🌾 Phase 5 — Agriculture, Cuisine & Monstres `v0.10→0.11` ⭐
+## 🌾 Phase 5 — Agriculture, Cooking & Monsters `v0.10→0.11` ⭐
 
-### Développement
-- Harvestable : 4 états `seed→sprout→grown→ripe` · piloté par `TimeSystem`
-- **Gardien Méca** : ordres simples → coffre `jardin_stock` · extensible avec niveau Jardin
-- **Chasseurs** : animaux dans `05-foret` → viande, peaux, captures de familiers
-- **Bûcherons** : arbres abattables → bois · **Mineurs** : veines minerai → pierre, métal
-- **Crafting System** : `recipes.json` unifié cuisine + artisanat · filtré par station + niveau bâtiment
-- **Monstres cuisinables** (Dungeon Meshi) : Bestiaire Culinaire in-game
+### Development
+- **Harvestable**: 4 states `seed→sprout→grown→ripe` · driven by `TimeSystem`.
+- **Guardian Mecha**: simple orders → `jardin_stock` chest · extendable with Garden level.
+- **Hunters**: animals in `05-foret` → meat, pelts, pet captures.
+- **Lumberjacks**: fellable trees → wood · **Miners**: ore veins → stone, metal.
+- **Crafting System**: unified `recipes.json` for cooking + crafting · filtered by station + building level.
+- **Cookable Monsters** (Dungeon Meshi): In-game Culinary Bestiary.
 
-| Monstre | Drop cuisinable | Effet plat |
+| Monster | Cookable Drop | Dish Effect |
 |---|---|---|
-| Créature végétale | Filaments, spores | +HP regen 3j |
-| Gardien méca hostile | Huile, acier cristal | +defense 2j |
-| Loup des glaces | Viande de givre | +speed |
-| Boss de zone | Cœur éthéré | Buff permanent mineur |
+| Plant Creature | Filaments, spores | +HP regen 3 days |
+| Hostile Mecha Guardian | Oil, crystal steel | +defense 2 days |
+| Ice Wolf | Frost meat | +speed |
+| Area Boss | Ethereal heart | Minor permanent buff |
 
-**Festivals saisonniers :**
-| Saison | Festival | Déclencheur |
+**Seasonal Festivals:**
+| Season | Festival | Trigger |
 |---|---|---|
-| Printemps | Festival des Semailles | Festin aux herbes sauvages |
-| Été | Festival du Soleil | Festin aux fruits d'éther |
-| Automne | Festival de la Moisson | Festin de monstre |
-| Hiver | Festival des Lumières | Festin chaud (ragoût) |
+| Spring | Sowing Festival | Wild herb feast |
+| Summer | Sun Festival | Ether fruit feast |
+| Autumn | Harvest Festival | Monster feast |
+| Winter | Festival of Lights | Hot feast (stew) |
 
-### 🎨 Assets à produire
-**Maps :** `08-sous_eau.tmj` (tuba requis) · `09-montagne.tmj` (manteau requis)  
-**Sprites :** 4-6 ennemis (attaque, dégâts, mort) · plantes 4 stades · effets cuisine  
-**Tilesets :** `tileset-aquatique.png` · `tileset-montagne.png`  
-**Audio :** BGM `08-combat.ogg` · BGM `09-festival.ogg` · BGM `10-sous_eau.ogg` · BGM `11-montagne.ogg` · SFX récolte/cuisine/festival/combat
+### 🎨 Assets to Produce
+**Maps:** `08-sous_eau.tmj` (snorkel required) · `09-montagne.tmj` (coat required)  
+**Sprites:** 4-6 enemies (attack, damage, death) · plants 4 stages · cooking effects  
+**Tilesets:** `tileset-aquatique.png` · `tileset-montagne.png`  
+**Audio:** BGM `08-combat.ogg` · BGM `09-festival.ogg` · BGM `10-sous_eau.ogg` · BGM `11-montagne.ogg` · harvest/cooking/festival/combat SFXs.
 
-**Livrable :** Cuisiner un monstre, déclencher un festival, voir la ville fêter.
+**Deliverable:** Cook a monster, trigger a festival, watch the town celebrate.
 
 ---
 
-## 🐾 Phase 6 — Familiers & Amitié `v0.11→0.12`
+## 🐾 Phase 6 — Familiars & Friendship `v0.11→0.12`
 
-### Développement
-- **Familiar System** : apprivoisement (nourrir un animal affaibli) · 5 niveaux d'amitié
-- FriendshipSystem : 5 niveaux avec PNJs · cadeaux · accès progressif
+### Development
+- **Familiar System**: taming (feeding a weakened animal) · 5 levels of friendship.
+- **FriendshipSystem**: 5 levels with NPCs · gifts · progressive access.
 
-**Familiers :**
-| Familier | Capacité (niv. 4) |
+**Familiars:**
+| Familiar | Ability (lvl 4) |
 |---|---|
-| Renard des bois | Révèle items cachés |
-| Louveteau méca | Alerte intrusions château |
-| Fée champignon | Accélère croissance parcelle |
-| Dragon de poche | Flamme 1×/jour |
-| Poisson lanterne | Navigation zones aquatiques |
+| Wood Fox | Reveals hidden items |
+| Mecha Pup | Alerts castle intrusions |
+| Mushroom Fairy | Accelerates crop growth |
+| Pocket Dragon | Flame 1×/day |
+| Lantern Fish | Navigation in aquatic zones |
 
-**Amitié PNJ :** Inconnu → Connaissance → Ami → Proche → Confiant  
-Niv. 5 : PNJ rejoint ponctuellement l'aventure + bonus passif permanent.
+**NPC Friendship:** Stranger → Acquaintance → Friend → Close → Confidant  
+Lvl 5: NPC joins adventure occasionally + minor permanent passive bonus.
 
-### 🎨 Assets à produire
-**Sprites :** 5-8 familiers (idle, suivi, capacité, affection)  
-**Audio :** SFX par familier · BGM `12-enclos.ogg`
+### 🎨 Assets to Produce
+**Sprites:** 5-8 familiers (idle, follow, ability, affection)  
+**Audio:** SFX per familiar · BGM `12-enclos.ogg`
 
 ---
 
-## 🔮 Phase 7 — Sphérier & Combat `v0.12→0.13`
+## 🔮 Phase 7 — Sphere Grid & Soft Combat `v0.12→0.13`
 
-### Développement
-- SphereGrid : **Éther Cristallisé** comme monnaie exclusive du Sphérier (ne remplace pas l'`gold` des boutiques) · nœuds libres (pas de voie verrouillée)
-- Tout débloquable en solo · Bibliothèque du château déverrouille les nœuds
-- Sources d'éther (one-time) : quêtes (+3-15) · craft (+1) · recette (+2) · festival (+5) · boss (+10) · bâtiment complété (+5)
+### Development
+- **SphereGrid**: **Crystallized Ether** as exclusive currency for the Sphere Grid (does not replace store `gold`) · free nodes (no locked paths).
+- Fully unlockable in solo · Castle Library unlocks nodes.
+- One-time ether sources: quests (+3-15) · crafting (+1) · recipe (+2) · festival (+5) · boss (+10) · completed building (+5).
 
-> [assumption: équilibre économique à valider en Phase 7 BUILD — coût moyen d'un nœud et nombre de nœuds total non définis. Risque d'overflow à calibrer par playtest.]
-- **Enemy** : Patrol→Chase→Attack · **mort douce** : Majordome nous ramène au lit (Pénalité : perte de 10% des `gold`, inventaire conservé)
+> [assumption: economic balance to validate in Phase 7 BUILD — average node cost and total node count not defined. Risk of overflow to calibrate via playtesting.]
+- **Enemy**: Patrol→Chase→Attack · **gentle death**: Butler carries player back to bed (Penalty: loss of 10% `gold`, inventory preserved).
 
-**Structure sphérier (nœuds libres) :**
+**Sphere Grid Structure (Free Nodes):**
 ```
-🌱 Récolte ×1.5    🏗️ -30% coûts     🗡️ +15% dégâts
-🍳 Buffs 2 jours   📚 +éther ×1.2    🛡️ -20% dégâts
-🎉 +festivals      🌍 +maps cachées   💨 +drops monstres
-🤝 Synergiste*     ⚖️ +XP ×1.5       🔥 Berserker
+🌱 Harvest ×1.5    🏗️ -30% Costs     🗡️ +15% Damage
+🍳 Buffs 2 days    📚 +Ether ×1.2    🛡️ -20% Damage
+🎉 +Festivals      🌍 +Hidden Maps   💨 +Monster Drops
+🤝 Synergist*      ⚖️ +XP ×1.5       🔥 Berserker
 ```
-*Synergiste : bonus en solo, ×2 en co-op*
+*\*Synergist: solo bonus, 2× in co-op*
 
-**Audio :** BGM `13-boss.ogg` · SFX sphérier (cristal qui s'active)
-
----
-
-## 💰 Phase 8 — Économie, Quêtes & Jeu Sans Fin `v0.13→0.14`
-
-- ShopUI (dérivée `ChestUI`) · rang guilde → items exclusifs
-- Quêtes : `collect` · `cook` · `build` · `tame` · `befriend` · `festival` · `weather_challenge` · `serve_monster_dish`
-- Dialogue conditionnel (WorldState + saison + météo + amitié)
-- **Pas d'endgame forcé** — saisons infinies, nouveaux PNJs, KingdomState croissant
-
-**Audio :** BGM variations saisonnières · SFX commerce/quête/amitié
+**Audio:** BGM `13-boss.ogg` · Sphere Grid SFX (activating crystal)
 
 ---
 
-## 👥 Phase 9 — Co-op Local `v0.14→1.0`
+## 💰 Phase 8 — Economy, Quests & Endless Play `v0.13→0.14`
 
-- 2-3 joueurs · **Écran partagé** (shared screen, la caméra dezoome, pas de split-screen) · WorldState + KingdomState + **Salle du trésor** partagés
-- **Verrouillage interaction** : Le premier joueur à interagir avec un PNJ ou un déclencheur d'événement verrouille l'action pour les autres jusqu'à la fin du dialogue/cinématique.
-- Sphérier indépendant par joueur · Familiers indépendants
-- Festival déclenché par un joueur → bonus pour tous
-- Save solo compatible avec l'arrivée de nouveaux joueurs
+- **ShopUI** (derived from `ChestUI`) · guild rank → exclusive items.
+- **Quests**: `collect` · `cook` · `build` · `tame` · `befriend` · `festival` · `weather_challenge` · `serve_monster_dish`.
+- **Conditional Dialogue** (WorldState + season + weather + friendship).
+- **No forced endgame** — infinite seasons, new NPCs, growing KingdomState.
+
+**Audio:** Seasonal BGM variations · commerce/quest/friendship SFXs.
 
 ---
 
-## 🔗 Dépendances entre Phases
+## 👥 Phase 9 — Local Co-op `v0.14→1.0`
 
-> Les phases doivent être développées dans l'ordre des dépendances suivantes. Un agent BUILD ne doit pas commencer Phase N+1 avant que les prérequis de Phase N soient satisfaits.
+- 2-3 players · **Shared screen** (camera zooms out, no split-screen) · shared WorldState + KingdomState + **Treasury Room**.
+- **Interaction Locking**: The first player to interact with an NPC or event trigger locks the action for others until the dialogue/cutscene ends.
+- Independent Sphere Grid per player · independent Familiars.
+- Festival triggered by one player → bonus for all.
+- Solo save compatible with new players joining.
 
-| Phase | Dépend de | Raison |
+---
+
+## 🔗 Phase Dependencies
+
+> Phases must be developed in the order of the following dependencies. A BUILD agent must not begin Phase N+1 until Phase N prerequisites are satisfied.
+
+| Phase | Depends on | Reason |
 |-------|-----------|--------|
-| Phase 1.5/1.6 | Phase 1 ✅ | Refactoring + autotiles directionnels (livrés ensemble) |
-| Phase 2 | Phase 1.5/1.6 ✅ | Moteur nettoyé + walkability directionnelle requis avant NPCs/Seasons |
-| Phase 3 | Phase 2 | `TimeSystem` étendu requis pour WeatherSystem |
-| Phase 4 | Phase 2 | KingdomState initialisé par les NPCs (Phase 2) |
-| Phase 5 | Phase 3 | Zones aquatiques/montagne nécessitent WeatherSystem |
-| Phase 5 | Phase 4 | **Crafting System** dépend des bâtiments de guilde |
-| Phase 6 | Phase 5 | Familiers capturés à la chasse (Phase 5) |
-| Phase 7 | Phase 4 | SphereGrid déverrouillé par la Bibliothèque (KingdomState ≥ 50) |
-| Phase 8 | Phase 6 | Quêtes et dialogues conditionnels nécessitent amitié PNJ |
-| Phase 9 | Phase 7 + KingdomState ≥ 75 | Co-op nécessite Salle du trésor et Sphérier complets |
+| Phase 1.5/1.6 | Phase 1 ✅ | Refactoring + directional autotiles (delivered together) |
+| Phase 2 | Phase 1.5/1.6 ✅ | Cleaned engine + directional walkability required before NPCs/Seasons |
+| Phase 3 | Phase 2 | Extended `TimeSystem` required for WeatherSystem |
+| Phase 4 | Phase 2 | KingdomState initialized by NPCs (Phase 2) |
+| Phase 5 | Phase 3 | Aquatic/mountain zones require WeatherSystem |
+| Phase 5 | Phase 4 | **Crafting System** depends on guild buildings |
+| Phase 6 | Phase 5 | Familiars captured during hunting (Phase 5) |
+| Phase 7 | Phase 4 | SphereGrid unlocked by the Library (KingdomState ≥ 50) |
+| Phase 8 | Phase 6 | Quests and conditional dialogues require NPC friendship |
+| Phase 9 | Phase 7 + KingdomState ≥ 75 | Co-op requires Treasury Room and complete Sphere Grid |
 
 ---
 
-## Anti-patterns
+## Anti-Patterns
 
-> **Note :** Les anti-patterns d'implémentation technique spécifiques sont dans les documents d'implémentation (ex: `engine-core.md`, `chest-ui-spec.md`). Ci-dessous les anti-patterns stratégiques globaux.
+> **Note:** Technical implementation anti-patterns are located in their respective spec documents (e.g. `engine-core.md`, `chest-ui-spec.md`). Strategic global anti-patterns are listed below.
 
-| # | Anti-Pattern | Violation Stratégique | Comportement Correct |
+| # | Anti-Pattern | Strategic Violation | Correct Behavior |
 |---|---|---|---|
-| 1 | **Scope Creep** | Ajouter des fonctionnalités non listées dans la vision (ex: multijoueur en ligne). | S'en tenir au co-op local (Phase 9) et au design "cozy" actuel. |
-| 2 | **Dissonance de Phase** | Implémenter des éléments de Phase N+1 alors que la Phase N n'est pas terminée. | Suivre strictement le tableau de dépendance des phases. |
-| 3 | **Hardcoding Métier** | Fixer des données de jeu en dur au lieu de les lire depuis `gameplay.json` ou Tiled. | Les définitions des items, quêtes et recettes doivent être pilotées par les données. |
-| 4 | **Surcharge Cognitive UI** | Créer des interfaces complexes pour chaque sous-système. | Réutiliser des paradigmes UI existants (ex: ShopUI dérivée de `ChestUI`). |
-| 5 | **Endgame Bloquant** | Forcer une fin de jeu qui empêche le joueur de continuer à jouer ou explorer. | Maintenir le principe de saisons infinies et d'évolution non limitante. |
+| 1 | **Scope Creep** | Adding features not listed in the vision (e.g. online multiplayer). | Stick to local co-op (Phase 9) and the current cozy design. |
+| 2 | **Phase Dissonance** | Implementing Phase N+1 elements while Phase N is incomplete. | Strictly follow the phase dependency table. |
+| 3 | **Business Hardcoding** | Hardcoding game data instead of reading from `gameplay.json` or Tiled. | Item, quest, and recipe definitions must be data-driven. |
+| 4 | **UI Cognitive Overload** | Creating complex custom interfaces for every subsystem. | Reuse existing UI paradigms (e.g. ShopUI derived from `ChestUI`). |
+| 5 | **Blocking Endgame** | Forcing a game-over or hard ending that prevents continued exploration. | Maintain the infinite season and non-limiting evolution design. |
 
 ---
 
 ## 📐 Versions
 
-| Version | Dev | Assets prioritaires |
+| Version | Dev | Priority Assets |
 |---|---|---|
 | `0.5.x` | Phase 1-1.6 (Game Flow, Refactor, Autotiles) | — |
 | `0.7.0` | Hardening & Urbanization (Traceability, 100% verify) | ✅ |
-| `0.6.0` | Monde + Saisons + PNJs + Customisation | Château maps · NPCs · tileset extérieur · BGM jardin/village |
-| `0.7.0` | Météo + Équipement contextuel | Overlays météo · tileset forêt · BGM forêt/orage |
-| `0.8.0` | Château + Guildes + Bâtiments + Mobilier | Bâtiments sprites · tileset village/mines · BGM mines |
-| `0.9.0` | Agriculture + Cuisine + Monstres ⭐ | Ennemis · tilesets aquatique/montagne · BGM combat/festival |
-| `1.0.0` | Familiers + Amitié PNJ | Familiers sprites · SFX animaux |
-| `1.1.0` | Sphérier + Combat doux | BGM boss · SFX sphérier |
-| `1.5.0` | Économie + Quêtes + Jeu sans fin | BGM saisonnières |
-| `2.0.0` | Co-op Local 👥 | — |
+| `0.6.0` | World + Seasons + NPCs + Customization | Castle maps · NPCs · outdoor tileset · garden/village BGMs |
+| `0.7.0` | Weather + Contextual Equipment | Weather overlays · forest tileset · forest/storm BGMs |
+| `0.8.0` | Castle + Guilds + Buildings + Furniture | Building sprites · village/mines tilesets · mines BGM |
+| `0.9.0` | Agriculture + Cooking + Monsters ⭐ | Enemies · aquatic/mountain tilesets · combat/festival BGMs |
+| `1.0.0` | Familiars + NPC Friendship | Familiar sprites · animal SFXs |
+| `1.1.0` | Sphere Grid + Soft Combat | Boss BGM · Sphere Grid SFX |
+| `1.5.0` | Economy + Quests + Endless Play | Seasonal BGMs |
+| `2.0.0` | Local Co-op 👥 | — |

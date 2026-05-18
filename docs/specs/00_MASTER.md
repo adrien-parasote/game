@@ -1,4 +1,3 @@
-
 # Master Specification Index [Strategic]
 
 > Document Type: Strategic
@@ -21,7 +20,7 @@ This document is the master index for all technical specifications in the RPG en
 |------|------|-----------------|
 | Map Parser | [map-parser-spec.md](./map-parser-spec.md#L1) | `TmjParser`, `TiledProject`, `MapManager`, `OrthogonalLayout` |
 | World System | [world-system.md](./world-system.md#L1) | WorldManager, map transitions |
-| Directional Autotiles | [map-parser-spec.md](./map-parser-spec.md#walkability--directional-flags) | Walkability directionnelle, animated autotile pipeline |
+| Directional Autotiles | [map-parser-spec.md](./map-parser-spec.md#walkability--directional-flags) | Directional walkability, animated autotile pipeline |
 
 ### Entities
 | Spec | File | Modules Covered |
@@ -61,7 +60,7 @@ This document is the master index for all technical specifications in the RPG en
 ### Refactoring Phases
 | Spec | File | Modules Covered |
 |------|------|-----------------|
-| Phase 1.6 — Autotiles directionnels | [map-parser-spec.md](./map-parser-spec.md#L1) | Walkability + direction_flags (intégré dans map-parser-spec) |
+| Phase 1.6 — Directional Autotiles | [map-parser-spec.md](./map-parser-spec.md#L1) | Walkability + direction_flags (integrated into map-parser-spec) |
 
 ## 2. Global Registry
 
@@ -100,14 +99,14 @@ This document is the master index for all technical specifications in the RPG en
 
 ## 5. Architecture Decision Records
 
-| ADR | Décision | Rationale |
+| ADR | Decision | Rationale |
 |-----|----------|-----------|
-| [ADR-001](../ADRs/ADR-001-gamestate-architecture.md) | `GameStateManager` externe orchestre `Game` | `game.py` à 854L — séparation état/logique sans regression sur les tests existants |
-| [ADR-002](../ADRs/ADR-002-save-format.md) | Format JSON versioned pour les sauvegardes | 3 slots, `version: "0.4.0"`, thumbnails PNG |
-| [ADR-003](../ADRs/ADR-003-key-mapping.md) | Bucket pre-cached pour les light masks (10 échelles) | Évite `rotozoom()` par frame dans le lighting des entités |
-| [ADR-004](../ADRs/ADR-004-refactoring-context-injection.md) | Duck-typing `game: Any` pour l'injection de contexte | Couplage faible entre sous-systèmes, évite les imports circulaires |
-| [ADR-005](../ADRs/ADR-005-singleton-new.md) | `__new__` singleton pour AssetManager/I18nManager | Accès zero-config depuis tout module sans import circulaire |
-| [ADR-006](../ADRs/ADR-006-perf-constants-pre-render-cache.md) | Pre-render cache pour les surfaces UI statiques | Zéro allocation `Surface` dans les hot paths de draw |
+| [ADR-001](../ADRs/ADR-001-gamestate-architecture.md) | External `GameStateManager` orchestrating `Game` | `game.py` at 854 LOC — separation of state/logic without regression on existing tests |
+| [ADR-002](../ADRs/ADR-002-save-format.md) | Versioned JSON format for saves | 3 slots, `version: "0.4.0"`, PNG thumbnails |
+| [ADR-003](../ADRs/ADR-003-key-mapping.md) | Map ESC key to Pause Screen | ESC opens Pause Overlay instead of exiting |
+| [ADR-004](../ADRs/ADR-004-refactoring-context-injection.md) | Duck-typing `game: Any` for context injection | Weak coupling between subsystems, avoids circular imports |
+| [ADR-005](../ADRs/ADR-005-singleton-new.md) | `__new__` singleton for AssetManager/I18nManager | Zero-config access from any module without circular imports |
+| [ADR-006](../ADRs/ADR-006-perf-constants-pre-render-cache.md) | Pre-render cache for static UI surfaces | Zero Surface allocations in draw hot paths |
 
-> **Note :** ADR-005 a été créé le 2026-05-15. Si le lien est rouge, le fichier ADR est en cours de création.
-| Phase 1.7 — Urbanisation & Traçabilité | [quality-gates.md](./quality-gates.md) | Traçabilité 100% TC/IT, IDs normalisés (SAVE-/PERF-) |
+> **Note:** ADR-005 was created on 2026-05-15. If the link is red, the ADR file is being created.
+| Phase 1.7 — Urbanization & Traceability | [quality-gates.md](./quality-gates.md) | 100% TC/IT traceability, normalized IDs (SAVE-/PERF-) |

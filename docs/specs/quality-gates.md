@@ -67,9 +67,9 @@ To maintain a 10-20x velocity multiplier, all contributions must pass through th
 
 ## Test Case Specifications
 
-> **Note :** Ce document de référence n'a pas de Test Cases propres. Les TCs concrets sont dans chaque spec d'implémentation avec préfixes domaine (ex: `CHEST-U-01`, `INT-I-03`). Voir [traceability.md](../traceability.md) pour la matrice de couverture complète.
+> **Note:** This reference document does not have its own Test Cases. Concrete TCs are located in each implementation spec with domain prefixes (e.g., `CHEST-U-01`, `INT-I-03`). See [traceability.md](../traceability.md) for the complete coverage matrix.
 > 
-> Règle L-TRACE-001 : tout TC doit utiliser un préfixe de domaine unique — jamais de `TC-001` générique.
+> Rule L-TRACE-001: every TC must use a unique domain prefix — never a generic `TC-001`.
 
 ## Error Handling
 | Error | Response | Fallback | Logging |

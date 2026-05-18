@@ -6,9 +6,9 @@ promoted: 2026-05-15
 
 # Blueprint: Directional Movement and Autotiles
 
-> **Spec d'implémentation :** [`docs/specs/map-parser-spec.md`](../specs/map-parser-spec.md) (sections `walkable`, `direction_flags`, `TileMapData`)  
-> ~~Spec phase-1.6 consolidée dans map-parser-spec.md le 2026-05-15~~ — voir aussi [`engine-core.md`](../specs/engine-core.md)  
-> Ce blueprint a été promu en spec le 2026-05-15. Les gaps ci-dessous ont été résolus.
+> **Implementation Spec:** [`docs/specs/map-parser-spec.md`](../specs/map-parser-spec.md) (sections `walkable`, `direction_flags`, `TileMapData`)  
+> ~~Phase 1.6 spec consolidated into map-parser-spec.md on 2026-05-15~~ — see also [`engine-core.md`](../specs/engine-core.md)  
+> This blueprint was promoted to spec on 2026-05-15. The gaps below have been resolved.
 
 ## 7 Questions Strategy
 
@@ -40,10 +40,10 @@ promoted: 2026-05-15
 
 ## Gap Discovery
 
-> Tous les gaps ont été résolus avant la promotion en spec (2026-05-15).
+> All gaps have been resolved prior to specification promotion (2026-05-15).
 
-| # | Gap | Résolution |
+| # | Gap | Resolution |
 |---|-----|------------|
-| 1 | **Movement Constraint Semantics**: Does `direction=up` restrict *entering* or *exiting* the tile? | **Résolu :** Exiting. La contrainte s'applique sur la tuile de **départ** — voir `map-parser-spec.md` § direction_flags. |
-| 2 | **Autotile Pipeline Support**: Support des 4-frame RPG Maker XP water autotiles? | **Résolu :** Oui, `scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py` supporte les frames animées — voir research `autotile_directional_movement_research.md`. |
-| 3 | **Backwards Compatibility**: Migration depuis `collidable` vers `walkable`? | **Résolu :** `collidable` est géré comme fallback (`walkable = not collidable` si `walkable` absent) — voir `map-parser-spec.md` § TileMapData Assumptions. |
+| 1 | **Movement Constraint Semantics**: Does `direction=up` restrict *entering* or *exiting* the tile? | **Resolved:** Exiting. The constraint is evaluated at the **departure** tile — see `map-parser-spec.md` § direction_flags. |
+| 2 | **Autotile Pipeline Support**: Support for 4-frame RPG Maker XP water autotiles? | **Resolved:** Yes, `scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py` supports animated frames — see research `autotile_directional_movement_research.md`. |
+| 3 | **Backwards Compatibility**: Migration from `collidable` to `walkable`? | **Resolved:** `collidable` is parsed as a fallback (`walkable = not collidable` if `walkable` is absent) — see `map-parser-spec.md` § TileMapData Assumptions. |

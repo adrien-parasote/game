@@ -12,7 +12,7 @@ ADR: docs/ADRs/ADR-006-perf-constants-pre-render-cache.md
 
 ## Document Type: Implementation
 
-> **Statut :** Delivered ✅ (BUILD terminé, tests passés)
+> **Status:** Delivered ✅ (BUILD completed, tests passed)
 
 **Covers:** P-FR-01, P-CONST-01a/b/c/d/e, P-PERF-01a/b/c/d
 

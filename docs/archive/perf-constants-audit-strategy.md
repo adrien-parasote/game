@@ -1,11 +1,11 @@
 # ~~Strategic Blueprint — Performance & Constants Hardening~~
 
-> ⚠️ **ARCHIVÉ — 2026-05-15**  
-> Le contenu de ce document a été promu en **[ADR-006](../ADRs/ADR-006-perf-constants-pre-render-cache.md)** (décision architecturale validée).  
-> Conservation à titre de traçabilité historique uniquement. **Référencer ADR-006 à la place.**
+> ⚠️ **ARCHIVED — 2026-05-15**  
+> The content of this document has been promoted to **[ADR-006](../ADRs/ADR-006-perf-constants-pre-render-cache.md)** (validated architectural decision).  
+> Kept for historical traceability only. **Reference ADR-006 instead.**
 
-> ✅ **Ce document est TERMINÉ.** Toutes les implémentations décrites ont été complétées dans la session 2026-05-07.  
-> Conservation à titre de référence historique. Ne pas ré-implémenter.
+> ✅ **This document is COMPLETED.** All described implementations were completed in the 2026-05-07 session.  
+> Kept for historical reference. Do not re-implement.
 
 # Strategic Blueprint — Performance & Constants Hardening
 

@@ -1,27 +1,27 @@
-# ADR-001 — Architecture : GameStateManager externe à Game
+# ADR-001 — Architecture: External GameStateManager Orchestrating Game
 
-**Date :** 2026-05-02  
-**Status :** ✅ Accepté
+**Date:** 2026-05-02  
+**Status:** ✅ Accepted
 
-## Contexte
+## Context
 
-`game.py` fait 854 lignes. Il faut ajouter un Menu Principal, un Menu Pause et un système de sauvegarde. Deux options ont été évaluées.
+`game.py` is 854 lines long. We need to introduce a Main Menu, a Pause Menu, and a save system. Two structural options were evaluated.
 
-## Options évaluées
+## Evaluated Options
 
 | Option | Description | Pros | Cons |
 |---|---|---|---|
-| **A (retenue)** | `GameStateManager` externe orchestre `Game` comme objet | Zero régression, `game.py` inchangé, testable séparément | `Game.run()` doit devenir `run_frame(dt)` |
-| **B (rejetée)** | Intégrer state machine dans `game.py` | Un seul fichier | `game.py` → ~1200L, viole règle 800L, risque de régression sur 444 tests |
+| **A (Selected)** | External `GameStateManager` orchestrating `Game` as an object | Zero regressions, `game.py` remains unchanged, separately testable | `Game.run()` must become `run_frame(dt)` |
+| **B (Rejected)** | Integrating the state machine directly inside `game.py` | Single file structure | `game.py` expands to ~1200 LOC, violating the 800-line rule, risking regressions across 444 tests |
 
-## Décision
+## Decision
 
-Option A. `GameStateManager` est le nouveau point d'entrée. Il possède une boucle principale et délègue le rendu/update à l'état courant (`TitleScreen`, `Game`, `PauseScreen`).
+Option A. `GameStateManager` is established as the new entry point. It hosts the main gameplay loop and delegates rendering and updates to the current active state (`TitleScreen`, `Game`, `PauseScreen`).
 
-`Game.run()` est remplacé par `Game.run_frame(dt) -> GameEvent` qui retourne un événement (`PAUSE_REQUESTED`, `QUIT`, `None`) au lieu de boucler indéfiniment.
+`Game.run()` is replaced with `Game.run_frame(dt) -> GameEvent`, which returns contextual events (`PAUSE_REQUESTED`, `QUIT`, `None`) to the manager instead of looping infinitely.
 
-## Conséquences
+## Consequences
 
-- `main.py` instancie `GameStateManager` au lieu de `Game`
-- `Game` reçoit 2 nouveaux hooks : `run_frame(dt)` et `save_state() -> dict`
-- Les 444 tests existants ne sont pas affectés (ils instancient `Game` directement)
+- `main.py` instantiates `GameStateManager` instead of `Game`.
+- `Game` receives two new hooks: `run_frame(dt)` and `save_state() -> dict`.
+- The 444 existing unit tests are unaffected (they instantiate `Game` directly in isolation).

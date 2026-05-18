@@ -115,8 +115,8 @@ To maintain modularity, the engine decouples map parsing from rendering logic.
 ### K. Entity Collision Logic
 In addition to map tile collisions, the engine supports blocking movement through dynamic entities via the `CollisionChecker`.
 - **Mechanism**: `CollisionChecker.check(px, py, requester)` iterates through layers and groups.
-- **Séquence de check (Autoritaire)**:
-    0. **Walkable Override (prioritaire)**: Si le point testé se situe dans le `rect` d'une entité présente dans `game.walkable_override_entities`, retourne immédiatement `False` (non bloqué). Permet aux ponts ouverts (`is_passable=True, is_on=True`) de court-circuiter la vérification des tuiles non-walkables (eau).
+- **Check Sequence (Authoritative)**:
+    0. **Walkable Override (priority)**: If the tested point is within the rect of an entity in `game.walkable_override_entities`, immediately return `False` (not blocked). Allows open bridges (`is_passable=True, is_on=True`) to bypass non-walkable tile checks (water).
     1. **Map tiles**: `map_manager.is_walkable(int(wx), int(wy))` (inverted logic: walkable=False blocks).
     2. **Dynamic Obstacles**: `obstacles_group` (collidepoint).
     3. **NPCs**: `npcs` group (collidepoint).
@@ -380,8 +380,8 @@ The engine enforces a strict UI priority to prevent overlapping interfaces and i
 
 | # | Assumption | Risk | Validation |
 |---|-----------|------|------------|
-| 1 | `pygame.display.get_surface()` retourne toujours un Surface valide une fois initialisé | Low | Tests existants (mocks) + integration test |
-| 2 | Le fichier `assets/tiled/game.tiled-project` existe en production (peut être absent dans les clones dev) | Medium | `load_property_types` retourne `[]` en fallback — jamais de crash |
-| 3 | Les coordonnées Tiled sont en Top-Left — le moteur applique l'offset `TILE_SIZE/2` au chargement | Low | `TmjParser` applique systématiquement la correction (vérifié par TC-MAP-*) |
-| 4 | La carte `99-debug_room.tmj` existe quand `DEBUG=True` — si absente, le jeu log CRITICAL et ne charge pas de carte | Medium | À vérifier en mode DEBUG avant release |
-| 5 | Les fichiers BGM sont tous en `.ogg` — autres formats non supportés par `pygame.mixer` | Low | Convention de projet — validée par linter asset |
+| 1 | `pygame.display.get_surface()` always returns a valid Surface once initialized | Low | Existing tests (mocks) + integration test |
+| 2 | The file `assets/tiled/game.tiled-project` exists in production (may be absent in dev clones) | Medium | `load_property_types` returns `[]` as fallback — never crashes |
+| 3 | Tiled coordinates are in Top-Left — the engine applies the `TILE_SIZE/2` offset on load | Low | `TmjParser` systematically applies the correction (verified by TC-MAP-*) |
+| 4 | The map `99-debug_room.tmj` exists when `DEBUG=True` — if absent, the game logs CRITICAL and does not load a map | Medium | To verify in DEBUG mode before release |
+| 5 | All BGM files are `.ogg` — other formats are not supported by `pygame.mixer` | Low | Project convention — validated by asset linter |

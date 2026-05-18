@@ -3,50 +3,50 @@
 > Document Type: Implementation
 # Save System & Save Menu UI
 
-Ce document spécifie le système de sauvegarde, l'interface utilisateur des emplacements de sauvegarde (Save Slots), et la gestion des miniatures (screenshots) du jeu.
+This document specifies the save system, the Save Slots user interface, and the game's thumbnail (screenshot) capture system.
 
-## 1. Architecture Core
+## 1. Core Architecture
 
-Le système repose sur 3 composants majeurs :
-1. **`SaveManager`** : Étendu pour supporter la sérialisation des miniatures, du niveau du joueur et du temps en jeu.
-2. **`SaveSlotUI`** : Un composant graphique réutilisable pour rendre un emplacement (Save Slot) à l'écran.
-3. **`SaveMenuOverlay`** : Un gestionnaire de menu (utilisé par `PauseScreen` et `TitleScreen`) affichant 3 `SaveSlotUI`.
+The system is composed of 3 major components:
+1. **`SaveManager`**: Extended to support the serialization of thumbnails, player level, and active playtime.
+2. **`SaveSlotUI`**: A reusable visual component designed to render an individual save slot on screen.
+3. **`SaveMenuOverlay`**: An overlay menu manager (utilized by `PauseScreen` and `TitleScreen`) that displays 3 `SaveSlotUI` components.
 
 ### 1.1 SaveManager & SlotInfo
 
-Le `SaveManager` doit être capable de lire les méta-données très rapidement pour le menu (sans parser les objets lourds comme `world_state` ou `inventory`).
+The `SaveManager` must read root metadata extremely fast to populate the UI (without parsing large nested objects like `world_state` or `inventory`).
 
-`SlotInfo` étendu :
+Extended `SlotInfo` properties:
 - `slot_id: int`
-- `saved_at: str` (format ISO)
+- `saved_at: str` (ISO 8601 format)
 - `playtime_seconds: float`
 - `map_name: str`
 - `player_name: str` (fallback: "Hero")
 - `level: int`
 
-**Gestion de la Miniature** :
-- Lors d'une sauvegarde, une capture d'écran carrée centrée sur le joueur (ex: 120x120 pixels) doit être sauvegardée sous `saves/slot_{id}_thumb.png`.
-- `SaveManager` expose `save_thumbnail(slot_id, surface)` et `load_thumbnail(slot_id) -> pygame.Surface | None`.
+**Thumbnail Management**:
+- During a save sequence, a squared player-centered screenshot crop (e.g., 120x120 pixels) must be saved to disk at `saves/slot_{id}_thumb.png`.
+- `SaveManager` exposes `save_thumbnail(slot_id, surface)` and `load_thumbnail(slot_id) -> pygame.Surface | None`.
 
-### 1.2 Rendering du Save Slot
+### 1.2 Save Slot Rendering
 
-Le slot utilise le background `assets/images/menu/03-save_slot.png` (427x200).
-- **Miniature** : Dessinée à gauche. La zone disponible est approximativement entre X=40 et X=160.
-- **Hover State** : Si le slot est survolé, un halo orange additif (cercle flou ou sprite) est rendu sur les 4 gemmes du cadre :
-  - Haut-Gauche : `(26, 27)`
-  - Haut-Droite : `(413, 27)`
-  - Bas-Gauche : `(26, 170)`
-  - Bas-Droite : `(414, 171)`
+The slot utilizes the background image asset `assets/images/menu/03-save_slot.png` (427x200 pixels).
+- **Thumbnail**: Rendered on the left side of the slot. The available coordinate window is approximately between X=40 and X=160.
+- **Hover State**: When a slot is hovered by the mouse, an additive orange glow/halo (soft blurred circle or sprite) must be rendered over the 4 frame corner gems:
+  - Top-Left: `(26, 27)`
+  - Top-Right: `(413, 27)`
+  - Bottom-Left: `(26, 170)`
+  - Bottom-Right: `(414, 171)`
 
-### 1.3 Bouton Retour (Back Button)
+### 1.3 Back Button
 
-Le `SaveMenuOverlay` inclut un bouton "Retour" positionné en bas à gauche du panneau.
-- **Icone** : `assets/images/menu/01-menu_back_cursor.png` (28x25).
-- **Label** : Texte "Retour" (I18n: `menu.back`) rendu avec la police `Cormorant Garamond`.
-- **Rendu** :
-  - **Repos** : Effet gravé ("engraved").
-  - **Survol** : Halo cyan intense (`(150, 255, 220)` / glow `(0, 180, 150)`).
-- **Interaction** : Cliquer sur ce bouton permet de fermer l'overlay et de retourner à l'état précédent.
+The `SaveMenuOverlay` includes a "Back" button positioned at the bottom left of the overlay panel.
+- **Icon Asset**: `assets/images/menu/01-menu_back_cursor.png` (28x25 pixels).
+- **Label**: Text "Back" (parsed via I18n key `menu.back`) rendered using the `Cormorant Garamond` font.
+- **Rendering States**:
+  - **Idle**: Renders with an engraved ("engraved") stone effect.
+  - **Hover**: Renders with an intense cyan halo (`(150, 255, 220)` with glow `(0, 180, 150)`).
+- **Interaction**: Clicking this button closes the overlay and returns the game to the previous state.
 
 ## Assumptions
 
@@ -60,11 +60,11 @@ Le `SaveMenuOverlay` inclut un bouton "Retour" positionné en bas à gauche du p
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
-| Charger tout le fichier JSON pour afficher le menu | Lire uniquement les méta-données racine dans `_read_slot_info` | Optimisation des temps de chargement du menu |
-| Écraser l'ancien fichier sans vérification | Créer un fichier `.tmp` puis le renommer | Prévenir la corruption si le jeu crash pendant la sauvegarde |
-| Gérer les clics de slot directement dans `SaveSlotUI` | Gérer la détection de collision et de clic dans le composant parent (`PauseScreen` / `TitleScreen`) | Le parent doit émettre les `GameEvent` appropriés |
-| Prendre le screenshot avec l'interface de pause visible | Prendre le screenshot juste avant l'ouverture du menu de pause ou rendre offscreen la scène | Le screenshot doit refléter le jeu, pas le menu |
-| Appliquer le halo de survol avec une simple couleur opaque | Utiliser le flag `pygame.BLEND_RGBA_ADD` | Garantir un effet lumineux/glowing cohérent avec le style |
+| Load the entire JSON file just to display slot metadata in the menu | Only read root-level metadata in `_read_slot_info` | Optimizes save slot menu loading times |
+| Overwrite the existing save file directly on write | Write to a temporary `.tmp` file and then rename | Prevents save file corruption if the game crashes mid-save |
+| Handle slot clicks directly inside the `SaveSlotUI` component | Delegate collision detection and click handling to the parent overlay (`PauseScreen` / `TitleScreen`) | The parent overlay must emit the appropriate `GameEvent` transitions |
+| Capture screenshots with the Pause menu UI visible | Capture the screenshot immediately before opening the Pause menu or render the game scene offscreen | The thumbnail must reflect in-game play, not overlay menus |
+| Apply the hover glow using a simple opaque solid color | Render using the `pygame.BLEND_RGBA_ADD` flag | Guarantees a glowing/luminous effect consistent with the visual direction |
 
 ## 3. Test Case Specifications
 
@@ -72,33 +72,33 @@ Le `SaveMenuOverlay` inclut un bouton "Retour" positionné en bas à gauche du p
 
 | Test ID | Component | Input | Expected Output | Edge Cases |
 |---------|-----------|-------|-----------------|------------|
-| SAVE-U-001 | SaveManager | `save_thumbnail(1, valid_surf)` | Crée `saves/slot_1_thumb.png` | Le dossier `saves` n'existe pas |
-| SAVE-U-002 | SaveManager | `load_thumbnail(1)` (existe) | Retourne la `pygame.Surface` | Fichier corrompu ou illisible |
-| SAVE-U-003 | SaveManager | `_read_slot_info` | Retourne `SlotInfo` complet avec `level` | `level` ou `player_name` manquant dans les vieux JSON |
-| SAVE-U-004 | SaveMenuOverlay | `update(dt)` avec souris sur Slot 2 | `_hovered_slot == 1` | Souris en dehors du menu |
-| SAVE-U-005 | SaveSlotUI | Rendu avec `info=None` | Affiche le texte "Emplacement X — Vide" | Slot sans thumbnail (fallback icon) |
-| SAVE-U-006 | SaveSlotUI | `draw(surface, rect, 1, None, None, False)` | Rendu sans crash | — |
-| SAVE-U-007 | SaveSlotUI | `draw(surface, rect, 1, info, thumb, True)` | Rendu avec thumbnail et halo | Thumbnail non carré |
-| SAVE-U-008 | SaveMenuOverlay | `__init__` + `refresh()` | `_slots_info[0].map_name` correct | SlotInfo None pour slots vides |
-| SAVE-U-009 | SaveMenuOverlay | `get_clicked_slot(event)` | Retourne l'index du slot cliqué | Clic hors des rects → None |
-| SAVE-U-010 | SaveMenuOverlay | `update(dt)` + `draw()` | `_hovered_slot` mis à jour, `screen.blit` appelé | — |
-| SAVE-U-011 | SaveMenuOverlay | `is_back_clicked(event)` | Retourne True si clic sur bouton retour | Clic hors bouton retour → False |
+| SAVE-U-001 | SaveManager | `save_thumbnail(1, valid_surf)` | Creates `saves/slot_1_thumb.png` | The `saves/` folder does not exist |
+| SAVE-U-002 | SaveManager | `load_thumbnail(1)` (file exists) | Returns the `pygame.Surface` | Corrupt or unreadable thumbnail file |
+| SAVE-U-003 | SaveManager | `_read_slot_info` | Returns fully populated `SlotInfo` including `level` | `level` or `player_name` properties missing from old save files |
+| SAVE-U-004 | SaveMenuOverlay | `update(dt)` with mouse hovered over Slot 2 | `_hovered_slot == 1` | Mouse cursor is outside the menu panel boundaries |
+| SAVE-U-005 | SaveSlotUI | Rendering with `info=None` | Renders placeholder text: "Slot X — Empty" | Slot without thumbnail file (renders fallback icon) |
+| SAVE-U-006 | SaveSlotUI | `draw(surface, rect, 1, None, None, False)` | Draws empty slot state without crashing | — |
+| SAVE-U-007 | SaveSlotUI | `draw(surface, rect, 1, info, thumb, True)` | Draws active save state with thumbnail and gem halos | Non-squared thumbnail dimension fallbacks |
+| SAVE-U-008 | SaveMenuOverlay | `__init__` + `refresh()` | Populates `_slots_info[0].map_name` correctly | SlotInfo is None for empty slots |
+| SAVE-U-009 | SaveMenuOverlay | `get_clicked_slot(event)` | Returns the index of the clicked slot | Click outside save slot bounding boxes returns `None` |
+| SAVE-U-010 | SaveMenuOverlay | `update(dt)` + `draw()` | `_hovered_slot` is updated, and `screen.blit` is called | — |
+| SAVE-U-011 | SaveMenuOverlay | `is_back_clicked(event)` | Returns `True` if clicking the Back button | Clicking outside back button bounds returns `False` |
 
 ### Integration Tests Required
 
 | Test ID | Flow | Setup | Verification | Teardown |
 |---------|------|-------|--------------|----------|
-| SAVE-I-001 | Cycle de Sauvegarde | Joueur dans la map `spawn` niveau 2 | Fichier JSON contient le `level=2` et `thumbnail` existe | Delete `saves/slot_X` |
-| SAVE-I-002 | Click sur Sauvegarder dans Pause | Ouvrir Pause, cliquer sur "Sauvegarder" | Le menu `SAVE_MENU` overlay s'affiche, les 3 slots sont visibles | Fermer Pause |
-| SAVE-I-003 | Hover sur Slot | `SaveMenuOverlay` ouvert | La méthode de rendu des halos additifs est appelée sur `TitleScreen` | Fermer |
+| SAVE-I-001 | Save & Load Cycle | Player inside the `spawn` map at Level 2 | Save JSON contains `level=2` and the thumbnail file exists | Delete generated `saves/slot_X` files |
+| SAVE-I-002 | Click "Save" in Pause Screen | Open Pause Screen, click "Save" | The `SAVE_MENU` overlay is displayed and all 3 save slots render | Close the Pause menu |
+| SAVE-I-003 | Hover over Slot | `SaveMenuOverlay` active | Additive glow halos draw call is executed on `TitleScreen` | Close the overlay |
 
 ## 4. Error Handling Matrix
 
 | Error Type | Detection | Response | Fallback | Logging | Alert |
 |------------|-----------|----------|----------|---------|-------|
-| Fichier JSON corrompu | `json.JSONDecodeError` dans `_read_slot_info` | Retourner `None` (considéré vide) | Ne pas crasher le menu | ERROR | Aucun |
-| Sauvegarde image échoue | `pygame.error` dans `save_thumbnail` | Ignorer la miniature | Le slot apparaîtra sans image | WARN | Aucun |
-| Image introuvable | `load_thumbnail` renvoie une erreur | Retourner `None` | Affiche un carré gris/vide | WARN | Aucun |
+| Corrupted JSON file | `json.JSONDecodeError` raised in `_read_slot_info` | Return `None` (interpreted as empty slot) | Prevent menu crashes | ERROR | None |
+| Screenshot save failure | `pygame.error` raised during `save_thumbnail` | Ignore thumbnail serialization | The save slot will render without a thumbnail | WARN | None |
+| Missing thumbnail image | File not found during `load_thumbnail` | Return `None` | Render slot with a default gray fallback icon | WARN | None |
 
 ## 5. Deep Links
 - **`SaveManager` class**: [save_manager.py L36](../../src/engine/save_manager.py#L36)

@@ -1,25 +1,25 @@
-# ADR-002 — Format de sauvegarde : JSON sur disque
+# ADR-002 — Save Format: JSON on Disk
 
-**Date :** 2026-05-02  
-**Status :** ✅ Accepté
+**Date:** 2026-05-02  
+**Status:** ✅ Accepted
 
-## Contexte
+## Context
 
-Il faut choisir comment sérialiser et stocker l'état du jeu (3 slots).
+We need to decide how to serialize and store the active game state across 3 save slots.
 
-## Options évaluées
+## Evaluated Options
 
 | Option | Pros | Cons |
 |---|---|---|
-| **JSON (retenu)** | Lisible, natif Python, pas de dépendance, inspecable en debug | Légèrement plus lent que binaire (négligeable pour 3 slots) |
-| pickle | Rapide, natif | Sécurité (exécute du code), fragile aux refactors de classes, non lisible |
-| SQLite | Robuste pour données relationnelles | Surengineering, aucune relation ici |
+| **JSON (Selected)** | Highly readable, native Python parsing, zero external dependencies, inspectable during debugging | Slightly slower to parse than binary formats (negligible for 3 slots) |
+| `pickle` | Fast, native serialization | Serious security concerns (arbitrary code execution), fragile under class refactoring, non-human-readable |
+| SQLite | Robust for complex relational datasets | Over-engineered for our flat schema needs; zero relations exist |
 
-## Décision
+## Decision
 
-JSON. Fichiers stockés dans `saves/` à la racine du projet. Répertoire dans `.gitignore`.
+JSON format. Save files will be stored under the `saves/` folder at the root of the project. This directory is included in `.gitignore`.
 
-## Structure du fichier `saves/slot_[N].json`
+## Schema Structure of `saves/slot_[N].json`
 
 ```json
 {
@@ -60,10 +60,10 @@ JSON. Fichiers stockés dans `saves/` à la racine du projet. Répertoire dans `
 }
 ```
 
-## Conséquences
+## Consequences
 
-- `SaveManager` est responsable de la sérialisation/désérialisation
-- `Item` doit exposer `to_dict() -> dict` et `from_dict(d: dict) -> Item`
-- `Inventory` doit exposer `to_dict()` et `from_dict()`
-- `TimeSystem` doit exposer `to_dict()` et `from_dict()`
-- Version du schéma (`version`) incluse pour migrations futures
+- `SaveManager` is solely responsible for serialization and deserialization.
+- `Item` must expose `to_dict() -> dict` and `from_dict(d: dict) -> Item`.
+- `Inventory` must expose `to_dict()` and `from_dict()`.
+- `TimeSystem` must expose `to_dict()` and `from_dict()`.
+- Scheme versioning (`version` key) is included to facilitate future migrations.

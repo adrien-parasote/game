@@ -1,69 +1,67 @@
-# ADR-006 — Pre-render Cache Pattern pour les surfaces UI statiques
+# ADR-006 — Pre-render Cache Pattern for Static UI Surfaces
 
-**Date :** 2026-05-07  
-**Statut :** ✅ ACCEPTED — Implémenté (commit `perf-constants`)
+**Date:** 2026-05-07  
+**Status:** ✅ Accepted — Implemented (commit `perf-constants`)
 
 ---
 
-## Contexte
+## Context
 
-Le moteur de jeu présentait trois catégories de dette technique impactant les performances runtime et la maintenabilité :
+The game engine suffered from three categories of technical debt that impacted runtime performance and code maintainability:
 
-1. **Allocations de Surface par frame** : `_blit_halo_text()` (partagé entre `pause_screen.py`, `save_menu.py`, `title_screen_draw.py`) allouait `pygame.Surface` + exécutait `gaussian_blur()` à 60 FPS lors des états hover. `chest_draw._draw_title()` instanciait un objet Font à chaque frame de draw. `hud.draw()` construisait `I18nManager()` à chaque frame.
+1. **Per-frame Surface Allocations**: `_blit_halo_text()` (shared between `pause_screen.py`, `save_menu.py`, `title_screen_draw.py`) allocated a new `pygame.Surface` and executed a `gaussian_blur()` at 60 FPS during hover states. `chest_draw._draw_title()` instantiated a `Font` object on every single draw frame. `hud.draw()` instantiated `I18nManager()` per frame.
+2. **Orphaned Magic Numbers**: 40+ RGB tuples, pixel offsets, font sizes, and engraving colors were hardcoded directly within five non-constants UI files (`save_menu.py`, `pause_screen.py`, `chest_draw.py`, `dialogue.py`, `lighting.py`), violating the established `_constants.py` architecture.
+3. **A French Comment** in `game_state_manager.py:133` violating the all-English codebase policy.
 
-2. **Valeurs magic orphelines** : 40+ tuples RGB, tailles en pixels, tailles de fonts et couleurs d'engraving étaient hardcodées dans 5 fichiers non-constants (`save_menu.py`, `pause_screen.py`, `chest_draw.py`, `dialogue.py`, `lighting.py`), violant l'architecture `_constants.py` établie.
+## Decision
 
-3. **Un commentaire en français** dans `game_state_manager.py:133` violant la politique all-English.
+**Pre-render Cache Pattern**: Compute static text surfaces once during `__init__` (or within a `refresh()` method for dynamic data-bound text), store them in a `dict[key → Surface]`, and invalidate them only when the underlying source data changes. This pattern was already successfully used in `title_screen.py` (line 168).
 
-## Décision
+**No New Abstractions**: Do not introduce any new wrapper classes. Extend existing `_constants.py` files or create dedicated constants files (e.g. `save_menu_constants.py`).
 
-**Pattern pre-render cache** : les surfaces de texte statiques sont calculées une seule fois à `__init__` (ou `refresh()` pour le texte dépendant de données), stockées dans `dict[key → Surface]`, invalidées uniquement quand la source change. Ce pattern existait déjà dans `title_screen.py` (ligne 168).
-
-**Aucune nouvelle abstraction.** Aucune nouvelle classe. Extension des fichiers `_constants.py` existants ou création d'un seul nouveau (`save_menu_constants.py`).
-
-| Amélioration | Avant | Après |
+| Optimization | Before | After |
 |---|---|---|
-| Surface allocs dans `_blit_halo_text` par frame | 2 allocs + 1 gaussian_blur par item hover | 0 (pre-render à init) |
-| Font créé dans `_draw_title()` | 1 par frame (60×/s) | 0 (cached dans mixin init) |
-| `I18nManager()` dans `draw()` | 1 par frame | 0 (cached dans `__init__`) |
-| Magic values dans fichiers non-constants | 40+ | 0 |
+| Surface allocations in `_blit_halo_text` per frame | 2 allocations + 1 gaussian_blur per hovered item | 0 (pre-rendered at init/refresh) |
+| Font object instantiated in `_draw_title()` | 1 instantiation per frame (60×/sec) | 0 (cached in mixin init) |
+| `I18nManager()` instantiation in `draw()` | 1 instantiation per frame | 0 (cached in `__init__`) |
+| Magic values hardcoded in UI modules | 40+ | 0 (centralized in constants) |
 
-## Alternatives rejetées
+## Rejected Alternatives
 
-| Alternative | Raison du rejet |
+| Alternative | Reason for Rejection |
 |---|---|
-| NumPy vectorization de `_create_beam_surface()` | Spec séparée nécessaire, hors scope |
-| Nouvelle couche d'abstraction UI | Inutile — extension des patterns existants suffisante |
-| Changements de l'asset pipeline | Hors scope — refactor uniquement |
+| NumPy vectorization of `_create_beam_surface()` | Out of scope; requires a separate dedicated design spec |
+| Introducing a new UI library abstraction layer | Unnecessary overhead; expanding existing patterns is fully sufficient |
+| Modifying the global asset pipeline | Out of scope; this is a pure code refactor |
 
-## Conséquences
+## Consequences
 
-**Positives :**
-- Zéro allocation `Surface` dans les hot paths de draw (pause menu, save menu, HUD)
-- Architecture `_constants.py` complète : tous les modules UI ont leur fichier constants dédié
-- Comportement observable inchangé — refactor pur
+**Positive:**
+- Zero `pygame.Surface` allocations in draw hot paths (pause menu, save menu, HUD).
+- Fully completed `_constants.py` architecture: all UI modules now have a dedicated constants file.
+- Clean refactoring: zero changes to observable in-game behavior.
 
-**Contraintes :**
-- Les surfaces pre-render doivent être invalidées explicitement si la donnée source change (ex: `SaveMenuOverlay.refresh()` reconstruit `_cached_title_surfs`)
-- Pattern `_rendered_idle` / `_rendered_hover` : deux listes séparées, `draw()` indexe selon l'état hover
+**Constraints / Negatives:**
+- Pre-rendered surfaces must be explicitly invalidated and rebuilt when source data changes (e.g. `SaveMenuOverlay.refresh()` reconstructs `_cached_title_surfs`).
+- Adopt the `_rendered_idle` / `_rendered_hover` pattern: maintain two separate surface lists, with `draw()` indexing them based on hover state.
 
-## Fichiers modifiés
+## Modified Files
 
-| Fichier | Changement |
+| File | Changes |
 |---------|-----------|
-| `src/ui/pause_screen.py` | `_make_engraved_surface()` + `_make_halo_surface()` au `__init__` |
-| `src/ui/save_menu.py` | `_cached_title_surfs` pre-render dans `refresh()` |
-| `src/ui/chest_draw.py` | Font cached dans mixin `__init__` |
-| `src/ui/hud.py` | `self._i18n = I18nManager()` dans `__init__` |
-| `src/ui/save_menu_constants.py` | *(nouveau)* 15 constantes |
-| `src/ui/pause_screen_constants.py` | +12 nouvelles constantes |
-| `src/engine/lighting_constants.py` | `BEAM_COLOR_MOON`, `BEAM_COLOR_SUN` |
-| `src/ui/dialogue_constants.py` | `DIALOGUE_SHADOW_COLOR`, `DIALOGUE_TEXT_COLOR` |
-| `src/ui/chest_constants.py` | `CHEST_TITLE_TEXT`, `CHEST_TEXT_COLOR`, `CHEST_SLOT_FALLBACK_COLOR` |
-| `src/engine/game_state_manager.py` | Fix commentaire français ligne 133 |
+| `src/ui/pause_screen.py` | `_make_engraved_surface()` + `_make_halo_surface()` pre-rendered at `__init__` |
+| `src/ui/save_menu.py` | `_cached_title_surfs` pre-rendered at `refresh()` |
+| `src/ui/chest_draw.py` | Font cached in the mixin `__init__` |
+| `src/ui/hud.py` | Cached `self._i18n = I18nManager()` in `__init__` |
+| `src/ui/save_menu_constants.py` | *(New file)* 15 centralized constants |
+| `src/ui/pause_screen_constants.py` | +12 new constants |
+| `src/engine/lighting_constants.py` | Defined `BEAM_COLOR_MOON` and `BEAM_COLOR_SUN` |
+| `src/ui/dialogue_constants.py` | Mapped `DIALOGUE_SHADOW_COLOR` and `DIALOGUE_TEXT_COLOR` |
+| `src/ui/chest_constants.py` | Centralized `CHEST_TITLE_TEXT`, `CHEST_TEXT_COLOR`, and `CHEST_SLOT_FALLBACK_COLOR` |
+| `src/engine/game_state_manager.py` | Translated the French comment at line 133 to English |
 
-## Références
+## References
 
-- Learning `L-UI-011` — Pre-render cache pattern (`.agents/learnings/ui.md`)
-- Learning `L-UI-012` — Constants-first refactor order (`.agents/learnings/ui.md`)
-- Spec stratégique originale : `docs/strategic/perf-constants-audit-strategy.md` *(archivée — ce ADR en est la forme canonique)*
+- Learning `L-UI-011` — Pre-render cache pattern (`.agents/learnings/ui.md`).
+- Learning `L-UI-012` — Constants-first refactor order (`.agents/learnings/ui.md`).
+- Original Strategic Spec: `docs/strategic/perf-constants-audit-strategy.md` *(archived — this ADR represents its canonical form)*.
