@@ -107,12 +107,7 @@ class Player(BaseEntity):
 
         # Trigger footstep on frames 1 and 3
         if self.is_moving and current_int_frame != prev_int_frame and current_int_frame in (1, 3):
-            # Resolve material from map
-            material = None
-            if self.game and self.game.map_manager:
-                material = self.game.map_manager.get_terrain_material_at(
-                    int(self.pos.x), int(self.pos.y)
-                )
+            material = self._resolve_footstep_material()
 
             sfx_name = f"04-footstep_{material}" if material else "04-footstep"
 
@@ -128,6 +123,29 @@ class Player(BaseEntity):
         # Get integer index to select frame (0 to 3) + offset
         current_frame = int(self.frame_index) % 4
         self.image = self.frames[offset + current_frame]
+
+    def _resolve_footstep_material(self) -> str | None:
+        """Return the footstep material at the player's current position.
+
+        Priority:
+          1. Active walkable_override entity (e.g. lowered bridge) with a material set.
+          2. Map tile material via map_manager (existing behavior).
+        """
+        if self.game:
+            for entity in getattr(self.game, "walkable_override_entities", ()):
+                if not entity.rect:
+                    continue
+                if not entity.rect.collidepoint(int(self.pos.x), int(self.pos.y)):
+                    continue
+                entity_material = getattr(entity, "material", "")
+                if entity_material:
+                    return entity_material
+
+        if self.game and self.game.map_manager:
+            return self.game.map_manager.get_terrain_material_at(
+                int(self.pos.x), int(self.pos.y)
+            )
+        return None
 
     def update(self, dt: float):
         # We don't call self.input() here to keep it testable with manual direction set

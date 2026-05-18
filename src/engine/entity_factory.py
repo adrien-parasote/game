@@ -144,7 +144,10 @@ class EntityFactory:
             activate_from_anywhere=bool(_get_property(props, "activate_from_anywhere", False)),
             facing_direction=str(_get_property(props, "facing_direction", "")),
             sfx=str(_get_property(props, "sfx", "")),
+            sfx_open=str(_get_property(props, "sfx_open", "")),
+            sfx_close=str(_get_property(props, "sfx_close", "")),
             sfx_ambient=str(_get_property(props, "sfx_ambient", "")),
+            material=str(_get_property(props, "material", "")),
             day_night_driven=bool(_get_property(props, "day_night_driven", False)),
         )
         entity._time_system = self.game.time_system

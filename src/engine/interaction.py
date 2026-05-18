@@ -114,11 +114,12 @@ class InteractionManager(InteractionEmoteMixin):
     def _trigger_object_interaction(self, obj, p_pos):
         res = obj.interact(self.game.player)
 
-        if getattr(obj, "sfx", None):
+        sfx_name = self._resolve_sfx(obj)
+        if sfx_name:
             dist = p_pos.distance_to(obj.pos)
             vol_mult = max(0.4, 1.0 - dist / 120.0)
             self.game.audio_manager.play_sfx(
-                str(obj.sfx),
+                sfx_name,
                 str(getattr(obj, "element_id", "")),
                 volume_multiplier=vol_mult,
             )
@@ -285,6 +286,22 @@ class InteractionManager(InteractionEmoteMixin):
             self.game.transition_map(tp.target_map, tp.target_spawn_id, tp.transition_type)
             break
 
+    @staticmethod
+    def _resolve_sfx(entity) -> str:
+        """Return the SFX name to play after a state toggle.
+
+        Priority: sfx_open/sfx_close (directional) > sfx (generic) > '' (silent).
+        entity.is_on must reflect the NEW state (post-toggle) at call time.
+        Only string values are considered valid (guards against MagicMock attrs).
+        """
+        def _get_str(obj, attr):
+            val = getattr(obj, attr, "")
+            return val if isinstance(val, str) else ""
+
+        if entity.is_on:
+            return _get_str(entity, "sfx_open") or _get_str(entity, "sfx")
+        return _get_str(entity, "sfx_close") or _get_str(entity, "sfx")
+
     def toggle_entity_by_id(self, target_id: str, depth: int = 0):
         """Toggle the state of any entity matching element_id == target_id."""
         if not target_id:
@@ -302,9 +319,10 @@ class InteractionManager(InteractionEmoteMixin):
                     if hasattr(entity, "interact"):
                         entity.interact(self.game.player)
 
-                        if getattr(entity, "sfx", None):
+                        sfx_name = self._resolve_sfx(entity)
+                        if sfx_name:
                             self.game.audio_manager.play_sfx(
-                                str(entity.sfx), str(getattr(entity, "element_id", ""))
+                                sfx_name, str(getattr(entity, "element_id", ""))
                             )
 
                         # Save state

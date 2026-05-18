@@ -63,7 +63,10 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         activate_from_anywhere: bool = False,
         facing_direction: str | None = None,
         sfx: str = "",
+        sfx_open: str = "",
+        sfx_close: str = "",
         sfx_ambient: str = "",
+        material: str = "",
         day_night_driven: bool = False,
     ):
         # 1. Properties & State Initialization
@@ -87,7 +90,10 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
             sprite_sheet,
             facing_direction,
             sfx,
+            sfx_open,
+            sfx_close,
             sfx_ambient,
+            material,
             day_night_driven,
         )
 
@@ -134,8 +140,8 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
     def _parse_properties(
         self, sub_type, start_row, end_row, is_on, is_animated, depth, position,
         off_position, halo_size, halo_color, halo_alpha, particles, particle_count,
-        activate_from_anywhere, sprite_sheet, facing_direction, sfx, sfx_ambient,
-        day_night_driven,
+        activate_from_anywhere, sprite_sheet, facing_direction, sfx, sfx_open,
+        sfx_close, sfx_ambient, material, day_night_driven,
     ):
         """Parse raw properties and initialize basic state."""
         self.sub_type = sub_type
@@ -151,7 +157,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self._parse_direction(facing_direction, position)
         self._parse_state(is_on, is_animated, halo_size)
         self._parse_halo(halo_size, halo_color, halo_alpha)
-        self._parse_misc(particles, particle_count, activate_from_anywhere, sfx, sfx_ambient)
+        self._parse_misc(particles, particle_count, activate_from_anywhere, sfx, sfx_open, sfx_close, sfx_ambient, material)
 
     def _parse_day_night(self, day_night_driven):
         self.day_night_driven = day_night_driven
@@ -203,13 +209,19 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self.f_alpha = 1.0
         self.f_scale = 1.0
 
-    def _parse_misc(self, particles, particle_count, activate_from_anywhere, sfx, sfx_ambient):
+    def _parse_misc(
+        self, particles, particle_count, activate_from_anywhere,
+        sfx, sfx_open, sfx_close, sfx_ambient, material,
+    ):
         self.particles = particles
         self.particle_count = particle_count
         self.particles_list = []
         self.activate_from_anywhere = activate_from_anywhere
         self.sfx = sfx
+        self.sfx_open = sfx_open
+        self.sfx_close = sfx_close
         self.sfx_ambient = sfx_ambient
+        self.material = material
 
     def _load_assets(self, sprite_sheet, width, height):
         """Load spritesheet and compute frame dimensions.
