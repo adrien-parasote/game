@@ -218,11 +218,6 @@
                     "value": -1
                 },
                 {
-                    "name": "sfx",
-                    "type": "string",
-                    "value": ""
-                },
-                {
                     "name": "sfx_ambient",
                     "type": "string",
                     "value": ""

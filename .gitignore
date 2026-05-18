@@ -36,3 +36,4 @@ pyright_output.txt
 src/dsm.txt
 fix_indent.py
 .tdd_lock
+verify_output.json
