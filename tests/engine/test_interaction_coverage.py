@@ -92,6 +92,7 @@ class TestInteractionManagerCoverage:
         obj.is_on = False
         obj.is_passable = False
         obj.sub_type = "lever"
+        obj.trigger_only = False
         obj.activate_from_anywhere = True  # Direct attribute — no property patch needed
         game.interactives = [obj]
         game.player.pos = pygame.math.Vector2(100, 100)

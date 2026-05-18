@@ -24,6 +24,7 @@ def _make_interactive(
     facing_direction=None,
     position=0,
     day_night_driven=False,
+    trigger_only=False,
 ):
     """Build a minimal InteractiveEntity without disk assets."""
     group = pygame.sprite.Group()
@@ -58,6 +59,7 @@ def _make_interactive(
             facing_direction=facing_direction,
             sfx="",
             day_night_driven=day_night_driven,
+            trigger_only=trigger_only,
         )
     return entity, obstacles
 
@@ -681,3 +683,32 @@ class TestBridgeSortY:
         chest, _ = _make_interactive(sub_type="chest")
         assert not hasattr(door, "sort_y"), "door must not have sort_y"
         assert not hasattr(chest, "sort_y"), "chest must not have sort_y"
+
+
+# ---------------------------------------------------------------------------
+# TC-001..TC-006 — trigger_only attribute on InteractiveEntity
+# Spec: docs/specs/trigger-only-spec.md
+# ---------------------------------------------------------------------------
+
+
+class TestTriggerOnly:
+    """Unit tests for the trigger_only property on InteractiveEntity.
+
+    trigger_only=True must:
+    - Be stored as self.trigger_only == True after __init__
+    - Default to False when not passed (backward compat)
+
+    Spec: docs/specs/trigger-only-spec.md § TC-001..TC-006
+    """
+
+    @pytest.mark.tc("TC-005")
+    def test_trigger_only_true_stored_on_entity(self):
+        """TC-005: trigger_only=True passed to __init__ → entity.trigger_only is True."""
+        entity, _ = _make_interactive(trigger_only=True)
+        assert entity.trigger_only is True
+
+    @pytest.mark.tc("TC-006")
+    def test_trigger_only_defaults_to_false(self):
+        """TC-006: No trigger_only arg → entity.trigger_only is False (backward compat)."""
+        entity, _ = _make_interactive()
+        assert entity.trigger_only is False

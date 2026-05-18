@@ -149,6 +149,7 @@ class EntityFactory:
             sfx_ambient=str(_get_property(props, "sfx_ambient", "")),
             material=str(_get_property(props, "material", "")),
             day_night_driven=bool(_get_property(props, "day_night_driven", False)),
+            trigger_only=bool(_get_property(props, "trigger_only", False)),
         )
         entity._time_system = self.game.time_system
         entity.game = self.game

@@ -127,6 +127,7 @@ def test_interactive_emote_at_dist_47(im_setup):
     obj.is_on = False
     obj.direction_str = "up"
     obj.sub_type = "chest"
+    obj.trigger_only = False
     game.interactives = [obj]
     im._check_proximity_emotes()
     assert game.player.playerEmote.called
@@ -173,6 +174,7 @@ def test_object_interaction_at_dist_44(im_setup):
     obj.sfx = None
     obj._world_state_key = None
     obj.is_on = True
+    obj.trigger_only = False
     obj.interact.return_value = None
     game.interactives = [obj]
     with patch(
@@ -299,6 +301,7 @@ def test_interaction_distance_sq_semantics_match_original(im_setup):
     obj_near.is_on = False
     obj_near.direction_str = "up"
     obj_near.sub_type = "chest"
+    obj_near.trigger_only = False
     game.interactives = [obj_near]
     im._check_proximity_emotes()
     assert game.player.playerEmote.called, "dist=47 < 48 must trigger emote"

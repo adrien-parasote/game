@@ -24,6 +24,7 @@ This document defines the requirements for fixed interactive objects (chests, sw
 | `sfx` | string | Optional. Name of the `.ogg` file in `assets/audio/sfx/` to play on interaction. |
 | `sfx_ambient` | string | Optional. Name of the looping `.ogg` file in `assets/audio/sfx/` to play while `is_on` is True. |
 | `off_position` | int | Column index for OFF state (`-1` = no switch, backward-compat default). When ≥ 0, `interact()` switches `col_index` between `on_position` (col 0) and `off_position`. Used by `animated_decor` (e.g. torch ON col 0 / OFF col 1). |
+| `trigger_only` | bool | Default `false`. If `true`, the object is **not operable directly by the player** (no emote, no `E` key). It can only be toggled by `toggle_entity_by_id()` from a triggering entity (lever, button, etc.). See [trigger-only-spec.md](./trigger-only-spec.md). |
 | `contents` | list[Item] | Dynamically populated list of `Item` objects (for chests), loaded from `LootTable`. |
 
 ### Animation Logic

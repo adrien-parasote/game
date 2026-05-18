@@ -68,6 +68,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         sfx_ambient: str = "",
         material: str = "",
         day_night_driven: bool = False,
+        trigger_only: bool = False,
     ):
         # 1. Properties & State Initialization
         self.target_id = target_id
@@ -95,6 +96,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
             sfx_ambient,
             material,
             day_night_driven,
+            trigger_only,
         )
 
         # 2. Asset Loading
@@ -147,7 +149,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self, sub_type, start_row, end_row, is_on, is_animated, depth, position,
         off_position, halo_size, halo_color, halo_alpha, particles, particle_count,
         activate_from_anywhere, sprite_sheet, facing_direction, sfx, sfx_open,
-        sfx_close, sfx_ambient, material, day_night_driven,
+        sfx_close, sfx_ambient, material, day_night_driven, trigger_only,
     ):
         """Parse raw properties and initialize basic state."""
         self.sub_type = sub_type
@@ -163,7 +165,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self._parse_direction(facing_direction, position)
         self._parse_state(is_on, is_animated, halo_size)
         self._parse_halo(halo_size, halo_color, halo_alpha)
-        self._parse_misc(particles, particle_count, activate_from_anywhere, sfx, sfx_open, sfx_close, sfx_ambient, material)
+        self._parse_misc(particles, particle_count, activate_from_anywhere, sfx, sfx_open, sfx_close, sfx_ambient, material, trigger_only)
 
     def _parse_day_night(self, day_night_driven):
         self.day_night_driven = day_night_driven
@@ -217,7 +219,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
 
     def _parse_misc(
         self, particles, particle_count, activate_from_anywhere,
-        sfx, sfx_open, sfx_close, sfx_ambient, material,
+        sfx, sfx_open, sfx_close, sfx_ambient, material, trigger_only,
     ):
         self.particles = particles
         self.particle_count = particle_count
@@ -228,6 +230,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self.sfx_close = sfx_close
         self.sfx_ambient = sfx_ambient
         self.material = material
+        self.trigger_only = trigger_only
 
     def _load_assets(self, sprite_sheet, width, height):
         """Load spritesheet and compute frame dimensions.

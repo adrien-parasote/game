@@ -96,6 +96,9 @@ class InteractionManager(InteractionEmoteMixin):
         return False
 
     def _is_object_interactable(self, obj, p_pos, p_state) -> bool:
+        if getattr(obj, "trigger_only", False):
+            return False
+
         sq_dist = p_pos.distance_squared_to(obj.pos)
 
         if getattr(obj, "is_passable", False) and sq_dist < _RANGE_SQ_16:

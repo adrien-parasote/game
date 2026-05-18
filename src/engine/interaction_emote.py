@@ -29,6 +29,8 @@ class InteractionEmoteMixin:
             sq_dist = p_pos.distance_squared_to(obj.pos)
             if sq_dist >= _RANGE_SQ_48:
                 continue
+            if getattr(obj, "trigger_only", False):
+                continue
 
             is_on_top = sq_dist < _RANGE_SQ_16 and getattr(obj, "is_passable", False)
             is_aligned = abs(p_pos.x - obj.pos.x) < 20 or abs(p_pos.y - obj.pos.y) < 20
