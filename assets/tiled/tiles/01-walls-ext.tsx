@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.12.1" name="01-walls-ext" class="00-tileset" tilewidth="32" tileheight="32" tilecount="250" columns="10">
- <image source="../../images/tilesets/01-walls-ext.png" width="320" height="800"/>
+<tileset version="1.10" tiledversion="1.12.1" name="01-walls-ext" class="00-tileset" tilewidth="32" tileheight="32" tilecount="270" columns="10">
+ <image source="../../images/tilesets/01-walls-ext.png" width="320" height="864"/>
  <tile id="0" type="00-tileset">
   <properties>
    <property name="depth" type="int" value="2"/>
@@ -621,8 +621,16 @@
    <property name="direction" propertytype="23-direction" value="up,down,left"/>
   </properties>
  </tile>
- <tile id="117" type="00-tileset"/>
- <tile id="118" type="00-tileset"/>
+ <tile id="117" type="00-tileset">
+  <properties>
+   <property name="direction" propertytype="23-direction" value="down,right,left"/>
+  </properties>
+ </tile>
+ <tile id="118" type="00-tileset">
+  <properties>
+   <property name="direction" propertytype="23-direction" value="down,right,left"/>
+  </properties>
+ </tile>
  <tile id="119" type="00-tileset"/>
  <tile id="120" type="00-tileset">
   <properties>
@@ -978,27 +986,81 @@
   </properties>
  </tile>
  <tile id="199" type="00-tileset"/>
- <tile id="200" type="00-tileset"/>
- <tile id="201" type="00-tileset"/>
- <tile id="202" type="00-tileset"/>
- <tile id="203" type="00-tileset"/>
- <tile id="204" type="00-tileset"/>
- <tile id="205" type="00-tileset"/>
+ <tile id="200" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="201" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="202" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="203" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="204" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="205" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
  <tile id="206" type="00-tileset"/>
  <tile id="207" type="00-tileset"/>
  <tile id="208" type="00-tileset"/>
  <tile id="209" type="00-tileset"/>
- <tile id="210" type="00-tileset"/>
- <tile id="211" type="00-tileset"/>
- <tile id="212" type="00-tileset"/>
- <tile id="213" type="00-tileset"/>
- <tile id="214" type="00-tileset"/>
- <tile id="215" type="00-tileset"/>
+ <tile id="210" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="211" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="212" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="213" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="214" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+   <property name="direction" propertytype="23-direction" value="up,right,left"/>
+  </properties>
+ </tile>
+ <tile id="215" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+   <property name="direction" propertytype="23-direction" value="up,right,left"/>
+  </properties>
+ </tile>
  <tile id="216" type="00-tileset"/>
  <tile id="217" type="00-tileset"/>
  <tile id="218" type="00-tileset"/>
  <tile id="219" type="00-tileset"/>
- <tile id="220" type="00-tileset"/>
+ <tile id="220" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
  <tile id="221" type="00-tileset"/>
  <tile id="222" type="00-tileset"/>
  <tile id="223" type="00-tileset"/>
