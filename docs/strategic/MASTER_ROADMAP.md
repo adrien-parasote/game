@@ -84,18 +84,20 @@ Technical and documentation integrity finalized. 100% TDD traceability.
 ### Development Breakdown by Micro-Versions
 
 #### 🏰 v0.7.0 — Castle Map Completion & Indoor/Outdoor Transitions
-*   **Objectives:** Player completes the main layout of `01-castel.tmj` integrating interior rooms. The system implements dynamic indoor/outdoor transition management, hiding roofs/ceilings and showing building interiors when the player steps inside.
+*   **Objectives:** Player completes the main layout of `01-castel.tmj` integrating interior rooms. The system implements dynamic indoor/outdoor transition management, hiding roofs/ceilings and showing building interiors when the player steps inside. Review and enhance the management of lights through interior windows, and implement the lighting system for exterior windows to illuminate correctly at night.
 *   **Component Impacts:**
-    *   `src/engine/map_manager.py` / `src/graphics/renderer.py`: Parse layer names (e.g., layers prefixed with `roof_`, `ceiling_`, or containing properties `is_roof=true`) and dynamically adjust their rendering alpha or visibility.
+    *   `src/engine/map_manager.py` / `src/graphics/renderer.py`: Parse layer names (e.g., layers prefixed with `roof_`, `ceiling_`, or containing properties `is_roof=true`) and dynamically adjust their rendering alpha or visibility. Enhance management of window light effects (e.g., `18-light` type objects) for both interior window projections and exterior night-time window emissions.
     *   `src/entities/player.py` / `src/engine/collision_checker.py`: Detect player entry/exit in interior spaces (via `interior` floor tile properties or Tiled rectangular trigger zones). Smoothly transition layer alpha between `255` (fully visible) and `0` (hidden).
 *   **🎨 Assets & Configurations to Produce:**
-    *   **Tiled & JSON configs:** Complete the layout of `01-castel.tmj`. Label layers that represent roofs/upper levels with `is_roof=true` or naming conventions, and mark interior floor tiles with custom property `interior=true` or place interior trigger zones.
+    *   **Tiled & JSON configs:** Complete the layout of `01-castel.tmj`. Label layers that represent roofs/upper levels with `is_roof=true` or naming conventions, and mark interior floor tiles with custom property `interior=true` or place interior trigger zones. Add light objects/properties for window light emissions.
     *   **Graphical Assets:** None.
     *   **Audio Assets:** None.
 *   **Test Cases (TDD):**
     *   `TC-TRANS-01`: Verify that stepping on an interior-designated tile triggers the indoor state.
     *   `TC-TRANS-02`: Verify that when the indoor state is active, layers marked as `is_roof` are smoothly hidden (alpha reaches `0`).
     *   `TC-TRANS-03`: Verify that exiting the interior zone restores roof visibility (alpha reaches `255`).
+    *   `TC-TRANS-04`: Verify that interior window lighting renders correctly when player is indoors.
+    *   `TC-TRANS-05`: Verify that exterior windows emit light correctly when the night-time cycle is active.
 
 #### 📦 v0.7.1 — Core Stats & Gameplay Database Integration
 *   **Objectives:** Load item definitions, equipment properties, and base stats dynamically from `gameplay.json`. Define character stats structure in memory.
