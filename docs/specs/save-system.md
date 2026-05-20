@@ -124,3 +124,15 @@ The `SaveMenuOverlay` includes a "Back" button positioned at the bottom left of 
 | SAVE-I-001 | `test_save_creates_file` | `../../tests/engine/test_save_manager.py` |
 | SAVE-I-002 | `test_pause_screen_handle_event_click_sauvegarder` | `../../tests/ui/test_pause_screen.py` |
 | SAVE-I-003 | `test_title_screen_update` | `../../tests/ui/test_title_screen.py` |
+| GF-001 | `test_save_creates_file` | `../../tests/engine/test_save_manager.py` |
+| GF-002 | `test_load_existing_slot` | `../../tests/engine/test_save_manager.py` |
+| GF-003 | `test_load_empty_slot_returns_none` | `../../tests/engine/test_save_manager.py` |
+| GF-004 | `test_load_corrupted_json_returns_none` | `../../tests/engine/test_save_manager.py` |
+| GF-005 | `test_delete_slot` | `../../tests/engine/test_save_manager.py` |
+| GF-006 | `test_slot_id_out_of_range_raises` | `../../tests/engine/test_save_manager.py` |
+| GF-007 | `test_list_slots_empty` | `../../tests/engine/test_save_manager.py` |
+| GF-008 | `test_list_slots_reflects_saved` | `../../tests/engine/test_save_manager.py` |
+| GF-009 | `test_inventory_roundtrip` | `../../tests/engine/test_save_manager.py` |
+| GF-010 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py` |
+| GF-011 | `test_save_io_error_does_not_crash` | `../../tests/engine/test_save_manager.py` |
+| CORE-W-01 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py` |

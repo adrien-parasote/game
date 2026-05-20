@@ -150,3 +150,14 @@ All technical features and in-game names must be mapped uniformly:
 | Use machine-specific absolute file links | Use relative Markdown links | Absolute links break between machines and CI |
 | Force push tags on release | Verify existing remote tags | Force pushing destroys remote Git history |
 | Modify settings globally during tests | Use context managers to restore | Pollution cascades failures to subsequent tests |
+
+---
+
+## 8. Test Case Specifications
+
+### 8.1 Release Automation Tests
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-REL-01 | `test_validate_version` | `../../tests/scripts/test_release.py` |
+| TC-REL-02 | `test_update_version` | `../../tests/scripts/test_release.py` |
+| TC-REL-03 | `test_run_git_commands` | `../../tests/scripts/test_release.py` |

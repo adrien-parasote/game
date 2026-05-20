@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-18 | Last doc-update: 2026-05-18 | Files scanned: 66 | Token estimate: ~1300 -->
+<!-- Generated: 2026-05-20 | Last doc-update: 2026-05-20 | Files scanned: 66 | Token estimate: ~1300 -->
 
 # Data & Dependencies Architecture
 

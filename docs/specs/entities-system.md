@@ -140,13 +140,60 @@ Asset: `assets/images/sprites/04-emotes.png` (5 columns × 8 rows).
 
 ## 9. Test Case Specifications
 
-### 9.1 Unit Tests
-- **UT-INT-01**: `is_on` toggle on an interactive door updates collision block state.
-- **UT-INT-02**: Bridge spawning never registers in `obstacles_group` regardless of `is_on` state.
-- **UT-INT-03**: Walkable bridgeLowered adds entity rect to `walkable_override_entities`.
-- **UT-INT-04**: EmoteSprite `update` linear Y-offset interpolation rises by exactly 15px over 0.6s.
-- **UT-INT-05**: Frame height computed dynamically matches sheet height for iron chests.
-- **UT-INT-06**: `trigger_only` entity blocks direct E-key inputs.
+### 9.1 Linked Test Functions
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| INT-U-01 | `test_interact_sign_returns_element_id` | `../../tests/entities/test_interactive.py` |
+| INT-U-02 | `test_update_animated_looping_wraps_frame` | `../../tests/entities/test_interactive.py` |
+| INT-U-03 | `test_update_animated_off_resets_frame` | `../../tests/entities/test_interactive.py` |
+| INT-U-04 | `test_update_closing_door_decrements_frame` | `../../tests/entities/test_interactive.py` |
+| INT-U-04b | `test_interact_close_sets_frame_index_to_end_row` | `../../tests/entities/test_interactive.py` |
+| TC-INT-DEPTH-01 | `test_depth_zero_preserved_after_init` | `../../tests/entities/test_interactive.py` |
+| TC-INT-DEPTH-02 | `test_depth_one_unchanged` | `../../tests/entities/test_interactive.py` |
+| TC-INT-DEPTH-03 | `test_depth_two_preserved_after_init` | `../../tests/entities/test_interactive.py` |
+| TC-INT-WO-01 | `test_open_passable_bridge_registers_in_override_set` | `../../tests/entities/test_interactive.py` |
+| TC-INT-WO-02 | `test_closed_passable_bridge_removed_from_override_set` | `../../tests/entities/test_interactive.py` |
+| TC-INT-WO-03 | `test_open_non_passable_bridge_not_registered` | `../../tests/entities/test_interactive.py` |
+| TC-INT-WO-04 | `test_sync_is_noop_when_no_game` | `../../tests/entities/test_interactive.py` |
+| TC-INT-WO-05 | `test_interact_open_registers_in_override` | `../../tests/entities/test_interactive.py` |
+| TC-INT-WO-06 | `test_interact_close_removes_from_override` | `../../tests/entities/test_interactive.py` |
+| TC-INT-WO-07 | `test_restore_state_open_registers_in_override` | `../../tests/entities/test_interactive.py` |
+| TC-INT-WO-08 | `test_restore_state_closed_removes_from_override` | `../../tests/entities/test_interactive.py` |
+| UT-001 | `test_bridge_raised_not_in_obstacles_at_spawn` | `../../tests/entities/test_interactive.py` |
+| UT-002 | `test_bridge_lowered_not_in_obstacles_at_spawn` | `../../tests/entities/test_interactive.py` |
+| UT-003 | `test_bridge_lowered_registers_in_walkable_override` | `../../tests/entities/test_interactive.py` |
+| UT-004 | `test_bridge_raised_not_in_walkable_override` | `../../tests/entities/test_interactive.py` |
+| UT-005 | `test_bridge_restore_state_open_not_in_obstacles` | `../../tests/entities/test_interactive.py` |
+| UT-006 | `test_bridge_restore_state_closed_not_in_obstacles` | `../../tests/entities/test_interactive.py` |
+| UT-007 | `test_door_spawn_still_blocked_regression_guard` | `../../tests/entities/test_interactive.py` |
+| UT-008 | `test_should_start_in_obstacles_bridge_always_false` | `../../tests/entities/test_interactive.py` |
+| UT-009 | `test_should_start_in_obstacles_door_closed` | `../../tests/entities/test_interactive.py` |
+| UT-010 | `test_should_start_in_obstacles_door_open_passable` | `../../tests/entities/test_interactive.py` |
+| TC-BRIDGE-SORT-01 | `test_bridge_has_sort_y_attribute` | `../../tests/entities/test_interactive.py` |
+| TC-BRIDGE-SORT-02 | `test_bridge_sort_y_equals_rect_top` | `../../tests/entities/test_interactive.py` |
+| TC-BRIDGE-SORT-03 | `test_bridge_sort_y_less_than_rect_bottom` | `../../tests/entities/test_interactive.py` |
+| TC-BRIDGE-SORT-04 | `test_non_bridge_entity_has_no_sort_y` | `../../tests/entities/test_interactive.py` |
+| TC-005 | `test_trigger_only_true_stored_on_entity` | `../../tests/entities/test_interactive.py` |
+| TC-006 | `test_trigger_only_false_stored_on_entity` | `../../tests/entities/test_interactive.py` |
+| SPRITE-U-01 | `test_torch_frame_height_computed_from_sheet` | `../../tests/entities/test_sprite_frame_loading.py` |
+| SPRITE-U-02 | `test_frame_count_matches_real_sheet_layout` | `../../tests/entities/test_sprite_frame_loading.py` |
+| SPRITE-U-03 | `test_chest_sheet_correct_frame_height` | `../../tests/entities/test_sprite_frame_loading.py` |
+| SPRITE-U-04 | `test_get_frame_returns_sheet_height_not_tiled_height` | `../../tests/entities/test_sprite_frame_loading.py` |
+| IT-003 | `test_emote_manager_spritesheet_error` | `../../tests/entities/test_entities.py` |
+| IT-004 | `test_emote_manager_chaining` | `../../tests/entities/test_entities.py` |
+| IT-005 | `test_handle_interaction_pickup_partial` | `../../tests/engine/test_interaction.py` |
+| INT-I-01 | `test_interaction_orientation` | `../../tests/engine/test_interaction.py` |
+| INT-I-02 | `test_pickup_diagonal_rejection` | `../../tests/engine/test_interaction.py` |
+| INT-I-03 | `test_verify_orientation_door_relaxed` | `../../tests/engine/test_interaction.py` |
+| INT-I-04 | `test_anywhere_object_diagonal_rejection` | `../../tests/engine/test_interaction.py` |
+| INT-I-05 | `test_interaction_toggle_entity_by_id` | `../../tests/engine/test_interaction.py` |
+| IT-PICK-001 | `test_handle_interaction_pickup` | `../../tests/engine/test_interaction.py` |
+| IT-PICK-002 | `test_handle_interaction_pickup_partial` | `../../tests/engine/test_interaction.py` |
+| TC-001 | `test_trigger_only_blocks_direct_player_interaction` | `../../tests/engine/test_interaction.py` |
+| TC-002 | `test_trigger_only_false_allows_direct_interaction` | `../../tests/engine/test_interaction.py` |
+| TC-003 | `test_trigger_only_suppresses_proximity_emote` | `../../tests/engine/test_interaction.py` |
+| TC-004 | `test_trigger_only_false_does_not_suppress_emote` | `../../tests/engine/test_interaction.py` |
+| IT-002 | `test_trigger_only_object_not_interactable_via_key` | `../../tests/engine/test_interaction.py` |
 
 ---
 

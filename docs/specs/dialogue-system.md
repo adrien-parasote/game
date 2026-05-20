@@ -109,15 +109,24 @@ The bubble is anchored above the NPC's head in world-space. Drawing utilizes a c
 ## 5. Test Case Specifications
 
 ### 5.1 Unit Tests
-- **UT-DLG-01**: `start_dialogue` splits long paragraphs into correct multi-page arrays.
-- **UT-DLG-02**: `advance` advances typing to end state, then switches to the next page.
-- **UT-DLG-03**: `_paginate` wraps lines accurately according to narrative font dimensions.
-- **UT-SPB-01**: Nine-patch builder correctly tiles surfaces to multiples of 32px.
-- **UT-SPB-02**: SpeechBubble name plate slices `23-bubble_name.png` to match name width.
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| UT-DLG-01 | `test_dialogue_manager_pre_renders_pages` | `../../tests/ui/test_dialogue.py` |
+| UT-DLG-02 | `test_dialogue_manager_advance_and_update` | `../../tests/ui/test_dialogue.py` |
+| UT-DLG-03 | `test_dialogue_manager_draw` | `../../tests/ui/test_dialogue.py` |
+| UT-SPB-01 | `test_max_width_not_exceeded` | `../../tests/ui/test_speech_bubble.py` |
+| UT-SPB-02 | `test_wrap_uses_padding_not_tile_size` | `../../tests/ui/test_speech_bubble.py` |
+| UT-SPB-03 | `test_bubble_bottom_anchored_above_character` | `../../tests/ui/test_speech_bubble.py` |
+| UT-SPB-04 | `test_multiple_pages_exist_for_long_text` | `../../tests/ui/test_speech_bubble.py` |
+| UT-SPB-05 | `test_arrow_drawn_for_multi_page_text` | `../../tests/ui/test_speech_bubble.py` |
+| UT-SPB-06 | `test_page_index_clamped` | `../../tests/ui/test_speech_bubble.py` |
+| UT-SPB-07 | `test_raises_when_font_not_set` | `../../tests/ui/test_speech_bubble.py` |
+| UT-SPB-08 | `test_name_plate_rendered` | `../../tests/ui/test_speech_bubble.py` |
 
-### 5.2 Integration Tests
-- **IT-DLG-01**: Player interaction with sign triggers `DialogueManager` textbox on Screen.
-- **IT-SPB-01**: Interaction with NPC spawns a camera-relative `SpeechBubble` above the sprite.
+### 5.2 Integration & UI Tests
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-DLG-01 | `test_dialogue_pagination` | `../../tests/ui/test_inventory.py` |
 
 ---
 

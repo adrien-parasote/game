@@ -85,6 +85,7 @@ def _char_rect() -> pygame.Rect:
 
 
 class TestSpeechBubbleMaxWidth(unittest.TestCase):
+    @pytest.mark.tc("UT-SPB-01")
     def test_max_width_not_exceeded(self):
         """Bubble width is capped at max_width_px."""
         bubble = _make_bubble(max_width_px=224)
@@ -93,6 +94,7 @@ class TestSpeechBubbleMaxWidth(unittest.TestCase):
         self.assertLessEqual(bubble.max_width_px, 224)
         self.assertTrue(blit.called)
 
+    @pytest.mark.tc("UT-SPB-02")
     def test_wrap_uses_padding_not_tile_size(self):
         """_wrap_text inner width = max_width_px - 2*padding."""
         bubble = _make_bubble(max_width_px=100)
@@ -106,6 +108,7 @@ class TestSpeechBubbleMaxWidth(unittest.TestCase):
 
 
 class TestSpeechBubblePosition(unittest.TestCase):
+    @pytest.mark.tc("UT-SPB-03")
     def test_bubble_bottom_anchored_above_character(self):
         """Bubble bottom edge respects tail_gap above char_rect.top."""
         bubble = _make_bubble()
@@ -127,12 +130,14 @@ class TestSpeechBubblePagination(unittest.TestCase):
     def _long_text(self) -> str:
         return "word " * 200  # guaranteed to span multiple pages
 
+    @pytest.mark.tc("UT-SPB-04")
     def test_multiple_pages_exist_for_long_text(self):
         """Long text produces more than one page of wrapped lines."""
         bubble = _make_bubble()
         total_pages = bubble.get_total_pages(self._long_text())
         self.assertGreater(total_pages, 1)
 
+    @pytest.mark.tc("UT-SPB-05")
     def test_arrow_drawn_for_multi_page_text(self):
         """draw() runs without error for multi-page text (arrow code path hit)."""
         bubble = _make_bubble()
@@ -141,6 +146,7 @@ class TestSpeechBubblePagination(unittest.TestCase):
         bubble.draw(_make_surface(), _char_rect(), self._long_text(), blit_func=blit)
         self.assertEqual(blit.call_count, 1)  # Integrated bubble is one blit
 
+    @pytest.mark.tc("UT-SPB-06")
     def test_page_index_clamped(self):
         """Passing a page index beyond the last page is clamped silently."""
         bubble = _make_bubble()
@@ -151,6 +157,7 @@ class TestSpeechBubblePagination(unittest.TestCase):
 
 
 class TestSpeechBubbleFontGuard(unittest.TestCase):
+    @pytest.mark.tc("UT-SPB-07")
     def test_raises_when_font_not_set(self):
         """draw() raises RuntimeError when no font is assigned."""
         with mock.patch("pygame.image.load") as ml:
@@ -168,6 +175,7 @@ class TestSpeechBubbleFontGuard(unittest.TestCase):
 
 
 class TestSpeechBubbleNamePlate(unittest.TestCase):
+    @pytest.mark.tc("UT-SPB-08")
     def test_name_plate_rendered(self):
         """When speaker_name is provided, a second blit occurs for the name plate."""
         with mock.patch("pygame.image.load") as ml:

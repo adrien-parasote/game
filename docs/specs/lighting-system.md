@@ -127,6 +127,15 @@ Interactive entities with `particles: true` emit visual details (e.g. fire spark
 - **IT-LT-01**: Dynamic overlay fades opacity matching noon to midnight transition times.
 - **IT-LT-02**: Particle spawns are culled and collected when lifetime hits 0.
 
+### Linked Test Functions
+
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| LT-001 | `test_map_manager_window_cache_lt001` | `../../tests/engine/test_lighting.py` |
+| LT-002 | `test_lighting_beam_color_sync_lt003` | `../../tests/engine/test_lighting.py` |
+| LT-004 | `test_lighting_night_overlay_lt004` | `../../tests/engine/test_lighting.py` |
+| LT-012 | `test_beam_cache_reuses_surface` | `../../tests/engine/test_lighting.py` |
+
 ---
 
 ## 7. Deep Links

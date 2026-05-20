@@ -94,15 +94,30 @@ All UI hardcoded literals are extracted into dedicated modules to enforce unifor
 ## 6. Test Case Specifications
 
 ### 6.1 Unit Tests
-- **UT-PRF-01**: Y-sort cache remains valid if no entity moves.
-- **UT-PRF-02**: Adding or removing sprites invalidates the Y-sort cache.
-- **UT-PRF-03**: TitleScreen bucket calculations clamp inputs correctly.
-- **UT-PRF-04**: `_active_torches` set updates when torches are toggled.
-- **UT-PRF-05**: Distance-squared math behaves identically to linear distance.
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| PERF-U-011 | `test_get_sorted_sprites_empty` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-012 | `test_get_sorted_sprites_cache_reused` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-013 | `test_cache_dirty_on_add` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-014 | `test_cache_dirty_on_remove` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-015 | `test_mark_dirty_sets_flag` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-016 | `test_sorted_sprites_y_order` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-022 | `test_interactive_emote_at_dist_47` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-023 | `test_interactive_emote_at_dist_49_not_triggered` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-024 | `test_pickup_emote_at_dist_15` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-025 | `test_object_interaction_at_dist_44` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-026 | `test_chest_auto_close_at_dist_46` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-027 | `test_audio_vol_mult_uses_real_distance` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-033 | `test_game_has_viewport_world_rect` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-035 | `test_game_no_dead_draw_methods` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-U-036 | `test_game_active_torches_initialized` | `../../tests/engine/test_performance_optimizations.py` |
 
 ### 6.2 Integration Tests
-- **IT-PRF-01**: Multi-pass draw scene uses batch blitting for foreground rendering.
-- **IT-PRF-02**: Re-load state preserves active torch cache mapping.
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| PERF-I-001 | `test_title_screen_draw_no_rotozoom` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-I-002 | `test_interaction_distance_sq_semantics_match_original` | `../../tests/engine/test_performance_optimizations.py` |
+| PERF-I-003 | `test_game_viewport_rect_reused_across_updates` | `../../tests/engine/test_performance_optimizations.py` |
 
 ---
 

@@ -85,30 +85,30 @@ def generate_report(
 
     coverage_pct = (len(covered) / len(all_spec_ids) * 100) if all_spec_ids else 0
 
-    sys.stdout.write("SPEC↔TEST TRACEABILITY REPORT")
-    sys.stdout.write("=" * 40)
-    sys.stdout.write(f"Specs scanned:      {len(spec_tcs)}")
-    sys.stdout.write(f"TC IDs in specs:    {len(all_spec_ids)}")
-    sys.stdout.write(f"TC markers found:   {len(all_test_ids)}")
+    sys.stdout.write("SPEC↔TEST TRACEABILITY REPORT\n")
+    sys.stdout.write("========================================\n")
+    sys.stdout.write(f"Specs scanned:      {len(spec_tcs)}\n")
+    sys.stdout.write(f"TC IDs in specs:    {len(all_spec_ids)}\n")
+    sys.stdout.write(f"TC markers found:   {len(all_test_ids)}\n")
     sys.stdout.write(
-        f"Coverage:           {coverage_pct:.0f}% ({len(covered)}/{len(all_spec_ids)})"
+        f"Coverage:           {coverage_pct:.0f}% ({len(covered)}/{len(all_spec_ids)})\n"
     )
-    sys.stdout.write(f"Missing markers:    {len(missing)}")
-    sys.stdout.write(f"Orphan markers:     {len(orphans)}")
+    sys.stdout.write(f"Missing markers:    {len(missing)}\n")
+    sys.stdout.write(f"Orphan markers:     {len(orphans)}\n")
 
     if missing:
-        sys.stdout.write("\n❌ MISSING (in spec but no @pytest.mark.tc):")
+        sys.stdout.write("\n❌ MISSING (in spec but no @pytest.mark.tc):\n")
         for tc_id in sorted(missing):
-            sys.stdout.write(f"   {tc_id} — {tc_to_spec[tc_id]}")
+            sys.stdout.write(f"   {tc_id} — {tc_to_spec[tc_id]}\n")
 
     if orphans:
-        sys.stdout.write("\n⚠️  ORPHAN (in test but not in spec):")
+        sys.stdout.write("\n⚠️  ORPHAN (in test but not in spec):\n")
         for tc_id in sorted(orphans):
             tests = tc_to_tests[tc_id]
-            sys.stdout.write(f"   {tc_id} — {tests[0]}")
+            sys.stdout.write(f"   {tc_id} — {tests[0]}\n")
 
     if not missing and not orphans:
-        sys.stdout.write("\n✅ Perfect alignment — every spec TC has a marker, no orphans.")
+        sys.stdout.write("\n✅ Perfect alignment — every spec TC has a marker, no orphans.\n")
 
     if markdown:
         _write_markdown(tc_to_spec, spec_tcs, tc_to_tests, covered, missing, orphans)
@@ -160,7 +160,7 @@ def _write_markdown(
 
     with open(TRACEABILITY_OUTPUT, "w") as f:
         f.write("\n".join(lines) + "\n")
-    sys.stdout.write(f"\n📄 Exported: {TRACEABILITY_OUTPUT}")
+    sys.stdout.write(f"\n📄 Exported: {TRACEABILITY_OUTPUT}\n")
 
 
 def main() -> None:

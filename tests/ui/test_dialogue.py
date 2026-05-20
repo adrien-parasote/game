@@ -8,6 +8,7 @@ import pytest
 from src.ui.dialogue import DialogueManager
 
 
+@pytest.mark.tc("UT-DLG-01")
 def test_dialogue_manager_pre_renders_pages():
     game = MagicMock()
     game.i18n.current_locale = "en"
@@ -43,6 +44,7 @@ def test_dialogue_manager_pre_renders_pages():
             assert isinstance(surf, pygame.Surface)
 
 
+@pytest.mark.tc("UT-DLG-02")
 def test_dialogue_manager_advance_and_update():
     mock_font = MagicMock()
     mock_font.get_linesize.return_value = 20
@@ -90,6 +92,7 @@ def test_dialogue_manager_advance_and_update():
         assert dm.message == ""
 
 
+@pytest.mark.tc("UT-DLG-03")
 def test_dialogue_manager_draw():
     mock_font = MagicMock()
     mock_font.get_linesize.return_value = 20

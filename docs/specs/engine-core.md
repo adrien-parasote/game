@@ -167,18 +167,116 @@ Strict UI priority layers prevent overlapping menus and input conflicts:
 
 ## 12. Test Case Specifications
 
-### 12.1 Unit Tests
-| Test ID | Component | Input | Expected Output |
-|---------|-----------|-------|-----------------|
-| UT-GSM-01 | GameStateManager | Transition `NEW_GAME` | Instantiates `Game`, state set to `PLAYING` |
-| UT-GSM-02 | GameStateManager | Transition `LOAD_GAME(1)` | Restores state via slot 1, starts game |
-| UT-GSM-03 | GameStateManager | Event `K_ESCAPE` in play | Switches state to `PAUSED` |
-| UT-TS-01 | TitleScreen | Click "Options" button | Sets state to `OPTIONS` |
-| UT-TS-02 | TitleScreen | Input hover | Updates `_hovered_item` |
-| CORE-R-01 | Y-Sorting | [Y=100, Y=50] elements | Rendered in order [50, 100] |
-| CORE-R-02 | Culling | Viewport at `(0, 0)` | Skips rendering tiles outside culling limits |
-| CORE-H-01 | Dialogue Update | Dialogue started | Sequential typewriter rendering advances |
-| TC-CC-08 | Collision Check | Walkable bridge overlap | Return `False` (traversal permitted) |
+### 12.1 Core Lifecycle, Loops & Game Tests
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| CORE-C-01 | `test_game_initialization` | `../../tests/engine/test_game.py` |
+| CORE-H-01 | `test_update_dialogue_branch` | `../../tests/engine/test_game.py` |
+| CORE-H-02 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py` |
+| CORE-R-01 | `test_game_draw_loop` | `../../tests/engine/test_game.py` |
+| CORE-R-02 | `test_game_draw_loop` | `../../tests/engine/test_game.py` |
+| CORE-R-03 | `test_game_draw_loop` | `../../tests/engine/test_game.py` |
+| DBG-CONF | `test_settings_load` | `../../tests/engine/test_game.py` |
+| DBG-MAP | `test_game_actual_load_map` | `../../tests/engine/test_game.py` |
+| DBG-SPAWN | `test_spawn_entities_initial_spawn_skipped` | `../../tests/engine/test_game.py` |
+| GF-012 | `test_game_ui_toggles` | `../../tests/engine/test_game.py` |
+| GF-013 | `test_game_update_loop` | `../../tests/engine/test_game.py` |
+| GF-014 | `test_update_dialogue_branch` | `../../tests/engine/test_game.py` |
+| GF-015 | `test_update_inventory_branch` | `../../tests/engine/test_game.py` |
+| GF-016 | `test_update_chest_branch` | `../../tests/engine/test_game.py` |
+| GF-017 | `test_handle_events_dialogue_advance` | `../../tests/engine/test_game.py` |
+| GF-018 | `test_game_transition_map_fade` | `../../tests/engine/test_game.py` |
+| WS-006 | `test_game_entity_spawning` | `../../tests/engine/test_game.py` |
+| TC-FONT-01 | `test_settings_load` | `../../tests/engine/test_game.py` |
+| TC-FONT-02 | `test_font_tiers_exist` | `../../tests/engine/test_game.py` |
+| TC-FONT-03 | `test_font_tiers_exist` | `../../tests/engine/test_game.py` |
+
+### 12.2 Game State Manager Tests
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| GF-019 | `test_initial_state` | `../../tests/engine/test_game_state_manager.py` |
+| GF-020 | `test_handle_title_new_game` | `../../tests/engine/test_game_state_manager.py` |
+| GF-021 | `test_handle_title_load_game` | `../../tests/engine/test_game_state_manager.py` |
+| GF-022 | `test_handle_title_quit` | `../../tests/engine/test_game_state_manager.py` |
+| GF-023 | `test_handle_playing_pause_requested` | `../../tests/engine/test_game_state_manager.py` |
+| GF-024 | `test_handle_paused_resume` | `../../tests/engine/test_game_state_manager.py` |
+| GF-025 | `test_handle_paused_save_requested` | `../../tests/engine/test_game_state_manager.py` |
+| GF-026 | `test_handle_paused_goto_title` | `../../tests/engine/test_game_state_manager.py` |
+| GF-027 | `test_save_to_first_free_slot` | `../../tests/engine/test_game_state_manager.py` |
+| GF-028 | `test_save_to_first_free_slot_all_full` | `../../tests/engine/test_game_state_manager.py` |
+| GF-029 | `test_on_escape` | `../../tests/engine/test_game_state_manager.py` |
+| GF-030 | `test_on_escape` | `../../tests/engine/test_game_state_manager.py` |
+| GF-031 | `test_load_game_time_restored` | `../../tests/engine/test_game_state_manager.py` |
+| GF-032 | `test_handle_events_filtering` | `../../tests/engine/test_game_state_manager.py` |
+| GF-033 | `test_transition_to_title_resets_inventory_and_chest_ui` | `../../tests/engine/test_game_state_manager.py` |
+
+### 12.3 Collision Checker Constraints Tests
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-CC-01 | `test_tile_not_walkable_returns_true` | `../../tests/engine/test_collision_checker.py` |
+| TC-CC-02 | `test_obstacle_blocks` | `../../tests/engine/test_collision_checker.py` |
+| TC-CC-03 | `test_obstacle_skipped_if_requester` | `../../tests/engine/test_collision_checker.py` |
+| TC-CC-04 | `test_npc_blocks` | `../../tests/engine/test_collision_checker.py` |
+| TC-CC-05 | `test_npc_skipped_if_requester` | `../../tests/engine/test_collision_checker.py` |
+| TC-CC-06 | `test_player_blocks_npc` | `../../tests/engine/test_collision_checker.py` |
+| TC-CC-07 | `test_nothing_blocks_returns_false` | `../../tests/engine/test_collision_checker.py` |
+| TC-CC-08 | `test_open_bridge_overrides_non_walkable_tile` | `../../tests/engine/test_collision_checker.py` |
+| TC-CC-09 | `test_no_override_non_walkable_tile_still_blocks` | `../../tests/engine/test_collision_checker.py` |
+| TC-CC-10 | `test_override_rect_miss_still_blocks` | `../../tests/engine/test_collision_checker.py` |
+| TC-CC-11 | `test_animating_override_does_not_override_tile` | `../../tests/engine/test_collision_checker.py` |
+| TC-CC-12 | `test_override_tile_still_checks_obstacles_and_npcs` | `../../tests/engine/test_collision_checker.py` |
+| IT-CC-01 | `test_is_walkable_delegates_to_collision_checker` | `../../tests/engine/test_collision_checker.py` |
+
+### 12.4 Spatial Utilities Tests
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-SU-01 | `test_get_facing_vector_down` | `../../tests/engine/test_spatial_utils.py` |
+| TC-SU-02 | `test_get_facing_vector_up` | `../../tests/engine/test_spatial_utils.py` |
+| TC-SU-03 | `test_get_facing_vector_left` | `../../tests/engine/test_spatial_utils.py` |
+| TC-SU-04 | `test_get_facing_vector_right` | `../../tests/engine/test_spatial_utils.py` |
+| TC-SU-05 | `test_get_facing_vector_unknown_state` | `../../tests/engine/test_spatial_utils.py` |
+| TC-SU-06 | `test_facing_toward_right_horizontal` | `../../tests/engine/test_spatial_utils.py` |
+| TC-SU-07 | `test_facing_toward_left_horizontal` | `../../tests/engine/test_spatial_utils.py` |
+| TC-SU-08 | `test_facing_toward_down_vertical` | `../../tests/engine/test_spatial_utils.py` |
+| TC-SU-09 | `test_facing_toward_wrong_direction` | `../../tests/engine/test_spatial_utils.py` |
+| TC-SU-10 | `test_verify_orientation_standard_up_down` | `../../tests/engine/test_spatial_utils.py` |
+| TC-SU-11 | `test_verify_orientation_not_aligned` | `../../tests/engine/test_spatial_utils.py` |
+| TC-SU-12 | `test_verify_orientation_door_relaxation` | `../../tests/engine/test_spatial_utils.py` |
+| TC-SU-13 | `test_verify_orientation_default_false` | `../../tests/engine/test_spatial_utils.py` |
+
+### 12.5 Game Orchestration (Phase 1.5 / Setup) Tests
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| TC-EF-01 | `test_get_property_root_level` | `../../tests/engine/test_phase15_game.py` |
+| TC-EF-02 | `test_get_property_nested` | `../../tests/engine/test_phase15_game.py` |
+| TC-EF-03 | `test_get_property_absent_returns_default` | `../../tests/engine/test_phase15_game.py` |
+| TC-EF-04 | `test_spawn_interactive_adds_to_groups` | `../../tests/engine/test_phase15_game.py` |
+| TC-EF-05 | `test_spawn_teleport_adds_to_teleports_group` | `../../tests/engine/test_phase15_game.py` |
+| TC-EF-06 | `test_spawn_npc_adds_to_visible_and_npcs` | `../../tests/engine/test_phase15_game.py` |
+| TC-EF-07 | `test_spawn_pickup_adds_to_pickups` | `../../tests/engine/test_phase15_game.py` |
+| TC-EF-08 | `test_spawn_entities_unknown_type_no_exception` | `../../tests/engine/test_phase15_game.py` |
+| TC-EF-09 | `test_spawn_interactive_restores_world_state` | `../../tests/engine/test_phase15_game.py` |
+| TC-GS-01 | `test_load_property_types_valid_file` | `../../tests/engine/test_phase15_game.py` |
+| TC-GS-02 | `test_load_property_types_missing_file` | `../../tests/engine/test_phase15_game.py` |
+| TC-GS-03 | `test_load_property_types_invalid_json` | `../../tests/engine/test_phase15_game.py` |
+| TC-GS-04 | `test_setup_logging_adds_handlers` | `../../tests/engine/test_phase15_game.py` |
+| TC-GS-05 | `test_load_property_types_missing_key` | `../../tests/engine/test_phase15_game.py` |
+| TC-IH-01 | `test_quit_event_calls_sys_exit` | `../../tests/engine/test_phase15_game.py` |
+| TC-IH-02 | `test_interact_key_no_dialogue_calls_handle_interactions` | `../../tests/engine/test_phase15_game.py` |
+| TC-IH-03 | `test_interact_key_with_dialogue_advances_dialogue` | `../../tests/engine/test_phase15_game.py` |
+| TC-IH-04 | `test_inventory_key_chest_closed_toggles_inventory` | `../../tests/engine/test_phase15_game.py` |
+| TC-IH-05 | `test_inventory_key_chest_open_does_not_toggle` | `../../tests/engine/test_phase15_game.py` |
+| TC-IH-06 | `test_interact_key_inventory_open_does_not_trigger_interaction` | `../../tests/engine/test_phase15_game.py` |
+| IT-EF-01 | `test_game_has_entity_factory_map_loader_input_handler` | `../../tests/engine/test_phase15_game.py` |
+| IT-GS-01 | `test_game_setup_logging_importable` | `../../tests/engine/test_phase15_game.py` |
+| IT-IH-01 | `test_game_handle_events_delegates_to_input_handler` | `../../tests/engine/test_phase15_game.py` |
+
+### 12.6 Title Screen Tests
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| GF-034 | `test_title_screen_draw_main_menu` | `../../tests/ui/test_title_screen.py` |
+| GF-035 | `test_title_screen_load_menu_back_button` | `../../tests/ui/test_title_screen.py` |
+| GF-036 | `test_title_screen_options_state_transitions` | `../../tests/ui/test_title_screen.py` |
 
 ---
 

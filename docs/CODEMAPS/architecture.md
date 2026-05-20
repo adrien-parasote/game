@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-18 | Last doc-update: 2026-05-18 | Files scanned: 66 | Token estimate: ~2600 -->
+<!-- Generated: 2026-05-20 | Last doc-update: 2026-05-20 | Files scanned: 66 | Token estimate: ~2600 -->
 
 # Game Engine Architecture
 
@@ -65,7 +65,7 @@
 ## Documentation & Tooling
 ```
 docs/
-  specs/            32 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
+  specs/            15 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
   traceability.md   Auto-generated spec↔test coverage matrix (scripts/tc_report.py — run to refresh)
   codemaps/         Architecture maps (this directory)
   strategic/        MASTER_ROADMAP.md, game_vision.md, perf-constants-audit-strategy (archived → ADR-006)

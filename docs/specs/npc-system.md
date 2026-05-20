@@ -185,18 +185,18 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-001 | `test_entity_initialization` | `../../tests/entities/test_entities.py:L26` |
-| TC-002 | `test_npc_ai_state_machine` | `../../tests/entities/test_entities.py:L115` |
-| TC-003 | `test_npc_update_invisible_skips` | `../../tests/entities/test_entities.py:L255` |
-| TC-004 | `test_npc_interact_faces_initiator_horizontal` | `../../tests/entities/test_entities.py:L126` |
-| TC-005 | `TestStaticNPC` (6 tests) | `../../tests/entities/test_npc.py:L118` |
+| TC-N-01 | `test_entity_initialization` | `../../tests/entities/test_entities.py` |
+| TC-N-02 | `test_npc_ai_state_machine` | `../../tests/entities/test_entities.py` |
+| TC-N-03 | `test_npc_update_invisible_skips` | `../../tests/entities/test_entities.py` |
+| TC-N-04 | `test_npc_interact_faces_initiator_horizontal` | `../../tests/entities/test_entities.py` |
+| TC-005 | `TestStaticNPC` | `../../tests/entities/test_npc.py` |
 | TC-006 | `test_static_npc_animates_when_idle` | `../../tests/entities/test_npc.py` |
 | TC-007 | `test_static_npc_anim_continues_when_idle` | `../../tests/entities/test_npc.py` |
 | TC-008 | `test_static_npc_facing_direction_init` | `../../tests/entities/test_npc.py` |
 | TC-009 | `test_npc_facing_direction_init` | `../../tests/entities/test_npc.py` |
 | TC-010 | `test_static_npc_anim_frozen_during_interaction` | `../../tests/entities/test_npc.py` |
-| IT-001 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
-| IT-002 | `test_npc_interact_freezes_ai` | `../../tests/entities/test_entities.py:L165` |
+| IT-001 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py` |
+| IT-N-02 | `test_npc_interact_freezes_ai` | `../../tests/entities/test_entities.py` |
 
 ## Assumptions
 | # | Assumption | Risk | Validation |

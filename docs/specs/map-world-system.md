@@ -201,6 +201,28 @@ When transition triggers a teleport, the following strict sequence occurs:
 | WS-007 | Facing Adjacency | `activate_from_anywhere=True`, facing away | Proximity interaction fails |
 | WS-008 | Teleport Guard | `required_direction="down"`, player facing up | Transition rejected |
 
+### Linked Test Functions
+
+| Test ID | Test Function | File |
+|---------|---------------|------|
+| CORE-T-01 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py` |
+| CORE-T-02 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py` |
+| WS-007 | `test_interaction_orientation` | `../../tests/engine/test_interaction.py` |
+| WS-008 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py` |
+| WS-009 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py` |
+| WS-010 | `test_interaction_check_teleporters` | `../../tests/engine/test_interaction.py` |
+| IT-INT-01 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py` |
+| IT-INT-02 | `test_interaction_toggle_entity_by_id` | `../../tests/engine/test_interaction.py` |
+| IT-N-01 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py` |
+| TC-ML-01 | `test_save_interactive_states_persists_is_on` | `../../tests/engine/test_map_loader.py` |
+| TC-ML-02 | `test_save_interactive_states_skips_entities_without_key` | `../../tests/engine/test_map_loader.py` |
+| TC-ML-03 | `test_save_interactive_states_includes_light_control` | `../../tests/engine/test_map_loader.py` |
+| TC-ML-04 | `test_save_npc_states_not_broken_by_interactive_save` | `../../tests/engine/test_map_loader.py` |
+| TC-ML-05 | `test_clear_groups_empties_walkable_override_entities` | `../../tests/engine/test_map_loader.py` |
+| TC-ML-06 | `test_load_fallback_center_logs_warning` | `../../tests/engine/test_phase15_game.py` |
+| TC-ML-07 | `test_load_empties_groups_before_spawn` | `../../tests/engine/test_phase15_game.py` |
+| IT-ML-01 | `test_game_load_map_delegates_to_map_loader` | `../../tests/engine/test_phase15_game.py` |
+
 ---
 
 ## 12. Deep Links
