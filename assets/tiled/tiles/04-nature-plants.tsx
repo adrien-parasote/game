@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.12.1" name="02-decorations" class="00-tileset" tilewidth="32" tileheight="32" tilecount="240" columns="12">
- <image source="../../images/tilesets/02-decorations.png" width="384" height="640"/>
+<tileset version="1.10" tiledversion="1.12.1" name="04-nature-plants" class="00-tileset" tilewidth="32" tileheight="32" tilecount="200" columns="10">
+ <image source="../../images/tilesets/04-nature-plants.png" width="320" height="640"/>
  <tile id="0" type="00-tileset">
   <properties>
    <property name="depth" type="int" value="2"/>
@@ -13,151 +13,85 @@
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
- <tile id="2" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
- <tile id="3" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
- <tile id="4" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
+ <tile id="2" type="00-tileset"/>
+ <tile id="3" type="00-tileset"/>
+ <tile id="4" type="00-tileset"/>
  <tile id="5" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="6" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="7" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="8" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
- <tile id="9" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
+ <tile id="9" type="00-tileset"/>
  <tile id="10" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="11" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="12" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
- <tile id="13" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
- <tile id="14" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
- <tile id="15" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
- <tile id="16" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
- <tile id="17" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
- <tile id="18" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
- <tile id="19" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
+ <tile id="13" type="00-tileset"/>
+ <tile id="14" type="00-tileset"/>
+ <tile id="15" type="00-tileset"/>
+ <tile id="16" type="00-tileset"/>
+ <tile id="17" type="00-tileset"/>
+ <tile id="18" type="00-tileset"/>
+ <tile id="19" type="00-tileset"/>
  <tile id="20" type="00-tileset">
   <properties>
    <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="21" type="00-tileset">
   <properties>
    <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
- <tile id="22" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
- <tile id="23" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
- <tile id="24" type="00-tileset">
-  <properties>
-   <property name="walkable" type="bool" value="false"/>
-  </properties>
- </tile>
+ <tile id="22" type="00-tileset"/>
+ <tile id="23" type="00-tileset"/>
+ <tile id="24" type="00-tileset"/>
  <tile id="25" type="00-tileset"/>
  <tile id="26" type="00-tileset"/>
  <tile id="27" type="00-tileset"/>
  <tile id="28" type="00-tileset"/>
  <tile id="29" type="00-tileset"/>
- <tile id="30" type="00-tileset"/>
- <tile id="31" type="00-tileset"/>
- <tile id="32" type="00-tileset"/>
+ <tile id="30" type="00-tileset">
+  <properties>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="31" type="00-tileset">
+  <properties>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="32" type="00-tileset">
+  <properties>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
  <tile id="33" type="00-tileset"/>
  <tile id="34" type="00-tileset"/>
  <tile id="35" type="00-tileset"/>
@@ -165,9 +99,23 @@
  <tile id="37" type="00-tileset"/>
  <tile id="38" type="00-tileset"/>
  <tile id="39" type="00-tileset"/>
- <tile id="40" type="00-tileset"/>
- <tile id="41" type="00-tileset"/>
- <tile id="42" type="00-tileset"/>
+ <tile id="40" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="41" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="42" type="00-tileset">
+  <properties>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
  <tile id="43" type="00-tileset"/>
  <tile id="44" type="00-tileset"/>
  <tile id="45" type="00-tileset"/>
@@ -175,8 +123,18 @@
  <tile id="47" type="00-tileset"/>
  <tile id="48" type="00-tileset"/>
  <tile id="49" type="00-tileset"/>
- <tile id="50" type="00-tileset"/>
- <tile id="51" type="00-tileset"/>
+ <tile id="50" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="51" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
  <tile id="52" type="00-tileset"/>
  <tile id="53" type="00-tileset"/>
  <tile id="54" type="00-tileset"/>
@@ -205,37 +163,129 @@
  <tile id="77" type="00-tileset"/>
  <tile id="78" type="00-tileset"/>
  <tile id="79" type="00-tileset"/>
- <tile id="80" type="00-tileset"/>
- <tile id="81" type="00-tileset"/>
- <tile id="82" type="00-tileset"/>
- <tile id="83" type="00-tileset"/>
- <tile id="84" type="00-tileset"/>
+ <tile id="80" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="81" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="82" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="83" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="84" type="00-tileset">
+  <properties>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
  <tile id="85" type="00-tileset"/>
  <tile id="86" type="00-tileset"/>
  <tile id="87" type="00-tileset"/>
  <tile id="88" type="00-tileset"/>
  <tile id="89" type="00-tileset"/>
- <tile id="90" type="00-tileset"/>
- <tile id="91" type="00-tileset"/>
- <tile id="92" type="00-tileset"/>
- <tile id="93" type="00-tileset"/>
- <tile id="94" type="00-tileset"/>
- <tile id="95" type="00-tileset"/>
- <tile id="96" type="00-tileset"/>
- <tile id="97" type="00-tileset"/>
- <tile id="98" type="00-tileset"/>
- <tile id="99" type="00-tileset"/>
- <tile id="100" type="00-tileset"/>
+ <tile id="90" type="00-tileset">
+  <properties>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="91" type="00-tileset">
+  <properties>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="92" type="00-tileset">
+  <properties>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="93" type="00-tileset">
+  <properties>
+   <property name="walkable" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="94" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="95" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="96" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="97" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="98" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="99" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="100" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
  <tile id="101" type="00-tileset"/>
  <tile id="102" type="00-tileset"/>
  <tile id="103" type="00-tileset"/>
- <tile id="104" type="00-tileset"/>
- <tile id="105" type="00-tileset"/>
- <tile id="106" type="00-tileset"/>
- <tile id="107" type="00-tileset"/>
- <tile id="108" type="00-tileset"/>
- <tile id="109" type="00-tileset"/>
- <tile id="110" type="00-tileset"/>
+ <tile id="104" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="105" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="106" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="107" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="108" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="109" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
+ <tile id="110" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
  <tile id="111" type="00-tileset"/>
  <tile id="112" type="00-tileset"/>
  <tile id="113" type="00-tileset"/>
@@ -245,7 +295,11 @@
  <tile id="117" type="00-tileset"/>
  <tile id="118" type="00-tileset"/>
  <tile id="119" type="00-tileset"/>
- <tile id="120" type="00-tileset"/>
+ <tile id="120" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
  <tile id="121" type="00-tileset"/>
  <tile id="122" type="00-tileset"/>
  <tile id="123" type="00-tileset"/>
@@ -255,7 +309,11 @@
  <tile id="127" type="00-tileset"/>
  <tile id="128" type="00-tileset"/>
  <tile id="129" type="00-tileset"/>
- <tile id="130" type="00-tileset"/>
+ <tile id="130" type="00-tileset">
+  <properties>
+   <property name="depth" type="int" value="2"/>
+  </properties>
+ </tile>
  <tile id="131" type="00-tileset"/>
  <tile id="132" type="00-tileset"/>
  <tile id="133" type="00-tileset"/>
@@ -325,44 +383,4 @@
  <tile id="197" type="00-tileset"/>
  <tile id="198" type="00-tileset"/>
  <tile id="199" type="00-tileset"/>
- <tile id="200" type="00-tileset"/>
- <tile id="201" type="00-tileset"/>
- <tile id="202" type="00-tileset"/>
- <tile id="203" type="00-tileset"/>
- <tile id="204" type="00-tileset"/>
- <tile id="205" type="00-tileset"/>
- <tile id="206" type="00-tileset"/>
- <tile id="207" type="00-tileset"/>
- <tile id="208" type="00-tileset"/>
- <tile id="209" type="00-tileset"/>
- <tile id="210" type="00-tileset"/>
- <tile id="211" type="00-tileset"/>
- <tile id="212" type="00-tileset"/>
- <tile id="213" type="00-tileset"/>
- <tile id="214" type="00-tileset"/>
- <tile id="215" type="00-tileset"/>
- <tile id="216" type="00-tileset"/>
- <tile id="217" type="00-tileset"/>
- <tile id="218" type="00-tileset"/>
- <tile id="219" type="00-tileset"/>
- <tile id="220" type="00-tileset"/>
- <tile id="221" type="00-tileset"/>
- <tile id="222" type="00-tileset"/>
- <tile id="223" type="00-tileset"/>
- <tile id="224" type="00-tileset"/>
- <tile id="225" type="00-tileset"/>
- <tile id="226" type="00-tileset"/>
- <tile id="227" type="00-tileset"/>
- <tile id="228" type="00-tileset"/>
- <tile id="229" type="00-tileset"/>
- <tile id="230" type="00-tileset"/>
- <tile id="231" type="00-tileset"/>
- <tile id="232" type="00-tileset"/>
- <tile id="233" type="00-tileset"/>
- <tile id="234" type="00-tileset"/>
- <tile id="235" type="00-tileset"/>
- <tile id="236" type="00-tileset"/>
- <tile id="237" type="00-tileset"/>
- <tile id="238" type="00-tileset"/>
- <tile id="239" type="00-tileset"/>
 </tileset>
