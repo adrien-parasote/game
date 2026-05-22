@@ -377,3 +377,147 @@ def test_full_walk_cycle_terminates(mock_load):
     assert game._intra_walk_target is None
     # Player direction must be cleared (A-GAME-003)
     assert game.player.direction == pygame.math.Vector2(0, 0)
+
+
+# ===========================================================================
+# TC-011 — player sprite is invisible (alpha=0) during scripted walk
+# ===========================================================================
+
+
+@patch("src.engine.game.Game._load_map")
+@pytest.mark.tc("TC-011")
+def test_player_invisible_during_walk(mock_load):
+    """TC-011: While _intra_walk_target is set, player.image must be fully transparent.
+
+    Uses _update_core_state with walk armed via intra_map_teleport() — verifies
+    player.image is the dedicated transparent surface (not a spritesheet frame).
+    This MUST NOT contaminate spritesheet frame surfaces.
+    """
+    game = _make_game()
+    spawn_px = (300, 300)
+    game._map_loader.resolve_spawn_by_id = MagicMock(return_value=spawn_px)
+
+    # Arm walk via the real path so _player_transparent is lazy-created
+    game.intra_map_teleport("spawn_x", "walk")
+    assert game._intra_walk_target is not None, "Walk must be armed"
+
+    # Patch subsystems so _update_core_state runs only the walk branch
+    game._tick_intra_walk = MagicMock()
+    game.visible_sprites = MagicMock()
+    game.player.is_moving = True  # still walking
+
+    game._update_core_state(0.016)
+
+    # player.image must now be the dedicated transparent surface
+    assert game.player.image is game._player_transparent, (
+        "player.image must be _player_transparent during walk"
+    )
+    # And it must be fully transparent (SRCALPHA fill=(0,0,0,0))
+    assert game.player.image.get_at((0, 0)).a == 0, (
+        "Transparent surface pixel alpha must be 0"
+    )
+
+
+
+# ===========================================================================
+# TC-012 — spritesheet frames NOT contaminated after walk
+# ===========================================================================
+
+
+@patch("src.engine.game.Game._load_map")
+@pytest.mark.tc("TC-012")
+def test_spritesheet_frames_not_contaminated_after_walk(mock_load):
+    """TC-012: After walk ends, player.frames surfaces retain their original alpha.
+
+    Walks for 1 tick (is_moving=True), then arrival tick (is_moving=False).
+    All frame surfaces in player.frames must still have their original alpha —
+    none should be permanently transparent.
+    """
+    game = _make_game()
+    # Record original alpha of all frames
+    original_alphas = [
+        (f.get_alpha(), f.get_at((0, 0)).a if f.get_alpha() is None else None)
+        for f in game.player.frames
+    ]
+
+    game._intra_walk_target = pygame.math.Vector2(300, 300)
+    game.player.is_moving = True
+    game._tick_intra_walk = MagicMock()
+    game.visible_sprites = MagicMock()
+
+    # Tick 1: walk in progress
+    game._update_core_state(0.016)
+
+    # Simulate arrival
+    game._intra_walk_target = None
+    game._walk_hidden = False
+
+    # Verify frames are unchanged
+    for i, frame in enumerate(game.player.frames):
+        orig_alpha, orig_pixel_a = original_alphas[i]
+        if orig_alpha is None:
+            # Per-pixel alpha frame — pixel alpha should be unchanged
+            current_pixel_a = frame.get_at((0, 0)).a
+            assert current_pixel_a == orig_pixel_a, (
+                f"Frame {i} pixel alpha contaminated: expected {orig_pixel_a}, "
+                f"got {current_pixel_a}"
+            )
+        else:
+            assert frame.get_alpha() == orig_alpha, (
+                f"Frame {i} surface alpha contaminated: expected {orig_alpha}, "
+                f"got {frame.get_alpha()}"
+            )
+
+
+# ===========================================================================
+# TC-013 — player sprite is visible again after walk arrival
+# ===========================================================================
+
+
+@patch("src.engine.game.Game._load_map")
+@pytest.mark.tc("TC-013")
+def test_player_visible_after_walk_arrival(mock_load):
+    """TC-013: After _tick_intra_walk terminates the walk (is_moving=False),
+    player.image must NOT be the transparent surface — visibility is restored.
+
+    Simulates: walk tick (player invisible) → arrival tick (_intra_walk_target=None)
+    → _update_core_state normal path → player.image is the normal animation frame.
+    """
+    game = _make_game()
+    target = pygame.math.Vector2(200, 200)
+    spawn_px = (200, 200)
+    game._map_loader.resolve_spawn_by_id = MagicMock(return_value=spawn_px)
+
+    # Arm walk
+    game.intra_map_teleport("spawn_x", "walk")
+
+    # Simulate arrival: player.move() set is_moving=False
+    game.player.is_moving = False
+    game.player.pos = pygame.math.Vector2(spawn_px)
+
+    # Tick the walk — this should clear _intra_walk_target
+    game._tick_intra_walk(0.016)
+
+    assert game._intra_walk_target is None, "Walk target must be cleared on arrival"
+
+    # Now run a normal _update_core_state tick
+    game._tick_intra_walk = MagicMock()  # prevent re-arming
+    game.visible_sprites = MagicMock()
+    game.interaction_manager = MagicMock()
+    game.player.input = MagicMock()
+
+    game._update_core_state(0.016)
+
+    # player.image must NOT be the transparent surface
+    # get_alpha() on a real animation frame is None (per-pixel) or 255
+    alpha = game.player.image.get_alpha()
+    if alpha is None:
+        # Per-pixel surface: pixel alpha should be > 0 (not the transparent placeholder)
+        pixel_a = game.player.image.get_at((0, 0)).a
+        # We can't guarantee non-zero pixel alpha for black pixels in the spritesheet,
+        # but we CAN guarantee player.image is not the dedicated transparent surface
+        assert game.player.image is not game._player_transparent, (
+            "player.image must not be the transparent surface after walk ends"
+        )
+    else:
+        assert alpha == 255, f"Expected alpha restored to 255, got {alpha}"

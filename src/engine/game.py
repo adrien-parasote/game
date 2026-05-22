@@ -117,8 +117,9 @@ class Game:
         # Intra-map walk state — None when inactive, Vector2 target when walk is in progress
         # Spec: docs/specs/intra-map-teleport.md § 4.4.1
         self._intra_walk_target: pygame.math.Vector2 | None = None
-        # True while player sprite is hidden during scripted walk (alpha=0)
-        self._walk_hidden: bool = False
+        # Lazy-initialized on first scripted walk (player must exist first).
+        # See _start_intra_walk for creation.
+        self._player_transparent: pygame.Surface | None = None
 
     def _init_systems(self):
         # Time System
@@ -328,6 +329,14 @@ class Game:
 
         Spec: docs/specs/intra-map-teleport.md § 4.4.2
         """
+        # Lazy-init the transparent surface (player must exist, sized to its image).
+        # Created once and reused across all scripted walks.
+        if self._player_transparent is None:
+            self._player_transparent = pygame.Surface(
+                self.player.image.get_size(), pygame.SRCALPHA
+            )
+            self._player_transparent.fill((0, 0, 0, 0))
+
         self._intra_walk_target = target
         self.player.target_pos = pygame.math.Vector2(target)
         self.player.is_moving = True
@@ -338,6 +347,7 @@ class Game:
                 self.player.current_state = "right" if delta.x > 0 else "left"
             else:
                 self.player.current_state = "up" if delta.y < 0 else "down"
+
 
     def _tick_intra_walk(self, dt: float) -> None:
         """Monitor walk completion and maintain player facing each frame.
@@ -354,10 +364,7 @@ class Game:
         if not self.player.is_moving:
             self._intra_walk_target = None
             self.player.direction = pygame.math.Vector2(0, 0)
-            # Restore player visibility
-            if self._walk_hidden:
-                self.player.image.set_alpha(255)
-                self._walk_hidden = False
+            # player.image is restored automatically next frame by _update_animation
             return
 
         # Keep facing updated based on remaining distance vector (G4)
@@ -462,9 +469,11 @@ class Game:
         if self._intra_walk_target is not None:
             self._tick_intra_walk(dt)
             self.visible_sprites.update(dt)
-            # Hide player sprite during scripted walk (alpha=0, post animation update)
-            self.player.image.set_alpha(0)
-            self._walk_hidden = True
+            # Swap player.image to the pre-built transparent surface so the player is
+            # invisible during the scripted walk. Done post-update so _update_animation
+            # doesn't override it. Avoids contaminating the shared spritesheet frames.
+            if self._intra_walk_target is not None:  # still walking (not arrived this frame)
+                self.player.image = self._player_transparent
             # Skip player.input(), interactions, and teleporter checks
         else:
             # Normal input path
