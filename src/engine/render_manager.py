@@ -51,11 +51,14 @@ class RenderManager:
                 if anim_blits:
                     self.game.screen.fblits(anim_blits)
 
-    def draw_foreground(self):
+    def draw_foreground(self) -> bool:
         """Draw foreground tiles: all tiles from layers with order > player depth,
         plus tiles with depth > player depth from mixed-depth layers.
         Applies occluded image when the player overlaps a depth > player.depth tile.
+        Returns:
+            bool: True if any tile is actively occluding the player, False otherwise.
         """
+        player_occluded = False
         cam_offset = self.game.visible_sprites.offset
         self._viewport_world.update(
             -cam_offset.x,
@@ -85,6 +88,7 @@ class RenderManager:
                 self._tile_rect.topleft = screen_pos
                 if player_screen_rect.colliderect(self._tile_rect):
                     screen.blit(tile_data.occluded_image or tile_data.image, screen_pos)
+                    player_occluded = True
                 else:
                     normal_blits.append((tile_data.image, screen_pos))
             else:
@@ -105,6 +109,8 @@ class RenderManager:
             if anim_fg_blits:
                 screen.fblits(anim_fg_blits)
 
+        return player_occluded
+
 
 
     def draw_hud(self):
@@ -117,8 +123,22 @@ class RenderManager:
         self.game.visible_sprites.calculate_offset(self.game.player)
         self.draw_background()
         self.game.visible_sprites.custom_draw(self.game.screen, max_depth=self.game.player.depth - 1)
-        self.draw_foreground()
+
+        is_occluded = self.draw_foreground()
+
+        # Apply occlusion transparency to the player if they are occluded by foreground
+        original_alpha = None
+        if is_occluded and self.game.player.image:
+            original_alpha = self.game.player.image.get_alpha()
+            if original_alpha is None:
+                original_alpha = 255
+            self.game.player.image.set_alpha(Settings.OCCLUSION_ALPHA)
+
         self.game.visible_sprites.custom_draw(self.game.screen, min_depth=self.game.player.depth)
+
+        # Restore the player's alpha
+        if original_alpha is not None and self.game.player.image:
+            self.game.player.image.set_alpha(original_alpha)
 
         night_alpha = self.game.time_system.night_alpha
         window_positions = self.game.map_manager.get_window_positions()
