@@ -457,3 +457,23 @@ git rm docs/specs/partial-sprite-occlusion.md
 
 **Scope :** Universal
 
+---
+
+### A-SPEC-003 · 2026-05-22 · U · Minor Rework
+**Sur-génération de spécifications et d'ADR temporaires menant à une dette documentaire et des suppressions accidentelles**
+
+Créer un fichier de spécification ou d'ADR indépendant pour chaque micro-optimisation de performance (ex : un ADR par règle F1, F2, F3, F4) ou chaque cycle de révision produit un éparpillement documentaire extrême. Cela engendre des risques de confusion pour l'agent (références fantômes, corpus saturé) et pousse le développeur à faire des suppressions massives au cours desquelles des blueprints stratégiques indispensables (ex : `docs/strategic/*.md`) sont accidentellement supprimés.
+
+**Anti-pattern :** Éparpiller la conception technique d'une même feature sur 5+ fichiers d'ADR ou de brouillons au lieu de centraliser l'implémentation dans une spécification technique unique.
+
+**Fix :**
+1. Maintenir un seul fichier de spécification par module ou feature active (ex : `camera-rendering.md`).
+2. Consolider les règles connexes (ex : optimisations F1-F4) sous forme de sections claires au lieu de fichiers multiples.
+3. Supprimer les fichiers de travail temporaires immédiatement après leur validation fonctionnelle.
+4. **Règle absolue (Override d'intégration) :** Tous les documents de conception (Specs, ADRs, Blueprints) doivent résider dans le workspace du projet (ex : `docs/strategic/`), tandis que seuls les artifacts de conversation éphémères (`task.md`, `walkthrough.md`) restent dans le répertoire Antigravity.
+
+**Evidence :** Suppression de 7 brouillons d'ADR-PERF et de spec-gate temporaires. Restauration via git de 3 blueprints stratégiques accidentellement supprimés dans `docs/strategic/`. Urbanisation réussie avec centralisation sur les codemaps.
+
+---
+
+

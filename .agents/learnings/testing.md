@@ -1016,3 +1016,32 @@ Plutôt que d'alourdir inutilement la gestion des paquets ou d'abandonner `pypro
 **Evidence :** `security_scan.py` levait une alerte `DEPS [A06]: HIGH` en raison du `pyproject.toml` sans lock. La création d'un fichier [poetry.lock](file:///Users/adrien.parasote/Documents/perso/game/poetry.lock) factice et explicite a permis de passer à 0 alerte.
 
 *Last updated: 2026-05-22 — L-TEST-017, A-TEST-015, L-TEST-018 depuis la session camera rendering et occlusion.*
+
+---
+
+### A-STATIC-001 · 2026-05-22 · U · Minor Rework
+**Annotations de type d'instance sur des propriétés de classe décorées dans `__init__`**
+
+Ajouter une annotation de type explicite sur une affectation d'attribut d'instance dans `__init__` (ex : `self.x: float = float(val)`) alors que `x` est déjà défini comme `@property` avec un getter/setter dans la même classe est un anti-pattern. Pyright interprète cela comme une tentative de shadowing de la propriété de classe par une variable d'instance, levant des avertissements ou des erreurs de type.
+
+```python
+# ❌ Shadowing de la propriété détecté par Pyright
+class TimeSystem:
+    def __init__(self, initial_minutes):
+        self._total_minutes: float = float(initial_minutes)  # Pyright warning/error
+
+    @property
+    def _total_minutes(self) -> float: ...
+
+# ✅ Laisser le décorateur de propriété déclarer le type
+class TimeSystem:
+    def __init__(self, initial_minutes):
+        self._total_minutes = float(initial_minutes)  # OK, pas de shadowing
+```
+
+**Fix :** Ne jamais déclarer d'annotation de type instance (`: type =`) dans `__init__` pour les attributs qui sont exposés comme propriétés. Laisser la signature du getter/setter de la `@property` définir contractuellement le type de la propriété.
+
+**Evidence :** Résolution d'un avertissement Pyright de shadowing dans `src/engine/time_system.py` sur l'affectation de `_total_minutes` dans `__init__`.
+
+---
+

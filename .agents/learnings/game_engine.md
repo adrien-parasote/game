@@ -584,3 +584,17 @@ assert game.screen.fblits.called  # PASS
 **Evidence :** 3 tests cassés après F3 (`test_render_manager_coverage.py`, `test_render_manager.py`, `test_render_order.py`). Fix : pré-peupler les caches dans chaque test. 1086/1086 verts après.
 
 ---
+
+### L-ARCH-009 · 2026-05-22 · U · Perfect
+**Modularisation des orchestrateurs graphiques (RenderManager) pour satisfaire la limite de taille des fonctions**
+
+Quand une méthode de rendu graphique ou d'orchestration de scène (`draw_scene`) accumule de multiples passes logiques complexes (filtrage de visibilité, calculs de wading d'herbe, occlusion, gestion de pool de surfaces, tris de profondeur), la refactoriser en sous-méthodes privées spécialisées (ex : `_render_grass_wading_for_sprite`, `_apply_partial_occlusion`) est indispensable pour respecter la règle de taille des fonctions (< 50 lignes).
+
+**Pattern :**
+- L'orchestrateur primaire ne doit contenir que la boucle principale de rendu et la délégation aux passes spécialisées.
+- Chaque passe spécialisée est isolée dans une fonction pure ou privée prenant en paramètres explicites les données nécessaires (e.g. `cam_offset`, `tile_size`).
+- Cette décomposition simplifie considérablement la couverture de test unitaire sur chaque passe graphique et élimine les goulots d'étranglement de complexité cognitive.
+
+**Evidence :** Refactoring de `RenderManager.py` : la méthode `_apply_grass_wading` a été divisée en extrayant `_render_grass_wading_for_sprite` (passant de 115 lignes à deux méthodes de moins de 45 lignes chacune). 1086/1086 tests validés avec succès après modularisation, 100% de conformité aux gates d'architecture.
+
+---
