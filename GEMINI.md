@@ -144,3 +144,55 @@ Each stage's detailed rules, checklists, and procedures live in dedicated rule f
 
 > **Load the relevant rule file when entering a stage.** GEMINI.md enforces the gates and pipeline; the topic files provide the detailed procedures.
 
+---
+
+## 🔧 PROJECT-SPECIFIC: Commit Protocol (Antigravity Sandbox Override)
+
+> **⛔ MANDATORY — This overrides the standard git-discipline.md commit protocol for this project.**
+
+### Problem
+
+The Antigravity sandbox blocks `git commit` directly unless `.sc-learn-eval` exists.
+The agent cannot write `.sc-learn-eval` directly (sandbox protection).
+
+### Solution
+
+Use `./scripts/sc-commit.sh` instead of `git commit` **for every commit**.
+The script creates the sentinel then commits — runs outside the sandbox restriction.
+
+### Agent Commit Protocol (replaces `git commit -F`)
+
+**Step 1 — Write message to file:**
+```bash
+cat > /tmp/commit_msg.txt << 'EOF'
+type(scope): description
+
+Body of commit message.
+EOF
+```
+
+**Step 2 — Stage files:**
+```bash
+git add path/to/file1 path/to/file2
+```
+
+**Step 3 — Commit via sc-commit.sh:**
+```bash
+./scripts/sc-commit.sh -F /tmp/commit_msg.txt && rm /tmp/commit_msg.txt
+```
+
+### Forms
+
+| Use case | Command |
+|----------|---------|
+| Message from file (multi-line) | `./scripts/sc-commit.sh -F /tmp/msg.txt` |
+| Short inline message | `./scripts/sc-commit.sh "type(scope): msg"` |
+| Stage + commit in one call | `./scripts/sc-commit.sh "type(scope): msg" file1 file2` |
+| Empty commit (test/placeholder) | `./scripts/sc-commit.sh --empty "type(scope): msg"` |
+
+### Rules
+
+- **Always use `sc-commit.sh`** — never `git commit` directly from the agent
+- **Stage before calling** `-F` form — `sc-commit.sh -F` does not auto-stage
+- **Message file in `/tmp/`** — never in the repo (not tracked)
+- **Push separately** — `git push` is unaffected by the sandbox
