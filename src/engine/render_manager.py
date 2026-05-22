@@ -67,9 +67,9 @@ class RenderManager:
             self._screen_rect.height,
         )
 
-        # Get visual rect anchored bottomright to physical rect for correct occlusion testing
-        visual_rect = self.game.player.image.get_rect(bottomright=self.game.player.rect.bottomright)
-        player_screen_rect = visual_rect.move(cam_offset.x, cam_offset.y)
+        # Use physical hitbox for occlusion detection — visual rect extends upward and
+        # would produce lag when the player exits a tile area (top of sprite still overlaps)
+        player_screen_rect = self.game.player.rect.move(cam_offset.x, cam_offset.y)
 
         # Split tiles: occluded tiles (need per-tile colliderect) vs normal tiles (batch)
         normal_blits = []

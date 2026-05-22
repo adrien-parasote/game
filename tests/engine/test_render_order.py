@@ -72,16 +72,8 @@ class TestBackgroundLayerRenderOrder:
         """
         rm = _make_render_manager()
 
-        # Player depth = 1
-        player = MagicMock()
-        player.depth = 1
-        rm.game.player = player
-
-        # Camera offset
-        offset = MagicMock()
-        offset.x = 0
-        offset.y = 0
-        rm.game.visible_sprites.offset = offset
+        rm.game.player = MagicMock(depth=1)
+        rm.game.visible_sprites.offset = MagicMock(x=0, y=0)
 
         # Map manager setup
         map_mgr = MagicMock()
@@ -106,7 +98,6 @@ class TestBackgroundLayerRenderOrder:
 
         rm.game.map_manager = map_mgr
 
-        # AnimMapManager returns image for water
         anim_mgr = MagicMock()
         anim_mgr.get_current_frame_image.return_value = water_anim_img
         rm.game.anim_map_manager = anim_mgr
