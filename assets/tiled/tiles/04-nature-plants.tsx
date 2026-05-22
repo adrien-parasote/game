@@ -101,13 +101,11 @@
  <tile id="39" type="00-tileset"/>
  <tile id="40" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="41" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
@@ -125,13 +123,11 @@
  <tile id="49" type="00-tileset"/>
  <tile id="50" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="51" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
    <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
@@ -215,42 +211,44 @@
  </tile>
  <tile id="94" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="95" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="96" type="00-tileset">
   <properties>
    <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="97" type="00-tileset">
   <properties>
    <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="98" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="99" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="100" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="101" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="102" type="00-tileset">
@@ -261,42 +259,44 @@
  <tile id="103" type="00-tileset"/>
  <tile id="104" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="105" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="106" type="00-tileset">
   <properties>
    <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="107" type="00-tileset">
   <properties>
    <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="108" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="109" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="110" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="111" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="112" type="00-tileset">
@@ -341,12 +341,12 @@
  </tile>
  <tile id="120" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="121" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="122" type="00-tileset">
@@ -391,7 +391,7 @@
  </tile>
  <tile id="130" type="00-tileset">
   <properties>
-   <property name="depth" type="int" value="2"/>
+   <property name="walkable" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="131" type="00-tileset">
