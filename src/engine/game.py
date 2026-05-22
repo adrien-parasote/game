@@ -117,6 +117,8 @@ class Game:
         # Intra-map walk state — None when inactive, Vector2 target when walk is in progress
         # Spec: docs/specs/intra-map-teleport.md § 4.4.1
         self._intra_walk_target: pygame.math.Vector2 | None = None
+        # True while player sprite is hidden during scripted walk (alpha=0)
+        self._walk_hidden: bool = False
 
     def _init_systems(self):
         # Time System
@@ -352,6 +354,10 @@ class Game:
         if not self.player.is_moving:
             self._intra_walk_target = None
             self.player.direction = pygame.math.Vector2(0, 0)
+            # Restore player visibility
+            if self._walk_hidden:
+                self.player.image.set_alpha(255)
+                self._walk_hidden = False
             return
 
         # Keep facing updated based on remaining distance vector (G4)
@@ -456,6 +462,9 @@ class Game:
         if self._intra_walk_target is not None:
             self._tick_intra_walk(dt)
             self.visible_sprites.update(dt)
+            # Hide player sprite during scripted walk (alpha=0, post animation update)
+            self.player.image.set_alpha(0)
+            self._walk_hidden = True
             # Skip player.input(), interactions, and teleporter checks
         else:
             # Normal input path
