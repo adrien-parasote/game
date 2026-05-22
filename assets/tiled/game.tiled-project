@@ -548,7 +548,8 @@
             "type": "enum",
             "values": [
                 "fade",
-                "instant"
+                "instant",
+                "walk"
             ],
             "valuesAsFlags": false
         },
