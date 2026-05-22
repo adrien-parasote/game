@@ -301,9 +301,8 @@ Applied at **Pass 3c** — after entities are fully drawn, before lighting. Crea
 
 **Trigger**: the tile at the sprite foot position has `properties.material == "grass"` (queried via `MapManager.get_grass_tile_image_at()`).
 
-**Effect (two passes per sprite):**
-1. **Grass re-blit**: the grass tile image is painted over the bottom `GRASS_WADING_DEPTH` pixels of the sprite screen rect — feet visually disappear into the grass texture.
-2. **Alpha blend**: a semi-transparent fill at `255 - GRASS_WADING_ALPHA` is applied over the same zone — softens the sprite-to-grass transition.
+**Effect:**
+1. **Semi-transparent Grass Overlay**: the grass tile image is painted over the bottom `GRASS_WADING_DEPTH` pixels of the sprite screen rect using a temporary `pygame.Surface` with `wading_alpha` applied via `set_alpha`. This blends the feet visually into the grass texture without mutating the shared tile image or drawing a dark/black transparent overlay bar over the feet.
 
 **Algorithm:**
 
@@ -339,7 +338,7 @@ def _apply_grass_wading(self, surface: pygame.Surface) -> None:
         foot_world_y = sprite.rect.bottom - 2
 
         grass_img = self.game.map_manager.get_grass_tile_image_at(foot_world_x, foot_world_y)
-        if grass_img is None:
+        if not isinstance(grass_img, pygame.Surface):
             continue  # Not on grass — skip
 
         # Wading zone: bottom GRASS_WADING_DEPTH pixels of sprite screen rect
@@ -365,6 +364,7 @@ def _apply_grass_wading(self, surface: pygame.Surface) -> None:
         row_start = int(world_top // tile_size)
         row_end = int((world_bottom - 1) // tile_size)
 
+        wading_surf = pygame.Surface(wading_rect.size, pygame.SRCALPHA)
         for col in range(col_start, col_end + 1):
             for row in range(row_start, row_end + 1):
                 tile_screen_x = col * tile_size + cam_offset.x
@@ -375,12 +375,17 @@ def _apply_grass_wading(self, surface: pygame.Surface) -> None:
                     crop_x = isect.x - tile_screen_x
                     crop_y = isect.y - tile_screen_y
                     grass_crop = pygame.Rect(crop_x, crop_y, isect.width, isect.height)
-                    surface.blit(grass_img, isect.topleft, area=grass_crop)
+                    
+                    # Calculate destination coordinates on the temporary wading surface
+                    dest_x = isect.x - wading_rect.x
+                    dest_y = isect.y - wading_rect.y
+                    wading_surf.blit(grass_img, (dest_x, dest_y), area=grass_crop)
 
-        # Pass 2: Semi-transparent fill to blend sprite into grass
-        alpha_surf = pygame.Surface(wading_rect.size, pygame.SRCALPHA)
-        alpha_surf.fill((0, 0, 0, 255 - wading_alpha))
-        surface.blit(alpha_surf, wading_rect.topleft)
+        # Apply overall wading alpha to make the re-blitted grass semi-transparent
+        wading_surf.set_alpha(wading_alpha)
+
+        # Blit the semi-transparent grass over the main surface
+        surface.blit(wading_surf, wading_rect.topleft)
 ```
 
 **Call site in `draw_scene()` (after Pass 3b, before Pass 4a):**
@@ -502,7 +507,7 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | Return `bool` from `draw_foreground()` | Return `list[tuple[pygame.Rect, int]]` | Bool insufficient — rects and depth needed for precise zone occlusion |
 | Probe terrain at `sprite.rect.centerx, sprite.rect.centery` | Probe at foot: `sprite.rect.centerx, sprite.rect.bottom - 2` | Chest-height probe misses ground material — must probe at feet |
 | Mutate `sprite.image` in `_apply_grass_wading` | Blit directly to `surface` — never touch `sprite.image` | `sprite.image` is a shared spritesheet frame; mutation contaminates all future frames |
-| Allocate `pygame.Surface` per frame per sprite for the grass re-blit | `surface.blit(grass_img, ..., area=grass_crop)` — no allocation | Per-frame Surface allocation at 60fps with multiple NPCs degrades performance |
+| Allocate a full-sized `pygame.Surface` for the grass wading overlay | Use a small `pygame.Surface` matched exactly to the `wading_rect` size (e.g. 32x10) | Allocating large surfaces per frame degrades performance, whereas a tiny matched surface is highly optimized |
 | Blit the full grass tile image | Use `area=grass_crop` to extract only the relevant pixels | Without crop, blit overdraws beyond the wading zone |
 | Apply wading to sprites with `depth < player.depth` | Skip — Pass 2 entities are already below the grass layer | Background entities are behind grass; wading on them is incorrect |
 | Skip screen-bounds clip on `wading_rect` | Always `wading_rect = wading_rect.clip(surface.get_rect())` | Sprites at map edges have foot rect partially off-screen |

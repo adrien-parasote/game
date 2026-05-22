@@ -766,3 +766,26 @@ def test_gwit003_scripted_walk_skips_player_processes_npc():
     # At least one blit happened (NPC processed)
     assert game.screen.blit.call_count >= 1
 
+
+# ---------------------------------------------------------------------------
+# GW-UT-009 — no semi-transparent black bar blitted
+# ---------------------------------------------------------------------------
+def test_grass_wading_does_not_blit_black_bar():
+    """GW-UT-009: _apply_grass_wading does not blit a semi-transparent black bar."""
+    game = _make_game_for_grass_wading(on_grass=True)
+    sprite = _make_sprite()
+    game.visible_sprites.get_sorted_sprites.return_value = [sprite]
+
+    rm = RenderManager(game)
+    rm._apply_grass_wading(game.screen)
+
+    # Inspect all surfaces blitted to screen
+    for call in game.screen.blit.call_args_list:
+        blit_surf = call[0][0]
+        if isinstance(blit_surf, pygame.Surface):
+            color = blit_surf.get_at((0, 0))
+            # Verify it is not a semi-transparent black color
+            assert not (color.r == 0 and color.g == 0 and color.b == 0 and color.a < 255), \
+                "Should not blit a semi-transparent black overlay (black bar)"
+
+

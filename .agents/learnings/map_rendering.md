@@ -489,3 +489,38 @@ for sprite, original in saved_images.items():
 - Walk guard en amont — ne pas appeler sur un player déjà transparent
 
 **Evidence :** 19/19 tests (UT-001..011, IT-001..004) — premier pass. 971/971 suite complète. Zéro intervention humaine. commit `d3db6bf`.
+
+---
+
+*Last updated: 2026-05-22 — L-REND-005 (composite SRCALPHA swap-and-restore).*
+
+---
+
+### A-REND-001 · 2026-05-22 · U · Minor Rework
+**Rectangle noir semi-transparent de blending d'herbe (wading) — crée une barre noire sur les pieds**
+
+**Anti-pattern :**
+Pour fondre les pieds du sprite dans le tile d'herbe, blitter d'abord la texture de l'herbe sur les pieds puis blitter par-dessus un rectangle plein noir semi-transparent `(0, 0, 0, 255 - wading_alpha)`.
+Cela produit une barre noire horizontale semi-transparente très visible et inesthétique sur les pieds des entités, au lieu d'une transition douce.
+
+**Fix :**
+Créer une surface temporaire `SRCALPHA` de la taille exacte de la zone de wading (`wading_rect`). Blitter les pixels croppés de la texture de l'herbe sur cette surface temporaire aux coordonnées relatives. Appliquer ensuite l'alpha global désiré sur cette surface temporaire avec `wading_surf.set_alpha(wading_alpha)`, puis blitter cette surface sur l'écran. Cela rend l'herbe re-blittée semi-transparente directement sur les pieds du sprite, sans barre noire.
+
+```python
+# ✅ Surface temporaire + set_alpha
+wading_surf = pygame.Surface(wading_rect.size, pygame.SRCALPHA)
+# Blitter la texture de l'herbe dans wading_surf...
+wading_surf.blit(grass_img, (dest_x, dest_y), area=grass_crop)
+
+# Appliquer l'alpha à la texture d'herbe re-blittée
+wading_surf.set_alpha(wading_alpha)
+
+# Blitter sur l'écran
+surface.blit(wading_surf, wading_rect.topleft)
+```
+
+**Evidence :** Le screen utilisateur montrait une barre noire sur les pieds du joueur et des NPCs. Le test `test_grass_wading_does_not_blit_black_bar` dans `test_render_manager.py` vérifie qu'aucune surface semi-transparente noire `(0,0,0,A)` avec `A < 255` n'est blittée. 1086/1086 tests passent.
+
+---
+
+*Last updated: 2026-05-22 — A-REND-001 (horizontal black bar on wading feet visual bug).*

@@ -367,8 +367,10 @@ class RenderManager:
             if wading_rect.width <= 0 or wading_rect.height <= 0:
                 continue
 
-            # Pass 1: Re-blit grass tile image, pixel-aligned to the 32×32 tile grid.
+            # Pass 1: Re-blit grass tile image semi-transparently over sprite feet.
             # The wading zone can straddle a tile boundary, so we iterate grid columns/rows.
+            # We blit the grass crops to a temporary surface first to apply the wading_alpha
+            # transparency without mutating the shared tile image.
             world_left = wading_rect.x - cam_offset.x
             world_right = world_left + wading_rect.width
             world_top = wading_rect.y - cam_offset.y
@@ -379,6 +381,7 @@ class RenderManager:
             row_start = int(world_top // tile_size)
             row_end = int((world_bottom - 1) // tile_size)
 
+            wading_surf = pygame.Surface(wading_rect.size, pygame.SRCALPHA)
             for col in range(col_start, col_end + 1):
                 for row in range(row_start, row_end + 1):
                     tile_screen_x = col * tile_size + cam_offset.x
@@ -389,9 +392,16 @@ class RenderManager:
                         crop_x = isect.x - tile_screen_x
                         crop_y = isect.y - tile_screen_y
                         grass_crop = pygame.Rect(crop_x, crop_y, isect.width, isect.height)
-                        surface.blit(grass_img, isect.topleft, area=grass_crop)
 
-            # Pass 2: Semi-transparent fill to blend sprite into grass
-            alpha_surf = pygame.Surface(wading_rect.size, pygame.SRCALPHA)
-            alpha_surf.fill((0, 0, 0, 255 - wading_alpha))
-            surface.blit(alpha_surf, wading_rect.topleft)
+                        # Calculate destination coordinates on the temporary wading surface
+                        dest_x = isect.x - wading_rect.x
+                        dest_y = isect.y - wading_rect.y
+                        wading_surf.blit(grass_img, (dest_x, dest_y), area=grass_crop)
+
+            # Apply overall wading alpha to make the re-blitted grass semi-transparent
+            wading_surf.set_alpha(wading_alpha)
+
+            # Blit the semi-transparent grass over the main surface
+            surface.blit(wading_surf, wading_rect.topleft)
+
+
