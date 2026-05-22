@@ -131,11 +131,14 @@ For tiles from foreground-order layers and tiles with `depth > player.depth`:
    - **Normal tiles** (all others, including foreground-order layer tiles with `depth <= player.depth`) → accumulated in list, drawn in single `screen.fblits()` call
 4. Animated foreground tiles are handled by `draw_background` per-layer (not in `draw_foreground`).
 
+**Player Sprite Occlusion (Implementation Note):**
+`draw_foreground()` returns `True` if any foreground tile overlapped the player. `draw_scene()` captures this boolean. If `True`, `draw_scene` temporarily applies `Settings.OCCLUSION_ALPHA` to the player's sprite before calling the final `custom_draw(min_depth=player.depth)` pass, and restores the original alpha immediately after.
+
 > **Performance**: batching reduces individual `blit()` calls by ~89% vs. the pre-optimization baseline (23K vs 212K calls per 600 frames).
 
 > **Implementation note**: `tile.depth` is accessed directly (not via `getattr`) — `TileMapData.depth` is a required dataclass field always set at parse time.
 
-This creates a semi-transparent effect where foreground tiles reveal the player underneath.
+This creates a semi-transparent effect where foreground tiles reveal the player underneath, and the player is also rendered with matching transparency for visual coherence.
 
 ### 4.4. Lighting Integration
 
@@ -207,6 +210,7 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | Call `screen.blit()` per-tile in loops | Accumulate in list, call `screen.fblits()` once | Individual blit calls have high Python overhead; fblits is ~5× faster for bulk ops |
 | `getattr(tile, 'depth', 0)` on `TileMapData` | `tile.depth` direct access | `TileMapData.depth` always set; getattr adds 847K unnecessary calls/600 frames |
 | Draw ALL background static surfaces, then ALL animated tiles | Draw static + animated per-layer in order (TC-RENDER-001) | Animated tiles from lower-order layers (e.g. water) overdraw static tiles from higher-order layers (e.g. bridge planks), making the bridge invisible |
+| Destructive Alpha Modification | Save `get_alpha()` and restore it after rendering | Calling `sprite.image.set_alpha()` directly without resetting it persists across frames |
 
 ## 7. Test Case Specifications
 
@@ -222,6 +226,8 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | TC-005 | SpriteSheet.load_grid | 4×4, valid file | 16 surfaces | Missing file |
 | TC-006 | SpriteSheet.load_grid_by_size | 32×48 frames | Correct frame count + last_cols/rows | Sheet not divisible |
 | TC-007 | mark_dirty | Called after position change | Cache rebuilds on next sort | Rapid successive dirties |
+| TC-OCC-001 | draw_foreground | Player overlaps tile | Returns True | |
+| TC-OCC-002 | draw_scene | draw_foreground returns True | Player alpha modified then restored | |
 
 ### Integration Tests
 | Test ID | Flow | Setup | Verification |
