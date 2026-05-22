@@ -408,3 +408,52 @@ Ne pas limiter la recherche au fichier de test direct — les tests de régressi
 
 **Scope :** Universal
 
+---
+
+### A-DOC-004 · 2026-05-22 · U · Methodology Gap
+**Créer une spec standalone pour un sous-système d'un module existant → doublon doc silencieux**
+
+Lors de la SPEC phase du cycle "Partial Sprite Occlusion", `partial-sprite-occlusion.md` a été créé comme fichier indépendant alors que toute la logique vit dans `RenderManager` — déjà documenté dans `camera-rendering.md`. Résultat : deux fichiers décrivant le même système pendant 2 sessions, avec risque croissant de divergence. Seule une question de l'utilisateur a déclenché la correction.
+
+**Signal d'alerte :** Si le nouveau fichier spec décrit uniquement des méthodes/comportements d'un module déjà couvert par une spec existante, c'est un sous-système — pas un système indépendant.
+
+**Règle — décision SPEC phase :**
+```
+SPEC STANDALONE si :
+  - La feature touche ≥ 2 modules distincts (ex: intra-map-teleport → player + map + camera)
+  - La feature introduit un nouveau module (ex: DialogueManager)
+  - La feature est suffisamment grande pour dépasser 1/3 de la spec existante
+
+SECTION DANS SPEC EXISTANTE si :
+  - La feature est entièrement implémentée dans un module déjà spécifié
+  - Les nouvelles méthodes s'ajoutent au même fichier source
+  - Exemples : partial occlusion → camera-rendering.md §4.3, bridge physics → entities-system.md §5
+```
+
+**Question à se poser en SPEC :** "Dans quel fichier source vit 100% de l'implémentation ?" → C'est la spec cible.
+
+**Evidence :** `partial-sprite-occlusion.md` (447L) existait en doublon de `camera-rendering.md` pendant 2 sessions. Fusion en 1 commit `87c8b55`. Human enforcement requis.
+
+**Scope :** Universal
+
+---
+
+### A-DOC-005 · 2026-05-22 · U · Perfect
+**`grep -rn "filename" docs/ .agents/` avant tout `git rm` d'un fichier de documentation**
+
+Avant de supprimer un fichier spec, blueprint, ou doc, toujours vérifier qu'aucun autre fichier ne le référence. Un lien cassé dans `00_MASTER.md`, un ADR, ou une autre spec passe inaperçu jusqu'à ce qu'un agent IA charge le mauvais chemin.
+
+```bash
+# ✅ Pattern systématique avant git rm d'un fichier doc
+grep -rn "partial-sprite-occlusion" docs/ .agents/ scripts/
+# Si 0 résultat → suppression safe
+# Si N résultats → mettre à jour chaque référence avant de supprimer
+git rm docs/specs/partial-sprite-occlusion.md
+```
+
+**Règle :** La commande grep doit cibler `docs/`, `.agents/`, et `scripts/` (pas seulement `docs/specs/`) — les scripts TC report ou les learnings peuvent aussi pointer vers des specs.
+
+**Evidence :** `partial-sprite-occlusion.md` supprimé proprement — grep = 0 résultats, zéro lien cassé. Distinct de L-DOC-007 (qui concerne la relocation de scripts, pas la suppression de specs).
+
+**Scope :** Universal
+
