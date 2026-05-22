@@ -4,6 +4,86 @@
   <property name="material" value="grass"/>
  </properties>
  <image source="../../images/autotiles/00-grass-2.png" width="512" height="32"/>
+ <tile id="0" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="1" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="2" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="3" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="4" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="5" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="6" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="7" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="8" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="9" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="10" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="11" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="12" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="13" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="14" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
+ <tile id="15" type="01-tileset_ground">
+  <properties>
+   <property name="material" value="grass"/>
+  </properties>
+ </tile>
  <wangsets>
   <wangset name="00-grass-2" class="01-tileset_ground" type="edge" tile="-1">
    <wangcolor name="00-grass-2" class="01-tileset_ground" color="#55aa00" tile="-1" probability="1">

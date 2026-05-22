@@ -3,6 +3,7 @@
 # Technical Specification - Camera & Rendering Pipeline [Implementation]
 
 > Document Type: Implementation
+> ADR (Partial Occlusion): [ADR-007](../ADRs/ADR-007-partial-occlusion-surface-composite.md)
 
 This document specifies the AS-IS technical implementation of the camera system, sprite rendering pipeline, Y-sorting, frustum culling, and spritesheet utility.
 
@@ -111,6 +112,8 @@ Wrapped in `try-except TypeError` for test compatibility with mock surfaces.
 | 11 | `chest_ui.draw()` | Chest overlay (if open) | Normal |
 | 12 | Custom Cursor | The absolute last rendering step | Normal |
 
+**Partial occlusion is applied between Pass 3 and Pass 3b** (`_apply_partial_occlusion` called after `draw_foreground`, before `custom_draw(min_depth=...)`).
+
 ### 4.2. Background Rendering (`draw_background`)
 
 - Iterates `map_manager.layer_order` sorted by ascending order value
@@ -123,35 +126,155 @@ Wrapped in `try-except TypeError` for test compatibility with mock surfaces.
 
 ### 4.3. Foreground Rendering with Partial Occlusion (`draw_foreground` + `_apply_partial_occlusion`)
 
-For tiles from foreground-order layers and tiles with `depth > player.depth`:
-1. Calculate viewport in world coordinates
-2. Get visible tile chunks via `map_manager.get_visible_chunks(min_depth=player.depth)`
-3. Collect ALL tiles with `depth > player.depth` into `occluding_rects: list[tuple[pygame.Rect, int]]` (screen-space coords + depth)
-4. Tiles are split into two blit tracks:
-   - **Occluded tiles** (`tile.depth > player.depth` AND overlaps player) → individual `screen.blit(occluded_image)` (per-tile `colliderect` check)
-   - **Normal tiles** (all others) → accumulated in list, drawn in single `screen.fblits()` call
-5. Animated foreground tiles (`depth > player.depth`) are also scanned; their rects added to `occluding_rects` (currently inert — no animated foreground tiles exist yet, but the branch is ready)
-6. Returns `occluding_rects` (empty list `[]` if no occluding tile visible)
+#### 4.3.1. `draw_foreground()` — Collecte des rects occludants
 
-**Partial Sprite Occlusion — `_apply_partial_occlusion(occluding_rects)`:**
-Called by `draw_scene()` BEFORE `custom_draw(min_depth=player.depth)`, this method implements the **swap-and-restore** pattern:
-- Iterates every sprite in `visible_sprites.get_sorted_sprites()` (depth ≥ player.depth)
-- For each sprite that intersects at least one tile where `tile_depth > sprite_depth`:
-  1. Builds a `SRCALPHA` composite surface (same size as `sprite.image`)
-  2. Full opaque blit of sprite first
-  3. For each intersection zone: `fill((0,0,0,0), local_rect)` then blit `alpha_surface.set_alpha(OCCLUSION_ALPHA)`
-  4. Replaces `sprite.image` with composite; saves original in `saved_images` dict
-- `draw_scene()` restores all `sprite.image` from `saved_images` immediately after `custom_draw`
+```python
+def draw_foreground(self) -> list[tuple[pygame.Rect, int]]:
+```
 
-This means **only the zone of the sprite that physically overlaps a foreground tile is semi-transparent** — the rest of the sprite remains fully opaque. Applies generically to player AND all NPCs.
+**Retourne** : liste de tuples `(screen-space Rect, depth)` pour tous les tiles actifs avec `depth > player.depth`. Liste vide `[]` si aucun tile occludant visible.
 
-> **Walk guard (TC-RENDER-002/003):** During scripted walk (`_intra_walk_target` is set), `draw_scene()` does NOT call `_apply_partial_occlusion()`. The player is already invisible (`_player_transparent`) — applying occlusion to an invisible player would produce alpha artifacts.
+**Boucle principale (Source A — tiles statiques) :**
 
-> **Performance**: batching reduces individual `blit()` calls by ~89% vs. the pre-optimization baseline. Composite surfaces are max 32×48px — negligible memory footprint (2-3 sprites occluded simultaneously max).
+```python
+occluding_rects = []  # remplace l'ancien player_occluded = False
 
-> **Depth filtering**: `tile_depth > sprite_depth` (strict). A tile at the same depth as a sprite does NOT occlude it.
+for px, py, tile_id, depth in self.game.map_manager.get_visible_chunks(
+    self._viewport_world, min_depth=player_depth
+):
+    tile_data = tiles[tile_id]
+    screen_pos = (px + cam_offset.x, py + cam_offset.y)
 
-This creates a spatially precise semi-transparent effect: only the overlapping area of each entity is affected.
+    # Collecter le rect pour TOUS les tiles depth > player (NPCs compris)
+    if depth > player_depth:
+        occluding_rects.append((
+            pygame.Rect(screen_pos, (self.game.tile_size, self.game.tile_size)),
+            depth
+        ))
+
+    # Rendu du tile — walk guard
+    if not walk_active and depth > player_depth:
+        self._tile_rect.topleft = screen_pos
+        if player_screen_rect.colliderect(self._tile_rect):
+            screen.blit(tile_data.occluded_image or tile_data.image, screen_pos)
+        else:
+            normal_blits.append((tile_data.image, screen_pos))
+    else:
+        normal_blits.append((tile_data.image, screen_pos))
+```
+
+**Source B — Tiles animés :**
+
+```python
+for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(
+    self._viewport_world
+):
+    if depth > player_depth:
+        screen_pos = (px + cam_offset.x, py + cam_offset.y)
+        occluding_rects.append((pygame.Rect(screen_pos, (self.game.tile_size, self.game.tile_size)), depth))
+```
+
+> **Note :** Aujourd'hui aucun tile animé n'a `depth > 1`. Cette branche est inerte mais sera activée automatiquement dès qu'un tile animé foreground sera créé.
+
+```python
+return occluding_rects  # list[tuple[pygame.Rect, int]], screen-space
+```
+
+L'ancien `player_occluded: bool` est **supprimé**. `draw_scene()` ne teste plus `if is_occluded:` — il passe directement `occluding_rects` à `_apply_partial_occlusion`.
+
+#### 4.3.2. `_apply_partial_occlusion(occluding_rects)` — Swap-and-Restore
+
+Méthode privée de `RenderManager`. Appelée **avant** `custom_draw(min_depth=player.depth)`.
+
+**Principe :** Pour chaque sprite intersectant au moins un rect occludant, générer une surface composite temporaire où seule la zone occludée est en alpha. Remplacer temporairement `sprite.image` par celle-ci. Retourne un dict pour restauration après le rendu.
+
+```python
+def _apply_partial_occlusion(
+    self, occluding_rects: list[tuple[pygame.Rect, int]]
+) -> dict[pygame.sprite.Sprite, pygame.Surface]:
+    if not occluding_rects:
+        return {}
+
+    cam_offset = self.game.visible_sprites.offset
+    saved_images = {}
+    player_depth = self.game.player.depth
+
+    for sprite in self.game.visible_sprites.get_sorted_sprites():
+        if not sprite.image or not sprite.rect:
+            continue
+        if getattr(sprite, "depth", 1) < player_depth:
+            continue  # uniquement les sprites du pass 3b
+
+        # visual_rect identique à custom_draw — cohérence obligatoire
+        visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
+        sprite_screen_rect = pygame.Rect(
+            (visual_rect.left + cam_offset.x, visual_rect.top + cam_offset.y),
+            visual_rect.size,
+        )
+
+        sprite_depth = getattr(sprite, "depth", 1)
+        intersections = [
+            sprite_screen_rect.clip(occ_rect)
+            for occ_rect, tile_depth in occluding_rects
+            if tile_depth > sprite_depth and sprite_screen_rect.colliderect(occ_rect)
+        ]
+        if not intersections:
+            continue
+
+        # Surface composite SRCALPHA
+        composite = pygame.Surface(visual_rect.size, pygame.SRCALPHA)
+        composite.blit(sprite.image, (0, 0))  # copie opaque complète
+
+        for isect in intersections:
+            if isect.width <= 0 or isect.height <= 0:
+                continue
+            local_rect = pygame.Rect(
+                isect.x - sprite_screen_rect.x,
+                isect.y - sprite_screen_rect.y,
+                isect.width,
+                isect.height,
+            )
+            composite.fill((0, 0, 0, 0), local_rect)  # vider la zone AVANT le blit
+            alpha_surface = pygame.Surface(local_rect.size, pygame.SRCALPHA)
+            alpha_surface.blit(sprite.image, (0, 0), local_rect)
+            alpha_surface.set_alpha(Settings.OCCLUSION_ALPHA)
+            composite.blit(alpha_surface, local_rect.topleft)
+
+        saved_images[sprite] = sprite.image
+        sprite.image = composite
+
+    return saved_images
+```
+
+**Contraintes d'implémentation critiques :**
+
+| Contrainte | Raison |
+|---|---|
+| `sprite.image.get_size()` lu dynamiquement à chaque appel | Frames de taille variable à prévoir |
+| `visual_rect` calculé avec `bottomright=sprite.rect.bottomright` | Identique à `custom_draw` — toute divergence = décalage visuel |
+| `fill((0, 0, 0, 0), local_rect)` AVANT le blit alpha | Indispensable — Pygame conserve les pixels opaques de la destination si on ne les vide pas |
+| Surface composite `SRCALPHA` allouée par sprite occludé par frame | Taille max 32×48px — négligeable en mémoire |
+| `tile_depth > sprite_depth` strict | Égalité = pas d'occlusion |
+
+#### 4.3.3. Walk guard
+
+Pendant un scripted walk (`_intra_walk_target` is set), le player est invisible (`_player_transparent`). `_apply_partial_occlusion` **ne doit pas être appelé** (alpha artifacts sur sprite invisible).
+
+```python
+walk_active = getattr(self.game, "_intra_walk_target", None) is not None
+occluding_rects = self.draw_foreground()
+
+saved_images = {}
+if not walk_active:
+    saved_images = self._apply_partial_occlusion(occluding_rects)
+
+self.game.visible_sprites.custom_draw(self.game.screen, min_depth=self.game.player.depth)
+
+for sprite, original_image in saved_images.items():
+    sprite.image = original_image
+```
+
+> `draw_foreground()` retourne toujours une **liste** (jamais `False`). Le walk guard est dans `draw_scene()`, pas dans `draw_foreground()`.
 
 ### 4.4. Lighting Integration
 
@@ -202,15 +325,44 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | `transparent=False` | 32×32 blue solid surface |
 | `transparent=True` | 32×32 fully transparent SRCALPHA surface |
 
-## 6. Assumptions
+## 6. Cross-Spec Contracts
+
+### Produces
+
+| Identifiant | Format | Consommateurs |
+|---|---|---|
+| `RenderManager.draw_foreground()` → `list[tuple[pygame.Rect, int]]` | Python list de tuples (pygame.Rect screen-space, depth) | `draw_scene()` (même module) |
+
+### Consumes
+
+| Identifiant | Format | Producteur |
+|---|---|---|
+| `MapManager.get_visible_chunks(min_depth)` | Iterator[(px, py, tile_id, depth)] | `src/map/manager.py` |
+| `MapManager.get_visible_animated_chunks(viewport)` | Iterator[(px, py, tile_id, depth)] | `src/map/manager.py` |
+| `CameraGroup.get_sorted_sprites()` | list[Sprite] | `src/entities/groups.py` |
+| `Settings.OCCLUSION_ALPHA` | int (0–255) | `src/config.py` |
+
+### Tracked Interface Changes
+
+| Method | Old contract | New contract | Specs impactées |
+|--------|-------------|-------------|-----------------|
+| `draw_foreground()` | `bool` | `list[tuple[pygame.Rect, int]]` | `intra-map-teleport.md §4.6, §9.2` (corrigé) |
+| `_apply_partial_occlusion()` | n/a (nouveau) | `dict[Sprite, Surface]` | — |
+
+## 7. Assumptions
 
 | # | Assumption | Risk | Validation |
 |---|------------|------|------------|
 | 1 | Map layers are statically ordered by depth. | Low | Confirmed via `MapManager`. |
 | 2 | Camera is always bound to player. | Low | Current implementation hardcodes player target. |
 | 3 | Frustum culling margin is 0. | Medium | If sprites are larger than 32px, they might cull early. |
+| 4 | `visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)` identique dans `custom_draw` et `_apply_partial_occlusion` | Low | Code review — même formule |
+| 5 | `Settings.OCCLUSION_ALPHA` identique pour NPCs et player (même expérience visuelle) | Low | Décision design confirmée |
+| 6 | Les tiles foreground sont tous de taille `TILE_SIZE × TILE_SIZE` (32×32) | Low | Contrainte moteur — `tile_size` issu de `self.game.tile_size` |
+| 7 | Max 2-3 NPCs occludés simultanément → perf négligeable | Medium | À vérifier en jeu sur map dense |
+| 8 | Tiles animés avec `depth > 1` n'existent pas encore — branche inerte jusqu'à création | Low | Confirmé |
 
-## 7. Anti-Patterns (DO NOT)
+## 8. Anti-Patterns (DO NOT)
 
 | ❌ Don't | ✅ Do Instead | Why |
 |----------|---------------|-----|
@@ -222,61 +374,89 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | Use `sprite.image.get_rect()` for physical position | Use `sprite.rect` (logical hitbox) | Prevents visual/physical desync |
 | Call `screen.blit()` per-tile in loops | Accumulate in list, call `screen.fblits()` once | Individual blit calls have high Python overhead; fblits is ~5× faster for bulk ops |
 | `getattr(tile, 'depth', 0)` on `TileMapData` | `tile.depth` direct access | `TileMapData.depth` always set; getattr adds 847K unnecessary calls/600 frames |
-| Draw ALL background static surfaces, then ALL animated tiles | Draw static + animated per-layer in order (TC-RENDER-001) | Animated tiles from lower-order layers (e.g. water) overdraw static tiles from higher-order layers (e.g. bridge planks), making the bridge invisible |
-| Destructive Alpha Modification (global) | Create SRCALPHA composite; swap-and-restore `sprite.image` | `sprite.image.set_alpha()` mutates the shared spritesheet frame, contaminating all future frames. The composite approach is spatially precise: only the occluded zone is in alpha. |
+| Draw ALL background static surfaces, then ALL animated tiles | Draw static + animated per-layer in order (TC-RENDER-001) | Animated tiles from lower-order layers (e.g. water) overdraw static tiles from higher-order layers (e.g. bridge planks) |
+| `sprite.image.set_alpha(OCCLUSION_ALPHA)` directly | Create SRCALPHA composite; swap-and-restore `sprite.image` | Mutates the shared spritesheet frame, contaminating all future frames |
+| Cache sprite size in `_apply_partial_occlusion` | Use `sprite.image.get_size()` dynamically | Frames can have variable sizes in the future |
+| Calculate `visual_rect` differently from `custom_draw` | Use exactly `get_rect(bottomright=sprite.rect.bottomright)` | Inconsistency = visual misalignment between rendered sprite and composite zone |
 | Call `_apply_partial_occlusion` during scripted walk | Guard with `walk_active` in `draw_scene()` | Player is already invisible (`_player_transparent`); occlusion on invisible sprite = alpha artifacts |
+| Do a second tile scan in `_apply_partial_occlusion` | Reuse rects collected in `draw_foreground()` | Double scan = duplicated work |
+| Ignore depth in `_apply_partial_occlusion` | Check `tile_depth > sprite_depth` | A tile must not occlude a sprite at the same or higher depth |
+| Return `bool` from `draw_foreground()` | Return `list[tuple[pygame.Rect, int]]` | Bool insufficient — rects and depth needed for precise zone occlusion |
 
-## 7. Test Case Specifications
+## 9. Test Case Specifications
 
 ### Unit Tests
-| Test ID | Component | Input | Expected Output | Edge Cases |
-|---------|-----------|-------|-----------------|------------|
-| TC-001 | calculate_offset | Player at center | offset = (0, 0) | Map smaller than screen |
-| TC-002 | calculate_offset | Player at (0, 0) | offset clamped to (0, 0) | Edge of world |
-| TC-003 | get_sorted_sprites | Sprites at Y=100, Y=50 | Sorted [Y=50, Y=100] | All at same Y |
-| TC-SORT-001 | get_sorted_sprites — sort_y override | Bridge sort_y=100, player rect.bottom=300 | Bridge before player in result | bridge.rect.bottom=500 |
-| TC-SORT-002 | get_sorted_sprites — mixed sort keys | Bridge sort_y=50, NPC bottom=150, player bottom=300 | [bridge, npc, player] order | |
-| TC-004 | Frustum culling | Sprite at (-100, -100) | Not blitted | Partially on-screen |
-| TC-005 | SpriteSheet.load_grid | 4×4, valid file | 16 surfaces | Missing file |
-| TC-006 | SpriteSheet.load_grid_by_size | 32×48 frames | Correct frame count + last_cols/rows | Sheet not divisible |
-| TC-007 | mark_dirty | Called after position change | Cache rebuilds on next sort | Rapid successive dirties |
-| TC-OCC-001 | `draw_foreground` | Tile depth=2 visible | Returns `list` with ≥1 `(pygame.Rect, int)` tuple |
-| TC-OCC-002 | `draw_scene` | `draw_foreground` returns non-empty list | `_apply_partial_occlusion()` called; sprite images swapped then restored |
-| TC-OCC-003 | `_apply_partial_occlusion` | Sprite depth=1, tile depth=2, intersection = lower 16px | Composite: upper zone opaque, lower 16px at `OCCLUSION_ALPHA` |
-| TC-OCC-004 | `_apply_partial_occlusion` | `tile_depth == sprite_depth` | Sprite not occluded (depth filter strict: `tile_depth > sprite_depth`) |
+
+| Test ID | Component | Input | Expected Output |
+|---------|-----------|-------|-----------------|
+| TC-001 | `calculate_offset` | Player at center | offset = (0, 0) |
+| TC-002 | `calculate_offset` | Player at (0, 0) | offset clamped to (0, 0) |
+| TC-003 | `get_sorted_sprites` | Sprites at Y=100, Y=50 | Sorted [Y=50, Y=100] |
+| TC-SORT-001 | `get_sorted_sprites` — sort_y override | Bridge sort_y=100, player rect.bottom=300 | Bridge before player in result |
+| TC-SORT-002 | `get_sorted_sprites` — mixed sort keys | Bridge sort_y=50, NPC bottom=150, player bottom=300 | [bridge, npc, player] order |
+| TC-004 | Frustum culling | Sprite at (-100, -100) | Not blitted |
+| TC-005 | `SpriteSheet.load_grid` | 4×4, valid file | 16 surfaces |
+| TC-006 | `SpriteSheet.load_grid_by_size` | 32×48 frames | Correct frame count + last_cols/rows |
+| TC-007 | `mark_dirty` | Called after position change | Cache rebuilds on next sort |
+| UT-001 | `draw_foreground()` | Aucun tile depth > 1 visible | Retourne `[]` |
+| UT-002 | `draw_foreground()` | 1 tile depth 2 visible, overlappant player rect | Retourne liste avec 1 tuple (Rect, depth) |
+| UT-003 | `draw_foreground()` | Tile animé depth 2 visible | Tuple du tile animé dans la liste |
+| UT-004 | `draw_foreground()` | Tile depth 2 mais `walk_active=True` | Liste retournée (collecte inchangée) |
+| UT-005 | `_apply_partial_occlusion` | `occluding_rects=[]` | Retour immédiat `{}`, aucun blit |
+| UT-006 | `_apply_partial_occlusion` | Sprite hors intersection de tous les rects | Sprite non retraité (skip) |
+| UT-007 | `_apply_partial_occlusion` | Sprite avec intersection partielle (moitié basse) | Composite : moitié haute opaque, moitié basse alpha |
+| UT-008 | `_apply_partial_occlusion` | Sprite (depth=1) entièrement dans le rect occludant (depth=2) | Composite entier en alpha |
+| UT-009 | `_apply_partial_occlusion` | Sprite avec 2 tiles occludants qui se chevauchent | Les deux intersections appliquées |
+| UT-010 | `_apply_partial_occlusion` | Sprite (depth=2) intersectant rect occludant (depth=2) | Sprite non retraité (tile_depth non strictement supérieur) |
+| UT-011 | `draw_scene()` | `walk_active=True`, tiles occludants présents | `_apply_partial_occlusion` non appelé |
 
 ### Integration Tests
+
 | Test ID | Flow | Setup | Verification |
 |---------|------|-------|--------------|
-| IT-001 | Full draw_scene | Game with loaded map + entities | No exceptions, correct pass order |
-| IT-002 | Foreground occlusion | Player under depth-1 tile | Occluded surface used for overlapping tile |
-| IT-003 | Layer ordering | Map with Tiled `order` property | Layers sorted by `order` int, not name prefix |
-| IT-004 | Multi-layer render | Map with multiple layers | Lowest `order` value drawn bottom-most |
-| IT-005 | Two-pass entity draw | Entity with depth=player.depth | Absent in pass 2 (max_depth=depth-1), present in pass 3b (min_depth=depth) |
+| IT-001 | Player sous tile depth 2 | Map mock avec tile depth 2 au-dessus du player rect | `draw_foreground()` retourne liste non vide ; `_apply_partial_occlusion` appelé |
+| IT-002 | NPC semi-occludé | NPC sprite 32×48, tile occludant sur la moitié basse | Surface composite différente de l'image originale sur la zone occludée |
+| IT-003 | Rétrocompat scripted walk | `_intra_walk_target` actif | `_apply_partial_occlusion` non appelé |
+| IT-004 | Full draw_scene | Game with loaded map + entities | No exceptions, correct pass order |
+| IT-005 | Layer ordering | Map with Tiled `order` property | Layers sorted by `order` int, not name prefix |
+| IT-006 | Multi-layer render | Map with multiple layers | Lowest `order` value drawn bottom-most |
+| IT-007 | Two-pass entity draw | Entity with depth=player.depth | Absent in pass 2 (max_depth=depth-1), present in pass 3b (min_depth=depth) |
 
 ### Linked Test Functions
+
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| IT-003 | `test_layer_recursive_order` | `../../tests/map/test_map.py:L41` |
-| IT-004 | `test_map_manager_render_layer` | `../../tests/map/test_map.py:L128` |
+| IT-005 | `test_layer_recursive_order` | `../../tests/map/test_map.py:L41` |
+| IT-006 | `test_map_manager_render_layer` | `../../tests/map/test_map.py:L128` |
 
-## 8. Error Handling Matrix
+## 10. Error Handling Matrix
 
 | Error Type | Detection | Response | Fallback |
 |------------|-----------|----------|----------|
 | No display surface | `pygame.display.get_surface()` is None | Set `half_width/height = 0` | Camera offset stays at origin |
-| Missing sprite image | `sprite.image is None` | Skip in custom_draw | No blit attempt |
+| Missing sprite image | `sprite.image is None` | Skip in `custom_draw` / `_apply_partial_occlusion` | No blit attempt |
+| Missing sprite rect | `sprite.rect is None` | Skip in `_apply_partial_occlusion` | No blit attempt |
 | Mock surface in tests | TypeError in `pygame.draw.rect` | Caught in try-except | Skip debug rendering |
 | Spritesheet load fail | `pygame.error` | Log error, `valid=False` | Return blue dummy surfaces |
 | Division by zero | Frame dims = 0 | Guard in `load_grid` | Return empty list |
+| Intersection rect taille 0 | `pygame.Rect.clip()` retourne Rect(0,0,0,0) | `if isect.width > 0 and isect.height > 0` | Skip silencieux |
+| `pygame.Surface()` fails | `pygame.error` | Non attrapé — erreur fatale (hors RAM) | — |
 
-## 9. Deep Links
+## 11. Deep Links
+
 - **`CameraGroup`**: [groups.py L4](../../src/entities/groups.py#L4)
 - **`RenderManager`**: [render_manager.py L6](../../src/engine/render_manager.py#L6)
+- **`draw_foreground()`**: [render_manager.py L54](../../src/engine/render_manager.py#L54)
+- **`draw_scene()`**: [render_manager.py L128](../../src/engine/render_manager.py#L128)
+- **`_apply_partial_occlusion()`**: [render_manager.py L168](../../src/engine/render_manager.py#L168)
+- **`CameraGroup.custom_draw()`**: [groups.py L91](../../src/entities/groups.py#L91)
+- **`CameraGroup.get_sorted_sprites()`**: [groups.py L76](../../src/entities/groups.py#L76)
 - **SpriteSheet**: [spritesheet.py L7](../../src/graphics/spritesheet.py#L7)
-- **`MapManager.get_layer_surface`**: [manager.py L1](../../src/map/manager.py#L1)
-- **`LightingManager`**: [lighting.py L1](../../src/engine/lighting.py#L1)
-- **Engine core spec (rendering pipeline)**: [engine-core.md §R](./engine-core.md#L1)
+- **`MapManager.get_visible_chunks()`**: [manager.py L152](../../src/map/manager.py#L152)
+- **`MapManager.get_visible_animated_chunks()`**: [manager.py L202](../../src/map/manager.py#L202)
+- **`Settings.OCCLUSION_ALPHA`**: [config.py L136](../../src/config.py#L136)
+- **ADR (Partial Occlusion)**: [ADR-007](../ADRs/ADR-007-partial-occlusion-surface-composite.md#L1)
+- **Engine core spec**: [engine-core.md §R](./engine-core.md#L1)
 - **Unit tests (render manager)**: [test_render_manager.py L1](../../tests/engine/test_render_manager.py#L1)
+- **Unit tests (render order)**: [test_render_order.py L1](../../tests/engine/test_render_order.py#L1)
 - **Unit tests (graphics)**: [test_graphics.py L1](../../tests/graphics/test_graphics.py#L1)
-
