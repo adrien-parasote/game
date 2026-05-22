@@ -30,7 +30,10 @@ def test_render_manager_draw_background_animated(mock_game):
 
     # Setup animated chunks
     mock_game.anim_map_manager.get_current_frame_image.return_value = MagicMock(spec=pygame.Surface)
-    mock_game.map_manager.get_visible_animated_chunks.return_value = [(0, 0, 1, 5)] # x, y, tile_id, depth (depth 5 <= player 10)
+    animated_tile = (0, 0, 1, 5)  # x, y, tile_id, depth (depth 5 <= player 10)
+
+    # Pre-populate F3 caches (draw_scene() normally does this)
+    rm._frame_anim_by_layer = {1: [animated_tile]}
 
     rm.draw_background()
     assert mock_game.screen.fblits.called
@@ -40,8 +43,10 @@ def test_render_manager_draw_foreground_animated(mock_game):
     rm = RenderManager(mock_game)
 
     mock_game.anim_map_manager.get_current_frame_image.return_value = MagicMock(spec=pygame.Surface)
-    mock_game.map_manager.get_visible_animated_chunks.return_value = [(0, 0, 1, 15)] # depth 15 > player 10
     mock_game.map_manager.get_visible_chunks.return_value = [] # no normal tiles
+
+    # Pre-populate F3 cache with a depth-15 tile (depth 15 > player 10 → foreground)
+    rm._frame_anim_all = [(0, 0, 1, 15)]
 
     rm.draw_foreground()
     assert mock_game.screen.fblits.called

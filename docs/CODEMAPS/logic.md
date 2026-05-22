@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-22 | Last doc-update: 2026-05-22 | Files scanned: 66 | Token estimate: ~1800 -->
+<!-- Generated: 2026-05-22 | Last doc-update: 2026-05-22 | Files scanned: 68 | Token estimate: ~1900 -->
 
 # Engine Logic Flow
 
@@ -89,9 +89,11 @@ sub_types: chest | lever | door | sign | animated_decor
 - **SpatialUtils** (`src/engine/spatial_utils.py`): `get_facing_vector()`, `is_facing_toward()`, `verify_orientation()` — utility functions shared by InteractionManager and CollisionChecker.
 
 ## Time System
-`TimeSystem.update(dt)` → accumulates `elapsed_seconds` → `world_time` (hour/minute/season) → `night_alpha` (0–200) → `brightness` (float 0.0–1.0) → drives `LightingManager` and `GameHUD` clock display.
+`TimeSystem.update(dt)` → accumulates `_total_minutes` → rebuilds `_cached_world_time` (1x/frame) → `world_time @property` returns cache → `night_alpha` (0–200) → `brightness` (float 0.0–1.0) → drives `LightingManager` and `GameHUD` clock display.
+- **Perf (F1 — pending):** `_compute_world_time()` called once in `update()`. Before: 335 NamedTuple allocations/frame. After: 1/frame.
 
 ## Rendering pipelines (Partial Occlusion & Grass Wading)
 `RenderManager.draw_scene()` → `_apply_partial_occlusion()` → `custom_draw()` → `_apply_grass_wading()`
 - **Partial Occlusion**: Intersects sprite screen-space rects with foreground tiles (`depth > sprite.depth`). Generates a temporary `SRCALPHA` composite where intersecting regions are rendered with `Settings.OCCLUSION_ALPHA` (50% transparency). Skip player sprite during scripted walks (NPCs still occluded).
 - **Grass Wading**: Probes the ground layer at each sprite's foot center position via `MapManager.get_grass_tile_image_at()`. If the topmost depth≤1 tile is marked as `"grass"`, re-blits the grass tile texture over the bottom `Settings.GRASS_WADING_DEPTH` (8px) of the sprite's screen-space bounds, aligned to the 32px grid, and overlays an alpha blend layer (`Settings.GRASS_WADING_ALPHA`, 140) to blend the feet smoothly. Skip player sprite during scripted walks.
+- **Perf (F3+F4 — pending):** Animated chunks computed once into `_frame_anim_all` at top of `draw_scene()` (was 311 generator calls/frame → 1). `_occlusion_composite` / `_alpha_surf` / `_wading_surf` pre-allocated in `__init__`, cleared with `fill((0,0,0,0))` each frame (was 3+ `pygame.Surface(SRCALPHA)` allocs/frame → 0).

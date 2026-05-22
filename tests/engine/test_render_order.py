@@ -41,6 +41,12 @@ def _make_render_manager():
     rm._tile_rect = pygame.Rect(0, 0, 32, 32)
     rm._screen_rect = pygame.Rect(0, 0, 1280, 720)
     rm._viewport_world = pygame.Rect(0, 0, 0, 0)
+    # F3+F4 caches (normally initialized in __init__)
+    rm._frame_anim_all = []
+    rm._frame_anim_by_layer = {}
+    rm._occlusion_pool = []
+    rm._alpha_surf = None
+    rm._wading_surf = None
     return rm
 
 
@@ -113,6 +119,9 @@ class TestBackgroundLayerRenderOrder:
 
         rm.game.screen.blit.side_effect = track_blit
         rm.game.screen.fblits.side_effect = track_fblits
+
+        # Pre-populate F3 caches (draw_scene() normally does this)
+        rm._frame_anim_by_layer = {7: [(0, 0, 1001, 0)], 8: []}
 
         # Act
         rm.draw_background()

@@ -148,7 +148,6 @@ def test_draw_foreground_animated_tile_depth2_included():
     """UT-003: Animated tile with depth>player.depth is included in occluding_rects."""
     game = MagicMock()
     game.map_manager.get_visible_chunks.return_value = []  # no static foreground tiles
-    game.map_manager.get_visible_animated_chunks.return_value = [(64, 0, 99, 2)]  # anim tile depth=2
     game.map_manager.tiles = {}
     game.anim_map_manager = MagicMock()  # anim manager present
     game.anim_map_manager.get_current_frame_image.return_value = pygame.Surface((32, 32))
@@ -160,10 +159,14 @@ def test_draw_foreground_animated_tile_depth2_included():
     game.tile_size = 32
 
     rm = RenderManager(game)
+    # Pre-populate F3 cache (draw_scene() normally does this)
+    rm._frame_anim_all = [(64, 0, 99, 2)]  # anim tile depth=2 > player.depth=1
+
     result = rm.draw_foreground()
 
     # The animated tile at depth=2 must be in the occluding list
     assert any(depth == 2 for _, depth in result)
+
 
 
 # ---------------------------------------------------------------------------

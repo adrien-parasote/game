@@ -110,11 +110,20 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
     def is_on(self) -> bool:
         if not self.day_night_driven:
             return getattr(self, "_static_is_on", False)
+        # For day_night_driven with no time_system: fallback to _static_is_on (not yet updated)
+        if self.__time_system is None:
+            return getattr(self, "_static_is_on", False)
+        # For day_night_driven: return pre-computed cache (updated in update())
+        return self._is_on_cache
+
+
+    def _compute_is_on(self) -> bool:
+        """Compute is_on state for day_night_driven entities. Called only in update()."""
         if self.light_control == "forced_on":
             return True
         if self.light_control == "forced_off":
             return False
-        # "auto" : follows the night
+        # "auto": follows night
         if self._time_system is None:
             return getattr(self, "_static_is_on", False)
         return self._time_system.brightness < 0.4
@@ -147,8 +156,26 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
 
     def _parse_day_night(self, day_night_driven):
         self.day_night_driven = day_night_driven
-        self._time_system = None
+        # _is_on_cache sentinel and light_control must be set BEFORE _time_system setter fires
+        # (setter calls _compute_is_on() which reads both light_control and _is_on_cache)
+        self._is_on_cache: bool = False
         self.light_control = "auto" if day_night_driven else "none"
+        self._time_system = None  # setter auto-refreshes cache using light_control above
+
+
+    @property
+    def _time_system(self):
+        return self.__time_system
+
+    @_time_system.setter
+    def _time_system(self, value) -> None:
+        """Auto-refresh _is_on_cache when time_system is injected — keeps tests that set
+        _time_system directly (without calling update()) working correctly.
+        Guard: skip refresh when value is None (init phase — _static_is_on not yet set)."""
+        self.__time_system = value
+        if self.day_night_driven and value is not None:
+            self._is_on_cache = self._compute_is_on()
+
 
     def _parse_direction(self, facing_direction, position):
         if facing_direction:
@@ -391,6 +418,8 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
                       one get_ticks() call per entity). Falls back to get_ticks() if None.
         """
         if self.day_night_driven:
+            # F2: Rebuild cache first (ADR-PERF-002) — must precede any read of self.is_on in this tick
+            self._is_on_cache = self._compute_is_on()
             self._update_col_index()
 
         # Ambient Audio

@@ -12,6 +12,16 @@ class RenderManager:
         self._tile_rect = pygame.Rect(0, 0, game.tile_size, game.tile_size)
         self._screen_rect = pygame.Rect(0, 0, game.screen.get_width(), game.screen.get_height())
         self._viewport_world = pygame.Rect(0, 0, 0, 0)
+        # F4: Pre-allocated SRCALPHA surface pool — reused every frame, cleared with fill()
+        # Pool for composite occlusion: distinct surface per occluded sprite, avoids reference sharing
+        self._occlusion_pool: list[pygame.Surface] = []
+        # Alpha surface for crop blitting (sequentially used — single instance is safe)
+        self._alpha_surf: pygame.Surface | None = None
+        # Grass wading surface (sequentially blitted and drawn immediately)
+        self._wading_surf: pygame.Surface | None = None
+        # F3: Pre-computed animated tile caches — populated once per frame in draw_scene()
+        self._frame_anim_all: list[tuple[int, int, int, int]] = []
+        self._frame_anim_by_layer: dict[int, list[tuple[int, int, int, int]]] = {}
 
     def draw_background(self):
         """Draw tiles with depth <= player depth (behind player).
@@ -19,12 +29,6 @@ class RenderManager:
         a higher-order layer always appears on top regardless of animation.
         """
         cam_offset = self.game.visible_sprites.offset
-
-        if self.game.anim_map_manager:
-            self._viewport_world.update(
-                -cam_offset.x, -cam_offset.y,
-                self._screen_rect.width, self._screen_rect.height,
-            )
 
         for layer_id in self.game.map_manager.layer_order:
             layer_order_val = self.game.map_manager.layer_depths.get(layer_id, 0)
@@ -38,12 +42,10 @@ class RenderManager:
             if surface:
                 self.game.screen.blit(surface, (cam_offset.x, cam_offset.y))
 
-            # 2. Animated tiles for this layer (drawn on top of static)
+            # 2. Animated tiles for this layer — F3: read from pre-computed cache
             if self.game.anim_map_manager:
                 anim_blits = []
-                for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(
-                    self._viewport_world, layer_id=layer_id
-                ):
+                for px, py, tile_id, depth in self._frame_anim_by_layer.get(layer_id, []):
                     if depth <= self.game.player.depth:
                         img = self.game.anim_map_manager.get_current_frame_image(tile_id)
                         if img:
@@ -115,9 +117,9 @@ class RenderManager:
             screen.fblits(normal_blits)
 
         # Draw animated foreground tiles + collect their rects if depth > player
-        if self.game.anim_map_manager:
+        if self.game.anim_map_manager and self._frame_anim_all:
             anim_fg_blits = []
-            for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(self._viewport_world):
+            for px, py, tile_id, depth in self._frame_anim_all:
                 if depth > player_depth:
                     img = self.game.anim_map_manager.get_current_frame_image(tile_id)
                     if img:
@@ -162,6 +164,7 @@ class RenderManager:
         saved_images: dict[object, pygame.Surface] = {}
         player_depth = self.game.player.depth
         walk_active = getattr(self.game, "_intra_walk_target", None) is not None
+        used_composites = 0  # F4: track pool index to avoid reference sharing between sprites
 
         for sprite in self.game.visible_sprites.get_sorted_sprites():
             if not sprite.image or not sprite.rect:
@@ -194,7 +197,17 @@ class RenderManager:
                 continue  # sprite not occluded — skip
 
             # Build composite: start with full opaque copy, then paint occluded zones in alpha.
-            composite = pygame.Surface(visual_rect.size, pygame.SRCALPHA)
+            # F4: Reuse or allocate a distinct surface from the pool for this specific sprite
+            if used_composites < len(self._occlusion_pool):
+                composite = self._occlusion_pool[used_composites]
+                if composite.get_size() != visual_rect.size:
+                    composite = pygame.Surface(visual_rect.size, pygame.SRCALPHA)
+                    self._occlusion_pool[used_composites] = composite
+            else:
+                composite = pygame.Surface(visual_rect.size, pygame.SRCALPHA)
+                self._occlusion_pool.append(composite)
+            used_composites += 1
+            composite.fill((0, 0, 0, 0))
             composite.blit(sprite.image, (0, 0))  # full opaque copy
 
             for isect in intersections:
@@ -214,8 +227,11 @@ class RenderManager:
                 # Without this, the existing opaque pixels would survive the blit.
                 composite.fill((0, 0, 0, 0), local_rect)
 
-                # Blit the source zone at reduced alpha.
-                alpha_surface = pygame.Surface(local_rect.size, pygame.SRCALPHA)
+                # F4: Sequentially reuse _alpha_surf since it is blitted immediately within the loop
+                if self._alpha_surf is None or self._alpha_surf.get_size() != local_rect.size:
+                    self._alpha_surf = pygame.Surface(local_rect.size, pygame.SRCALPHA)
+                self._alpha_surf.fill((0, 0, 0, 0))
+                alpha_surface = self._alpha_surf
                 alpha_surface.blit(sprite.image, (0, 0), local_rect)
                 alpha_surface.set_alpha(Settings.OCCLUSION_ALPHA)
                 composite.blit(alpha_surface, local_rect.topleft)
@@ -230,6 +246,36 @@ class RenderManager:
         """A helper representing the entire scene rendering logic."""
         self.game.screen.fill(Settings.COLOR_BG)
         self.game.visible_sprites.calculate_offset(self.game.player)
+
+        # F3: Pre-compute animated tile cache once per frame for the current viewport.
+        # draw_background() reads _frame_anim_by_layer; draw_foreground() reads _frame_anim_all.
+        # Order: calculate_offset() → update _viewport_world → populate caches → draw passes.
+        cam_offset = self.game.visible_sprites.offset
+        self._viewport_world.update(
+            -cam_offset.x, -cam_offset.y,
+            self._screen_rect.width, self._screen_rect.height,
+        )
+        self._frame_anim_all = []
+        self._frame_anim_by_layer = {
+            lid: [] for lid in self.game.map_manager.layer_order
+        }
+        if self.game.anim_map_manager:
+            tile_size = self.game.tile_size
+            for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(
+                self._viewport_world
+            ):
+                self._frame_anim_all.append((px, py, tile_id, depth))
+                # Resolve layer membership by checking tile_id at grid coordinate
+                col = px // tile_size
+                row = py // tile_size
+                for lid in self.game.map_manager.layer_order:
+                    if lid in self.game.map_manager.layers:
+                        layer_data = self.game.map_manager.layers[lid]
+                        if 0 <= row < len(layer_data) and 0 <= col < len(layer_data[row]):
+                            if layer_data[row][col] == tile_id:
+                                self._frame_anim_by_layer[lid].append((px, py, tile_id, depth))
+                                break
+
         self.draw_background()
         self.game.visible_sprites.custom_draw(self.game.screen, max_depth=self.game.player.depth - 1)
 
@@ -381,8 +427,13 @@ class RenderManager:
             row_start = int(world_top // tile_size)
             row_end = int((world_bottom - 1) // tile_size)
 
-            wading_surf = pygame.Surface(wading_rect.size, pygame.SRCALPHA)
+            # F4: Reuse _wading_surf — resize only if wading zone changed size
+            if self._wading_surf is None or self._wading_surf.get_size() != wading_rect.size:
+                self._wading_surf = pygame.Surface(wading_rect.size, pygame.SRCALPHA)
+            self._wading_surf.fill((0, 0, 0, 0))
+            wading_surf = self._wading_surf
             for col in range(col_start, col_end + 1):
+
                 for row in range(row_start, row_end + 1):
                     tile_screen_x = col * tile_size + cam_offset.x
                     tile_screen_y = row * tile_size + cam_offset.y
