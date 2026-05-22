@@ -347,3 +347,64 @@ print(f'-> cols=4: {w//4}x{h//4} per frame (4 rows)')
 ---
 
 *Last updated: 2026-05-17 — A-AGENT-004 (mesurer les dimensions sprite avant de proposer cols/rows).*
+
+---
+
+### A-DOC-003 · 2026-05-22 · U · Minor Rework
+**Contrat de retour d'une méthode partagée non documenté dans la spec → drift cross-spec détecté seulement en HARDEN**
+
+Quand une méthode est appelée depuis **plusieurs specs** (ex: `draw_foreground()` dans `camera-rendering.md` ET `intra-map-teleport.md §4.6`), changer son type de retour (`bool` → `list[tuple]`) sans documenter le nouveau contrat dans TOUTES les specs consommatrices crée un drift croisé silencieux. Ici, `intra-map-teleport.md §4.6` et `§9.2` décrivaient encore l'ancien `return False` 6 semaines après la mise à jour.
+
+**Quand ça se produit :**
+- Méthode utilisée comme signal entre 2 systèmes (render + teleport walk guard)
+- La spec primaire (`camera-rendering.md`) est mise à jour en SPEC phase
+- La spec secondaire (`intra-map-teleport.md`) est oubliée car elle est dans un autre domaine
+
+**Fix — à ajouter en SPEC phase, section "Cross-Spec Contracts" :**
+```markdown
+### Tracked Interface Changes
+| Method | Old contract | New contract | Specs to update |
+|--------|-------------|-------------|-----------------|
+| `draw_foreground()` | `bool` | `list[tuple[Rect,int]]` | `intra-map-teleport.md §4.6, §9.2` |
+```
+
+**Règle :** Pour tout changement de signature ou type de retour d'une méthode partagée, lancer :
+```bash
+grep -rn "draw_foreground\|method_name" docs/specs/
+# → chaque fichier listé = spec à mettre à jour
+```
+
+**Evidence :** `intra-map-teleport.md §4.6` et `§9.2` corrigés en HARDEN/doc-update (dérive ~6 semaines). La SPEC phase ne l'avait pas identifié car les specs ne s'étaient pas cross-référencées explicitement sur le contrat de retour.
+
+**Scope :** Universal
+
+---
+
+### A-TEST-014 · 2026-05-22 · U · Minor Rework
+**Tests legacy qui assertent le type de retour exact d'une méthode → cassent silencieusement sur changement de contrat**
+
+Quand `draw_foreground()` retournait `bool`, des tests dans `test_render_order.py` écrivaient `assert result is True` / `assert result is False`. Après changement vers `list[tuple]`, ces tests ont cassé (2 FAIL sur 971). Le contenu testé (blit de occluded_image ou non) était correct — seule l'assertion sur le return type était stale.
+
+```python
+# ❌ Assertion sur le type exact (fragile au refactoring de contrat)
+result = rm.draw_foreground()
+assert result is True   # → échoue si contrat change de bool à list
+
+# ✅ Assertion sur le comportement (robuste)
+result = rm.draw_foreground()
+assert isinstance(result, list) and len(result) > 0  # contrat: non-vide = occlusion active
+assert len(occluded_blits) == 1                       # comportement: blit occluded_image
+```
+
+**Règle :** Quand une méthode change de type de retour, exécuter :
+```bash
+grep -rn "assert.*method_name\|result is True\|result is False" tests/
+# → chaque match = test à adapter au nouveau contrat
+```
+
+Ne pas limiter la recherche au fichier de test direct — les tests de régression cross-domaine (ici `test_render_order.py` pour une méthode de `render_manager.py`) sont les plus exposés.
+
+**Evidence :** 2 tests (`test_render_order.py::TestOcclusionSkippedDuringWalk`) — cassés lors du passage `bool→list`. Adaptés en VERIFY. 971/971 verts.
+
+**Scope :** Universal
+

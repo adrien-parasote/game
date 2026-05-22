@@ -258,10 +258,10 @@ The walk state intercepts the normal update path **before** `player.input()`:
 
 **Problem:** During scripted walk the player sprite is hidden (`_player_transparent`). The occlusion system still ran, detecting `player.rect` overlap with foreground tiles and blitting `occluded_image` (semi-transparent tiles) — creating visible flickering artifacts.
 
-**Fix:** `draw_foreground()` checks `_intra_walk_target` and skips occlusion entirely when walk is active.
+**Fix:** `draw_foreground()` checks `_intra_walk_target` and skips the occluded-tile blit when walk is active. `draw_scene()` skips `_apply_partial_occlusion()` entirely when walk is active.
 
 ```python
-# draw_foreground() — added guard
+# draw_foreground() — occluded-tile blit guard (walk_active skips the colliderect path)
 walk_active = getattr(self.game, "_intra_walk_target", None) is not None
 
 if not walk_active and depth > player_depth:
@@ -272,17 +272,22 @@ else:
     normal_blits.append((tile_data.image, screen_pos))
 ```
 
-`draw_scene()` adds a symmetric guard:
+`draw_scene()` adds a symmetric guard before calling `_apply_partial_occlusion()`:
 ```python
 walk_active = getattr(self.game, "_intra_walk_target", None) is not None
-if not walk_active and is_occluded and self.game.player.image:
-    self.game.player.image.set_alpha(Settings.OCCLUSION_ALPHA)
+saved_images = {}
+if not walk_active:
+    saved_images = self._apply_partial_occlusion(occluding_rects)
+# ...custom_draw...
+for sprite, original_image in saved_images.items():
+    sprite.image = original_image
 ```
 
 **Rules:**
-- `draw_foreground()` returns `False` when walk is active (no occlusion state).
-- `player.image.set_alpha(OCCLUSION_ALPHA)` is never called during walk (player is already `_player_transparent`).
-- Normal (non-walk) occlusion behavior is **unchanged** — regression TC-RENDER-002a.
+- `draw_foreground()` returns `list[tuple[pygame.Rect, int]]` — always a list, never `False`. During walk, occluding rects are still collected (the guard only skips the sprite occlusion application, not the rect collection).
+- `_apply_partial_occlusion()` is the mechanism that applies alpha to sprite zones — NOT called during walk.
+- `player.image.set_alpha()` is **never** called on sprites (replaced by composite pattern).
+- Normal (non-walk) partial occlusion behavior is **unchanged** — regression TC-RENDER-002a.
 
 ---
 
@@ -380,9 +385,9 @@ if not walk_active and is_occluded and self.game.player.image:
 
 | Test ID | Function | Description |
 |---------|----------|-------------|
-| TC-RENDER-002a | `test_occlusion_active_when_not_walking` | Regression: without walk, `occluded_image` IS used when player rect overlaps foreground tile |
-| TC-RENDER-002b | `test_occlusion_skipped_during_walk` | Walk active: `draw_foreground()` uses `tile_data.image` only, returns `False` — no tile alpha artifacts |
-| TC-RENDER-003 | `test_no_occlusion_alpha_applied_to_player_during_walk` | Walk active: `player.image.set_alpha(OCCLUSION_ALPHA)` must NOT be called |
+| TC-RENDER-002a | `test_occlusion_active_when_not_walking` | Regression: without walk, `occluded_image` IS used when player rect overlaps foreground tile; `draw_foreground()` returns non-empty `list[tuple]` |
+| TC-RENDER-002b | `test_occlusion_skipped_during_walk` | Walk active: `draw_foreground()` uses `tile_data.image` only (no occluded blit); returns `list` (rects still collected) |
+| TC-RENDER-003 | `test_no_occlusion_alpha_applied_to_player_during_walk` | Walk active: `_apply_partial_occlusion()` must NOT be called — no `set_alpha` on player |
 
 ### 9.3 Integration Tests
 

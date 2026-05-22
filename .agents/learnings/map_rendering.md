@@ -433,3 +433,59 @@ row_offsets = {"down": 0, "left": fpd, "right": fpd * 2, "up": fpd * 3}
 ---
 
 *Last updated: 2026-05-17 — A-SPRITE-002 (NPC spritesheet grid hardcoded → silent cropped frames).*
+
+---
+
+### L-REND-005 · 2026-05-22 · U · Perfect
+**Composite SRCALPHA swap-and-restore pour l'occlusion partielle sprite**
+
+Pour rendre seulement la zone d'un sprite qui chevauche un tile occludant en semi-transparent (au lieu d'appliquer un alpha global), le pattern **composite swap-and-restore** produit un premier pass parfait :
+
+```python
+# _apply_partial_occlusion() — pattern
+saved_images = {}
+for sprite in sprites:
+    intersecting = [
+        (screen_rect.clip(tile_rect), tile_depth)
+        for tile_rect, tile_depth in occluding_rects
+        if tile_depth > sprite.depth and screen_rect.colliderect(tile_rect)
+    ]
+    if not intersecting:
+        continue
+
+    # 1. Build SRCALPHA composite (same size as sprite.image)
+    composite = pygame.Surface(sprite.image.get_size(), pygame.SRCALPHA)
+    composite.blit(sprite.image, (0, 0))  # full opaque copy
+
+    # 2. Apply alpha only to the intersecting zones
+    alpha_surf = pygame.Surface(sprite.image.get_size(), pygame.SRCALPHA)
+    alpha_surf.blit(sprite.image, (0, 0))
+    alpha_surf.set_alpha(Settings.OCCLUSION_ALPHA)
+    for clip_rect, _ in intersecting:
+        local_rect = clip_rect.move(-screen_rect.left, -screen_rect.top)
+        if local_rect.width > 0 and local_rect.height > 0:
+            composite.fill((0, 0, 0, 0), local_rect)          # ← reset zone
+            composite.blit(alpha_surf, local_rect, local_rect)  # ← alpha blit
+
+    # 3. Swap and save
+    saved_images[sprite] = sprite.image
+    sprite.image = composite
+
+# After custom_draw — restore
+for sprite, original in saved_images.items():
+    sprite.image = original
+```
+
+**Pourquoi ça marche :**
+- `fill((0,0,0,0), local_rect)` avant le blit alpha est **obligatoire** — sinon le blit additionne les canaux alpha au lieu de remplacer.
+- `alpha_surf.set_alpha(OCCLUSION_ALPHA)` sur une surface SRCALPHA définit l'alpha global de la surface utilisée comme source, pas du composite.
+- Le swap-and-restore préserve les frames partagées de la spritesheet — `set_alpha()` direct les contaminerait.
+- Fonctionne sur tous les sprites génériquement (player + NPCs) — aucun traitement special-case.
+
+**Préconditions spec pour que ça marche :**
+- `visual_rect` calculé avec `bottomright=sprite.rect.bottomright` (comme `custom_draw`)
+- Guard `tile_depth > sprite_depth` strict (égalité = pas d'occlusion)
+- Guard `width > 0 and height > 0` sur `clip_rect` (évite les blits 0-pixel)
+- Walk guard en amont — ne pas appeler sur un player déjà transparent
+
+**Evidence :** 19/19 tests (UT-001..011, IT-001..004) — premier pass. 971/971 suite complète. Zéro intervention humaine. commit `d3db6bf`.
