@@ -114,6 +114,9 @@ class Game:
         self._active_torches: set = set()
         # Initialized to None; set by MapLoader.load() on each map transition
         self.anim_map_manager = None
+        # Intra-map walk state — None when inactive, Vector2 target when walk is in progress
+        # Spec: docs/specs/intra-map-teleport.md § 4.4.1
+        self._intra_walk_target: pygame.math.Vector2 | None = None
 
     def _init_systems(self):
         # Time System
@@ -291,6 +294,74 @@ class Game:
 
         self.clock.tick(Settings.FPS)  # Reset dt so next frame logic doesn't jump
 
+    # ---------------------------------------------------------------------------
+    # Intra-map teleport — spec: docs/specs/intra-map-teleport.md § 4.3–4.4
+    # ---------------------------------------------------------------------------
+
+    def intra_map_teleport(self, target_spawn_id: str, transition_type: str) -> None:
+        """Reposition the player within the current map without reloading it.
+
+        Preserves all entity groups, world state, and audio.
+        transition_type 'instant': snap to spawn. 'walk': scripted lerp to spawn.
+
+        Spec: docs/specs/intra-map-teleport.md § 4.3
+        """
+        spawn_pos = self._map_loader.resolve_spawn_by_id(target_spawn_id)
+        if spawn_pos is None:
+            logging.error(
+                f"intra_map_teleport: spawn '{target_spawn_id}' not found — abort"
+            )
+            return
+
+        if transition_type == "walk":
+            self._start_intra_walk(pygame.math.Vector2(spawn_pos))
+        else:
+            self._map_loader._position_player(spawn_pos)
+
+    def _start_intra_walk(self, target: pygame.math.Vector2) -> None:
+        """Arm the scripted walk to *target* (pixel coords).
+
+        Sets target_pos on the player so player.move(dt) drives the translation.
+        Sets is_moving=True and computes initial facing from delta direction.
+
+        Spec: docs/specs/intra-map-teleport.md § 4.4.2
+        """
+        self._intra_walk_target = target
+        self.player.target_pos = pygame.math.Vector2(target)
+        self.player.is_moving = True
+        # Set initial facing — G4: facing follows walk direction
+        delta = target - self.player.pos
+        if delta.magnitude() > 0:
+            if abs(delta.x) >= abs(delta.y):
+                self.player.current_state = "right" if delta.x > 0 else "left"
+            else:
+                self.player.current_state = "up" if delta.y < 0 else "down"
+
+    def _tick_intra_walk(self, dt: float) -> None:
+        """Monitor walk completion and maintain player facing each frame.
+
+        Delegates actual translation to player.move(dt) (via visible_sprites.update).
+        Terminates when player.is_moving becomes False (player arrived at target_pos).
+
+        Spec: docs/specs/intra-map-teleport.md § 4.4.3
+        """
+        if self._intra_walk_target is None:
+            return
+
+        # Arrival: player.move() cleared is_moving when it reached target_pos
+        if not self.player.is_moving:
+            self._intra_walk_target = None
+            self.player.direction = pygame.math.Vector2(0, 0)
+            return
+
+        # Keep facing updated based on remaining distance vector (G4)
+        delta = self._intra_walk_target - self.player.pos
+        if delta.magnitude() > 0:
+            if abs(delta.x) >= abs(delta.y):
+                self.player.current_state = "right" if delta.x > 0 else "left"
+            else:
+                self.player.current_state = "up" if delta.y < 0 else "down"
+
     def run(self):
         """Main game loop optimized for 60 FPS."""
         while True:
@@ -378,16 +449,22 @@ class Game:
     def _update_core_state(self, dt: float):
         # Update Time
         self.time_system.update(dt)
-
-        # Input & Logic
         self.interaction_manager.update(dt)
 
-        self.player.input()
-        self.interaction_manager.handle_interactions()
+        # Walk-transition intercept — G2: all inputs blocked during scripted walk
+        # Spec: docs/specs/intra-map-teleport.md § 4.5
+        if self._intra_walk_target is not None:
+            self._tick_intra_walk(dt)
+            self.visible_sprites.update(dt)
+            # Skip player.input(), interactions, and teleporter checks
+        else:
+            # Normal input path
+            self.player.input()
+            self.interaction_manager.handle_interactions()
 
-        was_moving = self.player.is_moving
-        self.visible_sprites.update(dt)
-        self.interaction_manager.check_teleporters(was_moving)
+            was_moving = self.player.is_moving
+            self.visible_sprites.update(dt)
+            self.interaction_manager.check_teleporters(was_moving)
 
         # P12: CPU Freeze optimization for NPCs — reuse pre-allocated rect
         off_x = int(self.visible_sprites.offset.x)
@@ -439,13 +516,13 @@ class Game:
         path = os.path.join("assets", "data", "propertytypes.json")
         if not os.path.exists(path):
             logging.error(f"Item property types file not found: {path}")
-            return {}  # noqa: P6 — legitimate error handler (file not found)
+            return dict()  # noqa: P6 — legitimate error handler (file not found)
         try:
             with open(path, encoding="utf-8") as f:
                 return json.load(f)
         except (OSError, json.JSONDecodeError) as e:
             logging.error(f"Failed to load item property types from {path}: {e}")
-            return {}  # noqa: P6 — legitimate error handler (json parse failure)
+            return dict()  # noqa: P6 — legitimate error handler (json parse failure)
 
     def _setup_logging(self):
         """Delegate to game_setup.setup_logging (Phase 1.5 refactoring)."""

@@ -287,7 +287,13 @@ class InteractionManager(InteractionEmoteMixin):
             if getattr(tp, "sfx", None):
                 self.game.audio_manager.play_sfx(tp.sfx, str(id(tp)))
 
-            self.game.transition_map(tp.target_map, tp.target_spawn_id, tp.transition_type)
+            # Spec: docs/specs/intra-map-teleport.md § 4.1
+            # Empty target_map or same map → intra-map (no reload)
+            current = getattr(self.game, "_current_map_name", "")
+            if tp.target_map in ("", current):
+                self.game.intra_map_teleport(tp.target_spawn_id, tp.transition_type)
+            else:
+                self.game.transition_map(tp.target_map, tp.target_spawn_id, tp.transition_type)
             break
 
     @staticmethod

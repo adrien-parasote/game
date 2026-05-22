@@ -197,3 +197,26 @@ class MapLoader:
             dist = entity.pos.distance_to(player_pos)
             self.game.audio_manager.propose_ambient(sfx, dist)
         self.game.audio_manager.flush_ambient()
+
+    def resolve_spawn_by_id(self, target_spawn_id: str) -> tuple[int, int] | None:
+        """Find pixel centre of a spawn point on the currently loaded map.
+
+        Reads from game.map_manager._entities (in-memory, no disk I/O — A-ARCH-001).
+        Returns (pixel_x, pixel_y) or None if not found.
+
+        Spec: docs/specs/intra-map-teleport.md § 4.2
+        """
+        half_tile = self.game.tile_size // 2
+        for ent in self.game.map_manager._entities:
+            ent_type = ent.get("type", "")
+            props = ent.get("properties", {})
+            is_spawn = ent_type == "14-spawn_point" or props.get("spawn_player") is True
+            if not is_spawn:
+                continue
+            if props.get("spawn_id") == target_spawn_id:
+                return (ent["x"] + half_tile, ent["y"] + half_tile)
+        logging.warning(
+            f"resolve_spawn_by_id: '{target_spawn_id}' not found on map "
+            f"{getattr(self.game, '_current_map_name', '?')}"
+        )
+        return None

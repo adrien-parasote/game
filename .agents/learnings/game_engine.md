@@ -422,6 +422,7 @@ class EntityFactory:
 
 ---
 
+
 ### A-ML-001 · 2026-05-15 · U · Major Rework (silent bug)
 **`MapLoader` ne sauvegardait que les NPCs avant le déchargement — états interactifs silencieusement perdus**
 
@@ -446,4 +447,61 @@ self._clear_groups()
 
 **Evidence :** Coffres revenant à `is_on=False` après chaque téléport en debug room. `_save_interactive_states()` ajoutée. 4 tests TC-ML-01→04 RED → GREEN. 777/777 tests verts.
 
+---
 
+### L-GAME-002 · 2026-05-22 · U · Perfect
+**Pattern `_intra_walk_target: Vector2 | None` pour un walk scrypté avec input-block**
+
+Quand un système nécessite de déplacer le joueur de façon scriptée (téléport intra-carte avec animation), utiliser un champ nullable `Vector2 | None` comme état de machine d'état pour intercepter le loop normal AVANT `player.input()`.
+
+```python
+# Pattern complet — spec: intra-map-teleport.md § 4.4
+# 1. Champ d'état dans _init_groups()
+self._intra_walk_target: pygame.math.Vector2 | None = None
+
+# 2. Armement du walk
+def _start_intra_walk(self, target: pygame.math.Vector2) -> None:
+    self._intra_walk_target = target
+    self.player.target_pos = pygame.math.Vector2(target)  # bypass tile-by-tile
+    self.player.is_moving = True
+    # G4 : facing initial basé sur le vecteur delta
+    delta = target - self.player.pos
+    if delta.magnitude() > 0:
+        if abs(delta.x) >= abs(delta.y):
+            self.player.current_state = "right" if delta.x > 0 else "left"
+        else:
+            self.player.current_state = "up" if delta.y < 0 else "down"
+
+# 3. Tick — appelé à la place du path normal
+def _tick_intra_walk(self, dt: float) -> None:
+    if not self.player.is_moving:   # player.move() a atteint target_pos
+        self._intra_walk_target = None
+        self.player.direction = pygame.math.Vector2(0, 0)  # A-GAME-003
+        return
+    # Mise à jour facing continu (G4)
+    delta = self._intra_walk_target - self.player.pos
+    if delta.magnitude() > 0:
+        ...  # même logique facing que _start_intra_walk
+
+# 4. Intercept dans _update_core_state — AVANT player.input()
+if self._intra_walk_target is not None:
+    self._tick_intra_walk(dt)
+    self.visible_sprites.update(dt)  # animations continuent
+    # player.input() et check_teleporters() skippés
+else:
+    self.player.input()
+    ...
+```
+
+**Pourquoi ça fonctionne :** `BaseEntity.move()` respecte `target_pos` arbitraire (non-tile) quand `is_moving=True` est armé directement — bypass de `start_move()` sans modifier `BaseEntity`. La détection d'arrivée est déléguée à `move()` → `is_moving = False` à convergence.
+
+**Règles à documenter dans la spec :**
+- G2 : inputs bloqués (player.input() skippé)
+- G3 : vitesse = `Settings.PLAYER_SPEED` (héritée du player, aucune config supplémentaire)
+- G4 : facing mis à jour chaque frame, pas seulement au démarrage
+- A-GAME-003 : direction clearée à l'arrivée (sinon retry loop)
+- `check_teleporters()` skippé pendant le walk (évite re-trigger mid-walk)
+
+**Evidence :** `test_intra_map_teleport.py` — 13/13 tests GREEN à la première implémentation, 0 rework. 380/380 tests régression verts. Cycle intra-map-teleport.md → code : zéro itération de correction.
+
+---
