@@ -139,8 +139,8 @@ class TestBackgroundLayerRenderOrder:
 class TestOcclusionSkippedDuringWalk:
     """TC-RENDER-002: During intra-map scripted walk, draw_foreground must
     treat all foreground tiles as normal (no occluded_image blit) and
-    return False (player not occluded), even if the player rect overlaps
-    a foreground tile.
+    return a list[tuple] (rects are still collected regardless — the caller
+    guards with walk_active before calling _apply_partial_occlusion).
     """
 
     def _make_rm_with_occluding_tile(self):
@@ -183,26 +183,36 @@ class TestOcclusionSkippedDuringWalk:
         return rm, fg_tile_data, normal_blits, occluded_blits
 
     def test_occlusion_active_when_not_walking(self):
-        """TC-RENDER-002a (regression): Without walk, occluded_image IS used."""
+        """TC-RENDER-002a (non-regression): Without walk, occluded_image IS used,
+        and draw_foreground() returns a non-empty list[tuple[Rect, int]]."""
         rm, fg_tile_data, normal_blits, occluded_blits = self._make_rm_with_occluding_tile()
         rm.game._intra_walk_target = None  # no walk
 
         result = rm.draw_foreground()
 
-        assert result is True, "Player must be occluded when not walking"
+        # New contract: returns list[tuple], not bool
+        assert isinstance(result, list) and len(result) > 0, (
+            f"draw_foreground() must return non-empty list when player is occluded, got: {result!r}"
+        )
+        assert isinstance(result[0], tuple) and len(result[0]) == 2
+        assert isinstance(result[0][0], pygame.Rect)
+        assert isinstance(result[0][1], int)
         assert len(occluded_blits) == 1, "occluded_image must be blit once"
         assert len(normal_blits) == 0, "normal tile image must NOT be used"
 
     def test_occlusion_skipped_during_walk(self):
-        """TC-RENDER-002b (new): During scripted walk, occluded_image must NOT be used.
-        draw_foreground must return False and blit the normal tile image instead.
+        """TC-RENDER-002b (non-regression): During scripted walk, occluded_image must NOT be used.
+        draw_foreground() still returns the collected rects (the caller guards with walk_active).
         """
         rm, fg_tile_data, normal_blits, occluded_blits = self._make_rm_with_occluding_tile()
         rm.game._intra_walk_target = pygame.math.Vector2(100, 100)  # walk active
 
         result = rm.draw_foreground()
 
-        assert result is False, "draw_foreground must return False during walk (no occlusion)"
+        # New contract: returns list[tuple] even during walk — caller is responsible for the guard.
+        assert isinstance(result, list), (
+            f"draw_foreground() must return list even during walk, got: {type(result)!r}"
+        )
         assert len(occluded_blits) == 0, (
             "occluded_image must NOT be blit during walk — tiles should not go alpha"
         )
@@ -228,7 +238,7 @@ class TestDrawSceneOcclusionDuringWalk:
 
         # Stub out subsystem calls so draw_scene runs end-to-end
         rm.draw_background = MagicMock()
-        rm.draw_foreground = MagicMock(return_value=True)  # reports occluded
+        rm.draw_foreground = MagicMock(return_value=[(pygame.Rect(0, 0, 32, 32), 2)])  # reports occluded (new list contract)
         rm.draw_hud = MagicMock()
 
         player_image = MagicMock(name="player_image")

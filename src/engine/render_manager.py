@@ -51,18 +51,19 @@ class RenderManager:
                 if anim_blits:
                     self.game.screen.fblits(anim_blits)
 
-    def draw_foreground(self) -> bool:
+    def draw_foreground(self) -> list[tuple[pygame.Rect, int]]:
         """Draw foreground tiles: all tiles from layers with order > player depth,
         plus tiles with depth > player depth from mixed-depth layers.
         Applies occluded image when the player overlaps a depth > player.depth tile.
         Returns:
-            bool: True if any tile is actively occluding the player, False otherwise.
+            list[tuple[pygame.Rect, int]]: screen-space rects and depths of all active
+            occluding tiles (depth > player.depth). Empty list if none.
 
         Note: During intra-map scripted walk (_intra_walk_target is set), occlusion is
         skipped entirely — the player is invisible, so making tiles transparent would
         create a visible artifact (tiles flickering alpha as the player rect moves).
         """
-        player_occluded = False
+        occluding_rects: list[tuple[pygame.Rect, int]] = []
         cam_offset = self.game.visible_sprites.offset
         self._viewport_world.update(
             -cam_offset.x,
@@ -91,12 +92,19 @@ class RenderManager:
             tile_data = tiles[tile_id]
             screen_pos = (px + cam_offset.x, py + cam_offset.y)
 
+            # Collect rect for ALL tiles depth > player — NPCs may be behind tiles
+            # that the player doesn't touch, so we can't filter by player collision here.
+            if depth > player_depth:
+                occluding_rects.append((
+                    pygame.Rect(screen_pos, (self.game.tile_size, self.game.tile_size)),
+                    depth,
+                ))
+
             if not walk_active and depth > player_depth:
                 # Depth-occlusion: use semi-transparent image when player overlaps
                 self._tile_rect.topleft = screen_pos
                 if player_screen_rect.colliderect(self._tile_rect):
                     screen.blit(tile_data.occluded_image or tile_data.image, screen_pos)
-                    player_occluded = True
                 else:
                     normal_blits.append((tile_data.image, screen_pos))
             else:
@@ -106,24 +114,112 @@ class RenderManager:
         if normal_blits:
             screen.fblits(normal_blits)
 
-        # Draw animated foreground tiles
+        # Draw animated foreground tiles + collect their rects if depth > player
         if self.game.anim_map_manager:
             anim_fg_blits = []
             for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(self._viewport_world):
                 if depth > player_depth:
                     img = self.game.anim_map_manager.get_current_frame_image(tile_id)
                     if img:
-                        anim_fg_blits.append((img, (px + cam_offset.x, py + cam_offset.y)))
+                        screen_pos = (px + cam_offset.x, py + cam_offset.y)
+                        anim_fg_blits.append((img, screen_pos))
+                        # Also add to occluding list — inert today (no anim tile has depth>1)
+                        # but will fire automatically when animated foreground tiles are created.
+                        occluding_rects.append((
+                            pygame.Rect(screen_pos, (self.game.tile_size, self.game.tile_size)),
+                            depth,
+                        ))
             if anim_fg_blits:
                 screen.fblits(anim_fg_blits)
 
-        return player_occluded
+        return occluding_rects
 
 
 
     def draw_hud(self):
         """Draw time and season HUD overlay (top-right, fixed to screen)."""
         self.game.hud.draw(self.game.screen)
+
+    def _apply_partial_occlusion(
+        self, occluding_rects: list[tuple[pygame.Rect, int]]
+    ) -> dict[object, pygame.Surface]:
+        """For each visible sprite intersecting an occluding tile, replace sprite.image
+        with a composite surface where only the overlapping zone is semi-transparent.
+
+        Must be called BEFORE custom_draw() so pygame renders composites in depth order.
+        Returns a dict {sprite: original_image} for the caller to restore after drawing.
+
+        Args:
+            occluding_rects: list of (screen-space Rect, depth) tuples from draw_foreground().
+
+        Returns:
+            dict mapping each modified sprite to its original image surface.
+        """
+        if not occluding_rects:
+            return {}
+
+        cam_offset = self.game.visible_sprites.offset
+        saved_images: dict[object, pygame.Surface] = {}
+        player_depth = self.game.player.depth
+
+        for sprite in self.game.visible_sprites.get_sorted_sprites():
+            if not sprite.image or not sprite.rect:
+                continue
+            # Only pass-3b sprites (depth >= player.depth) are rendered behind foreground tiles.
+            sprite_depth = getattr(sprite, "depth", 1)
+            if sprite_depth < player_depth:
+                continue
+
+            # Build the visual screen-space rect — identical formula to custom_draw().
+            # Aligns sprite image bottom-right to hitbox bottom-right then applies camera offset.
+            visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
+            sprite_screen_rect = pygame.Rect(
+                (visual_rect.left + cam_offset.x, visual_rect.top + cam_offset.y),
+                visual_rect.size,
+            )
+
+            # Collect intersections with tiles strictly above this sprite's depth.
+            # tile_depth > sprite_depth ensures same-depth tiles don't occlude.
+            intersections = [
+                sprite_screen_rect.clip(occ_rect)
+                for occ_rect, tile_depth in occluding_rects
+                if tile_depth > sprite_depth and sprite_screen_rect.colliderect(occ_rect)
+            ]
+            if not intersections:
+                continue  # sprite not occluded — skip
+
+            # Build composite: start with full opaque copy, then paint occluded zones in alpha.
+            composite = pygame.Surface(visual_rect.size, pygame.SRCALPHA)
+            composite.blit(sprite.image, (0, 0))  # full opaque copy
+
+            for isect in intersections:
+                # pygame.Rect.clip() can return a zero-size rect for adjacent tiles.
+                if isect.width <= 0 or isect.height <= 0:
+                    continue
+
+                # Convert screen-space intersection to local composite coordinates.
+                local_rect = pygame.Rect(
+                    isect.x - sprite_screen_rect.x,
+                    isect.y - sprite_screen_rect.y,
+                    isect.width,
+                    isect.height,
+                )
+
+                # Clear the destination zone before blitting the alpha version.
+                # Without this, the existing opaque pixels would survive the blit.
+                composite.fill((0, 0, 0, 0), local_rect)
+
+                # Blit the source zone at reduced alpha.
+                alpha_surface = pygame.Surface(local_rect.size, pygame.SRCALPHA)
+                alpha_surface.blit(sprite.image, (0, 0), local_rect)
+                alpha_surface.set_alpha(Settings.OCCLUSION_ALPHA)
+                composite.blit(alpha_surface, local_rect.topleft)
+
+            # Swap: save original, install composite. Caller restores after custom_draw.
+            saved_images[sprite] = sprite.image
+            sprite.image = composite
+
+        return saved_images
 
     def draw_scene(self):
         """A helper representing the entire scene rendering logic."""
@@ -132,24 +228,22 @@ class RenderManager:
         self.draw_background()
         self.game.visible_sprites.custom_draw(self.game.screen, max_depth=self.game.player.depth - 1)
 
-        is_occluded = self.draw_foreground()
+        occluding_rects = self.draw_foreground()
 
-        # Apply occlusion transparency to the player if they are occluded by foreground.
-        # Guarded by walk check: during scripted walk the player is already invisible
-        # (_player_transparent), so set_alpha must not be called (TC-RENDER-003).
+        # Partial occlusion: replace each sprite's image with a composite where only
+        # the zone behind a foreground tile is semi-transparent. Guarded by walk check:
+        # during scripted walk the player is already invisible (_player_transparent),
+        # so _apply_partial_occlusion must not be called (UT-011 / IT-003).
         walk_active = getattr(self.game, "_intra_walk_target", None) is not None
-        original_alpha = None
-        if not walk_active and is_occluded and self.game.player.image:
-            original_alpha = self.game.player.image.get_alpha()
-            if original_alpha is None:
-                original_alpha = 255
-            self.game.player.image.set_alpha(Settings.OCCLUSION_ALPHA)
+        saved_images: dict[object, pygame.Surface] = {}
+        if not walk_active:
+            saved_images = self._apply_partial_occlusion(occluding_rects)
 
         self.game.visible_sprites.custom_draw(self.game.screen, min_depth=self.game.player.depth)
 
-        # Restore the player's alpha
-        if original_alpha is not None and self.game.player.image:
-            self.game.player.image.set_alpha(original_alpha)
+        # Restore original sprite images immediately after rendering.
+        for sprite, original_image in saved_images.items():
+            sprite.image = original_image
 
         night_alpha = self.game.time_system.night_alpha
         window_positions = self.game.map_manager.get_window_positions()
