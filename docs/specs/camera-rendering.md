@@ -348,6 +348,7 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 |--------|-------------|-------------|-----------------|
 | `draw_foreground()` | `bool` | `list[tuple[pygame.Rect, int]]` | `intra-map-teleport.md §4.6, §9.2` (corrigé) |
 | `_apply_partial_occlusion()` | n/a (nouveau) | `dict[Sprite, Surface]` | — |
+| `_apply_grass_wading()` | n/a (nouveau) | renders in-place to surface, no return | [grass-wading.md §5.1](./grass-wading.md#L1) |
 
 ## 7. Assumptions
 
