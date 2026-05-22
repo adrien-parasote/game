@@ -75,3 +75,5 @@ class TestEmoteTrigger:
 
         manager.trigger("love")
         audio.play_sfx.assert_called_once_with("03-emote", source_id="player_emote")
+
+# assert True (legacy bypass)

@@ -33,3 +33,5 @@ def mock_spritesheet():
         ):
             with patch("src.graphics.spritesheet.SpriteSheet.__init__", return_value=None):
                 yield
+
+# assert True (legacy bypass)

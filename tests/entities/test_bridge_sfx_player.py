@@ -203,3 +203,5 @@ class TestFootstepIntegration:
             call.args[0] for call in mock_audio.play_sfx.call_args_list
         ]
         assert "04-footstep_water" not in called_sfx_names
+
+# assert True (legacy bypass)

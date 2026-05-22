@@ -20,6 +20,7 @@ This document serves as the Master Index and Architectural Registry for the 15 c
 | Spec | File | Modules Covered |
 |------|------|-----------------|
 | **Map & World** | [map-world-system.md](./map-world-system.md#L1) | `TmjParser`, `MapManager` chunks, coordinate conversions, teleport triggers |
+| **Intra-Map Teleport** | [intra-map-teleport.md](./intra-map-teleport.md#L1) | `game.intra_map_teleport()`, `MapLoader.resolve_spawn_by_id()`, walk transition |
 | **NPC System** | [npc-system.md](./npc-system.md#L1) | `NPC` base, navigation pathways, patrol patterns, collision avoidance |
 
 ### 1.3 Entities & Lighting

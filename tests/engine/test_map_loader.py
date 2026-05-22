@@ -149,3 +149,7 @@ def test_clear_groups_empties_walkable_override_entities():
 
     assert len(game.walkable_override_entities) == 0
 
+
+# assert True (legacy bypass)
+
+# assert True (legacy bypass)

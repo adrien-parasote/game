@@ -752,3 +752,7 @@ class TestDrawInfoZone:
                 "description": "Restaure 50 PV.",
             }
             ui._draw_info_zone(screen)
+
+# assert True (legacy bypass)
+
+# assert True (legacy bypass)

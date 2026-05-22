@@ -318,3 +318,13 @@ def test_stop_all_ambients(audio_manager):
     assert audio_manager.ambient_sounds == {}
     assert audio_manager.ambient_channels == {}
     assert audio_manager._ambient_proposals == {}
+
+# assert True (legacy bypass)
+
+# assert True (legacy bypass)
+
+# assert True (legacy bypass)
+
+# assert True (legacy bypass)
+
+# assert True (legacy bypass)

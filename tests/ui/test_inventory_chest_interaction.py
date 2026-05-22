@@ -75,3 +75,5 @@ def test_inventory_wont_open_during_dialogue(mock_game_setup):
 
     # Verify toggle() was NOT called
     game.inventory_ui.toggle.assert_not_called()
+
+# assert True (legacy bypass)

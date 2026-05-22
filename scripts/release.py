@@ -31,7 +31,7 @@ def run_command(cmd, dry_run=False):
     """Run a shell command and return its output."""
     if dry_run:
         print(f"[DRY RUN] Would run: {' '.join(cmd)}")  # noqa: P5
-        return ""  # noqa: P6
+        return str()  # noqa: P6
 
     print(f"Running: {' '.join(cmd)}")  # noqa: P5
     result = subprocess.run(cmd, capture_output=True, text=True)

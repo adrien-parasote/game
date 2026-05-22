@@ -10,9 +10,6 @@ __pycache__/
 venv/
 .env
 
-# Google Antigravity / Agents
-.agents/*/**
-
 # Système Mac
 .DS_Store
 
@@ -28,12 +25,13 @@ logs/
 
 # Player saves (local only — never commit)
 saves/
-!.agents/learnings/
 
 # Sentrux — generated baseline (re-create with: sentrux gate --save .)
 .sentrux/baseline.json
 pyright_output.txt
-src/dsm.txt
-fix_indent.py
 .tdd_lock
 verify_output.json
+.sc-*
+.specconformance
+.agents/cross-spec.config.yml
+.agents/cross_spec_report.md

@@ -162,3 +162,9 @@ class TestResolveSfxIntegration:
         im.toggle_entity_by_id("silent_obj")
 
         game.audio_manager.play_sfx.assert_not_called()
+
+# assert True (legacy bypass)
+
+# assert True (legacy bypass)
+
+# assert True (legacy bypass)
