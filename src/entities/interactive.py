@@ -111,6 +111,8 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         if not self.day_night_driven:
             return getattr(self, "_static_is_on", False)
         # For day_night_driven with no time_system: fallback to _static_is_on (not yet updated)
+        # Direct access to __time_system (name-mangled) avoids re-entering the @property getter.
+        # Both self.__time_system and self._time_system are equivalent in value — this is intentional.
         if self.__time_system is None:
             return getattr(self, "_static_is_on", False)
         # For day_night_driven: return pre-computed cache (updated in update())

@@ -43,6 +43,7 @@ class RenderManager:
                 self.game.screen.blit(surface, (cam_offset.x, cam_offset.y))
 
             # 2. Animated tiles for this layer — F3: read from pre-computed cache
+            # Cache pre-populated by draw_scene() — tests must set self._frame_anim_by_layer (A-PERF-002)
             if self.game.anim_map_manager:
                 anim_blits = []
                 for px, py, tile_id, depth in self._frame_anim_by_layer.get(layer_id, []):
@@ -52,6 +53,72 @@ class RenderManager:
                             anim_blits.append((img, (px + cam_offset.x, py + cam_offset.y)))
                 if anim_blits:
                     self.game.screen.fblits(anim_blits)
+
+    def _draw_static_foreground_tiles(
+        self,
+        cam_offset: pygame.Vector2,
+        walk_active: bool,
+        player_screen_rect: pygame.Rect,
+        player_depth: int,
+        occluding_rects: list[tuple[pygame.Rect, int]],
+    ) -> list[tuple[pygame.Surface, tuple[int, int]]]:
+        """Process and collect static foreground tiles, updating occluding rects."""
+        normal_blits = []
+        tiles = self.game.map_manager.tiles
+        screen = self.game.screen
+        tile_size = self.game.tile_size
+
+        for px, py, tile_id, depth in self.game.map_manager.get_visible_chunks(
+            self._viewport_world, min_depth=player_depth
+        ):
+            tile_data = tiles[tile_id]
+            screen_pos = (px + cam_offset.x, py + cam_offset.y)
+
+            # Collect rect for ALL tiles depth > player — NPCs may be behind tiles
+            # that the player doesn't touch, so we can't filter by player collision here.
+            if depth > player_depth:
+                occluding_rects.append((
+                    pygame.Rect(screen_pos, (tile_size, tile_size)),
+                    depth,
+                ))
+
+            if not walk_active and depth > player_depth:
+                # Depth-occlusion: use semi-transparent image when player overlaps
+                self._tile_rect.topleft = screen_pos
+                if player_screen_rect.colliderect(self._tile_rect):
+                    screen.blit(tile_data.occluded_image or tile_data.image, screen_pos)
+                else:
+                    normal_blits.append((tile_data.image, screen_pos))
+            else:
+                # Walk active OR foreground-order layer tile with depth <= player: no occlusion
+                normal_blits.append((tile_data.image, screen_pos))
+        return normal_blits
+
+    def _draw_animated_foreground_tiles(
+        self,
+        cam_offset: pygame.Vector2,
+        player_depth: int,
+        occluding_rects: list[tuple[pygame.Rect, int]],
+    ) -> None:
+        """Process and blit animated foreground tiles, collecting occluding rects."""
+        if not (self.game.anim_map_manager and self._frame_anim_all):
+            return
+        anim_fg_blits = []
+        tile_size = self.game.tile_size
+        for px, py, tile_id, depth in self._frame_anim_all:
+            if depth > player_depth:
+                img = self.game.anim_map_manager.get_current_frame_image(tile_id)
+                if img:
+                    screen_pos = (px + cam_offset.x, py + cam_offset.y)
+                    anim_fg_blits.append((img, screen_pos))
+                    # Also add to occluding list — inert today (no anim tile has depth>1)
+                    # but will fire automatically when animated foreground tiles are created.
+                    occluding_rects.append((
+                        pygame.Rect(screen_pos, (tile_size, tile_size)),
+                        depth,
+                    ))
+        if anim_fg_blits:
+            self.game.screen.fblits(anim_fg_blits)
 
     def draw_foreground(self) -> list[tuple[pygame.Rect, int]]:
         """Draw foreground tiles: all tiles from layers with order > player depth,
@@ -81,66 +148,71 @@ class RenderManager:
         # Use physical hitbox for occlusion detection — visual rect extends upward and
         # would produce lag when the player exits a tile area (top of sprite still overlaps)
         player_screen_rect = self.game.player.rect.move(cam_offset.x, cam_offset.y)
-
-        # Split tiles: occluded tiles (need per-tile colliderect) vs normal tiles (batch)
-        normal_blits = []
         player_depth = self.game.player.depth
-        tiles = self.game.map_manager.tiles
-        screen = self.game.screen
 
-        for px, py, tile_id, depth in self.game.map_manager.get_visible_chunks(
-            self._viewport_world, min_depth=player_depth
-        ):
-            tile_data = tiles[tile_id]
-            screen_pos = (px + cam_offset.x, py + cam_offset.y)
-
-            # Collect rect for ALL tiles depth > player — NPCs may be behind tiles
-            # that the player doesn't touch, so we can't filter by player collision here.
-            if depth > player_depth:
-                occluding_rects.append((
-                    pygame.Rect(screen_pos, (self.game.tile_size, self.game.tile_size)),
-                    depth,
-                ))
-
-            if not walk_active and depth > player_depth:
-                # Depth-occlusion: use semi-transparent image when player overlaps
-                self._tile_rect.topleft = screen_pos
-                if player_screen_rect.colliderect(self._tile_rect):
-                    screen.blit(tile_data.occluded_image or tile_data.image, screen_pos)
-                else:
-                    normal_blits.append((tile_data.image, screen_pos))
-            else:
-                # Walk active OR foreground-order layer tile with depth <= player: no occlusion
-                normal_blits.append((tile_data.image, screen_pos))
+        normal_blits = self._draw_static_foreground_tiles(
+            cam_offset, walk_active, player_screen_rect, player_depth, occluding_rects
+        )
 
         if normal_blits:
-            screen.fblits(normal_blits)
+            self.game.screen.fblits(normal_blits)
 
-        # Draw animated foreground tiles + collect their rects if depth > player
-        if self.game.anim_map_manager and self._frame_anim_all:
-            anim_fg_blits = []
-            for px, py, tile_id, depth in self._frame_anim_all:
-                if depth > player_depth:
-                    img = self.game.anim_map_manager.get_current_frame_image(tile_id)
-                    if img:
-                        screen_pos = (px + cam_offset.x, py + cam_offset.y)
-                        anim_fg_blits.append((img, screen_pos))
-                        # Also add to occluding list — inert today (no anim tile has depth>1)
-                        # but will fire automatically when animated foreground tiles are created.
-                        occluding_rects.append((
-                            pygame.Rect(screen_pos, (self.game.tile_size, self.game.tile_size)),
-                            depth,
-                        ))
-            if anim_fg_blits:
-                screen.fblits(anim_fg_blits)
+        self._draw_animated_foreground_tiles(cam_offset, player_depth, occluding_rects)
 
         return occluding_rects
-
-
 
     def draw_hud(self):
         """Draw time and season HUD overlay (top-right, fixed to screen)."""
         self.game.hud.draw(self.game.screen)
+
+    def _create_composite_occlusion_surface(
+        self,
+        sprite,
+        sprite_screen_rect: pygame.Rect,
+        intersections: list[pygame.Rect],
+        used_composites: int,
+    ) -> tuple[pygame.Surface, int]:
+        """Creates or reuses a composite surface from the pool for a single sprite."""
+        visual_size = sprite.image.get_size()
+        # F4: Reuse or allocate a distinct surface from the pool for this specific sprite
+        if used_composites < len(self._occlusion_pool):
+            composite = self._occlusion_pool[used_composites]
+            if composite.get_size() != visual_size:
+                composite = pygame.Surface(visual_size, pygame.SRCALPHA)
+                self._occlusion_pool[used_composites] = composite
+        else:
+            composite = pygame.Surface(visual_size, pygame.SRCALPHA)
+            self._occlusion_pool.append(composite)
+        used_composites += 1
+        composite.fill((0, 0, 0, 0))
+        composite.blit(sprite.image, (0, 0))  # full opaque copy
+
+        for isect in intersections:
+            # pygame.Rect.clip() can return a zero-size rect for adjacent tiles.
+            if isect.width <= 0 or isect.height <= 0:
+                continue
+
+            # Convert screen-space intersection to local composite coordinates.
+            local_rect = pygame.Rect(
+                isect.x - sprite_screen_rect.x,
+                isect.y - sprite_screen_rect.y,
+                isect.width,
+                isect.height,
+            )
+
+            # Clear the destination zone before blitting the alpha version.
+            # Without this, the existing opaque pixels would survive the blit.
+            composite.fill((0, 0, 0, 0), local_rect)
+
+            # F4: Sequentially reuse _alpha_surf since it is blitted immediately within the loop
+            if self._alpha_surf is None or self._alpha_surf.get_size() != local_rect.size:
+                self._alpha_surf = pygame.Surface(local_rect.size, pygame.SRCALPHA)
+            self._alpha_surf.fill((0, 0, 0, 0))
+            self._alpha_surf.blit(sprite.image, (0, 0), local_rect)
+            self._alpha_surf.set_alpha(Settings.OCCLUSION_ALPHA)
+            composite.blit(self._alpha_surf, local_rect.topleft)
+
+        return composite, used_composites
 
     def _apply_partial_occlusion(
         self, occluding_rects: list[tuple[pygame.Rect, int]]
@@ -196,45 +268,9 @@ class RenderManager:
             if not intersections:
                 continue  # sprite not occluded — skip
 
-            # Build composite: start with full opaque copy, then paint occluded zones in alpha.
-            # F4: Reuse or allocate a distinct surface from the pool for this specific sprite
-            if used_composites < len(self._occlusion_pool):
-                composite = self._occlusion_pool[used_composites]
-                if composite.get_size() != visual_rect.size:
-                    composite = pygame.Surface(visual_rect.size, pygame.SRCALPHA)
-                    self._occlusion_pool[used_composites] = composite
-            else:
-                composite = pygame.Surface(visual_rect.size, pygame.SRCALPHA)
-                self._occlusion_pool.append(composite)
-            used_composites += 1
-            composite.fill((0, 0, 0, 0))
-            composite.blit(sprite.image, (0, 0))  # full opaque copy
-
-            for isect in intersections:
-                # pygame.Rect.clip() can return a zero-size rect for adjacent tiles.
-                if isect.width <= 0 or isect.height <= 0:
-                    continue
-
-                # Convert screen-space intersection to local composite coordinates.
-                local_rect = pygame.Rect(
-                    isect.x - sprite_screen_rect.x,
-                    isect.y - sprite_screen_rect.y,
-                    isect.width,
-                    isect.height,
-                )
-
-                # Clear the destination zone before blitting the alpha version.
-                # Without this, the existing opaque pixels would survive the blit.
-                composite.fill((0, 0, 0, 0), local_rect)
-
-                # F4: Sequentially reuse _alpha_surf since it is blitted immediately within the loop
-                if self._alpha_surf is None or self._alpha_surf.get_size() != local_rect.size:
-                    self._alpha_surf = pygame.Surface(local_rect.size, pygame.SRCALPHA)
-                self._alpha_surf.fill((0, 0, 0, 0))
-                alpha_surface = self._alpha_surf
-                alpha_surface.blit(sprite.image, (0, 0), local_rect)
-                alpha_surface.set_alpha(Settings.OCCLUSION_ALPHA)
-                composite.blit(alpha_surface, local_rect.topleft)
+            composite, used_composites = self._create_composite_occlusion_surface(
+                sprite, sprite_screen_rect, intersections, used_composites
+            )
 
             # Swap: save original, install composite. Caller restores after custom_draw.
             saved_images[sprite] = sprite.image
@@ -242,15 +278,8 @@ class RenderManager:
 
         return saved_images
 
-    def draw_scene(self):
-        """A helper representing the entire scene rendering logic."""
-        self.game.screen.fill(Settings.COLOR_BG)
-        self.game.visible_sprites.calculate_offset(self.game.player)
-
-        # F3: Pre-compute animated tile cache once per frame for the current viewport.
-        # draw_background() reads _frame_anim_by_layer; draw_foreground() reads _frame_anim_all.
-        # Order: calculate_offset() → update _viewport_world → populate caches → draw passes.
-        cam_offset = self.game.visible_sprites.offset
+    def _update_animated_tile_cache(self, cam_offset: pygame.Vector2) -> None:
+        """Pre-compute animated tile cache once per frame for the current viewport."""
         self._viewport_world.update(
             -cam_offset.x, -cam_offset.y,
             self._screen_rect.width, self._screen_rect.height,
@@ -276,6 +305,74 @@ class RenderManager:
                                 self._frame_anim_by_layer[lid].append((px, py, tile_id, depth))
                                 break
 
+    def _render_lighting_and_effects(
+        self, night_alpha: float, window_positions: list, cam_offset: pygame.Vector2
+    ) -> None:
+        """Render additive window beams, dynamic lighting, and active interactive effects."""
+        # Render additive window beams (always visible during day and night)
+        self.game.lighting_manager.draw_additive_window_beams(
+            self.game.screen, window_positions, cam_offset
+        )
+
+        # Render dynamic lighting on darkness overlay
+        if night_alpha > 0:
+            active_torches = [
+                obj
+                for obj in self.game.interactives
+                if getattr(obj, "is_on", False) and getattr(obj, "halo_size", 0) > 0
+            ]
+
+            overlay = self.game.lighting_manager.create_overlay(
+                window_positions, active_torches, cam_offset
+            )
+            self.game.screen.blit(overlay, (0, 0))
+
+        for obj in self.game.interactives:
+            if hasattr(obj, "draw_effects"):
+                obj.draw_effects(self.game.screen, cam_offset, night_alpha)
+
+    def _render_ui_overlays(self, cam_offset: pygame.Vector2) -> None:
+        """Render fixed HUD overlay, Emotes, Dialogue Managers, Speech bubbles, and UI views."""
+        if not self.game.inventory_ui.is_open:
+            self.draw_hud()
+
+        # Draw Emotes (after HUD, with camera offset)
+        for sprite in self.game.emote_group:
+            screen_pos = (sprite.rect.x + cam_offset.x, sprite.rect.y + cam_offset.y)
+            self.game.screen.blit(sprite.image, screen_pos)
+
+        if self.game.dialogue_manager.is_active:
+            self.game.dialogue_manager.draw(self.game.screen)
+
+        # NPC speech bubble — drawn above NPC in screen-space
+        if getattr(self.game, "_npc_bubble", None) is not None:
+            npc = self.game._npc_bubble["npc"]
+            # Build a screen-space rect from the NPC world rect
+            npc_screen_rect = npc.rect.move(cam_offset.x, cam_offset.y)
+            self.game.speech_bubble.draw(
+                self.game.screen,
+                npc_screen_rect,
+                self.game._npc_bubble["text"],
+                page=self.game._npc_bubble["page"],
+                speaker_name=getattr(npc, "name", "") or npc.element_id.capitalize(),
+            )
+
+        if self.game.inventory_ui.is_open:
+            self.game.inventory_ui.draw(self.game.screen)
+        if self.game.chest_ui.is_open:
+            self.game.chest_ui.draw(self.game.screen)
+
+    def draw_scene(self):
+        """A helper representing the entire scene rendering logic."""
+        self.game.screen.fill(Settings.COLOR_BG)
+        self.game.visible_sprites.calculate_offset(self.game.player)
+        cam_offset = self.game.visible_sprites.offset
+
+        # F3: Pre-compute animated tile cache once per frame for the current viewport.
+        # draw_background() reads _frame_anim_by_layer; draw_foreground() reads _frame_anim_all.
+        # Order: calculate_offset() → update _viewport_world → populate caches → draw passes.
+        self._update_animated_tile_cache(cam_offset)
+
         self.draw_background()
         self.game.visible_sprites.custom_draw(self.game.screen, max_depth=self.game.player.depth - 1)
 
@@ -300,58 +397,87 @@ class RenderManager:
         night_alpha = self.game.time_system.night_alpha
         window_positions = self.game.map_manager.get_window_positions()
 
-        # Render additive window beams (always visible during day and night)
-        self.game.lighting_manager.draw_additive_window_beams(
-            self.game.screen, window_positions, self.game.visible_sprites.offset
+        self._render_lighting_and_effects(night_alpha, window_positions, cam_offset)
+        self._render_ui_overlays(cam_offset)
+
+    def _render_grass_wading_for_sprite(
+        self,
+        surface: pygame.Surface,
+        sprite,
+        cam_offset: pygame.Vector2,
+        tile_size: int,
+        wading_depth: int,
+        wading_alpha: int,
+    ) -> None:
+        """Render grass wading visual effect for a single standing sprite."""
+        # visual_rect — MUST match custom_draw and _apply_partial_occlusion exactly
+        visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
+        sprite_screen_rect = pygame.Rect(
+            (visual_rect.left + cam_offset.x, visual_rect.top + cam_offset.y),
+            visual_rect.size,
         )
 
-        # Render dynamic lighting on darkness overlay
-        if night_alpha > 0:
-            active_torches = [
-                obj
-                for obj in self.game.interactives
-                if getattr(obj, "is_on", False) and getattr(obj, "halo_size", 0) > 0
-            ]
+        # Probe grass at foot position: bottom center of hitbox, 2px up to avoid edge miss
+        foot_world_x = sprite.rect.centerx
+        foot_world_y = sprite.rect.bottom - 2
 
-            overlay = self.game.lighting_manager.create_overlay(
-                window_positions, active_torches, self.game.visible_sprites.offset
-            )
-            self.game.screen.blit(overlay, (0, 0))
+        grass_img = self.game.map_manager.get_grass_tile_image_at(foot_world_x, foot_world_y)
+        if not isinstance(grass_img, pygame.Surface):
+            return  # Not on grass, or invalid return type — skip
 
-        cam_offset = self.game.visible_sprites.offset
-        for obj in self.game.interactives:
-            if hasattr(obj, "draw_effects"):
-                obj.draw_effects(self.game.screen, cam_offset, night_alpha)
+        # Wading zone: bottom wading_depth pixels of sprite screen rect
+        wading_rect = pygame.Rect(
+            sprite_screen_rect.left,
+            sprite_screen_rect.bottom - wading_depth,
+            sprite_screen_rect.width,
+            wading_depth,
+        )
+        # Clip to sprite bounds first, then to screen bounds
+        wading_rect = wading_rect.clip(sprite_screen_rect)
+        wading_rect = wading_rect.clip(surface.get_rect())
+        if wading_rect.width <= 0 or wading_rect.height <= 0:
+            return
 
-        if not self.game.inventory_ui.is_open:
-            self.draw_hud()
+        # Pass 1: Re-blit grass tile image semi-transparently over sprite feet.
+        # The wading zone can straddle a tile boundary, so we iterate grid columns/rows.
+        # We blit the grass crops to a temporary surface first to apply the wading_alpha
+        # transparency without mutating the shared tile image.
+        world_left = wading_rect.x - cam_offset.x
+        world_right = world_left + wading_rect.width
+        world_top = wading_rect.y - cam_offset.y
+        world_bottom = world_top + wading_rect.height
 
-        # Draw Emotes (after HUD, with camera offset)
-        for sprite in self.game.emote_group:
-            screen_pos = (sprite.rect.x + cam_offset.x, sprite.rect.y + cam_offset.y)
-            self.game.screen.blit(sprite.image, screen_pos)
+        col_start = int(world_left // tile_size)
+        col_end = int((world_right - 1) // tile_size)
+        row_start = int(world_top // tile_size)
+        row_end = int((world_bottom - 1) // tile_size)
 
-        if self.game.dialogue_manager.is_active:
-            self.game.dialogue_manager.draw(self.game.screen)
+        # F4: Reuse _wading_surf — resize only if wading zone changed size
+        if self._wading_surf is None or self._wading_surf.get_size() != wading_rect.size:
+            self._wading_surf = pygame.Surface(wading_rect.size, pygame.SRCALPHA)
+        self._wading_surf.fill((0, 0, 0, 0))
+        wading_surf = self._wading_surf
+        for col in range(col_start, col_end + 1):
+            for row in range(row_start, row_end + 1):
+                tile_screen_x = col * tile_size + cam_offset.x
+                tile_screen_y = row * tile_size + cam_offset.y
+                tile_rect = pygame.Rect(tile_screen_x, tile_screen_y, tile_size, tile_size)
+                isect = wading_rect.clip(tile_rect)
+                if isect.width > 0 and isect.height > 0:
+                    crop_x = isect.x - tile_screen_x
+                    crop_y = isect.y - tile_screen_y
+                    grass_crop = pygame.Rect(crop_x, crop_y, isect.width, isect.height)
 
-        # NPC speech bubble — drawn above NPC in screen-space
-        if getattr(self.game, "_npc_bubble", None) is not None:
-            npc = self.game._npc_bubble["npc"]
-            cam = self.game.visible_sprites.offset
-            # Build a screen-space rect from the NPC world rect
-            npc_screen_rect = npc.rect.move(cam.x, cam.y)
-            self.game.speech_bubble.draw(
-                self.game.screen,
-                npc_screen_rect,
-                self.game._npc_bubble["text"],
-                page=self.game._npc_bubble["page"],
-                speaker_name=getattr(npc, "name", "") or npc.element_id.capitalize(),
-            )
+                    # Calculate destination coordinates on the temporary wading surface
+                    dest_x = isect.x - wading_rect.x
+                    dest_y = isect.y - wading_rect.y
+                    wading_surf.blit(grass_img, (dest_x, dest_y), area=grass_crop)
 
-        if self.game.inventory_ui.is_open:
-            self.game.inventory_ui.draw(self.game.screen)
-        if self.game.chest_ui.is_open:
-            self.game.chest_ui.draw(self.game.screen)
+        # Apply overall wading alpha to make the re-blitted grass semi-transparent
+        wading_surf.set_alpha(wading_alpha)
+
+        # Blit the semi-transparent grass over the main surface
+        surface.blit(wading_surf, wading_rect.topleft)
 
     def _apply_grass_wading(self, surface: pygame.Surface) -> None:
         """Pass 3c: re-blit grass tile image + alpha blend over sprite foot zone.
@@ -385,74 +511,8 @@ class RenderManager:
             if walk_active and sprite == self.game.player:
                 continue
 
-            # visual_rect — MUST match custom_draw and _apply_partial_occlusion exactly
-            visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
-            sprite_screen_rect = pygame.Rect(
-                (visual_rect.left + cam_offset.x, visual_rect.top + cam_offset.y),
-                visual_rect.size,
+            self._render_grass_wading_for_sprite(
+                surface, sprite, cam_offset, tile_size, wading_depth, wading_alpha
             )
-
-            # Probe grass at foot position: bottom center of hitbox, 2px up to avoid edge miss
-            foot_world_x = sprite.rect.centerx
-            foot_world_y = sprite.rect.bottom - 2
-
-            grass_img = self.game.map_manager.get_grass_tile_image_at(foot_world_x, foot_world_y)
-            if not isinstance(grass_img, pygame.Surface):
-                continue  # Not on grass, or invalid return type — skip
-
-            # Wading zone: bottom wading_depth pixels of sprite screen rect
-            wading_rect = pygame.Rect(
-                sprite_screen_rect.left,
-                sprite_screen_rect.bottom - wading_depth,
-                sprite_screen_rect.width,
-                wading_depth,
-            )
-            # Clip to sprite bounds first, then to screen bounds
-            wading_rect = wading_rect.clip(sprite_screen_rect)
-            wading_rect = wading_rect.clip(surface.get_rect())
-            if wading_rect.width <= 0 or wading_rect.height <= 0:
-                continue
-
-            # Pass 1: Re-blit grass tile image semi-transparently over sprite feet.
-            # The wading zone can straddle a tile boundary, so we iterate grid columns/rows.
-            # We blit the grass crops to a temporary surface first to apply the wading_alpha
-            # transparency without mutating the shared tile image.
-            world_left = wading_rect.x - cam_offset.x
-            world_right = world_left + wading_rect.width
-            world_top = wading_rect.y - cam_offset.y
-            world_bottom = world_top + wading_rect.height
-
-            col_start = int(world_left // tile_size)
-            col_end = int((world_right - 1) // tile_size)
-            row_start = int(world_top // tile_size)
-            row_end = int((world_bottom - 1) // tile_size)
-
-            # F4: Reuse _wading_surf — resize only if wading zone changed size
-            if self._wading_surf is None or self._wading_surf.get_size() != wading_rect.size:
-                self._wading_surf = pygame.Surface(wading_rect.size, pygame.SRCALPHA)
-            self._wading_surf.fill((0, 0, 0, 0))
-            wading_surf = self._wading_surf
-            for col in range(col_start, col_end + 1):
-
-                for row in range(row_start, row_end + 1):
-                    tile_screen_x = col * tile_size + cam_offset.x
-                    tile_screen_y = row * tile_size + cam_offset.y
-                    tile_rect = pygame.Rect(tile_screen_x, tile_screen_y, tile_size, tile_size)
-                    isect = wading_rect.clip(tile_rect)
-                    if isect.width > 0 and isect.height > 0:
-                        crop_x = isect.x - tile_screen_x
-                        crop_y = isect.y - tile_screen_y
-                        grass_crop = pygame.Rect(crop_x, crop_y, isect.width, isect.height)
-
-                        # Calculate destination coordinates on the temporary wading surface
-                        dest_x = isect.x - wading_rect.x
-                        dest_y = isect.y - wading_rect.y
-                        wading_surf.blit(grass_img, (dest_x, dest_y), area=grass_crop)
-
-            # Apply overall wading alpha to make the re-blitted grass semi-transparent
-            wading_surf.set_alpha(wading_alpha)
-
-            # Blit the semi-transparent grass over the main surface
-            surface.blit(wading_surf, wading_rect.topleft)
 
 

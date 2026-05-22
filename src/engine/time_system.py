@@ -75,7 +75,7 @@ class TimeSystem:
 
         # Initialize cache sentinel before _total_minutes setter fires (setter calls _compute_world_time)
         self._cached_world_time: WorldTime = WorldTime(hour=0, minute=0, day=0)
-        self._total_minutes: float = float(initial_minutes)  # setter auto-refreshes cache
+        self._total_minutes = float(initial_minutes)  # setter auto-refreshes cache
 
     @property
     def _total_minutes(self) -> float:
@@ -88,7 +88,7 @@ class TimeSystem:
         self._cached_world_time = self._compute_world_time()
 
     def _compute_world_time(self) -> WorldTime:
-        """Compute WorldTime from _total_minutes. Called only in update()."""
+        """Compute WorldTime from _total_minutes. Called by update() and the _total_minutes setter."""
         total_minutes_int = int(self._total_minutes)
         minute = total_minutes_int % GAME_MINUTES_PER_HOUR
         total_hours = total_minutes_int // GAME_MINUTES_PER_HOUR

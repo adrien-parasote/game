@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-22 | Last doc-update: 2026-05-22 | Files scanned: 68 | Token estimate: ~1900 -->
+<!-- Generated: 2026-05-22 | Last doc-update: 2026-05-22 (F1-F4 perf) | Files scanned: 68 | Token estimate: ~1950 -->
 
 # Engine Logic Flow
 
@@ -89,11 +89,11 @@ sub_types: chest | lever | door | sign | animated_decor
 - **SpatialUtils** (`src/engine/spatial_utils.py`): `get_facing_vector()`, `is_facing_toward()`, `verify_orientation()` — utility functions shared by InteractionManager and CollisionChecker.
 
 ## Time System
-`TimeSystem.update(dt)` → accumulates `_total_minutes` → rebuilds `_cached_world_time` (1x/frame) → `world_time @property` returns cache → `night_alpha` (0–200) → `brightness` (float 0.0–1.0) → drives `LightingManager` and `GameHUD` clock display.
-- **Perf (F1 — pending):** `_compute_world_time()` called once in `update()`. Before: 335 NamedTuple allocations/frame. After: 1/frame.
+`TimeSystem.update(dt)` → accumule `_total_minutes` (via `@property` setter → `_compute_world_time()` auto-refresh) → `_cached_world_time` (1x/frame) → `world_time @property` retourne cache → `night_alpha` (0–200) → `brightness` (float 0.0–1.0) → pilote `LightingManager` et `GameHUD`.
+- **F1 LIVRÉ (commit 4a2e55e):** `_total_minutes` est un `@property` — setter appelle `_compute_world_time()`. Avant : 335 NamedTuple allocs/frame. Après : 1/frame.
 
 ## Rendering pipelines (Partial Occlusion & Grass Wading)
-`RenderManager.draw_scene()` → `_apply_partial_occlusion()` → `custom_draw()` → `_apply_grass_wading()`
+`RenderManager.draw_scene()` → pré-calcule `_frame_anim_all`/`_frame_anim_by_layer` (1x/frame) → `draw_background()` (lit `_frame_anim_by_layer`) → `_apply_partial_occlusion()` → `custom_draw()` → `draw_foreground()` (lit `_frame_anim_all`) → `_apply_grass_wading()`
 - **Partial Occlusion**: Intersects sprite screen-space rects with foreground tiles (`depth > sprite.depth`). Generates a temporary `SRCALPHA` composite where intersecting regions are rendered with `Settings.OCCLUSION_ALPHA` (50% transparency). Skip player sprite during scripted walks (NPCs still occluded).
-- **Grass Wading**: Probes the ground layer at each sprite's foot center position via `MapManager.get_grass_tile_image_at()`. If the topmost depth≤1 tile is marked as `"grass"`, re-blits the grass tile texture over the bottom `Settings.GRASS_WADING_DEPTH` (8px) of the sprite's screen-space bounds, aligned to the 32px grid, and overlays an alpha blend layer (`Settings.GRASS_WADING_ALPHA`, 140) to blend the feet smoothly. Skip player sprite during scripted walks.
-- **Perf (F3+F4 — pending):** Animated chunks computed once into `_frame_anim_all` at top of `draw_scene()` (was 311 generator calls/frame → 1). `_occlusion_composite` / `_alpha_surf` / `_wading_surf` pre-allocated in `__init__`, cleared with `fill((0,0,0,0))` each frame (was 3+ `pygame.Surface(SRCALPHA)` allocs/frame → 0).
+- **Grass Wading**: Probes the ground layer at each sprite's foot center via `MapManager.get_grass_tile_image_at()`. Re-blits grass texture over bottom `Settings.GRASS_WADING_DEPTH` (8px). Skip player during scripted walks.
+- **F3+F4 LIVRÉ (commit 4a2e55e):** Animated chunks pré-calculés 1x/frame dans `draw_scene()` (311 generator calls/frame → 1). `_occlusion_pool`/`_alpha_surf`/`_wading_surf` poolés — zéro `pygame.Surface(SRCALPHA)` alloc/frame en régime normal. Tests qui appellent `draw_background()`/`draw_foreground()` directement doivent pré-peupler `_frame_anim_by_layer`/`_frame_anim_all` (cf. A-PERF-002).

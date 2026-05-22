@@ -415,16 +415,8 @@
    <property name="depth" type="int" value="2"/>
   </properties>
  </tile>
- <tile id="77" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-  </properties>
- </tile>
- <tile id="78" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-  </properties>
- </tile>
+ <tile id="77" type="00-tileset"/>
+ <tile id="78" type="00-tileset"/>
  <tile id="79" type="00-tileset">
   <properties>
    <property name="depth" type="int" value="2"/>
@@ -453,21 +445,9 @@
  </tile>
  <tile id="84" type="00-tileset"/>
  <tile id="85" type="00-tileset"/>
- <tile id="86" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-  </properties>
- </tile>
- <tile id="87" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-  </properties>
- </tile>
- <tile id="88" type="00-tileset">
-  <properties>
-   <property name="depth" type="int" value="2"/>
-  </properties>
- </tile>
+ <tile id="86" type="00-tileset"/>
+ <tile id="87" type="00-tileset"/>
+ <tile id="88" type="00-tileset"/>
  <tile id="89" type="00-tileset">
   <properties>
    <property name="depth" type="int" value="2"/>

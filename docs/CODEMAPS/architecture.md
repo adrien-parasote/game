@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-22 | Last doc-update: 2026-05-22 | Files scanned: 68 | Token estimate: ~2700 -->
+<!-- Generated: 2026-05-22 | Last doc-update: 2026-05-22 (F1-F4 perf) | Files scanned: 68 | Token estimate: ~2750 -->
 
 # Game Engine Architecture
 
@@ -17,7 +17,7 @@
 |---|---|---|---|
 | **GameStateManager** | `src/engine/game_state_manager.py` | 309 | Top-level state machine (TITLE/PLAYING/PAUSED), global event routing, save/load orchestration |
 | **Game** | `src/engine/game.py` | 420 | Gameplay orchestrator, thin wrappers delegating to sub-managers. Phase 1.5 refactored. |
-| **RenderManager** | `src/engine/render_manager.py` | 408 | Scene rendering pipeline (background, foreground, HUD, overlays, partial occlusion, grass wading). **Perf pending (F3+F4):** `_frame_anim_all` pre-computed once/frame; `_occlusion_composite`/`_wading_surf` pre-allocated. |
+| **RenderManager** | `src/engine/render_manager.py` | ~430 | Scene rendering pipeline (background, foreground, HUD, overlays, partial occlusion, grass wading). **F3+F4 LIVRÉ:** `_frame_anim_all`/`_frame_anim_by_layer` pré-calculés 1x/frame dans `draw_scene()`; `_occlusion_pool`/`_wading_surf`/`_alpha_surf` pré-alloués — zéro `pygame.Surface(SRCALPHA)` alloc/frame. |
 | **InteractionManager** | `src/engine/interaction.py` | 400 | Proximity/facing checks for objects, NPCs, pickups, chests, emotes, teleporters. Uses `distance_squared_to` for performance. Implements `trigger_only` guards to suppress direct interaction. |
 | **EntityFactory** | `src/engine/entity_factory.py` | 265 | Entity spawning (interactive, teleport, NPC, pickup). Extracted from `Game` in Phase 1.5. Pattern: `EntityFactory(game: Any)`. |
 | **MapLoader** | `src/engine/map_loader.py` | ~115 | Map loading pipeline (parse, BGM, cleanup, spawn, player position). Extracted from `Game` in Phase 1.5. |
@@ -49,7 +49,7 @@
 - **SpeechBubble** (`src/ui/speech_bubble.py`, 263L): NPC nine-patch bubble, name plate, paginated text, auto-wrap 224px.
 
 ### Entities
-- **InteractiveEntity** (`src/entities/interactive.py`, 448L): Chests, levers, doors, signs, animated decor. Animated state machine (`is_on`), `day_night_driven` auto-lighting, halo lighting, `restore_state` from WorldState. Implements `sfx_open`/`sfx_close` and `trigger_only` properties. Uses `interactive_constants.py`. **Perf pending (F2):** `_is_on_cache` updated once/frame in `update()` for `day_night_driven` entities.
+- **InteractiveEntity** (`src/entities/interactive.py`, ~470L): Chests, levers, doors, signs, animated decor. Animated state machine (`is_on`), `day_night_driven` auto-lighting, halo lighting, `restore_state` from WorldState. Implements `sfx_open`/`sfx_close` et `trigger_only`. Uses `interactive_constants.py`. **F2 LIVRÉ:** `_is_on_cache: bool` mis à jour 1x/frame en tête de `update()` pour entités `day_night_driven`; `_time_system` exposed comme `@property` — setter auto-refresh le cache. `_compute_is_on()` privée, jamais appelée depuis la `@property`. |
 - **NPC** (`src/entities/npc.py`, 148L): Random AI patrol, interact trigger, pending dialogue queue (waits for movement to finish).
 - **Player** (`src/entities/player.py`, 122L): Input, directional animation, emote trigger.
 - **PickupItem** (`src/entities/pickup.py`, 45L): Static collectible, looted state synced to WorldState.
@@ -57,7 +57,7 @@
 
 ### Engine Support
 - **LightingManager** (`src/engine/lighting.py`, 300L): Night overlay, additive torch masks, slanted window beam shafts (continuous cosine blending at dawn/dusk). Beam colors driven by `BEAM_COLOR_MOON`/`BEAM_COLOR_SUN` constants in `lighting_constants.py`.
-- **TimeSystem** (`src/engine/time_system.py`, 131L): In-game clock, seasons, `night_alpha`, `brightness`. **Perf pending (F1):** `_cached_world_time` computed once in `update()` — `world_time @property` returns cache, eliminating 335 NamedTuple allocations/frame.
+- **TimeSystem** (`src/engine/time_system.py`, ~140L): In-game clock, seasons, `night_alpha`, `brightness`. **F1 LIVRÉ:** `_total_minutes` exposé comme `@property` — setter appelle `_compute_world_time()` (cache auto-refresh). `world_time @property` retourne `_cached_world_time` — 335 NamedTuple allocations/frame éliminées.
 - **AudioManager** (`src/engine/audio.py`, 248L): BGM/SFX via pygame mixer (32 channels), mute toggle, spatial ambient audio with `ambient_channels` dict + 20% floor volume, footstep normalization.
 - **LootTable** (`src/engine/loot_table.py`, 130L): JSON-driven chest contents, stack splitting, slot overflow trimming.
 - **WorldState** (`src/engine/world_state.py`, 22L): `{map_name}_{tiled_id}` keyed dict for cross-map persistence.
@@ -68,7 +68,7 @@ docs/
   specs/            18 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
   traceability.md   Auto-generated spec↔test coverage matrix (scripts/tc_report.py — run to refresh)
   codemaps/         Architecture maps (this directory)
-  strategic/        MASTER_ROADMAP.md, game_vision.md, perf-blueprint.md
+  strategic/        MASTER_ROADMAP.md, game_vision.md
   ADRs/             10 Architecture Decision Records (ADR-001 to ADR-006, ADR-PERF-001 to ADR-PERF-004)
   research/         Research docs (unit_test_optimization.md)
 scripts/
@@ -89,7 +89,7 @@ scripts/
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
-- **Test Suite**: Pytest 9.0.3, **794 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui,scripts}/` (6 domains)
+- **Test Suite**: Pytest 9.0.3, **1086 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui,scripts}/` (6 domains)
 - **Traceability**: `@pytest.mark.tc("DOMAIN-TYPE-ID")` markers — see `docs/traceability.md` (auto-generated). Registered in `pyproject.toml`.
 - **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), **Pre-render cache pattern** (static button/label surfaces pre-computed at init, zero allocation in draw loop), ChestUI mixin decomposition, GameEvent dataclass factory pattern, Context Injection (`SomeManager(game: Any)`) for sub-managers in Phase 1.5
-- **Perf Baseline (2026-05-22)**: Active frame time 9.74ms/frame (budget 16.6ms). 4 optimizations pending (F1-F4) targeting ≤7ms. See `docs/strategic/perf-blueprint.md`.
+- **Perf (2026-05-22 — F1-F4 LIVRÉ)**: Baseline 9.74ms/frame (budget 16.6ms). F1: TimeSystem `_cached_world_time` (–335 allocs/frame). F2: `InteractiveEntity._is_on_cache` (334x → ≤23x `brightness` calls/frame). F3: animated chunk precompute `_frame_anim_all`/`_frame_anim_by_layer` (–311 generator calls/frame). F4: surface pool `_occlusion_pool`/`_wading_surf`/`_alpha_surf` (–3+ `SRCALPHA` allocs/frame). Commit `4a2e55e`. See `docs/ADRs/ADR-PERF-001` — `ADR-PERF-004`.

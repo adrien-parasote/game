@@ -505,3 +505,82 @@ else:
 **Evidence :** `test_intra_map_teleport.py` — 13/13 tests GREEN à la première implémentation, 0 rework. 380/380 tests régression verts. Cycle intra-map-teleport.md → code : zéro itération de correction.
 
 ---
+
+### L-PERF-002 · 2026-05-22 · U · Perfect
+**Pattern `property setter auto-refresh` pour les caches frame-level en Python**
+
+Quand une valeur dérivée doit être précomputée une fois par frame ET testable sans appeler `update()`, transformer l'attribut source en `@property` avec un setter qui auto-refresh le cache. Cela maintient la compatibilité descendante des tests qui injectent l'attribut directement.
+
+```python
+# Pattern F1 — _total_minutes setter refresh cache WorldTime
+@_total_minutes.setter
+def _total_minutes(self, value: int) -> None:
+    self.__total_minutes = value
+    self._compute_world_time()  # cache refresh immédiat
+
+# Pattern F2 — _time_system setter avec guard None (init phase)
+@_time_system.setter
+def _time_system(self, value) -> None:
+    self.__time_system = value
+    if self.day_night_driven and value is not None:  # guard CRITIQUE
+        self._is_on_cache = self._compute_is_on()
+```
+
+**Règle :** Le guard `value is not None` dans le setter est obligatoire quand le setter est appelé pendant `__init__` avant que les attributs consommés par `_compute_*()` soient tous initialisés.
+
+**Règle spec :** Quand la spec dit "Ordering is critical", elle doit citer l'ordre exact des lignes d'initialisation dans `__init__` ou `_parse_*()`. Une ambiguïté d'ordre = une itération de correction assurée.
+
+**Evidence :** F1 (`time_system.py`) → 0 rework, 13/13 tests pass. F2 (`interactive.py`) → 3 itérations sur l'init order avant stabilisation. 1086/1086 tests verts.
+
+---
+
+### A-PERF-001 · 2026-05-22 · U · Minor Rework
+**Init `_parse_*()` : ordre des attributs quand un `@property` setter appelle une méthode**
+
+Quand un setter appelle `_compute_X()` qui lit `self.Y`, l'attribut `Y` DOIT être assigné AVANT l'assignation déclenchant le setter. L'erreur est silencieuse à l'analyse statique mais lève `AttributeError` à l'exécution.
+
+```python
+# ❌ setter → _compute_is_on() → self.light_control non set → AttributeError
+def _parse_day_night(self, day_night_driven):
+    self._is_on_cache = False
+    self._time_system = None   # setter fires _compute_is_on() → reads light_control!
+    self.light_control = "auto" if day_night_driven else "none"
+
+# ✅ dépendances assignées avant le setter
+def _parse_day_night(self, day_night_driven):
+    self._is_on_cache = False
+    self.light_control = "auto" if day_night_driven else "none"  # en premier
+    self._time_system = None   # setter fires _compute_is_on() → light_control ✓
+```
+
+**Règle :** Dans tout `_parse_*()`, lister les attributs dans l'ordre topologique de leurs dépendances. La spec doit expliciter : « Initialize in this order: `_cache`, `light_control`, `_time_system` ».
+
+**Détection :** Dans `_parse_*`, chercher toutes assignations dont le RHS (via setter) appelle `self.*` — vérifier que chaque `self.*` lu est déjà assigné dans le même bloc.
+
+**Evidence :** `interactive.py::_parse_day_night` → `AttributeError: object has no attribute 'light_control'`. 3 itérations pour isoler. 1086/1086 verts après fix.
+
+---
+
+### A-PERF-002 · 2026-05-22 · U · Minor Rework
+**Tests d'isolation sur sous-méthodes orchestrées : contrat de cache implicite cassé**
+
+Quand `draw_scene()` est refactoré pour pré-peupler des caches consommés par ses sous-méthodes (`draw_background`, `draw_foreground`), les tests qui appellent les sous-méthodes directement se retrouvent avec des caches vides → assertions silencieusement fausses.
+
+```python
+# ❌ cache vide — draw_scene() non appelé
+rm = RenderManager(game)
+rm.draw_background()   # _frame_anim_by_layer = {} → fblits jamais appelé
+assert game.screen.fblits.called  # FAIL
+
+# ✅ pré-peupler le cache manuellement
+rm = RenderManager(game)
+rm._frame_anim_by_layer = {layer_id: [(x, y, tile_id, depth)]}
+rm.draw_background()
+assert game.screen.fblits.called  # PASS
+```
+
+**Règle :** Toute méthode qui consomme un cache peuplé par son orchestrateur doit documenter ce contrat dans la spec (section « Testing Contract ») ET en commentaire dans le code : `# Cache pre-populated by draw_scene() — tests must set self._frame_anim_by_layer`.
+
+**Evidence :** 3 tests cassés après F3 (`test_render_manager_coverage.py`, `test_render_manager.py`, `test_render_order.py`). Fix : pré-peupler les caches dans chaque test. 1086/1086 verts après.
+
+---
