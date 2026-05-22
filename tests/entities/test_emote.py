@@ -26,14 +26,23 @@ class TestEmoteManagerInit:
         for name in ("love", "bored", "interact", "question", "frustration"):
             assert name in manager.emote_map
 
-    def test_handles_missing_sheet_gracefully(self, caplog):
-        """Missing spritesheet logs error and doesn't crash."""
+    def test_fallback_path_used_when_primary_missing(self):
+        """Ligne 25 : fallback path utilisé si assets/images/sprites/ n'existe pas."""
         from src.entities.emote import EmoteManager
-        with patch("src.entities.emote.SpriteSheet", side_effect=FileNotFoundError("missing")):
-            player = MagicMock()
-            with caplog.at_level(logging.ERROR):
+
+        # Simule : premier path inexistant, second valide
+        def fake_exists(path):
+            return "images" not in path  # le path primaire contient 'images', pas le fallback
+
+        fake_frames = [pygame.Surface((16, 16)) for _ in range(40)]
+        with patch("src.entities.emote.os.path.exists", side_effect=fake_exists):
+            with patch("src.entities.emote.SpriteSheet") as mock_ss:
+                mock_ss.return_value.load_grid.return_value = fake_frames
+                player = MagicMock()
                 manager = EmoteManager(player)
+        # Le manager est construit sans crash, fallback path pris
         assert manager is not None
+        assert manager.player is player
 
 
 class TestEmoteTrigger:

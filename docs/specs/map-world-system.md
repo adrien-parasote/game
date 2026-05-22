@@ -94,6 +94,13 @@ Returns the exit constraints intersection:
 #### `get_terrain_material_at(pixel_x: int, pixel_y: int) -> str | None`
 Top-down layer scan at a given pixel position. Skip tiles with `tile.depth > 1` (floats and roofs ignored). Returns the `material` property of the topmost tile with `depth <= 1`.
 
+#### `get_grass_tile_image_at(pixel_x: int, pixel_y: int) -> pygame.Surface | None`
+Identical scan logic to `get_terrain_material_at`. Returns the `TileMapData.image` surface when `material == "grass"`, else `None`. Used by `RenderManager._apply_grass_wading()` to obtain the exact grass pixel art to re-blit over sprite feet.
+
+- **Read-only**: does not modify any mutable state.
+- **No allocation**: returns the existing `TileMapData.image` reference (pre-loaded 32×32 subsurface).
+- **Spec**: [camera-rendering.md §4.6](./camera-rendering.md#L285) for the full rendering algorithm.
+
 ---
 
 ## 5. Interaction Model
@@ -196,6 +203,13 @@ When transition triggers a teleport, the following strict sequence occurs:
 | MAP-U-02 | _parse_tsx | Valid `.tsx` XML | Correct TileProperty GID mapping |
 | MAP-U-03 | TiledProject.resolve | Class with defaults | Overrides applied correctly |
 | MAP-U-04 | MapManager.get_terrain_at | Pixel on grass tile | `"grass"` |
+| GW-MM-001 | `get_grass_tile_image_at` | Tile at coords has `material="grass"` and `depth=0` | Returns `tile.image` (Surface) |
+| GW-MM-002 | `get_grass_tile_image_at` | Tile at coords has `material="dirt"` | Returns `None` |
+| GW-MM-003 | `get_grass_tile_image_at` | Tile has `material="grass"` but `depth=2` (roof) | Returns `None` — roof tile is skipped |
+| GW-MM-004 | `get_grass_tile_image_at` | Pixel coords out of bounds | Returns `None` — no crash |
+| GW-MM-005 | `get_grass_tile_image_at` | No tile at position (tile_id == 0) | Returns `None` |
+| GW-MM-006 | `get_grass_tile_image_at` | Two stacked layers: top=dirt(depth=0), bottom=grass(depth=0) | Returns `None` — top layer wins |
+| GW-MM-007 | `get_grass_tile_image_at` | Two stacked layers: top=roof(depth=2), bottom=grass(depth=0) | Returns grass image — roof is skipped |
 | WS-001 | make_key | `"00-spawn.tmj"`, `58` | `"00-spawn_58"` |
 | WS-002 | State Persistence | `set` then `get` | Value properly stored and retrieved |
 | WS-007 | Facing Adjacency | `activate_from_anywhere=True`, facing away | Proximity interaction fails |
@@ -228,5 +242,6 @@ When transition triggers a teleport, the following strict sequence occurs:
 ## 12. Deep Links
 - **`TmjParser`**: [tmj_parser.py L1](../../src/map/tmj_parser.py#L1)
 - **`MapManager`**: [manager.py L1](../../src/map/manager.py#L1)
+- **`MapManager.get_grass_tile_image_at()`**: [manager.py](../../src/map/manager.py) — rendering usage in [camera-rendering.md §4.6](./camera-rendering.md#L285)
 - **Spawning & Interactions**: [game.py L168](../../src/engine/game.py#L168)
 - **WorldState Keys**: [world_state.py L1](../../src/engine/world_state.py#L1)

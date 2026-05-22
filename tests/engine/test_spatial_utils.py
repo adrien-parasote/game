@@ -134,3 +134,52 @@ def test_verify_orientation_default_false():
     p_pos = pygame.math.Vector2(110, 100)
     result = verify_orientation(obj, "right", p_pos)
     assert result is False
+
+
+# ---------------------------------------------------------------------------
+# Extra branch coverage — _is_front_facing and _is_back_facing
+# ---------------------------------------------------------------------------
+
+def test_is_front_facing_down_branch():
+    """Ligne 67 : o_dir='down', p_state='up', dy > 0 → front-facing True."""
+    from src.engine.spatial_utils import _is_front_facing
+    # y_aligned est inutilisé ici — seul x_aligned et la branche down importent
+    result = _is_front_facing(
+        o_dir="down", p_state="up",
+        dx=0.0, dy=10.0,       # dy > 0 → player below, object faces down
+        x_aligned=True, y_aligned=False
+    )
+    assert result is True
+
+
+def test_is_back_facing_left_branch():
+    """Ligne 84 : o_dir='left', p_state='left', dx > 0 → back-facing True (open door)."""
+    from src.engine.spatial_utils import _is_back_facing
+    result = _is_back_facing(
+        o_dir="left", p_state="left",
+        dx=5.0, dy=0.0,
+        x_aligned=False, y_aligned=True
+    )
+    assert result is True
+
+
+def test_is_back_facing_right_branch():
+    """Ligne 86 : o_dir='right', p_state='right', dx < 0 → back-facing True (open door)."""
+    from src.engine.spatial_utils import _is_back_facing
+    result = _is_back_facing(
+        o_dir="right", p_state="right",
+        dx=-5.0, dy=0.0,
+        x_aligned=False, y_aligned=True
+    )
+    assert result is True
+
+
+def test_is_back_facing_returns_false_when_no_match():
+    """Ligne 87 : return False quand aucune condition de back-facing n'est satisfaite."""
+    from src.engine.spatial_utils import _is_back_facing
+    result = _is_back_facing(
+        o_dir="up", p_state="down",  # combinaison non gérée par back-facing
+        dx=0.0, dy=10.0,
+        x_aligned=True, y_aligned=False
+    )
+    assert result is False

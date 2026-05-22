@@ -81,6 +81,14 @@ class TestNPCInteract:
         npc.interact(initiator)
         assert npc.current_facing == "left"
 
+    def test_interact_faces_player_up(self):
+        """NPC faces up when player is above."""
+        npc = _make_npc(pos=(100, 100))
+        initiator = MagicMock()
+        initiator.pos = pygame.math.Vector2(100, 0)  # player above
+        npc.interact(initiator)
+        assert npc.current_facing == "up"
+
     def test_interact_faces_player_down(self):
         """NPC faces down when player is below."""
         npc = _make_npc(pos=(100, 100))
@@ -198,3 +206,33 @@ class TestStaticNPC:
         npc.frame_index = 1.0
         npc.update(0.1)
         assert npc.frame_index == 1.0
+
+
+class TestNPCProcessAIFacingUp:
+    def test_process_ai_sets_facing_up_when_moving_up(self):
+        """Ligne 143 : process_ai() définit current_facing='up' quand direction.y < 0."""
+        npc = _make_npc(pos=(100, 100), wander_radius=5)
+        npc.state = "idle"
+        npc._action_timer = 999.0
+        npc._action_cooldown = 0.0
+        npc.is_moving = False
+
+        up_vec = pygame.math.Vector2(0, -1)
+        with patch("src.entities.npc.random.choice", return_value=up_vec):
+            npc.process_ai(dt=0.016)
+
+        assert npc.current_facing == "up"
+
+    def test_process_ai_sets_facing_down_when_moving_down(self):
+        """Ligne 141 : process_ai() définit current_facing='down' quand direction.y > 0."""
+        npc = _make_npc(pos=(100, 100), wander_radius=5)
+        npc.state = "idle"
+        npc._action_timer = 999.0
+        npc._action_cooldown = 0.0
+        npc.is_moving = False
+
+        down_vec = pygame.math.Vector2(0, 1)
+        with patch("src.entities.npc.random.choice", return_value=down_vec):
+            npc.process_ai(dt=0.016)
+
+        assert npc.current_facing == "down"

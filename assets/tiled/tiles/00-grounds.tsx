@@ -914,12 +914,12 @@
  </tile>
  <tile id="188" type="01-tileset_ground">
   <properties>
-   <property name="material" value="wood"/>
+   <property name="material" value="stone"/>
   </properties>
  </tile>
  <tile id="189" type="01-tileset_ground">
   <properties>
-   <property name="material" value="wood"/>
+   <property name="material" value="stone"/>
   </properties>
  </tile>
  <tile id="190" type="01-tileset_ground">
@@ -964,12 +964,12 @@
  </tile>
  <tile id="198" type="01-tileset_ground">
   <properties>
-   <property name="material" value="wood"/>
+   <property name="material" value="stone"/>
   </properties>
  </tile>
  <tile id="199" type="01-tileset_ground">
   <properties>
-   <property name="material" value="wood"/>
+   <property name="material" value="stone"/>
   </properties>
  </tile>
  <tile id="200" type="01-tileset_ground">
@@ -1014,7 +1014,7 @@
  </tile>
  <tile id="208" type="01-tileset_ground">
   <properties>
-   <property name="material" value="wood"/>
+   <property name="material" value="stone"/>
   </properties>
  </tile>
  <tile id="209" type="01-tileset_ground">
@@ -1064,7 +1064,7 @@
  </tile>
  <tile id="218" type="01-tileset_ground">
   <properties>
-   <property name="material" value="wood"/>
+   <property name="material" value="stone"/>
   </properties>
  </tile>
  <tile id="219" type="01-tileset_ground">
@@ -1114,7 +1114,7 @@
  </tile>
  <tile id="228" type="01-tileset_ground">
   <properties>
-   <property name="material" value="wood"/>
+   <property name="material" value="stone"/>
   </properties>
  </tile>
  <tile id="229" type="01-tileset_ground">

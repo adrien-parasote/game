@@ -69,3 +69,29 @@ def test_title_lights_mixin_debug_and_clamping():
             ts._draw_mushroom_lights()
 
         assert ts._screen.blit.called
+
+
+def test_draw_options_overlay_not_hovered_uses_engraved():
+    """Ligne 188 : _draw_options_overlay avec _back_hovered=False appelle _blit_engraved."""
+    ts = MockTitleScreen()
+    # Attributs requis par _draw_options_overlay
+    mock_surf = pygame.Surface((40, 20), pygame.SRCALPHA)
+    ts._back_btn = mock_surf
+    ts._back_btn_hover = mock_surf
+    ts._i18n = MagicMock()
+    ts._i18n.get.return_value = "Retour"
+    ts._back_hovered = False  # branche else → _blit_engraved (ligne 188)
+
+    from src.ui.title_screen_constants import (
+        BACK_BTN_GAP,
+        BACK_BTN_OFFSET_X,
+        BACK_BTN_OFFSET_Y,
+        BACK_BTN_X,
+        BACK_BTN_Y,
+    )
+
+    # _blit_engraved appelle self._screen.blit trois fois
+    initial_blit_count = ts._screen.blit.call_count
+    ts._draw_options_overlay()
+    # Doit avoir blit au moins 4 fois (1 icon + 3 engraved text passes)
+    assert ts._screen.blit.call_count >= initial_blit_count + 4

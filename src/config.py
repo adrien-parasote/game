@@ -134,6 +134,8 @@ class Settings:
 
         # Overlay & Time
         cls.OCCLUSION_ALPHA = data.get("overlay", {}).get("occlusion_alpha", 102)
+        cls.GRASS_WADING_DEPTH: int = data.get("overlay", {}).get("grass_wading_depth", 10)
+        cls.GRASS_WADING_ALPHA: int = data.get("overlay", {}).get("grass_wading_alpha", 140)
         time_data = data.get("time", {})
         cls.MINUTE_DURATION: float = time_data.get("minute_duration", 1.0)
         cls.DAYS_PER_SEASON: int = time_data.get("days_per_season", 30)

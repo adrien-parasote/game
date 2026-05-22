@@ -156,11 +156,12 @@ class RenderManager:
             dict mapping each modified sprite to its original image surface.
         """
         if not occluding_rects:
-            return {}
+            return dict()
 
         cam_offset = self.game.visible_sprites.offset
         saved_images: dict[object, pygame.Surface] = {}
         player_depth = self.game.player.depth
+        walk_active = getattr(self.game, "_intra_walk_target", None) is not None
 
         for sprite in self.game.visible_sprites.get_sorted_sprites():
             if not sprite.image or not sprite.rect:
@@ -168,6 +169,10 @@ class RenderManager:
             # Only pass-3b sprites (depth >= player.depth) are rendered behind foreground tiles.
             sprite_depth = getattr(sprite, "depth", 1)
             if sprite_depth < player_depth:
+                continue
+            # During scripted walk the player is invisible (_player_transparent).
+            # Skip the player sprite only — NPCs must still be occluded (UT-011 / IT-003).
+            if walk_active and sprite == self.game.player:
                 continue
 
             # Build the visual screen-space rect — identical formula to custom_draw().
@@ -231,19 +236,20 @@ class RenderManager:
         occluding_rects = self.draw_foreground()
 
         # Partial occlusion: replace each sprite's image with a composite where only
-        # the zone behind a foreground tile is semi-transparent. Guarded by walk check:
-        # during scripted walk the player is already invisible (_player_transparent),
-        # so _apply_partial_occlusion must not be called (UT-011 / IT-003).
-        walk_active = getattr(self.game, "_intra_walk_target", None) is not None
-        saved_images: dict[object, pygame.Surface] = {}
-        if not walk_active:
-            saved_images = self._apply_partial_occlusion(occluding_rects)
+        # the zone behind a foreground tile is semi-transparent.
+        # The walk guard is applied inside _apply_partial_occlusion (player-sprite only)
+        # so NPCs continue to be occluded during scripted walk (IT-003).
+        saved_images = self._apply_partial_occlusion(occluding_rects)
 
         self.game.visible_sprites.custom_draw(self.game.screen, min_depth=self.game.player.depth)
 
         # Restore original sprite images immediately after rendering.
         for sprite, original_image in saved_images.items():
             sprite.image = original_image
+
+        # Pass 3c: Grass wading — re-blit grass tile pixels + alpha blend over sprite feet
+        # to create the visual illusion of walking inside tall grass.
+        self._apply_grass_wading(self.game.screen)
 
         night_alpha = self.game.time_system.night_alpha
         window_positions = self.game.map_manager.get_window_positions()
@@ -300,3 +306,92 @@ class RenderManager:
             self.game.inventory_ui.draw(self.game.screen)
         if self.game.chest_ui.is_open:
             self.game.chest_ui.draw(self.game.screen)
+
+    def _apply_grass_wading(self, surface: pygame.Surface) -> None:
+        """Pass 3c: re-blit grass tile image + alpha blend over sprite foot zone.
+
+        For every visible sprite standing on a grass tile, paint the grass texture over
+        the bottom GRASS_WADING_DEPTH pixels of the sprite in screen space, then apply
+        a semi-transparent fill to soften the sprite-to-grass boundary.
+
+        Preconditions:
+        - map_manager must not be None (guarded at method entry)
+        - visual_rect formula must match custom_draw and _apply_partial_occlusion exactly
+        - walk_active guard skips the player sprite only (NPCs always processed)
+        """
+        if not self.game.map_manager:
+            return
+
+        cam_offset = self.game.visible_sprites.offset
+        tile_size = self.game.tile_size
+        wading_depth = Settings.GRASS_WADING_DEPTH
+        wading_alpha = Settings.GRASS_WADING_ALPHA
+        player_depth = self.game.player.depth
+        walk_active = getattr(self.game, "_intra_walk_target", None) is not None
+
+        for sprite in self.game.visible_sprites.get_sorted_sprites():
+            if not sprite.image or not sprite.rect:
+                continue
+            # Skip Pass-2 sprites (they are already below the grass layer)
+            if getattr(sprite, "depth", 1) < player_depth:
+                continue
+            # During scripted walk, skip the player only (NPCs still get wading)
+            if walk_active and sprite == self.game.player:
+                continue
+
+            # visual_rect — MUST match custom_draw and _apply_partial_occlusion exactly
+            visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
+            sprite_screen_rect = pygame.Rect(
+                (visual_rect.left + cam_offset.x, visual_rect.top + cam_offset.y),
+                visual_rect.size,
+            )
+
+            # Probe grass at foot position: bottom center of hitbox, 2px up to avoid edge miss
+            foot_world_x = sprite.rect.centerx
+            foot_world_y = sprite.rect.bottom - 2
+
+            grass_img = self.game.map_manager.get_grass_tile_image_at(foot_world_x, foot_world_y)
+            if not isinstance(grass_img, pygame.Surface):
+                continue  # Not on grass, or invalid return type — skip
+
+            # Wading zone: bottom wading_depth pixels of sprite screen rect
+            wading_rect = pygame.Rect(
+                sprite_screen_rect.left,
+                sprite_screen_rect.bottom - wading_depth,
+                sprite_screen_rect.width,
+                wading_depth,
+            )
+            # Clip to sprite bounds first, then to screen bounds
+            wading_rect = wading_rect.clip(sprite_screen_rect)
+            wading_rect = wading_rect.clip(surface.get_rect())
+            if wading_rect.width <= 0 or wading_rect.height <= 0:
+                continue
+
+            # Pass 1: Re-blit grass tile image, pixel-aligned to the 32×32 tile grid.
+            # The wading zone can straddle a tile boundary, so we iterate grid columns/rows.
+            world_left = wading_rect.x - cam_offset.x
+            world_right = world_left + wading_rect.width
+            world_top = wading_rect.y - cam_offset.y
+            world_bottom = world_top + wading_rect.height
+
+            col_start = int(world_left // tile_size)
+            col_end = int((world_right - 1) // tile_size)
+            row_start = int(world_top // tile_size)
+            row_end = int((world_bottom - 1) // tile_size)
+
+            for col in range(col_start, col_end + 1):
+                for row in range(row_start, row_end + 1):
+                    tile_screen_x = col * tile_size + cam_offset.x
+                    tile_screen_y = row * tile_size + cam_offset.y
+                    tile_rect = pygame.Rect(tile_screen_x, tile_screen_y, tile_size, tile_size)
+                    isect = wading_rect.clip(tile_rect)
+                    if isect.width > 0 and isect.height > 0:
+                        crop_x = isect.x - tile_screen_x
+                        crop_y = isect.y - tile_screen_y
+                        grass_crop = pygame.Rect(crop_x, crop_y, isect.width, isect.height)
+                        surface.blit(grass_img, isect.topleft, area=grass_crop)
+
+            # Pass 2: Semi-transparent fill to blend sprite into grass
+            alpha_surf = pygame.Surface(wading_rect.size, pygame.SRCALPHA)
+            alpha_surf.fill((0, 0, 0, 255 - wading_alpha))
+            surface.blit(alpha_surf, wading_rect.topleft)

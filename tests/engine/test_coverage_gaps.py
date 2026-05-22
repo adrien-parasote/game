@@ -3,9 +3,10 @@ loot_table, asset_manager, inventory_draw, inventory_input, interactive,
 game_state_manager."""
 
 import os
-import pytest
+from unittest.mock import MagicMock, PropertyMock, patch
+
 import pygame
-from unittest.mock import MagicMock, patch, PropertyMock
+import pytest
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
@@ -49,8 +50,9 @@ class TestAssetManagerFontFallback:
 class TestLootTableBranches:
     def test_non_list_entries_triggers_warning(self, caplog):
         """Lignes 39-42 : entrée de coffre non-list → warning + continue."""
-        from src.engine.loot_table import LootTable
         import logging
+
+        from src.engine.loot_table import LootTable
 
         lt = LootTable()
         # Injecter directement via load() avec un JSON mocké
@@ -67,8 +69,9 @@ class TestLootTableBranches:
 
     def test_non_dict_root_returns_none(self, caplog):
         """Lignes 68-69 : _read_json() avec data non-dict → log error et return None."""
-        from src.engine.loot_table import LootTable
         import logging
+
+        from src.engine.loot_table import LootTable
 
         lt = LootTable()
         with patch("src.engine.loot_table.os.path.exists", return_value=True):

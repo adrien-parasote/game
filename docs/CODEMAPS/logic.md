@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-20 | Last doc-update: 2026-05-20 | Files scanned: 66 | Token estimate: ~1800 -->
+<!-- Generated: 2026-05-22 | Last doc-update: 2026-05-22 | Files scanned: 66 | Token estimate: ~1800 -->
 
 # Engine Logic Flow
 
@@ -90,3 +90,8 @@ sub_types: chest | lever | door | sign | animated_decor
 
 ## Time System
 `TimeSystem.update(dt)` → accumulates `elapsed_seconds` → `world_time` (hour/minute/season) → `night_alpha` (0–200) → `brightness` (float 0.0–1.0) → drives `LightingManager` and `GameHUD` clock display.
+
+## Rendering pipelines (Partial Occlusion & Grass Wading)
+`RenderManager.draw_scene()` → `_apply_partial_occlusion()` → `custom_draw()` → `_apply_grass_wading()`
+- **Partial Occlusion**: Intersects sprite screen-space rects with foreground tiles (`depth > sprite.depth`). Generates a temporary `SRCALPHA` composite where intersecting regions are rendered with `Settings.OCCLUSION_ALPHA` (50% transparency). Skip player sprite during scripted walks (NPCs still occluded).
+- **Grass Wading**: Probes the ground layer at each sprite's foot center position via `MapManager.get_grass_tile_image_at()`. If the topmost depth≤1 tile is marked as `"grass"`, re-blits the grass tile texture over the bottom `Settings.GRASS_WADING_DEPTH` (8px) of the sprite's screen-space bounds, aligned to the 32px grid, and overlays an alpha blend layer (`Settings.GRASS_WADING_ALPHA`, 140) to blend the feet smoothly. Skip player sprite during scripted walks.

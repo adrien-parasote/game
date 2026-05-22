@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-20 | Last doc-update: 2026-05-20 | Files scanned: 66 | Token estimate: ~2600 -->
+<!-- Generated: 2026-05-22 | Last doc-update: 2026-05-22 | Files scanned: 66 | Token estimate: ~2600 -->
 
 # Game Engine Architecture
 
@@ -17,7 +17,7 @@
 |---|---|---|---|
 | **GameStateManager** | `src/engine/game_state_manager.py` | 309 | Top-level state machine (TITLE/PLAYING/PAUSED), global event routing, save/load orchestration |
 | **Game** | `src/engine/game.py` | 420 | Gameplay orchestrator, thin wrappers delegating to sub-managers. Phase 1.5 refactored. |
-| **RenderManager** | `src/engine/render_manager.py` | 109 | Scene rendering pipeline (background, foreground, HUD, overlays) |
+| **RenderManager** | `src/engine/render_manager.py` | 398 | Scene rendering pipeline (background, foreground, HUD, overlays, partial occlusion, grass wading) |
 | **InteractionManager** | `src/engine/interaction.py` | 400 | Proximity/facing checks for objects, NPCs, pickups, chests, emotes, teleporters. Uses `distance_squared_to` for performance. Implements `trigger_only` guards to suppress direct interaction. |
 | **EntityFactory** | `src/engine/entity_factory.py` | 265 | Entity spawning (interactive, teleport, NPC, pickup). Extracted from `Game` in Phase 1.5. Pattern: `EntityFactory(game: Any)`. |
 | **MapLoader** | `src/engine/map_loader.py` | ~115 | Map loading pipeline (parse, BGM, cleanup, spawn, player position). Extracted from `Game` in Phase 1.5. |

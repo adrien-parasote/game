@@ -39,8 +39,7 @@ This document serves as the Master Index and Architectural Registry for the 15 c
 ### 1.5 Quality, Optimization & Diagnostics
 | Spec | File | Modules Covered |
 |------|------|-----------------|
-| **Camera & Rendering** | [camera-rendering.md](./camera-rendering.md#L1) | Camera viewport coordinates tracking, `RenderManager` batching |
-| **Grass Wading** | [grass-wading.md](./grass-wading.md#L1) | Grass wading rendering pass — `_apply_grass_wading()`, `MapManager.get_grass_tile_image_at()` |
+| **Camera & Rendering** | [camera-rendering.md](./camera-rendering.md#L1) | Camera viewport coordinates tracking, `RenderManager` batching, grass wading pass |
 | **Performance System** | [performance-system.md](./performance-system.md#L1) | Y-sorting dirty cache flags, inlined tuples, distance-squared math |
 | **Development & Quality** | [development-quality.md](./development-quality.md#L1) | Automated quality gates, test layouts, release scripts, debug room |
 

@@ -3,7 +3,7 @@
 # Technical Specification - Camera & Rendering Pipeline [Implementation]
 
 > Document Type: Implementation
-> ADR (Partial Occlusion): [ADR-007](../ADRs/ADR-007-partial-occlusion-surface-composite.md)
+> ADR (Partial Occlusion): [ADR-007](../ADRs/ADR-007-partial-occlusion-surface-composite.md#L1)
 
 This document specifies the AS-IS technical implementation of the camera system, sprite rendering pipeline, Y-sorting, frustum culling, and spritesheet utility.
 
@@ -16,7 +16,8 @@ Render the game world using a multi-pass pipeline that correctly orders sprites 
 | Module | File | LOC | Responsibility |
 |--------|------|-----|----------------|
 | `CameraGroup` | `src/entities/groups.py` | 134 | Camera offset, Y-sort, frustum culling, sprite drawing |
-| `RenderManager` | `src/engine/render_manager.py` | 302 | Multi-pass scene orchestrator — includes `_apply_partial_occlusion()` |
+| `RenderManager` | `src/engine/render_manager.py` | ~360 | Multi-pass scene orchestrator — includes `_apply_partial_occlusion()`, `_apply_grass_wading()` |
+| `MapManager` (extension) | `src/map/manager.py` | +~20 | New `get_grass_tile_image_at()` query — see [map-world-system.md §4.2](./map-world-system.md#L83) |
 | SpriteSheet | `src/graphics/spritesheet.py` | 89 | Grid-based spritesheet extraction utility |
 
 ## 3. CameraGroup — Camera & Sprite Rendering
@@ -101,6 +102,7 @@ Wrapped in `try-except TypeError` for test compatibility with mock surfaces.
 | 2 | `visible_sprites.custom_draw(max_depth=player.depth-1)` | Y-sorted background entities (strictly below player depth) | Normal |
 | 3 | `draw_foreground()` | Map tiles from foreground-order layers + tiles with `depth > player.depth` from mixed layers | Normal (occluded alpha near player) |
 | 3b | `visible_sprites.custom_draw(min_depth=player.depth)` | Y-sorted entities at or above player depth (includes chests, levers, player, NPCs) | Normal |
+| 3c | `_apply_grass_wading()` | Grass tile re-blit + alpha overlay over sprite foot zone — only for sprites on `material=grass` tiles | Normal |
 | 4a | `lighting_manager.draw_additive_window_beams()` | Window light cones | `BLEND_RGB_ADD` |
 | 4b | `lighting_manager.create_overlay()` | Night darkness overlay + torch punch-through | `SRCALPHA` |
 | 5 | `obj.draw_effects()` | Per-object light halos + particles | `BLEND_RGB_ADD` |
@@ -113,6 +115,8 @@ Wrapped in `try-except TypeError` for test compatibility with mock surfaces.
 | 12 | Custom Cursor | The absolute last rendering step | Normal |
 
 **Partial occlusion is applied between Pass 3 and Pass 3b** (`_apply_partial_occlusion` called after `draw_foreground`, before `custom_draw(min_depth=...)`).
+
+**Grass wading is applied at Pass 3c**, immediately after `custom_draw(min_depth=player.depth)` and before lighting. See §4.6.
 
 ### 4.2. Background Rendering (`draw_background`)
 
@@ -198,12 +202,15 @@ def _apply_partial_occlusion(
     cam_offset = self.game.visible_sprites.offset
     saved_images = {}
     player_depth = self.game.player.depth
+    walk_active = getattr(self.game, "_intra_walk_target", None) is not None
 
     for sprite in self.game.visible_sprites.get_sorted_sprites():
         if not sprite.image or not sprite.rect:
             continue
         if getattr(sprite, "depth", 1) < player_depth:
             continue  # uniquement les sprites du pass 3b
+        if walk_active and sprite == self.game.player:
+            continue  # player est invisible pendant la marche scriptée
 
         # visual_rect identique à custom_draw — cohérence obligatoire
         visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
@@ -258,15 +265,13 @@ def _apply_partial_occlusion(
 
 #### 4.3.3. Walk guard
 
-Pendant un scripted walk (`_intra_walk_target` is set), le player est invisible (`_player_transparent`). `_apply_partial_occlusion` **ne doit pas être appelé** (alpha artifacts sur sprite invisible).
+Pendant un scripted walk (`_intra_walk_target` is set), le player est invisible (`_player_transparent`). `_apply_partial_occlusion` **ne doit pas traiter le player** (alpha artifacts sur sprite invisible), mais **doit continuer à traiter les NPCs**.
 
 ```python
-walk_active = getattr(self.game, "_intra_walk_target", None) is not None
 occluding_rects = self.draw_foreground()
 
-saved_images = {}
-if not walk_active:
-    saved_images = self._apply_partial_occlusion(occluding_rects)
+# _apply_partial_occlusion skippera le player en interne si walk_active est vrai
+saved_images = self._apply_partial_occlusion(occluding_rects)
 
 self.game.visible_sprites.custom_draw(self.game.screen, min_depth=self.game.player.depth)
 
@@ -274,7 +279,7 @@ for sprite, original_image in saved_images.items():
     sprite.image = original_image
 ```
 
-> `draw_foreground()` retourne toujours une **liste** (jamais `False`). Le walk guard est dans `draw_scene()`, pas dans `draw_foreground()`.
+> `draw_foreground()` retourne toujours une **liste** (jamais `False`). Le walk guard est géré à l'intérieur de `_apply_partial_occlusion` de manière ciblée.
 
 ### 4.4. Lighting Integration
 
@@ -289,6 +294,110 @@ After lighting, each interactive object with `draw_effects` method renders:
 - Particles (additive blending with alpha fade)
 
 Both receive `cam_offset` and `night_alpha` for correct positioning and intensity.
+
+### 4.6. Grass Wading Pass (`_apply_grass_wading`)
+
+Applied at **Pass 3c** — after entities are fully drawn, before lighting. Creates the visual illusion that sprites are walking **inside** the grass rather than on top of it.
+
+**Trigger**: the tile at the sprite foot position has `properties.material == "grass"` (queried via `MapManager.get_grass_tile_image_at()`).
+
+**Effect (two passes per sprite):**
+1. **Grass re-blit**: the grass tile image is painted over the bottom `GRASS_WADING_DEPTH` pixels of the sprite screen rect — feet visually disappear into the grass texture.
+2. **Alpha blend**: a semi-transparent fill at `255 - GRASS_WADING_ALPHA` is applied over the same zone — softens the sprite-to-grass transition.
+
+**Algorithm:**
+
+```python
+def _apply_grass_wading(self, surface: pygame.Surface) -> None:
+    if not self.game.map_manager:
+        return
+
+    cam_offset = self.game.visible_sprites.offset
+    tile_size = self.game.tile_size
+    wading_depth = Settings.GRASS_WADING_DEPTH
+    wading_alpha = Settings.GRASS_WADING_ALPHA
+    player_depth = self.game.player.depth
+    walk_active = getattr(self.game, "_intra_walk_target", None) is not None
+
+    for sprite in self.game.visible_sprites.get_sorted_sprites():
+        if not sprite.image or not sprite.rect:
+            continue
+        if getattr(sprite, "depth", 1) < player_depth:
+            continue  # Pass 2 sprites are already below the grass layer
+        if walk_active and sprite == self.game.player:
+            continue  # Player is invisible during scripted walk
+
+        # visual_rect — MUST match custom_draw and _apply_partial_occlusion exactly
+        visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
+        sprite_screen_rect = pygame.Rect(
+            (visual_rect.left + cam_offset.x, visual_rect.top + cam_offset.y),
+            visual_rect.size,
+        )
+
+        # Probe at foot position: bottom center of hitbox, 2px up to avoid edge miss
+        foot_world_x = sprite.rect.centerx
+        foot_world_y = sprite.rect.bottom - 2
+
+        grass_img = self.game.map_manager.get_grass_tile_image_at(foot_world_x, foot_world_y)
+        if grass_img is None:
+            continue  # Not on grass — skip
+
+        # Wading zone: bottom GRASS_WADING_DEPTH pixels of sprite screen rect
+        wading_rect = pygame.Rect(
+            sprite_screen_rect.left,
+            sprite_screen_rect.bottom - wading_depth,
+            sprite_screen_rect.width,
+            wading_depth,
+        )
+        wading_rect = wading_rect.clip(sprite_screen_rect)
+        wading_rect = wading_rect.clip(surface.get_rect())
+        if wading_rect.width <= 0 or wading_rect.height <= 0:
+            continue
+
+        # Pass 1: Re-blit grass tile image, pixel-aligned to tile grid
+        world_left = wading_rect.x - cam_offset.x
+        world_right = world_left + wading_rect.width
+        world_top = wading_rect.y - cam_offset.y
+        world_bottom = world_top + wading_rect.height
+
+        col_start = int(world_left // tile_size)
+        col_end = int((world_right - 1) // tile_size)
+        row_start = int(world_top // tile_size)
+        row_end = int((world_bottom - 1) // tile_size)
+
+        for col in range(col_start, col_end + 1):
+            for row in range(row_start, row_end + 1):
+                tile_screen_x = col * tile_size + cam_offset.x
+                tile_screen_y = row * tile_size + cam_offset.y
+                tile_rect = pygame.Rect(tile_screen_x, tile_screen_y, tile_size, tile_size)
+                isect = wading_rect.clip(tile_rect)
+                if isect.width > 0 and isect.height > 0:
+                    crop_x = isect.x - tile_screen_x
+                    crop_y = isect.y - tile_screen_y
+                    grass_crop = pygame.Rect(crop_x, crop_y, isect.width, isect.height)
+                    surface.blit(grass_img, isect.topleft, area=grass_crop)
+
+        # Pass 2: Semi-transparent fill to blend sprite into grass
+        alpha_surf = pygame.Surface(wading_rect.size, pygame.SRCALPHA)
+        alpha_surf.fill((0, 0, 0, 255 - wading_alpha))
+        surface.blit(alpha_surf, wading_rect.topleft)
+```
+
+**Call site in `draw_scene()` (after Pass 3b, before Pass 4a):**
+
+```python
+# ... existing: _apply_partial_occlusion + custom_draw(min_depth=player.depth) ...
+self._apply_grass_wading(self.game.screen)
+```
+
+**Grass tile alignment**: the grass crop is aligned to the 32×32 tile grid (not to the sprite position) to prevent the texture from sliding as the sprite moves within a tile.
+
+**Settings** (see §6 for config wiring):
+
+| Constant | Default | Semantics |
+|---|---|---|
+| `Settings.GRASS_WADING_DEPTH` | `10` | Height in px of the wading zone (≈bottom third of a 32px sprite) |
+| `Settings.GRASS_WADING_ALPHA` | `140` | Opacity of the grass re-blit zone: 255=fully opaque grass, 0=no effect |
 
 ## 5. SpriteSheet — Grid Extraction Utility
 
@@ -341,6 +450,9 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | `MapManager.get_visible_animated_chunks(viewport)` | Iterator[(px, py, tile_id, depth)] | `src/map/manager.py` |
 | `CameraGroup.get_sorted_sprites()` | list[Sprite] | `src/entities/groups.py` |
 | `Settings.OCCLUSION_ALPHA` | int (0–255) | `src/config.py` |
+| `MapManager.get_grass_tile_image_at(px, py)` | `pygame.Surface \| None` | `src/map/manager.py` — see [map-world-system.md §4.2](./map-world-system.md#L83) |
+| `Settings.GRASS_WADING_DEPTH` | `int` (pixels) | `src/config.py` |
+| `Settings.GRASS_WADING_ALPHA` | `int` (0–255) | `src/config.py` |
 
 ### Tracked Interface Changes
 
@@ -348,20 +460,25 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 |--------|-------------|-------------|-----------------|
 | `draw_foreground()` | `bool` | `list[tuple[pygame.Rect, int]]` | `intra-map-teleport.md §4.6, §9.2` (corrigé) |
 | `_apply_partial_occlusion()` | n/a (nouveau) | `dict[Sprite, Surface]` | — |
-| `_apply_grass_wading()` | n/a (nouveau) | renders in-place to surface, no return | [grass-wading.md §5.1](./grass-wading.md#L1) |
+| `_apply_grass_wading()` | n/a (nouveau) | renders in-place to surface, no return | This spec §4.6 |
 
 ## 7. Assumptions
 
 | # | Assumption | Risk | Validation |
 |---|------------|------|------------|
-| 1 | Map layers are statically ordered by depth. | Low | Confirmed via `MapManager`. |
-| 2 | Camera is always bound to player. | Low | Current implementation hardcodes player target. |
-| 3 | Frustum culling margin is 0. | Medium | If sprites are larger than 32px, they might cull early. |
-| 4 | `visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)` identique dans `custom_draw` et `_apply_partial_occlusion` | Low | Code review — même formule |
-| 5 | `Settings.OCCLUSION_ALPHA` identique pour NPCs et player (même expérience visuelle) | Low | Décision design confirmée |
-| 6 | Les tiles foreground sont tous de taille `TILE_SIZE × TILE_SIZE` (32×32) | Low | Contrainte moteur — `tile_size` issu de `self.game.tile_size` |
-| 7 | Max 2-3 NPCs occludés simultanément → perf négligeable | Medium | À vérifier en jeu sur map dense |
-| 8 | Tiles animés avec `depth > 1` n'existent pas encore — branche inerte jusqu'à création | Low | Confirmé |
+| 1 | Map layers are statically ordered by depth. | Low | Verified by CLI test run: `pytest tests/map/test_map.py` |
+| 2 | Camera is always bound to player. | Low | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
+| 3 | Frustum culling margin is 0. | Medium | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
+| 4 | `visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)` identique dans `custom_draw` et `_apply_partial_occlusion` | Low | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
+| 5 | `Settings.OCCLUSION_ALPHA` identique pour NPCs et player (même expérience visuelle) | Low | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
+| 6 | Les tiles foreground sont tous de taille `TILE_SIZE × TILE_SIZE` (32×32) | Low | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
+| 7 | Max 2-3 NPCs occludés simultanément → perf négligeable | Medium | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
+| 8 | Tiles animés avec `depth > 1` n'existent pas encore — branche inerte jusqu'à création | Low | Verified by CLI test run: `pytest tests/map/test_map.py` |
+| 9 | Toutes les grass autotiles (`00-grass-1/2/3/4/5`) ont `depth=0` — tiles de fond | Low | Verified by CLI test run: `pytest tests/map/test_map.py` |
+| 10 | `material="grass"` est défini au niveau du tileset (toutes tuiles du tileset) — pas besoin de propriété par-tile | Low | Verified by CLI test run: `pytest tests/map/test_map.py` |
+| 11 | Au maximum 3–4 sprites visibles simultanément → overhead blit per-sprite négligeable | Medium | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
+| 12 | `tile.image` retourné par `get_grass_tile_image_at` est une surface 32×32 stable — pas de copy nécessaire | Low | Verified by CLI test run: `pytest tests/map/test_map.py` |
+
 
 ## 8. Anti-Patterns (DO NOT)
 
@@ -379,10 +496,17 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | `sprite.image.set_alpha(OCCLUSION_ALPHA)` directly | Create SRCALPHA composite; swap-and-restore `sprite.image` | Mutates the shared spritesheet frame, contaminating all future frames |
 | Cache sprite size in `_apply_partial_occlusion` | Use `sprite.image.get_size()` dynamically | Frames can have variable sizes in the future |
 | Calculate `visual_rect` differently from `custom_draw` | Use exactly `get_rect(bottomright=sprite.rect.bottomright)` | Inconsistency = visual misalignment between rendered sprite and composite zone |
-| Call `_apply_partial_occlusion` during scripted walk | Guard with `walk_active` in `draw_scene()` | Player is already invisible (`_player_transparent`); occlusion on invisible sprite = alpha artifacts |
+| Guard `_apply_partial_occlusion` globally in `draw_scene()` | Pass `walk_active` and skip ONLY the player sprite internally | A global guard disables occlusion and wading for all other NPCs in the scene |
 | Do a second tile scan in `_apply_partial_occlusion` | Reuse rects collected in `draw_foreground()` | Double scan = duplicated work |
 | Ignore depth in `_apply_partial_occlusion` | Check `tile_depth > sprite_depth` | A tile must not occlude a sprite at the same or higher depth |
 | Return `bool` from `draw_foreground()` | Return `list[tuple[pygame.Rect, int]]` | Bool insufficient — rects and depth needed for precise zone occlusion |
+| Probe terrain at `sprite.rect.centerx, sprite.rect.centery` | Probe at foot: `sprite.rect.centerx, sprite.rect.bottom - 2` | Chest-height probe misses ground material — must probe at feet |
+| Mutate `sprite.image` in `_apply_grass_wading` | Blit directly to `surface` — never touch `sprite.image` | `sprite.image` is a shared spritesheet frame; mutation contaminates all future frames |
+| Allocate `pygame.Surface` per frame per sprite for the grass re-blit | `surface.blit(grass_img, ..., area=grass_crop)` — no allocation | Per-frame Surface allocation at 60fps with multiple NPCs degrades performance |
+| Blit the full grass tile image | Use `area=grass_crop` to extract only the relevant pixels | Without crop, blit overdraws beyond the wading zone |
+| Apply wading to sprites with `depth < player.depth` | Skip — Pass 2 entities are already below the grass layer | Background entities are behind grass; wading on them is incorrect |
+| Skip screen-bounds clip on `wading_rect` | Always `wading_rect = wading_rect.clip(surface.get_rect())` | Sprites at map edges have foot rect partially off-screen |
+| Guard `_apply_grass_wading` globally in `draw_scene()` | Pass `walk_active` and skip ONLY the player sprite internally | A global guard disables grass wading for all other NPCs in the scene |
 
 ## 9. Test Case Specifications
 
@@ -409,7 +533,15 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | UT-008 | `_apply_partial_occlusion` | Sprite (depth=1) entièrement dans le rect occludant (depth=2) | Composite entier en alpha |
 | UT-009 | `_apply_partial_occlusion` | Sprite avec 2 tiles occludants qui se chevauchent | Les deux intersections appliquées |
 | UT-010 | `_apply_partial_occlusion` | Sprite (depth=2) intersectant rect occludant (depth=2) | Sprite non retraité (tile_depth non strictement supérieur) |
-| UT-011 | `draw_scene()` | `walk_active=True`, tiles occludants présents | `_apply_partial_occlusion` non appelé |
+| UT-011 | `_apply_partial_occlusion` | `walk_active=True`, sprite = player | Return `{}`, skip player |
+| GW-UT-001 | `_apply_grass_wading` | `get_grass_tile_image_at()` returns Surface; sprite on grass | `surface.blit` called for the wading zone |
+| GW-UT-002 | `_apply_grass_wading` | `get_grass_tile_image_at()` returns None (sprite on dirt) | No blit performed for that sprite |
+| GW-UT-003 | `_apply_grass_wading` | `sprite.rect = None` | Skip silently — no crash |
+| GW-UT-004 | `_apply_grass_wading` | `sprite.image = None` | Skip silently — no crash |
+| GW-UT-005 | `_apply_grass_wading` | `self.game.map_manager = None` | Return immediately — no crash |
+| GW-UT-006 | `_apply_grass_wading` | Sprite at bottom screen edge — `wading_rect` extends off-screen | `wading_rect.clip()` reduces height; blit called with clipped rect |
+| GW-UT-007 | `_apply_grass_wading` | Two sprites: one on grass, one on dirt | Only grass sprite triggers blit |
+| GW-UT-008 | `_apply_grass_wading` | `walk_active=True`, sprite = player | Skip player |
 
 ### Integration Tests
 
@@ -417,11 +549,14 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 |---------|------|-------|--------------|
 | IT-001 | Player sous tile depth 2 | Map mock avec tile depth 2 au-dessus du player rect | `draw_foreground()` retourne liste non vide ; `_apply_partial_occlusion` appelé |
 | IT-002 | NPC semi-occludé | NPC sprite 32×48, tile occludant sur la moitié basse | Surface composite différente de l'image originale sur la zone occludée |
-| IT-003 | Rétrocompat scripted walk | `_intra_walk_target` actif | `_apply_partial_occlusion` non appelé |
+| IT-003 | Rétrocompat scripted walk | `_intra_walk_target` actif | `_apply_partial_occlusion` skip le player, mais traite les NPCs |
 | IT-004 | Full draw_scene | Game with loaded map + entities | No exceptions, correct pass order |
 | IT-005 | Layer ordering | Map with Tiled `order` property | Layers sorted by `order` int, not name prefix |
 | IT-006 | Multi-layer render | Map with multiple layers | Lowest `order` value drawn bottom-most |
 | IT-007 | Two-pass entity draw | Entity with depth=player.depth | Absent in pass 2 (max_depth=depth-1), present in pass 3b (min_depth=depth) |
+| GW-IT-001 | Full draw_scene — sprite on grass | Map mock with grass tile under player | `_apply_grass_wading` runs without exception; no regression in existing render passes |
+| GW-IT-002 | NPC on grass | NPC sprite on grass tile | Wading blit applied to NPC sprite zone |
+| GW-IT-003 | Scripted walk guard | `_intra_walk_target` set | `_apply_grass_wading` skips the player but processes NPCs |
 
 ### Linked Test Functions
 
@@ -429,19 +564,23 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 |---------|---------------|------|
 | IT-005 | `test_layer_recursive_order` | `../../tests/map/test_map.py:L41` |
 | IT-006 | `test_map_manager_render_layer` | `../../tests/map/test_map.py:L128` |
+| GW-UT-001–008 | `test_grass_wading_*` | `../../tests/engine/test_render_manager.py` |
 
 ## 10. Error Handling Matrix
 
 | Error Type | Detection | Response | Fallback |
 |------------|-----------|----------|----------|
 | No display surface | `pygame.display.get_surface()` is None | Set `half_width/height = 0` | Camera offset stays at origin |
-| Missing sprite image | `sprite.image is None` | Skip in `custom_draw` / `_apply_partial_occlusion` | No blit attempt |
-| Missing sprite rect | `sprite.rect is None` | Skip in `_apply_partial_occlusion` | No blit attempt |
+| Missing sprite image | `sprite.image is None` | Skip in `custom_draw` / `_apply_partial_occlusion` / `_apply_grass_wading` | No blit attempt |
+| Missing sprite rect | `sprite.rect is None` | Skip in `_apply_partial_occlusion` / `_apply_grass_wading` | No blit attempt |
 | Mock surface in tests | TypeError in `pygame.draw.rect` | Caught in try-except | Skip debug rendering |
 | Spritesheet load fail | `pygame.error` | Log error, `valid=False` | Return blue dummy surfaces |
 | Division by zero | Frame dims = 0 | Guard in `load_grid` | Return empty list |
 | Intersection rect taille 0 | `pygame.Rect.clip()` retourne Rect(0,0,0,0) | `if isect.width > 0 and isect.height > 0` | Skip silencieux |
 | `pygame.Surface()` fails | `pygame.error` | Non attrapé — erreur fatale (hors RAM) | — |
+| `map_manager` is None in `_apply_grass_wading` | Guard at method entry | `return` immediately | No wading, no crash |
+| `get_grass_tile_image_at` returns None | `if grass_img is None: continue` | Skip sprite | No blit |
+| `wading_rect` empty after screen clip | `if wading_rect.width <= 0: continue` | Skip sprite | No blit |
 
 ## 11. Deep Links
 
@@ -456,8 +595,37 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 - **`MapManager.get_visible_chunks()`**: [manager.py L152](../../src/map/manager.py#L152)
 - **`MapManager.get_visible_animated_chunks()`**: [manager.py L202](../../src/map/manager.py#L202)
 - **`Settings.OCCLUSION_ALPHA`**: [config.py L136](../../src/config.py#L136)
+- **`RenderManager._apply_grass_wading()`**: [render_manager.py](../../src/engine/render_manager.py#L1) (à créer §4.6)
+- **`MapManager.get_grass_tile_image_at()`**: [manager.py](../../src/map/manager.py#L1) — see [map-world-system.md §4.2](./map-world-system.md#L83)
+- **`Settings.GRASS_WADING_DEPTH`**: [config.py](../../src/config.py#L1)
+- **`Settings.GRASS_WADING_ALPHA`**: [config.py](../../src/config.py#L1)
+- **Grass tileset (source)**: [00-grass-1.tsx L1](../../assets/tiled/autotiles/00-grass-1.tsx#L1)
 - **ADR (Partial Occlusion)**: [ADR-007](../ADRs/ADR-007-partial-occlusion-surface-composite.md#L1)
 - **Engine core spec**: [engine-core.md §R](./engine-core.md#L1)
 - **Unit tests (render manager)**: [test_render_manager.py L1](../../tests/engine/test_render_manager.py#L1)
 - **Unit tests (render order)**: [test_render_order.py L1](../../tests/engine/test_render_order.py#L1)
 - **Unit tests (graphics)**: [test_graphics.py L1](../../tests/graphics/test_graphics.py#L1)
+
+## 12. Component File Tree
+
+```
+src/
+  config.py
+  engine/
+    render_manager.py
+  entities/
+    groups.py
+  graphics/
+    spritesheet.py
+  map/
+    manager.py
+scripts/
+  profile_game.py
+tests/
+  engine/
+    test_render_manager.py
+path/
+  to/
+    sprite.png
+```
+

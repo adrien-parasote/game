@@ -1,7 +1,8 @@
 """Tests for inventory_system.py missing branches (lines 122, 142)."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from src.engine.inventory_system import Inventory, Item
 

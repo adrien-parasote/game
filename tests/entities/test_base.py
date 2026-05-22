@@ -49,6 +49,32 @@ class TestBaseEntityCoverage:
         result = entity.interact(MagicMock())
         assert result is None
 
+    def test_start_move_direction_down_with_game(self):
+        """Ligne 81 : direction.y > 0 → requested_dir = 'down' avec game mock."""
+        entity = BaseEntity(pos=(160, 160))
+        entity.speed = 200
+        mock_game = MagicMock()
+        mock_game.map_manager.get_direction_flags.return_value = ["any"]
+        mock_game.map_manager.width = 100
+        mock_game.map_manager.height = 100
+        entity.game = mock_game
+        entity.direction = pygame.math.Vector2(0, 1)  # direction down
+        entity.start_move()
+        assert entity.is_moving
+
+    def test_start_move_direction_up_allowed(self):
+        """Ligne 83 : direction.y < 0 → requested_dir = 'up' dans start_move."""
+        entity = BaseEntity(pos=(160, 160))
+        entity.speed = 200
+        mock_game = MagicMock()
+        mock_game.map_manager.get_direction_flags.return_value = ["any"]
+        mock_game.map_manager.width = 100
+        mock_game.map_manager.height = 100
+        entity.game = mock_game
+        entity.direction = pygame.math.Vector2(0, -1)  # direction up
+        entity.start_move()
+        assert entity.is_moving
+
     def test_update_calls_move(self):
         """L79: update() delegates to move()."""
         entity = BaseEntity(pos=(100, 100))
@@ -65,6 +91,20 @@ class TestBaseEntityCoverage:
 
 
 class TestPlayerCoverage:
+    def test_input_move_up(self):
+        """Lignes 67-70 : pressing MOVE_UP sets direction.y=-1 et state='up'."""
+        player = Player(pos=(100, 100))
+        keys = {
+            Settings.MOVE_UP: True,
+            Settings.MOVE_DOWN: False,
+            Settings.MOVE_LEFT: False,
+            Settings.MOVE_RIGHT: False,
+        }
+        with patch("pygame.key.get_pressed", return_value=keys):
+            player.input()
+        assert player.direction.y == -1
+        assert player.current_state == "up"
+
     def test_input_move_down(self):
         """L53-56: pressing MOVE_DOWN sets direction and state."""
         player = Player(pos=(100, 100))

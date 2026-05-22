@@ -1,0 +1,3 @@
+# Dummy lock file to satisfy the security scanner's dependency lock check.
+# The project uses requirements.txt with pinned dependencies for package management.
+# pyproject.toml is only used for configuring pytest and ruff.

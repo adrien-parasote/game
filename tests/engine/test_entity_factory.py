@@ -1,9 +1,9 @@
 """Tests for entity_factory.py missing branch (line 258: saved quantity restore)."""
 
-import pytest
 from unittest.mock import MagicMock, patch
 
 import pygame
+import pytest
 
 
 def _make_game():

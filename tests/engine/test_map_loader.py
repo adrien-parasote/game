@@ -55,8 +55,8 @@ def test_save_interactive_states_persists_is_on():
 
     loader._save_interactive_states()
 
-    game.world_state.set.assert_any_call("map::chest_1", {"is_on": False})
-    game.world_state.set.assert_any_call("map::lever_1", {"is_on": True})
+    assert call("map::chest_1", {"is_on": False}) in game.world_state.set.call_args_list
+    assert call("map::lever_1", {"is_on": True}) in game.world_state.set.call_args_list
 
 
 # ---------------------------------------------------------------------------
@@ -74,7 +74,7 @@ def test_save_interactive_states_skips_entities_without_key():
 
     loader._save_interactive_states()
 
-    game.world_state.set.assert_not_called()
+    assert game.world_state.set.call_count == 0
 
 
 # ---------------------------------------------------------------------------
@@ -92,7 +92,8 @@ def test_save_interactive_states_includes_light_control():
 
     loader._save_interactive_states()
 
-    game.world_state.set.assert_called_once_with(
+    assert game.world_state.set.call_count == 1
+    assert game.world_state.set.call_args == call(
         "map::lamp_5", {"is_on": True, "light_control": "forced_on"}
     )
 
@@ -117,7 +118,8 @@ def test_save_npc_states_not_broken_by_interactive_save():
 
     loader._save_npc_states()
 
-    game.world_state.set.assert_called_once_with(
+    assert game.world_state.set.call_count == 1
+    assert game.world_state.set.call_args == call(
         "map::npc_1", {"pos": (128.0, 256.0), "facing": "right"}
     )
 

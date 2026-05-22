@@ -2,9 +2,10 @@
 chest_transfer.py:13,32, chest.py:114,203-204, hud.py:47-49."""
 
 import os
+from unittest.mock import MagicMock, patch
+
 import pygame
 import pytest
-from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
@@ -86,6 +87,7 @@ class TestChestTransferGuards:
         ui._player = MagicMock()
         # Ne doit pas lever
         ui._transfer_chest_to_inventory()
+        assert ui._player.inventory.add_item.call_count == 0
 
     def test_transfer_inv_to_chest_returns_early_when_no_entity(self):
         """Ligne 32 : _transfer_inventory_to_chest retourne si _chest_entity est None."""
@@ -95,6 +97,7 @@ class TestChestTransferGuards:
         ui._chest_entity = None
         ui._player = MagicMock()
         ui._transfer_inventory_to_chest()
+        assert ui._player.inventory.slots.copy.call_count == 0
 
 
 # ---------------------------------------------------------------------------
@@ -126,7 +129,7 @@ class TestChestDrawGuard:
 class TestChestScrollLeft:
     def test_scroll_left_decrements_inv_offset(self):
         """Lignes 203-204 : _scroll_left() décrémente _inv_offset quand possible."""
-        from src.ui.chest import ChestUI, _INV_SLOTS_VISIBLE
+        from src.ui.chest import _INV_SLOTS_VISIBLE, ChestUI
 
         ui = ChestUI()
         player = MagicMock()

@@ -94,3 +94,24 @@ class TestDrawParticles:
         )
         assert painted, "Expected particle to paint at least one pixel near (10,10) but surface remained black"
 
+
+class TestUpdateParticlesLine22:
+    def test_spawns_zero_fallback_forces_one_spawn(self):
+        """Ligne 22 : quand expected_spawns < 1 ET random < 0.3, spawns est forcé à 1."""
+        from unittest.mock import patch as _patch
+        ent = _make_mixin(is_on=True)
+        ent.particle_count = 5
+        ent.particles_list = []
+
+        # dt très petit → expected_spawns << 1 → int(expected_spawns)==0
+        # Appels random.random() dans l'ordre :
+        #   ligne 19: 0.99 >= ~0.003 → pas d'incrément
+        #   ligne 21: 0.1 < 0.3 → spawns = 1
+        #   ligne 36: 0.5 < 0.9 → size = 1
+        random_values = iter([0.99, 0.1, 0.5])
+        with _patch("src.entities.interactive_particles.random.random", side_effect=lambda: next(random_values)):
+            with _patch("src.entities.interactive_particles.random.uniform", return_value=1.0):
+                InteractiveParticleMixin._update_particles(ent, dt=0.001)
+
+        # Exactement 1 particule spawnée via la branche ligne 22
+        assert len(ent.particles_list) == 1
