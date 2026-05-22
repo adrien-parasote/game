@@ -102,6 +102,7 @@ def test_render_manager_draw_foreground_occlusion():
 
     game.map_manager.tiles = {1: mock_tile_1, 2: mock_tile_2}
     game.anim_map_manager = None
+    game._intra_walk_target = None  # no scripted walk — occlusion must be active
 
     game.visible_sprites.offset = pygame.math.Vector2(0, 0)
     game.screen = MagicMock()
@@ -144,6 +145,7 @@ def test_render_manager_draw_scene_occlusion():
     game.player.image = pygame.Surface((32, 32), pygame.SRCALPHA)
     game.player.image.set_alpha(255)
     game.player.depth = 1
+    game._intra_walk_target = None  # no scripted walk — occlusion must apply
 
     rm = RenderManager(game)
 

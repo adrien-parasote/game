@@ -57,6 +57,10 @@ class RenderManager:
         Applies occluded image when the player overlaps a depth > player.depth tile.
         Returns:
             bool: True if any tile is actively occluding the player, False otherwise.
+
+        Note: During intra-map scripted walk (_intra_walk_target is set), occlusion is
+        skipped entirely — the player is invisible, so making tiles transparent would
+        create a visible artifact (tiles flickering alpha as the player rect moves).
         """
         player_occluded = False
         cam_offset = self.game.visible_sprites.offset
@@ -66,6 +70,10 @@ class RenderManager:
             self._screen_rect.width,
             self._screen_rect.height,
         )
+
+        # During scripted walk the player is hidden — skip occlusion to prevent
+        # foreground tiles from flickering alpha as the invisible player rect moves.
+        walk_active = getattr(self.game, "_intra_walk_target", None) is not None
 
         # Use physical hitbox for occlusion detection — visual rect extends upward and
         # would produce lag when the player exits a tile area (top of sprite still overlaps)
@@ -83,7 +91,7 @@ class RenderManager:
             tile_data = tiles[tile_id]
             screen_pos = (px + cam_offset.x, py + cam_offset.y)
 
-            if depth > player_depth:
+            if not walk_active and depth > player_depth:
                 # Depth-occlusion: use semi-transparent image when player overlaps
                 self._tile_rect.topleft = screen_pos
                 if player_screen_rect.colliderect(self._tile_rect):
@@ -92,7 +100,7 @@ class RenderManager:
                 else:
                     normal_blits.append((tile_data.image, screen_pos))
             else:
-                # Foreground-order layer tile with depth <= player: no occlusion needed
+                # Walk active OR foreground-order layer tile with depth <= player: no occlusion
                 normal_blits.append((tile_data.image, screen_pos))
 
         if normal_blits:
@@ -126,9 +134,12 @@ class RenderManager:
 
         is_occluded = self.draw_foreground()
 
-        # Apply occlusion transparency to the player if they are occluded by foreground
+        # Apply occlusion transparency to the player if they are occluded by foreground.
+        # Guarded by walk check: during scripted walk the player is already invisible
+        # (_player_transparent), so set_alpha must not be called (TC-RENDER-003).
+        walk_active = getattr(self.game, "_intra_walk_target", None) is not None
         original_alpha = None
-        if is_occluded and self.game.player.image:
+        if not walk_active and is_occluded and self.game.player.image:
             original_alpha = self.game.player.image.get_alpha()
             if original_alpha is None:
                 original_alpha = 255
