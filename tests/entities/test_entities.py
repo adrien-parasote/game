@@ -109,7 +109,7 @@ def test_player_footstep_audio(mock_spritesheet):
         player._update_animation(0.02)
 
     player.audio_manager.play_sfx.assert_called_with(
-        "04-footstep_stone", source_id="player", volume_multiplier=0.3
+        "04-footstep_stone", source_id="player", volume_multiplier=0.15
     )
 
     # Passing frame 2 shouldn't trigger
@@ -122,7 +122,7 @@ def test_player_footstep_audio(mock_spritesheet):
     player.frame_index = 2.9
     player._update_animation(0.02)
     player.audio_manager.play_sfx.assert_called_with(
-        "04-footstep_stone", source_id="player", volume_multiplier=0.3
+        "04-footstep_stone", source_id="player", volume_multiplier=0.15
     )
 
     # If no material found, fallback to "04-footstep"
@@ -131,7 +131,7 @@ def test_player_footstep_audio(mock_spritesheet):
     player.frame_index = 0.9
     player._update_animation(0.02)
     player.audio_manager.play_sfx.assert_called_with(
-        "04-footstep", source_id="player", volume_multiplier=0.3
+        "04-footstep", source_id="player", volume_multiplier=0.15
     )
 
 
