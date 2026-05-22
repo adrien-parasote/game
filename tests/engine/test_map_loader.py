@@ -150,6 +150,27 @@ def test_clear_groups_empties_walkable_override_entities():
     assert len(game.walkable_override_entities) == 0
 
 
-# assert True (legacy bypass)
+class TestResolveSpawnById:
+    def test_resolve_spawn_by_id_skips_non_spawn_entities(self):
+        """Ligne 215 : entité sans is_spawn → continue (non-spawn skippé)."""
+        game = MagicMock()
+        game.tile_size = 32
+        game.map_manager._entities = [
+            {"type": "random_entity", "x": 100, "y": 200, "properties": {}},  # non-spawn
+            {"type": "14-spawn_point", "x": 64, "y": 64, "properties": {"spawn_id": "entrance"}},
+        ]
+        loader = MapLoader(game)
+        result = loader.resolve_spawn_by_id("entrance")
+        assert result == (64 + 16, 64 + 16)  # tile_size // 2 = 16
 
-# assert True (legacy bypass)
+    def test_resolve_spawn_by_id_returns_none_when_not_found(self):
+        """resolve_spawn_by_id retourne None si spawn_id non trouvé."""
+        game = MagicMock()
+        game.tile_size = 32
+        game._current_map_name = "test.tmj"
+        game.map_manager._entities = [
+            {"type": "14-spawn_point", "x": 64, "y": 64, "properties": {"spawn_id": "other"}},
+        ]
+        loader = MapLoader(game)
+        result = loader.resolve_spawn_by_id("missing_spawn")
+        assert result is None

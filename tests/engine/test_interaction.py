@@ -765,3 +765,18 @@ class TestTriggerOnlyGuard:
 
         im._check_proximity_emotes()
         game.player.playerEmote.assert_not_called()
+
+
+class TestIsObjectInteractableFalse:
+    def test_returns_false_when_out_of_range_and_no_special_flags(self):
+        """Ligne 115 : sq_dist >= _RANGE_SQ_45 ET pas passable/activate_from_anywhere → False."""
+        game = MagicMock()
+        im = InteractionManager(game)
+        obj = MagicMock()
+        obj.pos = pygame.math.Vector2(1000, 1000)  # très loin
+        obj.trigger_only = False
+        obj.is_passable = False
+        obj.activate_from_anywhere = False
+        p_pos = pygame.math.Vector2(0, 0)
+        result = im._is_object_interactable(obj, p_pos, "down")
+        assert result is False

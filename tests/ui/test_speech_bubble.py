@@ -209,5 +209,45 @@ class TestSpeechBubbleNamePlate(unittest.TestCase):
             self.assertGreater(name_plate_surf.get_width(), 0)
 
 
+class TestSpeechBubbleMissingBranches(unittest.TestCase):
+    @staticmethod
+    def _make_bubble_no_font():
+        """SpeechBubble sans font, avec mock qui gère name_plate."""
+        def mock_load(path):
+            if "23-bubble_name" in path:
+                return pygame.Surface((96, 64))
+            return pygame.Surface((32, 32))
+
+        with mock.patch("pygame.image.load", side_effect=mock_load):
+            return SpeechBubble()
+
+    def test_wrap_text_raises_when_font_not_set(self):
+        """Ligne 93 : _wrap_text() RuntimeError quand font=None."""
+        bubble = self._make_bubble_no_font()
+        with self.assertRaises(RuntimeError):
+            bubble._wrap_text("Hello world")
+
+    def test_wrap_text_returns_text_when_inner_width_zero(self):
+        """Ligne 97 : inner_max_width <= 0 → [text] retourné directement."""
+        bubble = self._make_bubble_no_font()
+        bubble.set_font(_MockFont())  # type: ignore
+        bubble.max_width_px = 1
+        bubble.pad_x = 10
+        result = bubble._wrap_text("hello world")
+        self.assertEqual(result, ["hello world"])
+
+    def test_get_total_pages_returns_one_without_font(self):
+        """Ligne 282 : get_total_pages() retourne 1 si font non défini."""
+        bubble = self._make_bubble_no_font()
+        result = bubble.get_total_pages("Some long text here")
+        self.assertEqual(result, 1)
+
+    def test_load_tiles_raises_file_not_found(self):
+        """Ligne 69 : FileNotFoundError quand un asset PNG est manquant."""
+        with mock.patch("src.ui.speech_bubble.os.path.exists", return_value=False):
+            with self.assertRaises(FileNotFoundError):
+                SpeechBubble()
+
+
 if __name__ == "__main__":
     unittest.main()

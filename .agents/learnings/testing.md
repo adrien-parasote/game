@@ -952,3 +952,56 @@ python3 .agents/skills/verification-loop/scripts/verify.py .
 **Evidence :** Session `trigger_only` (2026-05-18) — P10 FAIL en HARDEN. Lock créé rétroactivement via `tdd_check.py --lock`. P10 PASS après. Rework : 0 code, 1 commande manquante.
 
 *Last updated: 2026-05-18 — A-TEST-014 depuis session trigger_only TDD (P10 FAIL par lock tardif).*
+
+---
+
+### L-TEST-017 · 2026-05-22 · U · Minor Rework
+**Mock `side_effect` par chemin pour assets multi-surface de taille différente**
+
+Quand un asset loader pygame appelle plusieurs fois `pygame.image.load()` avec des besoins de taille distincts (ex: `SpeechBubble` a besoin d'une `name_plate` de 96×64 et d'autres surfaces 32×32), un seul `return_value` produit tous les `blit()` sur des surfaces identiques — provoquant des `ValueError: subsurface outside parent surface`.
+
+```python
+# ❌ Toutes les surfaces identiques → ValueError sur subsurface
+with patch("pygame.image.load") as mock_load:
+    mock_load.return_value = pygame.Surface((32, 32))
+    sb = SpeechBubble(...)  # → ValueError : name_plate trop petite
+
+# ✅ side_effect par chemin → taille correcte par asset
+with patch("pygame.image.load") as mock_load:
+    def _load_by_path(path):
+        if "name_plate" in str(path):
+            return pygame.Surface((96, 64))
+        return pygame.Surface((32, 32))
+    mock_load.side_effect = _load_by_path
+    sb = SpeechBubble(...)  # → OK
+```
+
+**Règle :** Pour tout composant UI pygame chargeant ≥2 assets de tailles différentes, utiliser un `side_effect` lambda/fonction qui dispatch par nom de fichier (`path`), pas un `return_value` uniforme.
+
+**Evidence :** `tests/ui/test_speech_bubble.py` — 3 rounds de correction avant adoption du pattern. Passage à 100% coverage en 1 iteration après.
+
+---
+
+### A-TEST-015 · 2026-05-22 · U · Minor Rework
+**Appeler une méthode privée de mixin dans un test sans vérifier sa signature exacte**
+
+Supposer qu'une méthode privée de mixin s'appelle `_compute_inv_panel` alors que son nom réel est `_compute_inv_layout` (ou vice-versa), puis passer les mauvais arguments positionnels, cause un `TypeError` (trop peu/trop d'arguments) — difficile à diagnostiquer car l'erreur pointe vers le mock, pas vers le nom de méthode.
+
+```bash
+# ❌ Supposer le nom et les arguments sans vérification
+ui._compute_inv_layout(screen_w=1280, screen_h=720, arrow_scale=1.0)
+# → TypeError: _compute_inv_layout() missing 2 required positional arguments: 'slot_size', 'step'
+
+# ✅ Vérifier le nom et la signature AVANT d'écrire le test
+grep -n "def " src/ui/chest_layout.py
+# → def _compute_inv_layout(self, slot_size, step, screen_w, screen_h, arrow_scale)
+ui._compute_inv_layout(slot_size=49, step=56, screen_w=1280, screen_h=720, arrow_scale=1.0)
+```
+
+**Règle :** Avant d'appeler une méthode privée (`_method`) dans un test, toujours exécuter `grep -n "def " src/<module>.py` pour confirmer le nom exact et la liste des paramètres positionnels. Ne jamais deviner la signature d'une méthode privée.
+
+**Intégration dans Pre-Edit Investigation Gate :** Ajouter comme question #5 pour la création de tests : « Quelle est la signature exacte de la méthode privée ciblée ? → `grep -n "def <name>" src/<file>` ».
+
+**Evidence :** `tests/ui/test_chest_coverage_gaps.py` — 2 iterations gaspillées sur `chest_layout.py:148` (mauvais nom puis mauvaise arité). Corrigé en 1 iteration après `grep -n "def "`.
+
+*Last updated: 2026-05-22 — L-TEST-017, A-TEST-015 depuis session coverage gap (push 96% → fichiers 100% individuels).*
