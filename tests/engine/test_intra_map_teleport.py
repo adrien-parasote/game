@@ -450,7 +450,6 @@ def test_spritesheet_frames_not_contaminated_after_walk(mock_load):
 
     # Simulate arrival
     game._intra_walk_target = None
-    game._walk_hidden = False
 
     # Verify frames are unchanged
     for i, frame in enumerate(game.player.frames):

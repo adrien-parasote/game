@@ -137,12 +137,22 @@ def intra_map_teleport(self, target_spawn_id: str, transition_type: str) -> None
 
 **Two new private methods + one state field on `Game`.**
 
-#### 4.4.1 State field (add to `_init_groups()`)
+#### 4.4.1 State fields (add to `_init_groups()`)
 
 ```python
 # Intra-map walk state — None when inactive
 self._intra_walk_target: pygame.math.Vector2 | None = None
+# Lazy-initialized on first scripted walk (player must exist).
+# Pre-built SRCALPHA surface used to hide the player during walk.
+# Swapped into player.image each frame — avoids contaminating shared spritesheet frames.
+# See _start_intra_walk() for creation.
+self._player_transparent: pygame.Surface | None = None
 ```
+
+**Rules:**
+- `_player_transparent` is created once on first `_start_intra_walk()` call, never before (player must exist).
+- It is sized to `player.image.get_size()` and filled `(0, 0, 0, 0)` (fully transparent SRCALPHA).
+- Reused across all subsequent scripted walks — no per-walk allocation.
 
 #### 4.4.2 `_start_intra_walk()`
 
@@ -152,7 +162,16 @@ def _start_intra_walk(self, target: pygame.math.Vector2) -> None:
 
     Initiates physics target, triggers is_moving state, and computes initial direction/facing.
     Input is blocked for the duration (handled in _update_core_state).
+    Player sprite is hidden during walk (player.image swapped to _player_transparent each frame).
     """
+    # Lazy-init transparent surface (player must exist, sized to its image).
+    # Created once and reused — never re-allocated on subsequent walks.
+    if self._player_transparent is None:
+        self._player_transparent = pygame.Surface(
+            self.player.image.get_size(), pygame.SRCALPHA
+        )
+        self._player_transparent.fill((0, 0, 0, 0))
+
     self._intra_walk_target = target
     self.player.target_pos = target
     self.player.is_moving = True
@@ -206,10 +225,15 @@ The walk state intercepts the normal update path **before** `player.input()`:
         self.interaction_manager.update(dt)
         
         if self._intra_walk_target is not None:
-            # INTERCEPT: If walking via teleport, override standard loop
+            # INTERCEPT: scripted walk — override standard loop
             self._tick_intra_walk(dt)
             self.visible_sprites.update(dt)
-            # Skip player input, interact, and teleporter checks
+            # Swap player.image to transparent surface so player is invisible.
+            # Done AFTER visible_sprites.update() so _update_animation doesn't override it.
+            # Only swap when walk is still active (not just arrived this frame).
+            if self._intra_walk_target is not None:
+                self.player.image = self._player_transparent
+            # Skip player input, interactions, and teleporter checks
         else:
             self.player.input()
             self.interaction_manager.handle_interactions()
@@ -217,13 +241,48 @@ The walk state intercepts the normal update path **before** `player.input()`:
             self.visible_sprites.update(dt)
             self.interaction_manager.check_teleporters(was_moving)
             
-        # ... (Keep rest of existing _update_core_state: NPCs, interactives, ambient audio)
+        # ... (Keep rest: NPCs, interactives, ambient audio)
 ```
 
 **Rules:**
-- `self.visible_sprites.update(dt)` is kept so sprite animations continue during walk.
+- `self.visible_sprites.update(dt)` runs in both paths so sprite animations continue.
 - `check_teleporters()` is **not** called during walk (prevents re-trigger mid-walk).
-- `interaction_manager.update(dt)` is kept for cooldown tick only.
+- `interaction_manager.update(dt)` runs always (cooldown tick).
+- `player.image` is restored automatically next frame by `_update_animation()` when walk ends.
+
+---
+
+### 4.6 `render_manager.py` — Occlusion Guard During Walk
+
+**Location:** [`src/engine/render_manager.py`](../../src/engine/render_manager.py)
+
+**Problem:** During scripted walk the player sprite is hidden (`_player_transparent`). The occlusion system still ran, detecting `player.rect` overlap with foreground tiles and blitting `occluded_image` (semi-transparent tiles) — creating visible flickering artifacts.
+
+**Fix:** `draw_foreground()` checks `_intra_walk_target` and skips occlusion entirely when walk is active.
+
+```python
+# draw_foreground() — added guard
+walk_active = getattr(self.game, "_intra_walk_target", None) is not None
+
+if not walk_active and depth > player_depth:
+    # Normal occlusion path (tile goes semi-transparent over player)
+    ...
+else:
+    # Walk active: render tile normally — no occluded_image blit
+    normal_blits.append((tile_data.image, screen_pos))
+```
+
+`draw_scene()` adds a symmetric guard:
+```python
+walk_active = getattr(self.game, "_intra_walk_target", None) is not None
+if not walk_active and is_occluded and self.game.player.image:
+    self.game.player.image.set_alpha(Settings.OCCLUSION_ALPHA)
+```
+
+**Rules:**
+- `draw_foreground()` returns `False` when walk is active (no occlusion state).
+- `player.image.set_alpha(OCCLUSION_ALPHA)` is never called during walk (player is already `_player_transparent`).
+- Normal (non-walk) occlusion behavior is **unchanged** — regression TC-RENDER-002a.
 
 ---
 
@@ -280,6 +339,9 @@ The walk state intercepts the normal update path **before** `player.input()`:
 | Hardcode walk speed | Use `Settings.PLAYER_SPEED` | G3: walk speed = player normal speed |
 | Leave `player.is_moving = True` after walk ends | Set `is_moving = False` + `direction = (0,0)` | A-GAME-003: direction not cleared → retry loop |
 | Update `current_state` only at walk start | Update every frame in `_tick_intra_walk()` | G4: facing follows movement direction continuously |
+| Use `set_alpha(0)` on `player.image` to hide player | Swap `player.image = _player_transparent` | `set_alpha()` is a no-op on `convert_alpha()` surfaces; also contaminates shared spritesheet frames |
+| Let render_manager occlusion run during walk | Guard `draw_foreground()` with `walk_active` check | Invisible player rect still overlaps tiles → tiles go alpha → visible artifacts |
+| Create `_player_transparent` before player is created | Lazy-create in `_start_intra_walk()` | `player.image` does not exist during `_init_groups()` |
 
 ---
 
@@ -310,8 +372,19 @@ The walk state intercepts the normal update path **before** `player.input()`:
 | TC-008 | `test_tick_intra_walk_updates_facing_horizontal` | Walk left → `player.current_state == "left"` |
 | TC-009 | `test_tick_intra_walk_updates_facing_vertical` | Walk up → `player.current_state == "up"` |
 | TC-010 | `test_update_core_state_blocks_input_during_walk` | `_intra_walk_target` is set → `player.input()` not called |
+| TC-011 | `test_player_invisible_during_walk` | During walk, `player.image is game._player_transparent` and pixel alpha == 0 |
+| TC-012 | `test_spritesheet_frames_not_contaminated_after_walk` | After walk ends, all `player.frames` surfaces retain original alpha (no contamination) |
+| TC-013 | `test_player_visible_after_walk_arrival` | After `_tick_intra_walk` terminates, `player.image is not _player_transparent` |
 
-### 9.2 Integration Tests
+### 9.2 Render Tests — `tests/engine/test_render_order.py`
+
+| Test ID | Function | Description |
+|---------|----------|-------------|
+| TC-RENDER-002a | `test_occlusion_active_when_not_walking` | Regression: without walk, `occluded_image` IS used when player rect overlaps foreground tile |
+| TC-RENDER-002b | `test_occlusion_skipped_during_walk` | Walk active: `draw_foreground()` uses `tile_data.image` only, returns `False` — no tile alpha artifacts |
+| TC-RENDER-003 | `test_no_occlusion_alpha_applied_to_player_during_walk` | Walk active: `player.image.set_alpha(OCCLUSION_ALPHA)` must NOT be called |
+
+### 9.3 Integration Tests
 
 | Test ID | Function | Description |
 |---------|----------|-------------|
