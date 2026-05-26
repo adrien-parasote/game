@@ -6,17 +6,19 @@ A professional-grade, modular RPG engine built with **Python 3.12** and **Pygame
 
 - **Technical Excellence**: 10/10 AI-readiness score across 30+ technical specifications.
 - **Robust Architecture**: Layered design with structural governance via **Sentrux**.
+- **High Performance**: Optimized with frame-level caching, dirty-flag render batching, and surface pooling for flawless 60 FPS performance.
 - **Data-Driven**: Full **Tiled (TMX/TSX)** integration with support for custom properties and animated autotiles.
 - **Traceability**: Every feature is backed by specs, and every test is linked to its specification via `tc(id)` markers.
 
 ## 🛠️ Core Systems
 
-- **🎥 Camera & Rendering**: Smart camera with Y-sorted rendering and efficient tile batching.
+- **🎥 Camera & Rendering**: Smart camera with Y-sorted rendering, efficient tile batching, partial sprite occlusion, and transparent grass-wading effects.
 - **✨ Animated Autotiles**: Native support for frame-based animations parsed directly from Tiled assets.
-- **💡 Interactive Lighting**: Real-time lighting system with halo calibration and environmental blending.
-- **💬 Dialogue & NPCs**: Advanced NPC logic with speech bubbles and branching interaction states.
-- **📦 Inventory & Loot**: Data-driven inventory system with loot table support and persistent save states.
-- **🗺️ World System**: Seamless map transitions and interactive object handling.
+- **💡 Interactive Lighting**: Real-time lighting system with halo calibration, window beam overlays, and flicker mixins.
+- **🗺️ World & Navigation**: Seamless map loading, interactive chest UIs, and intra-map teleports with smooth walk transitions.
+- **🔊 Spatial Audio**: Adaptive sound manager with multi-channel fading and distance-based spatial panning.
+- **💬 Dialogue & NPCs**: Advanced NPC logic with speech bubbles, branching dialogue choices, and pathway patrol patterns.
+- **📦 Inventory & Save State**: Data-driven inventory systems, loot drops, and persistent slot saves with PNG screenshot thumbnails.
 
 ## 🚀 Getting Started
 
