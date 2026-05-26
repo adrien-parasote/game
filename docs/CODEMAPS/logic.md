@@ -1,4 +1,5 @@
-<!-- Generated: 2026-05-22 | Last doc-update: 2026-05-22 (F1-F4 perf) | Files scanned: 68 | Token estimate: ~1950 -->
+<!-- Generated: 2026-05-27 | Last doc-update: 2026-05-27 (Steps 1-11 remédiation) | Files scanned: 73 | Token estimate: ~2000 -->
+
 
 # Engine Logic Flow
 
@@ -93,7 +94,8 @@ sub_types: chest | lever | door | sign | animated_decor
 - **F1 LIVRÉ (commit 4a2e55e):** `_total_minutes` est un `@property` — setter appelle `_compute_world_time()`. Avant : 335 NamedTuple allocs/frame. Après : 1/frame.
 
 ## Rendering pipelines (Partial Occlusion & Grass Wading)
-`RenderManager.draw_scene()` → pré-calcule `_frame_anim_all`/`_frame_anim_by_layer` (1x/frame) → `draw_background()` (lit `_frame_anim_by_layer`) → `_apply_partial_occlusion()` → `custom_draw()` → `draw_foreground()` (lit `_frame_anim_all`) → `_apply_grass_wading()`
+`RenderManager.draw_scene()` → pré-calcule `_frame_anim_all`/`_frame_anim_by_layer` (1x/frame) → `draw_background()` (lit `_frame_anim_by_layer`) → `_apply_partial_occlusion()` → `custom_draw()` → `draw_foreground() → OccludingRect` (lit `_frame_anim_all`, retourne `list[tuple[Rect,int]]`) → `_apply_grass_wading()`
+
 - **Partial Occlusion**: Intersects sprite screen-space rects with foreground tiles (`depth > sprite.depth`). Generates a temporary `SRCALPHA` composite where intersecting regions are rendered with `Settings.OCCLUSION_ALPHA` (50% transparency). Skip player sprite during scripted walks (NPCs still occluded).
 - **Grass Wading**: Probes the ground layer at each sprite's foot center via `MapManager.get_grass_tile_image_at()`. Re-blits grass texture over bottom `Settings.GRASS_WADING_DEPTH` (8px). Skip player during scripted walks.
 - **F3+F4 LIVRÉ (commit 4a2e55e):** Animated chunks pré-calculés 1x/frame dans `draw_scene()` (311 generator calls/frame → 1). `_occlusion_pool`/`_alpha_surf`/`_wading_surf` poolés — zéro `pygame.Surface(SRCALPHA)` alloc/frame en régime normal. Tests qui appellent `draw_background()`/`draw_foreground()` directement doivent pré-peupler `_frame_anim_by_layer`/`_frame_anim_all` (cf. A-PERF-002).

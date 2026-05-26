@@ -1,4 +1,5 @@
-<!-- Generated: 2026-05-22 | Last doc-update: 2026-05-22 (F1-F4 perf) | Files scanned: 68 | Token estimate: ~2750 -->
+<!-- Generated: 2026-05-27 | Last doc-update: 2026-05-27 (Steps 1-11 remédiation) | Files scanned: 73 | Token estimate: ~2800 -->
+
 
 # Game Engine Architecture
 
@@ -17,13 +18,15 @@
 |---|---|---|---|
 | **GameStateManager** | `src/engine/game_state_manager.py` | 309 | Top-level state machine (TITLE/PLAYING/PAUSED), global event routing, save/load orchestration |
 | **Game** | `src/engine/game.py` | 420 | Gameplay orchestrator, thin wrappers delegating to sub-managers. Phase 1.5 refactored. |
-| **RenderManager** | `src/engine/render_manager.py` | ~430 | Scene rendering pipeline (background, foreground, HUD, overlays, partial occlusion, grass wading). **F3+F4 LIVRÉ:** `_frame_anim_all`/`_frame_anim_by_layer` pré-calculés 1x/frame dans `draw_scene()`; `_occlusion_pool`/`_wading_surf`/`_alpha_surf` pré-alloués — zéro `pygame.Surface(SRCALPHA)` alloc/frame. |
+| **RenderManager** | `src/engine/render_manager.py` | 521 | Scene rendering pipeline (background, foreground, HUD, overlays, partial occlusion, grass wading). **F3+F4 LIVRÉ:** `_frame_anim_all`/`_frame_anim_by_layer` pré-calculés 1x/frame dans `draw_scene()`; `_occlusion_pool`/`_wading_surf`/`_alpha_surf` pré-alloués — zéro `pygame.Surface(SRCALPHA)` alloc/frame. `draw_foreground()` retourne `OccludingRect = list[tuple[Rect, int]]` (alias de type). |
+
 | **InteractionManager** | `src/engine/interaction.py` | 400 | Proximity/facing checks for objects, NPCs, pickups, chests, emotes, teleporters. Uses `distance_squared_to` for performance. Implements `trigger_only` guards to suppress direct interaction. |
 | **EntityFactory** | `src/engine/entity_factory.py` | 265 | Entity spawning (interactive, teleport, NPC, pickup). Extracted from `Game` in Phase 1.5. Pattern: `EntityFactory(game: Any)`. |
 | **MapLoader** | `src/engine/map_loader.py` | ~115 | Map loading pipeline (parse, BGM, cleanup, spawn, player position). Extracted from `Game` in Phase 1.5. |
 | **InputHandler** | `src/engine/input_handler.py` | ~55 | Pygame event dispatch (interact, inventory, dialogue). Extracted from `Game` in Phase 1.5. |
 | **CollisionChecker** | `src/engine/collision_checker.py` | ~80 | Tile + entity collision checks. Extracted from `Game` in Phase 1.5. |
-| **SaveManager** | `src/engine/save_manager.py` | 222 | JSON save/load (3 slots), inventory + world state serialization, PNG thumbnails |
+| **SaveManager** | `src/engine/save_manager.py` | 271 | JSON save/load (3 slots), inventory + world state serialization, PNG thumbnails. Saves path via `pygame.system.get_pref_path("adrien", "game")` (cross-OS) with fallback to `saves/` |
+
 | **GameEvents** | `src/engine/game_events.py` | 59 | `GameEvent` dataclass + `GameEventType` enum. Factory methods: `new_game()`, `load_requested(slot_id)`, `quit()`, `pause_requested()`, `resume()`, `save_requested(slot_id)`, `goto_title()` |
 | **MapManager** | `src/map/manager.py` | 191 | Layer surfaces, TMJ state, collision tile queries, window positions |
 | **TmjParser** | `src/map/tmj_parser.py` | 263 | TMJ/TSX parsing → structured `map_data` dict |
@@ -69,7 +72,8 @@ docs/
   traceability.md   Auto-generated spec↔test coverage matrix (scripts/tc_report.py — run to refresh)
   codemaps/         Architecture maps (this directory)
   strategic/        MASTER_ROADMAP.md, game_vision.md
-  ADRs/             10 Architecture Decision Records (ADR-001 to ADR-006, ADR-PERF-001 to ADR-PERF-004)
+  ADRs/             8 Architecture Decision Records (ADR-001 to ADR-008). ADR-008: FRect non-migration decision documented.
+
   research/         Research docs (unit_test_optimization.md)
 scripts/
   autotiles/            Autotile pipeline scripts (blob/animated/static)
@@ -89,7 +93,12 @@ scripts/
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data Format**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
-- **Test Suite**: Pytest 9.0.3, **1086 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui,scripts}/` (6 domains)
+- **Test Suite**: Pytest 9.0.3, **1094 tests** — domain-based layout: `tests/{engine,entities,graphics,map,ui,scripts}/` (6 domains)
+
 - **Traceability**: `@pytest.mark.tc("DOMAIN-TYPE-ID")` markers — see `docs/traceability.md` (auto-generated). Registered in `pyproject.toml`.
-- **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), **Pre-render cache pattern** (static button/label surfaces pre-computed at init, zero allocation in draw loop), ChestUI mixin decomposition, GameEvent dataclass factory pattern, Context Injection (`SomeManager(game: Any)`) for sub-managers in Phase 1.5
-- **Perf (2026-05-22 — F1-F4 LIVRÉ)**: Baseline 9.74ms/frame (budget 16.6ms). F1: TimeSystem `_cached_world_time` (–335 allocs/frame). F2: `InteractiveEntity._is_on_cache` (334x → ≤23x `brightness` calls/frame). F3: animated chunk precompute `_frame_anim_all`/`_frame_anim_by_layer` (–311 generator calls/frame). F4: surface pool `_occlusion_pool`/`_wading_surf`/`_alpha_surf` (–3+ `SRCALPHA` allocs/frame). Commit `4a2e55e`. See `docs/ADRs/ADR-PERF-001` — `ADR-PERF-004`.
+- **Architecture Pattern**: Component-based entities, Singleton managers, Centralized Game Loop, UI configuration constants extraction (`_constants.py` files), **Pre-render cache pattern** (static button/label surfaces pre-computed at init, zero allocation in draw loop), ChestUI mixin decomposition, GameEvent dataclass factory pattern, Context Injection (`SomeManager(game: Any)`) for sub-managers in Phase 1.5. **`pathlib.Path`**: 55 `os.path.join` remplacés dans 28 fichiers `src/` (Step 11, commit `f63574d`); `os` conservé pour `os.path.exists`/`os.makedirs`/`os.listdir`.
+
+- **Perf (2026-05-22 — F1-F4 LIVRÉ)**: Baseline 9.74ms/frame (budget 16.6ms). F1: TimeSystem `_cached_world_time` (–335 allocs/frame). F2: `InteractiveEntity._is_on_cache` (334x → ≤23x `brightness` calls/frame). F3: animated chunk precompute `_frame_anim_all`/`_frame_anim_by_layer` (–311 generator calls/frame). F4: surface pool `_occlusion_pool`/`_alpha_surf`/`_wading_surf` (–3+ `SRCALPHA` allocs/frame). Commit `4a2e55e`. See `docs/ADRs/ADR-PERF-001` — `ADR-PERF-004`.
+- **Pyright**: `pyrightconfig.json` basic mode + `reportOptionalSubscript/MemberAccess/Call` suppressed. 0 errors, 0 warnings (Step 7, commit `f63574d`).
+- **DT clamp**: `Game.run_frame()` + `GameStateManager._handle_playing()` cap `dt` at 100ms (Step 1).
+- **Text cache**: HUD, Inventory, Chest pre-render text surfaces on value change — zero Surface alloc in draw loop (Steps 2-4).

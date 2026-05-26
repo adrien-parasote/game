@@ -1,4 +1,5 @@
-<!-- Generated: 2026-05-22 | Last doc-update: 2026-05-22 | Files scanned: 68 | Token estimate: ~1300 -->
+<!-- Generated: 2026-05-27 | Last doc-update: 2026-05-27 (Steps 1-11 remédiation) | Files scanned: 73 | Token estimate: ~1350 -->
+
 
 # Data & Dependencies Architecture
 
@@ -59,7 +60,8 @@ Stored on `InteractiveEntity` as `entity.loot_items: list[dict | None]` — fixe
 
 
 ## Save Data Model (`SaveManager`, `src/engine/save_manager.py`)
-- **Slots**: 3 slots → `saves/slot_[N].json` + `saves/slot_[N]_thumb.png`
+- **Slots**: 3 slots → `pygame.system.get_pref_path("adrien", "game")/slot_[N].json` + `/slot_[N]_thumb.png`. Fallback: `saves/` if `get_pref_path` fails (no pygame display init). Paths built with `pathlib.Path`.
+
 - **Format** (version `0.4.0`):
 ```json
 {
@@ -85,9 +87,10 @@ Stored on `InteractiveEntity` as `entity.loot_items: list[dict | None]` — fixe
 - **Lifecycle**: Populated on entity `interact()` or pickup collection; restored in `restore_state()` at spawn.
 
 ## Dependencies
-- **Python 3.13+** (Type-hinting, Dataclasses, IntEnum)
+- **Python 3.13+** (Type-hinting, Dataclasses, IntEnum, pathlib)
 - **Pygame-CE 2.5.7** (Renderer, Event Loop, Audio Mixer, SDL 2.32.10)
-- **Pytest 9.0.3 + pytest-cov 7.1.0**: 794 tests, ~93%+ overall coverage
+- **Pytest 9.0.3 + pytest-cov 7.1.0**: 1094 tests, ~93%+ overall coverage
+
 
 ## Asset Directory Map
 ```
