@@ -1,101 +1,91 @@
-<!-- Generated: 2026-05-27 | Last doc-update: 2026-05-27 (Steps 1-11 remédiation) | Files scanned: 73 | Token estimate: ~2000 -->
-
+<!-- Generated: 2026-05-27 | Last doc-update: 2026-05-27 (Steps 1-11 remédiation) | Files scanned: 73 | Token estimate: ~1100 -->
 
 # Engine Logic Flow
 
 ## GameStateManager State Machine (`src/engine/game_state_manager.py`)
 ```
-TITLE  → GameEvent.new_game()          → _transition_to_playing(None)  → PLAYING
-TITLE  → GameEvent.load_requested(N)   → _transition_to_playing(N)     → PLAYING
-TITLE  → GameEvent.quit()              → sys.exit()
-PLAYING→ ESC (filtered, not re-posted) → _transition_to_paused()       → PAUSED
-PAUSED → GameEvent.resume()            → _transition_to_playing(None, resume=True) → PLAYING
-PAUSED → GameEvent.save_requested(N)   → save_manager.save(N, game) + thumbnail → PAUSED
-PAUSED → GameEvent.goto_title()        → _transition_to_title()        → TITLE
+TITLE   → GameEvent.new_game()          → _transition_to_playing(None)  → PLAYING
+TITLE   → GameEvent.load_requested(N)   → _transition_to_playing(N)     → PLAYING
+TITLE   → GameEvent.quit()              → sys.exit()
+PLAYING → ESC (filtered, not re-posted) → _transition_to_paused()       → PAUSED
+PAUSED  → GameEvent.resume()            → _transition_to_playing(None, resume=True) → PLAYING
+PAUSED  → GameEvent.save_requested(N)   → save_manager.save(N, game) + thumbnail → PAUSED
+PAUSED  → GameEvent.goto_title()        → _transition_to_title()        → TITLE
 ```
-- `_save_to_first_free_slot()`: scans `list_slots()`, fallback to slot 1 if all full.
-- `_process_global_events()`: `pygame.QUIT` → `sys.exit()`, fullscreen toggle — runs every frame regardless of state.
+- `_save_to_first_free_slot()`: scans `list_slots()`, fallback slot 1 if all full.
+- `_process_global_events()`: `pygame.QUIT` → `sys.exit()`, fullscreen toggle — every frame.
 
 ## Movement Chain
-`Player.input()` (WASD/Arrows) → `BaseEntity.move(dt)` → `CollisionChecker.is_collidable()` (tile check via MapManager + obstacle group) → `rect` update + animation frame
-- **CollisionChecker** (`src/engine/collision_checker.py`, ~80L): extracted from `Game._is_collidable()` in Phase 1.5. Uses `game: Any` context injection.
-- **Footsteps**: Triggered on frames 1 and 3. `MapManager.get_terrain_material_at()` resolves surface **using only depth≤1 tiles** (depth>1 roofs/ceilings are ignored — BUG-SFX-001). `AudioManager.play_sfx(footstep_{material})` falls back to base footstep if specific file is missing.
+`Player.input()` (WASD/Arrows) → `BaseEntity.move(dt)` → `CollisionChecker.is_collidable()` (tile + obstacle group) → `rect` update + animation frame
+- **Footsteps**: frames 1 and 3. `MapManager.get_terrain_material_at()` → depth≤1 tiles only. `AudioManager.play_sfx(footstep_{material})` with fallback.
 
 ## Interaction Chain
-`INTERACT_KEY (E)` → `InteractionManager.handle_interactions()`  *(typed `game: Any` — uses `distance_squared_to` with module-level `_RANGE_SQ_*` constants for O(1) performance)*
-- `_check_npc_interactions()`: `sq_dist < _RANGE_SQ_48` (48px) + facing → `NPC.interact()` → `Game._trigger_npc_bubble()`
-- `_check_object_interactions()`: orthogonal `sq_dist < _RANGE_SQ_16` (16px) or range `sq_dist < _RANGE_SQ_48` (48px) + facing within 45° → respects `trigger_only` to suppress player interaction → `InteractiveEntity.interact()` → toggle `is_on` + SFX → `WorldState.set()` → `Game._trigger_dialogue()` / `chest_ui.open()`
+`INTERACT_KEY (E)` → `InteractionManager.handle_interactions()` (`distance_squared_to`, module-level `_RANGE_SQ_*` constants)
+- `_check_npc_interactions()`: `sq_dist < _RANGE_SQ_48` + facing → `NPC.interact()` → `Game._trigger_npc_bubble()`
+- `_check_object_interactions()`: `sq_dist < _RANGE_SQ_16/48` + facing 45° → respects `trigger_only` → `InteractiveEntity.interact()` → toggle `is_on` + SFX → `WorldState.set()` → dialogue / `chest_ui.open()`
 - `_check_pickup_interactions()`: `sq_dist < _RANGE_SQ_48` → `Inventory.add_item()` → `WorldState.set({looted:True})` → `pickup.kill()`
-- `toggle_entity_by_id(target_id)`: lever chains to linked doors/events (depth-limited recursion, max 5). Safe remote toggle.
+- `toggle_entity_by_id(target_id)`: lever chains (depth-limited recursion, max 5).
 
 ## Inventory UI State Machine (`src/ui/inventory.py`)
 ```
 IDLE → MOUSE_DOWN on item → DRAGGING → MOUSE_UP
-  DRAGGING → on grid slot   → _transfer_dragged_to_grid(target_idx)
-  DRAGGING → on equip slot  → _transfer_dragged_to_equipment(target_name)
-  DRAGGING → on empty area  → cancel drag (item returns to origin)
+  DRAGGING → grid slot   → _transfer_dragged_to_grid(idx)
+  DRAGGING → equip slot  → _transfer_dragged_to_equipment(name)
+  DRAGGING → empty area  → cancel (item returns to origin)
 ```
-- Equipment slot validity: checks `item.slot == target_name` before placing.
-- Grid D&D: stack merge if same `item_id` and `stackable`; swap otherwise.
+- Equipment: checks `item.slot == target_name`. Stack merge if same `item_id` + `stackable`.
 - `INVENTORY_KEY (I)` blocked when `chest_ui.is_open == True`.
 
 ## Chest UI State Machine (`src/ui/chest.py`)
 ```
 IDLE → MOUSE_DOWN on chest/inv slot → DRAGGING → MOUSE_UP
-  DRAGGING → chest slot    → _transfer_dragged_to_chest(target_idx)
-  DRAGGING → inv slot      → _transfer_dragged_to_inventory(target_idx)
-  ARROW_RIGHT click        → _transfer_chest_to_inventory() (all items)
-  ARROW_LEFT click         → _transfer_inventory_to_chest() (all items)
-  INV_ARROW_RIGHT/LEFT     → _scroll_right() / _scroll_left() (page = 18 slots)
+  DRAGGING → chest slot   → _transfer_dragged_to_chest(idx)
+  DRAGGING → inv slot     → _transfer_dragged_to_inventory(idx)
+  ARROW_RIGHT click       → _transfer_chest_to_inventory()
+  ARROW_LEFT click        → _transfer_inventory_to_chest()
+  INV_ARROW_RIGHT/LEFT    → _scroll_right() / _scroll_left() (18-slot pages)
 ```
-- Chest storage: fixed-size `list[dict | None]` padded to `CHEST_MAX_SLOTS (20)`.
-- Auto-close: `InteractionManager._check_chest_auto_close()` when player dist > threshold, routing through `_resolve_sfx`.
+- Auto-close: `InteractionManager._check_chest_auto_close()` when player dist > threshold.
 
-## InteractiveEntity Animated State Machine (`src/entities/interactive.py`)
+## InteractiveEntity State Machine (`src/entities/interactive.py`)
 ```
-is_on=False → interact() → is_on=True  → animation plays (start_row..end_row loop)
-is_on=True  → interact() → is_on=False → animation resets to frame 0
+is_on=False → interact() → is_on=True  → animation (start_row..end_row loop)
+is_on=True  → interact() → is_on=False → animation reset to frame 0
 sub_types: chest | lever | door | sign | animated_decor
 ```
-- Animated decor `off_position`: spritesheet column switch on toggle.
-  - `off_position=-1` (default) → single-column, no switch (backward compat).
-  - `off_position=N` → `col_index=N` when `is_on=False`, `col_index=on_position` when `True`.
-  - `restore_state({'is_on': bool})` also updates `col_index` via `_update_col_index()`. Auto day/night toggle also respects this.
-- **Directional Audio**: Uses `sfx_open`/`sfx_close` with fallback support (`_resolve_sfx`).
-- **Ambient Audio**: `sfx_ambient` triggers looping spatial audio when `is_on=True`. Volume scales via distance (`update_ambient`) with a 20% floor volume threshold for consistent background presence.
-- Linked entities (levers→doors): toggled via `Game.toggle_entity_by_id(target_id)`.
+- `off_position=-1` (default): single-column, no switch. `off_position=N`: col switch on toggle.
+- `restore_state({'is_on': bool})` → `_update_col_index()`. Day/night toggle respects col.
+- `sfx_ambient`: looping spatial audio when `is_on=True`. Volume scales with distance (20% floor).
 
 ## Emote Chain
 `InteractionManager.update()` → `_check_proximity_emotes()`
-- `_check_interactive_emote()` / `_check_npc_emote()` / `_check_pickup_emote()`: dist < 48px → `Player.playerEmote('interact')` → `EmoteManager.trigger('!')`.
-- Failed interaction check → `Player.playerEmote('question')` → `EmoteManager.trigger('?')`.
+- dist < 48px → `Player.playerEmote('interact')` → `EmoteManager.trigger('!')`
+- Failed interaction → `Player.playerEmote('question')` → `EmoteManager.trigger('?')`
 
-## Dialogue & Speech Bubbles
-- **Sign/Book (DialogueManager)**: `start_dialogue(text, title)` → `_paginate()` → typewriter render → `advance()` pages → `is_active=False`.
-- **NPC (SpeechBubble)**: `SpeechBubble(npc, text)` → nine-patch above NPC, name plate, paginated. `_advance_npc_bubble()` → next page or close.
+## Dialogue & Speech
+- **Sign/Book**: `DialogueManager.start_dialogue(text, title)` → `_paginate()` → typewriter → `advance()` → `is_active=False`
+- **NPC**: `SpeechBubble(npc, text)` → nine-patch above NPC → `_advance_npc_bubble()` → next page or close
 
 ## Lighting Pipeline (`src/engine/lighting.py`)
 `LightingManager.create_overlay(screen, sprites, cam_offset, time_alpha)`
-1. Create dark overlay (`night_alpha` from `TimeSystem`).
-2. `_get_beam_surface_for_time()`: slanted window beam polygon (UV-mapped quad via `_compute_slant()`).
-3. Blit beam with `BLEND_RGBA_ADD` over overlay.
-4. Per-sprite torch: `_get_torch_mask(radius, intensity)` → radial gradient → `BLEND_RGBA_ADD` punch-through.
-5. Overlay blit on screen.
+1. Dark overlay (`night_alpha` from `TimeSystem`)
+2. `_get_beam_surface_for_time()`: slanted window beam polygon
+3. Blit beam `BLEND_RGBA_ADD`
+4. Per-sprite torch: `_get_torch_mask(radius, intensity)` → radial gradient → `BLEND_RGBA_ADD`
+5. Overlay blit on screen
 
 ## Map Loading & Teleportation
-`Game._check_teleporters()` → on arrival tile or intent tile → `transition_map(target_map, spawn_id, type)`
-`transition_map()` → fade out → `MapLoader.load_map(map_file, spawn_id)` → `AssetManager.clear()` → `TmjParser.load_map()` → `MapManager` → `EntityFactory.spawn_entities()` → entities call `WorldState.get(key)` to restore state → fade in.
-- **MapLoader** (`src/engine/map_loader.py`, ~115L): handles BGM, cleanup, player position. Extracted from `Game._load_map()` in Phase 1.5.
-- **EntityFactory** (`src/engine/entity_factory.py`, 265L): dispatches entity creation by type. Extracted from `Game._spawn_entities()` in Phase 1.5. Dispatch order: interactive (`03-`) → NPC (`entity_type=='npc'` | `ent_type_field=='15-npc'` | `07-`) → teleport (`15-`) → pickup (`08-`). ⚠️ NPC must be checked before teleport: Tiled NPC type `'15-npc'` shares the `15-` prefix with teleports.
-- **SpatialUtils** (`src/engine/spatial_utils.py`): `get_facing_vector()`, `is_facing_toward()`, `verify_orientation()` — utility functions shared by InteractionManager and CollisionChecker.
+`Game._check_teleporters()` → `transition_map(target_map, spawn_id, type)`
+→ fade out → `MapLoader.load_map()` → `AssetManager.clear()` → `TmjParser.load_map()` → `MapManager` → `EntityFactory.spawn_entities()` → `WorldState.get(key)` restore → fade in
+
+- **EntityFactory dispatch order**: interactive (`03-`) → NPC (`entity_type=='npc'` | `'15-npc'` | `07-`) → teleport (`15-`) → pickup (`08-`). ⚠️ NPC before teleport: `'15-npc'` shares `15-` prefix.
 
 ## Time System
-`TimeSystem.update(dt)` → accumule `_total_minutes` (via `@property` setter → `_compute_world_time()` auto-refresh) → `_cached_world_time` (1x/frame) → `world_time @property` retourne cache → `night_alpha` (0–200) → `brightness` (float 0.0–1.0) → pilote `LightingManager` et `GameHUD`.
-- **F1 LIVRÉ (commit 4a2e55e):** `_total_minutes` est un `@property` — setter appelle `_compute_world_time()`. Avant : 335 NamedTuple allocs/frame. Après : 1/frame.
+`TimeSystem.update(dt)` → `_total_minutes @property` setter → `_compute_world_time()` (cache auto-refresh) → `_cached_world_time` → `world_time @property` → `night_alpha` → `brightness` → `LightingManager` + `GameHUD`
 
-## Rendering pipelines (Partial Occlusion & Grass Wading)
-`RenderManager.draw_scene()` → pré-calcule `_frame_anim_all`/`_frame_anim_by_layer` (1x/frame) → `draw_background()` (lit `_frame_anim_by_layer`) → `_apply_partial_occlusion()` → `custom_draw()` → `draw_foreground() → OccludingRect` (lit `_frame_anim_all`, retourne `list[tuple[Rect,int]]`) → `_apply_grass_wading()`
-
-- **Partial Occlusion**: Intersects sprite screen-space rects with foreground tiles (`depth > sprite.depth`). Generates a temporary `SRCALPHA` composite where intersecting regions are rendered with `Settings.OCCLUSION_ALPHA` (50% transparency). Skip player sprite during scripted walks (NPCs still occluded).
-- **Grass Wading**: Probes the ground layer at each sprite's foot center via `MapManager.get_grass_tile_image_at()`. Re-blits grass texture over bottom `Settings.GRASS_WADING_DEPTH` (8px). Skip player during scripted walks.
-- **F3+F4 LIVRÉ (commit 4a2e55e):** Animated chunks pré-calculés 1x/frame dans `draw_scene()` (311 generator calls/frame → 1). `_occlusion_pool`/`_alpha_surf`/`_wading_surf` poolés — zéro `pygame.Surface(SRCALPHA)` alloc/frame en régime normal. Tests qui appellent `draw_background()`/`draw_foreground()` directement doivent pré-peupler `_frame_anim_by_layer`/`_frame_anim_all` (cf. A-PERF-002).
+## Rendering Pipeline
+`RenderManager.draw_scene()` → pre-computes `_frame_anim_all`/`_frame_anim_by_layer` (1x/frame)
+→ `draw_background()` → `_apply_partial_occlusion()` → `custom_draw()` → `draw_foreground() → OccludingRect` → `_apply_grass_wading()`
+- **Partial Occlusion**: sprite rects ∩ foreground tiles (depth > sprite.depth) → composite with `OCCLUSION_ALPHA` (50%). Skips player during scripted intra-map walks.
+- **Grass Wading**: `MapManager.get_grass_tile_image_at()` at foot center → reblit grass over bottom 8px. Skips player during scripted walks.
+- **Test contract**: tests calling `draw_background()`/`draw_foreground()` directly must pre-populate `_frame_anim_by_layer`/`_frame_anim_all` (see A-PERF-002).
