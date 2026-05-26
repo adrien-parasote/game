@@ -486,8 +486,11 @@ def test_inventory_get_item_icon_load_from_disk():
     player = MagicMock()
     ui = InventoryUI(player)
     mock_img = pygame.Surface((48, 48))
-    with patch("os.path.exists", return_value=True), patch("pygame.image.load") as mock_load:
-        mock_load.return_value.convert_alpha.return_value = mock_img
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("src.ui.inventory.AssetManager") as mock_am_cls,
+    ):
+        mock_am_cls.return_value.get_image.return_value = mock_img
         result = ui._get_item_icon("sword.png")
     assert result is not None
     assert "sword.png" in ui.icon_cache
@@ -499,8 +502,9 @@ def test_inventory_get_item_icon_load_error():
     ui = InventoryUI(player)
     with (
         patch("os.path.exists", return_value=True),
-        patch("pygame.image.load", side_effect=Exception("corrupt")),
+        patch("src.ui.inventory.AssetManager") as mock_am_cls,
     ):
+        mock_am_cls.return_value.get_image.side_effect = Exception("corrupt")
         result = ui._get_item_icon("broken.png")
     assert result is None
 
@@ -519,8 +523,11 @@ def test_inventory_get_item_icon_adds_extension():
     player = MagicMock()
     ui = InventoryUI(player)
     mock_img = pygame.Surface((48, 48))
-    with patch("os.path.exists", return_value=True), patch("pygame.image.load") as mock_load:
-        mock_load.return_value.convert_alpha.return_value = mock_img
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("src.ui.inventory.AssetManager") as mock_am_cls,
+    ):
+        mock_am_cls.return_value.get_image.return_value = mock_img
         result = ui._get_item_icon("sword")
     assert result is not None
     assert "sword.png" in ui.icon_cache

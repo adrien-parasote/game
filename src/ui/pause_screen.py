@@ -3,12 +3,12 @@ PauseScreen — Overlay pause menu on top of the running game.
 Spec: docs/specs/game-flow-spec.md#24-srcuipause_screenpy-new
 """
 
-import logging
-import os
+from pathlib import Path
 
 import pygame
 
 from src.config import Settings
+from src.engine.asset_manager import AssetManager
 from src.engine.game_events import GameEvent, GameEventType
 from src.engine.i18n import I18nManager
 from src.engine.save_manager import SaveManager
@@ -71,25 +71,13 @@ class PauseScreen:
         self._compute_layout()
 
     def _load_asset(self, filename: str) -> pygame.Surface:
-        path = os.path.join(_MENU_DIR, filename)
-        try:
-            return pygame.image.load(path).convert_alpha()
-        except pygame.error as e:
-            logging.error(f"PauseScreen: Could not load {filename}: {e}")
-            surf = pygame.Surface((FALLBACK_SURF_SIZE, FALLBACK_SURF_SIZE))
-            surf.fill((255, 0, 255))
-            return surf
+        path = str(Path(_MENU_DIR) / filename)
+        return AssetManager().get_image(path, fallback=True)
 
     def _load_cursor(self, filename: str) -> pygame.Surface:
         """Load cursor from UI assets, scaled to CURSOR_SIZE."""
-        path = os.path.join(_UI_DIR, filename)
-        try:
-            raw = pygame.image.load(path).convert_alpha()
-        except pygame.error as e:
-            logging.error(f"PauseScreen: Could not load cursor {filename}: {e}")
-            surf = pygame.Surface((FALLBACK_SURF_SIZE, FALLBACK_SURF_SIZE))
-            surf.fill((255, 0, 255))
-            return surf
+        path = str(Path(_UI_DIR) / filename)
+        raw = AssetManager().get_image(path, fallback=True)
         target_h = Settings.CURSOR_SIZE
         ratio = target_h / CURSOR_RAW_H
         target_w = int(CURSOR_RAW_W * ratio)

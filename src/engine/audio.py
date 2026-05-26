@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 import pygame
 
@@ -28,8 +29,8 @@ class AudioManager:
     """
 
     def __init__(self):
-        self.bgm_dir = os.path.join("assets", "audio", "bgm")
-        self.sfx_dir = os.path.join("assets", "audio", "sfx")
+        self.bgm_dir = str(Path("assets") / "audio" / "bgm")
+        self.sfx_dir = str(Path("assets") / "audio" / "sfx")
 
         self.current_bgm: str | None = None
         self.sounds: dict[str, pygame.mixer.Sound] = {}
@@ -77,7 +78,7 @@ class AudioManager:
             if file.endswith(".ogg"):
                 name = file[:-4]  # Remove .ogg extension
                 try:
-                    path = os.path.join(self.sfx_dir, file)
+                    path = str(Path(self.sfx_dir) / file)
                     self.sounds[name] = pygame.mixer.Sound(path)
                     self.sounds[name].set_volume(Settings.SFX_VOLUME)
                 except pygame.error as e:
@@ -95,7 +96,7 @@ class AudioManager:
             return  # Continuum maintained
 
         filename = f"{name}.ogg"
-        path = os.path.join(self.bgm_dir, filename)
+        path = str(Path(self.bgm_dir) / filename)
 
         if not os.path.exists(path):
             logging.error(f"BGM file not found: {path}")
@@ -136,7 +137,7 @@ class AudioManager:
         if not sound:
             # Try to load it if not preloaded
             filename = f"{name}.ogg"
-            path = os.path.join(self.sfx_dir, filename)
+            path = str(Path(self.sfx_dir) / filename)
             if os.path.exists(path):
                 try:
                     sound = pygame.mixer.Sound(path)
@@ -208,7 +209,7 @@ class AudioManager:
             # Start the loop if not already playing
             if name not in self.ambient_sounds:
                 filename = f"{name}.ogg"
-                path = os.path.join(self.sfx_dir, filename)
+                path = str(Path(self.sfx_dir) / filename)
                 if not os.path.exists(path):
                     logging.warning(f"Ambient SFX not found: {path}")
                     continue

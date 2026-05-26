@@ -3,11 +3,12 @@ Save Menu UI Components.
 Spec: docs/specs/save-system.md
 """
 
-import os
+from pathlib import Path
 
 import pygame
 
 from src.config import Settings
+from src.engine.asset_manager import AssetManager
 from src.engine.i18n import I18nManager
 from src.engine.save_manager import SaveManager, SlotInfo
 from src.ui.save_menu_constants import (
@@ -26,7 +27,6 @@ from src.ui.save_menu_constants import (
     ENGRAVE_SHADOW,
     ENGRAVE_TEXT,
     SAVE_DETAIL_COLOR,
-    SAVE_FONT_TITLE_FALLBACK_SIZE,
     SAVE_HALO_BLUR_PADDING,
     SAVE_HALO_BLUR_RADIUS,
     SAVE_PANEL_FILL,
@@ -57,19 +57,12 @@ class SaveMenuOverlay:
         self._sw, self._sh = screen.get_size()
 
         # Load asset manager fonts
-        try:
-            am = __import__("src.engine.asset_manager", fromlist=["AssetManager"]).AssetManager()
-        except Exception:
-            am = None
+        am = AssetManager()
+        self._font_title = am.get_font(
+            Settings.FONT_NOBLE, int(Settings.FONT_SIZE_NOBLE * 1.5)
+        )
 
-        if am:
-            self._font_title = am.get_font(
-                Settings.FONT_NOBLE, int(Settings.FONT_SIZE_NOBLE * 1.5)
-            )
-        else:
-            self._font_title = pygame.font.SysFont(None, SAVE_FONT_TITLE_FALLBACK_SIZE)
-
-        self._slot_ui = SaveSlotUI(am) if am else None
+        self._slot_ui = SaveSlotUI(am)
 
         # Semi-transparent background panel
         self._panel = pygame.Surface((SAVE_PANEL_W, SAVE_PANEL_H), pygame.SRCALPHA)
@@ -91,20 +84,12 @@ class SaveMenuOverlay:
 
     def _load_back_assets(self) -> None:
         """Load icon and font for the Back button. Pre-render idle/hover label surfaces."""
-        path = os.path.join("assets", "images", "menu", "01-menu_back_cursor.png")
-        try:
-            raw = pygame.image.load(path).convert_alpha()
-            self._back_btn_icon = pygame.transform.smoothscale(
-                raw, (BACK_ICON_W, BACK_ICON_H)
-            )
-            self._back_btn_icon_hover = pygame.transform.smoothscale(
-                raw, (BACK_ICON_HOVER_W, BACK_ICON_HOVER_H)
-            )
-        except pygame.error:
-            self._back_btn_icon = pygame.Surface((BACK_ICON_W, BACK_ICON_H), pygame.SRCALPHA)
-            self._back_btn_icon_hover = pygame.Surface(
-                (BACK_ICON_HOVER_W, BACK_ICON_HOVER_H), pygame.SRCALPHA
-            )
+        path = str(Path("assets") / "images" / "menu" / "01-menu_back_cursor.png")
+        raw = AssetManager().get_image(path, fallback=True)
+        self._back_btn_icon = pygame.transform.smoothscale(raw, (BACK_ICON_W, BACK_ICON_H))
+        self._back_btn_icon_hover = pygame.transform.smoothscale(
+            raw, (BACK_ICON_HOVER_W, BACK_ICON_HOVER_H)
+        )
 
         try:
             self._font_back = pygame.font.Font(BACK_FONT_PATH, BACK_FONT_SIZE)
@@ -150,10 +135,6 @@ class SaveMenuOverlay:
         return out
 
     def _compute_layout(self) -> None:
-        if not self._slot_ui:
-            self.slot_rects = []
-            self.back_btn_rect = pygame.Rect(0, 0, 0, 0)
-            return
 
         slot_w, slot_h = self._slot_ui.get_size()
         spacing = SAVE_SLOT_SPACING
@@ -191,7 +172,9 @@ class SaveMenuOverlay:
         for i in range(3):
             if self._slots_info[i] is not None:
                 info = self._slots_info[i]
+                assert info is not None  # narrow SlotInfo|None → SlotInfo for Pyright
                 self._thumbnails[i] = self._save_manager.load_thumbnail(i + 1)
+
                 # Pre-render overlay title
                 display_name = info.map_display_name or ""
                 self._cached_title_surfs.append(
@@ -244,22 +227,21 @@ class SaveMenuOverlay:
         )
 
         # Draw slots
-        if self._slot_ui:
-            for i, rect in enumerate(self.slot_rects):
-                self._slot_ui.draw(
-                    surface=self._screen,
-                    rect=rect,
-                    slot_id=i + 1,
-                    info=self._slots_info[i],
-                    thumbnail=self._thumbnails[i],
-                    is_hovered=(self._hovered_slot == i),
-                    cached_level_surf=self._cached_level_surfs[i]
-                    if i < len(self._cached_level_surfs)
-                    else None,
-                    cached_time_surf=self._cached_time_surfs[i]
-                    if i < len(self._cached_time_surfs)
-                    else None,
-                )
+        for i, rect in enumerate(self.slot_rects):
+            self._slot_ui.draw(
+                surface=self._screen,
+                rect=rect,
+                slot_id=i + 1,
+                info=self._slots_info[i],
+                thumbnail=self._thumbnails[i],
+                is_hovered=(self._hovered_slot == i),
+                cached_level_surf=self._cached_level_surfs[i]
+                if i < len(self._cached_level_surfs)
+                else None,
+                cached_time_surf=self._cached_time_surfs[i]
+                if i < len(self._cached_time_surfs)
+                else None,
+            )
 
         # Draw Back Button
         self._draw_back_button()

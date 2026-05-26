@@ -35,3 +35,5 @@ verify_output.json
 .specconformance
 .agents/cross-spec.config.yml
 .agents/cross_spec_report.md
+saves_migrated/
+!saves_migrated/.gitkeep

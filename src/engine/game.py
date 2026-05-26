@@ -2,6 +2,7 @@ import json
 import logging
 import logging.handlers
 import os
+from pathlib import Path
 
 import pygame
 
@@ -135,7 +136,7 @@ class Game:
         # Loot Table (chest contents)
         self.loot_table = LootTable()
         property_types = self._load_property_types()
-        self.loot_table.load(os.path.join("assets", "data", "loot_table.json"), property_types)
+        self.loot_table.load(str(Path("assets") / "data" / "loot_table.json"), property_types)
 
         # Dialogue System (signs / interactive objects)
         self.dialogue_manager = DialogueManager()
@@ -191,12 +192,12 @@ class Game:
 
         # Debug Room Priority
         debug_room = "99-debug_room.tmj"
-        debug_path = os.path.join("assets", "tiled", "maps", debug_room)
+        debug_path = str(Path("assets") / "tiled" / "maps" / debug_room)
         if Settings.DEBUG and os.path.exists(debug_path):
             logging.info(f"Debug Mode active: Loading {debug_room} as initial map.")
             default_map = debug_room
         else:
-            world_path = os.path.join("assets", "tiled", "maps", "world.world")
+            world_path = str(Path("assets") / "tiled" / "maps" / "world.world")
             if os.path.exists(world_path):
                 try:
                     with open(world_path, encoding="utf-8") as f:
@@ -261,7 +262,7 @@ class Game:
         """Handle screen fading and triggering map load cleanly."""
         target_map = target_map.replace(".tjm", ".tmj")
 
-        map_path = os.path.join("assets", "tiled", "maps", target_map)
+        map_path = str(Path("assets") / "tiled" / "maps" / target_map)
         if not os.path.exists(map_path) and target_map != "00-spawn.tmj":
             # Safety checks for bad targets
             logging.error(f"Fading failed, map missing: {map_path}")
@@ -273,7 +274,8 @@ class Game:
         if transition_type == "fade":
             # Fade Out
             for alpha in range(0, 256, 15):
-                dt = self.clock.tick(Settings.FPS) / 1000.0
+                raw_dt = self.clock.tick(Settings.FPS) / 1000.0
+                dt = min(raw_dt, Settings.DT_MAX)
                 self.time_system.update(dt)  # Flow of time continues
 
                 self.render_manager.draw_scene()
@@ -287,7 +289,8 @@ class Game:
         if transition_type == "fade":
             # Fade In
             for alpha in range(255, -1, -15):
-                dt = self.clock.tick(Settings.FPS) / 1000.0
+                raw_dt = self.clock.tick(Settings.FPS) / 1000.0
+                dt = min(raw_dt, Settings.DT_MAX)
                 self.time_system.update(dt)
 
                 self.render_manager.draw_scene()
@@ -332,10 +335,12 @@ class Game:
         # Lazy-init the transparent surface (player must exist, sized to its image).
         # Created once and reused across all scripted walks.
         if self._player_transparent is None:
+            assert self.player.image is not None, "player.image must be loaded before scripted walk"
             self._player_transparent = pygame.Surface(
                 self.player.image.get_size(), pygame.SRCALPHA
             )
             self._player_transparent.fill((0, 0, 0, 0))
+
 
         self._intra_walk_target = target
         self.player.target_pos = pygame.math.Vector2(target)
@@ -381,7 +386,8 @@ class Game:
             self._handle_events()
 
             # Update (Fixed 60 FPS)
-            dt = self.clock.tick(Settings.FPS) / 1000.0
+            raw_dt = self.clock.tick(Settings.FPS) / 1000.0
+            dt = min(raw_dt, Settings.DT_MAX)
             self._update(dt)
 
             # Draw complete sequence
@@ -531,7 +537,7 @@ class Game:
 
     def _load_property_types(self) -> dict:
         """Load item property types from propertytypes.json."""
-        path = os.path.join("assets", "data", "propertytypes.json")
+        path = str(Path("assets") / "data" / "propertytypes.json")
         if not os.path.exists(path):
             logging.error(f"Item property types file not found: {path}")
             return dict()  # noqa: P6 — legitimate error handler (file not found)

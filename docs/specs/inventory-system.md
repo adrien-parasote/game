@@ -103,6 +103,12 @@ Reads `loot_table.json` once at startup to prepare and distribute item drops to 
   ```
   Sharing raw dict references causes state corruption, emptying subsequent chests when items are moved to inventory.
 
+> [!IMPORTANT]
+> The loot table uses `element_id` (manual Tiled property) for chest content binding.
+> WorldState persistence uses the native Tiled `id` (auto-generated, guaranteed unique) via key format `{map_basename}_{tiled_id}`.
+> These are intentionally different: `element_id` enables designer-readable loot assignments,
+> while native `id` ensures collision-free state keys. See [map-world-system.md §7.1](./map-world-system.md).
+
 ---
 
 ## 5. Anti-Patterns (DO NOT)

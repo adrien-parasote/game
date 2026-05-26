@@ -1,8 +1,8 @@
-import os
+from pathlib import Path
 
 TILE_SIZE: int = 32
 MIN_BUBBLE_SIZE: int = 2 * TILE_SIZE  # Minimum size to fit corners (64x64)
-ASSET_DIR: str = os.path.join("assets", "images", "HUD")
+ASSET_DIR: str = str(Path("assets") / "images" / "HUD")
 
 _ARROW_OFFSET_X = 8
 _ARROW_OFFSET_Y = -13

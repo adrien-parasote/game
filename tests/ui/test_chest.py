@@ -99,20 +99,23 @@ def test_draw_when_open_and_assets_present(monkeypatch):
 
 @pytest.mark.tc("CHEST-U-10")
 def test_load_background_missing_file(monkeypatch, caplog):
+    """AssetManager fallback: missing file returns a placeholder surface, not None."""
     ui = ChestUI()
     monkeypatch.setattr("src.ui.chest_draw.ASSET_CHEST_BG", "nonexistent.png")
     result = ui._load_background()
-    assert result is None
-    assert any("failed" in rec.message.lower() for rec in caplog.records)
+    # AssetManager returns a 32x32 placeholder (not None) when fallback=True
+    assert isinstance(result, pygame.Surface)
+    # Error is logged by AssetManager internally
+    assert any("asset not found" in rec.message.lower() for rec in caplog.records)
 
 
 @pytest.mark.tc("CHEST-U-11")
 def test_load_slot_image_missing_file(monkeypatch, caplog):
+    """AssetManager fallback: missing slot image returns None (32x32 placeholder detection)."""
     ui = ChestUI()
     monkeypatch.setattr("src.ui.chest_draw.ASSET_SLOT_IMG", "nonexistent.png")
     result = ui._load_slot_image()
     assert result is None
-    assert any("failed" in rec.message.lower() for rec in caplog.records)
 
 
 @pytest.mark.tc("CHEST-T-12")
@@ -144,10 +147,12 @@ def test_hovered_slot_reset_on_close():
 
 
 def test_load_cursor_missing_file(monkeypatch, caplog):
+    """AssetManager fallback: missing cursor returns a scaled placeholder surface."""
     ui = ChestUI()
     result = ui._load_cursor("nonexistent_cursor.png")
-    assert result is None
-    assert any("failed" in rec.message.lower() for rec in caplog.records)
+    # AssetManager returns a placeholder — _load_cursor scales it, so result is a Surface
+    assert isinstance(result, pygame.Surface)
+    assert any("asset not found" in rec.message.lower() for rec in caplog.records)
 
 
 def test_draw_hover_overlay_rendered(monkeypatch):
@@ -988,11 +993,11 @@ class TestDrawDraggedItem:
 
 class TestLoadAndScaleArrow:
     def test_load_arrow_missing_file(self, caplog):
-        """Missing arrow file returns None and logs warning."""
+        """Missing arrow file returns a placeholder Surface (AssetManager fallback)."""
         ui = ChestUI()
         result = ui._load_and_scale_arrow("nonexistent_arrow.png", 0.75)
-        assert result is None
-        assert any("failed" in r.message.lower() for r in caplog.records)
+        assert isinstance(result, pygame.Surface)
+        assert any("asset not found" in r.message.lower() for r in caplog.records)
 
 
 # ---------------------------------------------------------------------------
@@ -1002,12 +1007,12 @@ class TestLoadAndScaleArrow:
 
 class TestLoadInvBackground:
     def test_load_inv_bg_missing_file(self, caplog):
-        """Missing inv background returns None and logs error."""
+        """Missing inv background returns a placeholder Surface (AssetManager fallback)."""
         ui = ChestUI()
-        with patch("src.ui.chest_draw.ASSET_INV_BG", "nonexistent.png"):
-            result = ui._load_inv_background()
-        assert result is None
-        assert any("failed" in r.message.lower() for r in caplog.records)
+        with caplog.at_level(logging.ERROR):
+            with patch("src.ui.chest_draw.ASSET_INV_BG", "nonexistent.png"):
+                result = ui._load_inv_background()
+        assert isinstance(result, pygame.Surface)
 
 
 # ---------------------------------------------------------------------------

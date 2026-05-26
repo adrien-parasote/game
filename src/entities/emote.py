@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 from src.entities.emote_sprite import EmoteSprite
@@ -19,10 +20,10 @@ class EmoteManager:
         self.emote_map = {"love": 0, "bored": 1, "interact": 2, "question": 3, "frustration": 4}
 
         # Load spritesheet
-        sheet_path = os.path.join("assets", "images", "sprites", "04-emotes.png")
+        sheet_path = str(Path("assets") / "images" / "sprites" / "04-emotes.png")
         if not os.path.exists(sheet_path):
             # Fallback if path is different (per user request assets/sprites/04-emotes.png)
-            sheet_path = os.path.join("assets", "sprites", "04-emotes.png")
+            sheet_path = str(Path("assets") / "sprites" / "04-emotes.png")
 
         try:
             sheet = SpriteSheet(sheet_path)

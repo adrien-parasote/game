@@ -476,4 +476,56 @@ Créer un fichier de spécification ou d'ADR indépendant pour chaque micro-opti
 
 ---
 
+### L-AGENT-005 · 2026-05-27 · U · Perfect
+**Pattern `str(Path(x) / y)` pour la migration `os.path.join` → `pathlib` sans rework**
+
+Migrer `os.path.join(a, b, c)` vers `str(Path(a) / b / c)` au site d'appel est la stratégie minimale-risk pour une codebase qui passe des `str` aux APIs existantes (pygame, json, etc.). Conserver `os` pour `os.path.exists`, `os.listdir`, `os.makedirs` — uniquement remplacer les constructions de chemin.
+
+```python
+# ❌ os.path.join — verbeux, pas chainable
+path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "sprites", name)
+path = os.path.normpath(path)
+
+# ✅ pathlib — lisible, chainable, .resolve() = normpath + abspath
+path = str((Path(__file__).parent / ".." / ".." / "assets" / "images" / "sprites" / name).resolve())
+
+# ✅ Pour les chemins relatifs simples (pas __file__)
+path = str(Path("assets") / "audio" / "bgm")
+```
+
+**Règle :** Ne pas migrer `os.path.exists`, `os.listdir`, `os.makedirs` — ils acceptent déjà les `Path`. Garder `os` importé dans les fichiers qui en ont encore besoin. Retirer `import os` uniquement si 0 usage `os.*` résiduel.
+
+**Résultats :** 28 fichiers migrés, 55 occurrences supprimées, pyright: 0 errors, pytest: 1094/1094 — zéro régression.
+
+**Evidence :** Steps 1-11 remediation cycle `remediation_03_modernization.md`. 2026-05-27.
+
+---
+
+### A-AGENT-005 · 2026-05-27 · U · Minor Rework
+**`multi_replace_file_content` échoue sur lignes identiques sans `AllowMultiple=true`**
+
+Quand deux lignes identiques existent dans un fichier (ex: `path = os.path.join(self.sfx_dir, file)` à deux endroits différents), le chunk `multi_replace_file_content` avec un seul chunk renvoie une erreur silencieuse. La ligne n'est pas remplacée mais le tool ne lève pas d'exception bloquante.
+
+```python
+# ❌ Échoue si la target_content apparaît 2× dans le fichier
+multi_replace_file_content(chunks=[{"TargetContent": "path = os.path.join(self.sfx_dir, file)", ...}])
+# → "target content not found in specified range and not unique in the file"
+
+# ✅ Option 1 : AllowMultiple=true (si les 2 doivent être remplacées identiquement)
+replace_file_content(AllowMultiple=True, TargetContent="...", ReplacementContent="...")
+
+# ✅ Option 2 : Deux chunks avec des ranges distincts (StartLine/EndLine)
+multi_replace_file_content(chunks=[
+    {"StartLine": 126, "EndLine": 126, "TargetContent": "...", ...},
+    {"StartLine": 137, "EndLine": 137, "TargetContent": "...", ...},
+])
+```
+
+**Règle :** Avant tout chunk de remplacement, vérifier l'unicité : `grep -c "pattern" file`. Si count > 1 dans le range → utiliser `AllowMultiple=True` ou des ranges distincts.
+
+**Evidence :** `save_manager.py` — 2 lignes identiques `os.path.join(self._saves_dir, f"slot_{slot_id}_thumb.png")`. Résolu avec `AllowMultiple=True` après 2 tentatives échouées. 2026-05-27.
+
+---
+
+*Last updated: 2026-05-27 — L-AGENT-005 pathlib migration pattern, A-AGENT-005 multi_replace identical lines.*
 

@@ -1,5 +1,4 @@
-import logging
-import os
+from pathlib import Path
 
 import pygame
 
@@ -34,19 +33,17 @@ class GameHUD:
         self._season_surfs = self._load_season_icons()
         self._font = self._load_font()
         self._i18n = I18nManager()  # Cached once — never construct in draw()
+        self._text_cache: dict[str, pygame.Surface] = {}
+        self._shadow_cache: dict[str, pygame.Surface] = {}
 
     @staticmethod
     def _hud_asset_path(filename: str) -> str:
-        base = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "HUD")
-        return os.path.normpath(os.path.join(base, filename))
+        return str((Path(__file__).parent / ".." / ".." / "assets" / "images" / "HUD" / filename).resolve())
 
     def _load_image(self, filename: str) -> pygame.Surface:
         path = self._hud_asset_path(filename)
-        try:
-            return pygame.image.load(path).convert_alpha()
-        except pygame.error as e:
-            logging.error(f"GameHUD: Could not load image '{filename}': {e}")
-            return pygame.Surface((10, 10), pygame.SRCALPHA)
+        am = AssetManager()
+        return am.get_image(path, fallback=True)
 
     def _load_scaled_clock(self) -> pygame.Surface:
         raw = self._load_image("00-clock.png")
@@ -66,15 +63,18 @@ class GameHUD:
         am = AssetManager()
         return am.get_font(Settings.FONT_TECH, FONT_SIZE)
 
-    def _render_text_centered(self, surface: pygame.Surface, text: str, center: tuple) -> None:
-        shadow_surf = self._font.render(text, True, SHADOW_COLOR)
-        shadow_rect = shadow_surf.get_rect(
+    def _render_text_cached(self, surface: pygame.Surface, text: str, center: tuple) -> None:
+        """Render text with shadow using inline cache. Zero alloc if text unchanged."""
+        if text not in self._shadow_cache:
+            self._shadow_cache[text] = self._font.render(text, True, SHADOW_COLOR).convert_alpha()
+        if text not in self._text_cache:
+            self._text_cache[text] = self._font.render(text, True, TEXT_COLOR).convert_alpha()
+
+        shadow_rect = self._shadow_cache[text].get_rect(
             center=(center[0] + SHADOW_OFFSET, center[1] + SHADOW_OFFSET)
         )
-        surface.blit(shadow_surf, shadow_rect)
-        main_surf = self._font.render(text, True, TEXT_COLOR)
-        main_rect = main_surf.get_rect(center=center)
-        surface.blit(main_surf, main_rect)
+        surface.blit(self._shadow_cache[text], shadow_rect)
+        surface.blit(self._text_cache[text], self._text_cache[text].get_rect(center=center))
 
     def draw(self, screen: pygame.Surface) -> None:
         clock_w = self._clock_surf.get_width()
@@ -88,7 +88,7 @@ class GameHUD:
         icon_y = hud_y + SEASON_ICON_CENTER[1] - icon.get_height() // 2
         screen.blit(icon, (icon_x, icon_y))
 
-        self._render_text_centered(
+        self._render_text_cached(
             screen,
             self.time_system.time_label,
             (hud_x + TIME_ANCHOR[0], hud_y + TIME_ANCHOR[1]),
@@ -98,7 +98,7 @@ class GameHUD:
         day_label = self._i18n.get("day_label", "Day").upper()
         season_day_text = f"{day_label} {wt.day + 1}"
 
-        self._render_text_centered(
+        self._render_text_cached(
             screen,
             season_day_text,
             (hud_x + SEASON_DAY_ANCHOR[0], hud_y + SEASON_DAY_ANCHOR[1]),

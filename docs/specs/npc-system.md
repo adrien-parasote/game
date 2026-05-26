@@ -40,7 +40,7 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 - Nine-patch bubble rendered **above** the NPC's sprite using nine-patch 32×32 tiles from `assets/images/HUD/`.
 - Tail (`21-bubble_queue.png`) anchored to `npc.rect.top` with configurable `tail_gap`.
 - **Name Plate**: Renders NPC name at top-left using `23-bubble_name.png` (using subsurface slicing for variable width).
-- Text auto-wrapped to `max_width_px=224` (7 tiles) using narrative font.
+- Text content auto-wrapped to `max_width_px=224` (7 tiles × 32px) using narrative font. This is the **text content wrap width**, distinct from the minimum bubble surface width (also 224px, see [dialogue-system.md §3.2](./dialogue-system.md)).
 - Layout governed by constants: `_PADDING_TOP = 20`, `_PADDING_BOTTOM = 0`, `_PADDING_X = 30`. Max 4 lines per page.
 - Pagination via `page` index stored in `Game._npc_bubble`; `22-bubble_arrow.png` shown on multi-page.
 
@@ -165,7 +165,7 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 | ❌ Anti-Pattern | Impact | ✅ Correct Behavior |
 |---|---|---|
 | Animate a `static_npc` only if `is_moving` | `frame_index` stays at 0 → sprite frozen | Check if `sub_type == 'static_npc' or is_moving` to increment `frame_index` and cycle continuously. |
-| Apply `facing_direction` to `sub_type='npc'` | The wandering NPC changes direction via AI — silent deceptive override | `facing_direction` only applies to `static_npc` |
+| Rely on `facing_direction` to control a wandering NPC's facing at runtime | The AI wander loop overrides `current_facing` on first movement — the initial value is lost within seconds | `facing_direction` sets initial facing for all NPCs but is only **visually stable** for `static_npc` (since AI is skipped). For wandering NPCs, use it only when the initial idle pose matters (e.g., map load). |
 | Move `05-guard_*.png` to `sprites/` | `InteractiveEntity._load_assets()` searches in `sprites/`, `NPC.__init__` searches in `characters/` — wrong folder → FileNotFoundError | Keep all NPC spritesheets in `assets/images/characters/` |
 | Use a sprite layout (rows=frames, cols=variants) for a static_npc | `_update_animation` uses rows=directions → wrong frames displayed | Always use the character layout (rows=directions, cols=frames) for NPC spritesheets |
 | Reset `frame_index = 0` when `not is_moving` for a `static_npc` | Cuts the looping animation on every stopped frame | Ignore the `elif not self._was_moving` block for `static_npc` |

@@ -23,7 +23,7 @@ def pygame_setup(setup_pygame):
 
 class TestAssetManagerFontFallback:
     def test_get_font_returns_default_on_exception(self):
-        """Lignes 70-72 : get_font() retourne pygame.font.Font(None, size) si erreur."""
+        """Lignes 70-72 : get_font() retourne SysFont('Arial', size) si erreur de chargement."""
         from src.engine.asset_manager import AssetManager
 
         am = AssetManager()
@@ -33,12 +33,10 @@ class TestAssetManagerFontFallback:
         # Simuler un fichier existant mais Font() qui lève une Exception
         with patch("src.engine.asset_manager.os.path.exists", return_value=True):
             with patch("src.engine.asset_manager.pygame.font.Font") as mock_font_cls:
-                # Première appel (ligne 64) → Exception
-                # Deuxième appel (ligne 72 fallback Font(None, size)) → MagicMock
-                fallback_font = MagicMock()
-                mock_font_cls.side_effect = [Exception("corrupt font"), fallback_font]
+                mock_font_cls.side_effect = Exception("corrupt font")
                 result = am.get_font("bad_font.ttf", 16)
-        assert result is fallback_font
+        # Fallback now uses SysFont — result is a real pygame font
+        assert isinstance(result, pygame.font.Font)
 
 
 # ===========================================================================

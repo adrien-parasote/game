@@ -26,6 +26,18 @@ if TYPE_CHECKING:
 class InventoryDrawMixin:
     """Mixin handling all draw-related methods for InventoryUI."""
 
+    def _render_text(
+        self: "InventoryUIProtocol",
+        font: pygame.font.Font,
+        text: str,
+        color: tuple,
+    ) -> pygame.Surface:
+        """Cache-aware font.render. Zero alloc on repeat (text, color) pairs."""
+        key = (id(font), text, color)
+        if key not in self._text_cache:
+            self._text_cache[key] = font.render(text, True, color)
+        return self._text_cache[key]
+
     def draw(self: "InventoryUIProtocol", screen: pygame.Surface) -> None:
         """Render the complete inventory overlay."""
         if not self.is_open:
@@ -56,7 +68,7 @@ class InventoryDrawMixin:
         except Exception as e:
             logging.error(f"InventoryUI: Character preview failed: {e}")
 
-        name_text = self.noble_font.render("Player", True, COLOR_TEXT_STONE)
+        name_text = self._render_text(self.noble_font, "Player", COLOR_TEXT_STONE)
         screen.blit(name_text, name_text.get_rect(midbottom=self.char_name_pos))
 
     def _draw_grid(self: "InventoryUIProtocol", screen: pygame.Surface, s: float) -> None:
@@ -83,7 +95,7 @@ class InventoryDrawMixin:
                 if icon:
                     screen.blit(icon, icon.get_rect(center=(x, y)))
                 if item.quantity > 1:
-                    qty_text = self.tech_font.render(f"x{item.quantity}", True, COLOR_TEXT_STONE)
+                    qty_text = self._render_text(self.tech_font, f"x{item.quantity}", COLOR_TEXT_STONE)
                     margin = int(8 * s)
                     screen.blit(
                         qty_text,
@@ -120,7 +132,7 @@ class InventoryDrawMixin:
                 if icon:
                     screen.blit(icon, icon.get_rect(center=pos))
                 if item.quantity > 1:
-                    qty_text = self.tech_font.render(f"x{item.quantity}", True, COLOR_TEXT_STONE)
+                    qty_text = self._render_text(self.tech_font, f"x{item.quantity}", COLOR_TEXT_STONE)
                     margin = int(8 * s)
                     screen.blit(
                         qty_text,
@@ -153,7 +165,7 @@ class InventoryDrawMixin:
 
             qty = self._dragging_item["quantity"]
             if qty > 1:
-                qty_text = self.tech_font.render(f"x{qty}", True, COLOR_TEXT_STONE)
+                qty_text = self._render_text(self.tech_font, f"x{qty}", COLOR_TEXT_STONE)
                 # align to bottom right of the icon rect
                 margin = int(8 * self.scale_factor)
                 screen.blit(
@@ -228,19 +240,25 @@ class InventoryDrawMixin:
     ) -> None:
         """Draw LVL, HP, and GOLD in the stats bar."""
         # LVL (Left part of green bar)
-        lvl_text = self.noble_font.render(f"LVL {self.player.level}", True, COLOR_TEXT_STONE)
+        lvl_text = self._render_text(
+            self.noble_font, f"LVL {self.player.level}", COLOR_TEXT_STONE
+        )
         lvl_rect = lvl_text.get_rect(midleft=(stats_x, stats_y))
         screen.blit(lvl_text, lvl_rect)
 
         # HP (Center)
-        hp_text = self.noble_font.render(
-            f"HP {self.player.hp}/{self.player.max_hp}", True, COLOR_TEXT_STONE
+        hp_text = self._render_text(
+            self.noble_font,
+            f"HP {self.player.hp}/{self.player.max_hp}",
+            COLOR_TEXT_STONE,
         )
         hp_rect = hp_text.get_rect(center=(self.bg_rect.x + int(INV_HP_X * s), stats_y))
         screen.blit(hp_text, hp_rect)
 
         # GOLD (Right)
-        gold_text = self.noble_font.render(f"GOLD {self.player.gold}", True, COLOR_TEXT_STONE)
+        gold_text = self._render_text(
+            self.noble_font, f"GOLD {self.player.gold}", COLOR_TEXT_STONE
+        )
         gold_rect = gold_text.get_rect(
             midright=(self.bg_rect.x + int(INV_GOLD_X * s), stats_y)
         )

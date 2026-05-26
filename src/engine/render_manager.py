@@ -2,6 +2,9 @@ import pygame
 
 from src.config import Settings
 
+# Python 3.12 type aliases — replace inline annotations used across multiple methods
+type BlitSequence = list[tuple[pygame.Surface, tuple[int, int]]]
+type OccludingRect = list[tuple[pygame.Rect, int]]
 
 class RenderManager:
     """Handles all visual rendering logic for the game scene, decoupling it from the main event loop."""
@@ -60,8 +63,8 @@ class RenderManager:
         walk_active: bool,
         player_screen_rect: pygame.Rect,
         player_depth: int,
-        occluding_rects: list[tuple[pygame.Rect, int]],
-    ) -> list[tuple[pygame.Surface, tuple[int, int]]]:
+        occluding_rects: OccludingRect,
+    ) -> BlitSequence:
         """Process and collect static foreground tiles, updating occluding rects."""
         normal_blits = []
         tiles = self.game.map_manager.tiles
@@ -98,7 +101,7 @@ class RenderManager:
         self,
         cam_offset: pygame.Vector2,
         player_depth: int,
-        occluding_rects: list[tuple[pygame.Rect, int]],
+        occluding_rects: OccludingRect,
     ) -> None:
         """Process and blit animated foreground tiles, collecting occluding rects."""
         if not (self.game.anim_map_manager and self._frame_anim_all):
@@ -120,7 +123,7 @@ class RenderManager:
         if anim_fg_blits:
             self.game.screen.fblits(anim_fg_blits)
 
-    def draw_foreground(self) -> list[tuple[pygame.Rect, int]]:
+    def draw_foreground(self) -> OccludingRect:
         """Draw foreground tiles: all tiles from layers with order > player depth,
         plus tiles with depth > player depth from mixed-depth layers.
         Applies occluded image when the player overlaps a depth > player.depth tile.
@@ -132,7 +135,7 @@ class RenderManager:
         skipped entirely — the player is invisible, so making tiles transparent would
         create a visible artifact (tiles flickering alpha as the player rect moves).
         """
-        occluding_rects: list[tuple[pygame.Rect, int]] = []
+        occluding_rects: OccludingRect = []
         cam_offset = self.game.visible_sprites.offset
         self._viewport_world.update(
             -cam_offset.x,
@@ -215,7 +218,7 @@ class RenderManager:
         return composite, used_composites
 
     def _apply_partial_occlusion(
-        self, occluding_rects: list[tuple[pygame.Rect, int]]
+        self, occluding_rects: OccludingRect
     ) -> dict[object, pygame.Surface]:
         """For each visible sprite intersecting an occluding tile, replace sprite.image
         with a composite surface where only the overlapping zone is semi-transparent.

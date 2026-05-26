@@ -1,5 +1,5 @@
-import os
-from typing import Any
+from pathlib import Path
+from typing import Any, override
 
 import pygame
 
@@ -25,14 +25,8 @@ class Player(BaseEntity):
         self.speed = speed
 
         # Load Spritesheet
-        sheet_path = os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "..",
-            "assets",
-            "images",
-            "characters",
-            "01-character.png",
+        sheet_path = str(
+            (Path(__file__).parent / ".." / ".." / "assets" / "images" / "characters" / "01-character.png").resolve()
         )
         sheet = SpriteSheet(sheet_path)
         self.frames = sheet.load_grid(4, 4)
@@ -147,6 +141,7 @@ class Player(BaseEntity):
             )
         return None
 
+    @override
     def update(self, dt: float):
         # We don't call self.input() here to keep it testable with manual direction set
         # But in the game loop we would

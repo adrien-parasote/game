@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from src.engine.i18n import I18nManager
 
@@ -39,7 +40,7 @@ class Inventory:
 
     def _load_item_data(self) -> dict[str, dict]:
         """Load item properties from JSON."""
-        path = os.path.join("assets", "data", "propertytypes.json")
+        path = str(Path("assets") / "data" / "propertytypes.json")
         if not os.path.exists(path):
             logging.error(f"Inventory: Properties file not found at {path}")
             return dict()

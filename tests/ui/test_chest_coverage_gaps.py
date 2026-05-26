@@ -162,11 +162,12 @@ class TestChestScrollLeft:
 
 class TestHudLoadImageFallback:
     def test_load_image_returns_fallback_surface_on_pygame_error(self):
-        """Lignes 47-49 : _load_image retourne Surface(10,10) si pygame.error."""
+        """Lignes 47-49 : _load_image retourne une Surface placeholder via AssetManager."""
         from src.ui.hud import GameHUD
 
-        with patch("src.ui.hud.pygame.image.load") as mock_load:
-            mock_load.side_effect = pygame.error("file not found")
+        with patch("src.ui.hud.AssetManager") as mock_am_cls:
+            placeholder = pygame.Surface((32, 32))
+            mock_am_cls.return_value.get_image.return_value = placeholder
             hud = GameHUD.__new__(GameHUD)
             result = hud._load_image("missing.png")
-        assert result.get_size() == (10, 10)
+        assert isinstance(result, pygame.Surface)

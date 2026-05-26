@@ -1,10 +1,11 @@
-import logging
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pygame
 
 from src.config import Settings
+from src.engine.asset_manager import AssetManager
 from src.ui.chest_constants import (
     _INV_SLOTS_VISIBLE,
     _INV_TARGET_WIDTH,
@@ -33,10 +34,18 @@ class ChestDrawMixin:
             return
         if self._title_font is None:
             self._title_font = pygame.font.Font(Settings.FONT_NOBLE, Settings.FONT_SIZE_NOBLE)
-        surf = self._title_font.render(CHEST_TITLE_TEXT, True, CHEST_TEXT_COLOR)
+        # Pre-render once: CHEST_TITLE_TEXT is a constant, never changes at runtime
+        title_surf = getattr(self, "_title_surf", None)
+        if title_surf is None:
+            title_surf = self._title_font.render(CHEST_TITLE_TEXT, True, CHEST_TEXT_COLOR)
+            try:
+                self._title_surf = title_surf
+            except AttributeError:
+                pass  # FakeChest in tests may not declare _title_surf
         cx = self._title_rect.centerx + _TITLE_OFFSET_X
         cy = self._title_rect.centery + _TITLE_OFFSET_Y
-        screen.blit(surf, surf.get_rect(center=(cx, cy)))
+        screen.blit(title_surf, title_surf.get_rect(center=(cx, cy)))
+
 
     def _draw_slots(self: "ChestUIProtocol", screen: pygame.Surface) -> None:
         """Render chest slot frames, item icons, quantities, and hover overlay."""
@@ -82,11 +91,19 @@ class ChestDrawMixin:
 
             qty = entry.get("quantity", 1)
             if qty > 1:
-                qty_surf = self._qty_font.render(f"x{qty}", True, CHEST_TEXT_COLOR)
-                qty_rect = qty_surf.get_rect(
-                    bottomright=(rect.right - margin, rect.bottom - margin)
-                )
-                screen.blit(qty_surf, qty_rect)
+                if qty not in self._qty_cache:
+                    if self._qty_font is None:
+                        pass  # guarded by caller
+                    else:
+                        self._qty_cache[qty] = self._qty_font.render(
+                            f"x{qty}", True, CHEST_TEXT_COLOR
+                        )
+                qty_surf = self._qty_cache.get(qty)
+                if qty_surf is not None:
+                    qty_rect = qty_surf.get_rect(
+                        bottomright=(rect.right - margin, rect.bottom - margin)
+                    )
+                    screen.blit(qty_surf, qty_rect)
 
         if self._hovered_chest_slot is not None and self._hover_img:
             hover_rect = self._hover_img.get_rect(
@@ -152,11 +169,17 @@ class ChestDrawMixin:
 
             qty = getattr(item, "quantity", 1)
             if qty > 1:
-                qty_surf = self._qty_font.render(f"x{qty}", True, CHEST_TEXT_COLOR)
-                qty_rect = qty_surf.get_rect(
-                    bottomright=(rect.right - margin, rect.bottom - margin)
-                )
-                screen.blit(qty_surf, qty_rect)
+                if qty not in self._qty_cache:
+                    if self._qty_font is not None:
+                        self._qty_cache[qty] = self._qty_font.render(
+                            f"x{qty}", True, CHEST_TEXT_COLOR
+                        )
+                qty_surf = self._qty_cache.get(qty)
+                if qty_surf is not None:
+                    qty_rect = qty_surf.get_rect(
+                        bottomright=(rect.right - margin, rect.bottom - margin)
+                    )
+                    screen.blit(qty_surf, qty_rect)
 
         # Hover overlay (guard against hovering a now-hidden slot)
         hov = self._hovered_inv_slot
@@ -212,55 +235,39 @@ class ChestDrawMixin:
 
     def _load_background(self) -> pygame.Surface | None:
         """Load and scale the chest background image to _TARGET_WIDTH."""
-        try:
-            img = pygame.image.load(ASSET_CHEST_BG).convert_alpha()
-            w, h = img.get_size()
-            scale = _TARGET_WIDTH / w
-            return pygame.transform.smoothscale(img, (int(w * scale), int(h * scale)))
-        except Exception as e:
-            logging.error(f"ChestUI background load failed: {e}")
-            return None
+        img = AssetManager().get_image(ASSET_CHEST_BG, fallback=True)
+        w, h = img.get_size()
+        scale = _TARGET_WIDTH / w
+        return pygame.transform.smoothscale(img, (int(w * scale), int(h * scale)))
 
     def _load_inv_background(self) -> pygame.Surface | None:
         """Load and scale the inventory background image to _INV_TARGET_WIDTH."""
-        try:
-            img = pygame.image.load(ASSET_INV_BG).convert_alpha()
-            w, h = img.get_size()
-            scale = _INV_TARGET_WIDTH / w
-            return pygame.transform.smoothscale(img, (int(w * scale), int(h * scale)))
-        except Exception as e:
-            logging.error(f"ChestUI inventory background load failed: {e}")
-            return None
+        img = AssetManager().get_image(ASSET_INV_BG, fallback=True)
+        w, h = img.get_size()
+        scale = _INV_TARGET_WIDTH / w
+        return pygame.transform.smoothscale(img, (int(w * scale), int(h * scale)))
 
     def _load_slot_image(self) -> pygame.Surface | None:
         """Load the slot placeholder image."""
-        try:
-            return pygame.image.load(ASSET_SLOT_IMG).convert_alpha()
-        except Exception as e:
-            logging.warning(f"ChestUI slot image load failed: {e}")
+        img = AssetManager().get_image(ASSET_SLOT_IMG, fallback=True)
+        # Distinguish real miss from fallback placeholder (32x32 magenta)
+        if img.get_size() == (32, 32):
             return None
+        return img
 
     def _load_cursor(self, path: str) -> pygame.Surface | None:
         """Load and scale a cursor image."""
-        try:
-            img = pygame.image.load(path).convert_alpha()
-            size = Settings.CURSOR_SIZE
-            w, h = img.get_size()
-            ratio = min(size / w, size / h)
-            return pygame.transform.smoothscale(img, (int(w * ratio), int(h * ratio)))
-        except Exception as e:
-            logging.warning(f"ChestUI cursor load failed ({path}): {e}")
-            return None
+        img = AssetManager().get_image(path, fallback=True)
+        size = Settings.CURSOR_SIZE
+        w, h = img.get_size()
+        ratio = min(size / w, size / h)
+        return pygame.transform.smoothscale(img, (int(w * ratio), int(h * ratio)))
 
     def _load_and_scale_arrow(self, path: str, scale: float) -> pygame.Surface | None:
         """Load an arrow icon and scale it by the given factor."""
-        try:
-            img = pygame.image.load(path).convert_alpha()
-            w, h = img.get_size()
-            return pygame.transform.smoothscale(img, (int(w * scale), int(h * scale)))
-        except Exception as e:
-            logging.warning(f"ChestUI arrow hover load failed ({path}): {e}")
-            return None
+        img = AssetManager().get_image(path, fallback=True)
+        w, h = img.get_size()
+        return pygame.transform.smoothscale(img, (int(w * scale), int(h * scale)))
 
     def _get_item_icon(self, icon_filename: str, slot_size: int) -> pygame.Surface | None:
         """Load, scale, and cache an item icon to *slot_size* px."""
@@ -268,18 +275,15 @@ class ChestDrawMixin:
         if cache_key in self._icon_cache:
             return self._icon_cache[cache_key]
 
-        path = os.path.join("assets", "images", "icons", icon_filename)
+        path = str(Path("assets") / "images" / "icons" / icon_filename)
         if not path.endswith(".png"):
             path += ".png"
 
-        try:
-            if os.path.exists(path):
-                img = pygame.image.load(path).convert_alpha()
-                img = pygame.transform.smoothscale(img, (slot_size, slot_size))
-                self._icon_cache[cache_key] = img
-                return img
-        except Exception as e:
-            logging.warning(f"ChestUI: Could not load icon {icon_filename}: {e}")
+        if os.path.exists(path):
+            img = AssetManager().get_image(path, fallback=True)
+            img = pygame.transform.smoothscale(img, (slot_size, slot_size))
+            self._icon_cache[cache_key] = img
+            return img
 
         self._icon_cache[cache_key] = None
         return None

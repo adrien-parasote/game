@@ -1,0 +1,172 @@
+{
+  "project": "/Users/adrien.parasote/Documents/perso/game",
+  "build_system": "Python",
+  "total_duration_s": 10.5,
+  "results": [
+    {
+      "check": "P0_Security",
+      "priority": "P0",
+      "passed": true,
+      "scanned_files": 199,
+      "findings_count": 0,
+      "critical": 0,
+      "high": 0,
+      "findings": []
+    },
+    {
+      "check": "P1_Build",
+      "priority": "P1",
+      "passed": null,
+      "skipped": true,
+      "reason": "No build command for Python"
+    },
+    {
+      "check": "P2_Types",
+      "priority": "P2",
+      "build_system": "Python",
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "0 errors, 0 warnings, 0 informations \n",
+      "stderr": "",
+      "duration_s": 1.3,
+      "command": "pyright ."
+    },
+    {
+      "check": "P3_Lint",
+      "priority": "P3",
+      "build_system": "Python",
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": "",
+      "duration_s": 0.0,
+      "command": "ruff check ."
+    },
+    {
+      "check": "P4_Tests",
+      "priority": "P4",
+      "build_system": "Python",
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "........................................................................ [  6%]\n........................................................................ [ 13%]\n........................................................................ [ 19%]\n........................................................................ [ 26%]\n........................................................................ [ 32%]\n........................................................................ [ 39%]\n........................................................................ [ 46%]\n........................................................................ [ 52%]\n........................................................................ [ 59%]\n........................................................................ [ 65%]\n........................................................................ [ 72%]\n........................................................................ [ 78%]\n........................................................................ [ 85%]\n........................................................................ [ 92%]\n........................................................................ [ 98%]\n..............                                                           [100%]\n1094 passed in 5.88s\n",
+      "stderr": "",
+      "duration_s": 6.3,
+      "command": "pytest --tb=short -q"
+    },
+    {
+      "check": "P5_DebugArtifacts",
+      "priority": "P5",
+      "passed": true,
+      "scanned_files": 104,
+      "findings_count": 0,
+      "findings": []
+    },
+    {
+      "check": "P6_StubDetection",
+      "priority": "P6",
+      "passed": true,
+      "scanned_files": 104,
+      "findings_count": 0,
+      "findings": []
+    },
+    {
+      "check": "P7_Architecture",
+      "priority": "P7",
+      "passed": true,
+      "quality_signal": "6504",
+      "rules_pass": true,
+      "gate_pass": true,
+      "violation_count": 0,
+      "violations": [],
+      "gate_info": "Quality:      6504 -> 6504",
+      "duration_s": 1.1
+    },
+    {
+      "check": "P8_SpecConformance",
+      "priority": "P8",
+      "passed": true,
+      "status": "CONFORMS",
+      "divergence_count": 0,
+      "divergences": [],
+      "spec_files": [
+        "docs/codemaps/architecture.md"
+      ],
+      "duration_s": 0.1
+    },
+    {
+      "check": "P9_TestQuality",
+      "priority": "P9",
+      "passed": true,
+      "scanned_test_files": 95,
+      "findings_count": 0,
+      "findings": []
+    },
+    {
+      "check": "P10_TDDSequence",
+      "priority": "P10",
+      "passed": false,
+      "lock_timestamp": "2026-05-22T20:01:15+0200",
+      "locked_test_files": 91,
+      "modified_count": 8,
+      "missing_count": 0,
+      "findings": [
+        {
+          "file": "tests/conftest.py",
+          "type": "test_modified_after_lock",
+          "severity": "high",
+          "message": "Test file was modified after TDD lock \u2014 possible confirmation-bias rewrite"
+        },
+        {
+          "file": "tests/ui/test_chest.py",
+          "type": "test_modified_after_lock",
+          "severity": "high",
+          "message": "Test file was modified after TDD lock \u2014 possible confirmation-bias rewrite"
+        },
+        {
+          "file": "tests/ui/test_chest_draw_assets.py",
+          "type": "test_modified_after_lock",
+          "severity": "high",
+          "message": "Test file was modified after TDD lock \u2014 possible confirmation-bias rewrite"
+        },
+        {
+          "file": "tests/ui/test_inventory.py",
+          "type": "test_modified_after_lock",
+          "severity": "high",
+          "message": "Test file was modified after TDD lock \u2014 possible confirmation-bias rewrite"
+        },
+        {
+          "file": "tests/ui/test_pause_screen.py",
+          "type": "test_modified_after_lock",
+          "severity": "high",
+          "message": "Test file was modified after TDD lock \u2014 possible confirmation-bias rewrite"
+        },
+        {
+          "file": "tests/ui/test_save_menu.py",
+          "type": "test_modified_after_lock",
+          "severity": "high",
+          "message": "Test file was modified after TDD lock \u2014 possible confirmation-bias rewrite"
+        },
+        {
+          "file": "tests/engine/test_coverage_gaps.py",
+          "type": "test_modified_after_lock",
+          "severity": "high",
+          "message": "Test file was modified after TDD lock \u2014 possible confirmation-bias rewrite"
+        },
+        {
+          "file": "tests/ui/test_chest_coverage_gaps.py",
+          "type": "test_modified_after_lock",
+          "severity": "high",
+          "message": "Test file was modified after TDD lock \u2014 possible confirmation-bias rewrite"
+        }
+      ],
+      "missing_files": []
+    }
+  ],
+  "summary": {
+    "total": 11,
+    "passed": 9,
+    "failed": 1,
+    "skipped": 1
+  },
+  "verdict": "FAIL"
+}

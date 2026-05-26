@@ -50,6 +50,10 @@ class ChestUI(ChestLayoutMixin, ChestTransferMixin, ChestDrawMixin, ChestInputMi
         self._qty_font: pygame.font.Font | None = None
         # Title font (lazy-init in ChestDrawMixin._draw_title — created once, never per frame)
         self._title_font: pygame.font.Font | None = None
+        # Pre-rendered title surface (CHEST_TITLE_TEXT is static — rendered once)
+        self._title_surf: pygame.Surface | None = None
+        # Quantity badge cache: qty int → Surface
+        self._qty_cache: dict[int, pygame.Surface] = {}
 
         # --- Computed layout (filled in _compute_layout) ---
         self._bg_rect: pygame.Rect | None = None

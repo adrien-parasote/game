@@ -48,6 +48,9 @@ This document specifies the core RPG Tile Engine lifecycle, GameStateManager orc
 - **Playing State**: Holds active `Game` orchestration loop (updates logic, inputs, and custom rendering passes).
 - **Paused State**: Overlays a semi-transparent gray surface `(0, 0, 0, 150)` with `PauseScreen` options.
 
+> [!NOTE]
+> During `PLAYING`, the `_intra_walk_target` flag creates a modal sub-state where player input is blocked and a scripted walk executes. See [intra-map-teleport.md §4.2](./intra-map-teleport.md).
+
 ---
 
 ## 3. Title Screen & Pause Screen Interfaces
@@ -105,19 +108,45 @@ offset_x = clamp(player_center_x - screen_w // 2, 0, map_w_px - screen_w)
 ```
 If screen width exceeds map width, coordinates are centered: `offset_x = (screen_w - map_w_px) // 2`.
 
+### 6.3 Game Update Loop (`_update_core_state`)
+
+The canonical per-frame update method is `Game._update_core_state(dt)`, called from the main loop during `PLAYING` state. Its structure:
+
+1. **Intra-map walk intercept**: If `_intra_walk_target` is set, delegate to `_tick_intra_walk(dt)` and return early (blocks all other update logic). See [intra-map-teleport.md §4.5](./intra-map-teleport.md).
+2. **Player input**: `player.input()` (keyboard polling).
+3. **Entity updates**: `player.update(dt)`, NPC updates (visibility-gated), interactive entity updates.
+4. **Interaction checks**: `interaction_manager.update(dt)`, `interaction_manager.check_teleporters(was_moving)`.
+5. **Audio flush**: `audio_manager.flush_ambient()`.
+6. **Camera sync**: Update viewport offset.
+
 ---
 
 ## 7. Spatial Interaction & Dialogue HUD
 
 ### 7.1 Interaction Mechanics
 - Triggered by `Settings.INTERACT_KEY` (E) with a **0.5s cooldown**.
-- Valid within a `< 45px` range when facing the target.
 - Open doors (`is_on=True`) relax the facing checks to let players close them from either side.
+
+#### 7.1.1 Distance Thresholds
+
+| Range | Constant | Applied To |
+|-------|----------|------------|
+| `< 45px` | `_RANGE_SQ_45` | Standard object interaction, chest auto-close |
+| `< 48px` | `_RANGE_SQ_48` | Pickup items, `activate_from_anywhere` objects, proximity emotes |
+| `< 16px` | `_RANGE_SQ_16` | On-top exception (passable objects, pickup facing bypass) |
+
+> [!NOTE]
+> These thresholds are distinct by design. Standard objects use 45px; pickups and `activate_from_anywhere` objects use the wider 48px range. The on-top exception at 16px allows interaction regardless of facing direction.
 
 ### 7.2 Dialogue Typewriter Box
 - **Typewriter Rendering**: Reveals characters sequentially at `Settings.TEXT_SPEED` (cps).
 - **Pagination Logic**: Line length and count wrap dynamically within `dialogue_box` margins (140px). Text blocks auto-paginate (3 lines max with a Title, 5 lines max without).
 - **Control**: Pressing the interact key during typing fills the current page instantly. Pressing it when typing is done advances pages or dismisses dialogue.
+
+### 7.3 Playtime Tracking
+- `Game._playtime_seconds: float` — accumulated via `+= dt` every frame during `PLAYING` state only (paused time excluded).
+- `SaveManager.save()` reads `game._playtime_seconds` and stores it in the JSON root as `playtime_seconds`.
+- `SaveManager.load()` restores it into `game._playtime_seconds`.
 
 ---
 

@@ -10,6 +10,7 @@ Deep links:
 
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 import pygame
@@ -50,7 +51,7 @@ class MapLoader:
             transition_type: Transition animation type (currently unused).
         """
         map_name = map_name.replace(".tjm", ".tmj")
-        map_path = os.path.join("assets", "tiled", "maps", map_name)
+        map_path = str(Path("assets") / "tiled" / "maps" / map_name)
 
         if not os.path.exists(map_path):
             logging.error(f"Target map not found: {map_path}")

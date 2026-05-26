@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import pygame
 
 from src.config import Settings
+from src.engine.asset_manager import AssetManager
 from src.ui.chest_constants import (
     _ARROW_DOWN_ZONE_REL,
     _ARROW_OFFSET_X,
@@ -70,7 +71,9 @@ class ChestLayoutMixin:
         self._layout_computed = True
 
     def _compute_panel_rects(self: "ChestUIProtocol", screen_w: int, bg_w: int, bg_h: int) -> None:
+        assert self._bg is not None, "_compute_panel_rects called with _bg=None"
         self._bg_rect = self._bg.get_rect(midtop=(screen_w // 2, 10))
+
 
         left, top, right, bottom = _TITLE_ZONE_REL
         self._title_rect = pygame.Rect(
@@ -93,19 +96,25 @@ class ChestLayoutMixin:
         if self._slot_img is not None:
             self._slot_img = pygame.transform.smoothscale(self._slot_img, (slot_size, slot_size))
         try:
-            raw = pygame.image.load(ASSET_SLOT_HOVER).convert_alpha()
-            self._hover_img = pygame.transform.smoothscale(raw, (slot_size, slot_size))
+            raw = AssetManager().get_image(ASSET_SLOT_HOVER, fallback=True)
+            if raw.get_size() == (32, 32):
+                # Default image — treat as missing
+                self._hover_img = None
+            else:
+                self._hover_img = pygame.transform.smoothscale(raw, (slot_size, slot_size))
         except Exception as e:
             logging.warning(f"ChestUI hover image load failed: {e}")
             self._hover_img = None
 
     def _compute_chest_grid(self: "ChestUIProtocol", slot_size: int, step: int) -> None:
+        assert self._content_rect is not None, "_content_rect must be computed before grid"
         grid_w = step * (_SLOT_COLS - 1) + slot_size
         grid_h = step * (_SLOT_ROWS - 1) + slot_size
         origin_x = self._content_rect.left + (self._content_rect.width - grid_w) // 2
         origin_y = (
             self._content_rect.top + (self._content_rect.height - grid_h) // 2 + _GRID_OFFSET_Y
         )
+
 
         self._slot_positions.clear()
         for row in range(_SLOT_ROWS):

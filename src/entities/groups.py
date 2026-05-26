@@ -1,3 +1,5 @@
+from typing import override
+
 import pygame
 
 from src.config import Settings
@@ -65,10 +67,12 @@ class CameraGroup(pygame.sprite.Group):
         """Invalidate the Y-sort cache — call after any sprite position change."""
         self._cache_dirty = True
 
+    @override
     def add(self, *sprites) -> None:  # type: ignore[override]
         super().add(*sprites)
         self._cache_dirty = True
 
+    @override
     def remove(self, *sprites) -> None:  # type: ignore[override]
         super().remove(*sprites)
         self._cache_dirty = True

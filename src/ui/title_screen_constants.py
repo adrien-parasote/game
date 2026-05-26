@@ -1,8 +1,8 @@
-import os
+from pathlib import Path
 
 # ── Asset constants ────────────────────────────────────────────────────────────
-_MENU_DIR = os.path.join("assets", "images", "menu")
-_UI_DIR = os.path.join("assets", "images", "ui")
+_MENU_DIR = str(Path("assets") / "images" / "menu")
+_UI_DIR = str(Path("assets") / "images" / "ui")
 
 # Logo composite: 3 separate alpha-transparent PNGs assembled at runtime
 LOGO_MAIN_W = 640  # main title scaled width

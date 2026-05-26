@@ -6,10 +6,59 @@ Spec: docs/specs/game-flow-spec.md#21-srcenginesave_managerpy-new
 import json
 import logging
 import os
+import shutil
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 
-SAVES_DIR = "saves"
+import pygame.system
+
+
+def _get_saves_dir() -> str:
+    """Return the OS-appropriate saves directory path.
+
+    Uses pygame.system.get_pref_path() for cross-OS compatibility:
+    - macOS: ~/Library/Application Support/adrien/game/
+    - Windows: %APPDATA%/adrien/game/
+    - Linux: ~/.local/share/adrien/game/
+
+    Falls back to "saves" if pygame is not initialized (e.g. test context).
+
+    Migration: if legacy "./saves" exists and the new directory is empty,
+    moves all saves to the new directory and renames "./saves" to "./saves_migrated".
+    """
+    try:
+        path = pygame.system.get_pref_path("adrien", "game")
+
+        # MIGRATION: Preserve user data from legacy paths
+        legacy_path = "saves"
+        if os.path.isdir(legacy_path):
+            if not os.path.exists(path) or not os.listdir(path):
+                os.makedirs(path, exist_ok=True)
+                for item in os.listdir(legacy_path):
+                    src = str(Path(legacy_path) / item)
+                    dst = str(Path(path) / item)
+                    if os.path.isdir(src):
+                        shutil.copytree(src, dst)
+                    else:
+                        shutil.copy2(src, dst)
+                # Safe rename — avoid collision with existing saves_migrated
+                migrated = legacy_path + "_migrated"
+                if os.path.exists(migrated):
+                    counter = 1
+                    while os.path.exists(f"{migrated}_{counter}"):
+                        counter += 1
+                    migrated = f"{migrated}_{counter}"
+                os.rename(legacy_path, migrated)
+                logging.info(f"SaveManager: migrated saves from '{legacy_path}' to '{path}'")
+
+        return path
+    except Exception as exc:
+        logging.warning(f"SaveManager: get_pref_path failed ({exc}), using fallback 'saves'")
+        return "saves"
+
+
+SAVES_DIR = _get_saves_dir()
 MAX_SLOTS = 3
 SCHEMA_VERSION = "0.4.0"
 
@@ -74,7 +123,7 @@ class SaveManager:
 
         self._validate_slot_id(slot_id)
         os.makedirs(self._saves_dir, exist_ok=True)
-        path = os.path.join(self._saves_dir, f"slot_{slot_id}_thumb.png")
+        path = str(Path(self._saves_dir) / f"slot_{slot_id}_thumb.png")
         try:
             pygame.image.save(surface, path)
         except pygame.error as e:
@@ -85,7 +134,7 @@ class SaveManager:
         import pygame
 
         self._validate_slot_id(slot_id)
-        path = os.path.join(self._saves_dir, f"slot_{slot_id}_thumb.png")
+        path = str(Path(self._saves_dir) / f"slot_{slot_id}_thumb.png")
         if not os.path.exists(path):
             return None
         try:
@@ -142,7 +191,7 @@ class SaveManager:
     # ── Private helpers ───────────────────────────────────────────────────────
 
     def _slot_path(self, slot_id: int) -> str:
-        return os.path.join(self._saves_dir, f"slot_{slot_id}.json")
+        return str(Path(self._saves_dir) / f"slot_{slot_id}.json")
 
     def _validate_slot_id(self, slot_id: int) -> None:
         if slot_id < 1 or slot_id > MAX_SLOTS:

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 
@@ -21,8 +22,7 @@ class I18nManager:
     def load(self, locale: str):
         """Load a language file from assets/langs/{locale}.json."""
         self.current_locale = locale
-        root = os.path.join(os.path.dirname(__file__), "..", "..")
-        path = os.path.normpath(os.path.join(root, "assets", "langs", f"{locale}.json"))
+        path = str((Path(__file__).parent / ".." / ".." / "assets" / "langs" / f"{locale}.json").resolve())
 
         try:
             if os.path.exists(path):

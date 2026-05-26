@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 import pygame
 
@@ -58,21 +59,23 @@ class DialogueManager:
     def _load_assets(self):
         """Load HUD assets and prepare fonts."""
         try:
-            hud_dir = os.path.join("assets", "images", "hud")
+            hud_dir = Path("assets") / "images" / "hud"
 
             # 1. Dialogue Box (05-textbox.png)
-            box_path = os.path.join(hud_dir, "05-textbox.png")
+            box_path = hud_dir / "05-textbox.png"
             if os.path.exists(box_path):
-                img = pygame.image.load(box_path).convert_alpha()
+                am = AssetManager()
+                img = am.get_image(str(box_path), fallback=True)
                 w, h = img.get_size()
                 self.dialogue_box = pygame.transform.smoothscale(
                     img, (int(w * self.scale), int(h * self.scale))
                 )
 
             # 2. Next Arrow (06-cursor.png)
-            arrow_path = os.path.join(hud_dir, "06-cursor.png")
+            arrow_path = hud_dir / "06-cursor.png"
             if os.path.exists(arrow_path):
-                img = pygame.image.load(arrow_path).convert_alpha()
+                am = AssetManager()
+                img = am.get_image(str(arrow_path), fallback=True)
                 w, h = img.get_size()
                 self.next_arrow = pygame.transform.smoothscale(
                     img, (int(w * self.scale), int(h * self.scale))
@@ -215,6 +218,7 @@ class DialogueManager:
             self._is_page_complete = True
 
     def _draw_typewriter_text(self, screen, message_x, message_y, page_surf):
+        assert self.font_message is not None, "font_message must be loaded before drawing"
         line_spacing = 1.2
         line_height = self.font_message.get_linesize() * line_spacing
         current_page_lines = self._pages[self._current_page_index]

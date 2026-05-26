@@ -1,6 +1,6 @@
-import os
 import random
-from typing import Any
+from pathlib import Path
+from typing import Any, override
 
 import pygame
 
@@ -33,8 +33,8 @@ class NPC(BaseEntity):
         self.speed = getattr(Settings, "NPC_SPEED", 40)
 
         # Load Spritesheet
-        sheet_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "assets", "images", "characters", sheet_name
+        sheet_path = str(
+            (Path(__file__).parent / ".." / ".." / "assets" / "images" / "characters" / sheet_name).resolve()
         )
         sheet = SpriteSheet(sheet_path)
         self.frames = sheet.load_grid(sheet_cols, sheet_rows)
@@ -163,6 +163,7 @@ class NPC(BaseEntity):
         current_frame = int(self.frame_index) % fpd
         self.image = self.frames[offset + current_frame]
 
+    @override
     def update(self, dt: float):
         if not self.is_visible:
             return  # CPU Freeze optimization

@@ -69,7 +69,10 @@ class AssetManager:
             return font
         except Exception as e:
             logging.error(f"Failed to load font {path}: {e}")
-            return pygame.font.Font(None, size)
+            try:
+                return pygame.font.SysFont("Arial", size)
+            except Exception:
+                return pygame.font.Font(None, size)
 
     def clear_cache(self):
         """Clear all cached assets."""

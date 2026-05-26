@@ -12,6 +12,7 @@ import json
 import logging
 import logging.handlers
 import os
+from pathlib import Path
 from typing import Any
 
 
@@ -26,7 +27,7 @@ def setup_logging(settings: Any) -> None:
     """
     log_dir = "logs"
     os.makedirs(log_dir, exist_ok=True)
-    log_file = os.path.join(log_dir, "game.log")
+    log_file = str(Path(log_dir) / "game.log")
 
     logger = logging.getLogger()
     logger.setLevel(settings.LOG_LEVEL)

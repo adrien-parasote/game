@@ -20,6 +20,16 @@ def setup_pygame():
     pygame.quit()
 
 
+@pytest.fixture(autouse=True)
+def reset_asset_manager():
+    """Reset the AssetManager singleton before each test to prevent state leakage."""
+    from src.engine.asset_manager import AssetManager
+
+    AssetManager._instance = None
+    yield
+    AssetManager._instance = None
+
+
 @pytest.fixture
 def mock_spritesheet():
     """Global mock for spritesheet loading to prevent missing file errors."""

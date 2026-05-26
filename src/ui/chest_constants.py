@@ -1,21 +1,21 @@
 # src/ui/chest_constants.py
 """Chest UI constants and asset paths."""
 
-import os
+from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Asset paths (relative to project root)
 # ---------------------------------------------------------------------------
-ASSET_CHEST_BG = os.path.join("assets", "images", "HUD", "07-chest.png")
-ASSET_INV_BG = os.path.join("assets", "images", "HUD", "12-inventory.png")
-ASSET_SLOT_IMG = os.path.join("assets", "images", "ui", "03-inventory_slot.png")
-ASSET_SLOT_HOVER = os.path.join("assets", "images", "ui", "04-inventory_slot_hover.png")
-ASSET_POINTER = os.path.join("assets", "images", "ui", "05-pointer.png")
-ASSET_POINTER_SELECT = os.path.join("assets", "images", "ui", "06-pointer_select.png")
-ASSET_ARROW_DOWN_HOVER = os.path.join("assets", "images", "HUD", "08-arrow_down.png")
-ASSET_ARROW_UP_HOVER = os.path.join("assets", "images", "HUD", "09-arrow_up.png")
-ASSET_ARROW_LEFT_HOVER = os.path.join("assets", "images", "HUD", "10-arrow_left.png")
-ASSET_ARROW_RIGHT_HOVER = os.path.join("assets", "images", "HUD", "11-arrow_right.png")
+ASSET_CHEST_BG = str(Path("assets") / "images" / "HUD" / "07-chest.png")
+ASSET_INV_BG = str(Path("assets") / "images" / "HUD" / "12-inventory.png")
+ASSET_SLOT_IMG = str(Path("assets") / "images" / "ui" / "03-inventory_slot.png")
+ASSET_SLOT_HOVER = str(Path("assets") / "images" / "ui" / "04-inventory_slot_hover.png")
+ASSET_POINTER = str(Path("assets") / "images" / "ui" / "05-pointer.png")
+ASSET_POINTER_SELECT = str(Path("assets") / "images" / "ui" / "06-pointer_select.png")
+ASSET_ARROW_DOWN_HOVER = str(Path("assets") / "images" / "HUD" / "08-arrow_down.png")
+ASSET_ARROW_UP_HOVER = str(Path("assets") / "images" / "HUD" / "09-arrow_up.png")
+ASSET_ARROW_LEFT_HOVER = str(Path("assets") / "images" / "HUD" / "10-arrow_left.png")
+ASSET_ARROW_RIGHT_HOVER = str(Path("assets") / "images" / "HUD" / "11-arrow_right.png")
 
 # ---------------------------------------------------------------------------
 # Chest panel layout constants

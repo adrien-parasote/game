@@ -25,7 +25,7 @@ Extended `SlotInfo` properties:
 - `level: int`
 
 **Thumbnail Management**:
-- During a save sequence, a squared player-centered screenshot crop (e.g., 120x120 pixels) must be saved to disk at `saves/slot_{id}_thumb.png`.
+- During a save sequence, a squared player-centered screenshot crop of **120×120 pixels** must be saved to disk at `saves/slot_{id}_thumb.png`.
 - `SaveManager` exposes `save_thumbnail(slot_id, surface)` and `load_thumbnail(slot_id) -> pygame.Surface | None`.
 
 ### 1.2 Save Slot Rendering

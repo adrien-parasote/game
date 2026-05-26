@@ -8,9 +8,11 @@ The tail (queue) is tile 21-bubble_queue.png.
 
 import os
 from collections.abc import Callable
+from pathlib import Path
 
 import pygame
 
+from src.engine.asset_manager import AssetManager
 from src.ui.speech_bubble_constants import (
     _ARROW_OFFSET_X,
     _ARROW_OFFSET_Y,
@@ -64,10 +66,10 @@ class SpeechBubble:
         """Load all PNG tiles and cache them as pygame.Surface objects."""
         self.tiles: dict = {}
         for key, filename in TILES.items():
-            path = os.path.join(ASSET_DIR, filename)
+            path = str(Path(ASSET_DIR) / filename)
             if not os.path.exists(path):
                 raise FileNotFoundError(f"Bubble asset not found: {path}")
-            img = pygame.image.load(path).convert_alpha()
+            img = AssetManager().get_image(path)
 
             # Use default size for arrow as requested; scale others to TILE_SIZE
             if key == "arrow":
@@ -173,7 +175,10 @@ class SpeechBubble:
 
         # Use name_font if available, else fallback to standard font
         font_to_use = self.name_font if self.name_font else self.font
+        if font_to_use is None:
+            return None
         name_surf = font_to_use.render(speaker_name, True, (255, 255, 255))
+
 
         name_w = name_surf.get_width()
         plate_padding_x = 16

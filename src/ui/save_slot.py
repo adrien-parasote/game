@@ -1,5 +1,4 @@
-import logging
-import os
+from pathlib import Path
 
 import pygame
 
@@ -35,15 +34,14 @@ class SaveSlotUI:
         self._i18n = I18nManager()
 
         # Load the slot background — scaled to SAVE_SLOT_BG_W x SAVE_SLOT_BG_H
-        path = os.path.join("assets", "images", "menu", "03-save_slot.png")
-        try:
-            raw = pygame.image.load(path).convert_alpha()
-            self._bg = pygame.transform.smoothscale(raw, (SAVE_SLOT_BG_W, SAVE_SLOT_BG_H))
-        except pygame.error as e:
-            logging.error(f"SaveSlotUI: Could not load 03-save_slot.png: {e}")
+        path = str(Path("assets") / "images" / "menu" / "03-save_slot.png")
+        raw = am.get_image(path, fallback=True)
+        if raw.get_size() == (32, 32):  # fallback placeholder from AssetManager
             self._bg = pygame.Surface((SAVE_SLOT_BG_W, SAVE_SLOT_BG_H), pygame.SRCALPHA)
             self._bg.fill(SAVE_SLOT_FALLBACK_BG)
             pygame.draw.rect(self._bg, SAVE_SLOT_FALLBACK_BORDER, self._bg.get_rect(), 2)
+        else:
+            self._bg = pygame.transform.smoothscale(raw, (SAVE_SLOT_BG_W, SAVE_SLOT_BG_H))
 
         # Pre-calculate halo for hover effect (using additive blending)
         radius = SAVE_SLOT_HALO_RADIUS

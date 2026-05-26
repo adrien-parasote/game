@@ -2,6 +2,7 @@ import json
 import os
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import pygame
@@ -35,7 +36,7 @@ class TmjParser:
         if not os.path.exists(tmj_path):
             if not tmj_path.startswith("assets"):
                 # Fallback to absolute if needed but try relative first
-                tmj_path = os.path.join(os.getcwd(), tmj_path)
+                tmj_path = str(Path.cwd() / tmj_path)
             if not os.path.exists(tmj_path):
                 raise FileNotFoundError(f"Map file not found: {tmj_path}")
 
@@ -64,7 +65,7 @@ class TmjParser:
             firstgid = ts["firstgid"]
             source = ts["source"]
             # Join relative to map file
-            tsx_path = os.path.normpath(os.path.join(os.path.dirname(tmj_path), source))
+            tsx_path = str((Path(tmj_path).parent / source).resolve())
             self._parse_tsx(tsx_path, firstgid, map_result["tiles"])
 
         # 2. Parse layers recursively
@@ -153,7 +154,7 @@ class TmjParser:
         if img_source is None:
             raise ValueError(f"Image tag missing source in TSX: {tsx_path}")
 
-        img_path = os.path.normpath(os.path.join(os.path.dirname(tsx_path), img_source))
+        img_path = str((Path(tsx_path).parent / img_source).resolve())
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"Tileset image not found: {img_path}")
 

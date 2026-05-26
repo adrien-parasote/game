@@ -38,6 +38,11 @@ INACTIVE ──start_dialogue()──→ TYPING ──(page complete)──→ P
                                                       INACTIVE
 ```
 
+The `DialogueManager` uses a boolean `_is_page_complete` flag to track the conceptual states:
+- **INACTIVE**: `is_active == False`
+- **TYPING**: `is_active == True` and `_is_page_complete == False`
+- **PAGE_COMPLETE**: `is_active == True` and `_is_page_complete == True`
+
 ### 2.2 Text wrapping & Pagination Algorithm
 - **Width**: `max_w = box_width - 2 * DIALOGUE_CONTENT_MARGIN_X` (140px margins).
 - **Line capacity**: `max_lines = floor(available_h / (font_linesize * 1.2))`. Adjusts dynamically (3 lines max with title, 5 lines max without).
@@ -75,7 +80,7 @@ All tiles are 32×32 pixels and loaded from `assets/images/HUD/`:
 
 ### 3.2 Nine-Patch Construction Algorithm
 1. Calculate bounds based on wrapped text size:
-   - `width = max(text_width + 60, name_plate_width + 30, 224)` (rounded up to 32px multiples).
+   - `width = max(text_width + 60, name_plate_width + 30, 224)` (rounded up to 32px multiples). The `224` is the **minimum bubble surface width** (7 tiles × 32px), distinct from the text content wrap width (also 224px, see [npc-system.md §SpeechBubble](./npc-system.md)).
    - `height = line_count * line_height + 40` (rounded up to 32px multiples).
 2. Create transparent Surface `(width, height, SRCALPHA)`.
 3. Blit 4 corner tiles.
@@ -126,7 +131,7 @@ The bubble is anchored above the NPC's head in world-space. Drawing utilizes a c
 ### 5.2 Integration & UI Tests
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-DLG-01 | `test_dialogue_pagination` | `../../tests/ui/test_inventory.py` |
+| TC-DLG-01 | `test_dialogue_pagination` | `../../tests/ui/test_inventory.py` | ⚠️ Misplaced — should be moved to `test_dialogue.py` |
 
 ---
 

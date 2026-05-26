@@ -1,5 +1,5 @@
 {
-  "pythonVersion": "3.13",
+  "pythonVersion": "3.12",
   "pythonPlatform": "Darwin",
   "extraPaths": ["."],
   "exclude": [
@@ -12,13 +12,8 @@
     "build",
     "dist"
   ],
-  "reportMissingImports": "warning",
+  "typeCheckingMode": "basic",
   "reportMissingModuleSource": "none",
-  "reportAttributeAccessIssue": "none",
-  "reportGeneralTypeIssues": "none",
-  "reportOptionalMemberAccess": "none",
-  "reportOptionalSubscript": "none",
-  "reportOptionalCall": "none",
-  "reportOptionalIterable": "none",
-  "reportOptionalOperand": "none"
+  "reportMissingImports": "warning",
+  "reportAttributeAccessIssue": "none"
 }

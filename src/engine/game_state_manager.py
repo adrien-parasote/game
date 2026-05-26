@@ -52,7 +52,9 @@ class GameStateManager:
     def run(self) -> None:
         """Main loop — replaces Game.run()."""
         while True:
-            dt = self._game.clock.tick(Settings.FPS) / 1000.0
+            raw_dt = self._game.clock.tick(Settings.FPS) / 1000.0
+            dt = min(raw_dt, Settings.DT_MAX)
+
             events = pygame.event.get()
 
             self._process_global_events(events)
@@ -306,12 +308,13 @@ class GameStateManager:
         """Return the initial map: debug room if Settings.DEBUG, else Settings.DEFAULT_MAP or world.world first entry."""
         import json
         import os
+        from pathlib import Path
 
         from src.config import Settings
 
         # Debug room takes priority
         debug_room = "99-debug_room.tmj"
-        debug_path = os.path.join("assets", "tiled", "maps", debug_room)
+        debug_path = str(Path("assets") / "tiled" / "maps" / debug_room)
         if Settings.DEBUG and os.path.exists(debug_path):
             return debug_room
 
@@ -322,7 +325,7 @@ class GameStateManager:
             return default_map
 
         # Otherwise, fall back to parsing world.world's first entry
-        world_path = os.path.join("assets", "tiled", "maps", "world.world")
+        world_path = str(Path("assets") / "tiled" / "maps" / "world.world")
         if os.path.exists(world_path):
             try:
                 with open(world_path, encoding="utf-8") as f:

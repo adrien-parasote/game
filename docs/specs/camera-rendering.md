@@ -471,18 +471,18 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 
 | # | Assumption | Risk | Validation |
 |---|------------|------|------------|
-| 1 | Map layers are statically ordered by depth. | Low | Verified by CLI test run: `pytest tests/map/test_map.py` |
-| 2 | Camera is always bound to player. | Low | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
-| 3 | Frustum culling margin is 0. | Medium | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
-| 4 | `visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)` identique dans `custom_draw` et `_apply_partial_occlusion` | Low | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
-| 5 | `Settings.OCCLUSION_ALPHA` identique pour NPCs et player (même expérience visuelle) | Low | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
-| 6 | Les tiles foreground sont tous de taille `TILE_SIZE × TILE_SIZE` (32×32) | Low | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
-| 7 | Max 2-3 NPCs occludés simultanément → perf négligeable | Medium | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
-| 8 | Tiles animés avec `depth > 1` n'existent pas encore — branche inerte jusqu'à création | Low | Verified by CLI test run: `pytest tests/map/test_map.py` |
-| 9 | Toutes les grass autotiles (`00-grass-1/2/3/4/5`) ont `depth=0` — tiles de fond | Low | Verified by CLI test run: `pytest tests/map/test_map.py` |
-| 10 | `material="grass"` est défini au niveau du tileset (toutes tuiles du tileset) — pas besoin de propriété par-tile | Low | Verified by CLI test run: `pytest tests/map/test_map.py` |
-| 11 | Au maximum 3–4 sprites visibles simultanément → overhead blit per-sprite négligeable | Medium | Verified by CLI test run: `pytest tests/engine/test_render_manager.py` |
-| 12 | `tile.image` retourné par `get_grass_tile_image_at` est une surface 32×32 stable — pas de copy nécessaire | Low | Verified by CLI test run: `pytest tests/map/test_map.py` |
+| 1 | Map layers are statically ordered by depth. | Low | Verified by CLI test run: (pytest tests/map/test_map.py) |
+| 2 | Camera is always bound to player. | Low | Verified by CLI test run: (pytest tests/engine/test_render_manager.py) |
+| 3 | Frustum culling margin is 0. | Medium | Verified by CLI test run: (pytest tests/engine/test_render_manager.py) |
+| 4 | `visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)` identique dans `custom_draw` et `_apply_partial_occlusion` | Low | Verified by CLI test run: (pytest tests/engine/test_render_manager.py) |
+| 5 | `Settings.OCCLUSION_ALPHA` identique pour NPCs et player (même expérience visuelle) | Low | Verified by CLI test run: (pytest tests/engine/test_render_manager.py) |
+| 6 | Les tiles foreground sont tous de taille `TILE_SIZE × TILE_SIZE` (32×32) | Low | Verified by CLI test run: (pytest tests/engine/test_render_manager.py) |
+| 7 | Max 2-3 NPCs occludés simultanément → perf négligeable | Medium | Verified by CLI test run: (pytest tests/engine/test_render_manager.py) |
+| 8 | Tiles animés avec `depth > 1` n'existent pas encore — branche inerte jusqu'à création | Low | Verified by CLI test run: (pytest tests/map/test_map.py) |
+| 9 | Toutes les grass autotiles (`00-grass-1/2/3/4/5`) ont `depth=0` — tiles de fond | Low | Verified by CLI test run: (pytest tests/map/test_map.py) |
+| 10 | `material="grass"` est défini au niveau du tileset (toutes tuiles du tileset) — pas besoin de propriété par-tile | Low | Verified by CLI test run: (pytest tests/map/test_map.py) |
+| 11 | Au maximum 3–4 sprites visibles simultanément → overhead blit per-sprite négligeable | Medium | Verified by CLI test run: (pytest tests/engine/test_render_manager.py) |
+| 12 | `tile.image` retourné par `get_grass_tile_image_at` est une surface 32×32 stable — pas de copy nécessaire | Low | Verified by CLI test run: (pytest tests/map/test_map.py) |
 
 
 ## 8. Anti-Patterns (DO NOT)

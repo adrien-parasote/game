@@ -69,6 +69,11 @@ This document serves as the Master Index and Architectural Registry for the 15 c
 | `WINDOW_WIDTH` | `config.py` | `1280` | Viewport dimensions, UI overlays |
 | `WINDOW_HEIGHT` | `config.py` | `720` | Viewport dimensions, UI overlays |
 | `MAX_DT_CLAMP` | `config.py` | `10.0` | Physics framerate delta clamping |
+| `PAGE_COMPLETE` | `ui/dialogue.py` | `1` | Dialogue pagination status |
+| `SHADOW_COLOR` | `config.py` | `(0, 0, 0)` | Text shadow color |
+| `SHADOW_OFFSET` | `config.py` | `(1, 1)` | Text shadow offset |
+| `STATIC_LABELS` | `config.py` | `{}` | Pre-rendered static UI text labels |
+| `TEXT_COLOR` | `config.py` | `(255, 255, 255)` | Default UI text color |
 
 ---
 
@@ -93,3 +98,138 @@ This document serves as the Master Index and Architectural Registry for the 15 c
 | [ADR-004](../ADRs/ADR-004-refactoring-context-injection.md) | Loose coupling context injection | Uses duck-typed `game` parameters to eliminate circular module imports |
 | [ADR-005](../ADRs/ADR-005-singleton-new.md) | Singleton loaders | Applies `__new__` singleton patterns to core asset & language managers |
 | [ADR-006](../ADRs/ADR-006-perf-constants-pre-render-cache.md) | Composite graphics caching | Pre-renders button and font assets to eliminate drawing allocations |
+| [ADR-007](../ADRs/ADR-007-partial-occlusion-surface-composite.md) | Partial Occlusion Surface Composite | Documents the composite-based approach to partial sprite occlusion behind foreground tiles |
+
+---
+
+## 6. Project Deliverables Tree
+
+```text
+    assets/
+        data/
+            loot_table.json
+            propertytypes.json
+        fonts/
+            cormorant-garamond-regular.ttf
+        images/
+            characters/
+            HUD/
+                07-chest.png
+            menu/
+                01-menu_back_cursor.png
+                03-save_slot.png
+            sprites/
+                04-emotes.png
+            ui/
+                03-inventory_slot.png
+        tiled/
+            game.tiled-project
+    characters/
+    data/
+        loot_table.json
+    saves/
+        slot_1_thumb.png
+        slot_X
+    sprites/
+    src/
+        engine/
+            asset_manager.py
+            collision_checker.py
+            lighting.py
+            map_loader.py
+        entities/
+            emote_sprite.py
+            interaction.py
+            teleport.py
+        graphics/
+            spritesheet.py
+        ui/
+            chest.py
+            chest_layout.py
+            chest_transfer.py
+            inventory_system.py
+        config.py
+    settings.json
+    pyproject.toml
+    docs/
+        specs/
+            engine-core.md
+            entities-system.md
+            map-world-system.md
+            camera-rendering.md
+            pygame_ce_python_312_best_practices.md
+            best_practices_remediation_blueprint.md
+        ADRs/
+            ADR-006-perf-constants-pre-render-cache.md
+    tests/
+        engine/
+            test_game.py
+            test_game_state_manager.py
+            test_collision_checker.py
+            test_spatial_utils.py
+            test_phase15_game.py
+            test_interaction.py
+            test_loot_table.py
+            test_lighting.py
+            test_map_loader.py
+            test_performance_optimizations.py
+            test_save_manager.py
+            test_bridge_sfx_interaction.py
+        entities/
+            test_interactive.py
+            test_sprite_frame_loading.py
+            test_entities.py
+            test_npc.py
+            test_bridge_sfx.py
+            test_bridge_sfx_player.py
+        ui/
+            test_dialogue.py
+            test_speech_bubble.py
+            test_inventory.py
+            test_title_screen.py
+            test_save_menu.py
+            test_pause_screen.py
+        scripts/
+            test_release.py
+        test_chest_ui.py
+        test_transfer_logic.py
+        test_interaction.py
+.agents/
+    learnings/
+        game_engine.md
+        ui.md
+engine-core.md
+asset_manager.py
+chest.py
+chest_layout.py
+chest_transfer.py
+propertytypes.json
+loot_table.json
+best_practices_remediation_blueprint.md
+pygame_ce_python_312_best_practices.md
+camera-rendering.md
+entities-system.md
+collision_checker.py
+test_dialogue.py
+ADR-006-perf-constants-pre-render-cache.md
+interaction.py
+map_loader.py
+map-world-system.md
+inventory_system.py
+spritesheet.py
+emote_sprite.py
+teleport.py
+gameplay.json
+game_engine.md
+title_screen_draw.py
+_constants.py
+save_menu_constants.py
+game_setup.py
+spatial_utils.py
+config.py
+ui/dialogue.py
+game.py
+lighting.py
+test_npc.py
+saves/
+```

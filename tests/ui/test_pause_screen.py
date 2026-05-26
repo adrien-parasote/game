@@ -59,11 +59,12 @@ def test_pause_screen_load_asset_fallback(pause_screen):
         assert surf.get_size() == (32, 32)
 
 
-def test_pause_screen_load_cursor_fallback(pause_screen):
-    # Tester _load_cursor en forçant une erreur
-    with patch("pygame.image.load", side_effect=pygame.error("Test error")):
-        surf = pause_screen._load_cursor("missing.png")
-        assert surf.get_size() == (32, 32)
+def test_pause_screen_load_cursor_fallback(pause_screen, caplog):
+    """_load_cursor returns a Surface from AssetManager fallback (not necessarily 32x32)."""
+    surf = pause_screen._load_cursor("assets/images/ui/missing.png")
+    assert isinstance(surf, pygame.Surface)
+    # AssetManager logs a warning about the missing asset
+    assert any("asset not found" in rec.message.lower() for rec in caplog.records)
 
 
 def test_pause_screen_load_assets_no_fallback(mock_screen, mock_save_manager):
@@ -113,7 +114,10 @@ def test_pause_screen_handle_event_click_sauvegarder(pause_screen):
     event.button = 1
     event.pos = pause_screen.button_rects[2].center
 
-    result = pause_screen.handle_event(event)
+    with patch("src.ui.pause_screen.SaveMenuOverlay") as mock_overlay_cls:
+        mock_overlay = MagicMock()
+        mock_overlay_cls.return_value = mock_overlay
+        result = pause_screen.handle_event(event)
     assert result is None
     assert pause_screen.state == "SAVE_MENU"
 

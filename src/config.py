@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 import pygame
@@ -82,9 +83,9 @@ class Settings:
     @classmethod
     def load(cls):
         """Load settings from JSON files and map to class attributes."""
-        root = os.path.join(os.path.dirname(__file__), "..")
-        tech_path = os.path.join(root, "settings.json")
-        game_path = os.path.join(root, "gameplay.json")
+        root = Path(__file__).parent / ".."
+        tech_path = str(root / "settings.json")
+        game_path = str(root / "gameplay.json")
 
         data = cls._DEFAULTS.copy()
         cls._read_json_into(tech_path, data)
@@ -101,7 +102,9 @@ class Settings:
         cls.WINDOW_WIDTH: int = data["display"]["width"]
         cls.WINDOW_HEIGHT: int = data["display"]["height"]
         cls.FPS: int = data["display"]["fps"]
+        cls.DT_MAX: float = 0.1  # Max dt in seconds — prevents physics tunneling on freeze (≥10FPS floor)
         cls.GAME_TITLE: str = data["display"]["title"]
+
         cls.FULLSCREEN: bool = data["display"]["fullscreen"]
 
         # Map & Colors

@@ -1,8 +1,8 @@
 import ast
 import logging
 import math
-import os
 import random
+from pathlib import Path
 
 import pygame
 
@@ -252,8 +252,8 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
 
         sheet_path = ""
         if sprite_sheet and sprite_sheet.strip():
-            sheet_path = os.path.join(
-                os.path.dirname(__file__), "..", "..", "assets", "images", "sprites", sprite_sheet
+            sheet_path = str(
+                (Path(__file__).parent / ".." / ".." / "assets" / "images" / "sprites" / sprite_sheet).resolve()
             )
 
         sheet = SpriteSheet(sheet_path) if sheet_path else None

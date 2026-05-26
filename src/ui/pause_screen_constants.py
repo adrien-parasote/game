@@ -1,7 +1,7 @@
-import os
+from pathlib import Path
 
-_MENU_DIR = os.path.join("assets", "images", "menu")
-_UI_DIR = os.path.join("assets", "images", "ui")
+_MENU_DIR = str(Path("assets") / "images" / "menu")
+_UI_DIR = str(Path("assets") / "images" / "ui")
 
 _FONT_PATH = "assets/fonts/cormorant-garamond-regular.ttf"
 

@@ -4,6 +4,7 @@ TC-CA-01..TC-CA-08 from docs/specs/phase-1.5-chest-refactoring.md
 IT-CA-01..IT-CA-05 regression/integration tests.
 """
 
+import logging
 import os
 from unittest.mock import MagicMock, patch
 
@@ -32,11 +33,17 @@ def make_chest_ui() -> ChestUI:
 
 @pytest.mark.tc("TC-CA-01")
 def test_load_background_missing_asset_returns_none(caplog):
-    """_load_background must return None and log error when asset is absent."""
+    """_load_background with AssetManager fallback returns a Surface (not None).
+
+    After migration to AssetManager, missing assets return a placeholder
+    surface instead of None. The method always returns a Surface.
+    """
     ui = make_chest_ui()
-    with patch("pygame.image.load", side_effect=Exception("no file")):
+    with patch("src.ui.chest_draw.ASSET_CHEST_BG", "nonexistent_bg.png"):
         result = ui._load_background()
-    assert result is None
+    # AssetManager fallback: returns a Surface, not None
+    assert isinstance(result, pygame.Surface)
+    assert any("asset not found" in rec.message.lower() for rec in caplog.records)
 
 
 # ---------------------------------------------------------------------------
@@ -46,11 +53,12 @@ def test_load_background_missing_asset_returns_none(caplog):
 
 @pytest.mark.tc("TC-CA-02")
 def test_load_inv_background_missing_asset_returns_none(caplog):
-    """_load_inv_background must return None and log error when asset is absent."""
+    """_load_inv_background with AssetManager fallback returns a Surface."""
     ui = make_chest_ui()
-    with patch("pygame.image.load", side_effect=Exception("no file")):
+    with patch("src.ui.chest_draw.ASSET_INV_BG", "nonexistent_inv.png"):
         result = ui._load_inv_background()
-    assert result is None
+    assert isinstance(result, pygame.Surface)
+    assert any("asset not found" in rec.message.lower() for rec in caplog.records)
 
 
 # ---------------------------------------------------------------------------
@@ -59,12 +67,14 @@ def test_load_inv_background_missing_asset_returns_none(caplog):
 
 
 @pytest.mark.tc("TC-CA-03")
-def test_load_slot_image_missing_asset_returns_none():
-    """_load_slot_image must return None on error."""
+def test_load_slot_image_missing_asset_returns_none(caplog):
+    """_load_slot_image returns None when asset is absent (32x32 fallback detection)."""
     ui = make_chest_ui()
-    with patch("pygame.image.load", side_effect=Exception("no file")):
+    with patch("src.ui.chest_draw.ASSET_SLOT_IMG", "nonexistent_slot.png"):
         result = ui._load_slot_image()
+    # Implementation checks for 32x32 size to detect placeholder
     assert result is None
+    assert any("asset not found" in rec.message.lower() for rec in caplog.records)
 
 
 # ---------------------------------------------------------------------------
@@ -73,12 +83,12 @@ def test_load_slot_image_missing_asset_returns_none():
 
 
 @pytest.mark.tc("TC-CA-04")
-def test_load_cursor_invalid_path_returns_none():
-    """_load_cursor must return None on error."""
+def test_load_cursor_invalid_path_returns_none(caplog):
+    """_load_cursor with missing file returns a scaled placeholder Surface (not None)."""
     ui = make_chest_ui()
-    with patch("pygame.image.load", side_effect=Exception("no file")):
-        result = ui._load_cursor("nonexistent.png")
-    assert result is None
+    result = ui._load_cursor("nonexistent.png")
+    # AssetManager returns a placeholder — _load_cursor scales it
+    assert isinstance(result, pygame.Surface)
 
 
 # ---------------------------------------------------------------------------
@@ -87,12 +97,12 @@ def test_load_cursor_invalid_path_returns_none():
 
 
 @pytest.mark.tc("TC-CA-05")
-def test_load_and_scale_arrow_invalid_path_returns_none():
-    """_load_and_scale_arrow must return None on error."""
+def test_load_and_scale_arrow_invalid_path_returns_none(caplog):
+    """_load_and_scale_arrow with missing file returns a scaled placeholder Surface."""
     ui = make_chest_ui()
-    with patch("pygame.image.load", side_effect=Exception("no file")):
-        result = ui._load_and_scale_arrow("nonexistent.png", 1.0)
-    assert result is None
+    result = ui._load_and_scale_arrow("nonexistent.png", 1.0)
+    # AssetManager returns a placeholder — method scales it
+    assert isinstance(result, pygame.Surface)
 
 
 # ---------------------------------------------------------------------------

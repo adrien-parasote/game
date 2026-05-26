@@ -80,7 +80,7 @@ tests/
 ```
 
 - **Global conftest**: Initializes Pygame in a headless mode (`dummy` video driver) to allow execution inside GUI-less CI environments.
-- **Isolation Rule**: Standard settings mutated in a test must be restored inside a `try/finally` block or context manager to prevent test suite state pollution.
+- **Isolation Rule**: Standard settings mutated in a test must be restored inside a try/finally block or context manager to prevent test suite state pollution.
 
 ---
 
@@ -88,7 +88,7 @@ tests/
 
 Version updates are automated via the `scripts/release.py` workflow:
 1. **Pre-checks**:
-   - Verification that the working directory is clean (`git status --porcelain`).
+   - Verification that the working directory is clean (using git status --porcelain).
    - Semantic Versioning check of requested tag.
    - Local and remote validation that the target tag does not already exist.
 2. **Version Bump**:

@@ -39,6 +39,8 @@ def test_save_slot_ui_draw_empty():
     pygame.font.init()
     mock_am = Mock()
     mock_am.get_font.return_value = pygame.font.SysFont(None, 24)
+    # get_image must return a real Surface (not a Mock) to avoid TypeError in smoothscale
+    mock_am.get_image.return_value = pygame.Surface((427, 200))
     slot_ui = SaveSlotUI(mock_am)
     surface = pygame.Surface((800, 120))
 
@@ -52,6 +54,7 @@ def test_save_slot_ui_draw_filled():
     pygame.font.init()
     mock_am = Mock()
     mock_am.get_font.return_value = pygame.font.SysFont(None, 24)
+    mock_am.get_image.return_value = pygame.Surface((427, 200))
     slot_ui = SaveSlotUI(mock_am)
     surface = pygame.Surface((800, 120))
     info = SlotInfo(

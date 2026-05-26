@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 import pygame
 
@@ -23,14 +24,12 @@ from src.ui.inventory_constants import (
     INV_GRID_START,
     INV_ORIGINAL_CURSOR_HEIGHT,
     INV_ORIGINAL_CURSOR_WIDTH,
-    INV_PLACEHOLDER_SIZE,
     INV_TAB_X_POSITIONS,
     INV_TAB_Y,
     INV_TARGET_WIDTH,
 )
 from src.ui.inventory_draw import InventoryDrawMixin
 from src.ui.inventory_input import InventoryInputMixin
-from src.ui.ui_colors import COLOR_DEBUG_MISSING
 
 
 class InventoryUI(InventoryDrawMixin, InventoryInputMixin):
@@ -43,6 +42,7 @@ class InventoryUI(InventoryDrawMixin, InventoryInputMixin):
     def __init__(self, player):
         self.player = player
         self.icon_cache = {}
+        self._text_cache: dict[tuple, pygame.Surface] = {}  # (text, color_tuple) → Surface
         self._init_state()
 
         am = AssetManager()
@@ -52,6 +52,7 @@ class InventoryUI(InventoryDrawMixin, InventoryInputMixin):
 
         self._load_and_scale_assets()
         self._init_layout_constants()
+
 
     def _init_state(self):
         self.is_open = False
@@ -139,14 +140,8 @@ class InventoryUI(InventoryDrawMixin, InventoryInputMixin):
         )
 
     def _load_asset(self, filename):
-        path = os.path.join("assets", "images", "ui", filename)
-        try:
-            return pygame.image.load(path).convert_alpha()
-        except pygame.error as e:
-            logging.error(f"InventoryUI: Could not load {filename}: {e}")
-            surf = pygame.Surface((INV_PLACEHOLDER_SIZE, INV_PLACEHOLDER_SIZE))
-            surf.fill(COLOR_DEBUG_MISSING)
-            return surf
+        path = str(Path("assets") / "images" / "ui" / filename)
+        return AssetManager().get_image(path, fallback=True)
 
     def toggle(self):
         self.is_open = not self.is_open
@@ -199,21 +194,23 @@ class InventoryUI(InventoryDrawMixin, InventoryInputMixin):
         if icon_filename in self.icon_cache:
             return self.icon_cache[icon_filename]
 
-        path = os.path.join("assets", "images", "icons", icon_filename)
+        path = str(Path("assets") / "images" / "icons" / icon_filename)
         # Ensure .png extension if missing
         if not path.endswith(".png"):
             path += ".png"
             icon_filename += ".png"
 
-        try:
-            if os.path.exists(path):
-                img = pygame.image.load(path).convert_alpha()
-                # Scale icon to fit slot (approx 48x48 base, scaled by s)
-                target_size = int(48 * self.scale_factor)
-                img = pygame.transform.smoothscale(img, (target_size, target_size))
-                self.icon_cache[icon_filename] = img
-                return img
-        except Exception as e:
-            logging.error(f"InventoryUI: Could not load icon {icon_filename}: {e}")
+        if os.path.exists(path):
+            try:
+                img = AssetManager().get_image(path, fallback=True)
+            except Exception as e:
+                logging.error(f"InventoryUI: Could not load icon {icon_filename}: {e}")
+                self.icon_cache[icon_filename] = None
+                return None
+            # Scale icon to fit slot (approx 48x48 base, scaled by s)
+            target_size = int(48 * self.scale_factor)
+            img = pygame.transform.smoothscale(img, (target_size, target_size))
+            self.icon_cache[icon_filename] = img
+            return img
 
         return None
