@@ -365,39 +365,40 @@ for sprite, original_image in saved_images.items():
 
 ### 9.1 Unit Tests — `tests/engine/test_intra_map_teleport.py`
 
-| Test ID | Function | Description |
-|---------|----------|-------------|
-| TC-001 | `test_intra_map_teleport_instant_repositions_player` | `intra_map_teleport("spawn_a", "instant")` → player pos == spawn_a coords, no `_load_map` called |
-| TC-002 | `test_intra_map_teleport_walk_sets_walk_state` | `intra_map_teleport("spawn_b", "walk")` → `_intra_walk_target` is set, player.target_pos is updated, is_moving is True |
-| TC-003 | `test_intra_map_teleport_unknown_spawn_logs_error_and_returns` | `resolve_spawn_by_id("nonexistent")` returns `None` → no exception, player pos unchanged |
-| TC-004 | `test_resolve_spawn_by_id_finds_correct_entity` | `map_manager._entities` has spawn with `spawn_id="door_exit"` → returns correct pixel coords |
-| TC-005 | `test_resolve_spawn_by_id_returns_none_on_miss` | No matching spawn → returns `None`, logs warning |
-| TC-006 | `test_tick_intra_walk_updates_facing_direction` | `_tick_intra_walk(dt)` updates `player.current_state` based on target vector |
-| TC-007 | `test_tick_intra_walk_terminates_on_arrival` | `_tick_intra_walk(dt)` once `player.is_moving` is `False` → clears `_intra_walk_target` and resets direction |
-| TC-008 | `test_tick_intra_walk_updates_facing_horizontal` | Walk left → `player.current_state == "left"` |
-| TC-009 | `test_tick_intra_walk_updates_facing_vertical` | Walk up → `player.current_state == "up"` |
-| TC-010 | `test_update_core_state_blocks_input_during_walk` | `_intra_walk_target` is set → `player.input()` not called |
-| TC-011 | `test_player_invisible_during_walk` | During walk, `player.image is game._player_transparent` and pixel alpha == 0 |
-| TC-012 | `test_spritesheet_frames_not_contaminated_after_walk` | After walk ends, all `player.frames` surfaces retain original alpha (no contamination) |
-| TC-013 | `test_player_visible_after_walk_arrival` | After `_tick_intra_walk` terminates, `player.image is not _player_transparent` |
+| Test ID | Function | File | Description |
+|---------|----------|------|-------------|
+| TC-001 | `test_intra_map_teleport_instant_repositions_player` | `../../tests/engine/test_intra_map_teleport.py` | `intra_map_teleport("spawn_a", "instant")` → player pos == spawn_a coords, no `_load_map` called |
+| TC-002 | `test_intra_map_teleport_walk_sets_walk_state` | `../../tests/engine/test_intra_map_teleport.py` | `intra_map_teleport("spawn_b", "walk")` → `_intra_walk_target` is set, player.target_pos is updated, is_moving is True |
+| TC-003 | `test_intra_map_teleport_unknown_spawn_logs_error_and_returns` | `../../tests/engine/test_intra_map_teleport.py` | `resolve_spawn_by_id("nonexistent")` returns `None` → no exception, player pos unchanged |
+| TC-004 | `test_resolve_spawn_by_id_finds_correct_entity` | `../../tests/engine/test_intra_map_teleport.py` | `map_manager._entities` has spawn with `spawn_id="door_exit"` → returns correct pixel coords |
+| TC-005 | `test_resolve_spawn_by_id_returns_none_on_miss` | `../../tests/engine/test_intra_map_teleport.py` | No matching spawn → returns `None`, logs warning |
+| TC-006 | `test_tick_intra_walk_updates_facing_direction` | `../../tests/engine/test_intra_map_teleport.py` | `_tick_intra_walk(dt)` updates `player.current_state` based on target vector |
+| TC-007 | `test_tick_intra_walk_terminates_on_arrival` | `../../tests/engine/test_intra_map_teleport.py` | `_tick_intra_walk(dt)` once `player.is_moving` is `False` → clears `_intra_walk_target` and resets direction |
+| TC-008 | `test_tick_intra_walk_updates_facing_horizontal` | `../../tests/engine/test_intra_map_teleport.py` | Walk left → `player.current_state == "left"` |
+| TC-009 | `test_tick_intra_walk_updates_facing_vertical` | `../../tests/engine/test_intra_map_teleport.py` | Walk up → `player.current_state == "up"` |
+| TC-010 | `test_update_core_state_blocks_input_during_walk` | `../../tests/engine/test_intra_map_teleport.py` | `_intra_walk_target` is set → `player.input()` not called |
+| TC-011 | `test_player_invisible_during_walk` | `../../tests/engine/test_intra_map_teleport.py` | During walk, `player.image is game._player_transparent` and pixel alpha == 0 |
+| TC-012 | `test_spritesheet_frames_not_contaminated_after_walk` | `../../tests/engine/test_intra_map_teleport.py` | After walk ends, all `player.frames` surfaces retain original alpha (no contamination) |
+| TC-013 | `test_player_visible_after_walk_arrival` | `../../tests/engine/test_intra_map_teleport.py` | After `_tick_intra_walk` terminates, `player.image is not _player_transparent` |
 
 ### 9.2 Render Tests — `tests/engine/test_render_order.py`
 
-| Test ID | Function | Description |
-|---------|----------|-------------|
-| TC-RENDER-002a | `test_occlusion_active_when_not_walking` | Regression: without walk, `occluded_image` IS used when player rect overlaps foreground tile; `draw_foreground()` returns non-empty `list[tuple]` |
-| TC-RENDER-002b | `test_occlusion_skipped_during_walk` | Walk active: `draw_foreground()` uses `tile_data.image` only (no occluded blit); returns `list` (rects still collected) |
-| TC-RENDER-003 | `test_no_occlusion_alpha_applied_to_player_during_walk` | Walk active: `_apply_partial_occlusion()` must NOT be called — no `set_alpha` on player |
+| Test ID | Function | File | Description |
+|---------|----------|------|-------------|
+| TC-RENDER-002a | `test_occlusion_active_when_not_walking` | `../../tests/engine/test_render_order.py` | Regression: without walk, `occluded_image` IS used when player rect overlaps foreground tile; `draw_foreground()` returns non-empty `list[tuple]` |
+| TC-RENDER-002b | `test_occlusion_skipped_during_walk` | `../../tests/engine/test_render_order.py` | Walk active: `draw_foreground()` uses `tile_data.image` only (no occluded blit); returns `list` (rects still collected) |
+| TC-RENDER-003 | `test_no_occlusion_alpha_applied_to_player_during_walk` | `../../tests/engine/test_render_order.py` | Walk active: `_apply_partial_occlusion()` must NOT be called — no `set_alpha` on player |
 
 ### 9.3 Integration Tests
 
-| Test ID | Function | Description |
-|---------|----------|-------------|
-| IT-001 | `test_check_teleporters_routes_intra_map` | Teleport with `target_map == _current_map_name` → `intra_map_teleport()` called, NOT `transition_map()` |
-| IT-002 | `test_check_teleporters_routes_cross_map` | Teleport with different `target_map` → `transition_map()` called (regression test) |
-| IT-003 | `test_full_walk_cycle_terminates` | Walk from A to B over N frames → `_intra_walk_target == None` at end, `player.pos == target` |
+| Test ID | Function | File | Description |
+|---------|----------|------|-------------|
+| IT-001 | `test_check_teleporters_routes_intra_map` | `../../tests/engine/test_intra_map_teleport.py` | Teleport with `target_map == _current_map_name` → `intra_map_teleport()` called, NOT `transition_map()` |
+| IT-002 | `test_check_teleporters_routes_cross_map` | `../../tests/engine/test_intra_map_teleport.py` | Teleport with different `target_map` → `transition_map()` called (regression test) |
+| IT-003 | `test_full_walk_cycle_terminates` | `../../tests/engine/test_intra_map_teleport.py` | Walk from A to B over N frames → `_intra_walk_target == None` at end, `player.pos == target` |
 
 ---
+
 
 ## 10. Bundling & Native-Module Audit
 

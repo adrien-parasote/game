@@ -36,4 +36,5 @@ saves/
 saves_migrated/
 !saves_migrated/.gitkeep
 .agents/session-observations.jsonl
+.agents/cross_spec_report
 .agents/active_stage.json

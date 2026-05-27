@@ -601,6 +601,7 @@ def test_map_manager_empty_layers():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.tc("IT-006")
 def test_map_manager_render_layer(map_manager):
     """First render creates surface of correct size."""
     surface = map_manager.get_layer_surface(1, pygame)

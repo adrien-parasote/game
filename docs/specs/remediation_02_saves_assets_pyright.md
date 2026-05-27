@@ -2,7 +2,7 @@
 
 > Document Type: Implementation
 > **Covers:** Save-Path, AssetManager-UI, Pyright-basic
-> **Référence blueprint:** [`best_practices_remediation_blueprint.md`](./strategic/best_practices_remediation_blueprint.md#plan-dimplémentation--10-steps)
+> **Référence blueprint:** [`best_practices_remediation_blueprint.md`](../strategic/best_practices_remediation_blueprint.md#plan-dimplémentation--10-steps)
 > **Guide best practices:** [`pygame_ce_python_312_best_practices.md`](./pygame_ce_python_312_best_practices.md#section-3-save-system)
 > **Statut:** SPEC — prêt pour BUILD
 

@@ -2,7 +2,7 @@
 
 > Document Type: Implementation
 > **Covers:** DT-Clamp, Text-Cache-HUD, Text-Cache-Inventory, Text-Cache-Chest
-> **Référence blueprint:** [`best_practices_remediation_blueprint.md`](./strategic/best_practices_remediation_blueprint.md#plan-dimplémentation--10-steps)
+> **Référence blueprint:** [`best_practices_remediation_blueprint.md`](../strategic/best_practices_remediation_blueprint.md#plan-dimplémentation--10-steps)
 > **Guide best practices:** [`pygame_ce_python_312_best_practices.md`](./pygame_ce_python_312_best_practices.md#section-5-architecture)
 > **Statut:** SPEC — prêt pour BUILD
 
@@ -255,54 +255,46 @@ Même pattern que Step 3. Toutes les surfaces sont soit statiques (pre-render à
 
 ### Unit Tests — DT Clamp
 
-**TC-DT-001** : `game_state_manager.run()` avec horloge simulant un tick de 500ms → `_handle_playing()` reçoit `dt ≤ 0.1`
-```python
-# Arrange: mock clock.tick → return 500 (ms)
-# Act: one iteration of run() loop
-# Assert: dt argument to _handle_playing ≤ 0.1
-```
-
-**TC-DT-002** : `game_state_manager.run()` avec tick normal 16ms → `dt ≈ 0.016` (non clampé inutilement)
-```python
-# Assert: dt ≈ 0.016 (± 0.001)
-```
-
-**TC-DT-003** : `game.py` fade-out loop avec tick simulé 200ms → `dt ≤ 0.1` dans la boucle de fade
-
-**TC-DT-004** : Vérification statique (grep "clock.tick" src/engine/game.py) → chaque hit suivi de `min(` dans les 2 lignes suivantes
+| Test ID | Function | File | Description |
+|---------|----------|------|-------------|
+| TC-DT-001 | `test_gsm_dt_clamped_on_long_tick` | `../../tests/engine/test_dt_clamp.py` | `game_state_manager.run()` avec horloge simulant un tick de 500ms → `_handle_playing()` reçoit `dt ≤ 0.1` |
+| TC-DT-002 | `test_gsm_dt_not_clamped_on_normal_tick` | `../../tests/engine/test_dt_clamp.py` | `game_state_manager.run()` avec tick normal 16ms → `dt ≈ 0.016` (non clampé inutilement) |
+| TC-DT-003 | — | — | `game.py` fade-out loop avec tick simulé 200ms → `dt ≤ 0.1` dans la boucle de fade |
+| TC-DT-004 | `test_static_clock_tick_followed_by_clamp` | `../../tests/engine/test_dt_clamp.py` | Vérification statique (grep "clock.tick" src/engine/game.py) → chaque hit suivi de `min(` dans les 2 lignes suivantes |
 
 ### Unit Tests — HUD Cache
 
-**TC-HUD-001** : `GameHUD._render_text_cached("12:00", ...)` appelé 2× → `font.render` appelé exactement 1× (pas 2×)
-```python
-# Arrange: mock self._font.render → return Surface
-# Act: _render_text_cached("12:00", center) × 2
-# Assert: mock.render.call_count == 1
-```
-
-**TC-HUD-002** : `GameHUD._render_text_cached("12:00", ...)` puis `_render_text_cached("12:01", ...)` → `font.render` appelé 2× (cache miss sur nouvelle clé)
-
-**TC-HUD-003** : `GameHUD.draw()` appelé 60× sans changement de `time_label` → `font.render` appelé exactement 2× (1 shadow + 1 main pour le label initial)
+| Test ID | Function | File | Description |
+|---------|----------|------|-------------|
+| TC-HUD-001 | `test_hud_font_render_called_once_on_double_draw_same_label` | `../../tests/ui/test_text_cache.py` | `GameHUD._render_text_cached("12:00", ...)` appelé 2× → `font.render` appelé exactement 1× (pas 2×) |
+| TC-HUD-002 | `test_hud_cache_miss_on_new_label` | `../../tests/ui/test_text_cache.py` | `GameHUD._render_text_cached("12:00", ...)` puis `_render_text_cached("12:01", ...)` → `font.render` appelé 2× (cache miss sur nouvelle clé) |
+| TC-HUD-003 | `test_hud_cache_attribute_present` | `../../tests/ui/test_text_cache.py` | `GameHUD.draw()` appelé 60× sans changement de `time_label` → `font.render` appelé exactement 2× (1 shadow + 1 main pour le label initial) |
 
 ### Unit Tests — Inventory Cache
 
-**TC-INV-001** : `_draw_stats()` appelé 2× avec `player.level=1, player.hp=100, player.gold=0` → `noble_font.render` pour LVL appelé 1× seulement
+| Test ID | Function | File | Description |
+|---------|----------|------|-------------|
+| TC-INV-CACHE-001 | `test_inventory_text_cache_attribute` | `../../tests/ui/test_text_cache.py` | InventoryUI must have `_text_cache` dict after `__init__` |
+| TC-INV-CACHE-002 | — | — | `_draw_stats()` appelé 2× avec `player.level=1, player.hp=100, player.gold=0` → `noble_font.render` pour LVL appelé 1× seulement |
+| TC-INV-CACHE-003 | — | — | `_draw_stats()` avec `player.hp=100` puis `player.hp=90` → `noble_font.render` pour HP appelé 2× (cache miss sur nouvelle valeur) |
+| TC-INV-CACHE-004 | — | — | `_draw_character_preview()` appelé 30× → `noble_font.render("Player", ...)` appelé exactement 1× (pre-rendered à l'init) |
+| TC-INV-CACHE-005 | — | — | `_get_text_surface(text, font_a, color)` puis `_get_text_surface(text, font_b, color)` → 2 surfaces distinctes (clé inclut `id(font)`) |
 
-**TC-INV-002** : `_draw_stats()` avec `player.hp=100` puis `player.hp=90` → `noble_font.render` pour HP appelé 2× (cache miss sur nouvelle valeur)
+### Unit Tests — Chest Cache
 
-**TC-INV-003** : `_draw_character_preview()` appelé 30× → `noble_font.render("Player", ...)` appelé exactement 1× (pre-rendered à l'init)
-
-**TC-INV-004** : `_get_text_surface(text, font_a, color)` puis `_get_text_surface(text, font_b, color)` → 2 surfaces distinctes (clé inclut `id(font)`)
-
-**TC-INV-005** : `_draw_item_info(item_a)` puis `_draw_item_info(item_b)` → surfaces différentes dans le cache
+| Test ID | Function | File | Description |
+|---------|----------|------|-------------|
+| TC-CHEST-001 | `test_chest_no_font_render_in_draw_on_second_call` | `../../tests/ui/test_text_cache.py` | ChestDrawMixin must not call `font.render` for static title on 2nd draw |
 
 ### Integration Tests
 
-**TC-IT-001** : Ouvrir l'inventaire, ne pas toucher HP/GOLD/LVL pendant 60 frames → 0 appels à `font.render` après le frame 1 (vérifiable via mock + call_count)
+| Test ID | Function | File | Description |
+|---------|----------|------|-------------|
+| TC-IT-001 | — | — | Ouvrir l'inventaire, ne pas toucher HP/GOLD/LVL pendant 60 frames → 0 appels à `font.render` après le frame 1 |
+| TC-IT-002 | — | — | Recevoir des dégâts (HP change), ouvrir l'inventaire → HP surface recalculée avec la nouvelle valeur |
+| TC-IT-003 | — | — | `GameStateManager.run()` avec freeze simulé 2 secondes → joueur ne se téléporte pas (position inchangée après 1 tick long) |
 
-**TC-IT-002** : Recevoir des dégâts (HP change), ouvrir l'inventaire → HP surface recalculée avec la nouvelle valeur
-
-**TC-IT-003** : `GameStateManager.run()` avec freeze simulé 2 secondes → joueur ne se téléporte pas (position inchangée après 1 tick long)
+---
 
 ---
 

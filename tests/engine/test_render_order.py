@@ -191,6 +191,7 @@ class TestOcclusionSkippedDuringWalk:
         rm.game.screen.fblits.side_effect = track_fblits
         return rm, fg_tile_data, normal_blits, occluded_blits
 
+    @pytest.mark.tc("TC-RENDER-002a")
     def test_occlusion_active_when_not_walking(self):
         """TC-RENDER-002a (non-regression): Without walk, occluded_image IS used,
         and draw_foreground() returns a non-empty list[tuple[Rect, int]]."""
@@ -209,6 +210,7 @@ class TestOcclusionSkippedDuringWalk:
         assert len(occluded_blits) == 1, "occluded_image must be blit once"
         assert len(normal_blits) == 0, "normal tile image must NOT be used"
 
+    @pytest.mark.tc("TC-RENDER-002b")
     def test_occlusion_skipped_during_walk(self):
         """TC-RENDER-002b (non-regression): During scripted walk, occluded_image must NOT be used.
         draw_foreground() still returns the collected rects (the caller guards with walk_active).
@@ -228,6 +230,7 @@ class TestOcclusionSkippedDuringWalk:
         assert len(normal_blits) == 1, "normal tile image must be used instead"
 
 
+
 # ---------------------------------------------------------------------------
 # TC-RENDER-003: draw_scene does not apply occlusion alpha to player during walk
 # ---------------------------------------------------------------------------
@@ -238,6 +241,7 @@ class TestDrawSceneOcclusionDuringWalk:
     invisible and we must not risk altering the transparent surface.
     """
 
+    @pytest.mark.tc("TC-RENDER-003")
     def test_no_occlusion_alpha_applied_to_player_during_walk(self):
         """TC-RENDER-003: player.image.set_alpha must NOT be called during walk."""
         rm = _make_render_manager()

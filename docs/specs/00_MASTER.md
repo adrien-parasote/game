@@ -43,8 +43,16 @@ This document serves as the Master Index and Architectural Registry for the 15 c
 | **Performance System** | [performance-system.md](./performance-system.md#L1) | Y-sorting dirty cache flags, inlined tuples, distance-squared math |
 | **Development & Quality** | [development-quality.md](./development-quality.md#L1) | Automated quality gates, test layouts, release scripts, debug room |
 | **Best Practices** | [pygame_ce_python_312_best_practices.md](./pygame_ce_python_312_best_practices.md#L1) | Modern Python 3.12 and Pygame-CE best practices and optimizations |
+### 1.6 Historical Remediation & Hardening
+| Spec | File | Modules Covered |
+|------|------|-----------------|
+| **Code Quality Pass** | [code-quality-constants-i18n.md](./code-quality-constants-i18n.md#L1) | French→EN translation, magic color constants, pre-existing constant usage bugs |
+| **DT Clamp & Text Cache** | [remediation_01_dt_text_cache.md](./remediation_01_dt_text_cache.md#L1) | DT Clamping and pre-rendered text cache (HUD, Inventory, Chest) |
+| **Saves & Pyright** | [remediation_02_saves_assets_pyright.md](./remediation_02_saves_assets_pyright.md#L1) | Pyright type checking and `pygame.system.get_pref_path` save paths |
+| **Modernization** | [remediation_03_modernization.md](./remediation_03_modernization.md#L1) | `pathlib.Path` migration and standardizations |
 
 ---
+
 
 ## 2. Global Subsystem Registry
 
@@ -99,6 +107,7 @@ This document serves as the Master Index and Architectural Registry for the 15 c
 | [ADR-005](../ADRs/ADR-005-singleton-new.md) | Singleton loaders | Applies `__new__` singleton patterns to core asset & language managers |
 | [ADR-006](../ADRs/ADR-006-perf-constants-pre-render-cache.md) | Composite graphics caching | Pre-renders button and font assets to eliminate drawing allocations |
 | [ADR-007](../ADRs/ADR-007-partial-occlusion-surface-composite.md) | Partial Occlusion Surface Composite | Documents the composite-based approach to partial sprite occlusion behind foreground tiles |
+| [ADR-008](../ADRs/ADR-008-frect-migration.md) | pygame.FRect migration decision | Non-migration decision deferred to avoid regression risk on collision math |
 
 ---
 

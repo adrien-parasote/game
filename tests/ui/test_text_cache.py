@@ -3,7 +3,7 @@ Tests RED pour Text Cache (Steps 2-4).
 Spec: docs/specs/remediation_01_dt_text_cache.md § Steps 2-4
 
 TC-HUD-001 à TC-HUD-003 : cache sur GameHUD
-TC-INV-001 à TC-INV-005 : cache sur InventoryDrawMixin
+TC-INV-CACHE-001 à TC-INV-CACHE-005 : cache sur InventoryDrawMixin
 TC-CHEST-001 : cache sur ChestDrawMixin
 """
 from unittest.mock import MagicMock, call, patch
@@ -116,9 +116,9 @@ def test_hud_cache_attribute_present(hud):
     assert isinstance(hud._shadow_cache, dict), "_shadow_cache must be a dict"
 
 
-# ── TC-INV-001 ───────────────────────────────────────────────────────────────
+# ── TC-INV-CACHE-001 ──────────────────────────────────────────────────────────
 
-@pytest.mark.tc("TC-INV-001")
+@pytest.mark.tc("TC-INV-CACHE-001")
 def test_inventory_text_cache_attribute():
     """InventoryUI must have _text_cache dict after __init__."""
     try:

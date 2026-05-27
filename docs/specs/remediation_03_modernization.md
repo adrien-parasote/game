@@ -2,7 +2,7 @@
 
 > Document Type: Implementation
 > **Covers:** @override, Type aliases, ADR-008 FRect, pathlib.Path ✅
-> **Référence blueprint:** [`best_practices_remediation_blueprint.md`](./strategic/best_practices_remediation_blueprint.md#plan-dimplémentation--10-steps)
+> **Référence blueprint:** [`best_practices_remediation_blueprint.md`](../strategic/best_practices_remediation_blueprint.md#plan-dimplémentation--10-steps)
 > **Guide best practices:** [`pygame_ce_python_312_best_practices.md`](./pygame_ce_python_312_best_practices.md#section-4-typing)
 > **Statut:** DONE — Steps 8-11 implémentés et vérifiés (pyright: 0 errors, pytest: 1094/1094)
 

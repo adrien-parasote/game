@@ -2,7 +2,7 @@
 
 # Spec↔Test Traceability Matrix
 
-**Coverage:** 309/309 (100%)
+**Coverage:** 324/324 (100%)
 
 ## asset-i18n.md
 
@@ -40,8 +40,8 @@
 
 | TC ID | Status | Test |
 |-------|--------|------|
-| IT-003 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_emote_suppressed_in_proximity_check` |
-| IT-004 | ✅ | `tests/engine/test_interaction.py::test_interaction_toggle_bridge_guard` |
+| IT-005 | ✅ | `tests/engine/test_interaction.py::test_handle_interaction_pickup_partial` |
+| IT-006 | ✅ | `tests/map/test_map.py::test_map_manager_render_layer` |
 
 ## chest-ui.md
 
@@ -247,8 +247,8 @@
 | TC-BRIDGE-SORT-02 | ✅ | `tests/entities/test_interactive.py::test_bridge_sort_y_equals_rect_top` |
 | TC-BRIDGE-SORT-03 | ✅ | `tests/entities/test_interactive.py::test_bridge_sort_y_less_than_rect_bottom` |
 | TC-BRIDGE-SORT-04 | ✅ | `tests/entities/test_interactive.py::test_non_bridge_entity_has_no_sort_y` |
-| TC-005 | ✅ | `tests/entities/test_interactive.py::test_trigger_only_true_stored_on_entity` |
-| TC-006 | ✅ | `tests/entities/test_interactive.py::test_trigger_only_defaults_to_false` |
+| TC-005 | ✅ | `tests/engine/test_intra_map_teleport.py::test_resolve_spawn_by_id_returns_none_on_miss` |
+| TC-006 | ✅ | `tests/engine/test_intra_map_teleport.py::test_tick_intra_walk_updates_facing_direction` |
 | SPRITE-U-01 | ✅ | `tests/entities/test_sprite_frame_loading.py::test_torch_frame_height_computed_from_sheet` |
 | SPRITE-U-02 | ✅ | `tests/entities/test_sprite_frame_loading.py::test_frame_count_matches_real_sheet_layout` |
 | SPRITE-U-03 | ✅ | `tests/entities/test_sprite_frame_loading.py::test_chest_sheet_correct_frame_height` |
@@ -268,6 +268,30 @@
 | TC-003 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_suppresses_proximity_emote` |
 | TC-004 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_false_does_not_suppress_emote` |
 | IT-002 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_object_not_interactable_via_key` |
+
+## intra-map-teleport.md
+
+| TC ID | Status | Test |
+|-------|--------|------|
+| TC-001 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_blocks_direct_player_interaction` |
+| TC-002 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_false_allows_direct_interaction` |
+| TC-003 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_suppresses_proximity_emote` |
+| TC-004 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_false_does_not_suppress_emote` |
+| TC-005 | ✅ | `tests/engine/test_intra_map_teleport.py::test_resolve_spawn_by_id_returns_none_on_miss` |
+| TC-006 | ✅ | `tests/engine/test_intra_map_teleport.py::test_tick_intra_walk_updates_facing_direction` |
+| TC-007 | ✅ | `tests/engine/test_intra_map_teleport.py::test_tick_intra_walk_terminates_on_arrival` |
+| TC-008 | ✅ | `tests/engine/test_intra_map_teleport.py::test_tick_intra_walk_updates_facing_horizontal` |
+| TC-009 | ✅ | `tests/engine/test_intra_map_teleport.py::test_tick_intra_walk_updates_facing_vertical` |
+| TC-010 | ✅ | `tests/engine/test_intra_map_teleport.py::test_update_core_state_blocks_input_during_walk` |
+| TC-011 | ✅ | `tests/engine/test_intra_map_teleport.py::test_player_invisible_during_walk` |
+| TC-012 | ✅ | `tests/engine/test_intra_map_teleport.py::test_spritesheet_frames_not_contaminated_after_walk` |
+| TC-013 | ✅ | `tests/engine/test_intra_map_teleport.py::test_player_visible_after_walk_arrival` |
+| TC-RENDER-002a | ✅ | `tests/engine/test_render_order.py::test_occlusion_active_when_not_walking` |
+| TC-RENDER-002b | ✅ | `tests/engine/test_render_order.py::test_occlusion_skipped_during_walk` |
+| TC-RENDER-003 | ✅ | `tests/engine/test_render_order.py::test_no_occlusion_alpha_applied_to_player_during_walk` |
+| IT-001 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_still_togglable_by_toggle_entity_by_id` |
+| IT-002 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_object_not_interactable_via_key` |
+| IT-003 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_emote_suppressed_in_proximity_check` |
 
 ## inventory-system.md
 
@@ -327,11 +351,11 @@
 | TC-N-02 | ✅ | `tests/entities/test_entities.py::test_npc_ai_state_machine` |
 | TC-N-03 | ✅ | `tests/entities/test_entities.py::test_npc_update_invisible_skips` |
 | TC-N-04 | ✅ | `tests/entities/test_entities.py::test_npc_interact_faces_initiator_horizontal` |
-| TC-006 | ✅ | `tests/entities/test_interactive.py::test_trigger_only_defaults_to_false` |
-| TC-007 | ✅ | `tests/entities/test_npc.py::test_static_npc_anim_continues_when_idle` |
-| TC-008 | ✅ | `tests/entities/test_npc.py::test_static_npc_facing_direction_init` |
-| TC-009 | ✅ | `tests/entities/test_npc.py::test_npc_facing_direction_init` |
-| TC-010 | ✅ | `tests/entities/test_npc.py::test_static_npc_anim_frozen_during_interaction` |
+| TC-006 | ✅ | `tests/engine/test_intra_map_teleport.py::test_tick_intra_walk_updates_facing_direction` |
+| TC-007 | ✅ | `tests/engine/test_intra_map_teleport.py::test_tick_intra_walk_terminates_on_arrival` |
+| TC-008 | ✅ | `tests/engine/test_intra_map_teleport.py::test_tick_intra_walk_updates_facing_horizontal` |
+| TC-009 | ✅ | `tests/engine/test_intra_map_teleport.py::test_tick_intra_walk_updates_facing_vertical` |
+| TC-010 | ✅ | `tests/engine/test_intra_map_teleport.py::test_update_core_state_blocks_input_during_walk` |
 | IT-001 | ✅ | `tests/engine/test_interaction.py::test_trigger_only_still_togglable_by_toggle_entity_by_id` |
 | IT-N-02 | ✅ | `tests/entities/test_entities.py::test_npc_interact_freezes_ai` |
 
@@ -357,6 +381,19 @@
 | PERF-I-001 | ✅ | `tests/engine/test_performance_optimizations.py::test_title_screen_draw_no_rotozoom` |
 | PERF-I-002 | ✅ | `tests/engine/test_performance_optimizations.py::test_interaction_distance_sq_semantics_match_original` |
 | PERF-I-003 | ✅ | `tests/engine/test_performance_optimizations.py::test_game_viewport_rect_reused_across_updates` |
+
+## remediation_01_dt_text_cache.md
+
+| TC ID | Status | Test |
+|-------|--------|------|
+| TC-DT-001 | ✅ | `tests/engine/test_dt_clamp.py::test_gsm_dt_clamped_on_long_tick` |
+| TC-DT-002 | ✅ | `tests/engine/test_dt_clamp.py::test_gsm_dt_not_clamped_on_normal_tick` |
+| TC-DT-004 | ✅ | `tests/engine/test_dt_clamp.py::test_static_clock_tick_followed_by_clamp` |
+| TC-HUD-001 | ✅ | `tests/ui/test_text_cache.py::test_hud_font_render_called_once_on_double_draw_same_label` |
+| TC-HUD-002 | ✅ | `tests/ui/test_text_cache.py::test_hud_cache_miss_on_new_label` |
+| TC-HUD-003 | ✅ | `tests/ui/test_text_cache.py::test_hud_cache_attribute_present` |
+| TC-INV-CACHE-001 | ✅ | `tests/ui/test_text_cache.py::test_inventory_text_cache_attribute` |
+| TC-CHEST-001 | ✅ | `tests/ui/test_text_cache.py::test_chest_no_font_render_in_draw_on_second_call` |
 
 ## save-system.md
 
