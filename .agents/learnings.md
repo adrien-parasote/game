@@ -3,9 +3,10 @@
 > **Usage:** Lire avant toute session BUILD. Chaque entrée = un pattern ou anti-pattern confirmé avec evidence.
 > **Format:** `ID · Date · Scope [P=project-specific | U=universal] · Outcome`
 
-> **⛔ RÈGLE PERMANENTE — LEARNINGS HUB INTERDIT :**
-> Ne jamais appeler `auth_status`, `auth_login`, `submit_learning`, `search_learnings` ou tout outil MCP `learnings-hub` sur ce projet.
-> Les learnings sont intégrés **uniquement** dans `.agents/learnings/`. Step 4b de `/learn-eval` est systématiquement skippé.
+> **⛔ RÈGLE PERMANENTE — LEARNINGS HUB : LECTURE SEULE :**
+> `pull_learnings`, `search_learnings`, `auth_status`, `auth_login` sont **autorisés** (lecture depuis le Hub).
+> `submit_learning` est **interdit** sur ce projet — ne jamais soumettre de learnings au Hub.
+> Les learnings projet sont maintenus **uniquement** dans `.agents/learnings/`. Step 4b de `/learn-eval` est systématiquement skippé.
 
 
 ## Domains

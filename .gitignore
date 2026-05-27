@@ -28,12 +28,12 @@ saves/
 
 # Sentrux — generated baseline (re-create with: sentrux gate --save .)
 .sentrux/baseline.json
-pyright_output.txt
+*_output.*
 .tdd_lock
-verify_output.json
 .sc-*
 .specconformance
-.agents/cross-spec.config.yml
-.agents/cross_spec_report.md
+.agents/cross-spec*
 saves_migrated/
 !saves_migrated/.gitkeep
+.agents/session-observations.jsonl
+.agents/active_stage.json
