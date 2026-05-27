@@ -455,3 +455,24 @@ def _transition_to_title(self):
 ---
 
 *Last updated: 2026-05-15 — added A-UI-008 from BUG-GSM-001 inventory state reset fix.*
+
+---
+
+### L-UI-013 · 2026-05-27 · U · Perfect
+**Pre-Investigation Gate catches "imported but never used" constant bugs without tests**
+
+On a zero-logic-change refactor (magic-values → named constants), running `grep -n CONSTANT src/file.py` before editing caught 2 pre-existing bugs: `SAVE_TITLE_COLOR` (imported at line 37 but raw tuple `(220, 200, 150)` used at line 224) and `PANEL_W`/`PANEL_H` (imported at lines 38-39 but `(480, 480)` literals used at lines 95/98). Both would have been invisible without the grep — the spec scan only audited inline tuples via grep patterns, not whether constants were being used.
+
+**Pattern:**
+```bash
+# Before editing any file in a constants pass:
+grep -n "CONSTANT_NAME" src/file.py     # verify it's actually used — not just imported
+grep -n "(raw_tuple)" src/file.py       # find all remaining inline occurrences
+```
+Apply to every file in the change set before writing a single line of code. Audit "imported" ≠ "used".
+
+**Evidence:** 2 usage bugs found and fixed in `save_menu.py` (line 224) and `pause_screen.py` (lines 95, 98) during BUILD. 1094/1094 tests passed post-fix. Zero regressions.
+
+---
+
+*Last updated: 2026-05-27 — added L-UI-013 from code-quality-constants-i18n cycle.*

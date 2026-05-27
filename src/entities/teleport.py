@@ -1,5 +1,7 @@
 import pygame
 
+from src.engine.engine_constants import COLOR_PLACEHOLDER_MAGENTA
+
 
 class Teleport(pygame.sprite.Sprite):
     """
@@ -26,5 +28,5 @@ class Teleport(pygame.sprite.Sprite):
         self.sfx = ""
         # Used for collision detection but not rendered
         self.image = pygame.Surface((self.rect.width, self.rect.height))
-        self.image.fill((255, 0, 255))
+        self.image.fill(COLOR_PLACEHOLDER_MAGENTA)
         self.image.set_alpha(0)

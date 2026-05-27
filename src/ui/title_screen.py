@@ -42,6 +42,7 @@ from src.ui.title_screen_constants import (
 )
 from src.ui.title_screen_draw import TitleDrawMixin
 from src.ui.title_screen_lights import TitleLightsMixin
+from src.ui.ui_colors import COLOR_BLACK
 
 
 class TitleScreen(TitleLightsMixin, TitleDrawMixin):
@@ -70,7 +71,7 @@ class TitleScreen(TitleLightsMixin, TitleDrawMixin):
         )
 
         self._load_menu = SaveMenuOverlay(
-            screen, save_manager, self._i18n.get("save_menu.title_load", "Charger une partie")
+            screen, save_manager, self._i18n.get("save_menu.title_load", "Load Game")
         )
 
         self._load_assets()
@@ -112,7 +113,7 @@ class TitleScreen(TitleLightsMixin, TitleDrawMixin):
         # Semi-transparent overlay
         self._overlay = pygame.Surface((self._sw, self._sh))
         self._overlay.set_alpha(OVERLAY_ALPHA)
-        self._overlay.fill((0, 0, 0))
+        self._overlay.fill(COLOR_BLACK)
 
         # Fonts
         try:
@@ -214,7 +215,7 @@ class TitleScreen(TitleLightsMixin, TitleDrawMixin):
         self._draw_background_lights()
         self._draw_mushroom_lights()
 
-        title_text = self._i18n.get("menu.main_title", "L'Éveil de l'Héritier")
+        title_text = self._i18n.get("menu.main_title", "L'Éveil de l'Héritier")  # Proper noun — game title stays in French
         self._blit_halo_text(
             title_text, LOGO_ZONE_W // 2, LOGO_Y, self._title_font, LOGO_MAIN_COLOR, LOGO_MAIN_HALO
         )
@@ -259,7 +260,7 @@ class TitleScreen(TitleLightsMixin, TitleDrawMixin):
         self.state = "OPTIONS"
 
     def _handle_options(self, event: pygame.Event) -> GameEvent | None:
-        """ESC ou clic sur le bouton retour → MAIN_MENU."""
+        """ESC or click on back button → MAIN_MENU."""
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.state = "MAIN_MENU"
             return None

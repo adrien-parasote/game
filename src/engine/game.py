@@ -28,6 +28,7 @@ from src.ui.dialogue import DialogueManager
 from src.ui.hud import GameHUD
 from src.ui.inventory import InventoryUI
 from src.ui.speech_bubble import SpeechBubble
+from src.ui.ui_colors import COLOR_BLACK
 
 
 def _get_property(props: dict, key: str, default=None):
@@ -269,7 +270,7 @@ class Game:
             return
 
         fade_surf = pygame.Surface(self.screen.get_size())
-        fade_surf.fill((0, 0, 0))
+        fade_surf.fill(COLOR_BLACK)
 
         if transition_type == "fade":
             # Fade Out

@@ -5,6 +5,7 @@ from pathlib import Path
 import pygame
 
 from src.config import Settings
+from src.engine.engine_constants import COLOR_PLACEHOLDER_MAGENTA
 from src.graphics.spritesheet import SpriteSheet
 
 from .base import BaseEntity
@@ -57,7 +58,7 @@ class PickupItem(BaseEntity):
                 f"PickupItem: Could not load sprite {sprite_sheet} from sprites or icons."
             )
             self.image = pygame.Surface((Settings.TILE_SIZE, Settings.TILE_SIZE))
-            self.image.fill((255, 0, 255))  # Magenta placeholder
+            self.image.fill(COLOR_PLACEHOLDER_MAGENTA)  # Magenta placeholder
 
         # Hitbox is smaller than visual to ensure player always appears "in front" when standing on it
         self.rect = pygame.Rect(0, 0, 20, 10)

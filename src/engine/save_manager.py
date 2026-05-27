@@ -118,7 +118,7 @@ class SaveManager:
             logging.error(f"SaveManager: Failed to write slot {slot_id}: {e}")
 
     def save_thumbnail(self, slot_id: int, surface) -> None:
-        """Sauvegarde une capture d'écran pour la miniature du slot."""
+        """Save a screenshot for the slot thumbnail."""
         import pygame
 
         self._validate_slot_id(slot_id)
@@ -130,7 +130,7 @@ class SaveManager:
             logging.warning(f"SaveManager: Failed to save thumbnail {slot_id}: {e}")
 
     def load_thumbnail(self, slot_id: int):
-        """Retourne la miniature en pygame.Surface, ou None si non trouvée."""
+        """Return the slot thumbnail as a pygame.Surface, or None if not found."""
         import pygame
 
         self._validate_slot_id(slot_id)
@@ -155,7 +155,7 @@ class SaveManager:
             with open(path, encoding="utf-8") as f:
                 data = json.load(f)
         except (OSError, json.JSONDecodeError) as e:
-            logging.warning(f"SaveManager: Slot {slot_id} corrompu: {e}")
+            logging.warning(f"SaveManager: Slot {slot_id} corrupted: {e}")
             return None
 
         if data.get("version") != SCHEMA_VERSION:

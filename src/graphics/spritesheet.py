@@ -3,6 +3,8 @@ import os
 
 import pygame
 
+from src.engine.engine_constants import COLOR_PLACEHOLDER_BLUE
+
 
 class SpriteSheet:
     """Utility class to extract images from a spritesheet."""
@@ -84,5 +86,5 @@ class SpriteSheet:
         if transparent:
             return pygame.Surface(size, pygame.SRCALPHA).convert_alpha()
         surf = pygame.Surface(size)
-        surf.fill((0, 0, 255))  # Blue default
+        surf.fill(COLOR_PLACEHOLDER_BLUE)  # Blue default
         return surf

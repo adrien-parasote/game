@@ -529,3 +529,39 @@ multi_replace_file_content(chunks=[
 
 *Last updated: 2026-05-27 — L-AGENT-005 pathlib migration pattern, A-AGENT-005 multi_replace identical lines.*
 
+---
+
+### A-SPEC-004 · 2026-05-27 · U · Minor Rework
+**i18n fallback string grep misses method-argument call sites — spec gap in FR→EN translation tasks**
+
+A spec for a FR→EN translation pass identified FR strings via `grep -rn "[àâæçéèêëîïôœùûüÿ]"` on the codebase pre-spec. This correctly found `_BUTTON_DEFAULTS`, docstrings, and log strings — but **missed 5 additional FR strings** embedded as positional arguments in method calls, not in named constant assignments:
+
+```python
+# NOT caught by accent grep — these were method arguments, not constants
+self._i18n.get("save_menu.title_load", "Charger une partie")   # title_screen.py line 74
+self._i18n.get("pause_menu.saved_success", "Partie sauvegardée !")  # pause_screen.py line 260
+self._i18n.get("save_menu.level", "Niveau: {level}")           # save_slot.py line 98
+```
+
+**Root cause:** Spec grep scope was: "files with accented characters" → "what constant does that character live in?" — it didn't follow the i18n pattern `self._i18n.get("key", "FR_DEFAULT")` systematically across ALL call sites.
+
+**Fix — Add to any FR→EN spec:**
+```bash
+# ✅ Two complementary greps required for complete FR scan:
+# 1. Accent scan (catches docstrings, comments, raw strings)
+grep -rn "[àâæçéèêëîïôœùûüÿÀÂÆÇÉÈÊËÎÏÔŒÙÛÜŸ]" src/ --include="*.py"
+
+# 2. i18n fallback scan (catches method-argument defaults that may not have accents)
+grep -rn 'i18n.get(' src/ --include="*.py" | grep -v "#"
+# → manually review each default="" argument for FR text
+```
+
+**Also:** Explicitly mark proper nouns in the spec's exclusion list with rationale (e.g., game titles that must stay in the original language).
+
+**Evidence:** 5 FR strings found during BUILD (not in spec). Required BUILD addendum to close divergence. 2026-05-27 — code-quality-constants-i18n spec.
+
+**Scope:** Universal
+
+---
+
+*Last updated: 2026-05-27 — added A-SPEC-004 from code-quality-constants-i18n cycle (i18n fallback strings missed in FR→EN grep scan).*

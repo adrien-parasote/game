@@ -47,6 +47,7 @@ from src.ui.pause_screen_constants import (
     TITLE_COLOR,
 )
 from src.ui.save_menu import SaveMenuOverlay
+from src.ui.ui_colors import COLOR_BLACK
 
 
 class PauseScreen:
@@ -60,7 +61,7 @@ class PauseScreen:
         self.state = "MAIN"  # "MAIN" or "SAVE_MENU"
         self._i18n = I18nManager()
         self._save_menu = SaveMenuOverlay(
-            screen, save_manager, self._i18n.get("pause_menu.save", "Sauvegarder la partie")
+            screen, save_manager, self._i18n.get("pause_menu.save", "Save Game")
         )
 
         sw, sh = screen.get_size()
@@ -87,15 +88,15 @@ class PauseScreen:
         # Semi-transparent overlay
         self._overlay = pygame.Surface((self._sw, self._sh))
         self._overlay.set_alpha(OVERLAY_ALPHA)
-        self._overlay.fill((0, 0, 0))
+        self._overlay.fill(COLOR_BLACK)
 
         # Panel background — 02-panel_background.png (600x600 RGBA → scaled)
         panel_raw = self._load_asset("02-panel_background.png")
         if panel_raw.get_size() != (FALLBACK_SURF_SIZE, FALLBACK_SURF_SIZE):
-            self._panel = pygame.transform.smoothscale(panel_raw, (480, 480))
+            self._panel = pygame.transform.smoothscale(panel_raw, (PANEL_W, PANEL_H))
         else:
             # Fallback: programmatic surface
-            self._panel = pygame.Surface((480, 480), pygame.SRCALPHA)
+            self._panel = pygame.Surface((PANEL_W, PANEL_H), pygame.SRCALPHA)
             self._panel.fill(PANEL_FALLBACK_FILL)
             pygame.draw.rect(self._panel, PANEL_FALLBACK_BORDER, self._panel.get_rect(), 2)
 
@@ -256,7 +257,7 @@ class PauseScreen:
             self._screen.blit(surf, surf.get_rect(center=rect.center))
 
         if self._confirm_timer > 0:
-            success_text = self._i18n.get("pause_menu.saved_success", "Partie sauvegardée !")
+            success_text = self._i18n.get("pause_menu.saved_success", "Game saved!")
             msg = self._success_font.render(success_text, True, SUCCESS_COLOR)
             alpha = int(min(255, (self._confirm_timer / CONFIRM_DISPLAY_SECONDS) * 255))
             msg.set_alpha(alpha)

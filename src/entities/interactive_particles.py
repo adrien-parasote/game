@@ -6,6 +6,8 @@ import random
 
 import pygame
 
+from src.entities.interactive_constants import PARTICLE_DEFAULT_COLOR
+
 
 class InteractiveParticleMixin:
     """Mixin handling particle spawning, physics update, and drawing."""
@@ -57,7 +59,7 @@ class InteractiveParticleMixin:
         if not self.particles_list:
             return
 
-        base_color = getattr(self, "halo_color", (250, 250, 250))
+        base_color = getattr(self, "halo_color", PARTICLE_DEFAULT_COLOR)
         for p in self.particles_list:
             alpha = (p["life"] / p["max_life"]) ** 0.6
             color = (

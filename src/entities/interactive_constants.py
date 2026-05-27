@@ -37,3 +37,6 @@ HALO_DEFAULT_COLOR: tuple = (255, 255, 255)
 
 # Default halo opacity (0-255)
 HALO_DEFAULT_ALPHA: int = 130
+
+# Default particle base color (near-white) when halo_color attribute is not set
+PARTICLE_DEFAULT_COLOR: tuple[int, int, int] = (250, 250, 250)

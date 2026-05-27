@@ -11,6 +11,7 @@ from src.ui.title_screen_constants import (
     HALO_DEBUG,
     MUSHROOM_LIGHTS,
 )
+from src.ui.ui_colors import COLOR_BLACK
 
 
 class TitleLightsMixin:
@@ -54,7 +55,7 @@ class TitleLightsMixin:
     def _create_radial_gradient(radius: int, color: tuple) -> pygame.Surface:
         """Generate a radial gradient surface for a given radius and color."""
         base = pygame.Surface((radius * 2, radius * 2))
-        base.fill((0, 0, 0))
+        base.fill(COLOR_BLACK)
         for ri in range(radius, 0, -1):
             intensity = (1.0 - (ri / radius)) ** 2
             c = (int(color[0] * intensity), int(color[1] * intensity), int(color[2] * intensity))

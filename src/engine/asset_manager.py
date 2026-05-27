@@ -3,6 +3,8 @@ import os
 
 import pygame
 
+from src.engine.engine_constants import COLOR_PLACEHOLDER_MAGENTA
+
 
 class AssetManager:
     """
@@ -33,7 +35,7 @@ class AssetManager:
             if fallback:
                 logging.error(f"Asset not found: {path}. Using placeholder.")
                 placeholder = pygame.Surface((32, 32))
-                placeholder.fill((255, 0, 255))  # Magenta placeholder
+                placeholder.fill(COLOR_PLACEHOLDER_MAGENTA)  # Magenta placeholder
                 self._images[path] = placeholder
                 return placeholder
             raise FileNotFoundError(f"Asset not found: {path}")
@@ -48,7 +50,7 @@ class AssetManager:
             logging.error(f"Failed to load image {path}: {e}")
             if fallback:
                 placeholder = pygame.Surface((32, 32))
-                placeholder.fill((255, 0, 255))
+                placeholder.fill(COLOR_PLACEHOLDER_MAGENTA)
                 return placeholder
             raise
 

@@ -23,6 +23,7 @@ from src.ui.save_menu_constants import (
     SAVE_THUMB_Y,
     SAVE_TITLE_COLOR,
 )
+from src.ui.ui_colors import COLOR_BLACK
 
 
 class SaveSlotUI:
@@ -46,7 +47,7 @@ class SaveSlotUI:
         # Pre-calculate halo for hover effect (using additive blending)
         radius = SAVE_SLOT_HALO_RADIUS
         self._halo = pygame.Surface((radius * 2, radius * 2))
-        self._halo.fill((0, 0, 0))
+        self._halo.fill(COLOR_BLACK)
         for r in range(radius, 0, -1):
             # Non-linear (quadratic) gradient for a soft light falloff
             intensity = (1.0 - (r / radius)) ** 2
@@ -95,7 +96,7 @@ class SaveSlotUI:
         if cached_level_surf is not None:
             surface.blit(cached_level_surf, (text_x, details_y))
         else:
-            level_str = self._i18n.get("save_menu.level", "Niveau: {level}").format(level=info.level)
+            level_str = self._i18n.get("save_menu.level", "Level: {level}").format(level=info.level)
             level_text = self._font_small.render(level_str, True, SAVE_DETAIL_COLOR)
             surface.blit(level_text, (text_x, details_y))
 
@@ -105,7 +106,7 @@ class SaveSlotUI:
             hours = int(info.playtime_seconds // 3600)
             minutes = int((info.playtime_seconds % 3600) // 60)
             time_str = self._i18n.get(
-                "save_menu.time", "Temps: {hours:02d}h {minutes:02d}m"
+                "save_menu.time", "Time: {hours:02d}h {minutes:02d}m"
             ).format(hours=hours, minutes=minutes)
             time_text = self._font_small.render(time_str, True, SAVE_DETAIL_COLOR)
             surface.blit(time_text, (text_x, details_y + SAVE_DETAIL_LINE_SPACING))

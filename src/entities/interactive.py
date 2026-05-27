@@ -380,7 +380,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
                 if not getattr(self, "is_animated", False):
                     self.is_closing = not self.is_on
                     if self.is_closing:
-                        # Fermeture : partir de end_row pour jouer l'anim à l'envers
+                        # Closing: play animation in reverse starting from end_row
                         self.frame_index = float(self.end_row)
                 logging.info(f"Object {self.sub_type} toggled to {'ON' if self.is_on else 'OFF'}")
 

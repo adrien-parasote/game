@@ -21,6 +21,7 @@ from src.entities.interactive_constants import (
     LIGHT_MASK_SCALE_BASE,
     LIGHT_MASK_SCALE_STEP,
 )
+from src.ui.ui_colors import COLOR_BLACK
 
 if TYPE_CHECKING:
     pass
@@ -45,7 +46,7 @@ class InteractiveLightingMixin:
         """Generate radial gradient surface."""
         size = int(radius * 2)
         surf = pygame.Surface((size, size))
-        surf.fill((0, 0, 0))
+        surf.fill(COLOR_BLACK)
         center = (radius, radius)
 
         base_color = pygame.Color(*self.halo_color)

@@ -20,3 +20,7 @@ COLOR_SLOT_BORDER_HOVER: tuple = (180, 180, 180)  # Hovered slot border
 # Debug / fallback
 COLOR_DEBUG_MISSING: tuple = (255, 0, 255)  # Magenta placeholder for missing assets
 COLOR_DEBUG_RECT: tuple = (255, 0, 0)  # Red debug rect overlay
+
+# Shared primitives
+COLOR_BLACK: tuple[int, int, int] = (0, 0, 0)
+COLOR_WHITE: tuple[int, int, int] = (255, 255, 255)

@@ -23,10 +23,13 @@ from src.ui.speech_bubble_constants import (
     _PADDING_X,
     _TAIL_GAP,
     ASSET_DIR,
+    BUBBLE_CENTER_FILL,
+    BUBBLE_NAME_TEXT_COLOR,
     MIN_BUBBLE_SIZE,
     TILE_SIZE,
     TILES,
 )
+from src.ui.ui_colors import COLOR_TEXT_STONE
 
 # Type alias for the blit callable signature used by pygame.Surface.blit
 BlitFunc = Callable[[pygame.Surface, tuple[int, int]], None]
@@ -125,7 +128,7 @@ class SpeechBubble:
 
         # Center fill
         if edge_w > 0 and edge_h > 0:
-            bg.fill((255, 255, 255), pygame.Rect(TILE_SIZE, TILE_SIZE, edge_w, edge_h))
+            bg.fill(BUBBLE_CENTER_FILL, pygame.Rect(TILE_SIZE, TILE_SIZE, edge_w, edge_h))
 
         # Top edge
         if edge_w > 0:
@@ -177,7 +180,7 @@ class SpeechBubble:
         font_to_use = self.name_font if self.name_font else self.font
         if font_to_use is None:
             return None
-        name_surf = font_to_use.render(speaker_name, True, (255, 255, 255))
+        name_surf = font_to_use.render(speaker_name, True, BUBBLE_NAME_TEXT_COLOR)
 
 
         name_w = name_surf.get_width()
@@ -256,7 +259,7 @@ class SpeechBubble:
         # 4. Text rendered at (pad_x, pad_top) — full bubble width minus padding
         inner_y = self.pad_top
         for line in page_lines:
-            txt_surf = self.font.render(line, True, (60, 40, 30))
+            txt_surf = self.font.render(line, True, COLOR_TEXT_STONE)
             bg.blit(txt_surf, (self.pad_x, inner_y))
             inner_y += line_height
 

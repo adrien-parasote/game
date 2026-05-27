@@ -113,7 +113,7 @@ MENU_ENGRAVE_SHADOW = (12, 20, 23)  # shadow (top-left -1,-1): engraving depth
 MENU_ENGRAVE_LIGHT = (90, 120, 130)  # highlight (bottom-right +1,+1): lit edge
 
 _MENU_ITEM_KEYS = ["menu.new_game", "menu.load", "menu.options", "menu.quit"]
-_MENU_ITEM_DEFAULTS = ["Nouvelle Partie", "Charger", "Options", "Quitter"]
+_MENU_ITEM_DEFAULTS = ["New Game", "Load", "Options", "Quit"]
 
 # Options back button
 BACK_BTN_W = 28  # render width (1/2 native)
@@ -125,4 +125,7 @@ BACK_BTN_OFFSET_Y = 0  # fine-tune y
 BACK_BTN_GAP = 6  # space between the text and the icon
 BACK_BTN_FONT_SIZE = 22  # label size
 BACK_BTN_LABEL_KEY = "menu.back"  # i18n key
-BACK_BTN_LABEL_DEFAULT = "Retour"  # default value
+BACK_BTN_LABEL_DEFAULT = "Back"  # default fallback value
+
+# Measurement color — used only for font.render() width measurement (not rendered to screen)
+LABEL_MEASURE_COLOR: tuple[int, int, int] = (0, 0, 0)

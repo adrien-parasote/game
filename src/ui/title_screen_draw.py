@@ -13,6 +13,7 @@ from src.ui.title_screen_constants import (
     BACK_BTN_OFFSET_Y,
     BACK_BTN_X,
     BACK_BTN_Y,
+    LABEL_MEASURE_COLOR,
     MENU_ENGRAVE_LIGHT,
     MENU_ENGRAVE_SHADOW,
     MENU_ENGRAVE_TEXT,
@@ -157,7 +158,7 @@ class TitleDrawMixin:
         self._screen.blit(img, mouse_pos)
 
     def _draw_options_overlay(self) -> None:
-        """Draw options panel: 'Retour' label (engraved/golden) + back icon."""
+        """Draw options panel: 'Back' label (engraved/golden) + back icon."""
         label = self._i18n.get(BACK_BTN_LABEL_KEY, default=BACK_BTN_LABEL_DEFAULT)
         cx = BACK_BTN_X + BACK_BTN_OFFSET_X
         cy = BACK_BTN_Y + BACK_BTN_OFFSET_Y
@@ -167,7 +168,7 @@ class TitleDrawMixin:
         icon_w = btn.get_width()
 
         # Measure label width for layout (use engraved text surface)
-        label_surf_measure = self._back_label_font.render(label, True, (0, 0, 0))
+        label_surf_measure = self._back_label_font.render(label, True, LABEL_MEASURE_COLOR)
         label_w = label_surf_measure.get_width()
 
         # Total width: icon + gap + label  — centred on (cx, cy)

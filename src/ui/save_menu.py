@@ -97,7 +97,7 @@ class SaveMenuOverlay:
             self._font_back = pygame.font.SysFont(None, BACK_FONT_SIZE)
 
         # Pre-render back button label surfaces (idle + hover) — zero allocs in draw()
-        label = self._i18n.get("menu.back", "Retour")
+        label = self._i18n.get("menu.back", "Back")
         self._back_idle_surf: pygame.Surface = self._make_back_idle_surf(label)
         self._back_hover_surf: pygame.Surface = self._make_back_hover_surf(label)
 
@@ -221,7 +221,7 @@ class SaveMenuOverlay:
         self._screen.blit(self._panel, self._panel_rect)
 
         # Draw title
-        title_surf = self._font_title.render(self._title_text, True, (220, 200, 150))
+        title_surf = self._font_title.render(self._title_text, True, SAVE_TITLE_COLOR)
         self._screen.blit(
             title_surf, title_surf.get_rect(midtop=(self._sw // 2, self._panel_rect.y + 20))
         )
