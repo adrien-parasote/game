@@ -5,7 +5,7 @@ Uses a vertical shear transformation (column-by-column translation) to preserve
 crisp pixel-art boundaries without horizonal resizing or sub-pixel blur.
 
 Usage:
-    python3 scripts/autotiles/flat_wall_to_diagonal.py \
+    python3 scripts/assets/flat_wall_to_diagonal.py \
             [--input-dir PATH] [--output-dir PATH] [--direction {nw-se,ne-sw,both}]
 """
 

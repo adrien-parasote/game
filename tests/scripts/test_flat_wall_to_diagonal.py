@@ -11,7 +11,7 @@ from PIL import Image
 
 # Import the modules under test (will fail with ImportError initially, showing RED state)
 try:
-    from scripts.autotiles.flat_wall_to_diagonal import (
+    from scripts.assets.flat_wall_to_diagonal import (
         apply_vertical_shear,
         convert_image_file,
         parse_arguments,

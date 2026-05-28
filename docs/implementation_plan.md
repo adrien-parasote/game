@@ -24,7 +24,7 @@ Zero open questions remain. All choices regarding geometric algorithms, grid ali
 
 ### Component: Developer Utility Scripts
 
-#### [NEW] [flat_wall_to_diagonal.py](file:///Users/adrien.parasote/Documents/perso/game/scripts/autotiles/flat_wall_to_diagonal.py)
+#### [NEW] [flat_wall_to_diagonal.py](file:///Users/adrien.parasote/Documents/perso/game/scripts/assets/flat_wall_to_diagonal.py)
 * **Main Script:** Implement a pure Python CLI utility that parses arguments (`--input-dir`, `--output-dir`, `--direction`).
 * **PIL Shear Algorithm:** Loop through columns, slice $1$-pixel vertical strips, and translate them vertically to generate perfect, crisp $45^\circ$ diagonal tilesets (NW-SE and NE-SW slopes) without sub-pixel blur.
 * **Batch Execution:** Scan `scripts/input/` for PNG files, process `asset1.png` ($32\times96$), `asset2.png` ($96\times192$), and `asset3.png` ($128\times224$), and output the results.
