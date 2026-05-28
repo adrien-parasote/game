@@ -6,7 +6,7 @@ Covers:
   UT-002 — PauseScreen.draw() blits pre-rendered surface, no new Surface alloc
   UT-003 — _make_halo_surface() works when gaussian_blur raises AttributeError
 
-Spec: docs/specs/perf-constants-spec.md#feature-p-perf-01c--pre-render-pause-menu-items
+Spec: docs/game/specs/perf-constants-spec.md#feature-p-perf-01c--pre-render-pause-menu-items
 """
 from unittest.mock import MagicMock, patch
 

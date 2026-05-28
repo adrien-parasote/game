@@ -1,6 +1,6 @@
 """
 DialogueManager layout constants — box margins and text positioning.
-Spec: docs/specs/dialogue-spec.md
+Spec: docs/game/specs/dialogue-spec.md
 """
 
 # Horizontal text margin inside the dialogue box (px from the box left edge)

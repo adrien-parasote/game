@@ -5,7 +5,7 @@ Extracted from Game._load_map (game.py L186-L285) and _start_initial_ambients
 
 Deep links:
   - Origin: src/engine/game.py#L186-L299
-  - Spec: docs/specs/phase-1.5-game-refactoring.md
+  - Spec: docs/game/specs/phase-1.5-game-refactoring.md
 """
 
 import logging
@@ -205,7 +205,7 @@ class MapLoader:
         Reads from game.map_manager._entities (in-memory, no disk I/O — A-ARCH-001).
         Returns (pixel_x, pixel_y) or None if not found.
 
-        Spec: docs/specs/intra-map-teleport.md § 4.2
+        Spec: docs/game/specs/intra-map-teleport.md § 4.2
         """
         half_tile = self.game.tile_size // 2
         for ent in self.game.map_manager._entities:

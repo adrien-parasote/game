@@ -161,15 +161,39 @@ This document serves as the Master Index and Architectural Registry for the 15 c
     settings.json
     pyproject.toml
     docs/
-        specs/
-            engine-core.md
-            entities-system.md
-            map-world-system.md
-            camera-rendering.md
-            pygame_ce_python_312_best_practices.md
-            best_practices_remediation_blueprint.md
-        ADRs/
-            ADR-006-perf-constants-pre-render-cache.md
+        README.md
+        game/
+            specs/
+                00_MASTER.md
+                engine-core.md
+                entities-system.md
+                map-world-system.md
+                camera-rendering.md
+                pygame_ce_python_312_best_practices.md
+                ...
+            strategic/
+                MASTER_ROADMAP.md
+                game_vision.md
+                best_practices_remediation_blueprint.md
+                ...
+            research/
+            ADRs/
+                ADR-001 .. ADR-008
+        tooling/
+            specs/
+                autotile-pipeline-spec.md
+                blob_autotile_pipeline_spec.md
+                diagonal_wall_spec.md
+            strategic/
+                autotile-pipeline-strategy.md
+                diagonal_wall_blueprint.md
+            research/
+                autotile_to_tiled.md
+                diagonal_wall_transformation.md
+        codemaps/
+            architecture.md
+            logic.md
+            data.md
     tests/
         engine/
             test_game.py

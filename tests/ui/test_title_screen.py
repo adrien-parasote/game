@@ -1,6 +1,6 @@
 """
 Tests RED — TitleScreen (TC-009 à TC-013) + GameStateManager (TC-014 à TC-018)
-Spec: docs/specs/game-flow-spec.md#4-test-case-specifications
+Spec: docs/game/specs/game-flow-spec.md#4-test-case-specifications
 """
 
 from unittest.mock import MagicMock, call, patch

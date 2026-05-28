@@ -5,7 +5,7 @@ Used by InteractionManager via a thin wrapper preserving the public API.
 
 Deep links:
   - Origin: src/engine/interaction.py#L364-L390
-  - Spec: docs/specs/phase-1.5-interaction-refactoring.md
+  - Spec: docs/game/specs/phase-1.5-interaction-refactoring.md
 """
 
 from typing import Any

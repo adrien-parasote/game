@@ -414,7 +414,7 @@ class EntityFactory:
 - `interaction.py` : 474 → 400 LOC
 - Suite : 647 tests, tous verts
 
-**Evidence :** [`docs/specs/engine-core.md`](../../docs/specs/engine-core.md), ADR-004.
+**Evidence :** [`docs/game/specs/engine-core.md`](../../docs/game/specs/engine-core.md), ADR-004.
 
 **Scope :** Project-specific (pattern général Python)
 

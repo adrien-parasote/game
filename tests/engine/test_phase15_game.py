@@ -2,7 +2,7 @@
 
 TC-GS-01..05, TC-EF-01..09, TC-ML-01..07, TC-IH-01..05
 IT-EF-01, IT-ML-01, IT-IH-01, IT-GS-01
-from docs/specs/phase-1.5-game-refactoring.md
+from docs/game/specs/phase-1.5-game-refactoring.md
 """
 
 import json

@@ -1,6 +1,6 @@
 """RED tests — Bridge SFX : _resolve_footstep_material on Player.
 
-Spec: docs/specs/bridge-sfx-spec.md
+Spec: docs/game/specs/bridge-sfx-spec.md
 Tests: UT-020 → UT-023, IT-003
 """
 

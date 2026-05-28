@@ -1,6 +1,6 @@
 """
 InteractiveEntity animation and physics constants.
-Spec: docs/specs/entity-spec.md (interactive entities section)
+Spec: docs/game/specs/entity-spec.md (interactive entities section)
 """
 
 # Sprite sheet layout

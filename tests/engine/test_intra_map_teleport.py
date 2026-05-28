@@ -1,6 +1,6 @@
 """RED tests — Intra-Map Teleport & Walk Transition.
 
-Spec: docs/specs/intra-map-teleport.md
+Spec: docs/game/specs/intra-map-teleport.md
 Tests: TC-001..TC-010 (unit) + IT-001..IT-003 (integration)
 
 These tests MUST fail (RED) before any implementation is written.

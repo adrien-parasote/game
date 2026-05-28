@@ -5,7 +5,7 @@ Extracted from Game._setup_logging (L704-L732) and Game._load_property_types
 
 Deep links:
   - Origin: src/engine/game.py#L691-L732
-  - Spec: docs/specs/phase-1.5-game-refactoring.md
+  - Spec: docs/game/specs/phase-1.5-game-refactoring.md
 """
 
 import json

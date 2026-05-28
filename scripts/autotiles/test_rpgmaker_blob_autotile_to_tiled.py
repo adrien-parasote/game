@@ -1,7 +1,7 @@
 """
 TDD tests for scripts/rpgmaker_blob_autotile_to_tiled.py
 
-Tests derived from scripts/docs/specs/blob_autotile_pipeline_spec.md
+Tests derived from scripts/docs/game/specs/blob_autotile_pipeline_spec.md
 """
 
 import sys

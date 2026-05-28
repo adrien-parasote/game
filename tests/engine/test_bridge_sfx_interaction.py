@@ -1,6 +1,6 @@
 """RED tests — Bridge SFX : _resolve_sfx helper in InteractionManager.
 
-Spec: docs/specs/bridge-sfx-spec.md
+Spec: docs/game/specs/bridge-sfx-spec.md
 Tests: UT-010 → UT-015
 """
 

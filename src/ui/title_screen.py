@@ -1,6 +1,6 @@
 """
 TitleScreen — Main menu UI with state machine.
-Spec: docs/specs/game-flow-spec.md#22-srcuititle_screenpy-new
+Spec: docs/game/specs/game-flow-spec.md#22-srcuititle_screenpy-new
 """
 
 import logging

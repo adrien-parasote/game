@@ -521,7 +521,7 @@ class TestBridgeSubtype:
     When raised (is_on=False), the water tiles beneath handle blocking.
     When lowered (is_on=True), walkable_override_entities enables crossing.
 
-    Spec: docs/specs/bridge-subtype-spec.md
+    Spec: docs/game/specs/bridge-subtype-spec.md
     """
 
     def _make_bridge(self, is_on=False, is_passable=True):
@@ -687,7 +687,7 @@ class TestBridgeSortY:
 
 # ---------------------------------------------------------------------------
 # TC-001..TC-006 — trigger_only attribute on InteractiveEntity
-# Spec: docs/specs/trigger-only-spec.md
+# Spec: docs/game/specs/trigger-only-spec.md
 # ---------------------------------------------------------------------------
 
 
@@ -698,7 +698,7 @@ class TestTriggerOnly:
     - Be stored as self.trigger_only == True after __init__
     - Default to False when not passed (backward compat)
 
-    Spec: docs/specs/trigger-only-spec.md § TC-001..TC-006
+    Spec: docs/game/specs/trigger-only-spec.md § TC-001..TC-006
     """
 
     @pytest.mark.tc("TC-005")

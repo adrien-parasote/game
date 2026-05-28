@@ -1,6 +1,6 @@
 """RED tests — Bridge SFX : material, sfx_open, sfx_close on InteractiveEntity.
 
-Spec: docs/specs/bridge-sfx-spec.md
+Spec: docs/game/specs/bridge-sfx-spec.md
 Tests: UT-001 → UT-004
 """
 

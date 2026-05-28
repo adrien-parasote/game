@@ -6,7 +6,7 @@ Also manages obstacle group registration (doors).
 
 Deep links:
   - Origin: src/engine/game.py#L35-L56, L301-L448
-  - Spec: docs/specs/phase-1.5-game-refactoring.md
+  - Spec: docs/game/specs/phase-1.5-game-refactoring.md
 """
 
 import logging

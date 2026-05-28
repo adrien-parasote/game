@@ -613,7 +613,7 @@ def test_interaction_toggle_bridge_guard():
 
 # ---------------------------------------------------------------------------
 # TC-001..TC-004, IT-001..IT-003 — trigger_only interaction guard
-# Spec: docs/specs/trigger-only-spec.md
+# Spec: docs/game/specs/trigger-only-spec.md
 # ---------------------------------------------------------------------------
 
 
@@ -641,7 +641,7 @@ class TestTriggerOnlyGuard:
     - Not suppress emote when False (TC-004)
     - Still be togglable by toggle_entity_by_id() (IT-001)
 
-    Spec: docs/specs/trigger-only-spec.md § TC-001..IT-003
+    Spec: docs/game/specs/trigger-only-spec.md § TC-001..IT-003
     """
 
     @pytest.mark.tc("TC-001")

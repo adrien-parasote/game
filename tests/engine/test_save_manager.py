@@ -1,6 +1,6 @@
 """
 Tests RED — SaveManager (TC-001 à TC-008)
-Spec: docs/specs/game-flow-spec.md#4-test-case-specifications
+Spec: docs/game/specs/game-flow-spec.md#4-test-case-specifications
 """
 
 import json

@@ -1,6 +1,6 @@
 """
 PauseScreen — Overlay pause menu on top of the running game.
-Spec: docs/specs/game-flow-spec.md#24-srcuipause_screenpy-new
+Spec: docs/game/specs/game-flow-spec.md#24-srcuipause_screenpy-new
 """
 
 from pathlib import Path

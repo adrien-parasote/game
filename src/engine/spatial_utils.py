@@ -5,7 +5,7 @@ Extracted from src/engine/interaction.py as part of Phase 1.5 refactoring.
 
 Deep links:
   - Origin: src/engine/interaction.py#L265-L320
-  - Spec: docs/specs/phase-1.5-interaction-refactoring.md
+  - Spec: docs/game/specs/phase-1.5-interaction-refactoring.md
 """
 
 import pygame

@@ -1,7 +1,7 @@
 """
 Engine-level constants — placeholder and fallback colors.
 These colors appear in error/missing-asset rendering paths only (never in production UI).
-Spec: docs/specs/code-quality-constants-i18n.md § F-QUAL-02-A
+Spec: docs/game/specs/code-quality-constants-i18n.md § F-QUAL-02-A
 """
 
 # Fallback colors for missing or fallback assets (debug-visible, non-production)

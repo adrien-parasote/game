@@ -1,6 +1,6 @@
 """
 GameStateManager constants — save thumbnail sizing and audio fade timings.
-Spec: docs/specs/game-flow-spec.md
+Spec: docs/game/specs/game-flow-spec.md
 """
 
 # Save thumbnail generation

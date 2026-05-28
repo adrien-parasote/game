@@ -1,6 +1,6 @@
 """
 Tests for DT Clamp (Step 1 — TC-DT-001 to TC-DT-004).
-Spec: docs/specs/remediation_01_dt_text_cache.md § Step 1
+Spec: docs/game/specs/remediation_01_dt_text_cache.md § Step 1
 
 These tests are written RED-first: they will FAIL until the clamp is implemented.
 """

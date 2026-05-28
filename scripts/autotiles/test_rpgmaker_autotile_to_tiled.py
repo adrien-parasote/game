@@ -1,7 +1,7 @@
 """
 TDD tests for scripts/rpgmaker_autotile_to_tiled.py
 
-Tests derived directly from scripts/docs/specs/autotile-pipeline-spec.md
+Tests derived directly from scripts/docs/game/specs/autotile-pipeline-spec.md
 Test IDs: UT-001..UT-009, IT-001..IT-003
 """
 

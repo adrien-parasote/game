@@ -1,6 +1,6 @@
 """
 Tests RED — Performance Optimizations
-Spec: docs/specs/performance-optimization-spec.md
+Spec: docs/game/specs/performance-optimization-spec.md
 TC-001..TC-036 + IT-001..IT-003
 """
 

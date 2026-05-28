@@ -1,6 +1,6 @@
 """
 LightingManager constants — beam shape defaults and overlay tuning values.
-Spec: docs/specs/lighting-spec.md
+Spec: docs/game/specs/lighting-spec.md
 """
 
 # Window beam shape defaults (pixels).

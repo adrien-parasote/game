@@ -117,7 +117,7 @@ class Game:
         # Initialized to None; set by MapLoader.load() on each map transition
         self.anim_map_manager = None
         # Intra-map walk state — None when inactive, Vector2 target when walk is in progress
-        # Spec: docs/specs/intra-map-teleport.md § 4.4.1
+        # Spec: docs/game/specs/intra-map-teleport.md § 4.4.1
         self._intra_walk_target: pygame.math.Vector2 | None = None
         # Lazy-initialized on first scripted walk (player must exist first).
         # See _start_intra_walk for creation.
@@ -302,7 +302,7 @@ class Game:
         self.clock.tick(Settings.FPS)  # Reset dt so next frame logic doesn't jump
 
     # ---------------------------------------------------------------------------
-    # Intra-map teleport — spec: docs/specs/intra-map-teleport.md § 4.3–4.4
+    # Intra-map teleport — spec: docs/game/specs/intra-map-teleport.md § 4.3–4.4
     # ---------------------------------------------------------------------------
 
     def intra_map_teleport(self, target_spawn_id: str, transition_type: str) -> None:
@@ -311,7 +311,7 @@ class Game:
         Preserves all entity groups, world state, and audio.
         transition_type 'instant': snap to spawn. 'walk': scripted lerp to spawn.
 
-        Spec: docs/specs/intra-map-teleport.md § 4.3
+        Spec: docs/game/specs/intra-map-teleport.md § 4.3
         """
         spawn_pos = self._map_loader.resolve_spawn_by_id(target_spawn_id)
         if spawn_pos is None:
@@ -331,7 +331,7 @@ class Game:
         Sets target_pos on the player so player.move(dt) drives the translation.
         Sets is_moving=True and computes initial facing from delta direction.
 
-        Spec: docs/specs/intra-map-teleport.md § 4.4.2
+        Spec: docs/game/specs/intra-map-teleport.md § 4.4.2
         """
         # Lazy-init the transparent surface (player must exist, sized to its image).
         # Created once and reused across all scripted walks.
@@ -361,7 +361,7 @@ class Game:
         Delegates actual translation to player.move(dt) (via visible_sprites.update).
         Terminates when player.is_moving becomes False (player arrived at target_pos).
 
-        Spec: docs/specs/intra-map-teleport.md § 4.4.3
+        Spec: docs/game/specs/intra-map-teleport.md § 4.4.3
         """
         if self._intra_walk_target is None:
             return
@@ -472,7 +472,7 @@ class Game:
         self.interaction_manager.update(dt)
 
         # Walk-transition intercept — G2: all inputs blocked during scripted walk
-        # Spec: docs/specs/intra-map-teleport.md § 4.5
+        # Spec: docs/game/specs/intra-map-teleport.md § 4.5
         if self._intra_walk_target is not None:
             self._tick_intra_walk(dt)
             self.visible_sprites.update(dt)

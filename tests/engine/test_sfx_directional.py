@@ -1,6 +1,6 @@
 """Tests for directional SFX: sfx_open / sfx_close on chest, door, lever, and _close_chest().
 
-Spec: docs/specs/sfx-migration-spec.md
+Spec: docs/game/specs/sfx-migration-spec.md
 Tests: TC-001, TC-002, IT-001, IT-002, IT-003
 """
 

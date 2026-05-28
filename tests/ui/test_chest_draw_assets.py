@@ -1,6 +1,6 @@
 """RED tests for Phase 1.5 — verify asset methods exist on ChestDrawMixin.
 
-TC-CA-01..TC-CA-08 from docs/specs/phase-1.5-chest-refactoring.md
+TC-CA-01..TC-CA-08 from docs/game/specs/phase-1.5-chest-refactoring.md
 IT-CA-01..IT-CA-05 regression/integration tests.
 """
 

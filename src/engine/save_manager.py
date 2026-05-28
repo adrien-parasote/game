@@ -1,6 +1,6 @@
 """
 SaveManager — Serialization and persistence of save slots.
-Spec: docs/specs/game-flow-spec.md#21-srcenginesave_managerpy-new
+Spec: docs/game/specs/game-flow-spec.md#21-srcenginesave_managerpy-new
 """
 
 import json

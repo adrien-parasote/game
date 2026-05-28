@@ -222,8 +222,8 @@ python3 scripts/autotiles/rpgmaker_autotile_to_tiled.py <input> [tsx] [png]
 
 ## Deep Links
 
-- Research (Wang ID format, discovery): [scripts/docs/research/autotile_to_tiled.md#findings](file:///Users/adrien.parasote/Documents/perso/game/scripts/docs/research/autotile_to_tiled.md#findings)
-- Strategy: [scripts/docs/strategic/autotile-pipeline-strategy.md#L1](file:///Users/adrien.parasote/Documents/perso/game/scripts/docs/strategic/autotile-pipeline-strategy.md#L1)
+- Research (Wang ID format, discovery): [autotile_to_tiled.md](../research/autotile_to_tiled.md#findings)
+- Strategy: [autotile-pipeline-strategy.md](../strategic/autotile-pipeline-strategy.md#L1)
 - Tiled Wang Sets docs: [mapeditor.org](https://doc.mapeditor.org/en/stable/manual/wang-sets/)
 
 ---

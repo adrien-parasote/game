@@ -1,6 +1,6 @@
 """
 SaveMenu UI constants — layout, colors, dimensions.
-Spec: docs/specs/perf-constants-spec.md#feature-p-const-01e--save-menu-constants-new-file
+Spec: docs/game/specs/perf-constants-spec.md#feature-p-const-01e--save-menu-constants-new-file
 """
 
 from src.ui.pause_screen_constants import ENGRAVE_LIGHT, ENGRAVE_SHADOW, ENGRAVE_TEXT

@@ -1,7 +1,7 @@
 """
 GameStateManager — Main loop orchestrator, manages TITLE/PLAYING/PAUSED states.
-Spec: docs/specs/game-flow-spec.md#23-srcenginegame_state_managerpy-new
-ADR: docs/ADRs/ADR-001-gamestate-architecture.md
+Spec: docs/game/specs/game-flow-spec.md#23-srcenginegame_state_managerpy-new
+ADR: docs/game/ADRs/ADR-001-gamestate-architecture.md
 """
 
 import logging

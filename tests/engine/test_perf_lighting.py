@@ -1,7 +1,7 @@
 """
 RED test for UT-006: LightingManager uses BEAM_COLOR_MOON/SUN constants.
 
-Spec: docs/specs/perf-constants-spec.md#feature-p-const-01a--lighting-beam-colors
+Spec: docs/game/specs/perf-constants-spec.md#feature-p-const-01a--lighting-beam-colors
 """
 from unittest.mock import MagicMock, patch
 

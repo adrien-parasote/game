@@ -1,6 +1,6 @@
 """RED tests for Phase 1.5 — CollisionChecker.
 
-TC-CC-01..TC-CC-07, IT-CC-01 from docs/specs/phase-1.5-interaction-refactoring.md
+TC-CC-01..TC-CC-07, IT-CC-01 from docs/game/specs/phase-1.5-interaction-refactoring.md
 """
 
 from unittest.mock import MagicMock

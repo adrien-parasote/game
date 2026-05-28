@@ -2,7 +2,7 @@
 Tests for UT-005: GameHUD caches I18nManager at __init__ and does not
 construct it during draw().
 
-Spec: docs/specs/perf-constants-spec.md#feature-p-perf-01a--i18nmanager-cache-in-hud
+Spec: docs/game/specs/perf-constants-spec.md#feature-p-perf-01a--i18nmanager-cache-in-hud
 """
 from unittest.mock import MagicMock, call, patch
 

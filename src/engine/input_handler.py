@@ -5,7 +5,7 @@ Phase 1.5 refactoring.
 
 Deep links:
   - Origin: src/engine/game.py#L560-L596
-  - Spec: docs/specs/phase-1.5-game-refactoring.md
+  - Spec: docs/game/specs/phase-1.5-game-refactoring.md
 """
 
 import sys

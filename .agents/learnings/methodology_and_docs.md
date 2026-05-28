@@ -86,14 +86,14 @@ Absolute `file:///Users/username/...` paths in spec deep links break on every ma
 # ❌ Machine-specific — breaks on any other system
 [inventory.py L21](../../src/engine/inventory_system.py#L21)
 
-# ✅ Relative from docs/specs/ — portable
+# ✅ Relative from docs/game/specs/ — portable
 [inventory.py L21](../../src/engine/inventory_system.py#L21)
 ```
 
-**Convention from docs/specs/:**
+**Convention from docs/game/specs/:**
 - `../../src/` → source files
 - `../../tests/` → test files
-- `./` → other spec files in docs/specs/
+- `./` → other spec files in docs/game/specs/
 - `../` → other docs/ files
 
 **Evidence:** 87 links converted in 13 spec files. Script: `re.sub(r'file:///Users/[^/]+/Documents/perso/game/', '../../', content)`. commit `a7be023`.
@@ -233,7 +233,7 @@ Lors d'un audit doc, on suppose souvent que les références problématiques son
 grep -rl "design-tokens.md" docs/ .agents/
 # → 31 fichiers identifiés d'un coup
 # Puis supprimer en masse :
-for f in docs/specs/*.md; do sed -i '' '1{/design-tokens/d;}' "$f"; done
+for f in docs/game/specs/*.md; do sed -i '' '1{/design-tokens/d;}' "$f"; done
 ```
 
 **Règle :** Avant de corriger manuellement N occurrences d'un pattern problématique, lancer `grep -rl "pattern" .` pour connaître l'étendue réelle. Si N > 5 → script sed one-liner au lieu de corrections manuelles.
@@ -258,7 +258,7 @@ Un fichier `design-tokens.md` contenant des tokens CSS (`--primary: #3A7BD5`, `I
 ### L-DOC-007 · 2026-05-15 · U · Perfect
 **Script relocation: grep for all hardcoded call sites across docs and config**
 
-When moving scripts to subdirectories (e.g. `scripts/` -> `scripts/calibration/`), assuming only `ARCHITECTURE.md` needs updates is an anti-pattern. Hardcoded paths often exist in `docs/specs/`, `README.md`, and metadata-generating scripts (e.g. `tc_report.py`).
+When moving scripts to subdirectories (e.g. `scripts/` -> `scripts/calibration/`), assuming only `ARCHITECTURE.md` needs updates is an anti-pattern. Hardcoded paths often exist in `docs/game/specs/`, `README.md`, and metadata-generating scripts (e.g. `tc_report.py`).
 
 **Pattern:**
 1. Move files.
@@ -266,7 +266,7 @@ When moving scripts to subdirectories (e.g. `scripts/` -> `scripts/calibration/`
 3. Update `ARCHITECTURE.md` and any identified specs.
 4. Verify by running the script from its new location if applicable.
 
-**Evidence:** Relocation of `calibrate_halos.py` and `process_banners.py` identified 4 hidden references in `docs/specs/game-flow-spec.md` and 1 in `tc_report.py` that would have otherwise broken traceability reporting.
+**Evidence:** Relocation of `calibrate_halos.py` and `process_banners.py` identified 4 hidden references in `docs/game/specs/game-flow-spec.md` and 1 in `tc_report.py` that would have otherwise broken traceability reporting.
 
 ---
 
@@ -370,7 +370,7 @@ Quand une méthode est appelée depuis **plusieurs specs** (ex: `draw_foreground
 
 **Règle :** Pour tout changement de signature ou type de retour d'une méthode partagée, lancer :
 ```bash
-grep -rn "draw_foreground\|method_name" docs/specs/
+grep -rn "draw_foreground\|method_name" docs/game/specs/
 # → chaque fichier listé = spec à mettre à jour
 ```
 
@@ -448,10 +448,10 @@ Avant de supprimer un fichier spec, blueprint, ou doc, toujours vérifier qu'auc
 grep -rn "partial-sprite-occlusion" docs/ .agents/ scripts/
 # Si 0 résultat → suppression safe
 # Si N résultats → mettre à jour chaque référence avant de supprimer
-git rm docs/specs/partial-sprite-occlusion.md
+git rm docs/game/specs/partial-sprite-occlusion.md
 ```
 
-**Règle :** La commande grep doit cibler `docs/`, `.agents/`, et `scripts/` (pas seulement `docs/specs/`) — les scripts TC report ou les learnings peuvent aussi pointer vers des specs.
+**Règle :** La commande grep doit cibler `docs/`, `.agents/`, et `scripts/` (pas seulement `docs/game/specs/`) — les scripts TC report ou les learnings peuvent aussi pointer vers des specs.
 
 **Evidence :** `partial-sprite-occlusion.md` supprimé proprement — grep = 0 résultats, zéro lien cassé. Distinct de L-DOC-007 (qui concerne la relocation de scripts, pas la suppression de specs).
 
@@ -462,7 +462,7 @@ git rm docs/specs/partial-sprite-occlusion.md
 ### A-SPEC-003 · 2026-05-22 · U · Minor Rework
 **Sur-génération de spécifications et d'ADR temporaires menant à une dette documentaire et des suppressions accidentelles**
 
-Créer un fichier de spécification ou d'ADR indépendant pour chaque micro-optimisation de performance (ex : un ADR par règle F1, F2, F3, F4) ou chaque cycle de révision produit un éparpillement documentaire extrême. Cela engendre des risques de confusion pour l'agent (références fantômes, corpus saturé) et pousse le développeur à faire des suppressions massives au cours desquelles des blueprints stratégiques indispensables (ex : `docs/strategic/*.md`) sont accidentellement supprimés.
+Créer un fichier de spécification ou d'ADR indépendant pour chaque micro-optimisation de performance (ex : un ADR par règle F1, F2, F3, F4) ou chaque cycle de révision produit un éparpillement documentaire extrême. Cela engendre des risques de confusion pour l'agent (références fantômes, corpus saturé) et pousse le développeur à faire des suppressions massives au cours desquelles des blueprints stratégiques indispensables (ex : `docs/game/strategic/*.md`) sont accidentellement supprimés.
 
 **Anti-pattern :** Éparpiller la conception technique d'une même feature sur 5+ fichiers d'ADR ou de brouillons au lieu de centraliser l'implémentation dans une spécification technique unique.
 
@@ -470,9 +470,9 @@ Créer un fichier de spécification ou d'ADR indépendant pour chaque micro-opti
 1. Maintenir un seul fichier de spécification par module ou feature active (ex : `camera-rendering.md`).
 2. Consolider les règles connexes (ex : optimisations F1-F4) sous forme de sections claires au lieu de fichiers multiples.
 3. Supprimer les fichiers de travail temporaires immédiatement après leur validation fonctionnelle.
-4. **Règle absolue (Override d'intégration) :** Tous les documents de conception (Specs, ADRs, Blueprints) doivent résider dans le workspace du projet (ex : `docs/strategic/`), tandis que seuls les artifacts de conversation éphémères (`task.md`, `walkthrough.md`) restent dans le répertoire Antigravity.
+4. **Règle absolue (Override d'intégration) :** Tous les documents de conception (Specs, ADRs, Blueprints) doivent résider dans le workspace du projet (ex : `docs/game/strategic/`), tandis que seuls les artifacts de conversation éphémères (`task.md`, `walkthrough.md`) restent dans le répertoire Antigravity.
 
-**Evidence :** Suppression de 7 brouillons d'ADR-PERF et de spec-gate temporaires. Restauration via git de 3 blueprints stratégiques accidentellement supprimés dans `docs/strategic/`. Urbanisation réussie avec centralisation sur les codemaps.
+**Evidence :** Suppression de 7 brouillons d'ADR-PERF et de spec-gate temporaires. Restauration via git de 3 blueprints stratégiques accidentellement supprimés dans `docs/game/strategic/`. Urbanisation réussie avec centralisation sur les codemaps.
 
 ---
 

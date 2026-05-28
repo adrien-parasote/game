@@ -1,6 +1,6 @@
 """
 Tests RED pour Text Cache (Steps 2-4).
-Spec: docs/specs/remediation_01_dt_text_cache.md § Steps 2-4
+Spec: docs/game/specs/remediation_01_dt_text_cache.md § Steps 2-4
 
 TC-HUD-001 à TC-HUD-003 : cache sur GameHUD
 TC-INV-CACHE-001 à TC-INV-CACHE-005 : cache sur InventoryDrawMixin

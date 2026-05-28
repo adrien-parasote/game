@@ -10,7 +10,7 @@ Covers:
   IT-001 — No French comment "# Sauvegarder" in source files
   IT-003 — save_menu_constants imports without error
 
-Spec: docs/specs/perf-constants-spec.md
+Spec: docs/game/specs/perf-constants-spec.md
 """
 import subprocess
 import sys

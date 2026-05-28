@@ -1,6 +1,6 @@
 """RED tests for Phase 1.5 — spatial_utils pure functions.
 
-TC-SU-01..TC-SU-13 from docs/specs/phase-1.5-interaction-refactoring.md
+TC-SU-01..TC-SU-13 from docs/game/specs/phase-1.5-interaction-refactoring.md
 """
 
 from unittest.mock import MagicMock

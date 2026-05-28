@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Spec↔Test Traceability Report.
 
-Cross-references TC IDs from docs/specs/ with @pytest.mark.tc decorators
+Cross-references TC IDs from docs/game/specs/ with @pytest.mark.tc decorators
 in the test suite to produce a coverage report.
 
 Usage:
@@ -16,7 +16,7 @@ import re
 import sys
 from collections import defaultdict
 
-SPECS_DIR = "docs/specs"
+SPECS_DIR = "docs/game/specs"
 TRACEABILITY_OUTPUT = "docs/traceability.md"
 
 

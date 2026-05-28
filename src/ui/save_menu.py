@@ -1,6 +1,6 @@
 """
 Save Menu UI Components.
-Spec: docs/specs/save-system.md
+Spec: docs/game/specs/save-system.md
 """
 
 from pathlib import Path
