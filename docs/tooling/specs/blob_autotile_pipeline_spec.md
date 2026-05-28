@@ -1,18 +1,18 @@
 > Document Type: Implementation
 
-# Spec : Blob Autotile Pipeline (47 tiles)
+# Spec: Blob Autotile Pipeline (47 tiles)
 
-**Script :** `scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py`
-**Remplace :** `scripts/autotiles/rpgmaker_autotile_to_tiled.py` (16 tiles edge-only → coin artefacts)
-**Research :** [devium/tiled-autotile](https://github.com/devium/tiled-autotile)
+**Script:** `scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py`  
+**Replaces:** `scripts/autotiles/rpgmaker_autotile_to_tiled.py` (16 tiles edge-only → corner artifacts)  
+**Research:** [devium/tiled-autotile](https://github.com/devium/tiled-autotile)
 
 ---
 
-## Contexte et décision
+## Context and Decision
 
-Le script 16-tile edge-only génère des artefacts aux **coins diagonaux** car il ne connaît que 4 voisins (T/R/B/L). La solution correcte est le format **47-tile blob** qui encode les 8 voisins (T/R/B/L + 4 diagonales).
+The 16-tile edge-only script generates artifacts at **diagonal corners** because it only recognizes 4 neighbors (T/R/B/L). The correct solution is the **47-tile blob** format, which encodes all 8 neighbors (T/R/B/L + 4 diagonals).
 
-**ADR-002 :** Adopt `devium/tiled-autotile` sub-tile assembly logic, adapted pour notre pipeline standalone.
+**ADR-002:** Adopt `devium/tiled-autotile` sub-tile assembly logic, adapted for our standalone pipeline.
 
 ---
 
@@ -20,38 +20,38 @@ Le script 16-tile edge-only génère des artefacts aux **coins diagonaux** car i
 
 | # | Assumption | Risk |
 |---|-----------|------|
-| A1 | L'autotile source RPG Maker XP est 96×128 px (statique) ou N×96×128 (animé) | Low |
-| A2 | Les 47 combinations devium couvrent tous les cas visuels du blob | Low — validé sur des milliers de jeux RPG |
-| A3 | Tiled `type="mixed"` (corner+edge) supporte les 47 tiles blob | Low — confirmé doc Tiled 1.10 |
-| A4 | Le wangid blob encodes 8 directions : TL,T,TR,R,BR,B,BL,L | Low — format Tiled TSX |
+| A1 | The source RPG Maker XP autotile is 96×128 px (static) or N×96×128 (animated) | Low |
+| A2 | The 47 devium combinations cover all visual edge cases of the blob | Low — validated on thousands of RPG games |
+| A3 | Tiled `type="mixed"` (corner+edge) supports the 47-tile blob | Low — confirmed in Tiled 1.10 docs |
+| A4 | The blob wangid encodes 8 directions: TL, T, TR, R, BR, B, BL, L | Low — Tiled TSX format |
 
-| Constante | Valeur | Description |
+| Constant | Value | Description |
 |-----------|--------|-------------|
-| SUBTILE | 16 | Demi-tile en px |
-| TILE_SIZE | 32 | Tile en px |
-| BLOB_COUNT | 47 | Nombre de tiles blob (49 slots, 2 vides) |
+| SUBTILE | 16 | Half-tile in px |
+| TILE_SIZE | 32 | Tile in px |
+| BLOB_COUNT | 47 | Number of blob tiles (49 slots, 2 empty) |
 
 ---
 
-## Format source RPG Maker XP (96×128)
+## Source RPG Maker XP Format (96×128)
 
 ```
-6 colonnes × 8 lignes de sub-tiles 16×16
+6 columns × 8 rows of 16×16 sub-tiles
 Col 0-5, Row 0-7
 
-Layout (en tiles 32×32) :
+Layout (in 32×32 tiles):
   [A][B][C]    A=isolated, B=inner-corners, C=variant
   [D][E][F]    D=left-edge, E=top-edge, F=right-edge
   [G][H][I]    G=left, H=CENTER (full), I=right
   [J][K][L]    J=bot-left, K=bot-edge, L=bot-right
 ```
-Les inner-corners (`B`) se trouvent aux colonnes 4-5, lignes 0-1, et NON aux colonnes 2-3 (qui sont transparentes dans l'eau).
+The inner-corners (`B`) are located at columns 4-5, rows 0-1, and NOT at columns 2-3 (which are transparent in water tiles).
 
 ---
 
-## Les 47 combinations (sub-tiles)
+## The 47 Combinations (Sub-tiles)
 
-L'implémentation n'utilise pas la liste devium 49 mais reconstruit dynamiquement les 47 bitmasks de terrain (`BLOB_BITMASKS`) via une logique modulaire `_quarter()` qui mappe chaque coin vers son sub-tile 16x16 exact dans la source.
+The implementation does not use the devium 49 list but dynamically reconstructs the 47 terrain bitmasks (`BLOB_BITMASKS`) via modular `_quarter()` logic that maps each corner to its exact 16x16 sub-tile in the source.
 
 ```python
 BLOB_BITMASKS = (
@@ -62,22 +62,22 @@ BLOB_BITMASKS = (
 )
 ```
 
-## Bitmask → tile index
+## Bitmask → Tile Index
 
-Le bitmask 8 bits encode les voisins : `NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, SE=128`
+The 8-bit bitmask encodes neighbors: `NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, SE=128`
 
-**Règle blob :** Si un voisin cardinal (N/E/S/W) est absent, ses diagonales adjacentes sont ignorées dans la construction de la sous-tuile pour éviter le "tearing".
-L'index est simplement la position dans `BLOB_BITMASKS`. Il y a exactement 47 slots par frame, sans padding vide.
+**Blob Rule:** If a cardinal neighbor (N/E/S/W) is absent, its adjacent diagonals are ignored when constructing the sub-tile to prevent "tearing".
+The index is simply the position in `BLOB_BITMASKS`. There are exactly 47 slots per frame, without empty padding.
 
 ---
 
-## Données de sortie
+## Output Data
 
-### Strip PNG
+### PNG Strip
 
 ```
-Dimensions : (47 × 32) × 32 = 1504 × 32 px
-Tiles 0-46 : positions BLOB_BITMASKS
+Dimensions: (47 × 32) × 32 = 1504 × 32 px
+Tiles 0-46: BLOB_BITMASKS positions
 ```
 
 ### TSX XML
@@ -88,7 +88,7 @@ Tiles 0-46 : positions BLOB_BITMASKS
          tilecount="47" columns="47">
   <image source="{rel_png}" width="1568" height="32"/>
 
-  <!-- Animations (si N > 1) : même logique que le script animé -->
+  <!-- Animations (if N > 1): same logic as the animated script -->
   <tile id="{i}">
     <animation>
       <frame tileid="{i}"       duration="{ms}"/>
@@ -100,7 +100,7 @@ Tiles 0-46 : positions BLOB_BITMASKS
   <wangsets>
     <wangset name="{stem}" type="mixed" tile="-1">
       <wangcolor name="{stem}" color="#4488ff" tile="-1" probability="1"/>
-      <!-- 47 wangtiles (slots 41 et 48 ignorés) -->
+      <!-- 47 wangtiles (slots 41 and 48 ignored) -->
       <wangtile tileid="{i}" wangid="{_blob_wang_id(bitmask)}"/>
     </wangset>
   </wangsets>
@@ -109,7 +109,7 @@ Tiles 0-46 : positions BLOB_BITMASKS
 
 ### wangid blob (type="mixed")
 
-Format Tiled mixed exact: `Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left, TopLeft`
+Exact Tiled mixed format: `Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left, TopLeft`
 
 ```python
 def _blob_wang_id(bitmask: int) -> str:
@@ -121,13 +121,13 @@ def _blob_wang_id(bitmask: int) -> str:
     s  = (bitmask >> 6) & 1
     sw = (bitmask >> 5) & 1
     w  = (bitmask >> 3) & 1
-    # Note : Tiled Wang ID expects exact array order
+    # Note: Tiled Wang ID expects exact array order
     return f"{n},{ne},{e},{se},{s},{sw},{w},{nw}"
 ```
 
 ---
 
-## Interface CLI
+## CLI Interface
 
 ```
 python3 scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py <input.png>
@@ -138,7 +138,7 @@ Identique au script animé. Si `width == 96` → static (pas d'animation). Si `w
 
 ---
 
-## Algorithme
+## Algorithm
 
 ```python
 def convert(input_path, tsx_path, png_path, frame_duration):
@@ -152,7 +152,7 @@ def convert(input_path, tsx_path, png_path, frame_duration):
     _print_success(...)
 
 def _build_blob_strip(src, n_frames):
-    # 49 slots par frame
+    # 49 slots per frame
     total = n_frames * 49
     strip = Image.new("RGBA", (32 * total, 32))
 
@@ -183,15 +183,15 @@ def _assemble_tile(frame, combo):
 
 | Error | Response | Message |
 |-------|----------|---------|
-| Fichier absent | `sys.exit` | `ERROR: File not found: {path}` |
-| Image corrompue | `sys.exit` | `ERROR: Cannot open image: {e}` |
+| Missing file | `sys.exit` | `ERROR: File not found: {path}` |
+| Corrupt image | `sys.exit` | `ERROR: Cannot open image: {e}` |
 | height ≠ 128 | `sys.exit` | `ERROR: Expected height 128px, got {h}px` |
 | width % 96 ≠ 0 | `sys.exit` | `ERROR: Width not a multiple of 96px` |
 | frame_duration ≤ 0 | `sys.exit` | `ERROR: --frame-duration must be > 0` |
 | N == 1 | warning | `WARNING: Single frame — static output` |
-| mkdir échoue | `sys.exit` | `ERROR: Could not create output directory: {e}` |
-| PNG write échoue | `sys.exit` | `ERROR: Cannot write PNG: {e}` |
-| TSX write échoue | `sys.exit` | `ERROR: Cannot write TSX: {e}` |
+| mkdir fails | `sys.exit` | `ERROR: Could not create output directory: {e}` |
+| PNG write fails | `sys.exit` | `ERROR: Cannot write PNG: {e}` |
+| TSX write fails | `sys.exit` | `ERROR: Cannot write TSX: {e}` |
 
 ---
 
@@ -199,70 +199,70 @@ def _assemble_tile(frame, combo):
 
 | # | Anti-pattern | Correct |
 |---|-------------|---------|
-| AP-1 | Réutiliser `_build_tile` (4-bit edge) | Utiliser `_assemble_tile` avec les 49 combinations |
-| AP-2 | wangset `type="edge"` | `type="mixed"` pour blob corner+edge |
-| AP-3 | 16 wangtiles | 47 wangtiles (slots 41 et 48 omis) |
-| AP-4 | wangid format `T,0,R,0,B,0,L,0` | Format mixed `TL,T,TR,R,BR,B,BL,L` |
-| AP-5 | tilecount=49 fixe | `tilecount = n_frames * 49` |
-| AP-6 | Inclure les slots vides (41,48) dans les wangtiles | Les omettre — tiles transparentes, pas de terrain |
-| AP-7 | Ignorer les diagonales dans le bitmask | Appliquer la règle blob : diagonal=0 si cardinal absent |
+| AP-1 | Reusing `_build_tile` (4-bit edge) | Use `_assemble_tile` with the 49 combinations |
+| AP-2 | wangset `type="edge"` | `type="mixed"` for corner+edge blob |
+| AP-3 | 16 wangtiles | 47 wangtiles (slots 41 and 48 omitted) |
+| AP-4 | wangid format `T,0,R,0,B,0,L,0` | Mixed format `TL,T,TR,R,BR,B,BL,L` |
+| AP-5 | fixed tilecount=49 | `tilecount = n_frames * 49` |
+| AP-6 | Including empty slots (41,48) in wangtiles | Omit them — transparent tiles, no terrain |
+| AP-7 | Ignoring diagonals in bitmask | Apply blob rule: diagonal=0 if cardinal is absent |
 
 ---
 
 ## Test Case Specifications
 
-### UT-001 — _assemble_tile : dimensions correctes
-**Input :** frame 96×128 synthétique, combo index 8 (center full)
-**Expected :** tile 32×32 RGBA
+### UT-001 — _assemble_tile: correct dimensions
+**Input:** synthetic 96×128 frame, combo index 8 (center full)  
+**Expected:** 32×32 RGBA tile
 
-### UT-002 — _blob_mask : règle diagonal
-**Input :** n=True, nw=True, w=False
-**Expected :** nw forcé à 0 (w absent)
+### UT-002 — _blob_mask: diagonal rule
+**Input:** n=True, nw=True, w=False  
+**Expected:** nw forced to 0 (w absent)
 
-### UT-003 — _blob_wang_id : bitmask 255 (entouré)
-**Input :** bitmask=255
-**Expected :** `"1,1,1,1,1,1,1,1"`
+### UT-003 — _blob_wang_id: bitmask 255 (surrounded)
+**Input:** bitmask=255  
+**Expected:** `"1,1,1,1,1,1,1,1"`
 
-### UT-004 — _blob_wang_id : bitmask 0 (isolé)
-**Input :** bitmask=0
-**Expected :** `"0,0,0,0,0,0,0,0"`
+### UT-004 — _blob_wang_id: bitmask 0 (isolated)
+**Input:** bitmask=0  
+**Expected:** `"0,0,0,0,0,0,0,0"`
 
-### UT-005 — Strip statique : dimensions
-**Input :** Image 96×128
-**Expected :** strip size == (1568, 32)
+### UT-005 — Static strip: dimensions
+**Input:** 96×128 image  
+**Expected:** strip size == (1568, 32)
 
-### UT-006 — Slots vides transparents
-**Input :** slot 41 et 48
-**Expected :** pixels = (0,0,0,0) RGBA
+### UT-006 — Transparent empty slots
+**Input:** slot 41 and 48  
+**Expected:** pixels = (0,0,0,0) RGBA
 
-### UT-007 — Validation height
-**Input :** Image 96×64
-**Expected :** SystemExit, "height"
+### UT-007 — Height validation
+**Input:** 96×64 image  
+**Expected:** SystemExit, "height"
 
-### UT-008 — Validation width
-**Input :** Image 100×128
-**Expected :** SystemExit, "multiple"
+### UT-008 — Width validation
+**Input:** 100×128 image  
+**Expected:** SystemExit, "multiple"
 
-### IT-001 — Pipeline statique complet
-**Input :** grass.png 96×128
-**Expected :** PNG 1568×32, TSX tilecount=49, 47 wangtiles, type="mixed"
+### IT-001 — Complete static pipeline
+**Input:** grass.png 96×128  
+**Expected:** 1568×32 PNG, TSX tilecount=49, 47 wangtiles, type="mixed"
 
-### IT-002 — Pipeline animé N=4
-**Input :** water.png 384×128, frame_duration=200
-**Expected :** PNG 7056×32 (4×49×32), 47 `<tile><animation>` de 4 frames
+### IT-002 — Animated pipeline N=4
+**Input:** water.png 384×128, frame_duration=200  
+**Expected:** 7056×32 PNG (4×49×32), 47 `<tile><animation>` of 4 frames
 
 ### IT-003 — Bitmask 255 → slot 46 (center)
-**Input :** bitmask=255
-**Expected :** BITMASK_TO_IDX[255] == 46
+**Input:** bitmask=255  
+**Expected:** BITMASK_TO_IDX[255] == 46
 
-### IT-004 — Image relative dans TSX
-**Input :** tsx dans `tilesets/`, png dans `images/`
-**Expected :** `<image source>` est relatif
+### IT-004 — Relative image in TSX
+**Input:** tsx in `tilesets/`, png in `images/`  
+**Expected:** `<image source>` is relative
 
 ---
 
 ## Deep Links
 
-- Tiled mixed Wang : https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#wangset
-- devium/tiled-autotile : https://github.com/devium/tiled-autotile
-- Script Blob : [rpgmaker_blob_autotile_to_tiled.py](../../autotiles/rpgmaker_blob_autotile_to_tiled.py#L1)
+- Tiled mixed Wang: https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#wangset
+- devium/tiled-autotile: https://github.com/devium/tiled-autotile
+- Blob Script: [rpgmaker_blob_autotile_to_tiled.py](../../autotiles/rpgmaker_blob_autotile_to_tiled.py#L1)

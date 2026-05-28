@@ -1,19 +1,19 @@
-# Guide de Référence — Best Practices Python 3.12 & Pygame-CE [Reference]
+# Reference Guide — Python 3.12 & Pygame-CE Best Practices [Reference]
 
-> **Type de document :** Référence de développement / State of the Art
-> **Technologies cibles :** Python 3.12+, Pygame-CE (Community Edition) 2.4.0+
-> **Objectif :** Établir les standards de codage, d'architecture et d'optimisation pour concevoir des moteurs de jeu 2D professionnels et ultra-performants.
+> **Document Type:** Development Reference / State of the Art
+> **Target Technologies:** Python 3.12+, Pygame-CE (Community Edition) 2.4.0+
+> **Objective:** Establish coding, architecture, and optimization standards to design professional and high-performance 2D game engines.
 
 ---
 
-## 1. Pourquoi Pygame-CE (Community Edition) ?
+## 1. Why Pygame-CE (Community Edition)?
 
-**Pygame-CE** est le fork officiel et activement maintenu par la communauté des développeurs d'origine. Contrairement à la version héritée (`pygame` upstream), Pygame-CE apporte :
-* **Performances SIMD et AVX2** : Rendu de surfaces et manipulations arithmétiques largement accélérées.
-* **Modernisation des API** : Introduction de structures modernes comme `FRect`, `fblits`, et `pygame.system`.
-* **Compatibilité continue** : Support optimal des dernières versions de Python (3.11, 3.12, et versions futures).
+**Pygame-CE** is the official, actively community-maintained fork of the original developers. Unlike the legacy version (`pygame` upstream), Pygame-CE brings:
+* **SIMD and AVX2 Performance**: Significantly accelerated surface rendering and mathematical manipulations.
+* **API Modernization**: Introduction of modern structures such as `FRect`, `fblits`, and `pygame.system`.
+* **Continuous Compatibility**: Optimal support for the latest Python versions (3.11, 3.12, and future releases).
 
-*Règle d'installation : Ne jamais installer les deux dans le même environnement virtuel (virtualenv).*
+*Installation Rule: Never install both in the same virtual environment (virtualenv).*
 ```bash
 pip uninstall pygame
 pip install pygame-ce
@@ -21,57 +21,57 @@ pip install pygame-ce
 
 ---
 
-## 2. Rendu Graphique & Optimisations Pygame-CE
+## 2. Graphical Rendering & Pygame-CE Optimizations
 
-Le rendu en Python est souvent limité par l'overhead du CPU (le "passage de frontière" entre Python et le code C de SDL). Pour maintenir un framerate stable à 60 FPS ou plus, vous devez appliquer ces techniques de pointe.
+Rendering in Python is often limited by CPU overhead (the "boundary crossing" between Python and SDL's C code). To maintain a stable framerate at 60 FPS or higher, you must apply these state-of-the-art techniques.
 
-### 2.1 L'utilisation massive de `Surface.fblits`
-La méthode classique `Surface.blit` appelée dans une boucle `for` en Python crée un goulot d'étranglement CPU à cause de l'interprétation de la boucle à chaque frame.
-* **La solution** : Regrouper vos rendus (par exemple, le rendu de la grille de tuiles d'une carte ou d'un système de particules) et appeler `fblits` en une seule opération.
+### 2.1 Massive Use of `Surface.fblits`
+The classic `Surface.blit` method called in a Python `for` loop creates a CPU bottleneck due to loop interpretation on every frame.
+* **The Solution**: Group your rendering operations (e.g., rendering a map's tile grid or a particle system) and call `fblits` in a single operation.
 
 ```python
-# ❌ ANTI-PATTERN : Lent, boucle de blits en Python
+# ❌ ANTI-PATTERN: Slow, blit loop in Python
 for texture, position in render_queue:
     screen.blit(texture, position)
 
-#   BEST PRACTICE : Traitement groupé ultra-rapide (C-loop interne)
-# render_queue est une liste de tuples (Surface, coordonnees_ou_rect)
+#   BEST PRACTICE: Ultra-fast batch processing (internal C-loop)
+# render_queue is a list of tuples (Surface, coordinates_or_rect)
 screen.fblits(render_queue)
 ```
-> **Impact de performance constaté** : Réduction du temps de rendu d'une carte complète de 8ms à 2ms (soit un gain de 300% sur le frame budget).
+> **Observed Performance Impact**: Reduction in full map rendering time from 8ms to 2ms (a 300% gain on the frame budget).
 
 ### 2.2 `FRect` (Floating-point Rectangle)
-Le `Rect` historique de Pygame tronquait toutes les coordonnées en entiers (`int`), provoquant des micro-saccades ("jittering") lors de mouvements à faible vitesse ou de déplacements de caméra fluides.
-* **La solution** : Utiliser `pygame.FRect` pour toutes les entités physiques et la caméra. Il gère les décimaux (`float`) pour les calculs physiques et arrondit proprement uniquement au moment du rendu de l'image.
+Pygame's legacy `Rect` truncated all coordinates to integers (`int`), causing micro-stuttering ("jittering") during low-speed movements or smooth camera pans.
+* **The Solution**: Use `pygame.FRect` for all physical entities and the camera. It handles decimals (`float`) for physical calculations and rounds cleanly only at rendering time.
 
 ```python
 import pygame
 
-# Créer un rectangle flottant
+# Create a floating-point rectangle
 entity_frect = pygame.FRect(10.5, 20.75, 32.0, 64.0)
 
-# Mouvement fluide avec delta time
+# Smooth movement with delta time
 entity_frect.x += velocity_x * dt
 
-# Récupérer un FRect depuis une Surface
+# Retrieve an FRect from a Surface
 sprite_frect = surface.get_frect(topleft=(x, y))
 ```
 
-### 2.3 Conversion systématique des formats de pixel
-Ne jamais oublier de convertir les images immédiatement après leur chargement. Sans cela, Pygame doit convertir le format de pixel à chaque frame lors du `blit`, ce qui détruit les performances.
-* `.convert()` : Pour les images opaques (sans transparence).
-* `.convert_alpha()` : Pour les images contenant de la transparence (per-pixel alpha).
+### 2.3 Systematic Conversion of Pixel Formats
+Never forget to convert images immediately after loading them. Otherwise, Pygame must convert the pixel format at each frame during the `blit`, which destroys performance.
+* `.convert()`: For opaque images (no transparency).
+* `.convert_alpha()`: For images containing transparency (per-pixel alpha).
 
 ```python
-#   Best Practice : Chargeur sécurisé et optimisé
+#   Best Practice: Safe and optimized loader
 def load_texture(path: str, use_alpha: bool = True) -> pygame.Surface:
     raw_surf = pygame.image.load(path)
     return raw_surf.convert_alpha() if use_alpha else raw_surf.convert()
 ```
 
-### 2.4 Caching du Rendu de Textes (Font Rendering)
-Le rendu de texte avec `font.render()` est l'une des opérations les plus lentes dans Pygame car elle génère une nouvelle surface pixel par pixel à la volée.
-* **Règle** : Ne jamais appeler `font.render` dans votre boucle de dessin principale (`draw()`) pour des textes statiques ou semi-statiques. Générez-les une fois, stockez-les dans un cache (dictionnaire) et dessinez la surface pré-rendue.
+### 2.4 Text Rendering Caching (Font Rendering)
+Text rendering with `font.render()` is one of the slowest operations in Pygame because it generates a new surface pixel by pixel on the fly.
+* **Rule**: Never call `font.render` in your main drawing loop (`draw()`) for static or semi-static text. Generate them once, store them in a cache (dictionary), and draw the pre-rendered surface.
 
 ```python
 class TextCache:
@@ -86,60 +86,60 @@ class TextCache:
         return self._cache[key]
 ```
 
-### 2.5 Frustum Culling (Rendu sélectif)
-Inutile d'envoyer des centaines de tuiles ou d'entités à la carte graphique si elles se situent hors de l'écran.
-* **Best Practice** : Calculez l'intersection entre le rectangle de la caméra (`camera_frect`) et le rectangle de l'entité/tuile avant de l'ajouter à la file d'attente de rendu.
+### 2.5 Frustum Culling (Selective Rendering)
+No need to send hundreds of tiles or entities to the graphics card if they are located off-screen.
+* **Best Practice**: Calculate the intersection between the camera rectangle (`camera_frect`) and the entity/tile rectangle before adding it to the render queue.
 
 ```python
-# Rendu uniquement si visible à l'écran
+# Render only if visible on screen
 if camera_frect.colliderect(entity.frect):
     render_queue.append((entity.image, entity.frect.topleft - camera_offset))
 ```
 
 ---
 
-## 3. Améliorations Mathématiques & API système de Pygame-CE
+## 3. Mathematical & Pygame-CE System API Improvements
 
-### 3.1 Manipulation de Vecteurs avec `Vector2`
-Pygame-CE a optimisé les classes `pygame.math.Vector2` et `Vector3` en C, rendant leur instanciation et leurs calculs très performants.
-* **`Vector2.move_towards(target, distance)`** : Calcule le déplacement vers une cible sans jamais la dépasser (évite les oscillations et le codage manuel de la trigonométrie).
+### 3.1 Vector Manipulation with `Vector2`
+Pygame-CE has optimized `pygame.math.Vector2` and `Vector3` in C, making their instantiation and calculations highly performant.
+* **`Vector2.move_towards(target, distance)`**: Calculates movement toward a target without ever overshooting it (prevents oscillations and manual trigonometry coding).
 
 ```python
 pos = pygame.Vector2(10, 10)
 target = pygame.Vector2(100, 100)
 speed = 4.5 * dt
 
-# Déplacement direct et sécurisé sans dépassement (overshoot)
+# Direct and safe movement without overshoot (in-place)
 pos.move_towards_ip(target, speed)
 ```
 
-### 3.2 Accès aux chemins système avec `pygame.system`
-Gérer les chemins de sauvegarde manuellement selon l'OS (Windows, macOS, Linux) est source d'erreurs et de violations de permissions. Pygame-CE intègre un module système robuste.
+### 3.2 Accessing System Paths with `pygame.system`
+Managing save paths manually based on the OS (Windows, macOS, Linux) is a source of errors and permission violations. Pygame-CE integrates a robust system module.
 
 ```python
 import pygame.system
 
-# Récupérer un dossier d'écriture garanti et sécurisé pour les sauvegardes
-# Windows : C:\Users\Nom\AppData\Roaming\MyCompany\MyGame
-# macOS   : /Users/Nom/Library/Application Support/MyCompany/MyGame
+# Retrieve a guaranteed and safe directory to write save files
+# Windows: C:\Users\Name\AppData\Roaming\MyCompany\MyGame
+# macOS  : /Users/Name/Library/Application Support/MyCompany/MyGame
 save_dir = pygame.system.get_pref_path(org="MyCompany", app="MyGame")
 
-# Obtenir les préférences linguistiques de l'OS de l'utilisateur
+# Get user OS language preferences
 user_locales = pygame.system.get_pref_locales()
-# Retourne par exemple: [{'language': 'fr', 'country': 'FR'}]
+# Returns for example: [{'language': 'en', 'country': 'US'}]
 ```
 
 ---
 
-## 4. Intégration des Fonctionnalités Modernes de Python 3.12
+## 4. Integration of Modern Python 3.12 Features
 
-Python 3.12 introduit des fonctionnalités majeures qui simplifient le code de jeu et améliorent drastiquement le typage statique (validé par `pyright`).
+Python 3.12 introduces major features that simplify game code and drastically improve static typing (validated by `pyright`).
 
-### 4.1 Syntaxe simplifiée des Génériques (PEP 695)
-Plus besoin d'importer `TypeVar` ou `Generic` pour définir des classes ou des fonctions génériques. La syntaxe est désormais intégrée directement à la signature.
+### 4.1 Simplified Generic Syntax (PEP 695)
+No need to import `TypeVar` or `Generic` to define generic classes or functions anymore. The syntax is now directly integrated into the signature.
 
 ```python
-#   BEST PRACTICE : Gestionnaire d'entités générique en Python 3.12
+#   BEST PRACTICE: Generic entity manager in Python 3.12
 class EntityManager[T]:
     def __init__(self):
         self._entities: list[T] = []
@@ -151,13 +151,13 @@ class EntityManager[T]:
         return self._entities
 ```
 
-### 4.2 Déclaration de Type Alias explicite (`type`)
-Rend les signatures de fonctions beaucoup plus lisibles en évitant les surcharges de types complexes.
+### 4.2 Explicit Type Alias Declaration (`type`)
+Makes complex type signatures much more readable by avoiding verbose type assignments.
 
 ```python
 import pygame
 
-# Déclarer des alias de type clairs et réutilisables
+# Declare clear and reusable type aliases
 type Coordinate = tuple[float, float] | pygame.Vector2
 type RenderItem = tuple[pygame.Surface, pygame.FRect | Coordinate]
 
@@ -165,8 +165,8 @@ def queue_render(item: RenderItem) -> None:
     ...
 ```
 
-### 4.3 Décorateur de surcharge explicite (`@override`)
-Pour sécuriser le polymorphisme (très fréquent dans les architectures d'entités ou de UI de jeux vidéo). Le décorateur `@override` de la bibliothèque `typing` permet aux outils comme `pyright` de lever immédiatement une erreur si la méthode de la classe mère change de signature ou de nom.
+### 4.3 Explicit Override Decorator (`@override`)
+Secures polymorphism (very common in game entity or UI architectures). The `@override` decorator from the `typing` library allows tools like `pyright` to raise an error immediately if the parent class method signature or name changes.
 
 ```python
 from typing import override
@@ -179,12 +179,12 @@ class BaseEntity(pygame.sprite.Sprite):
 class Player(BaseEntity):
     @override
     def update(self, dt: float) -> None:
-        # Si la méthode parente "update" était renommée, Pyright lèverait une erreur ici.
+        # If the parent method "update" were renamed, Pyright would raise an error here.
         self.move_player(dt)
 ```
 
-### 4.4 Typage précis des configurations avec `Unpack` et `TypedDict`
-Idéal pour passer des configurations ou des paramètres de création d'entités complexes sans perdre le typage automatique de l'autocomplétion.
+### 4.4 Precise Configuration Typing with `Unpack` and `TypedDict`
+Ideal for passing complex entity creation configurations or parameters without losing autocompletion and static type safety.
 
 ```python
 from typing import TypedDict, Unpack
@@ -195,62 +195,62 @@ class EntityConfig(TypedDict):
     name: str
     can_teleport: bool
 
-#   Usage : kwargs est maintenant entièrement typé et validé statiquement !
+#   Usage: kwargs is now fully typed and statically validated!
 def spawn_entity(x: float, y: float, **kwargs: Unpack[EntityConfig]) -> None:
     speed = kwargs.get("speed", 100.0)
     name = kwargs.get("name", "NPC")
 ```
 
-### 4.5 F-Strings surpuissants
-Les f-strings en Python 3.12 n'ont plus de limitations sur les guillemets et autorisent le nesting, les retours à la ligne et les commentaires directement dans les expressions.
-* **Le specifier `=`** : Indispensable pour les logs de debugging rapide.
+### 4.5 Powerful F-Strings
+F-strings in Python 3.12 no longer have quote limitations and allow nesting, newlines, and comments directly inside the expressions.
+* **The `=` Specifier**: Indispensable for quick debugging logs.
 
 ```python
 pos = pygame.Vector2(45.2, 89.1)
-# Affiche directement : pos=Vector2(45.2, 89.1)
+# Prints directly: pos=Vector2(45.2, 89.1)
 print(f"{pos=}") 
 
-# F-string complexe autorisé en 3.12 (multi-lignes et expressions imbriquées)
+# Complex F-string allowed in 3.12 (multi-line and nested expressions)
 debug_info = f"Entity: {
     'Active' if entity.is_alive 
-    else 'Dead' # Commentaire autorisé ici !
+    else 'Dead' # Comments are allowed here!
 }"
 ```
 
 ---
 
-## 5. Architecture de Jeu "State-of-the-Art"
+## 5. State-of-the-Art Game Architecture
 
-Pour éviter que le code d'un jeu vidéo ne devienne un "plat de spaghettis" illisible après quelques semaines, structurez votre code selon ces principes rigoureux.
+To prevent video game code from becoming an unreadable "spaghetti bowl" after a few weeks, structure your codebase according to these rigorous principles.
 
 ```
 src/
-├── main.py                           # Point d'entrée unique
-├── config.py                         # Paramètres globaux (classe Settings persistante)
+├── main.py                           # Single entry point
+├── config.py                         # Global parameters (persistent Settings class)
 ├── engine/
-│   ├── game.py                       # Boucle principale (Init, Events, Update, Draw)
-│   ├── audio.py                      # Gestionnaire de sons et musique
-│   └── state.py                      # Machine à états (Menu, Game, Inventory...)
+│   ├── game.py                       # Main loop (Init, Events, Update, Draw)
+│   ├── audio.py                      # Sound and music manager
+│   └── state.py                      # State machine (Menu, Game, Inventory...)
 ├── entities/
-│   ├── base.py                       # Classe abstraite BaseEntity
-│   ├── player.py                     # Classe Player (hérite de BaseEntity)
-│   └── groups.py                     # Groupes de sprites personnalisés (Y-Sorted)
+│   ├── base.py                       # BaseEntity abstract class
+│   ├── player.py                     # Player class (inherits from BaseEntity)
+│   └── groups.py                     # Custom sprite groups (Y-Sorted)
 ├── map/
-│   ├── manager.py                    # Chargement des cartes et transitions
-│   └── tmj_parser.py                 # Parser JSON Tiled (TMX optimisé JSON)
+│   ├── manager.py                    # Map loading and transitions
+│   └── tmj_parser.py                 # Tiled JSON parser (TMX optimized for JSON)
 └── ui/
-    ├── manager.py                    # Gestionnaire d'interfaces et de fenêtres
-    └── components.py                 # Boutons, boîtes de dialogues, grilles d'inventaire
+    ├── manager.py                    # UI and window manager
+    └── components.py                 # Buttons, dialog boxes, inventory grids
 ```
 
-### 5.1 Séparation stricte de la Physique et du Rendu
-* Le calcul physique s'effectue dans `update(dt)`.
-* Le dessin s'effectue dans `draw(screen)`.
-* **Aucun calcul physique ni déplacement ne doit être codé dans la méthode de dessin.**
+### 5.1 Strict Separation of Physics and Rendering
+* Physics calculations happen in `update(dt)`.
+* Drawing happens in `draw(screen)`.
+* **No physical calculations or movements should ever be coded inside the drawing method.**
 
-### 5.2 Rendu Y-Sorted (Profondeur de champ 2.5D)
-Pour un RPG 2.5D, les entités doivent se dessiner selon leur ordonnée Y (`centery` ou `bottom`). Les objets situés plus bas à l'écran se dessinent *au-dessus* des objets situés plus haut.
-* **Best Practice** : Hériter de `pygame.sprite.Group` et surcharger la méthode de dessin.
+### 5.2 Y-Sorted Rendering (2.5D Depth of Field)
+For a 2.5D RPG, entities must be drawn according to their Y-coordinate (`centery` or `bottom`). Objects lower on the screen are drawn *on top of* objects higher on the screen.
+* **Best Practice**: Inherit from `pygame.sprite.Group` and override the drawing method.
 
 ```python
 class YSortedCameraGroup(pygame.sprite.Group):
@@ -260,12 +260,12 @@ class YSortedCameraGroup(pygame.sprite.Group):
         self.offset = pygame.Vector2()
 
     def custom_draw(self, camera_frect: pygame.FRect):
-        # 1. Calculer le décalage de la caméra
+        # 1. Calculate camera offset
         self.offset.x = camera_frect.x
         self.offset.y = camera_frect.y
 
-        # 2. Trier les entités par leur coordonnée Y basse (bottom)
-        # 3. Construire la render_queue pour fblits
+        # 2. Sort entities by their bottom Y-coordinate (bottom)
+        # 3. Build render_queue for fblits
         render_queue = []
         sorted_sprites = sorted(self.sprites(), key=lambda sprite: sprite.frect.bottom)
         
@@ -275,14 +275,14 @@ class YSortedCameraGroup(pygame.sprite.Group):
                 render_pos = sprite.frect.topleft - self.offset
                 render_queue.append((sprite.image, render_pos))
 
-        # 4. Effectuer le rendu de masse ultra-rapide
+        # 4. Perform ultra-fast batch rendering
         self.display_surface.fblits(render_queue)
 ```
 
-### 5.3 Stabilisation du Delta Time (FPS Independence)
-Les calculs physiques doivent être multipliés par le temps écoulé depuis la dernière frame (`dt` exprimé en secondes).
-* **Attention au piège** : Si le jeu subit un gel (freeze) de 2 secondes (par exemple lors du chargement d'un niveau ou d'un break dans le débuggeur), le `dt` grimpe en flèche, ce qui peut projeter le joueur à travers les murs lors de la frame suivante.
-* **Solution** : Clamper la valeur maximale du pas de temps (`dt_clamp`).
+### 5.3 Delta Time Stabilization (FPS Independence)
+Physical calculations must be multiplied by the time elapsed since the last frame (`dt` expressed in seconds).
+* **Watch out for the trap**: If the game freezes for 2 seconds (e.g., during level loading or a breakpoint in the debugger), `dt` spikes, which can project the player through walls on the next frame.
+* **Solution**: Rigidly clamp the maximum value of the time step (`dt_clamp`).
 
 ```python
 class Game:
@@ -292,10 +292,10 @@ class Game:
 
     def run(self) -> None:
         while self.running:
-            # dt en secondes (ex: 1/60 = 0.016s)
+            # dt in seconds (e.g. 1/60 = 0.016s)
             raw_dt = self.clock.tick(self.target_fps) / 1000.0
             
-            # Sécurité anti-téléportation : limiter dt à un équivalent de 10 FPS min (0.1s max)
+            # Anti-teleportation safety: limit dt to equivalent of 10 FPS min (0.1s max)
             dt = min(raw_dt, 0.1)
             
             self.handle_events()
@@ -305,24 +305,24 @@ class Game:
 
 ---
 
-## 6. Anti-Patterns absolus à bannir (DO NOT)
+## 6. Absolute Anti-Patterns to Ban (DO NOT)
 
-| Pratique Interdite ❌ | Conséquence Technique | Pratique Recommandée ✅ |
+| Forbidden Practice ❌ | Technical Consequence | Recommended Practice ✅ |
 | :--- | :--- | :--- |
-| Instancier des objets (`Vector2`, `FRect`, `Surface`) dans la boucle principale | Explosion du ramasse-miettes (Garbage Collector), provoquant des micro-saccades de framerate régulières. | Instancier une fois dans le constructeur (`__init__`) et modifier les propriétés existantes (ex: utiliser `move_towards_ip`). |
-| Rendre les textes ou charger les polices de caractères à chaque frame | Chute dramatique du FPS (< 15 FPS) car la génération de texture de police est extrêmement lourde pour le CPU. | Charger les polices une fois et pré-calculer/cacher les surfaces textuelles. |
-| Utiliser `pygame.display.flip()` si seule une petite partie de l'écran change | Transfert inutile de données vers l'écran. | Utiliser `pygame.display.update(rect_list)` pour limiter la mise à jour aux zones de mouvements (Dirty Rects). |
-| Utiliser des chemins d'accès bruts avec des slashes (`/` ou `\`) | Crash instantané lors du portage du jeu d'un OS à un autre (ex: de macOS vers Windows). | Toujours construire les chemins avec `os.path.join` ou `pathlib.Path`. |
-| Omettre d'appeler `.convert()` ou `.convert_alpha()` sur une surface | Perte de 200 à 300% de vitesse d'affichage de l'image (CPU obligé de décoder les bits à chaque frame). | Appliquer la conversion dès le chargement de l'asset graphique. |
-| Omettre de clamper le Delta Time (`dt`) | Traversée de murs, bugs de collisions physiques majeurs en cas de baisse soudaine de framerate ou pendant les pauses débug. | Clamper rigoureusement la valeur maximale de `dt`. |
+| Instantiating objects (`Vector2`, `FRect`, `Surface`) in the main loop | Garbage Collector explosion, causing regular framerate micro-stutters. | Instantiate once in the constructor (`__init__`) and modify existing properties (e.g., using `move_towards_ip`). |
+| Rendering text or loading fonts at each frame | Dramatic FPS drop (< 15 FPS) because font texture generation is extremely heavy for the CPU. | Load fonts once and pre-calculate/cache text surfaces. |
+| Using `pygame.display.flip()` if only a small part of the screen changes | Unnecessary data transfer to the screen. | Use `pygame.display.update(rect_list)` to limit the update to moving areas (Dirty Rects). |
+| Using raw paths with hardcoded slashes (`/` or `\`) | Instant crash when porting the game from one OS to another (e.g., from macOS to Windows). | Always build paths using `os.path.join` or `pathlib.Path`. |
+| Omitting `.convert()` or `.convert_alpha()` on a surface | Loss of 200% to 300% in image display speed (CPU forced to decode bits at each frame). | Apply conversion as soon as the graphic asset is loaded. |
+| Omitting Delta Time (`dt`) clamping | Glitching through walls, major physical collision bugs during sudden framerate drops or debug pauses. | Rigidly clamp the maximum value of `dt`. |
 
 ---
 
-## 7. Configuration de Qualité Préconisée
+## 7. Recommended Quality Configuration
 
-Pour garantir le maintien de ces standards élevés, configurez vos outils statiques avec ces paramètres :
+To guarantee that these high standards are maintained, configure your static analysis tools with these settings:
 
-### Configuration Pyright (`pyrightconfig.json`)
+### Pyright Configuration (`pyrightconfig.json`)
 ```json
 {
   "include": ["src"],
@@ -335,7 +335,7 @@ Pour garantir le maintien de ces standards élevés, configurez vos outils stati
 }
 ```
 
-### Configuration Ruff (`pyproject.toml`)
+### Ruff Configuration (`pyproject.toml`)
 ```toml
 [tool.ruff]
 line-length = 100
@@ -343,12 +343,12 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = [
-    "E",   # Erreurs pycodestyle
-    "W",   # Avertissements pycodestyle
-    "F",   # Pyflakes (détection bugs)
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes (bug detection)
     "B",   # Bugbear (anti-patterns)
-    "I",   # Isort (organisation des imports)
-    "UP",  # Upgrade (modernisation vers Python 3.12)
-    "T20"  # Interdire les prints sauvages (privilégier le logging)
+    "I",   # Isort (import organization)
+    "UP",  # Upgrade (modernization to Python 3.12)
+    "T20"  # Ban rogue prints (favor logging)
 ]
 ```

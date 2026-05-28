@@ -4,129 +4,129 @@
 
 ---
 
-## 1. Problème exact à résoudre
+## 1. Exact Problem to Solve
 
-**Persona :** Le joueur entre dans un château. La porte est une zone `Teleport` Tiled.  
-**Problème actuel :** `target_map == _current_map_name` → `transition_map()` → `_load_map()` → toute la carte est détruite et rechargée : entités vidées, spawn repositionné, fade optionnel. Résultat : flash blanc/noir, perte de contexte, et la même carte repart de zéro.  
-**Problème secondaire :** Aucun `transition_type` ne fait suivre la caméra pendant que le joueur MARCHE de la zone source à la zone destination. Le seul option fluide est `"fade"` (fondu noir), qui cache le déplacement.
+**Scenario:** The player enters a castle. The door is a Tiled `Teleport` zone.  
+**Current Problem:** `target_map == _current_map_name` → `transition_map()` → `_load_map()` → the entire map is destroyed and reloaded: entities are cleared, spawn is repositioned, and an optional fade occurs. Result: white/black flash, loss of context, and the same map restarts from scratch.  
+**Secondary Problem:** No `transition_type` makes the camera follow while the player WALKS from the source zone to the destination zone. The only smooth option is `"fade"` (fade to black), which hides the movement.
 
-**Outcome attendu :**
-- Téléport intra-carte : zéro rechargement, zéro flash, entités préservées.
-- `transition_type = "walk"` : le joueur se déplace automatiquement en ligne droite de A→B, la caméra suit en temps réel, le tout visible à l'écran.
+**Expected Outcome:**
+- Intra-map teleport: zero reloads, zero flashes, entities preserved.
+- `transition_type = "walk"`: the player moves automatically in a straight line from A→B, the camera follows in real-time, and everything remains visible on screen.
 
 ---
 
-## 2. Métriques de succès
+## 2. Success Metrics
 
-| Critère | Mesure |
+| Criterion | Measure |
 |---------|--------|
-| Zéro rechargement de carte | `_load_map()` n'est pas appelé pour `target_map == _current_map_name` |
-| Entités préservées | Les sprites restent dans leurs groupes après le téléport |
-| Transition fluide | 60 FPS maintenus pendant le `"walk"` (profiler confirme < 8ms/frame) |
-| Caméra suit le joueur | `visible_sprites.offset` mis à jour à chaque frame du walk |
-| Intégration Tiled | Aucune nouvelle propriété Tiled requise (réutilise `target_map`, `target_spawn_id`, `transition_type`) |
+| Zero map reloads | `_load_map()` is not called when `target_map == _current_map_name` |
+| Entities preserved | Sprites remain in their groups after teleportation |
+| Smooth transition | 60 FPS maintained during the `"walk"` (profiler confirms < 8ms/frame) |
+| Camera follows the player | `visible_sprites.offset` is updated at each frame of the walk |
+| Tiled integration | No new Tiled properties required (reuses `target_map`, `target_spawn_id`, `transition_type`) |
 
 ---
 
-## 3. Avantage architectural
+## 3. Architectural Advantage
 
-Le système existant est déjà proche de la solution :
-- `Teleport` stocke `target_map`, `target_spawn_id`, `transition_type` → aucune nouvelle propriété.
-- `CameraGroup.calculate_offset()` suit le joueur à chaque frame → si le joueur marche vers la destination, la caméra suit naturellement.
-- `_position_player()` dans `MapLoader` est déjà isolée → réutilisable sans `_load_map()`.
-- `WorldState` + `_save_interactive_states()` protègent les états (A-ML-001) → pas de risque de perte.
+The existing system is already close to the solution:
+- `Teleport` stores `target_map`, `target_spawn_id`, and `transition_type` → no new properties.
+- `CameraGroup.calculate_offset()` tracks the player at each frame → if the player walks toward the destination, the camera follows naturally.
+- `_position_player()` in `MapLoader` is already isolated → reusable without `_load_map()`.
+- `WorldState` + `_save_interactive_states()` protect states (A-ML-001) → no risk of loss.
 
 ---
 
-## 4. Décision architecturale principale
+## 4. Main Architectural Decision
 
-### Q4 : Mécanisme de déplacement pour `"walk"` — Lerp vs Pathfinding vs Input simulé
+### Q4: Movement Mechanism for `"walk"` — Lerp vs Pathfinding vs Simulated Input
 
-Trois options :
+Three options:
 
-| Option | Mécanisme | Pro | Con |
+| Option | Mechanism | Pro | Con |
 |--------|-----------|-----|-----|
-| **A — Lerp direct** | Tweening pos A→B en N frames | Simple, prévisible, 0 risque collision | Ignore le système de collision (mais c'est voulu — le téléport a autorité) |
-| **B — Inputs simulés** | Push `player.direction` vers la cible | Réutilise le player.input() | Difficile à terminer précisément, drift possible |
-| **C — Pathfinding** | Calcul de chemin tile-by-tile | Respecte les obstacles | Complexité disproportionnée pour un couloir droit |
+| **A — Direct Lerp** | Tweening pos A→B in N frames | Simple, predictable, 0 collision risk | Ignores the collision system (but this is intentional — the teleport has authority) |
+| **B — Simulated Inputs** | Push `player.direction` toward target | Reuses `player.input()` | Hard to end precisely, drift possible |
+| **C — Pathfinding** | Calculate path tile-by-tile | Respects obstacles | Disproportionate complexity for a straight corridor |
 
-**DÉCISION : Option A — Lerp direct dans `game.py`.**
+**DECISION: Option A — Direct Lerp in `game.py`.**
 
-Rationale :
-1. Un téléport de type "entrée dans un bâtiment" est toujours une trajectoire DROITE (couloir, porte).
-2. Le joueur n'a pas besoin de contourner des obstacles — le téléport override la physique.
-3. Lerp = 10 lignes dans `game.py`, pas de dépendances nouvelles.
-4. La durée est configurable : `INTRA_WALK_SPEED = 4` tiles/seconde par défaut.
-5. Cohérent avec `L-ARCH-005` : pas de Manager/Factory pour ce qui est résolvable en une fonction.
+Rationale:
+1. An entry-type teleport into a building is always a STRAIGHT trajectory (corridor, door).
+2. The player does not need to bypass obstacles — the teleport overrides physics.
+3. Lerp = 10 lines in `game.py`, no new dependencies.
+4. Duration is configurable: `INTRA_WALK_SPEED = 4` tiles/second by default.
+5. Consistent with `L-ARCH-005`: no Manager/Factory for what is resolvable in a single function.
 
-**Conséquences :**
-- Pendant le walk, `player.input()` est suspendu (le mouvement est scripté).
-- Les collisions ne s'appliquent pas (le téléport a autorité sur le chemin).
-- La caméra suit via `calculate_offset()` normal — aucune modification de `CameraGroup`.
+**Consequences:**
+- During the walk, `player.input()` is suspended (movement is scripted).
+- Collisions do not apply (the teleport has authority over the path).
+- The camera follows via normal `calculate_offset()` — no modification to `CameraGroup`.
 
 ---
 
-## 5. Stack technique & rationale
+## 5. Technical Stack & Rationale
 
-| Composant | Technologie | Rationale |
+| Component | Technology | Rationale |
 |-----------|-------------|-----------|
-| Détection intra-carte | `interaction.py` | C'est là que `check_teleporters()` vit déjà |
-| Walk controller | `game.py` méthode `intra_map_teleport()` | Pattern L-ARCH-008 : context injection `game: Any` |
-| Résolution spawn | `map_loader.py` méthode `resolve_spawn_by_id()` | MapLoader possède la connaissance du spawn |
-| Déplacement | Lerp direct sur `player.pos` + `player.rect` | Pas de dépendance sur player.input() |
-| Caméra | `CameraGroup.calculate_offset()` existant | Aucun changement requis |
-| Tiled | Propriétés existantes (`target_map`, `target_spawn_id`, `transition_type="walk"`) | Zéro nouvelle propriété |
+| Intra-map detection | `interaction.py` | This is where `check_teleporters()` already lives |
+| Walk controller | `game.py` method `intra_map_teleport()` | Pattern L-ARCH-008: context injection `game: Any` |
+| Spawn resolution | `map_loader.py` method `resolve_spawn_by_id()` | MapLoader owns the knowledge of the spawn |
+| Movement | Direct Lerp on `player.pos` + `player.rect` | No dependency on `player.input()` |
+| Camera | Existing `CameraGroup.calculate_offset()` | No changes required |
+| Tiled | Existing properties (`target_map`, `target_spawn_id`, `transition_type="walk"`) | Zero new properties |
 
 ---
 
-## 6. Features — ordonnées par dépendance
+## 6. Features — Ordered by Dependency
 
-### Feature 1 : Détection intra-carte dans `check_teleporters()`
-`interaction.py` — branchement : même carte → `game.intra_map_teleport()`, carte différente → `game.transition_map()` (inchangé).
+### Feature 1: Intra-map detection in `check_teleporters()`
+`interaction.py` — branching: same map → `game.intra_map_teleport()`, different map → `game.transition_map()` (unchanged).
 
-### Feature 2 : `MapLoader.resolve_spawn_by_id()` 
-`map_loader.py` — lit les entités spawn depuis `self.game.map_manager` (en mémoire) pour trouver les coordonnées pixel du `target_spawn_id`.
+### Feature 2: `MapLoader.resolve_spawn_by_id()` 
+`map_loader.py` — reads spawn entities from `self.game.map_manager` (in memory) to find the pixel coordinates of the `target_spawn_id`.
 
-> ⚠️ **Gap G1** : `map_manager` en mémoire expose-t-il les entités spawn ? Vérifier si `TmjParser` stocke les entités ou seulement les tiles.
+> ⚠️ **Gap G1**: Does `map_manager` in memory expose spawn entities? Verify if `TmjParser` stores entities or only tiles.
 
-### Feature 3 : `game.intra_map_teleport(target_spawn_id, transition_type)`
-`game.py` — dispatcher :
-- `"instant"` → appelle `_map_loader._position_player(spawn_pos)` directement.
-- `"walk"` → démarre une boucle de lerp frame-by-frame.
+### Feature 3: `game.intra_map_teleport(target_spawn_id, transition_type)`
+`game.py` — dispatcher:
+- `"instant"` → calls `_map_loader._position_player(spawn_pos)` directly.
+- `"walk"` → starts a frame-by-frame lerp loop.
 
-### Feature 4 : Walk loop dans `_update_core_state()`
-`game.py` — état `_intra_walk_active` : si actif, déplace `player.pos` d'un pas vers `_walk_target` chaque frame, calcule l'orientation du joueur selon la direction du walk.
+### Feature 4: Walk loop in `_update_core_state()`
+`game.py` — state `_intra_walk_active`: if active, moves `player.pos` one step closer to `_walk_target` each frame, calculates the player orientation based on the walk direction.
 
-### Feature 5 : Tests
-- TC-01 : Téléport intra-carte `"instant"` → repositionne sans rechargement.
-- TC-02 : Téléport intra-carte `"walk"` → démarre la boucle walk.
-- TC-03 : Walk termine → `_intra_walk_active = False`, position = target.
-- TC-04 : Téléport cross-carte → `transition_map()` appelé (régression).
+### Feature 5: Tests
+- TC-01: Intra-map `"instant"` teleport → reposition without reload.
+- TC-02: Intra-map `"walk"` teleport → starts the walk loop.
+- TC-03: Walk ends → `_intra_walk_active = False`, position = target.
+- TC-04: Cross-map teleport → `transition_map()` called (regression check).
 
 ---
 
-## 7. Ce qu'on NE construit PAS
+## 7. What We Do NOT Build
 
 | Exclusion | Rationale |
 |-----------|-----------|
-| ❌ Pathfinding A* pour le walk | Disproportionné — les couloirs de téléport sont droits par design |
-| ❌ Nouveau type de propriété Tiled | Les propriétés existantes suffisent |
-| ❌ Modification de `CameraGroup` | `calculate_offset()` suit le joueur naturellement |
-| ❌ Lerp de caméra (camera tween séparé) | Inutile si le joueur lerpe — la caméra suit |
-| ❌ Animation de porte (ouvrir/fermer) | Hors scope — géré par les interactives existants |
-| ❌ Multi-step waypoints | Hors scope — toujours ligne droite A→B |
+| ❌ A* Pathfinding for the walk | Disproportionate — teleport corridors are straight by design |
+| ❌ New Tiled property type | Existing properties are sufficient |
+| ❌ Modification to `CameraGroup` | `calculate_offset()` tracks the player naturally |
+| ❌ Camera Lerp (separate camera tween) | Unnecessary if the player lerps — the camera follows |
+| ❌ Door animation (open/close) | Out of scope — managed by existing interactive items |
+| ❌ Multi-step waypoints | Out of scope — always straight line A→B |
 
 ---
 
-## Gap Discovery — ✅ TOUS RÉSOLUS
+## Gap Discovery — ✅ ALL RESOLVED
 
-| # | Gap | Décision |
+| # | Gap | Decision |
 |---|-----|----------|
-| **G1** ✅ | `map_manager` expose-t-il les entités spawn en mémoire ? | OUI — `MapManager._entities` (ligne 16) stocke la liste complète des entités, incluant les spawn points. `resolve_spawn_by_id()` peut chercher directement dans `self.game.map_manager._entities`. |
-| **G2** ✅ | Inputs pendant le walk ? | **Complètement bloqués** — ni mouvement, ni inventaire, ni interaction pendant la transition. |
-| **G3** ✅ | Durée vs vitesse ? | **Vitesse fixe** = même `px/s` que le joueur normal (`Settings.PLAYER_SPEED`). Distance courte = transition rapide, longue = plus lente. Naturel et cohérent. |
-| **G4** ✅ | Orientation pendant le walk ? | **Suit la direction du déplacement automatique** — si le joueur marche vers le haut, `player.current_state = "up"`. L'animation walk joue normalement. |
+| **G1** ✅ | Does `map_manager` expose spawn entities in memory? | YES — `MapManager._entities` (line 16) stores the complete list of entities, including spawn points. `resolve_spawn_by_id()` can search directly inside `self.game.map_manager._entities`. |
+| **G2** ✅ | Inputs during the walk? | **Completely blocked** — no movement, inventory, or interaction during the transition. |
+| **G3** ✅ | Duration vs Speed? | **Fixed Speed** = same `px/s` as normal player movement (`Settings.PLAYER_SPEED`). Short distance = fast transition, long distance = slower transition. Natural and coherent. |
+| **G4** ✅ | Orientation during the walk? | **Tracks the direction of the automatic movement** — if the player walks upward, `player.current_state = "up"`. The walk animation plays normally. |
 
 ---
 
-*Tous les gaps sont résolus → prêt pour SPEC.*
+*All gaps are resolved → ready for SPEC.*

@@ -1,72 +1,72 @@
-# Spec — Steps 5 à 7 : Saves Path + AssetManager UI + Pyright
+# Spec — Steps 5 to 7: Save Path + AssetManager UI + Pyright
 
 > Document Type: Implementation
 > **Covers:** Save-Path, AssetManager-UI, Pyright-basic
-> **Référence blueprint:** [`best_practices_remediation_blueprint.md`](../strategic/best_practices_remediation_blueprint.md#plan-dimplémentation--10-steps)
-> **Guide best practices:** [`pygame_ce_python_312_best_practices.md`](./pygame_ce_python_312_best_practices.md#section-3-save-system)
-> **Statut:** SPEC — prêt pour BUILD
+> **Blueprint Reference:** [`best_practices_remediation_blueprint.md`](../strategic/best_practices_remediation_blueprint.md#implementation-plan--10-steps)
+> **Best Practices Guide:** [`pygame_ce_python_312_best_practices.md`](./pygame_ce_python_312_best_practices.md#section-3-save-system)
+> **Status:** SPEC — ready for BUILD
 
 ---
 
-## Contexte
+## Context
 
-Trois violations de moyenne sévérité :
+Three medium-severity violations:
 
-1. **Save path relatif** : `SAVES_DIR = "saves"` dans `save_manager.py` — fragile en distribution (macOS .app bundle, Windows UAC). Doit utiliser `pygame.system.get_pref_path()`.
-2. **Images UI chargées hors `AssetManager`** : 8 fichiers UI utilisent `pygame.image.load(path).convert_alpha()` directement, bypassing le cache partagé.
-3. **Pyright quasi-désactivé** : `pyrightconfig.json` supprime 7 catégories d'erreurs dont 5 ne cachent rien et 2 cachent 14 vraies erreurs corrigeables.
+1. **Relative save path**: `SAVES_DIR = "saves"` in `save_manager.py` — fragile in distribution (macOS .app bundle, Windows UAC). Must use `pygame.system.get_pref_path()`.
+2. **UI images loaded outside `AssetManager`**: 8 UI files use `pygame.image.load(path).convert_alpha()` directly, bypassing the shared cache.
+3. **Pyright virtually disabled**: `pyrightconfig.json` suppresses 7 categories of errors, of which 5 hide nothing and 2 suppress 14 real, fixable errors.
 
 ---
 
 ## Constraints
 
-| Tier | Exemples |
+| Tier | Examples |
 |---|---|
-| **Always do** | Initialiser `pygame.system` avant `get_pref_path`. Créer le répertoire si absent. Passer par `AssetManager.get_image()` pour tout `pygame.image.load` dans `src/ui/`. |
-| **Ask first** | Modifier la signature publique de `SaveManager.__init__`. Changer `SAVES_DIR` globalement (impact sur saves existantes). |
-| **Never do** | Supprimer `reportAttributeAccessIssue: none` (irréductible sans stubs pygame-ce). Modifier `AssetManager` lui-même. Toucher `src/engine/save_manager.py` au-delà de `SAVES_DIR`. |
+| **Always do** | Initialize `pygame.system` before calling `get_pref_path`. Create the directory if absent. Use `AssetManager.get_image()` for any `pygame.image.load` in `src/ui/`. |
+| **Ask first** | Modify the public signature of `SaveManager.__init__`. Change `SAVES_DIR` globally (impacts existing saves). |
+| **Never do** | Remove `reportAttributeAccessIssue: none` (unresolvable without pygame-ce type stubs). Modify `AssetManager` itself. Touch `src/engine/save_manager.py` beyond `SAVES_DIR`. |
 
 ---
 
 ## Cross-Spec Contracts
 
 ### Produces
-| Path / Identifiant | Format | Schema | Consommateurs |
+| Path / Identifier | Format | Schema | Consumers |
 |---|---|---|---|
-| Répertoire saves | Filesystem, path `str` | `save-system.md § "Format de sauvegarde"` | `SaveManager.list_slots()`, `SaveManager.load()`, `SaveManager.save()` |
+| Saves directory | Filesystem, path `str` | `save-system.md § "Save Format"` | `SaveManager.list_slots()`, `SaveManager.load()`, `SaveManager.save()` |
 
 ### Consumes
-| Identifiant | Format | Défini dans | Producteur |
+| Identifier | Format | Defined in | Producer |
 |---|---|---|---|
 | `AssetManager.get_image(path)` | `pygame.Surface` (convert_alpha'd) | `engine-core.md § "AssetManager"` | `AssetManager` singleton |
-| `pygame.system.get_pref_path(org, app)` | `str` (chemin absolu OS-specific) | pygame-ce docs | pygame-ce stdlib |
+| `pygame.system.get_pref_path(org, app)` | `str` (OS-specific absolute path) | pygame-ce docs | pygame-ce stdlib |
 
 ### Public Interface
-N/A — pas de changement d'API publique. `SaveManager.__init__(saves_dir)` garde la même signature (override via paramètre optionnel).
+N/A — no public API changes. `SaveManager.__init__(saves_dir)` keeps the same signature (overridable via optional parameter).
 
 ### External Invocations
-| Type | Invoqué | Défini dans |
+| Type | Invoked | Defined in |
 |---|---|---|
-| `pygame.system.get_pref_path("adrien", "game")` | Retourne le répertoire de préférences OS | pygame-ce API — retourne `str` |
+| `pygame.system.get_pref_path("adrien", "game")` | Returns OS preference directory | pygame-ce API — returns `str` |
 
 ### Tracked Concepts
-| Concept | Statut | Mentionné dans |
+| Concept | Status | Mentioned in |
 |---|---|---|
-| `SAVES_DIR` | Migré vers `get_pref_path` à l'init | `save-system.md § "Répertoire"` |
-| `AssetManager` singleton | Consommé, non modifié | `engine-core.md § "AssetManager"` |
+| `SAVES_DIR` | Migrated to `get_pref_path` at init | `save-system.md § "Directory"` |
+| `AssetManager` singleton | Consumed, not modified | `engine-core.md § "AssetManager"` |
 
 ---
 
-## Step 5 — `pygame.system.get_pref_path` pour les saves
+## Step 5 — `pygame.system.get_pref_path` for Saves
 
-### Fichier modifié : `src/engine/save_manager.py`
+### Modified File: `src/engine/save_manager.py`
 
-**Avant (L12) :**
+**Before (L12):**
 ```python
 SAVES_DIR = "saves"
 ```
 
-**Après :**
+**After:**
 ```python
 import pygame.system
 import os
@@ -111,16 +111,16 @@ def _get_saves_dir() -> str:
                 
         return path
     except Exception:
-        return "saves"  # fallback pour tests headless
-
+        return "saves"  # fallback for headless tests
+ 
 SAVES_DIR = _get_saves_dir()
 ```
 
-**Règle :** `pygame.init()` doit avoir été appelé avant `_get_saves_dir()`. Dans l'ordre d'init actuel (`game.py:__init__` → `pygame.init()` → `SaveManager()`), c'est garanti.
+**Rule:** `pygame.init()` must be called before `_get_saves_dir()`. In the current initialization order (`game.py:__init__` → `pygame.init()` → `SaveManager()`), this is guaranteed.
 
-**Tests existants :** `SaveManager` accepte `saves_dir` en paramètre (`__init__(self, saves_dir: str = SAVES_DIR)`). Les tests passent leur propre répertoire temporaire → non impactés par ce changement.
+**Existing Tests:** `SaveManager` accepts `saves_dir` in its parameters (`__init__(self, saves_dir: str = SAVES_DIR)`). Tests pass their own temporary directory, meaning they are not impacted by this change.
 
-### Vérification post-implémentation
+### Post-Implementation Verification
 
 ```bash
 python3 -c "
@@ -129,66 +129,66 @@ pygame.init()
 import pygame.system
 print(pygame.system.get_pref_path('adrien', 'game'))
 "
-# → doit afficher un chemin absolu dans ~/Library/Application Support/ (macOS)
+# → must display an absolute path in ~/Library/Application Support/ (macOS)
 ```
 
 ---
 
-## Step 6 — Centraliser les chargements d'images dans `AssetManager`
+## Step 6 — Centralize Image Loading in `AssetManager`
 
-### Inventaire complet des violations
+### Complete Inventory of Violations
 
-| Fichier | Lignes | Image chargée |
+| File | Lines | Loaded Image |
 |---|---|---|
-| `src/ui/inventory.py` | 144, 210 | Images d'inventaire (backgrounds, slots) |
-| `src/ui/chest_draw.py` | 216, 227, 238, 246, 258, 277 | Images du coffre |
-| `src/ui/chest_layout.py` | 96 | Image de survol du slot |
-| `src/ui/hud.py` | 46 | Images d'HUD (clock, season icons) |
-| `src/ui/title_screen.py` | 83, 94 | Backgrounds écran titre |
-| `src/ui/pause_screen.py` | 76, 87 | Backgrounds écran pause |
-| `src/ui/dialogue.py` | 66, 75 | Bubbles dialogue |
-| `src/ui/speech_bubble.py` | Variable | Ressources speech bubble |
-| `src/ui/save_slot.py` | Variable | Icônes slot de sauvegarde |
-| `src/ui/save_menu.py` | Variable | Background menu save |
+| `src/ui/inventory.py` | 144, 210 | Inventory images (backgrounds, slots) |
+| `src/ui/chest_draw.py` | 216, 227, 238, 246, 258, 277 | Chest images |
+| `src/ui/chest_layout.py` | 96 | Slot hover image |
+| `src/ui/hud.py` | 46 | HUD images (clock, season icons) |
+| `src/ui/title_screen.py` | 83, 94 | Title screen backgrounds |
+| `src/ui/pause_screen.py` | 76, 87 | Pause screen backgrounds |
+| `src/ui/dialogue.py` | 66, 75 | Dialogue bubbles |
+| `src/ui/speech_bubble.py` | Variable | Speech bubble assets |
+| `src/ui/save_slot.py` | Variable | Save slot icons |
+| `src/ui/save_menu.py` | Variable | Save menu background |
 
-### Pattern de migration
+### Migration Pattern
 
-**Avant :**
+**Before:**
 ```python
-# Dans __init__ d'un module UI
+# In __init__ of a UI module
 img = pygame.image.load(path).convert_alpha()
 ```
 
-**Après :**
+**After:**
 ```python
 from src.engine.asset_manager import AssetManager
 
-# Dans __init__
+# In __init__
 am = AssetManager()
 img = am.get_image(path)
 ```
 
-**Règle :** `AssetManager` est un singleton — `AssetManager()` retourne toujours la même instance. `.get_image(path)` appelle `.convert_alpha()` en interne (vérifié `asset_manager.py:44`). Aucune double conversion.
+**Rule:** `AssetManager` is a singleton — calling `AssetManager()` always returns the same instance. `.get_image(path)` calls `.convert_alpha()` internally (verified in `asset_manager.py:44`). No double conversion.
 
-**⚠️ Précaution :** Avant chaque migration, vérifier que le chemin passé à `pygame.image.load(path)` est identique au chemin que recevrait `am.get_image(path)`. `AssetManager.get_image` peut avoir un format de chemin différent (relatif vs absolu). Vérifier `asset_manager.py` avant de migrer.
+**⚠️ Precaution:** Before each migration, verify that the path passed to `pygame.image.load(path)` is identical to the path that `am.get_image(path)` would receive. `AssetManager.get_image` may use a different path format (relative vs absolute). Verify `asset_manager.py` before migrating.
 
-### Fichiers modifiés
+### Modified Files
 
-Chacun des 8 fichiers listés ci-dessus — **uniquement les lignes `pygame.image.load`**. Aucun autre changement.
+Each of the 10 files listed above — **only the `pygame.image.load` lines**. No other changes.
 
 ---
 
-## Step 7 — Pyright mode `basic` + suppression des suppressions fantômes
+## Step 7 — Pyright `basic` Mode + Removal of Ghost Suppressions
 
-### Données mesurées
+### Measured Data
 
-| Config | Erreurs |
+| Config | Errors |
 |---|---|
-| Config actuelle (7 suppressions) | 0 erreurs (Pyright muet) |
-| Mode `basic` sans aucune suppression | 158 erreurs |
-| Mode `basic` + `reportAttributeAccessIssue: none` seulement | **14 erreurs** |
+| Current config (7 suppressions) | 0 errors (Pyright silent) |
+| `basic` mode without any suppression | 158 errors |
+| `basic` mode + `reportAttributeAccessIssue: none` only | **14 errors** |
 
-### Config cible : `pyrightconfig.json`
+### Target Config: `pyrightconfig.json`
 
 ```json
 {
@@ -212,44 +212,44 @@ Chacun des 8 fichiers listés ci-dessus — **uniquement les lignes `pygame.imag
 }
 ```
 
-**Suppressions retirées (étaient fantômes — 0 erreur supplémentaire) :**
-- `reportGeneralTypeIssues` (était `"none"`)
-- `reportOptionalSubscript` (était `"none"`)
-- `reportOptionalCall` (était `"none"`)
-- `reportOptionalIterable` (était `"none"`)
+**Removed Suppressions (were ghost suppressions — 0 extra errors):**
+- `reportGeneralTypeIssues` (was `"none"`)
+- `reportOptionalSubscript` (was `"none"`)
+- `reportOptionalCall` (was `"none"`)
+- `reportOptionalIterable` (was `"none"`)
 
-**Suppression conservée (irréductible sans stubs pygame-ce) :**
-- `reportAttributeAccessIssue: none` — 144 erreurs de type `.blit`, `.pos`, `.rect` sur objects pygame
+**Retained Suppression (unresolvable without pygame-ce type stubs):**
+- `reportAttributeAccessIssue: none` — 144 type errors for `.blit`, `.pos`, `.rect` on pygame objects
 
-**Correction supplémentaire :** `"pythonVersion": "3.13"` → `"3.12"` (le projet tourne en 3.12)
+**Additional Correction:** `"pythonVersion": "3.13"` → `"3.12"` (the project runs on 3.12)
 
-### 14 Erreurs réelles à corriger
+### 14 Real Errors to Fix
 
-| Fichier | Nb | Type | Correction |
+| File | Qty | Type | Fix |
 |---|---|---|---|
-| `src/engine/lighting.py` | 4 | `reportOptionalOperand` — opérations `/`, `*`, `+`, `-` sur valeur potentiellement `None` | Ajouter guard `if value is None: return` ou assertion |
-| `src/map/tmj_parser.py` | 2 | Type `str | None` passé à `int()` | `int(value)` → `int(value) if value is not None else default` |
-| `src/ui/dialogue.py` | 3 | `reportOptionalMemberAccess` — `.render()` et `.get_linesize()` sur `font: Font | None` | Guard `if self._font is None: return` en début de méthode |
-| `src/ui/save_menu.py` | 3 | `reportOptionalMemberAccess` — attrs sur `SaveData | None` | Guard `if slot_data is None: return` |
-| `src/ui/speech_bubble.py` | 1 | `reportOptionalMemberAccess` — `.render()` sur font `None` | Guard `if self._font is None: return` |
+| `src/engine/lighting.py` | 4 | `reportOptionalOperand` — `/`, `*`, `+`, `-` operations on potentially `None` value | Add guard `if value is None: return` or assertion |
+| `src/map/tmj_parser.py` | 2 | `str | None` type passed to `int()` | `int(value)` → `int(value) if value is not None else default` |
+| `src/ui/dialogue.py` | 3 | `reportOptionalMemberAccess` — `.render()` and `.get_linesize()` on `font: Font | None` | Guard `if self._font is None: return` at the start of the method |
+| `src/ui/save_menu.py` | 3 | `reportOptionalMemberAccess` — attrs on `SaveData | None` | Guard `if slot_data is None: return` |
+| `src/ui/speech_bubble.py` | 1 | `reportOptionalMemberAccess` — `.render()` on `None` font | Guard `if self._font is None: return` |
 
-**Correction type :**
+**Typical Correction:**
 ```python
-# AVANT — lighting.py:150
-result = value / divisor  # value peut être None
+# BEFORE — lighting.py:150
+result = value / divisor  # value can be None
 
-# APRÈS
+# AFTER
 if value is None:
     logging.warning("lighting: expected float, got None")
     return
 result = value / divisor
 ```
 
-### Vérification post-Step 7
+### Post-Step 7 Verification
 
 ```bash
 source venv/bin/activate && pyright src/
-# → 0 errors, N warnings (informatifs)
+# → 0 errors, N warnings (informational)
 ```
 
 ---
@@ -258,15 +258,13 @@ source venv/bin/activate && pyright src/
 
 | # | Anti-Pattern | Violation | Correct Behavior |
 |---|---|---|---|
-| 1 | `pygame.image.load().convert_alpha()` inline dans `__init__` UI | `img = pygame.image.load(path).convert_alpha()` dans 8 modules UI | `am = AssetManager(); img = am.get_image(path)` — conforme [`engine-core.md`](./engine-core.md#assetmanager) |
-| 2 | Supprimer toutes les règles Pyright sans mesurer | 7 suppressions actives, 5 ne cachaient rien | Supprimer uniquement les suppressions vérifiées comme fantômes. Garder `reportAttributeAccessIssue: none` |
-| 3 | Supprimer `reportAttributeAccessIssue` | Supprime 144 erreurs pygame-ce irréductibles | Ne JAMAIS retirer cette suppression sans stubs pygame-ce |
-| 4 | `get_pref_path` avant `pygame.init()` | `SaveManager()` instancié avant le premier `pygame.init()` | Toujours initialiser pygame avant `SaveManager`. Vérifier l'ordre dans [`engine-core.md`](./engine-core.md#init-sequence) |
-| 5 | Chemin absolus hardcodés pour les saves | `SAVES_DIR = "/Users/user/game/saves"` | Uniquement `pygame.system.get_pref_path(org, app)` comme source du chemin |
-| 6 | Modifier `AssetManager.get_image()` pour adapter les chemins UI | Changer le format de chemin dans `AssetManager` pour accommoder les modules UI | Adapter le chemin dans le site d'appel UI, pas dans `AssetManager` |
-| 7 | `"pythonVersion": "3.13"` dans pyrightconfig.json | Faux positifs 3.13 sur un projet 3.12 | Toujours aligner `pythonVersion` avec la version réelle du venv |
-
-
+| 1 | `pygame.image.load().convert_alpha()` inline in UI `__init__` | `img = pygame.image.load(path).convert_alpha()` in 8 UI modules | `am = AssetManager(); img = am.get_image(path)` — conforms to [`engine-core.md`](./engine-core.md#assetmanager) |
+| 2 | Suppressing all Pyright rules without measuring | 7 active suppressions, 5 hid nothing | Remove only suppressions verified as ghost suppressions. Retain `reportAttributeAccessIssue: none` |
+| 3 | Removing `reportAttributeAccessIssue` | Suppresses 144 unresolvable pygame-ce errors | NEVER remove this suppression without pygame-ce stubs |
+| 4 | `get_pref_path` before `pygame.init()` | `SaveManager()` instantiated before the first `pygame.init()` | Always initialize pygame before `SaveManager`. Verify ordering in [`engine-core.md`](./engine-core.md#init-sequence) |
+| 5 | Hardcoded absolute paths for saves | `SAVES_DIR = "/Users/user/game/saves"` | Only use `pygame.system.get_pref_path(org, app)` as the path source |
+| 6 | Modifying `AssetManager.get_image()` to adapt UI paths | Change path format in `AssetManager` to accommodate UI modules | Adapt path at the UI call site, not in `AssetManager` |
+| 7 | `"pythonVersion": "3.13"` in pyrightconfig.json | 3.13 false positives on a 3.12 project | Always align `pythonVersion` with the actual venv version |
 
 ---
 
@@ -274,69 +272,69 @@ source venv/bin/activate && pyright src/
 
 ### Unit Tests — Save Path
 
-**TC-SAVE-001** : `SaveManager()` initialisé avec `pygame.init()` actif → `self._saves_dir` est un chemin absolu (ne commence pas par `"saves"`)
+**TC-SAVE-001**: `SaveManager()` initialized with active `pygame.init()` → `self._saves_dir` is an absolute path (does not start with `"saves"`)
 ```python
-# Arrange: pygame.init() appelé (conftest.py)
+# Arrange: pygame.init() called (conftest.py)
 # Act: sm = SaveManager()
 # Assert: os.path.isabs(sm._saves_dir) == True
 ```
 
-**TC-SAVE-002** : `SaveManager()` initialisé sans pygame → `self._saves_dir == "saves"` (fallback)
+**TC-SAVE-002**: `SaveManager()` initialized without pygame → `self._saves_dir == "saves"` (fallback)
 ```python
 # Arrange: patch pygame.system.get_pref_path → raise Exception
 # Act: sm = SaveManager()
 # Assert: sm._saves_dir == "saves"
 ```
 
-**TC-SAVE-003** : Tests existants passent sans modification — le paramètre `saves_dir` override reste fonctionnel
+**TC-SAVE-003**: Existing tests pass without modification — the `saves_dir` parameter override remains functional
 ```python
 # Arrange: SaveManager(saves_dir="/tmp/test_saves")
 # Assert: sm._saves_dir == "/tmp/test_saves"
 ```
 
-**TC-SAVE-004** : `_get_saves_dir()` retourne un `str` (pas `bytes`) sur pygame-ce
+**TC-SAVE-004**: `_get_saves_dir()` returns a `str` (not `bytes`) on pygame-ce
 ```python
 # Assert: isinstance(result, str)
 ```
 
 ### Unit Tests — AssetManager UI
 
-**TC-ASSET-001** : Après migration, aucun fichier `src/ui/` ne contient `pygame.image.load`
+**TC-ASSET-001**: After migration, no file in `src/ui/` contains `pygame.image.load`
 ```python
-# Vérification statique :
-# grep -rn "pygame.image.load" src/ui/ → 0 résultats
+# Static check:
+# grep -rn "pygame.image.load" src/ui/ → 0 results
 ```
 
-**TC-ASSET-002** : `AssetManager.get_image(path)` appelé 3× avec le même path → `pygame.image.load` appelé 1× (cache hit)
+**TC-ASSET-002**: `AssetManager.get_image(path)` called 3× with the same path → `pygame.image.load` called 1× (cache hit)
 ```python
 # Arrange: mock pygame.image.load
 # Act: am.get_image(path) × 3
 # Assert: load.call_count == 1
 ```
 
-**TC-ASSET-003** : Les tests de modules UI (chest, inventory, pause_screen) passent après migration — pas de régression sur les surfaces
+**TC-ASSET-003**: UI module tests (chest, inventory, pause_screen) pass after migration — no regression on surfaces
 
 ### Unit Tests — Pyright
 
-**TC-PYRIGHT-001** : `pyright src/` avec la nouvelle config → 0 errors
+**TC-PYRIGHT-001**: `pyright src/` with the new config → 0 errors
 ```bash
 pyright src/ | grep "0 errors"
 ```
 
-**TC-PYRIGHT-002** : `lighting.py` — opération sur valeur `None` → levée de warning logging, pas de crash
+**TC-PYRIGHT-002**: `lighting.py` — operation on `None` value → logging warning raised, no crash
 ```python
-# Arrange: mettre la valeur None dans le contexte lighting
-# Assert: logging.warning appelé, pas d'exception
+# Arrange: put None value in lighting context
+# Assert: logging.warning called, no exception
 ```
 
-**TC-PYRIGHT-003** : `dialogue.py` — `_font is None` → `draw()` retourne sans blit
+**TC-PYRIGHT-003**: `dialogue.py` — `_font is None` → `draw()` returns without blit
 ```python
 # Arrange: dialogue._font = None
 # Act: dialogue.draw(screen)
 # Assert: screen.blit not called, no AttributeError
 ```
 
-**TC-PYRIGHT-004** : `save_menu.py` — `slot_data is None` → rendu slot vide sans crash
+**TC-PYRIGHT-004**: `save_menu.py` — `slot_data is None` → render empty slot without crash
 ```python
 # Arrange: slot_data = None
 # Assert: no AttributeError on None.map_display_name
@@ -344,31 +342,31 @@ pyright src/ | grep "0 errors"
 
 ### Integration Tests
 
-**TC-IT-SAVE-001** : Cycle save → quit → load sur chemin `get_pref_path` → données identiques avant/après
+**TC-IT-SAVE-001**: save → quit → load cycle on `get_pref_path` path → identical data before/after
 
-**TC-IT-ASSET-001** : Démarrage du jeu complet, ouverture inventaire + coffre + écran titre → aucune `pygame.error` sur image manquante
+**TC-IT-ASSET-001**: Full game startup, open inventory + chest + title screen → no `pygame.error` on missing image
 
 ---
 
 ## Error Handling Matrix
 
-| Erreur | Cause | Comportement |
+| Error | Cause | Behavior |
 |---|---|---|
-| `pygame.system.get_pref_path` lève exception | pygame non initialisé | Fallback vers `"saves"` + log warning |
-| Répertoire `get_pref_path` non créable (permissions) | Permissions OS restreintes | `OSError` remontée par `SaveManager.save()` — message user-friendly "Impossible de sauvegarder" |
-| `AssetManager.get_image(path)` — fichier manquant | Asset supprimé/renommé | `AssetManager` retourne surface fallback + log error (comportement existant non modifié) |
-| Chemin UI incompatible avec `AssetManager` | Format chemin différent | `FileNotFoundError` visible à la migration — corriger le chemin dans le site d'appel |
-| `lighting.py` — `None` dans opération arithmétique | Valeur non initialisée | Guard + `logging.warning` + `return` |
-| `dialogue.py` — font `None` | Chargement font échoué | Guard `if self._font is None: return` |
+| `pygame.system.get_pref_path` raises exception | pygame not initialized | Fallback to `"saves"` + log warning |
+| `get_pref_path` directory not writable (permissions) | Restricted OS permissions | `OSError` bubbled up by `SaveManager.save()` — user-friendly message "Unable to save" |
+| `AssetManager.get_image(path)` — missing file | Asset deleted/renamed | `AssetManager` returns fallback surface + logs error (existing unmodified behavior) |
+| UI path incompatible with `AssetManager` | Different path format | `FileNotFoundError` visible during migration — fix path at call site |
+| `lighting.py` — `None` in arithmetic operation | Uninitialized value | Guard + `logging.warning` + `return` |
+| `dialogue.py` — `None` font | Failed font load | Guard `if self._font is None: return` |
 
 ---
 
 ## Bundling & Native-Module Audit
 
-- **BM1:** N/A — projet Python pur
+- **BM1:** N/A — pure Python project
 - **BM2:** N/A
-- **BM3:** N/A — aucun module natif introduit
-- **BM4:** N/A — aucune constante renommée. Vérifier que `SAVES_DIR` n'est pas importé directement ailleurs : `grep -rn "from src.engine.save_manager import SAVES_DIR" src/`
+- **BM3:** N/A — no native module introduced
+- **BM4:** N/A — no constants renamed. Verify `SAVES_DIR` is not imported directly elsewhere: `grep -rn "from src.engine.save_manager import SAVES_DIR" src/`
 
 ---
 
@@ -385,21 +383,21 @@ src/
     ├── hud.py                       [MODIFY] — pygame.image.load → AssetManager
     ├── title_screen.py              [MODIFY] — pygame.image.load → AssetManager
     ├── pause_screen.py              [MODIFY] — pygame.image.load → AssetManager
-    ├── dialogue.py                  [MODIFY] — pygame.image.load → AssetManager + guard font None
-    ├── speech_bubble.py             [MODIFY] — pygame.image.load → AssetManager + guard font None
+    ├── dialogue.py                  [MODIFY] — pygame.image.load → AssetManager + font None guard
+    ├── speech_bubble.py             [MODIFY] — pygame.image.load → AssetManager + font None guard
     ├── save_slot.py                 [MODIFY] — pygame.image.load → AssetManager
-    └── save_menu.py                 [MODIFY] — pygame.image.load → AssetManager + guard SlotInfo None
+    └── save_menu.py                 [MODIFY] — pygame.image.load → AssetManager + SlotInfo None guard
 
-pyrightconfig.json                   [MODIFY] — typeCheckingMode basic, python 3.12, 5 suppressions retirées
+pyrightconfig.json                   [MODIFY] — typeCheckingMode basic, python 3.12, 5 suppressions removed
 ```
 
 ---
 
 ## Assumptions
 
-| Assumption | Risque | Validation |
+| Assumption | Risk | Validation |
 |---|---|---|
-| `AssetManager.get_image()` accepte les mêmes chemins que `pygame.image.load()` dans les modules UI | Medium — les chemins peuvent être relatifs vs absolus | Vérifier `asset_manager.py:get_image()` pour le format attendu avant de migrer chaque fichier |
-| `pygame.system.get_pref_path` est disponible dans pygame-ce 2.x | Low — API stable depuis pygame 2.0 | `import pygame.system; hasattr(pygame.system, 'get_pref_path')` |
-| Les 14 erreurs Pyright sont toutes corrigeables par guard `is None` | Low — toutes catégorisées `reportOptionalMemberAccess` / `reportOptionalOperand` | Données mesurées sur la codebase réelle |
-| Les saves existantes dans ./saves/ seront inaccessibles après migration vers `get_pref_path` | High — **breaking change pour les parties en cours** | **MIGRATION OBLIGATOIRE** implémentée dans `_get_saves_dir`. Le répertoire legacy est copié vers pref_path puis renommé `saves_migrated`. |
+| `AssetManager.get_image()` accepts the same paths as `pygame.image.load()` in UI modules | Medium — paths may be relative vs absolute | Verify `asset_manager.py:get_image()` for expected format before migrating each file |
+| `pygame.system.get_pref_path` is available in pygame-ce 2.x | Low — API stable since pygame 2.0 | `import pygame.system; hasattr(pygame.system, 'get_pref_path')` |
+| The 14 Pyright errors are all fixable by an `is None` guard | Low — all categorized as `reportOptionalMemberAccess` / `reportOptionalOperand` | Data measured on actual codebase |
+| Existing saves in ./saves/ will be inaccessible after migrating to `get_pref_path` | High — **breaking change for ongoing games** | **MIGRATION REQUIRED** implemented in `_get_saves_dir`. The legacy directory is copied to pref_path and then renamed to `saves_migrated`. |

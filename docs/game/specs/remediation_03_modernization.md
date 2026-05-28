@@ -1,43 +1,43 @@
-# Spec — Steps 8 à 11 : Modernisation Python 3.12
+# Spec — Steps 8 to 11: Python 3.12 Modernization
 
 > Document Type: Implementation
 > **Covers:** @override, Type aliases, ADR-008 FRect, pathlib.Path ✅
-> **Référence blueprint:** [`best_practices_remediation_blueprint.md`](../strategic/best_practices_remediation_blueprint.md#plan-dimplémentation--10-steps)
-> **Guide best practices:** [`pygame_ce_python_312_best_practices.md`](./pygame_ce_python_312_best_practices.md#section-4-typing)
-> **Statut:** DONE — Steps 8-11 implémentés et vérifiés (pyright: 0 errors, pytest: 1094/1094)
+> **Blueprint Reference:** [`best_practices_remediation_blueprint.md`](../strategic/best_practices_remediation_blueprint.md#implementation-plan--10-steps)
+> **Best Practices Guide:** [`pygame_ce_python_312_best_practices.md`](./pygame_ce_python_312_best_practices.md#section-4-typing)
+> **Status:** DONE — Steps 8-11 implemented and verified (pyright: 0 errors, pytest: 1094/1094)
 
 ---
 
-## Contexte
+## Context
 
-Quatre améliorations de faible sévérité pour moderniser la codebase vers Python 3.12 :
+Four low-severity improvements to modernize the codebase toward Python 3.12:
 
-1. **`@override`** : Absence de décorateur sur les méthodes héritées empêche Pyright de détecter les ruptures de signature parent.
-2. **Alias de type `type`** : Annotations complexes dupliquées dans `render_manager.py` sans alias nommés.
-3. **ADR-008 FRect** : Décision documentée de ne pas migrer (Vector2+Rect fonctionne). Crée une trace pour les décisions futures.
-4. **`pathlib.Path`** : Migration de 55 `os.path.join` vers `pathlib.Path` — 28 fichiers (`src/config.py`, `src/engine/`, `src/entities/`, `src/ui/`, `src/map/tmj_parser.py`). Seul `src/main.py:6` (bootstrap `sys.path`) conserve `os`.
+1. **`@override`**: Lack of decorators on inherited methods prevents Pyright from detecting parent signature breaks.
+2. **`type` Type Aliases**: Complex annotations duplicated in `render_manager.py` without named aliases.
+3. **ADR-008 FRect**: Documented decision not to migrate (Vector2+Rect works). Creates a trace for future decisions.
+4. **`pathlib.Path`**: Migration of 55 `os.path.join` occurrences to `pathlib.Path` across 28 files (`src/config.py`, `src/engine/`, `src/entities/`, `src/ui/`, `src/map/tmj_parser.py`). Only `src/main.py:6` (bootstrap `sys.path`) retains `os`.
 
 ---
 
 ## Constraints
 
-| Tier | Exemples |
+| Tier | Examples |
 |---|---|
-| **Always do** | `@override` uniquement sur les méthodes qui surchargent réellement une méthode parent définie (pas sur les méthodes abstraites implémentées). Alias de type `type` en haut du fichier, après les imports. |
-| **Ask first** | Ajouter `@override` sur une méthode si la méthode parent n'est pas clairement identifiable. |
-| **Never do** | Modifier la logique des méthodes décorées avec `@override`. `@override` est un décorateur d'annotation pure — aucun comportement runtime. Ne pas toucher aux méthodes qui n'overrident pas une méthode parent (ex: méthodes spécifiques à la sous-classe). |
+| **Always do** | `@override` only on methods that actually override a defined parent method (not on implemented abstract methods). Place `type` aliases at the top of the file, after imports. |
+| **Ask first** | Add `@override` to a method if the parent method is not clearly identifiable. |
+| **Never do** | Modify the logic of methods decorated with `@override`. `@override` is a pure annotation decorator — no runtime behavior. Do not touch methods that do not override a parent method (e.g., subclass-specific methods). |
 
 ---
 
 ## Cross-Spec Contracts
 
 ### Produces
-| Identifiant | Format | Consommateurs |
+| Identifier | Format | Consumers |
 |---|---|---|
-| `docs/ADRs/ADR-008-frect.md` | Markdown | Référence future pour décision FRect |
+| `docs/ADRs/ADR-008-frect.md` | Markdown | Future reference for FRect decision |
 
 ### Consumes
-N/A — modifications purement locales.
+N/A — purely local modifications.
 
 ### Public Interface
 N/A.
@@ -46,48 +46,48 @@ N/A.
 N/A.
 
 ### Tracked Concepts
-| Concept | Statut | Mentionné dans |
+| Concept | Status | Mentioned in |
 |---|---|---|
-| `FRect` | Décision documentée (ADR-008) : non migré en Phase 1 | `camera-rendering.md`, `entities-system.md` |
+| `FRect` | Documented decision (ADR-008): not migrated in Phase 1 | `camera-rendering.md`, `entities-system.md` |
 
 ---
 
-## Step 8 — `@override` sur les méthodes héritées
+## Step 8 — `@override` on Inherited Methods
 
-### Inventaire complet
+### Complete Inventory
 
-| Classe | Méthode | Fichier | Parent | Ligne approx. |
+| Class | Method | File | Parent | Approx. Line |
 |---|---|---|---|---|
 | `Player` | `update(dt)` | `src/entities/player.py` | `BaseEntity` | ~150 |
 | `CameraGroup` | `add(*sprites)` | `src/entities/groups.py` | `pygame.sprite.Group` | ~68 |
 | `CameraGroup` | `remove(*sprites)` | `src/entities/groups.py` | `pygame.sprite.Group` | ~72 |
-| `NPC` | `update(dt)` | `src/entities/npc.py` | `BaseEntity` | À vérifier |
+| `NPC` | `update(dt)` | `src/entities/npc.py` | `BaseEntity` | To verify |
 
-### Implémentation
+### Implementation
 
-**Import à ajouter (Python 3.12 stdlib — zéro dépendance) :**
+**Import to add (Python 3.12 stdlib — zero dependencies):**
 ```python
 from typing import override
 ```
 
-**Pattern :**
+**Pattern:**
 ```python
 class Player(BaseEntity):
     @override
     def update(self, dt: float) -> None:
-        ...  # corps existant inchangé
+        ...  # unchanged existing body
 
 class CameraGroup(pygame.sprite.Group):
     @override
     def add(self, *sprites: pygame.sprite.Sprite) -> None:
-        ...  # corps existant inchangé
+        ...  # unchanged existing body
 ```
 
-**Règle :** Ne modifier QUE la ligne d'import et la ligne de déclaration de méthode. Zéro changement au corps des méthodes.
+**Rule:** Only modify the import line and the method declaration line. Zero changes to the method body.
 
-**Vérification Pyright :** Avec `@override` et `typeCheckingMode: basic`, Pyright lèvera une erreur si la signature diffère de celle du parent — c'est l'objectif.
+**Pyright Verification:** With `@override` and `typeCheckingMode: basic`, Pyright will raise an error if the signature differs from the parent — that is the objective.
 
-### Fichiers modifiés
+### Modified Files
 
 - `src/entities/player.py`
 - `src/entities/groups.py`
@@ -95,28 +95,28 @@ class CameraGroup(pygame.sprite.Group):
 
 ---
 
-## Step 9 — Alias de type `type` pour signatures complexes
+## Step 9 — `type` Type Aliases for Complex Signatures
 
-### Inventaire des signatures à aliaser
+### Signatures to Alias Inventory
 
-Annotations complexes identifiées dans `render_manager.py` :
+Complex annotations identified in `render_manager.py`:
 
 ```python
-# Actuellement inline (dupliquées ou non lisibles) :
-list[tuple[pygame.Surface, tuple[int, int]]]   # liste de blits
-list[tuple[pygame.Rect, int]]                   # rects occludants
+# Currently inline (duplicated or unreadable):
+list[tuple[pygame.Surface, tuple[int, int]]]   # list of blits
+list[tuple[pygame.Rect, int]]                   # occluding rects
 ```
 
-### Implémentation
+### Implementation
 
-**En haut de `src/engine/render_manager.py`, après les imports :**
+**At the top of `src/engine/render_manager.py`, after imports:**
 ```python
 # Python 3.12 type aliases
 type BlitSequence = list[tuple[pygame.Surface, tuple[int, int]]]
 type OccludingRect = list[tuple[pygame.Rect, int]]
 ```
 
-**Utilisation dans les signatures de méthodes :**
+**Usage in method signatures:**
 ```python
 def _collect_blit_items(self) -> BlitSequence:
     ...
@@ -125,62 +125,62 @@ def _get_occluding_rects(self) -> OccludingRect:
     ...
 ```
 
-**Règle :** Uniquement pour les types qui apparaissent ≥2 fois dans le fichier ou dont la lisibilité bénéficie clairement d'un nom. Pas d'alias pour les types simples déjà lisibles (`str`, `int`, `float`, `pygame.Surface`).
+**Rule:** Only for types appearing ≥2 times in the file or whose readability clearly benefits from a name. No aliases for simple, already readable types (`str`, `int`, `float`, `pygame.Surface`).
 
-### Fichiers modifiés
+### Modified File
 
 - `src/engine/render_manager.py`
 
 ---
 
-## Step 10 — ADR-008 : Décision FRect
+## Step 10 — ADR-008: FRect Decision
 
-### Document à créer : `docs/ADRs/ADR-008-frect-migration.md`
+### Document to Create: `docs/ADRs/ADR-008-frect-migration.md`
 
 ```markdown
-# ADR-008 — Migration vers pygame.FRect : Décision de Non-Migration (Phase 1)
+# ADR-008 — Migration to pygame.FRect: Non-Migration Decision (Phase 1)
 
-**Date :** 2026-05-26
-**Status :** ✅ Accepted — Migration différée
+**Date:** 2026-05-26
+**Status:** ✅ Accepted — Migration deferred
 
-## Contexte
+## Context
 
-Le guide de référence `pygame_ce_python_312_best_practices.md §2.2` recommande l'utilisation
-de `pygame.FRect` pour les entités mobiles afin d'éliminer le jitter sub-pixel.
+The reference guide `pygame_ce_python_312_best_practices.md §2.2` recommends using
+`pygame.FRect` for mobile entities to eliminate sub-pixel jitter.
 
-Le projet utilise actuellement `pygame.Rect` (entier) pour les hitboxes et positions de rendu,
-combiné avec `pygame.math.Vector2` pour les positions sub-pixel (`pos`, `target_pos`).
+The project currently uses `pygame.Rect` (integer) for hitboxes and rendering positions,
+combined with `pygame.math.Vector2` for sub-pixel positions (`pos`, `target_pos`).
 
-## Analyse coût/bénéfice
+## Cost/Benefit Analysis
 
-**Bénéfice :**
-- Supprimerait le double-stockage `Vector2 pos` + `Rect` dans `BaseEntity`
-- Éliminerait les arrondis manuels `int(self.pos.x)`, `int(self.pos.y)`
-- Conformité totale avec le guide de référence §2.2
+**Benefit:**
+- Would remove double storage of `Vector2 pos` + `Rect` in `BaseEntity`
+- Would eliminate manual rounding `int(self.pos.x)`, `int(self.pos.y)`
+- Full compliance with reference guide §2.2
 
-**Coût :**
-- Impact sur `base.py`, `player.py`, `npc.py`, `groups.py`, `collision_checker.py`
-- Potentiel de régression sur la détection de collisions (FRect vs Rect en collision check)
-- Effort estimé : >4h + 2h de tests de régression collision
+**Cost:**
+- Impact on `base.py`, `player.py`, `npc.py`, `groups.py`, `collision_checker.py`
+- Potential for regression in collision detection (FRect vs Rect in collision checks)
+- Estimated effort: >4h + 2h of collision regression testing
 
-**Jitter actuel :** Non observé. Le système `Vector2 pos` + `Rect` arrondi fonctionne
-correctement. Aucun rapport de jitter en gameplay.
+**Current Jitter:** Not observed. The rounded `Vector2 pos` + `Rect` system works
+correctly. No jitter reports in gameplay.
 
-## Décision
+## Decision
 
-**Ne pas migrer vers FRect en Phase 1.**
+**Do not migrate to FRect in Phase 1.**
 
-Le double-système est fonctionnel. Le bénéfice (simplification du code) ne justifie pas
-le risque de régression sur les collisions et l'effort de migration.
+The dual-system is functional. The benefit (code simplification) does not justify the
+risk of collision regressions and migration effort.
 
-## Conditions de révision
+## Revision Conditions
 
-Reconsidérer si :
-1. Du jitter sub-pixel est observé en distribution (écrans haute résolution)
-2. La migration vers FRect est proposée dans une release dédiée avec test suite de collision complète
-3. pygame-ce fournit un guide de migration officiel FRect
+Reconsider if:
+1. Sub-pixel jitter is observed in distribution (high-resolution screens)
+2. FRect migration is proposed in a dedicated release with a full collision test suite
+3. pygame-ce provides an official FRect migration guide
 
-## Fichiers non modifiés
+## Unmodified Files
 
 - `src/entities/base.py`
 - `src/entities/player.py`
@@ -190,49 +190,49 @@ Reconsidérer si :
 
 ---
 
-## Step 11 (Optionnel) — Migration `os.path.join` → `pathlib.Path`
+## Step 11 (Optional) — Migration `os.path.join` → `pathlib.Path`
 
-> **⚠️ Step optionnel.** Ne bloque pas les Steps 1-10. Décider séparément.
+> **⚠️ Optional step.** Does not block Steps 1-10. Decide separately.
 
-### Inventaire
+### Inventory
 
-~60 occurrences de `os.path.join` dans `src/`. Les concentrations majeures :
+~60 occurrences of `os.path.join` in `src/`. Major concentrations:
 
-| Module | Occurrences approx. | Criticité |
+| Module | Approx. Occurrences | Criticality |
 |---|---|---|
-| `src/engine/asset_manager.py` | ~5 | High — chemin de tous les assets |
-| `src/engine/save_manager.py` | ~8 | High — chemins de sauvegarde |
+| `src/engine/asset_manager.py` | ~5 | High — path of all assets |
+| `src/engine/save_manager.py` | ~8 | High — save paths |
 | `src/ui/hud.py` | 2 | Low |
 | `src/map/tmj_parser.py` | ~10 | Medium |
-| Autres UI modules | ~15 | Low |
+| Other UI modules | ~15 | Low |
 
-### Pattern de migration
+### Migration Pattern
 
 ```python
-# AVANT
+# BEFORE
 import os
 path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "images", "HUD", "00-clock.png")
 path = os.path.normpath(path)
 
-# APRÈS
+# AFTER
 from pathlib import Path
 path = Path(__file__).parent / ".." / ".." / "assets" / "images" / "HUD" / "00-clock.png"
-path = path.resolve()  # équivalent de normpath mais absolu
+path = path.resolve()  # equivalent to normpath but absolute
 ```
 
-### Règle d'implémentation
+### Implementation Rule
 
-1. Migrer **fichier par fichier**, pas en masse.
-2. Vérifier que les fonctions appelantes acceptent `Path` ou `str` (pygame-ce accepte les deux).
-3. `Path.resolve()` remplace `os.path.normpath()` + `os.path.abspath()`.
-4. `Path(__file__).parent` remplace `os.path.dirname(__file__)`.
-5. Les tests existants doivent passer sans modification.
+1. Migrate **file by file**, not in bulk.
+2. Verify that calling functions accept `Path` or `str` (pygame-ce accepts both).
+3. `Path.resolve()` replaces `os.path.normpath()` + `os.path.abspath()`.
+4. `Path(__file__).parent` replaces `os.path.dirname(__file__)`.
+5. Existing tests must pass without modification.
 
-### Vérification
+### Verification
 
 ```bash
-grep -rn "os.path.join" src/  # → 0 après migration complète
-grep -rn "import os" src/     # → uniquement les fichiers qui utilisent os.environ, os.path.exists, etc.
+grep -rn "os.path.join" src/  # → 0 after complete migration
+grep -rn "import os" src/     # → only files using os.environ, os.path.exists, etc.
 ```
 
 ---
@@ -241,15 +241,13 @@ grep -rn "import os" src/     # → uniquement les fichiers qui utilisent os.env
 
 | # | Anti-Pattern | Violation | Correct Behavior |
 |---|---|---|---|
-| 1 | `@override` sur une méthode abstraite implémentée | Décorer avec `@override` une méthode qui implémente `@abstractmethod` | `@override` = remplace une méthode **concrète** du parent. Vérifier [`entities-system.md`](./entities-system.md#base-entity) pour la hiérarchie |
-| 2 | Alias de type pour des types simples | `type Name = str` ou `type Count = int` | Aliaser uniquement les types composites : ≥2 niveaux d'imbrication ou longueur > 40 chars |
-| 3 | `type Alias = ...` au milieu du fichier | Déclarer un alias après des `def` ou `class` | Les alias vont après les imports, avant le premier `def` ou `class` |
-| 4 | Modifier le corps d'une méthode en ajoutant `@override` | Combiner l'ajout de `@override` avec un refactor du corps | `@override` est purement un décorateur d'annotation. Zéro modification de corps |
-| 5 | `pathlib.Path` mixé avec `str` sans conversion | `pygame.image.load(Path("assets/img.png"))` si l'API attend `str` | Toujours vérifier l'API cible. Utiliser `str(path)` si nécessaire au site d'appel |
-| 6 | ADR-008 sans conditions de révision | "Ne pas migrer FRect" sans définir quand revoir la décision | Documenter les 3 conditions de révision dans [`ADR-008`](../ADRs/ADR-008-frect-migration.md#conditions-de-révision) |
-| 7 | Migration pathlib sur des fichiers partagés sans tests | Migrer `asset_manager.py` sans vérifier que les tests existants couvrent les chemins | Lancer les tests après chaque fichier migré. Vérifier couverture via [`verification-loop`](./../agents/skills/verification-loop/SKILL.md) |
-
-
+| 1 | `@override` on an implemented abstract method | Decorating a method with `@override` that implements `@abstractmethod` | `@override` = replaces a **concrete** parent method. Check [`entities-system.md`](./entities-system.md#base-entity) for hierarchy |
+| 2 | Type aliases for simple types | `type Name = str` or `type Count = int` | Alias only composite types: ≥2 levels of nesting or length > 40 chars |
+| 3 | `type Alias = ...` in the middle of a file | Declaring an alias after `def` or `class` | Aliases go after imports, before the first `def` or `class` |
+| 4 | Modifying method body when adding `@override` | Combining the addition of `@override` with a body refactor | `@override` is strictly an annotation decorator. Zero body modification |
+| 5 | `pathlib.Path` mixed with `str` without conversion | `pygame.image.load(Path("assets/img.png"))` if the API expects `str` | Always verify the target API. Use `str(path)` if necessary at the call site |
+| 6 | ADR-008 without revision conditions | "Do not migrate FRect" without defining when to review the decision | Document the 3 revision conditions in [`ADR-008`](../ADRs/ADR-008-frect-migration.md#revision-conditions) |
+| 7 | Pathlib migration on shared files without tests | Migrate `asset_manager.py` without verifying that existing tests cover paths | Run tests after migrating each file. Verify coverage via [`verification-loop`](./../agents/skills/verification-loop/SKILL.md) |
 
 ---
 
@@ -257,63 +255,63 @@ grep -rn "import os" src/     # → uniquement les fichiers qui utilisent os.env
 
 ### Unit Tests — @override
 
-**TC-001** : `Player.update(dt=0.016)` s'exécute sans erreur avec `@override` ajouté
+**TC-001**: `Player.update(dt=0.016)` runs without error with `@override` added
 ```python
-# Arrange: player instance valide
+# Arrange: valid player instance
 # Act: player.update(0.016)
 # Assert: no TypeError, no AttributeError
 ```
 
-**TC-002** : `CameraGroup.add(sprite)` s'exécute sans erreur avec `@override`
+**TC-002**: `CameraGroup.add(sprite)` runs without error with `@override`
 ```python
 # Assert: sprite in group after add()
 ```
 
-**TC-003** : `CameraGroup.remove(sprite)` s'exécute sans erreur avec `@override`
+**TC-003**: `CameraGroup.remove(sprite)` runs without error with `@override`
 ```python
 # Assert: sprite not in group after remove()
 ```
 
-**TC-004** : Vérification statique — `@override` présent sur les 4 méthodes ciblées
+**TC-004**: Static verification — `@override` present on the 4 targeted methods
 ```bash
 grep -n "@override" src/entities/player.py src/entities/groups.py src/entities/npc.py
-# → 4 résultats
+# → 4 results
 ```
 
 ### Unit Tests — Type Aliases
 
-**TC-005** : `render_manager.py` importe correctement ses propres alias (pas d'ImportError)
+**TC-005**: `render_manager.py` correctly imports its own aliases (no ImportError)
 ```python
-from src.engine.render_manager import RenderManager  # import clean
+from src.engine.render_manager import RenderManager  # clean import
 ```
 
-**TC-006** : Vérification statique — `type BlitSequence` présent dans `render_manager.py`
+**TC-006**: Static verification — `type BlitSequence` present in `render_manager.py`
 ```bash
-grep "^type " src/engine/render_manager.py  # → ≥1 résultat
+grep "^type " src/engine/render_manager.py  # → ≥1 result
 ```
 
-### Unit Tests — pathlib (si Step 11 exécuté)
+### Unit Tests — Pathlib (if Step 11 executed)
 
-**TC-007** : `AssetManager.get_image(path)` retourne la même surface avant et après migration
+**TC-007**: `AssetManager.get_image(path)` returns the same surface before and after migration
 ```python
-# Assert: surface.get_size() identique avant/après migration
+# Assert: surface.get_size() identical before/after migration
 ```
 
-**TC-008** : `SaveManager._saves_dir` est un chemin valide après migration
+**TC-008**: `SaveManager._saves_dir` is a valid path after migration
 ```python
-# Assert: Path(sm._saves_dir).exists() (après création)
+# Assert: Path(sm._saves_dir).exists() (after creation)
 ```
 
-**TC-009** : Vérification statique
+**TC-009**: Static verification
 ```bash
-grep -rn "os.path.join" src/  # → 0 (si migration complète)
+grep -rn "os.path.join" src/  # → 0 (if complete migration)
 ```
 
 ### Integration Tests
 
-**IT-001** : Partie complète — joueur se déplace, NPC bouge, sprites ajoutés/supprimés → aucune régression de comportement
+**IT-001**: Full gameplay — player moves, NPC moves, sprites added/removed → no behavioral regressions
 
-**IT-002** : Pyright avec `@override` → 0 erreurs supplémentaires (les overrides sont corrects)
+**IT-002**: Pyright with `@override` → 0 additional errors (overrides are correct)
 
 ---
 
@@ -321,11 +319,10 @@ grep -rn "os.path.join" src/  # → 0 (si migration complète)
 
 | Error | Fallback | Logging |
 |---|---|---|
-| Pyright `reportGeneralTypeIssues` sur `@override` — signature incompatible avec le parent | Corriger la signature pour matcher le parent — erreur Pyright visible bloque le commit | `pyright src/` dans le pipeline CI |
-| `type` alias non résolu — Python < 3.12 utilisé | `SyntaxError` au parsing. Vérifier `python --version` = 3.12+ | Message clair: "type statement requires Python 3.12+" |
-| `Path` vs `str` incompatibilité — API pygame-ce attend `str` | `str(path)` au site d'appel — ne pas modifier l'API réceptrice | `TypeError` capturé en test TC-003 |
-| ADR-008 non créé — Step 10 ignoré | Aucun impact runtime — purement documentaire | N/A |
-
+| Pyright `reportGeneralTypeIssues` on `@override` — signature incompatible with parent | Correct signature to match parent — visible Pyright error blocks the commit | `pyright src/` in the CI pipeline |
+| Unresolved `type` alias — Python < 3.12 used | `SyntaxError` on parsing. Verify `python --version` = 3.12+ | Clear message: "type statement requires Python 3.12+" |
+| `Path` vs `str` incompatibility — pygame-ce API expects `str` | `str(path)` at the call site — do not modify the receiving API | `TypeError` caught in TC-003 test |
+| ADR-008 not created — Step 10 ignored | No runtime impact — purely documentary | N/A |
 
 ---
 
@@ -334,7 +331,7 @@ grep -rn "os.path.join" src/  # → 0 (si migration complète)
 - **BM1:** N/A
 - **BM2:** N/A
 - **BM3:** N/A
-- **BM4:** N/A — pas de renommage de constantes dans cette spec
+- **BM4:** N/A — no constant renaming in this spec
 
 ---
 
@@ -343,26 +340,26 @@ grep -rn "os.path.join" src/  # → 0 (si migration complète)
 ```
 src/
 ├── entities/
-│   ├── player.py                    [MODIFY] — @override sur update()
-│   ├── groups.py                    [MODIFY] — @override sur add() et remove()
-│   └── npc.py                       [MODIFY] — @override sur update()
+│   ├── player.py                    [MODIFY] — @override on update()
+│   ├── groups.py                    [MODIFY] — @override on add() and remove()
+│   └── npc.py                       [MODIFY] — @override on update()
 └── engine/
-    └── render_manager.py            [MODIFY] — alias de type BlitSequence, OccludingRect
+    └── render_manager.py            [MODIFY] — BlitSequence, OccludingRect type aliases
 
 docs/
 └── ADRs/
-    └── ADR-008-frect-migration.md   [NEW] — décision de non-migration FRect
+    └── ADR-008-frect-migration.md   [NEW] — FRect non-migration decision
 
-# Step 11 optionnel — mêmes fichiers + suppression os.path.join
+# Optional Step 11 — same files + os.path.join removal
 ```
 
 ---
 
 ## Assumptions
 
-| Assumption | Risque | Validation |
+| Assumption | Risk | Validation |
 |---|---|---|
-| `BaseEntity.update(dt)` a la même signature que `Player.update(dt)` | Low | Vérifier `base.py` signature avant `@override` |
-| `pygame.sprite.Group.add/remove` acceptent `*sprites` (même signature) | Low | Vérifié dans la doc pygame-ce |
-| `type` statement est disponible (Python 3.12+) | Low | `python --version` = 3.12 dans venv |
-| Step 11 (pathlib) ne casse pas les chemins relatifs existants | Medium — `Path.resolve()` rend absolus les chemins relatifs | Vérifier chaque chemin avant migration |
+| `BaseEntity.update(dt)` has the same signature as `Player.update(dt)` | Low | Verify `base.py` signature before `@override` |
+| `pygame.sprite.Group.add/remove` accept `*sprites` (same signature) | Low | Verified in pygame-ce docs |
+| `type` statement is available (Python 3.12+) | Low | `python --version` = 3.12 in venv |
+| Step 11 (pathlib) does not break existing relative paths | Medium — `Path.resolve()` makes relative paths absolute | Verify each path before migrating |

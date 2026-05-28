@@ -1,76 +1,71 @@
-# Blueprint Stratégique — Occlusion Partielle des Sprites Entités
+# Strategic Blueprint — Partial Occlusion of Entity Sprites
 
 > Document Type: Strategic
-> Créé: 2026-05-22
+> Created: 2026-05-22
 
-## Problème
+## Problem
 
-Les sprites NPC (32×48px visuellement, 32×32px hitbox) reçoivent un alpha global
-(`set_alpha(OCCLUSION_ALPHA)`) dès qu'une partie quelconque de leur sprite chevauche un
-tile foreground (depth > player.depth). Ce comportement est visuellement incorrect :
-si seuls les pieds du NPC sont derrière un mur, la tête l'est aussi.
+NPC sprites (32×48px visually, 32×32px hitbox) receive a global alpha (`set_alpha(OCCLUSION_ALPHA)`) as soon as any part of their sprite overlaps a foreground tile (depth > player.depth). This behavior is visually incorrect: if only the NPC's feet are behind a wall, the head is as well.
 
-**Comportement attendu :** seule la portion du sprite physiquement sur le tile occludant
-devient semi-transparente. Le reste reste opaque.
+**Expected Behavior:** Only the portion of the sprite physically on the occluding tile becomes semi-transparent. The rest remains opaque.
 
-## Métriques de succès
+## Success Metrics
 
-- Partie basse du sprite sur tile depth 2 → alpha visible
-- Partie haute du sprite hors tile depth 2 → opaque
-- Transition (chevauchement partiel) → split clair et stable
-- 60 FPS maintenu (clock.get_fps() > 55 avec 2 NPCs occludés)
-- Player : alpha global inchangé — TC-OCC-001/002 restent verts
+- Bottom part of the sprite on depth 2 tile → visible alpha
+- Top part of the sprite off depth 2 tile → opaque
+- Transition (partial overlap) → clean and stable split
+- 60 FPS maintained (`clock.get_fps() > 55` with 2 occluded NPCs)
+- Player: unchanged global alpha — TC-OCC-001/002 remain green
 
-## Décision architecturale (→ ADR-007)
+## Architectural Decision (→ ADR-007)
 
-**Option retenue : Surface composite SRCALPHA par NPC occludé**
+**Selected Option: SRCALPHA Composite Surface per Occluded NPC**
 
-Pour chaque NPC dont le sprite visuel intersecte un tile occludant :
-1. Créer une surface temporaire `SRCALPHA` aux dimensions du sprite
-2. Blit normal de l'image complète (opaque)
-3. Pour chaque intersection sprite×tile : dessiner la zone en alpha
-4. Blit de la surface composite sur l'écran
+For each NPC whose visual sprite intersects an occluding tile:
+1. Create a temporary `SRCALPHA` surface with the dimensions of the sprite
+2. Perform a normal blit of the complete (opaque) image
+3. For each sprite×tile intersection: draw the zone in alpha
+4. Blit the composite surface onto the screen
 
-Calcul O(1) par intersection via `pygame.Rect.clip()`.
-Surface allouée uniquement en cas d'occlusion (cas rare).
+O(1) calculation per intersection via `pygame.Rect.clip()`.
+Surface allocated only when occlusion occurs (rare case).
 
-**Alternatives rejetées :**
-- `set_clip()` sur screen : logique d'inversion difficile à lire
-- Modifier `custom_draw()` API : couple trop `groups.py` au système d'occlusion
+**Rejected Alternatives:**
+- `set_clip()` on screen: inversion logic is difficult to read
+- Modifying `custom_draw()` API: couples `groups.py` too tightly to the occlusion system
 
-## Pipeline impacté
+## Impacted Pipeline
 
 ```
 draw_foreground() → list[pygame.Rect]   ← CHANGE: bool → list (screen-space rects)
-draw_scene() → utilise la liste pour le pass 3b NPC
-custom_draw() → inchangé (CameraGroup reste générique)
+draw_scene() → uses the list for pass 3b NPC
+custom_draw() → unchanged (CameraGroup remains generic)
 ```
 
-## Périmètre des sprites concernés
+## Scope of Affected Sprites
 
-L'occlusion partielle s'applique à **tous les sprites** du pass 3b (`custom_draw(min_depth=player.depth)`) :
+Partial occlusion applies to **all sprites** in pass 3b (`custom_draw(min_depth=player.depth)`):
 - NPCs (sprite > TILE_SIZE)
-- **Player** (même logique, même alpha)
-- Interactives si elles ont un sprite plus grand qu'un tile
+- **Player** (same logic, same alpha)
+- Interactive items if they have a sprite larger than a tile
 
-La logique est générique — pas de traitement spécifique par type d'entité.
+The logic is generic — no entity-type-specific processing.
 
-## Exclusions explicites
+## Explicit Exclusions
 
-| Exclusion | Rationale |
+| Exclusion | Precise Reason |
 |---|---|
-| Tiles animés foreground | ⚠️ Décision en attente — voir Gap #2 |
-| Cache zones occludantes | YAGNI — max 2-3 sprites occludés simultanément |
-| Lighting interaction | Alpha sprite n'impacte pas le système de lumières |
+| Animated foreground tiles | ⚠️ Decision pending — see Gap #2 |
+| Occluding zone cache | YAGNI — max 2-3 occluded sprites simultaneously |
+| Lighting interaction | Sprite alpha does not impact the lighting system |
 
-## Gaps résolus avant SPEC
+## Gaps Resolved Before SPEC
 
-| # | Gap | Décision |
+| # | Gap | Decision |
 |---|---|---|
-| 1 | `draw_foreground()` retourne un bool → tests à adapter | Changer le type de retour : `list[pygame.Rect]` (liste vide = pas d'occlusion, évalue à False → rétrocompat partielle) |
-| 2 | Tiles animés foreground inclus ? | ✅ **Oui — inclus.** Les tiles animés n'ont pas encore de depth > 1 mais en auront. La collecte des rects occludants scanne `get_visible_animated_chunks()` en plus des statiques. Quand les tiles animés depth > 1 existeront, ça marche automatiquement. |
-| 3 | Taille sprite variable dans le futur ? | ✅ **Prévoir** — utiliser `sprite.image.get_size()` dynamiquement à chaque frame, jamais de taille cachée. Surface composite allouée à la taille courante du frame actif. |
-| 4 | Player générique ? | ✅ **Oui — player inclus.** La logique est appliquée à tous les sprites du pass 3b. Le player perd son `set_alpha()` global au profit de l'occlusion partielle. |
+| 1 | `draw_foreground()` returns a bool → tests to adapt | Change the return type: `list[pygame.Rect]` (empty list = no occlusion, evaluates to False → partial backward compatibility) |
+| 2 | Animated foreground tiles included? | ✅ **Yes — included.** Animated tiles do not yet have depth > 1 but will. The occluding rect collection scans `get_visible_animated_chunks()` in addition to static ones. When depth > 1 animated tiles exist, this will work automatically. |
+| 3 | Variable sprite size in the future? | ✅ **Plan ahead** — use `sprite.image.get_size()` dynamically at each frame, never use cached sizes. Composite surface allocated at the current size of the active frame. |
+| 4 | Generic Player? | ✅ **Yes — player included.** The logic is applied to all sprites in pass 3b. The player loses their global `set_alpha()` in favor of partial occlusion. |
 
-**Tous les gaps sont résolus. STRATEGY complète. Prêt pour SPEC.**
-
+**All gaps are resolved. STRATEGY complete. Ready for SPEC.**

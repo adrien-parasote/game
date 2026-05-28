@@ -1,95 +1,95 @@
-# Spec — Steps 1 à 4 : DT Clamp + Text Cache
+# Spec — Steps 1 to 4: DT Clamp + Text Cache
 
 > Document Type: Implementation
 > **Covers:** DT-Clamp, Text-Cache-HUD, Text-Cache-Inventory, Text-Cache-Chest
-> **Référence blueprint:** [`best_practices_remediation_blueprint.md`](../strategic/best_practices_remediation_blueprint.md#plan-dimplémentation--10-steps)
-> **Guide best practices:** [`pygame_ce_python_312_best_practices.md`](./pygame_ce_python_312_best_practices.md#section-5-architecture)
-> **Statut:** SPEC — prêt pour BUILD
+> **Blueprint Reference:** [`best_practices_remediation_blueprint.md`](../strategic/best_practices_remediation_blueprint.md#implementation-plan--10-steps)
+> **Best Practices Guide:** [`pygame_ce_python_312_best_practices.md`](./pygame_ce_python_312_best_practices.md#section-5-architecture)
+> **Status:** SPEC — ready for BUILD
 
 ---
 
-## Contexte
+## Context
 
-Deux anti-patterns critiques identifiés dans l'audit (§6 du guide de référence) :
+Two critical anti-patterns identified in the audit (§6 of the reference guide):
 
-1. **DT non clampé** : `game.py:384` et `game_state_manager.py:55` passent le `dt` brut à la physique. Un freeze > 0.1s téléporte le joueur à travers des collisions.
-2. **`font.render()` dans les boucles de dessin** : `hud.py:70/75`, `inventory_draw.py:59,86,123,201,219,231,236,243`, `chest_draw.py:36,85,155` allouent des surfaces à chaque frame.
+1. **Unclamped DT**: `game.py:384` and `game_state_manager.py:55` pass the raw `dt` to physics. A freeze > 0.1s teleports the player through collisions.
+2. **`font.render()` in drawing loops**: `hud.py:70/75`, `inventory_draw.py:59,86,123,201,219,231,236,243`, and `chest_draw.py:36,85,155` allocate surfaces on every frame.
 
 ---
 
 ## Constraints
 
-| Tier | Exemples |
+| Tier | Examples |
 |---|---|
-| **Always do** | Clamp DT avec `min(raw_dt, 0.1)`. Pre-render les surfaces statiques à `__init__`. Invalider le cache uniquement sur mutation de données. |
-| **Ask first** | Modifier la signature de `_render_text_centered`. Ajouter une méthode publique sur `InventoryUI`. |
-| **Never do** | Introduire une classe `TextCache` partagée (ADR-006 §"No New Abstractions"). Modifier `TimeSystem`, `RenderManager`, `CameraGroup`. Toucher des fichiers hors scope. |
+| **Always do** | Clamp DT with `min(raw_dt, 0.1)`. Pre-render static surfaces in `__init__`. Invalidate the cache only when data mutates. |
+| **Ask first** | Modify the signature of `_render_text_centered`. Add a public method to `InventoryUI`. |
+| **Never do** | Introduce a shared `TextCache` class (ADR-006 §"No New Abstractions"). Modify `TimeSystem`, `RenderManager`, or `CameraGroup`. Touch files out of scope. |
 
 ---
 
 ## Cross-Spec Contracts
 
 ### Produces
-N/A — cette spec ne produit pas d'artefacts consommés par d'autres specs.
+N/A — this spec does not produce artifacts consumed by other specs.
 
 ### Consumes
-| Identifiant | Format | Défini dans | Producteur |
+| Identifier | Format | Defined in | Producer |
 |---|---|---|---|
-| `dt: float` passé à `_update(dt)` | float, secondes | `engine-core.md § "Boucle principale"` | `game.py:run()` et `game_state_manager.py:run()` |
+| `dt: float` passed to `_update(dt)` | float, seconds | `engine-core.md § "Main Loop"` | `game.py:run()` and `game_state_manager.py:run()` |
 | `time_system.time_label` | str, format `"HH:MM"` | `engine-core.md § "TimeSystem"` | `TimeSystem` |
 | `time_system.world_time.day` | int | `engine-core.md § "TimeSystem"` | `TimeSystem` |
 | `player.hp`, `player.max_hp`, `player.gold`, `player.level` | int | `entities-system.md § "Player"` | `Player` |
 
 ### Public Interface
-N/A — aucune API publique exposée. Toutes les modifications sont internes aux modules.
+N/A — no public API exposed. All modifications are internal to modules.
 
 ### External Invocations
 N/A.
 
 ### Tracked Concepts
-| Concept | Statut dans cette spec | Mentionné dans |
+| Concept | Status in this Spec | Mentioned in |
 |---|---|---|
-| `dt` (delta time) | Contraint à `min(raw_dt, 0.1)` | `engine-core.md`, `entities-system.md` |
-| pre-render cache pattern | Inline dict par composant | `ADR-006-perf-constants-pre-render-cache.md` |
+| `dt` (delta time) | Constrained to `min(raw_dt, 0.1)` | `engine-core.md`, `entities-system.md` |
+| pre-render cache pattern | Inline dict per component | `ADR-006-perf-constants-pre-render-cache.md` |
 
 ---
 
 ## Step 1 — DT Clamp
 
-### Cible
+### Target
 
-Chaque `clock.tick(FPS) / 1000.0` doit être immédiatement suivi d'un `min(raw_dt, 0.1)`.
+Each `clock.tick(FPS) / 1000.0` must be immediately followed by a `min(raw_dt, 0.1)`.
 
-### Fichiers modifiés
+### Modified Files
 
-| Fichier | Ligne | Avant | Après |
+| File | Line | Before | After |
 |---|---|---|---|
 | `src/engine/game_state_manager.py` | 55 | `dt = self._game.clock.tick(Settings.FPS) / 1000.0` | `raw_dt = self._game.clock.tick(Settings.FPS) / 1000.0` / `dt = min(raw_dt, 0.1)` |
 | `src/engine/game.py` | 384 | `dt = self.clock.tick(Settings.FPS) / 1000.0` | `raw_dt = self.clock.tick(Settings.FPS) / 1000.0` / `dt = min(raw_dt, 0.1)` |
 | `src/engine/game.py` | 276 | `dt = self.clock.tick(Settings.FPS) / 1000.0` | `raw_dt = self.clock.tick(Settings.FPS) / 1000.0` / `dt = min(raw_dt, 0.1)` |
 | `src/engine/game.py` | 290 | `dt = self.clock.tick(Settings.FPS) / 1000.0` | `raw_dt = self.clock.tick(Settings.FPS) / 1000.0` / `dt = min(raw_dt, 0.1)` |
 
-**Règle :** Toute occurrence de `clock.tick(Settings.FPS) / 1000.0` dans `src/` doit être suivie d'un clamp. Aucune exception.
+**Rule:** Every occurrence of `clock.tick(Settings.FPS) / 1000.0` in `src/` must be followed by a clamp. No exceptions.
 
-**Constante :** `DT_MAX = 0.1` dans `src/config.py` ou inline. Pas de magic number nu.
+**Constant:** `DT_MAX = 0.1` in `src/config.py` or inline. No naked magic numbers.
 
-### Vérification
+### Verification
 
 ```bash
 grep -n "clock.tick" src/engine/game.py src/engine/game_state_manager.py
-# → chaque hit doit avoir min(raw_dt, ...) à la ligne suivante
+# → each hit must have min(raw_dt, ...) on the following line
 ```
 
 ---
 
 ## Steps 2-4 — Text Cache
 
-### Principe général (conforme ADR-006)
+### General Principle (conforming to ADR-006)
 
-**Pattern :** pre-render dict inline dans chaque composant. Aucune classe partagée.
+**Pattern:** Inline pre-render dict in each component. No shared classes.
 
 ```python
-# PATTERN RÉFÉRENCE (identique à PauseScreen._make_engraved_surface et title_screen.py:168)
+# REFERENCE PATTERN (identical to PauseScreen._make_engraved_surface and title_screen.py:168)
 
 # __init__ — pre-render
 self._cached_texts: dict[str, pygame.Surface] = {}
@@ -102,53 +102,53 @@ def _build_static_text_cache(self) -> None:
         self._cached_texts[key] = self._font.render(text, True, TEXT_COLOR).convert_alpha()
         self._cached_shadow_texts[key] = self._font.render(text, True, SHADOW_COLOR).convert_alpha()
 
-# draw() — zéro alloc
+# draw() — zero allocations
 screen.blit(self._cached_texts["time"], rect)
 ```
 
-**Règle d'invalidation :** Les textes dynamiques (valeurs qui changent) utilisent un cache par valeur, avec une limite de taille stricte pour éviter les fuites mémoire (OOM) :
+**Invalidation Rule:** Dynamic text (values that change) uses a cache-by-value, with a strict size limit to prevent memory leaks (OOM):
 ```python
 def _get_cached_text(self, text: str, color: tuple[int, int, int]) -> pygame.Surface:
-    key = f"{text}"  # couleur fixe par composant → pas dans la clé
+    key = f"{text}"  # fixed color per component → not in the key
     if key not in self._text_cache:
-        # Cache eviction pour le texte dynamique
-        if len(self._text_cache) > 512:  # Limite augmentée à 512 pour éviter les micro-stutters
+        # Cache eviction for dynamic text
+        if len(self._text_cache) > 512:  # Limit increased to 512 to prevent micro-stutters
             self._text_cache.clear()
         self._text_cache[key] = self._font.render(text, True, color).convert_alpha()
     return self._text_cache[key]
 ```
 
-**⛔ JAMAIS dans `draw()` :**
+**⛔ NEVER in `draw()`:**
 ```python
-# INTERDIT
+# FORBIDDEN
 def draw(self, screen):
-    surf = self._font.render("Day 1", True, COLOR)  # alloc à chaque frame
+    surf = self._font.render("Day 1", True, COLOR)  # allocates every frame
 ```
 
 ---
 
 ## Step 2 — Text Cache HUD (`hud.py`)
 
-### Analyse de la cible
+### Target Analysis
 
-`GameHUD.draw()` appelle `_render_text_centered()` 2× :
-1. `self.time_system.time_label` — change 1×/minute en jeu (temps accéléré)
-2. `f"{day_label} {wt.day + 1}"` — change 1×/jour en jeu
+`GameHUD.draw()` calls `_render_text_centered()` 2×:
+1. `self.time_system.time_label` — changes 1×/minute in-game (accelerated time)
+2. `f"{day_label} {wt.day + 1}"` — changes 1×/day in-game
 
-Chaque appel fait 2 `font.render()` (shadow + main). Total : **4 surfaces/frame**.
+Each call performs 2 `font.render()` operations (shadow + main). Total: **4 surfaces/frame**.
 
-### Implémentation
+### Implementation
 
-**`GameHUD.__init__` — ajouter :**
+**`GameHUD.__init__` — add:**
 ```python
 self._text_cache: dict[str, pygame.Surface] = {}
 self._shadow_cache: dict[str, pygame.Surface] = {}
 ```
 
-**Remplacer `_render_text_centered` :**
+**Replace `_render_text_centered`:**
 ```python
 def _render_text_cached(self, surface: pygame.Surface, text: str, center: tuple[int, int]) -> None:
-    """Render text with shadow using cache. Zero alloc if text unchanged."""
+    """Render text with shadow using cache. Zero allocations if text unchanged."""
     if text not in self._shadow_cache:
         self._shadow_cache[text] = self._font.render(text, True, SHADOW_COLOR).convert_alpha()
     if text not in self._text_cache:
@@ -161,76 +161,76 @@ def _render_text_cached(self, surface: pygame.Surface, text: str, center: tuple[
     surface.blit(self._text_cache[text], self._text_cache[text].get_rect(center=center))
 ```
 
-**Remplacer les 2 appels dans `draw()` :**
+**Replace the 2 calls in `draw()`:**
 ```python
 self._render_text_cached(screen, self.time_system.time_label, ...)
 self._render_text_cached(screen, season_day_text, ...)
 ```
 
-**Cache éviction :** Aucune nécessaire. Le dict grossit de 2-3 clés max (labels de temps). Taille négligeable.
+**Cache Eviction:** None required. The dict grows by 2-3 keys max (time labels). Negligible size.
 
-### Fichier modifié
+### Modified File
 
-- `src/ui/hud.py` — remplacement de `_render_text_centered` par `_render_text_cached`
+- `src/ui/hud.py` — replace `_render_text_centered` with `_render_text_cached`
 
 ---
 
 ## Step 3 — Text Cache Inventory (`inventory_draw.py`)
 
-### Analyse de la cible
+### Target Analysis
 
-`_draw_stats()` fait 3 `font.render()` à chaque frame d'inventaire ouvert :
-- `f"LVL {player.level}"` — change uniquement lors d'un level-up
-- `f"HP {player.hp}/{player.max_hp}"` — change lors de dégâts/soins
-- `f"GOLD {player.gold}"` — change lors d'une transaction
+`_draw_stats()` performs 3 `font.render()` calls on every frame the inventory is open:
+- `f"LVL {player.level}"` — changes only on level-up
+- `f"HP {player.hp}/{player.max_hp}"` — changes on damage/heal
+- `f"GOLD {player.gold}"` — changes on transaction
 
-`_draw_character_preview()` fait 1 `font.render()` : `"Player"` — **statique**.
-`_draw_grid()` fait `font.render()` pour `f"x{item.quantity}"` — change lors d'une transaction.
-`_draw_item_info()` fait `font.render()` pour nom et description item — change selon hover.
+`_draw_character_preview()` performs 1 `font.render()` call: `"Player"` — **static**.
+`_draw_grid()` performs `font.render()` for `f"x{item.quantity}"` — changes on transaction.
+`_draw_item_info()` performs `font.render()` for item name and description — changes on hover.
 
-### Pattern d'invalidation
+### Invalidation Pattern
 
-Les stats HP/GOLD/LVL sont des attributs publics simples sur `Player`. Mutations à l'init + dans `_apply_save_data()`. **Décision : cache par valeur** (conforme G1 résolu).
+The HP/GOLD/LVL stats are simple public attributes on `Player`. Mutations happen at init + inside `_apply_save_data()`. **Decision: cache by value** (conforms to G1 resolution).
 
 ```python
 # InventoryDrawMixin.__init__ (via InventoryUI.__init__)
-self._text_cache: dict[str, pygame.Surface] = {}  # ajout
+self._text_cache: dict[str, pygame.Surface] = {}  # added
 
 def _get_text_surface(self: "InventoryUIProtocol", text: str, font: pygame.font.Font, color: tuple[int, int, int]) -> pygame.Surface:
     """Cache lookup by (text, font_id, color). Creates on miss."""
-    key = (id(font), color, text)  # Tuple unique pour éviter les collisions de couleurs
+    key = (id(font), color, text)  # Unique tuple to avoid color collisions
     if key not in self._text_cache:
         self._text_cache[key] = font.render(text, True, color).convert_alpha()
     return self._text_cache[key]
 ```
 
-**`"Player"` static label** → pre-rendered à l'init, jamais recalculé.
+**`"Player"` static label** → pre-rendered at init, never recalculated.
 
-**Item info (nom + description)** → cache par `item.id`. Invalide implicitement : si l'item hover change, la clé change.
+**Item info (name + description)** → cache by `item.id`. Implicitly invalidates: if the hovered item changes, the key changes.
 
-**Quantity `f"x{qty}"`** → cache par valeur string (ex: `"x3"` → réutilisable entre items différents de même quantité).
+**Quantity `f"x{qty}"`** → cache by string value (e.g., `"x3"` → reusable across different items of the same quantity).
 
-### Fichier modifié
+### Modified Files
 
 - `src/ui/inventory_draw.py` — `_draw_stats()`, `_draw_character_preview()`, `_draw_grid()`, `_draw_item_info()`
-- `src/ui/inventory.py` (via `InventoryUI.__init__`) — ajout `self._text_cache: dict[str, pygame.Surface] = {}`
+- `src/ui/inventory.py` (via `InventoryUI.__init__`) — add `self._text_cache: dict[str, pygame.Surface] = {}`
 
 ---
 
 ## Step 4 — Text Cache Chest (`chest_draw.py`)
 
-### Analyse de la cible
+### Target Analysis
 
-Violations dans `chest_draw.py` :
-- L36 : titre du coffre (statique)
-- L85 : quantité item (semi-statique)
-- L155 : label catégorie (statique)
+Violations in `chest_draw.py`:
+- L36: chest title (static)
+- L85: item quantity (semi-static)
+- L155: category label (static)
 
-### Implémentation
+### Implementation
 
-Même pattern que Step 3. Toutes les surfaces sont soit statiques (pre-render à l'init) soit par-valeur (cache hit sur clé string).
+Same pattern as Step 3. All surfaces are either static (pre-rendered at init) or by-value (cache hit on string key).
 
-### Fichier modifié
+### Modified File
 
 - `src/ui/chest_draw.py`
 
@@ -240,14 +240,12 @@ Même pattern que Step 3. Toutes les surfaces sont soit statiques (pre-render à
 
 | # | Anti-Pattern | Violation | Correct Behavior |
 |---|---|---|---|
-| 1 | `font.render()` dans `draw()` | `surf = self._font.render(text, True, color)` dans une méthode appelée 60×/sec | Pre-render dans `__init__` ou cache dict — zéro alloc dans `draw()` |
-| 2 | Classe `TextCache` globale partagée | `from src.engine.text_cache import TextCache` importé dans HUD, Inventory, Chest | Dict inline par composant — conforme [ADR-006](../ADRs/ADR-006-perf-constants-pre-render-cache.md#decision) |
-| 3 | Cache avec éviction LRU sur texte borné | Implanter un cache LRU pour 3-20 clés max | `dict[str, Surface]` simple — YAGNI |
-| 4 | DT clampé uniquement dans `TimeSystem` | `TimeSystem.update()` clamp en interne, physique reçoit `dt` brut | Clamp à la source : `dt = min(raw_dt, DT_MAX)` avant tout appel à `_update(dt)` |
-| 5 | `min(raw_dt, 0.1)` sans constante | Magic number `0.1` inline, aucune constante `DT_MAX` | Définir `DT_MAX = 0.1` dans `src/config.py` ou en tête de module |
-| 6 | Clamp dans `TimeSystem` seulement | `TimeSystem` protège son propre état mais pas la physique | Clamp avant `self._update(dt)` — [engine-core.md](./engine-core.md#boucle-principale) |
-
-
+| 1 | `font.render()` in `draw()` | `surf = self._font.render(text, True, color)` in a method called 60×/sec | Pre-render in `__init__` or cache dict — zero allocations in `draw()` |
+| 2 | Shared global `TextCache` class | `from src.engine.text_cache import TextCache` imported in HUD, Inventory, Chest | Inline dict per component — conforms to [ADR-006](../ADRs/ADR-006-perf-constants-pre-render-cache.md#decision) |
+| 3 | Cache with LRU eviction on bounded text | Implement an LRU cache for only 3-20 keys max | Simple `dict[str, Surface]` — YAGNI |
+| 4 | DT clamped only in `TimeSystem` | `TimeSystem.update()` clamps internally, physics receives raw `dt` | Clamp at the source: `dt = min(raw_dt, DT_MAX)` before any `_update(dt)` call |
+| 5 | `min(raw_dt, 0.1)` without constant | Magic number `0.1` inline, no `DT_MAX` constant | Define `DT_MAX = 0.1` in `src/config.py` or at the top of the module |
+| 6 | Clamp in `TimeSystem` only | `TimeSystem` protects its own state but not the physics engine | Clamp before `self._update(dt)` — [engine-core.md](./engine-core.md#main-loop) |
 
 ---
 
@@ -257,28 +255,28 @@ Même pattern que Step 3. Toutes les surfaces sont soit statiques (pre-render à
 
 | Test ID | Function | File | Description |
 |---------|----------|------|-------------|
-| TC-DT-001 | `test_gsm_dt_clamped_on_long_tick` | `../../tests/engine/test_dt_clamp.py` | `game_state_manager.run()` avec horloge simulant un tick de 500ms → `_handle_playing()` reçoit `dt ≤ 0.1` |
-| TC-DT-002 | `test_gsm_dt_not_clamped_on_normal_tick` | `../../tests/engine/test_dt_clamp.py` | `game_state_manager.run()` avec tick normal 16ms → `dt ≈ 0.016` (non clampé inutilement) |
-| TC-DT-003 | — | — | `game.py` fade-out loop avec tick simulé 200ms → `dt ≤ 0.1` dans la boucle de fade |
-| TC-DT-004 | `test_static_clock_tick_followed_by_clamp` | `../../tests/engine/test_dt_clamp.py` | Vérification statique (grep "clock.tick" src/engine/game.py) → chaque hit suivi de `min(` dans les 2 lignes suivantes |
+| TC-DT-001 | `test_gsm_dt_clamped_on_long_tick` | `../../tests/engine/test_dt_clamp.py` | `game_state_manager.run()` with a clock simulating a 500ms tick → `_handle_playing()` receives `dt ≤ 0.1` |
+| TC-DT-002 | `test_gsm_dt_not_clamped_on_normal_tick` | `../../tests/engine/test_dt_clamp.py` | `game_state_manager.run()` with a normal 16ms tick → `dt ≈ 0.016` (not clamped unnecessarily) |
+| TC-DT-003 | — | — | `game.py` fade-out loop with a simulated 200ms tick → `dt ≤ 0.1` in the fade loop |
+| TC-DT-004 | `test_static_clock_tick_followed_by_clamp` | `../../tests/engine/test_dt_clamp.py` | Static check (grep "clock.tick" src/engine/game.py) → each hit followed by `min(` within the next 2 lines |
 
 ### Unit Tests — HUD Cache
 
 | Test ID | Function | File | Description |
 |---------|----------|------|-------------|
-| TC-HUD-001 | `test_hud_font_render_called_once_on_double_draw_same_label` | `../../tests/ui/test_text_cache.py` | `GameHUD._render_text_cached("12:00", ...)` appelé 2× → `font.render` appelé exactement 1× (pas 2×) |
-| TC-HUD-002 | `test_hud_cache_miss_on_new_label` | `../../tests/ui/test_text_cache.py` | `GameHUD._render_text_cached("12:00", ...)` puis `_render_text_cached("12:01", ...)` → `font.render` appelé 2× (cache miss sur nouvelle clé) |
-| TC-HUD-003 | `test_hud_cache_attribute_present` | `../../tests/ui/test_text_cache.py` | `GameHUD.draw()` appelé 60× sans changement de `time_label` → `font.render` appelé exactement 2× (1 shadow + 1 main pour le label initial) |
+| TC-HUD-001 | `test_hud_font_render_called_once_on_double_draw_same_label` | `../../tests/ui/test_text_cache.py` | `GameHUD._render_text_cached("12:00", ...)` called 2× → `font.render` called exactly 1× (not 2×) |
+| TC-HUD-002 | `test_hud_cache_miss_on_new_label` | `../../tests/ui/test_text_cache.py` | `GameHUD._render_text_cached("12:00", ...)` then `_render_text_cached("12:01", ...)` → `font.render` called 2× (cache miss on new key) |
+| TC-HUD-003 | `test_hud_cache_attribute_present` | `../../tests/ui/test_text_cache.py` | `GameHUD.draw()` called 60× without `time_label` changing → `font.render` called exactly 2× (1 shadow + 1 main for the initial label) |
 
 ### Unit Tests — Inventory Cache
 
 | Test ID | Function | File | Description |
 |---------|----------|------|-------------|
 | TC-INV-CACHE-001 | `test_inventory_text_cache_attribute` | `../../tests/ui/test_text_cache.py` | InventoryUI must have `_text_cache` dict after `__init__` |
-| TC-INV-CACHE-002 | — | — | `_draw_stats()` appelé 2× avec `player.level=1, player.hp=100, player.gold=0` → `noble_font.render` pour LVL appelé 1× seulement |
-| TC-INV-CACHE-003 | — | — | `_draw_stats()` avec `player.hp=100` puis `player.hp=90` → `noble_font.render` pour HP appelé 2× (cache miss sur nouvelle valeur) |
-| TC-INV-CACHE-004 | — | — | `_draw_character_preview()` appelé 30× → `noble_font.render("Player", ...)` appelé exactement 1× (pre-rendered à l'init) |
-| TC-INV-CACHE-005 | — | — | `_get_text_surface(text, font_a, color)` puis `_get_text_surface(text, font_b, color)` → 2 surfaces distinctes (clé inclut `id(font)`) |
+| TC-INV-CACHE-002 | — | — | `_draw_stats()` called 2× with `player.level=1, player.hp=100, player.gold=0` → `noble_font.render` for LVL called 1× only |
+| TC-INV-CACHE-003 | — | — | `_draw_stats()` with `player.hp=100` then `player.hp=90` → `noble_font.render` for HP called 2× (cache miss on new value) |
+| TC-INV-CACHE-004 | — | — | `_draw_character_preview()` called 30× → `noble_font.render("Player", ...)` called exactly 1× (pre-rendered at init) |
+| TC-INV-CACHE-005 | — | — | `_get_text_surface(text, font_a, color)` then `_get_text_surface(text, font_b, color)` → 2 distinct surfaces (key includes `id(font)`) |
 
 ### Unit Tests — Chest Cache
 
@@ -290,11 +288,9 @@ Même pattern que Step 3. Toutes les surfaces sont soit statiques (pre-render à
 
 | Test ID | Function | File | Description |
 |---------|----------|------|-------------|
-| TC-IT-001 | — | — | Ouvrir l'inventaire, ne pas toucher HP/GOLD/LVL pendant 60 frames → 0 appels à `font.render` après le frame 1 |
-| TC-IT-002 | — | — | Recevoir des dégâts (HP change), ouvrir l'inventaire → HP surface recalculée avec la nouvelle valeur |
-| TC-IT-003 | — | — | `GameStateManager.run()` avec freeze simulé 2 secondes → joueur ne se téléporte pas (position inchangée après 1 tick long) |
-
----
+| TC-IT-001 | — | — | Open inventory, do not modify HP/GOLD/LVL for 60 frames → 0 calls to `font.render` after frame 1 |
+| TC-IT-002 | — | — | Take damage (HP changes), open inventory → HP surface recalculated with the new value |
+| TC-IT-003 | — | — | `GameStateManager.run()` with a simulated 2-second freeze → player does not teleport (position remains unchanged after 1 long tick) |
 
 ---
 
@@ -302,17 +298,19 @@ Même pattern que Step 3. Toutes les surfaces sont soit statiques (pre-render à
 
 | Error | Fallback | Logging |
 |---|---|---|
-| `font.render()` échoue (font None) — `AssetManager.get_font()` a échoué | Surface fallback de l'init retournée — pas de crash dans `draw()` | `logging.error` dans `_load_font()` |\n| `clock.tick()` retourne 0 — première frame | `min(0 / 1000.0, 0.1)` = 0.0 — correct, pas de division par zéro | N/A |\n| `clock.tick()` retourne valeur négative — jamais sur pygame-ce | `max(0.0, min(raw_dt, 0.1))` si garde-fou ajouté | N/A — défensif uniquement |\n| Cache `_text_cache` absent — oubli d'initialisation dans `__init__` | `AttributeError` au premier appel de `_get_text_surface` — détectable en test TC-INV-001 | Test TC-INV-001 catch immédiat |
-
+| `font.render()` fails (font is None) — `AssetManager.get_font()` failed | Fallback surface from init returned — no crash in `draw()` | `logging.error` in `_load_font()` |
+| `clock.tick()` returns 0 — first frame | `min(0 / 1000.0, 0.1)` = 0.0 — correct, no division by zero | N/A |
+| `clock.tick()` returns negative value — never on pygame-ce | `max(0.0, min(raw_dt, 0.1))` if safeguard added | N/A — defensive only |
+| `_text_cache` absent — initialization forgotten in `__init__` | `AttributeError` at the first call of `_get_text_surface` — caught in TC-INV-001 test | Caught immediately by TC-INV-001 |
 
 ---
 
 ## Bundling & Native-Module Audit
 
-- **BM1:** N/A — projet Python pur, pas de framework bundlé Next.js/SvelteKit
+- **BM1:** N/A — pure Python project, no bundled SvelteKit/Next.js framework
 - **BM2:** N/A
-- **BM3:** N/A — aucun module natif introduit
-- **BM4:** N/A — aucune constante renommée dans cette spec
+- **BM3:** N/A — no native module introduced
+- **BM4:** N/A — no constants renamed in this spec
 
 ---
 
@@ -324,19 +322,19 @@ src/
 │   ├── game.py                    [MODIFY] — DT clamp ×3 occurrences
 │   └── game_state_manager.py      [MODIFY] — DT clamp ×1 occurrence
 └── ui/
-    ├── hud.py                     [MODIFY] — _render_text_cached remplace _render_text_centered
-    ├── inventory.py               [MODIFY] — ajout self._text_cache dans __init__
+    ├── hud.py                     [MODIFY] — _render_text_cached replaces _render_text_centered
+    ├── inventory.py               [MODIFY] — add self._text_cache inside __init__
     ├── inventory_draw.py          [MODIFY] — _draw_stats, _draw_character_preview, _draw_grid, _draw_item_info
-    └── chest_draw.py              [MODIFY] — surfaces titre + quantité pré-rendues
+    └── chest_draw.py              [MODIFY] — pre-rendered title + quantity surfaces
 ```
 
 ---
 
 ## Assumptions
 
-| Assumption | Risque | Validation |
+| Assumption | Risk | Validation |
 |---|---|---|
-| `DT_MAX = 0.1` (100ms = 10 FPS minimum) est suffisant | Low — valeur standard pygame-ce | Conforme guide de référence §5.3 |
-| `time_label` est un str pur sans caractères spéciaux | Low | Vérifié dans `TimeSystem._format_time()` |
-| Le cache `_text_cache` dict ne grossira pas > 50 clés en conditions normales | Low — HUD = 2-3 clés, Inventory stats = 3 clés + N items hover | Pas d'éviction nécessaire |
-| `convert_alpha()` est disponible (display initialisé) | Low — conftest.py crée `pygame.HIDDEN` display | Vérifié dans l'analyse des gaps (G3) |
+| `DT_MAX = 0.1` (100ms = 10 FPS minimum) is sufficient | Low — standard pygame-ce value | Conforms to reference guide §5.3 |
+| `time_label` is a pure str with no special characters | Low | Verified in `TimeSystem._format_time()` |
+| The `_text_cache` dict will not grow > 50 keys in normal conditions | Low — HUD = 2-3 keys, Inventory stats = 3 keys + hovered items | Eviction not strictly necessary |
+| `convert_alpha()` is available (display initialized) | Low — `conftest.py` creates `pygame.HIDDEN` display | Verified in the gap analysis (G3) |

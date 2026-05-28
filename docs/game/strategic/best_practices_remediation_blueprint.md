@@ -1,117 +1,117 @@
-# Blueprint Stratégique — Remédiation Best Practices Pygame-CE / Python 3.12
+# Strategic Blueprint — Pygame-CE / Python 3.12 Best Practices Remediation
 
-> **Type :** Plan stratégique de remédiation technique
-> **Référence :** `docs/specs/pygame_ce_python_312_best_practices.md`
-> **Audit source :** `pygame_ce_best_practices_audit.md` (2026-05-26)
-> **Statut :** Stratégie validée — en attente de SPEC
+> **Type:** Strategic Technical Remediation Plan
+> **Reference:** `docs/specs/pygame_ce_python_312_best_practices.md`
+> **Source Audit:** `pygame_ce_best_practices_audit.md` (2026-05-26)
+> **Status:** Strategy validated — pending SPEC
 
 ---
 
-## Problème résolu
+## Problem Solved
 
-8 violations techniques documentées dans le guide de référence pygame-ce / Python 3.12.
-Impacte la stabilité du gameplay (DT non clampé), les performances (font.render en boucle),
-la portabilité (chemins saves) et la maintenabilité (Pyright désactivé, @override absent).
+8 technical violations documented in the pygame-ce / Python 3.12 reference guide.
+Impacts gameplay stability (unclamped DT), performance (font.render in drawing loops),
+portability (save paths), and maintainability (disabled Pyright, missing @override).
 
-## Succès mesurable
+## Measurable Success
 
-| Métrique | Cible |
+| Metric | Target |
 |---|---|
-| DT clampé partout | `grep "min(raw_dt"` → 2 hits (game.py, game_state_manager.py) |
-| 0 `font.render` dans draw() | `grep -n "font.render" src/ui/hud.py` → 0 dans `draw()` |
-| saves via `get_pref_path` | `grep "get_pref_path" src/engine/save_manager.py` → 1 hit |
-| Pyright `basic` → 0 erreurs | `pyright src/ --outputjson \| jq .summary.errorCount` = 0 |
-| Images UI via AssetManager | `grep -rn "pygame.image.load" src/ui/` → 0 |
-| `@override` sur méthodes héritées | `grep "@override" src/entities/player.py` → 1+ |
-| Tests verts | `pytest` → 0 failures |
+| DT clamped everywhere | `grep "min(raw_dt"` → 2 hits (game.py, game_state_manager.py) |
+| 0 `font.render` in draw() | `grep -n "font.render" src/ui/hud.py` → 0 in `draw()` |
+| Saves via `get_pref_path` | `grep "get_pref_path" src/engine/save_manager.py` → 1 hit |
+| Pyright `basic` → 0 errors | `pyright src/ --outputjson \| jq .summary.errorCount` = 0 |
+| UI images via AssetManager | `grep -rn "pygame.image.load" src/ui/` → 0 |
+| `@override` on inherited methods | `grep "@override" src/entities/player.py` → 1+ |
+| Green tests | `pytest` → 0 failures |
 
 ---
 
-## Décisions architecturales
+## Architectural Decisions
 
-### DA-1 : TextCache — dict inline, pas de classe partagée
-**Décision :** Pré-rendu dict dans chaque composant, pattern identique à `title_screen.py:168` et `PauseScreen._make_engraved_surface()`.
-**Rationale :** Conforme ADR-006 §"No New Abstractions". Le composant le plus complexe (inventory_draw) a besoin d'invalidation par event de mutation, pas par timer.
-**Exclu :** Classe `TextCache` globale dans `src/engine/`.
+### AD-1: TextCache — Inline Dict, No Shared Class
+**Decision:** Pre-rendered dict in each component, using the same pattern as `title_screen.py:168` and `PauseScreen._make_engraved_surface()`.
+**Rationale:** Conforms to ADR-006 §"No New Abstractions". The most complex component (inventory_draw) needs invalidation by mutation events, not by timers.
+**Excluded:** A global `TextCache` class in `src/engine/`.
 
-### DA-2 : FRect — ADR uniquement, pas de migration code
-**Décision :** Rédiger ADR-008 documentant la décision de ne PAS migrer en Phase 1. Le double-système `Vector2+Rect` est fonctionnel. Migration planifiée si jitter visible post-distribution.
-**Exclu :** Tout changement de code sur `base.py`, `player.py`, `groups.py`.
+### AD-2: FRect — ADR Only, No Code Migration
+**Decision:** Write ADR-008 documenting the decision NOT to migrate in Phase 1. The dual `Vector2+Rect` system is functional. Migration planned only if visible jitter occurs post-distribution.
+**Excluded:** Any code changes in `base.py`, `player.py`, `groups.py`.
 
-### DA-3 : Pyright — mode `basic`, pas `strict` (inaccessible sans stubs pygame)
-**Décision :** `"typeCheckingMode": "basic"`. `strict` est exclu définitivement pour ce projet.
-**Données mesurées :** `strict` génère 3 289 erreurs dont 1 353 (`reportUnknownMemberType` + `reportUnknownVariableType`) viennent de l'absence de stubs Pyright complets pour pygame-ce. Ces erreurs sont **irréductibles sans stubs tiers**.
-**Vrai fix :** Passer à `basic` + supprimer les suppressions `reportOptional*` une par une. Les 14 erreurs `reportOptionalMemberAccess` réelles seront alors visibles et corrigeables.
+### AD-3: Pyright — `basic` Mode, Not `strict` (Unachievable without Pygame Stubs)
+**Decision:** `"typeCheckingMode": "basic"`. `strict` is permanently excluded for this project.
+**Measured Data:** `strict` generates 3,289 errors, of which 1,353 (`reportUnknownMemberType` + `reportUnknownVariableType`) stem from the lack of complete Pyright stubs for pygame-ce. These errors are **unresolvable without third-party stubs**.
+**Real Fix:** Switch to `basic` + remove `reportOptional*` suppressions one by one. The 14 real `reportOptionalMemberAccess` errors will then become visible and fixable.
 
-### DA-4 : `pathlib.Path` — Step optionnel distinct, pas une exclusion
-**Révision :** L'exclusion initiale était paresseuse ("hors document de référence"). `pathlib.Path` est le standard Python 3.12.
-**Décision :** Ce n'est pas une violation du guide de référence, mais c'est une amélioration légitime. Classé **Step 11 optionnel** (refactoring mécanique ~60 occurrences). Traité séparément des corrections de violations car il ne répond pas à un anti-pattern identifié dans l'audit.
+### AD-4: `pathlib.Path` — Distinct Optional Step, Not an Exclusion
+**Revision:** The initial exclusion was lazy ("outside reference document"). `pathlib.Path` is the Python 3.12 standard.
+**Decision:** This is not a violation of the reference guide, but it is a legitimate improvement. Categorized as **Optional Step 11** (mechanical refactoring of ~60 occurrences). Handled separately from violation fixes as it does not address a specific anti-pattern identified in the audit.
 
 ---
 
-## Plan d'implémentation — 10 Steps
+## Implementation Plan — 10 Steps
 
-| Step | Description | Sévérité | Effort | Fichiers |
+| Step | Description | Severity | Effort | Files |
 |---|---|---|---|---|
-| **1** | DT Clamp dans toutes les boucles | 🔴 | 15 min | `game.py`, `game_state_manager.py` |
-| **2** | Text Cache HUD (textes semi-statiques) | 🔴 | 1h | `hud.py` |
-| **3** | Text Cache Inventory (textes dynamiques) | 🔴 | 1h | `inventory_draw.py` |
-| **4** | Text Cache Chest | 🔴 | 30 min | `chest_draw.py` |
+| **1** | DT Clamp in all loops | 🔴 | 15 min | `game.py`, `game_state_manager.py` |
+| **2** | HUD Text Cache (semi-static text) | 🔴 | 1h | `hud.py` |
+| **3** | Inventory Text Cache (dynamic text) | 🔴 | 1h | `inventory_draw.py` |
+| **4** | Chest Text Cache | 🔴 | 30 min | `chest_draw.py` |
 | **5** | `pygame.system.get_pref_path` saves | 🟡 | 1h | `save_manager.py` |
-| **6** | Centraliser images UI dans AssetManager | 🟡 | 2h | 8 fichiers `ui/` |
-| **7** | Pyright mode `basic` + suppr. suppressions Optional | 🟡 | 1-2h | `pyrightconfig.json` |
-| **8** | `@override` sur méthodes héritées | 🟢 | 30 min | `player.py`, `groups.py`, `npc.py` |
-| **9** | Alias de type `type` | 🟢 | 30 min | `render_manager.py` |
-| **10** | ADR-008 FRect — évaluation et décision | 🟢 | 30 min | `docs/ADRs/ADR-008-frect.md` |
-| **11** _(optionnel)_ | Migration `os.path.join` → `pathlib.Path` | 🟢 | 2-3h | ~60 occurrences dans `src/` |
+| **6** | Centralize UI images in AssetManager | 🟡 | 2h | 8 `ui/` files |
+| **7** | Pyright `basic` mode + remove Optional suppressions | 🟡 | 1-2h | `pyrightconfig.json` |
+| **8** | `@override` on inherited methods | 🟢 | 30 min | `player.py`, `groups.py`, `npc.py` |
+| **9** | `type` Type Aliases | 🟢 | 30 min | `render_manager.py` |
+| **10** | ADR-008 FRect — evaluation and decision | 🟢 | 30 min | `docs/ADRs/ADR-008-frect.md` |
+| **11** _(optional)_ | `os.path.join` → `pathlib.Path` migration | 🟢 | 2-3h | ~60 occurrences in `src/` |
 
-**Effort total estimé : 9-12h**
+**Total Estimated Effort: 9-12h**
 
 ---
 
-## Scope — Ce qu'on ne fait PAS (et pourquoi)
+## Scope — What We Do NOT Do (and Why)
 
-| Exclusion | Raison précise |
+| Exclusion | Precise Reason |
 |---|---|
-| Migration `FRect` (code) | Vector2+Rect est fonctionnel. Pas de jitter visible. Coût > bénéfice immédiat. ADR-008 documente la décision. |
-| Pyright `strict` | **Inaccessible** : 1 353/3 289 erreurs sont structurellement irréductibles sans stubs Pyright complets pour pygame-ce. Cible : `basic` uniquement. |
-| `src/map/` | Aucune violation identifiée dans l'audit. Zéro `font.render` en boucle, zéro chargement image hors AssetManager, zéro DT non clampé. |
-| `src/graphics/spritesheet.py` | `pygame.image.load` à la ligne 26 est **légitime** : chargement à l'init de l'entité, pas dans la boucle de dessin. Déjà mocké dans les tests. |
-| Refactoring interne `AssetManager` | `AssetManager` ne change pas. P2-C modifie les 8 fichiers UI qui le *contournent* — AssetManager lui-même n'est pas refactorisé. |
+| `FRect` migration (code) | Vector2+Rect is functional. No visible jitter. Cost > immediate benefit. ADR-008 documents the decision. |
+| Pyright `strict` | **Unachievable**: 1,353/3,289 errors are structurally unresolvable without complete Pyright stubs for pygame-ce. Target: `basic` only. |
+| `src/map/` | No violations identified in the audit. Zero loop `font.render`, zero image loads outside AssetManager, zero unclamped DT. |
+| `src/graphics/spritesheet.py` | `pygame.image.load` on line 26 is **legitimate**: loaded at entity init, not in the drawing loop. Already mocked in tests. |
+| `AssetManager` internal refactoring | `AssetManager` does not change. Phase 2-C modifies the 8 UI files that *bypass* it — AssetManager itself is not refactored. |
 
-> **Note :** `pathlib.Path` n'est plus une exclusion — c'est un **Step 11 optionnel** distinct. Voir plan d'implémentation.
+> **Note:** `pathlib.Path` is no longer an exclusion — it is a distinct **Optional Step 11**. See the implementation plan.
 
 ---
 
-## Gaps ouverts (à résoudre avant SPEC)
+## Open Gaps (to Resolve Before SPEC)
 
 | # | Gap | Owner |
 |---|---|---|
-| **G1** | Pattern d'invalidation TextCache inventory (HP/GOLD/LVL setters ?) | Code + toi |
-| **G2** | Type de retour de `pygame.system.get_pref_path` dans pygame-ce 2.4+ | Research |
-| **G3** | `AssetManager.get_image` appelle `convert_alpha` — crash headless en tests ? | Code |
-| **G4** | Budget corrections Pyright `basic` acceptable ? | Toi |
+| **G1** | Inventory TextCache invalidation pattern (HP/GOLD/LVL setters ?) | Code + You |
+| **G2** | Return type of `pygame.system.get_pref_path` in pygame-ce 2.4+ | Research |
+| **G3** | `AssetManager.get_image` calls `convert_alpha` — headless crash in tests? | Code |
+| **G4** | Acceptable budget for Pyright `basic` corrections? | You |
 
 ---
 
-## Learnings intégrés
+## Integrated Learnings
 
-- **L-UI-011** → Pre-render cache pattern pour textes statiques (PauseScreen, SaveMenu)
-- **ADR-006** → No New Abstractions — dict inline preferred over new class
-- **L-UI-012** → Ordre : constants → source → tests
-- **A-UI-002** → grep avant tout mv/rm d'asset
+- **L-UI-011** → Pre-render cache pattern for static text (PauseScreen, SaveMenu)
+- **ADR-006** → No New Abstractions — inline dict preferred over new class
+- **L-UI-012** → Order: constants → source → tests
+- **A-UI-002** → grep before any asset mv/rm
 
 ---
 
-## Résolution des Gaps
+## Gap Resolution
 
-| # | Gap | Résolution | Source |
+| # | Gap | Resolution | Source |
 |---|---|---|---|
-| **G1** | Invalidation TextCache inventory (HP/GOLD/LVL) | `hp`, `gold`, `level` sont des attributs publics simples. Mutations uniquement à l'init + dans `_apply_save_data()`. Pattern : pre-render au `__init__` de `InventoryUI` + méthode `refresh_stats()` appelée après `_apply_save_data()`. Identique à `SaveMenuOverlay.refresh()` (ADR-006). | Code inspection |
-| **G2** | Type retour `pygame.system.get_pref_path` | Retourne `str` en Python 3. Aucune gestion de `bytes` nécessaire. | Web search docs pygame-ce |
-| **G3** | `AssetManager.convert_alpha()` headless | `conftest.py` crée un vrai display `pygame.HIDDEN`. `.convert_alpha()` fonctionne. Centralisation sans risque. | Code inspection |
-| **G4** | Budget Pyright `basic` | Corrections de types **uniquement dans les fichiers modifiés par les autres Steps**. Pas de correction dans les fichiers non touchés. | Décision de scope |
+| **G1** | Inventory TextCache invalidation (HP/GOLD/LVL) | `hp`, `gold`, and `level` are simple public attributes. Mutations happen only at init + inside `_apply_save_data()`. Pattern: pre-render at `InventoryUI` `__init__` + call `refresh_stats()` after `_apply_save_data()`. Identical to `SaveMenuOverlay.refresh()` (ADR-006). | Code inspection |
+| **G2** | `pygame.system.get_pref_path` return type | Returns `str` in Python 3. No `bytes` handling necessary. | Web search pygame-ce docs |
+| **G3** | `AssetManager.convert_alpha()` headless | `conftest.py` creates a real `pygame.HIDDEN` display. `.convert_alpha()` works. Risk-free centralization. | Code inspection |
+| **G4** | Pyright `basic` budget | Type corrections **only in files modified by other Steps**. No corrections in untouched files. | Scope decision |
 
 ---
 
-*Créé : 2026-05-26 | Gaps résolus : 2026-05-26 | Prochaine étape : SPEC*
+*Created: 2026-05-26 | Gaps Resolved: 2026-05-26 | Next Step: SPEC*
