@@ -6,7 +6,6 @@ Spec: docs/game/specs/game-flow-spec.md#21-srcenginesave_managerpy-new
 import json
 import logging
 import os
-import shutil
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -23,42 +22,16 @@ def _get_saves_dir() -> str:
     - Linux: ~/.local/share/adrien/game/
 
     Falls back to "saves" if pygame is not initialized (e.g. test context).
-
-    Migration: if legacy "./saves" exists and the new directory is empty,
-    moves all saves to the new directory and renames "./saves" to "./saves_migrated".
     """
     try:
-        path = pygame.system.get_pref_path("adrien", "game")
-
-        # MIGRATION: Preserve user data from legacy paths
-        legacy_path = "saves"
-        if os.path.isdir(legacy_path):
-            if not os.path.exists(path) or not os.listdir(path):
-                os.makedirs(path, exist_ok=True)
-                for item in os.listdir(legacy_path):
-                    src = str(Path(legacy_path) / item)
-                    dst = str(Path(path) / item)
-                    if os.path.isdir(src):
-                        shutil.copytree(src, dst)
-                    else:
-                        shutil.copy2(src, dst)
-                # Safe rename — avoid collision with existing saves_migrated
-                migrated = legacy_path + "_migrated"
-                if os.path.exists(migrated):
-                    counter = 1
-                    while os.path.exists(f"{migrated}_{counter}"):
-                        counter += 1
-                    migrated = f"{migrated}_{counter}"
-                os.rename(legacy_path, migrated)
-                logging.info(f"SaveManager: migrated saves from '{legacy_path}' to '{path}'")
-
-        return path
+        return pygame.system.get_pref_path("adrien", "game")
     except Exception as exc:
         logging.warning(f"SaveManager: get_pref_path failed ({exc}), using fallback 'saves'")
         return "saves"
 
 
 SAVES_DIR = _get_saves_dir()
+
 MAX_SLOTS = 3
 SCHEMA_VERSION = "0.4.0"
 
