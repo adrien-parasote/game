@@ -2,17 +2,17 @@
     "maps": [
         {
             "fileName": "../maps/01-castel-ext.tmj",
-            "height": 1952,
+            "height": 1920,
             "width": 1888,
             "x": 0,
-            "y": 0
+            "y": 64
         },
         {
             "fileName": "../maps/01-castel-place.tmj",
-            "height": 960,
+            "height": 1440,
             "width": 1888,
             "x": 0,
-            "y": -960
+            "y": -1376
         }
     ],
     "onlyShowAdjacentMaps": false,
