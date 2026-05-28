@@ -95,7 +95,7 @@ Returns the exit constraints intersection:
 Top-down layer scan at a given pixel position. Skip tiles with `tile.depth > 1` (floats and roofs ignored). Returns the `material` property of the topmost tile with `depth <= 1`.
 
 #### `get_grass_tile_image_at(pixel_x: int, pixel_y: int) -> pygame.Surface | None`
-Identical scan logic to `get_terrain_material_at`. Returns the `TileMapData.image` surface when `material == "grass"`, else `None`. Used by `RenderManager._apply_grass_wading()` to obtain the exact grass pixel art to re-blit over sprite feet.
+Identical scan logic to `get_terrain_material_at`. Returns the `TileMapData.image` surface when `material == "grass"`, else `None`. Used by `RenderManager._build_wading_composite()` to obtain the exact grass pixel art to bake into the sprite composite before `custom_draw`.
 
 - **Read-only**: does not modify any mutable state.
 - **No allocation**: returns the existing `TileMapData.image` reference (pre-loaded 32×32 subsurface).

@@ -381,21 +381,26 @@ class RenderManager:
 
         occluding_rects = self.draw_foreground()
 
-        # Partial occlusion: replace each sprite's image with a composite where only
+        # Pass 3b: Partial occlusion — replace each sprite image with a composite where only
         # the zone behind a foreground tile is semi-transparent.
-        # The walk guard is applied inside _apply_partial_occlusion (player-sprite only)
-        # so NPCs continue to be occluded during scripted walk (IT-003).
+        # Pass 3c: Grass wading — compose wading pixels into each sprite image BEFORE draw.
+        # Both passes use the same pre-blit image swap pattern so rendering order (Y-sort)
+        # governs visibility naturally — no wading bleed onto adjacent sprites.
+        # saved_images tracks the PRE-OCCLUSION originals. _apply_grass_wading_to_images
+        # receives it so that wading stacks on the occlusion composite while saving the
+        # true original (pre-occlusion), giving a single restore step.
         saved_images = self._apply_partial_occlusion(occluding_rects)
+        wading_saved = self._apply_grass_wading_to_images(cam_offset, saved_images)
 
         self.game.visible_sprites.custom_draw(self.game.screen, min_depth=self.game.player.depth)
 
-        # Restore original sprite images immediately after rendering.
+        # Restore all sprites to their original images in one pass.
+        # saved_images already contains pre-occlusion originals; wading_saved contains the
+        # originals for sprites that only needed wading (not occlusion).
         for sprite, original_image in saved_images.items():
             sprite.image = original_image
-
-        # Pass 3c: Grass wading — re-blit grass tile pixels + alpha blend over sprite feet
-        # to create the visual illusion of walking inside tall grass.
-        self._apply_grass_wading(self.game.screen)
+        for sprite, original_image in wading_saved.items():
+            sprite.image = original_image
 
         night_alpha = self.game.time_system.night_alpha
         window_positions = self.game.map_manager.get_window_positions()
@@ -403,106 +408,136 @@ class RenderManager:
         self._render_lighting_and_effects(night_alpha, window_positions, cam_offset)
         self._render_ui_overlays(cam_offset)
 
-    def _render_grass_wading_for_sprite(
+    def _build_wading_composite(
         self,
-        surface: pygame.Surface,
         sprite,
         cam_offset: pygame.Vector2,
         tile_size: int,
         wading_depth: int,
         wading_alpha: int,
-    ) -> None:
-        """Render grass wading visual effect for a single standing sprite."""
-        # visual_rect — MUST match custom_draw and _apply_partial_occlusion exactly
-        visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
-        sprite_screen_rect = pygame.Rect(
-            (visual_rect.left + cam_offset.x, visual_rect.top + cam_offset.y),
-            visual_rect.size,
-        )
+    ) -> pygame.Surface | None:
+        """Build a composite of the sprite image with grass wading applied to its foot zone.
 
+        Returns a new SRCALPHA surface with the wading pixels composited into the bottom
+        wading_depth rows, or None if the sprite is not standing on a grass tile.
+
+        The composite is built in sprite-local coordinates so that the rendering order
+        (Y-sort via custom_draw) governs visibility — no screen-space bleed onto adjacent
+        sprites that happen to occupy the same screen area.
+        """
         # Probe grass at foot position: bottom center of hitbox, 2px up to avoid edge miss
         foot_world_x = sprite.rect.centerx
         foot_world_y = sprite.rect.bottom - 2
 
         grass_img = self.game.map_manager.get_grass_tile_image_at(foot_world_x, foot_world_y)
         if not isinstance(grass_img, pygame.Surface):
-            return  # Not on grass, or invalid return type — skip
+            return None  # Not on grass — nothing to do
 
-        # Wading zone: bottom wading_depth pixels of sprite screen rect
-        wading_rect = pygame.Rect(
-            sprite_screen_rect.left,
-            sprite_screen_rect.bottom - wading_depth,
-            sprite_screen_rect.width,
-            wading_depth,
-        )
-        # Clip to sprite bounds first, then to screen bounds
-        wading_rect = wading_rect.clip(sprite_screen_rect)
-        wading_rect = wading_rect.clip(surface.get_rect())
-        if wading_rect.width <= 0 or wading_rect.height <= 0:
-            return
+        visual_size = sprite.image.get_size()
+        img_w, img_h = visual_size
 
-        # Pass 1: Re-blit grass tile image semi-transparently over sprite feet.
-        # The wading zone can straddle a tile boundary, so we iterate grid columns/rows.
-        # We blit the grass crops to a temporary surface first to apply the wading_alpha
-        # transparency without mutating the shared tile image.
-        world_left = wading_rect.x - cam_offset.x
-        world_right = world_left + wading_rect.width
-        world_top = wading_rect.y - cam_offset.y
-        world_bottom = world_top + wading_rect.height
+        # Wading zone in LOCAL sprite coordinates (bottom wading_depth rows).
+        local_wading_top = max(0, img_h - wading_depth)
+        local_wading_h = img_h - local_wading_top
+        if local_wading_h <= 0:
+            return None
 
-        col_start = int(world_left // tile_size)
-        col_end = int((world_right - 1) // tile_size)
-        row_start = int(world_top // tile_size)
-        row_end = int((world_bottom - 1) // tile_size)
+        # Build the composite: full opaque sprite image + wading overlay at the bottom.
+        composite = pygame.Surface(visual_size, pygame.SRCALPHA)
+        composite.blit(sprite.image, (0, 0))
+
+        # Determine screen-space position of the sprite's visual rect to look up
+        # which grass tile pixels align with the wading zone.
+        visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
+        sprite_screen_left = visual_rect.left + cam_offset.x
+        sprite_screen_top = visual_rect.top + cam_offset.y
+
+        # Wading zone in screen space (for tile lookup only)
+        wading_screen_top = sprite_screen_top + local_wading_top
+        wading_screen_left = sprite_screen_left
+        wading_screen_right = sprite_screen_left + img_w
+        wading_screen_bottom = sprite_screen_top + img_h
+
+        col_start = int((wading_screen_left - cam_offset.x) // tile_size)
+        col_end = int((wading_screen_right - cam_offset.x - 1) // tile_size)
+        row_start = int((wading_screen_top - cam_offset.y) // tile_size)
+        row_end = int((wading_screen_bottom - cam_offset.y - 1) // tile_size)
 
         # F4: Reuse _wading_surf — resize only if wading zone changed size
-        if self._wading_surf is None or self._wading_surf.get_size() != wading_rect.size:
-            self._wading_surf = pygame.Surface(wading_rect.size, pygame.SRCALPHA)
+        wading_size = (img_w, local_wading_h)
+        if self._wading_surf is None or self._wading_surf.get_size() != wading_size:
+            self._wading_surf = pygame.Surface(wading_size, pygame.SRCALPHA)
         self._wading_surf.fill((0, 0, 0, 0))
         wading_surf = self._wading_surf
+
         for col in range(col_start, col_end + 1):
             for row in range(row_start, row_end + 1):
-                tile_screen_x = col * tile_size + cam_offset.x
-                tile_screen_y = row * tile_size + cam_offset.y
-                tile_rect = pygame.Rect(tile_screen_x, tile_screen_y, tile_size, tile_size)
-                isect = wading_rect.clip(tile_rect)
-                if isect.width > 0 and isect.height > 0:
-                    crop_x = isect.x - tile_screen_x
-                    crop_y = isect.y - tile_screen_y
-                    grass_crop = pygame.Rect(crop_x, crop_y, isect.width, isect.height)
+                tile_world_x = col * tile_size
+                tile_world_y = row * tile_size
+                tile_screen_x = tile_world_x + cam_offset.x
+                tile_screen_y = tile_world_y + cam_offset.y
 
-                    # Calculate destination coordinates on the temporary wading surface
-                    dest_x = isect.x - wading_rect.x
-                    dest_y = isect.y - wading_rect.y
-                    wading_surf.blit(grass_img, (dest_x, dest_y), area=grass_crop)
+                # Intersection between this tile and the wading screen zone
+                isect_left = max(wading_screen_left, tile_screen_x)
+                isect_top = max(wading_screen_top, tile_screen_y)
+                isect_right = min(wading_screen_right, tile_screen_x + tile_size)
+                isect_bottom = min(wading_screen_bottom, tile_screen_y + tile_size)
+                isect_w = isect_right - isect_left
+                isect_h = isect_bottom - isect_top
+                if isect_w <= 0 or isect_h <= 0:
+                    continue
 
-        # Apply overall wading alpha to make the re-blitted grass semi-transparent
+                # Crop coordinates on the grass tile image
+                crop_x = int(isect_left - tile_screen_x)
+                crop_y = int(isect_top - tile_screen_y)
+                grass_crop = pygame.Rect(crop_x, crop_y, int(isect_w), int(isect_h))
+
+                # Destination on the wading surface (local to the wading zone)
+                dest_x = int(isect_left - wading_screen_left)
+                dest_y = int(isect_top - wading_screen_top)
+                wading_surf.blit(grass_img, (dest_x, dest_y), area=grass_crop)
+
         wading_surf.set_alpha(wading_alpha)
+        composite.blit(wading_surf, (0, local_wading_top))
+        return composite
 
-        # Blit the semi-transparent grass over the main surface
-        surface.blit(wading_surf, wading_rect.topleft)
+    def _apply_grass_wading_to_images(
+        self,
+        cam_offset: pygame.Vector2 | None = None,
+        pre_occlusion_originals: dict[object, pygame.Surface] | None = None,
+    ) -> dict[object, pygame.Surface]:
+        """Pass 3c: compose grass wading pixels into each sprite's image BEFORE custom_draw.
 
-    def _apply_grass_wading(self, surface: pygame.Surface) -> None:
-        """Pass 3c: re-blit grass tile image + alpha blend over sprite foot zone.
+        Works like _apply_partial_occlusion: replaces sprite.image with a composite that
+        has the wading pixels baked in, returns {sprite: pre-wading original} for restoration.
 
-        For every visible sprite standing on a grass tile, paint the grass texture over
-        the bottom GRASS_WADING_DEPTH pixels of the sprite in screen space, then apply
-        a semi-transparent fill to soften the sprite-to-grass boundary.
+        If pre_occlusion_originals is provided (from _apply_partial_occlusion), sprites in
+        that dict have their wading applied to the occlusion composite; their restoration
+        entry is the PRE-OCCLUSION original so a single restore pass suffices.
+
+        By modifying the image before the draw call (rather than blitting to screen after),
+        the Y-sort rendering order guarantees that no sprite's wading zone can bleed over
+        another sprite drawn later in the same pass.
 
         Preconditions:
         - map_manager must not be None (guarded at method entry)
-        - visual_rect formula must match custom_draw and _apply_partial_occlusion exactly
-        - walk_active guard skips the player sprite only (NPCs always processed)
+        - Must be called BEFORE custom_draw(min_depth=player.depth).
+        - walk_active guard skips the player sprite only (NPCs always processed).
         """
         if not self.game.map_manager:
-            return
+            return {}
 
-        cam_offset = self.game.visible_sprites.offset
+        if cam_offset is None:
+            cam_offset = self.game.visible_sprites.offset
+        pre_occ = pre_occlusion_originals or {}
         tile_size = self.game.tile_size
         wading_depth = Settings.GRASS_WADING_DEPTH
         wading_alpha = Settings.GRASS_WADING_ALPHA
         player_depth = self.game.player.depth
         walk_active = getattr(self.game, "_intra_walk_target", None) is not None
+        # Only sprites NOT already in pre_occ need a restore entry here.
+        # Sprites in pre_occ are restored by the caller's saved_images loop.
+        wading_only_originals: dict[object, pygame.Surface] = {}
 
         for sprite in self.game.visible_sprites.get_sorted_sprites():
             if not sprite.image or not sprite.rect:
@@ -514,8 +549,14 @@ class RenderManager:
             if walk_active and sprite == self.game.player:
                 continue
 
-            self._render_grass_wading_for_sprite(
-                surface, sprite, cam_offset, tile_size, wading_depth, wading_alpha
+            composite = self._build_wading_composite(
+                sprite, cam_offset, tile_size, wading_depth, wading_alpha
             )
+            if composite is not None:
+                if sprite not in pre_occ:
+                    # Save original before wading so the caller can restore it.
+                    wading_only_originals[sprite] = sprite.image
+                # Stack wading on whatever image is current (may be occlusion composite).
+                sprite.image = composite
 
-
+        return wading_only_originals

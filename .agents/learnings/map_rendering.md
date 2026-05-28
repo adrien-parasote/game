@@ -536,3 +536,34 @@ By applying a precise vertical shear transformation (shifting column $x$ vertica
 ---
 
 *Last updated: 2026-05-28 — L-MAP-009 (lossless vertical shear mapping).*
+
+### L-REND-006 · 2026-05-28 · U · Major Rework
+**Post-draw screen-blit effects violate Y-sort ordering guarantees**
+
+When a rendering effect is applied to the screen AFTER `custom_draw` completes, the effect pixels from the sprite drawn **last** (highest Y in Y-sort) bleed over sprites drawn **earlier** (lower Y). The Y-sort depth guarantee only holds when all per-sprite visual modifications happen BEFORE the draw call.
+
+**Pattern:** use the swap-and-restore pattern (identical to `_apply_partial_occlusion`):
+1. Build the composite locally: `copy sprite.image → modify → return new Surface`
+2. Replace `sprite.image` with the composite **BEFORE** `custom_draw`
+3. Restore original `sprite.image` **AFTER** `custom_draw`
+
+This is safe because the composite is a new Surface — no shared frame mutation occurs.
+
+**Evidence:** 1121/1121 tests pass. Visual regression confirmed fixed (user verified in-game: NPC heads no longer transparent when player walks in front of them in grass).
+
+---
+
+### A-REND-002 · 2026-05-28 · U · Major Rework
+**"Never mutate sprite.image" and "use pre-blit swap" are compatible rules**
+
+The spec §4.6 anti-pattern "Blit to surface — never touch sprite.image" was protecting against MUTATION of the shared spritesheet frame. The fix (swap-and-restore) does NOT mutate the original — it replaces `sprite.image` with a new composite Surface and restores it after draw.
+
+**Anti-pattern:** forbidding ALL `sprite.image` modification in specs. The correct boundary is: never call `.set_alpha()` or draw directly on the original `sprite.image`. A temporary replacement with a locally-constructed composite Surface is correct and required for per-sprite effects that must respect Y-sort ordering.
+
+**Fix:** spec anti-patterns for rendering effects must distinguish between MUTATION (forbidden) and SWAP-AND-RESTORE (required for post-composition per-sprite effects). Spec §4.6 anti-pattern table updated with this distinction.
+
+**Evidence:** Spec §4.6 refactored. `_apply_grass_wading` (screen-blit POST-draw, 1 method) → `_apply_grass_wading_to_images` + `_build_wading_composite` (image-swap PRE-draw, 2 methods). 1121/1121 tests pass.
+
+---
+
+*Last updated: 2026-05-28 — L-REND-006 (post-draw Y-sort violation), A-REND-002 (mutation vs swap-and-restore distinction).*
