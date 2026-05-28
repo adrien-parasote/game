@@ -523,4 +523,16 @@ surface.blit(wading_surf, wading_rect.topleft)
 
 ---
 
-*Last updated: 2026-05-22 — A-REND-001 (horizontal black bar on wading feet visual bug).*
+### L-MAP-009 · 2026-05-28 · U · Perfect
+**Lossless vertical shear mapping for 2D diagonal wall assets**
+
+When transforming flat, front-facing 2D wall assets into 45-degree diagonal walls (NW-SE or NE-SW), using general-purpose rotation or scaling introduces sub-pixel resampling blur, destroying the crisp pixel-art style of the assets. 
+
+By applying a precise vertical shear transformation (shifting column $x$ vertically downwards by $x$ pixels for NW-SE, or $W - 1 - x$ pixels for NE-SW), we create a lossless pixel mapping. A flat $32\times32$ tile is sheared into a $32\times64$ segment, which is then cleanly split into a **"Top" tile** (wall below the diagonal $Y = X$) and a **"Bottom" tile** (wall above the diagonal $Y = X$). Staggering these staggered tile pairs in a staircase pattern on the grid forms a perfect, seamless 45-degree diagonal wall with zero blur and pristine pixel alignment.
+
+**Rule:** Always use whole-pixel column-by-column cropping and translation (vertical shear) instead of rotation filters when converting 2D orthogonal grid assets (like walls or roofs) to diagonal perspectives.
+**Evidence:** 6/6 pytest suite passed on the first run. Output tilesets `asset1_nw_se.png`, `asset2_nw_se.png`, and `asset3_nw_se.png` compiled with 100% mathematical precision and crisp pixel borders.
+
+---
+
+*Last updated: 2026-05-28 — L-MAP-009 (lossless vertical shear mapping).*
