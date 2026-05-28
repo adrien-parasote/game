@@ -85,7 +85,7 @@ sub_types: chest | lever | door | sign | animated_decor
 
 ## Rendering Pipeline
 `RenderManager.draw_scene()` → pre-computes `_frame_anim_all`/`_frame_anim_by_layer` (1x/frame)
-→ `draw_background()` → `_apply_partial_occlusion()` → `custom_draw()` → `draw_foreground() → OccludingRect` → `_apply_grass_wading()`
+→ `draw_background()` → `_apply_partial_occlusion()` → `_apply_grass_wading_to_images()` → `custom_draw()` → `draw_foreground() → OccludingRect`
 - **Partial Occlusion**: sprite rects ∩ foreground tiles (depth > sprite.depth) → composite with `OCCLUSION_ALPHA` (50%). Skips player during scripted intra-map walks.
 - **Grass Wading**: `MapManager.get_grass_tile_image_at()` at foot center → reblit grass over bottom 8px. Skips player during scripted walks.
 - **Test contract**: tests calling `draw_background()`/`draw_foreground()` directly must pre-populate `_frame_anim_by_layer`/`_frame_anim_all` (see A-PERF-002).
