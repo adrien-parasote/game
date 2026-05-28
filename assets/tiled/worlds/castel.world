@@ -1,0 +1,20 @@
+{
+    "maps": [
+        {
+            "fileName": "../maps/01-castel-ext.tmj",
+            "height": 1952,
+            "width": 1888,
+            "x": 0,
+            "y": 0
+        },
+        {
+            "fileName": "../maps/01-castel-place.tmj",
+            "height": 960,
+            "width": 1888,
+            "x": 0,
+            "y": -960
+        }
+    ],
+    "onlyShowAdjacentMaps": false,
+    "type": "world"
+}
