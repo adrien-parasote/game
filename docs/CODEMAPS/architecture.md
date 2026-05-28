@@ -85,5 +85,5 @@ scripts/
 - **Traceability**: `@pytest.mark.tc("DOMAIN-TYPE-ID")` markers — `docs/traceability.md`
 - **Pyright**: basic mode, `reportOptional*` suppressed. 0 errors/warnings.
 - **Path handling**: `pathlib.Path` throughout `src/` (55 `os.path.join` migrated, Step 11). `os` retained for `os.path.exists`/`makedirs`/`listdir`.
-- **Perf wins (commit `4a2e55e`)**: `_cached_world_time` (–335 allocs/frame), `_is_on_cache` (–334x brightness/frame), `_frame_anim_by_layer` (–311 generator calls/frame), surface pool (–3+ SRCALPHA allocs/frame). See `docs/ADRs/ADR-PERF-001..004`.
+- **Perf wins (commit `4a2e55e`)**: `_cached_world_time` (–335 allocs/frame), `_is_on_cache` (–334x brightness/frame), `_frame_anim_by_layer` (–311 generator calls/frame), surface pool (–3+ SRCALPHA allocs/frame). See `docs/game/ADRs/ADR-PERF-001..004`.
 - **Best practices (commit `f63574d`)**: DT clamp 100ms, text pre-render cache (HUD/Inventory/Chest), `@override` annotations, type aliases, `pathlib.Path`.
