@@ -64,4 +64,4 @@ docs/
 2. **Spec ↔ Blueprint pairing** — Each spec in `specs/` should link back to its strategic blueprint in `strategic/`, and vice versa.
 3. **New docs** — When creating documentation for new features, place it in `game/` or `tooling/` based on the table above.
 4. **Codemaps** — Auto-generated via `/update-codemaps`. Do not edit manually.
-5. **Traceability** — Auto-generated via `scripts/tc_report.py`. Do not edit manually.
+5. **Traceability** — Auto-generated via `scripts/dev/tc_report.py`. Do not edit manually.

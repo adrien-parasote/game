@@ -564,4 +564,21 @@ grep -rn 'i18n.get(' src/ --include="*.py" | grep -v "#"
 
 ---
 
-*Last updated: 2026-05-27 — added A-SPEC-004 from code-quality-constants-i18n cycle (i18n fallback strings missed in FR→EN grep scan).*
+### L-DOC-011 · 2026-05-28 · U · Perfect
+**Reorganizing developmental scripts in subfolders with mirrored test suites and auto-traceability**
+
+When reorganizing miscellaneous utility scripts into clean category folders (e.g. `scripts/dev/` and `scripts/build/`), always reorganize the corresponding test suite with a mirrored subfolder structure (e.g. `tests/scripts/build/test_release.py`). This guarantees test isolation, clean structure, and continuous validation.
+
+**Pattern:**
+1. **Parent Path Resolution**: Update relative path walk-ups inside the scripts (`os.path.dirname(__file__)` plus additional `..` levels) to preserve workspace root detection.
+2. **Test Mirroring**: Move tests to exact mirrored paths under `tests/scripts/<category>/` to satisfy automated test location expectations.
+3. **Lock Sync**: Update path mappings and compute SHA-256 hashes in `.tdd_lock` to prevent TDD sequence validation failures.
+4. **Auto-Traceability Matrix**: Rather than manually updating test paths in documentation, run the relocated traceability generator (e.g. `python3 scripts/dev/tc_report.py --markdown`) to automatically update `docs/traceability.md` references.
+
+**Evidence:** Relocation of 5 root utility scripts and tests to `scripts/dev/`, `scripts/build/`, and `tests/scripts/build/` with a perfect 324/324 test traceability match and 100% `verify.py` success.
+
+**Scope:** Universal
+
+---
+
+*Last updated: 2026-05-28 — added L-DOC-011 scripts folder urbanization pattern.*

@@ -5,7 +5,8 @@ import sys
 
 def get_version():
     """Extract and sys.stdout.write the game version from settings.json."""
-    config_path = os.path.join(os.path.dirname(__file__), "..", "settings.json")
+    # From scripts/build/get_version.py, go up two directories to reach workspace root
+    config_path = os.path.join(os.path.dirname(__file__), "..", "..", "settings.json")
     if not os.path.exists(config_path):
         print("Error: settings.json not found", file=sys.stderr)  # noqa
         sys.exit(1)

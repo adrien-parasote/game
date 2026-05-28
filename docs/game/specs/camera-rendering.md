@@ -625,7 +625,8 @@ src/
   map/
     manager.py
 scripts/
-  profile_game.py
+  dev/
+    profile_game.py
 tests/
   engine/
     test_render_manager.py

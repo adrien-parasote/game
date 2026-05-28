@@ -67,12 +67,15 @@ docs/
   specs/            21 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
   ADRs/             8 ADRs (ADR-001..008). ADR-008: FRect non-migration.
   strategic/        MASTER_ROADMAP.md, game_vision.md, best_practices_remediation_blueprint.md
-  traceability.md   Auto-generated (scripts/tc_report.py)
+  traceability.md   Auto-generated (scripts/dev/tc_report.py)
   codemaps/         Architecture maps (this directory)
 scripts/
-  autotiles/        Autotile pipeline
-  tc_report.py      Spec↔Test traceability (CLI + --markdown)
-  profile_game.py   Performance profiling
+  assets/           Asset processing (banners, diagonal walls)
+  autotiles/        Autotile pipeline (rpgmaker, blob autotiles)
+  calibration/      Calibration tools (halos)
+  build/            Build & release tools (release.py, get_version.py)
+  dev/              Development utilities (check_lengths.py, tc_report.py, profile_game.py)
+  sc-commit.sh      Commit helper script (Stream Coding sandbox)
 .agents/
   learnings/        6 domain files (methodology_and_docs, game_engine, audio_engine, ui, testing, map_rendering)
   learnings.md      Index by domain

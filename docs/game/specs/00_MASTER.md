@@ -223,7 +223,8 @@ This document serves as the Master Index and Architectural Registry for the 15 c
             test_save_menu.py
             test_pause_screen.py
         scripts/
-            test_release.py
+            build/
+                test_release.py
         test_chest_ui.py
         test_transfer_logic.py
         test_interaction.py

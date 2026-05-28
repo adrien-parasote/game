@@ -6,10 +6,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Add root to sys.path to import from scripts
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+# Add root to sys.path to import from scripts (go up 3 levels to reach workspace root)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
-from scripts.release import run_git_commands, update_version, validate_version
+from scripts.build.release import run_git_commands, update_version, validate_version
 
 
 @pytest.fixture
@@ -17,6 +17,7 @@ def test_settings(tmp_path):
     settings_path = tmp_path / "settings.json"
     settings_path.write_text(json.dumps({"version": "0.6.0"}))
     return str(settings_path)
+
 
 @pytest.mark.tc("TC-REL-01")
 def test_validate_version():
@@ -26,12 +27,14 @@ def test_validate_version():
     assert not validate_version("invalid")
     assert not validate_version("1.0")
 
+
 @pytest.mark.tc("TC-REL-02")
 def test_update_version(test_settings):
     update_version(test_settings, "0.6.1")
     with open(test_settings) as f:
         data = json.load(f)
         assert data["version"] == "0.6.1"
+
 
 @pytest.mark.tc("TC-REL-03")
 @patch("subprocess.run")
@@ -57,6 +60,7 @@ def test_run_git_commands(mock_run):
 
     # Check if git commands were called
     assert mock_run.call_count >= 5
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

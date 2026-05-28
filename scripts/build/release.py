@@ -12,6 +12,7 @@ def validate_version(version):
     pattern = r"^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$"
     return re.match(pattern, version) is not None
 
+
 def update_version(settings_path, new_version):
     """Update version in settings.json."""
     if not os.path.exists(settings_path):
@@ -27,6 +28,7 @@ def update_version(settings_path, new_version):
         f.write("\n")
     print(f"Bumped {settings_path} to version {new_version}")  # noqa: P5
 
+
 def run_command(cmd, dry_run=False):
     """Run a shell command and return its output."""
     if dry_run:
@@ -39,6 +41,7 @@ def run_command(cmd, dry_run=False):
         print(f"Error: {result.stderr}", file=sys.stderr)  # noqa: P5
         sys.exit(result.returncode)
     return result.stdout.strip()
+
 
 def run_git_commands(version, dry_run=False):
     """Run git add, commit, tag, and push."""
@@ -73,6 +76,7 @@ def run_git_commands(version, dry_run=False):
 
     print(f"Successfully released version {version} on branch {branch}")  # noqa: P5
 
+
 def main():
     parser = argparse.ArgumentParser(description="Release a new version of the game.")
     parser.add_argument("version", help="The new version string (e.g., 0.6.1)")
@@ -83,7 +87,8 @@ def main():
         print(f"Error: Invalid version format '{args.version}'. Must be x.y.z", file=sys.stderr)  # noqa: P5
         sys.exit(1)
 
-    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    # Go up 2 directories from scripts/build/release.py to reach workspace root
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     settings_path = os.path.join(root_dir, "settings.json")
 
     try:
@@ -96,6 +101,7 @@ def main():
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)  # noqa: P5
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

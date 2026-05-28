@@ -26,4 +26,4 @@ clean:
 	find . -type f -name "*.pyc" -delete
 
 version:
-	@$(PYTHON) scripts/get_version.py
+	@$(PYTHON) scripts/build/get_version.py

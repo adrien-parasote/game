@@ -50,7 +50,7 @@ make run    # Start the engine
 We maintain an **80%+ test coverage** and enforce strict quality gates.
 
 - **Run Tests**: `make test` or `pytest tests/`
-- **Traceability Report**: `python scripts/tc_report.py` (Verify spec coverage)
+- **Traceability Report**: `python scripts/dev/tc_report.py` (Verify spec coverage)
 - **Linting**: `ruff check .`
 - **Static Analysis**: `pyright`
 

@@ -1,7 +1,7 @@
 # Technical Specification — Development Quality, Automation & Verification [Reference]
 
 > **Document Type:** Reference
-> **Source Files:** `scripts/release.py`, `src/config.py`, `src/engine/game.py`, `src/entities/groups.py`, `tests/conftest.py`
+> **Source Files:** `scripts/build/release.py`, `src/config.py`, `src/engine/game.py`, `src/entities/groups.py`, `tests/conftest.py`
 
 This reference specification consolidates the development quality gates, domain-driven test suite architectures, version release pipelines, internal debugging configurations, and multilingual translation dictionaries.
 
@@ -86,7 +86,7 @@ tests/
 
 ## 4. SemVer Release Automation
 
-Version updates are automated via the `scripts/release.py` workflow:
+Version updates are automated via the `scripts/build/release.py` workflow:
 1. **Pre-checks**:
    - Verification that the working directory is clean (using git status --porcelain).
    - Semantic Versioning check of requested tag.
@@ -158,6 +158,6 @@ All technical features and in-game names must be mapped uniformly:
 ### 8.1 Release Automation Tests
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-REL-01 | `test_validate_version` | `../../tests/scripts/test_release.py` |
-| TC-REL-02 | `test_update_version` | `../../tests/scripts/test_release.py` |
-| TC-REL-03 | `test_run_git_commands` | `../../tests/scripts/test_release.py` |
+| TC-REL-01 | `test_validate_version` | `../../tests/scripts/build/test_release.py` |
+| TC-REL-02 | `test_update_version` | `../../tests/scripts/build/test_release.py` |
+| TC-REL-03 | `test_run_git_commands` | `../../tests/scripts/build/test_release.py` |
