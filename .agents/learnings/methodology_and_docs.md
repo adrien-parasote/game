@@ -581,4 +581,20 @@ When reorganizing miscellaneous utility scripts into clean category folders (e.g
 
 ---
 
-*Last updated: 2026-05-28 — added L-DOC-011 scripts folder urbanization pattern.*
+### A-AGENT-006 · 2026-05-28 · U · Minor Rework
+**Running directory-level batch scripts for single-file operations**
+
+Launching a utility script designed for directory-level batch processing (e.g., `flat_wall_to_diagonal.py` with `--input-dir`) directly on a shared folder containing multiple files will process all files, violating the user's intent to target a single file and wasting performance or corrupting existing outputs.
+
+**Anti-pattern:**
+Running batch processing scripts directly on a directory with multiple files when only one or a subset of files needs to be processed.
+
+**Fix:**
+If the script does not support single-file targeting, dynamically isolate the target file(s) by copying them into a temporary input directory, execute the script targeting that temporary directory, and clean up the temporary directory afterward.
+
+**Evidence:** Running `flat_wall_to_diagonal.py` on the shared `scripts/input` folder processed `asset1.png` and `asset2.png` along with `asset3.png`. Restricting execution to `asset3.png` was successfully achieved by creating `scripts/input_single/` containing only `asset3.png`.
+
+---
+
+*Last updated: 2026-05-28 — added L-DOC-011 scripts folder urbanization pattern, A-AGENT-006 directory-level batch isolation.*
+
