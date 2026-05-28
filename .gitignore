@@ -1,40 +1,84 @@
-# Python : Fichiers compilés et caches
+# ==============================================================================
+# 🐍 Python Build, Cache & Compilation
+# ==============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
-.pytest_cache/
-.coverage
 *.cpython*
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.nosexy/
 
-# Environnement virtuel (si tu en crées un)
+# ==============================================================================
+# 📦 Virtual Environments
+# ==============================================================================
 venv/
+.venv/
+env/
+ENV/
 .env
+.env.local
+.env.*.local
 
-# Système Mac
+# ==============================================================================
+# 🖥️ OS System Files
+# ==============================================================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
 
-# IDE (VS Code / Cursor)
+# ==============================================================================
+# 💻 IDEs & Editors (VS Code, Cursor, JetBrains)
+# ==============================================================================
 .vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
 
-#Logs
+# ==============================================================================
+# 🎮 Game & Tiled Specifics
+# ==============================================================================
+*.tiled-session
+*.tiled-project
+*.tiled-workspace
+
+# ==============================================================================
+# 💾 Player Saves (Local & Backup)
+# ==============================================================================
+saves/
+saves_migrated/
+
+# ==============================================================================
+# 🛠️ Tooling & Scripts (Stream Coding, Agent & Sentrux)
+# ==============================================================================
+# Logs
 logs/
 *.log
 
-#tiled
-*.tiled-session
-
-# Player saves (local only — never commit)
-saves/
-
-# Sentrux — generated baseline (re-create with: sentrux gate --save .)
+# Sentrux
 .sentrux/baseline.json
 *_output.*
-.tdd_lock
+
+# Stream Coding Sentinels & Locks
 .sc-*
-.specconformance
-.agents/cross-spec*
-saves_migrated/
-!saves_migrated/.gitkeep
-.agents/session-observations.jsonl
-.agents/cross_spec_report
+.tdd_lock
+
+# Agent runtime files (observations, state, custom specs)
 .agents/active_stage.json
+.agents/session-observations.jsonl
+.agents/cross-spec*
+.agents/cross_spec_report
+
+# Temporary isolated asset scripts workspace
+scripts/input_*
+scripts/output_*
