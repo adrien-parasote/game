@@ -12,15 +12,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-# Path to the script's directory so we can import it directly.
-SCRIPTS_DIR = Path(__file__).parent
-sys.path.insert(0, str(SCRIPTS_DIR))
-
-from rpgmaker_autotile_to_tiled import (  # noqa: E402
+from scripts.autotiles.rpgmaker_autotile_to_tiled import (
     _Q,
     TILE_COUNT,
     TILE_SIZE,
@@ -52,7 +44,7 @@ def _save_autotile(tmp_path: Path, **kwargs) -> Path:
 @pytest.mark.unit
 def test_ut001_no_args_exits_with_usage(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["rpgmaker_autotile_to_tiled.py"])
-    from rpgmaker_autotile_to_tiled import main  # noqa: PLC0415
+    from scripts.autotiles.rpgmaker_autotile_to_tiled import main  # noqa: PLC0415
 
     with pytest.raises(SystemExit) as exc:
         main()
@@ -68,7 +60,7 @@ def test_ut001_no_args_exits_with_usage(monkeypatch):
 def test_ut002_missing_file_exits(monkeypatch, tmp_path):
     missing = tmp_path / "nonexistent.png"
     monkeypatch.setattr(sys, "argv", ["rpgmaker_autotile_to_tiled.py", str(missing)])
-    from rpgmaker_autotile_to_tiled import main  # noqa: PLC0415
+    from scripts.autotiles.rpgmaker_autotile_to_tiled import main  # noqa: PLC0415
 
     with pytest.raises(SystemExit) as exc:
         main()

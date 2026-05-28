@@ -11,10 +11,6 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-SCRIPTS_DIR = Path(__file__).parent
-sys.path.insert(0, str(SCRIPTS_DIR))
-
-WATER_PNG = SCRIPTS_DIR.parent / "water.png"
 BLOB_SLOTS = 47
 TILE_SIZE = 32
 
@@ -35,7 +31,7 @@ def _save(tmp_path: Path, width: int = 96, height: int = 128) -> Path:
 
 @pytest.mark.unit
 def test_ut001_assemble_tile_size():
-    from rpgmaker_blob_autotile_to_tiled import _build_blob_tile  # noqa
+    from scripts.autotiles.rpgmaker_blob_autotile_to_tiled import _build_blob_tile  # noqa
 
     frame = _synthetic(96, 128)
     tile = _build_blob_tile(frame, 255)  # bitmask 255 = fully surrounded
@@ -48,7 +44,7 @@ def test_ut001_assemble_tile_size():
 
 @pytest.mark.unit
 def test_ut002_blob_mask_diagonal_cleared():
-    from rpgmaker_blob_autotile_to_tiled import _blob_mask  # noqa
+    from scripts.autotiles.rpgmaker_blob_autotile_to_tiled import _blob_mask  # noqa
 
     # n=True, nw=True, w=False → nw doit être forcé à 0
     result = _blob_mask(nw=True, n=True, ne=False, w=False, e=False, sw=False, s=False, se=False)
@@ -68,7 +64,7 @@ def test_ut002_blob_mask_diagonal_cleared():
 
 @pytest.mark.unit
 def test_ut003_wang_id_full():
-    from rpgmaker_blob_autotile_to_tiled import _blob_wang_id  # noqa
+    from scripts.autotiles.rpgmaker_blob_autotile_to_tiled import _blob_wang_id  # noqa
 
     assert _blob_wang_id(255) == "1,1,1,1,1,1,1,1"
 
@@ -79,7 +75,7 @@ def test_ut003_wang_id_full():
 
 @pytest.mark.unit
 def test_ut004_wang_id_isolated():
-    from rpgmaker_blob_autotile_to_tiled import _blob_wang_id  # noqa
+    from scripts.autotiles.rpgmaker_blob_autotile_to_tiled import _blob_wang_id  # noqa
 
     assert _blob_wang_id(0) == "0,0,0,0,0,0,0,0"
 
@@ -90,7 +86,7 @@ def test_ut004_wang_id_isolated():
 
 @pytest.mark.unit
 def test_ut005_strip_size_static():
-    from rpgmaker_blob_autotile_to_tiled import _build_blob_strip  # noqa
+    from scripts.autotiles.rpgmaker_blob_autotile_to_tiled import _build_blob_strip  # noqa
 
     src = _synthetic(96, 128)
     strip = _build_blob_strip(src, n_frames=1)
@@ -103,7 +99,7 @@ def test_ut005_strip_size_static():
 
 @pytest.mark.unit
 def test_ut006_isolated_tile_assembled():
-    from rpgmaker_blob_autotile_to_tiled import _build_blob_strip  # noqa
+    from scripts.autotiles.rpgmaker_blob_autotile_to_tiled import _build_blob_strip  # noqa
 
     src = _synthetic(96, 128, color=(255, 0, 0, 255))
     strip = _build_blob_strip(src, n_frames=1)
@@ -120,7 +116,7 @@ def test_ut006_isolated_tile_assembled():
 
 @pytest.mark.unit
 def test_ut007_invalid_height(tmp_path):
-    from rpgmaker_blob_autotile_to_tiled import convert  # noqa
+    from scripts.autotiles.rpgmaker_blob_autotile_to_tiled import convert  # noqa
 
     src = _save(tmp_path, width=96, height=64)
     with pytest.raises(SystemExit) as exc:
@@ -134,7 +130,7 @@ def test_ut007_invalid_height(tmp_path):
 
 @pytest.mark.unit
 def test_ut008_invalid_width(tmp_path):
-    from rpgmaker_blob_autotile_to_tiled import convert  # noqa
+    from scripts.autotiles.rpgmaker_blob_autotile_to_tiled import convert  # noqa
 
     src = _save(tmp_path, width=100, height=128)
     with pytest.raises(SystemExit) as exc:
@@ -148,7 +144,7 @@ def test_ut008_invalid_width(tmp_path):
 
 @pytest.mark.integration
 def test_it001_static_pipeline(tmp_path):
-    from rpgmaker_blob_autotile_to_tiled import convert  # noqa
+    from scripts.autotiles.rpgmaker_blob_autotile_to_tiled import convert  # noqa
 
     src = _save(tmp_path, width=96, height=128)
     tsx = tmp_path / "grass.tsx"
@@ -184,7 +180,7 @@ def test_it001_static_pipeline(tmp_path):
 
 @pytest.mark.integration
 def test_it002_animated_pipeline_4_frames(tmp_path):
-    from rpgmaker_blob_autotile_to_tiled import convert  # noqa
+    from scripts.autotiles.rpgmaker_blob_autotile_to_tiled import convert  # noqa
 
     src = _save(tmp_path, width=384, height=128)
     tsx = tmp_path / "water.tsx"
@@ -215,7 +211,7 @@ def test_it002_animated_pipeline_4_frames(tmp_path):
 
 @pytest.mark.integration
 def test_it003_bitmask_255_is_slot_46():
-    from rpgmaker_blob_autotile_to_tiled import BITMASK_TO_IDX  # noqa
+    from scripts.autotiles.rpgmaker_blob_autotile_to_tiled import BITMASK_TO_IDX  # noqa
 
     assert BITMASK_TO_IDX.get(255) == 46
 
@@ -226,7 +222,7 @@ def test_it003_bitmask_255_is_slot_46():
 
 @pytest.mark.integration
 def test_it004_image_source_relative(tmp_path):
-    from rpgmaker_blob_autotile_to_tiled import convert  # noqa
+    from scripts.autotiles.rpgmaker_blob_autotile_to_tiled import convert  # noqa
 
     src = _save(tmp_path, width=96, height=128)
     tsx = tmp_path / "tilesets" / "t.tsx"

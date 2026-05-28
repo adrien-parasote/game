@@ -9,16 +9,12 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-# Import the modules under test (will fail with ImportError initially, showing RED state)
-try:
-    from scripts.assets.flat_wall_to_diagonal import (
-        apply_vertical_shear,
-        convert_image_file,
-        parse_arguments,
-    )
-except ImportError:
-    # Handle the TDD RED state before the module exists
-    pass
+# Import the modules under test
+from scripts.assets.flat_wall_to_diagonal import (
+    apply_vertical_shear,
+    convert_image_file,
+    parse_arguments,
+)
 
 
 # ── UT-001: Path Resolution & CLI Arguments ───────────────────────────────────
@@ -26,11 +22,6 @@ except ImportError:
 
 def test_ut_001_parse_arguments_defaults():
     """Verify default CLI arguments are resolved correctly."""
-    # Since we might not be able to import yet in the TDD RED phase,
-    # we dynamically check if the function is defined. If not, we fail (RED).
-    if "parse_arguments" not in globals():
-        pytest.fail("TDD RED state: flat_wall_to_diagonal.py does not exist yet.")
-
     args = parse_arguments([])
     assert args.direction == "both"
     assert Path(args.input_dir).name == "input"
@@ -39,9 +30,6 @@ def test_ut_001_parse_arguments_defaults():
 
 def test_ut_001_parse_arguments_custom():
     """Verify custom CLI arguments override defaults."""
-    if "parse_arguments" not in globals():
-        pytest.fail("TDD RED state: flat_wall_to_diagonal.py does not exist yet.")
-
     args = parse_arguments(
         ["--input-dir", "custom/in", "--output-dir", "custom/out", "--direction", "nw-se"]
     )
@@ -55,9 +43,6 @@ def test_ut_001_parse_arguments_custom():
 
 def test_ut_002_missing_input_raises_error():
     """Verify that attempting to convert a non-existent file fails gracefully."""
-    if "convert_image_file" not in globals():
-        pytest.fail("TDD RED state: flat_wall_to_diagonal.py does not exist yet.")
-
     non_existent = Path("scripts/input/does_not_exist_xyz.png")
     out_dir = Path("assets/images/tilesets")
 
@@ -70,9 +55,6 @@ def test_ut_002_missing_input_raises_error():
 
 def test_ut_003_sheared_dimensions():
     """Verify sheared canvas dimensions are exactly W x (H + W)."""
-    if "apply_vertical_shear" not in globals():
-        pytest.fail("TDD RED state: flat_wall_to_diagonal.py does not exist yet.")
-
     # Create a test image of 32x96 (like asset1.png)
     test_img = Image.new("RGBA", (32, 96), (255, 0, 0, 255))
 
@@ -90,9 +72,6 @@ def test_ut_003_sheared_dimensions():
 
 def test_ut_004_nw_se_column_translation():
     """Verify that NW-SE column x of the source is shifted downwards by x pixels."""
-    if "apply_vertical_shear" not in globals():
-        pytest.fail("TDD RED state: flat_wall_to_diagonal.py does not exist yet.")
-
     # Create a 32x32 image with a single blue pixel at (0, 0) and green pixel at (31, 0)
     src = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
     src.putpixel((0, 0), (0, 0, 255, 255))  # Blue
@@ -116,9 +95,6 @@ def test_ut_004_nw_se_column_translation():
 
 def test_ut_005_ne_sw_column_translation():
     """Verify that NE-SW column x of the source is shifted downwards by W - 1 - x pixels."""
-    if "apply_vertical_shear" not in globals():
-        pytest.fail("TDD RED state: flat_wall_to_diagonal.py does not exist yet.")
-
     # Create a 32x32 image with a single blue pixel at (0, 0) and green pixel at (31, 0)
     src = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
     src.putpixel((0, 0), (0, 0, 255, 255))  # Blue
