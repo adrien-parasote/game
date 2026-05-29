@@ -55,7 +55,7 @@
                         }, 
                         {
                          "height":32,
-                         "id":45,
+                         "id":63,
                          "name":"spawn_player",
                          "opacity":1,
                          "properties":[
@@ -68,8 +68,8 @@
                          "type":"14-spawn_point",
                          "visible":true,
                          "width":32,
-                         "x":736,
-                         "y":1824
+                         "x":480,
+                         "y":672
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -1886,7 +1886,7 @@
          "y":0
         }],
  "nextlayerid":10,
- "nextobjectid":62,
+ "nextobjectid":64,
  "orientation":"orthogonal",
  "properties":[
         {
