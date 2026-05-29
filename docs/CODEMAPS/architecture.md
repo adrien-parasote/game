@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-27 | Last doc-update: 2026-05-27 (Steps 1-11 remédiation) | Files scanned: 73 | Token estimate: ~1400 -->
+<!-- Generated: 2026-05-27 | Last doc-update: 2026-05-29 (pixel-perfect occlusion) | Files scanned: 73 | Token estimate: ~1400 -->
 
 # Game Engine Architecture
 
@@ -17,7 +17,7 @@
 |---|---|---|---|
 | **GameStateManager** | `src/engine/game_state_manager.py` | 309 | State machine (TITLE/PLAYING/PAUSED), global event routing, save/load orchestration |
 | **Game** | `src/engine/game.py` | 420 | Gameplay orchestrator, thin wrappers to sub-managers |
-| **RenderManager** | `src/engine/render_manager.py` | 521 | Scene rendering (background/foreground/HUD/occlusion/wading). `draw_foreground()→OccludingRect`. Frame-anim pre-computed 1x/frame. |
+| **RenderManager** | `src/engine/render_manager.py` | 597 | Scene rendering (background/foreground/HUD/occlusion/wading). `draw_foreground()→OccludingRect(Rect,depth,Surface\|None)`. `_create_composite_occlusion_surface()` applies `BLEND_RGBA_MULT` directly on composite for pixel-perfect partial-tile alpha. Frame-anim pre-computed 1x/frame. |
 | **InteractionManager** | `src/engine/interaction.py` | 400 | Proximity/facing checks (objects, NPCs, pickups, chests, emotes, teleporters) |
 | **EntityFactory** | `src/engine/entity_factory.py` | 265 | Entity spawning (interactive, teleport, NPC, pickup). Pattern: `EntityFactory(game: Any)`. |
 | **MapLoader** | `src/engine/map_loader.py` | 115 | Map loading pipeline (parse, BGM, cleanup, spawn, player position) |
@@ -28,7 +28,7 @@
 | **MapManager** | `src/map/manager.py` | 191 | Layer surfaces, TMJ state, collision tile queries |
 | **TmjParser** | `src/map/tmj_parser.py` | 263 | TMJ/TSX parsing → structured `map_data` dict |
 | **CameraGroup** | `src/entities/groups.py` | 121 | Y-sorted rendering, camera offset, dirty-flag sort cache |
-| **AssetManager** | `src/engine/asset_manager.py` | 76 | Singleton image/font cache with per-map clear |
+| **AssetManager** | `src/engine/asset_manager.py` | 125 | Singleton image/font cache with per-map clear. `get_occlusion_mask(tile_surf)→Surface\|None`: BLEND_RGBA_MULT modulation mask cached by `id(tile_surf)`, built once at load time (A=OCCLUSION_ALPHA where opaque, A=255 where transparent). Cleared in `clear_cache()`. |
 | **I18nManager** | `src/engine/i18n.py` | 58 | Singleton translation lookup via nested key paths |
 
 ## Key Subsystems
@@ -84,7 +84,7 @@ scripts/
 ## Tech Stack
 - **Engine**: Python 3.13+, Pygame-CE 2.5.7 (SDL 2.32.10)
 - **Data**: Tiled (TMJ/TSX), JSON (settings, i18n, loot tables, saves)
-- **Tests**: Pytest 9.0.3 — **1094 tests** across `tests/{engine,entities,graphics,map,ui,scripts}/`
+- **Tests**: Pytest 9.0.3 — **1126 tests** across `tests/{engine,entities,graphics,map,ui,scripts}/`
 - **Traceability**: `@pytest.mark.tc("DOMAIN-TYPE-ID")` markers — `docs/traceability.md`
 - **Pyright**: basic mode, `reportOptional*` suppressed. 0 errors/warnings.
 - **Path handling**: `pathlib.Path` throughout `src/` (55 `os.path.join` migrated, Step 11). `os` retained for `os.path.exists`/`makedirs`/`listdir`.

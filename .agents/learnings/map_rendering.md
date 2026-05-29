@@ -567,3 +567,59 @@ The spec §4.6 anti-pattern "Blit to surface — never touch sprite.image" was p
 ---
 
 *Last updated: 2026-05-28 — L-REND-006 (post-draw Y-sort violation), A-REND-002 (mutation vs swap-and-restore distinction).*
+
+---
+
+### L-REND-007 · 2026-05-29 · U · Major Rework
+**BLEND_RGBA_MULT must be applied directly on the destination surface containing the target pixels**
+
+When using `BLEND_RGBA_MULT` to selectively reduce sprite alpha (pixel-perfect tile occlusion), the blit must target the surface that **already contains the opaque sprite pixels**, not an intermediate helper surface.
+
+**Pattern:**
+```python
+# 1. composite already has opaque sprite pixels (A=255 for body)
+composite.fill((0, 0, 0, 0))
+composite.blit(sprite.image, (0, 0))
+
+# 2. _alpha_surf carries the mask crop — pure crop helper, not the target
+self._alpha_surf.fill((0, 0, 0, 0))
+self._alpha_surf.blit(mask, (0, 0), area=tile_crop_rect)  # RGB=255, A=OCCL_ALPHA or 255
+
+# 3. BLEND_RGBA_MULT DIRECTLY on composite — this is the critical step
+composite.blit(self._alpha_surf, local_rect.topleft, special_flags=pygame.BLEND_RGBA_MULT)
+# Result: composite.A = sprite.A × mask.A / 255
+#   opaque tile pixel  (mask.A=102): 255×102/255 = 102 ✓
+#   transparent pixel  (mask.A=255): 255×255/255 = 255 ✓
+```
+
+**Why this works:** The mask never has A=0, so the result can never be invisible. No `set_alpha()` state is involved. The operation is purely on per-pixel data of a surface that already holds the correct pixels.
+
+**Why the inverse failed:** Applying BLEND_RGBA_MULT on the **intermediate** SRCALPHA helper (`_alpha_surf`) that is later blitted onto a cleared zone introduces `set_alpha()` residual state from previous frames (since `_alpha_surf` is reused). On macOS/SDL2, `set_alpha(None)` after `set_alpha(OCCLUSION_ALPHA)` does not always reliably clear the global alpha before BLEND_RGBA_MULT executes, causing non-deterministic A=0 (invisible) or A=255 (unoccluded) per-frame.
+
+**Evidence:** 3 runtime bugs (invisible sprite, unoccluded sprite, flickering during movement) fixed in a single refactor. 1126/1126 tests pass. User verified visually in-game.
+
+---
+
+### A-REND-003 · 2026-05-29 · U · Major Rework
+**BLEND_RGBA_MULT on a reused SRCALPHA intermediate surface with set_alpha() residual state is non-deterministic on macOS/SDL2**
+
+**Anti-pattern:**
+```python
+# ❌ Wrong: blit sprite pixels INTO _alpha_surf, then BLEND_RGBA_MULT on _alpha_surf
+composite.fill((0, 0, 0, 0), local_rect)       # clear composite zone
+self._alpha_surf.fill((0, 0, 0, 0))
+self._alpha_surf.blit(sprite.image, (0, 0), local_rect)
+self._alpha_surf.set_alpha(None)               # supposed to reset residual set_alpha(102)
+self._alpha_surf.blit(mask, ..., special_flags=BLEND_RGBA_MULT)  # modifies _alpha_surf
+composite.blit(self._alpha_surf, ...)          # blit onto cleared zone
+```
+
+**Why it fails:** `_alpha_surf` is reused across frames. When the classic path (mask=None) calls `set_alpha(OCCLUSION_ALPHA)` on it in one frame, and the mask path calls `set_alpha(None)` in the next, the SDL2 surface alpha state on macOS is not reliably reset before BLEND_RGBA_MULT executes. Result: per-frame non-deterministic A=0 (fully invisible) or A=255 (unoccluded). The cleared composite zone amplifies the bug: if `_alpha_surf` produces wrong pixels, the cleared zone is never restored.
+
+**Fix:** Never apply BLEND_RGBA_MULT on an intermediate surface. Apply it directly on the destination that already holds the target pixels. Never mix `set_alpha()` state management with BLEND_RGBA_MULT on the same SRCALPHA surface.
+
+**Evidence:** 3 visual bugs (invisible player, unoccluded player, per-frame flickering during movement across partial depth=2 tiles). Diagnosed after user reported visual regression. 1 rework pass. Root cause: macOS/SDL2 `set_alpha(None)` + BLEND_RGBA_MULT interaction.
+
+---
+
+*Last updated: 2026-05-29 — L-REND-007 (BLEND_RGBA_MULT direct on destination), A-REND-003 (BLEND_RGBA_MULT on reused SRCALPHA intermediate).*
