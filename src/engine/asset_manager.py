@@ -6,6 +6,7 @@ import pygame
 from src.engine.engine_constants import COLOR_PLACEHOLDER_MAGENTA
 
 
+
 class AssetManager:
     """
     Centralized cache for game assets (images, tilesets, sounds).
@@ -21,10 +22,12 @@ class AssetManager:
         return cls._instance
 
     def _init_manager(self):
-        self._images = {}
-        self._tilesets = {}
-        self._sounds = {}
-        self._fonts = {}
+        self._images: dict = {}
+        self._tilesets: dict = {}
+        self._sounds: dict = {}
+        self._fonts: dict = {}
+        # Maps id(tile_surface) → BLEND_RGBA_MULT modulation mask (or None for fully opaque tiles)
+        self._occlusion_masks: dict[int, pygame.Surface | None] = {}
 
     def get_image(self, path: str, fallback: bool = False) -> pygame.Surface:
         """Load, convert and cache an image."""
@@ -76,9 +79,47 @@ class AssetManager:
             except Exception:
                 return pygame.font.Font(None, size)
 
+    def get_occlusion_mask(self, tile_surf: pygame.Surface) -> pygame.Surface | None:
+        """Return the BLEND_RGBA_MULT modulation mask for a tile surface.
+
+        The mask is a SRCALPHA Surface where:
+        - RGB = (255, 255, 255) everywhere (neutral for BLEND_RGBA_MULT on colour channels)
+        - A = OCCLUSION_ALPHA for opaque tile pixels
+        - A = 255 for transparent tile pixels (no change to sprite)
+
+        Returns None if the tile is fully opaque (use classic set_alpha() code path).
+        Cache key: id(tile_surf) — stable because AssetManager caches image objects.
+        """
+        key = id(tile_surf)
+        if key not in self._occlusion_masks:
+            self._occlusion_masks[key] = self._build_occlusion_mask(tile_surf)
+        return self._occlusion_masks[key]
+
+    def _build_occlusion_mask(self, tile_surf: pygame.Surface) -> pygame.Surface | None:
+        """Compute the BLEND_RGBA_MULT modulation mask for a tile surface.
+
+        Pure pygame — uses get_at/set_at (load time only, never called at runtime).
+        Returns None if no transparent pixel is found (fully opaque tile).
+        """
+        from src.config import Settings  # local import to avoid circular deps
+
+        w, h = tile_surf.get_size()
+        has_transparency = False
+        mask = pygame.Surface((w, h), pygame.SRCALPHA)
+        for x in range(w):
+            for y in range(h):
+                tile_a = tile_surf.get_at((x, y)).a
+                if tile_a < 255:
+                    has_transparency = True
+                # Modulation: opaque tile pixel → darken sprite; transparent → preserve sprite
+                mod_a = Settings.OCCLUSION_ALPHA if tile_a > 0 else 255
+                mask.set_at((x, y), (255, 255, 255, mod_a))
+        return mask if has_transparency else None
+
     def clear_cache(self):
         """Clear all cached assets."""
         self._images.clear()
         self._tilesets.clear()
         self._sounds.clear()
         self._fonts.clear()
+        self._occlusion_masks.clear()

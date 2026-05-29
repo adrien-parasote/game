@@ -204,9 +204,10 @@ class TestOcclusionSkippedDuringWalk:
         assert isinstance(result, list) and len(result) > 0, (
             f"draw_foreground() must return non-empty list when player is occluded, got: {result!r}"
         )
-        assert isinstance(result[0], tuple) and len(result[0]) == 2
+        assert isinstance(result[0], tuple) and len(result[0]) == 3
         assert isinstance(result[0][0], pygame.Rect)
         assert isinstance(result[0][1], int)
+        # result[0][2] is tile_img: Surface or None
         assert len(occluded_blits) == 1, "occluded_image must be blit once"
         assert len(normal_blits) == 0, "normal tile image must NOT be used"
 
@@ -251,7 +252,7 @@ class TestDrawSceneOcclusionDuringWalk:
 
         # Stub out subsystem calls so draw_scene runs end-to-end
         rm.draw_background = MagicMock()
-        rm.draw_foreground = MagicMock(return_value=[(pygame.Rect(0, 0, 32, 32), 2)])  # reports occluded (new list contract)
+        rm.draw_foreground = MagicMock(return_value=[(pygame.Rect(0, 0, 32, 32), 2, None)])  # 3-tuple contract
         rm.draw_hud = MagicMock()
 
         player_image = MagicMock(name="player_image")

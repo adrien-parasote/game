@@ -135,10 +135,11 @@ def test_draw_foreground_occluding_tile_returns_tuple_list():
 
     assert isinstance(result, list)
     assert len(result) == 1
-    occ_rect, depth = result[0]
+    occ_rect, depth, tile_img = result[0]
     assert isinstance(occ_rect, pygame.Rect)
     assert depth == 2
     assert occ_rect == pygame.Rect(0, 0, 32, 32)  # screen_pos=(0,0), tile_size=32
+    assert isinstance(tile_img, pygame.Surface)  # tile image now included
 
 
 # ---------------------------------------------------------------------------
@@ -165,7 +166,7 @@ def test_draw_foreground_animated_tile_depth2_included():
     result = rm.draw_foreground()
 
     # The animated tile at depth=2 must be in the occluding list
-    assert any(depth == 2 for _, depth in result)
+    assert any(depth == 2 for _, depth, _ in result)
 
 
 
@@ -227,7 +228,7 @@ def test_apply_partial_occlusion_no_intersection_skips_sprite():
     game.visible_sprites.get_sorted_sprites.return_value = [sprite]
 
     rm = RenderManager(game)
-    occluding_rects = [(pygame.Rect(0, 0, 32, 32), 2)]  # tile at (0,0), depth=2
+    occluding_rects = [(pygame.Rect(0, 0, 32, 32), 2, None)]  # no tile image (legacy path)
     result = rm._apply_partial_occlusion(occluding_rects)
 
     assert result == {}  # No sprite was saved/modified
@@ -256,7 +257,7 @@ def test_apply_partial_occlusion_partial_intersection_creates_composite():
 
     rm = RenderManager(game)
     # Tile covers y=32..64 — intersects lower 16px of sprite (y=32..48)
-    occluding_rects = [(pygame.Rect(0, 32, 32, 32), 2)]
+    occluding_rects = [(pygame.Rect(0, 32, 32, 32), 2, None)]
     result = rm._apply_partial_occlusion(occluding_rects)
 
     assert sprite in result  # original saved
@@ -283,7 +284,7 @@ def test_apply_partial_occlusion_full_intersection_composite_all_alpha():
     game.visible_sprites.get_sorted_sprites.return_value = [sprite]
 
     rm = RenderManager(game)
-    occluding_rects = [(pygame.Rect(0, 0, 64, 64), 2)]  # tile much larger than sprite
+    occluding_rects = [(pygame.Rect(0, 0, 64, 64), 2, None)]  # tile much larger than sprite
     result = rm._apply_partial_occlusion(occluding_rects)
 
     assert sprite in result
@@ -311,8 +312,8 @@ def test_apply_partial_occlusion_two_tiles_both_applied():
     rm = RenderManager(game)
     # Two separate tiles, each covering part of the sprite
     occluding_rects = [
-        (pygame.Rect(0, 0, 32, 32), 2),   # top half of sprite
-        (pygame.Rect(0, 32, 32, 32), 2),  # bottom half of sprite
+        (pygame.Rect(0, 0, 32, 32), 2, None),   # top half of sprite
+        (pygame.Rect(0, 32, 32, 32), 2, None),  # bottom half of sprite
     ]
     result = rm._apply_partial_occlusion(occluding_rects)
     assert sprite in result  # composite was generated
@@ -334,7 +335,7 @@ def test_apply_partial_occlusion_same_depth_no_occlusion():
     game.visible_sprites.get_sorted_sprites.return_value = [sprite]
 
     rm = RenderManager(game)
-    occluding_rects = [(pygame.Rect(0, 0, 32, 32), 2)]  # tile_depth == sprite_depth
+    occluding_rects = [(pygame.Rect(0, 0, 32, 32), 2, None)]  # tile_depth == sprite_depth
     result = rm._apply_partial_occlusion(occluding_rects)
 
     assert result == {}  # Not occluded
@@ -368,7 +369,7 @@ def test_apply_partial_occlusion_walk_active_skips_player_only():
     game.visible_sprites.get_sorted_sprites.return_value = [player_sprite, npc_sprite]
 
     rm = RenderManager(game)
-    occluding_rects = [(pygame.Rect(0, 0, 64, 64), 2)]
+    occluding_rects = [(pygame.Rect(0, 0, 64, 64), 2, None)]
     result = rm._apply_partial_occlusion(occluding_rects)
 
     # Player skipped — NPC processed
@@ -399,7 +400,7 @@ def test_it001_draw_foreground_triggers_partial_occlusion():
     game._intra_walk_target = None
 
     rm = RenderManager(game)
-    occluding = [(pygame.Rect(0, 0, 32, 32), 2)]
+    occluding = [(pygame.Rect(0, 0, 32, 32), 2, None)]
 
     with patch.object(rm, 'draw_foreground', return_value=occluding), \
          patch.object(rm, '_apply_partial_occlusion', return_value={}) as mock_apo:
@@ -438,7 +439,7 @@ def test_it002_npc_semi_occluded_swap_and_restore():
     composite_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
 
     rm = RenderManager(game)
-    occluding = [(pygame.Rect(0, 0, 32, 32), 2)]
+    occluding = [(pygame.Rect(0, 0, 32, 32), 2, None)]
 
     # _apply_partial_occlusion swaps image and returns the saved dict
     with patch.object(rm, 'draw_foreground', return_value=occluding), \
@@ -477,7 +478,7 @@ def test_it003_scripted_walk_skips_player_but_processes_npcs():
     game.visible_sprites.get_sorted_sprites.return_value = [player_sprite, npc_sprite]
 
     rm = RenderManager(game)
-    occluding_rects = [(pygame.Rect(0, 0, 64, 64), 2)]
+    occluding_rects = [(pygame.Rect(0, 0, 64, 64), 2, None)]
     result = rm._apply_partial_occlusion(occluding_rects)
 
     assert player_sprite not in result  # player skipped
@@ -510,9 +511,10 @@ def test_it004_draw_foreground_returns_list_not_bool():
     assert result is not True  # explicit: must never be bool True
     assert result is not False  # explicit: must never be bool False
     for item in result:
-        assert isinstance(item, tuple) and len(item) == 2
+        assert isinstance(item, tuple) and len(item) == 3
         assert isinstance(item[0], pygame.Rect)
         assert isinstance(item[1], int)
+        # item[2] is tile_img: Surface or None
 
 
 # ===========================================================================
@@ -799,3 +801,179 @@ def test_grass_wading_does_not_blit_black_bar():
             color = composite.get_at((x, y))
             assert color.r > 200, \
                 f"Upper body pixel at ({x},{y}) was overwritten — expected red, got {color}"
+
+
+# ===========================================================================
+# PIXEL-PERFECT OCCLUSION — OCC-UT-001..005
+# ===========================================================================
+
+def _make_sprite_for_occ(image: pygame.Surface, rect: pygame.Rect, depth: int = 1):
+    """Helper: build a minimal sprite mock for occlusion tests."""
+    sprite = MagicMock()
+    sprite.image = image
+    sprite.rect = rect
+    sprite.depth = depth
+    return sprite
+
+
+# ---------------------------------------------------------------------------
+# OCC-UT-001 — Fully opaque tile: AssetManager returns None mask → classic path
+# ---------------------------------------------------------------------------
+def test_occ_ut001_fully_opaque_tile_mask_is_none():
+    """OCC-UT-001: get_occlusion_mask returns None for a fully opaque tile surface.
+    No transparent pixel → mask unnecessary → classic set_alpha() code path.
+    """
+    from src.engine.asset_manager import AssetManager
+
+    # Fully opaque tile — no alpha < 255
+    opaque_surf = pygame.Surface((32, 32), pygame.SRCALPHA)
+    opaque_surf.fill((200, 100, 50, 255))
+
+    am = AssetManager()
+    # Ensure no stale cache entry for this surface
+    am._occlusion_masks.pop(id(opaque_surf), None)
+
+    mask = am.get_occlusion_mask(opaque_surf)
+    assert mask is None, "Fully opaque tile must return None mask (classic code path)"
+
+
+# ---------------------------------------------------------------------------
+# OCC-UT-002 — Half-transparent tile: only the opaque half of the sprite is occluded
+# ---------------------------------------------------------------------------
+def test_occ_ut002_partial_tile_only_opaque_half_occluded():
+    """OCC-UT-002: Tile with left half transparent (A=0) and right half opaque (A=255).
+    After occlusion, sprite pixels at x < 16 keep alpha=255; pixels at x >= 16 get OCCLUSION_ALPHA.
+    """
+    from src.config import Settings
+    from src.engine.asset_manager import AssetManager
+
+    tile_size = 32
+    # Build partial tile: left 16px transparent, right 16px opaque
+    partial_tile = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
+    partial_tile.fill((0, 0, 0, 0))           # fully transparent base
+    right_rect = pygame.Rect(16, 0, 16, 32)
+    partial_tile.fill((150, 100, 50, 255), right_rect)  # right half opaque
+
+    # Flush stale cache for this surface
+    am = AssetManager()
+    am._occlusion_masks.pop(id(partial_tile), None)
+
+    mask = am.get_occlusion_mask(partial_tile)
+    assert mask is not None, "Partial tile must return a non-None mask"
+
+    # Verify mask modulation values
+    # Left half (transparent tile) → A=255 (no change to sprite)
+    for x in range(0, 16):
+        mod_a = mask.get_at((x, 0)).a
+        assert mod_a == 255, f"Left half pixel ({x},0) should have A=255, got {mod_a}"
+
+    # Right half (opaque tile) → A=OCCLUSION_ALPHA
+    for x in range(16, 32):
+        mod_a = mask.get_at((x, 0)).a
+        assert mod_a == Settings.OCCLUSION_ALPHA, (
+            f"Right half pixel ({x},0) should have A={Settings.OCCLUSION_ALPHA}, got {mod_a}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# OCC-UT-003 — NPC behind partial tile: treated identically to player
+# ---------------------------------------------------------------------------
+def test_occ_ut003_npc_partial_tile_same_as_player():
+    """OCC-UT-003: _apply_partial_occlusion treats an NPC sprite behind a partial tile
+    identically to the player — no special-casing per entity type.
+    """
+    game = MagicMock()
+    game.visible_sprites.offset = pygame.math.Vector2(0, 0)
+    game.player.depth = 1
+    game._intra_walk_target = None
+
+    # NPC sprite — not the player object
+    npc_image = pygame.Surface((32, 48), pygame.SRCALPHA)
+    npc_image.fill((0, 180, 0, 255))
+    npc = MagicMock()
+    npc.image = npc_image
+    npc.rect = pygame.Rect(0, 16, 32, 32)  # visual_rect bottom at y=48
+    npc.depth = 1
+    # Ensure npc is NOT game.player
+    game.player = MagicMock()
+    game.player.depth = 1
+    game.player.rect = pygame.Rect(200, 200, 32, 32)
+
+    game.visible_sprites.get_sorted_sprites.return_value = [npc]
+
+    rm = RenderManager(game)
+    # Tile covers upper portion of NPC visual rect
+    partial_tile_surf = pygame.Surface((32, 32), pygame.SRCALPHA)
+    partial_tile_surf.fill((100, 100, 100, 255))  # opaque tile
+    occluding_rects = [(pygame.Rect(0, 0, 32, 32), 2, partial_tile_surf)]
+
+    result = rm._apply_partial_occlusion(occluding_rects)
+
+    assert npc in result, "NPC sprite must be occluded by partial tile (same as player)"
+    assert result[npc] is npc_image, "Original NPC image must be saved"
+    assert npc.image is not npc_image, "NPC image must be replaced with composite"
+
+
+# ---------------------------------------------------------------------------
+# OCC-UT-004 — Animated tile frame: each frame gets its own cache entry
+# ---------------------------------------------------------------------------
+def test_occ_ut004_animated_tile_frame_cached_by_id():
+    """OCC-UT-004: Two distinct frame surfaces get independent cache entries in AssetManager.
+    Changing frames does not reuse the wrong mask.
+    """
+    from src.engine.asset_manager import AssetManager
+
+    am = AssetManager()
+
+    # Frame 1: partially transparent
+    frame1 = pygame.Surface((32, 32), pygame.SRCALPHA)
+    frame1.fill((0, 0, 0, 0))
+    frame1.fill((255, 0, 0, 255), pygame.Rect(0, 0, 16, 32))  # left half opaque
+
+    # Frame 2: fully opaque (different object, different id)
+    frame2 = pygame.Surface((32, 32), pygame.SRCALPHA)
+    frame2.fill((0, 255, 0, 255))
+
+    # Flush stale entries
+    am._occlusion_masks.pop(id(frame1), None)
+    am._occlusion_masks.pop(id(frame2), None)
+
+    mask1 = am.get_occlusion_mask(frame1)
+    mask2 = am.get_occlusion_mask(frame2)
+
+    # frame1 is partial → non-None mask
+    assert mask1 is not None, "frame1 (partial) must produce a non-None mask"
+    # frame2 is fully opaque → None mask
+    assert mask2 is None, "frame2 (fully opaque) must produce None mask"
+
+    # Cache entries are independent
+    assert am._occlusion_masks[id(frame1)] is mask1
+    assert am._occlusion_masks.get(id(frame2)) is None
+
+
+# ---------------------------------------------------------------------------
+# OCC-UT-005 — AssetManager cache: _build_occlusion_mask called exactly once
+# ---------------------------------------------------------------------------
+def test_occ_ut005_asset_manager_cache_no_recompute():
+    """OCC-UT-005: Calling get_occlusion_mask twice with the same surface
+    only triggers _build_occlusion_mask once (cache hit on second call).
+    """
+    from src.engine.asset_manager import AssetManager
+
+    am = AssetManager()
+
+    partial_surf = pygame.Surface((32, 32), pygame.SRCALPHA)
+    partial_surf.fill((0, 0, 0, 0))
+    partial_surf.fill((80, 60, 40, 255), pygame.Rect(8, 8, 16, 16))  # centre opaque
+
+    # Flush any existing cache entry
+    am._occlusion_masks.pop(id(partial_surf), None)
+
+    with patch.object(am, '_build_occlusion_mask', wraps=am._build_occlusion_mask) as mock_build:
+        result1 = am.get_occlusion_mask(partial_surf)
+        result2 = am.get_occlusion_mask(partial_surf)
+
+    assert mock_build.call_count == 1, (
+        f"_build_occlusion_mask must be called exactly once, was called {mock_build.call_count} times"
+    )
+    assert result1 is result2, "Both calls must return the same cached Surface"

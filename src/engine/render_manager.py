@@ -1,10 +1,11 @@
 import pygame
 
 from src.config import Settings
+from src.engine.asset_manager import AssetManager
 
 # Python 3.12 type aliases — replace inline annotations used across multiple methods
 type BlitSequence = list[tuple[pygame.Surface, tuple[int, int]]]
-type OccludingRect = list[tuple[pygame.Rect, int]]
+type OccludingRect = list[tuple[pygame.Rect, int, pygame.Surface | None]]
 
 class RenderManager:
     """Handles all visual rendering logic for the game scene, decoupling it from the main event loop."""
@@ -83,6 +84,7 @@ class RenderManager:
                 occluding_rects.append((
                     pygame.Rect(screen_pos, (tile_size, tile_size)),
                     depth,
+                    tile_data.image,  # pixel-perfect mask resolved from tile image
                 ))
 
             if not walk_active and depth > player_depth:
@@ -114,11 +116,12 @@ class RenderManager:
                 if img:
                     screen_pos = (px + cam_offset.x, py + cam_offset.y)
                     anim_fg_blits.append((img, screen_pos))
-                    # Also add to occluding list — inert today (no anim tile has depth>1)
-                    # but will fire automatically when animated foreground tiles are created.
+                    # Current frame passed in tuple so pixel-perfect mask is resolved
+                    # per-frame by AssetManager (each frame Surface has a unique id).
                     occluding_rects.append((
                         pygame.Rect(screen_pos, (tile_size, tile_size)),
                         depth,
+                        img,
                     ))
         if anim_fg_blits:
             self.game.screen.fblits(anim_fg_blits)
@@ -172,10 +175,16 @@ class RenderManager:
         self,
         sprite,
         sprite_screen_rect: pygame.Rect,
-        intersections: list[pygame.Rect],
+        intersections: list[tuple[pygame.Rect, pygame.Rect, pygame.Surface | None]],
         used_composites: int,
     ) -> tuple[pygame.Surface, int]:
-        """Creates or reuses a composite surface from the pool for a single sprite."""
+        """Creates or reuses a composite surface from the pool for a single sprite.
+
+        For each intersection zone:
+        - If the tile image has a pixel-perfect mask (partial tile): apply BLEND_RGBA_MULT
+          so only pixels covered by opaque tile pixels are semi-transparent.
+        - If no mask (fully opaque tile or tile_img is None): classic uniform set_alpha().
+        """
         visual_size = sprite.image.get_size()
         # F4: Reuse or allocate a distinct surface from the pool for this specific sprite
         if used_composites < len(self._occlusion_pool):
@@ -190,7 +199,7 @@ class RenderManager:
         composite.fill((0, 0, 0, 0))
         composite.blit(sprite.image, (0, 0))  # full opaque copy
 
-        for isect in intersections:
+        for isect, occ_rect, tile_img in intersections:
             # pygame.Rect.clip() can return a zero-size rect for adjacent tiles.
             if isect.width <= 0 or isect.height <= 0:
                 continue
@@ -203,19 +212,45 @@ class RenderManager:
                 isect.height,
             )
 
-            # Clear the destination zone before blitting the alpha version.
-            # Without this, the existing opaque pixels would survive the blit.
-            composite.fill((0, 0, 0, 0), local_rect)
+            # Resolve pixel-perfect mask from AssetManager (cached by id(tile_img)).
+            mask = AssetManager().get_occlusion_mask(tile_img) if tile_img is not None else None
 
-            # F4: Sequentially reuse _alpha_surf since it is blitted immediately within the loop
-            if self._alpha_surf is None or self._alpha_surf.get_size() != local_rect.size:
-                self._alpha_surf = pygame.Surface(local_rect.size, pygame.SRCALPHA)
-            self._alpha_surf.fill((0, 0, 0, 0))
-            self._alpha_surf.blit(sprite.image, (0, 0), local_rect)
-            self._alpha_surf.set_alpha(Settings.OCCLUSION_ALPHA)
-            composite.blit(self._alpha_surf, local_rect.topleft)
+            if mask is None:
+                # Fully opaque tile (or no tile image): classic uniform alpha.
+                # Clear zone then reblit sprite at OCCLUSION_ALPHA — unchanged from prior approach.
+                composite.fill((0, 0, 0, 0), local_rect)
+                # F4: Sequentially reuse _alpha_surf — resized only when intersection changes
+                if self._alpha_surf is None or self._alpha_surf.get_size() != local_rect.size:
+                    self._alpha_surf = pygame.Surface(local_rect.size, pygame.SRCALPHA)
+                self._alpha_surf.fill((0, 0, 0, 0))
+                self._alpha_surf.blit(sprite.image, (0, 0), local_rect)
+                self._alpha_surf.set_alpha(Settings.OCCLUSION_ALPHA)
+                composite.blit(self._alpha_surf, local_rect.topleft)
+            else:
+                # Pixel-perfect: apply BLEND_RGBA_MULT DIRECTLY on the composite zone.
+                # composite already holds the opaque sprite pixels (A=255 for body).
+                # We blit the mask crop into _alpha_surf (just as a cropping helper),
+                # then BLEND_RGBA_MULT onto composite — no clear, no set_alpha juggling.
+                #   composite.A = sprite.A × mask.A / 255
+                #   → opaque tile pixel  (mask.A=OCCLUSION_ALPHA): sprite dims to OCCLUSION_ALPHA
+                #   → transparent tile pixel (mask.A=255):          sprite stays at 255
+                tile_crop_rect = pygame.Rect(
+                    isect.x - occ_rect.x,
+                    isect.y - occ_rect.y,
+                    isect.width,
+                    isect.height,
+                )
+                if self._alpha_surf is None or self._alpha_surf.get_size() != local_rect.size:
+                    self._alpha_surf = pygame.Surface(local_rect.size, pygame.SRCALPHA)
+                self._alpha_surf.fill((0, 0, 0, 0))
+                self._alpha_surf.blit(mask, (0, 0), area=tile_crop_rect)
+                composite.blit(
+                    self._alpha_surf, local_rect.topleft,
+                    special_flags=pygame.BLEND_RGBA_MULT,
+                )
 
         return composite, used_composites
+
 
     def _apply_partial_occlusion(
         self, occluding_rects: OccludingRect
@@ -264,8 +299,8 @@ class RenderManager:
             # Collect intersections with tiles strictly above this sprite's depth.
             # tile_depth > sprite_depth ensures same-depth tiles don't occlude.
             intersections = [
-                sprite_screen_rect.clip(occ_rect)
-                for occ_rect, tile_depth in occluding_rects
+                (sprite_screen_rect.clip(occ_rect), occ_rect, tile_img)
+                for occ_rect, tile_depth, tile_img in occluding_rects
                 if tile_depth > sprite_depth and sprite_screen_rect.colliderect(occ_rect)
             ]
             if not intersections:
