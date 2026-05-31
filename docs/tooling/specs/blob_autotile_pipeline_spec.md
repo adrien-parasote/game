@@ -30,6 +30,8 @@ The 16-tile edge-only script generates artifacts at **diagonal corners** because
 | SUBTILE | 16 | Half-tile in px |
 | TILE_SIZE | 32 | Tile in px |
 | BLOB_COUNT | 47 | Number of blob tiles (49 slots, 2 empty) |
+| BLOB_BITMASKS | tuple | 47 valid terrain bitmask values |
+| BLOB_COMBINATIONS | list | 49 quadrant combinations mapping to source sub-tiles |
 
 ---
 
@@ -67,7 +69,7 @@ BLOB_BITMASKS = (
 The 8-bit bitmask encodes neighbors: `NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, SE=128`
 
 **Blob Rule:** If a cardinal neighbor (N/E/S/W) is absent, its adjacent diagonals are ignored when constructing the sub-tile to prevent "tearing".
-The index is simply the position in `BLOB_BITMASKS`. There are exactly 47 slots per frame, without empty padding.
+The index is simply the position in `BLOB_BITMASKS`. There are exactly 49 slots per frame, including empty transparent padding at slots 41 and 48.
 
 ---
 
@@ -76,16 +78,18 @@ The index is simply the position in `BLOB_BITMASKS`. There are exactly 47 slots 
 ### PNG Strip
 
 ```
-Dimensions: (47 × 32) × 32 = 1504 × 32 px
-Tiles 0-46: BLOB_BITMASKS positions
+Dimensions: (49 × 32) × 32 = 1568 × 32 px
+Tiles 0-48: BLOB_COMBINATIONS positions (slots 41 and 48 are transparent spacer tiles)
 ```
 
 ### TSX XML
 
+The script generates the TSX dynamically using the following XML template, sourcing the Tiled version and Wang color from module-level constants `TILED_VERSION = "1.10.0"` and `WANG_COLOR = "#4488ff"` respectively:
+
 ```xml
-<tileset version="1.10" tiledversion="1.10.0"
+<tileset version="1.10" tiledversion="{tiled_version}"
          name="{stem}" tilewidth="32" tileheight="32"
-         tilecount="47" columns="47">
+         tilecount="49" columns="49">
   <image source="{rel_png}" width="1568" height="32"/>
 
   <!-- Animations (if N > 1): same logic as the animated script -->
@@ -99,8 +103,8 @@ Tiles 0-46: BLOB_BITMASKS positions
 
   <wangsets>
     <wangset name="{stem}" type="mixed" tile="-1">
-      <wangcolor name="{stem}" color="#4488ff" tile="-1" probability="1"/>
-      <!-- 47 wangtiles (slots 41 and 48 ignored) -->
+      <wangcolor name="{stem}" color="{wang_color}" tile="-1" probability="1"/>
+      <!-- 47 wangtiles (slots 41 and 48 omitted, no wangtile element) -->
       <wangtile tileid="{i}" wangid="{_blob_wang_id(bitmask)}"/>
     </wangset>
   </wangsets>
@@ -195,6 +199,68 @@ def _assemble_tile(frame, combo):
 
 ---
 
+## Constraints
+
+| Tier | Examples |
+|------|----------|
+| **Always do** | Run Python unit tests before completing execution; use pathlib.Path for all path manipulations; preserve 100% of horizontal pixel-art alignment (no horizontal scaling). |
+| **Ask first** | Adding dependencies outside Pillow (PIL) to requirements.txt or pyproject.toml; changing the CLI argument contract names. |
+| **Never do** | Commit raw image assets; use lossy compression (JPEG) for tileset outputs; apply horizontal interpolation or antialiasing (no fuzzy pixels). |
+
+---
+
+## Cross-Spec Contracts
+
+### Produces
+| Path / Identifier | Format | Schema location | Consumers |
+|---|---|---|---|
+| Target PNG strip | PNG (RGBA) | This spec § "PNG Strip" | Tiled Map Editor |
+| Target TSX XML | TSX (XML) | This spec § "TSX XML" | Tiled Map Editor |
+
+### Consumes
+| Path / Identifier | Format | Schema location | Producer |
+|---|---|---|---|
+| Source RPG Maker autotile | PNG (RGBA) | This spec § "Source RPG Maker XP Format (96×128)" | RPG Maker XP / Artist |
+
+### Public Interface
+| Type | Identifier | Documented at |
+|---|---|---|
+| CLI Command | `python3 scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py` | This spec § "CLI Interface" |
+| Public function | `convert` | This spec § "Algorithm" |
+
+### External Invocations
+| Type | Invoked | Defined in |
+|---|---|---|
+| Python Library | `PIL` | External library (Pillow) |
+
+### Tracked Concepts
+| Concept | Status in this spec | Mentioned in |
+|---|---|---|
+| 47-Tile Blob | Implemented | [asset_creator_spec.md](./asset_creator_spec.md#L1) |
+
+---
+
+## Project File Tree
+
+The following files are managed by this specification:
+```
+scripts/
+  autotiles/
+    rpgmaker_blob_autotile_to_tiled.py # [DEV-TOOL] Main blob autotile converter script
+assets/
+  images/
+    autotiles/
+      images/                          # [DEV-TOOL] Directory for image assets
+  tiled/
+    autotiles/
+      tilesets/                        # [DEV-TOOL] Directory for tileset TSXs
+third_party/
+  devium/
+    tiled-autotile/                    # [DEV-TOOL] Reference devium autotile repo
+```
+
+---
+
 ## Anti-patterns
 
 | # | Anti-pattern | Correct |
@@ -256,7 +322,7 @@ def _assemble_tile(frame, combo):
 **Expected:** BITMASK_TO_IDX[255] == 46
 
 ### IT-004 — Relative image in TSX
-**Input:** tsx in `tilesets/`, png in `images/`  
+**Input:** tsx in `autotiles/tilesets`, png in `autotiles/images`  
 **Expected:** `<image source>` is relative
 
 ---

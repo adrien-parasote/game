@@ -26,7 +26,7 @@ python3 scripts/autotiles/rpgmaker_autotile_to_tiled.py <input.png> [tsx_path] [
 
 | Positional | Required | Type | Behaviour |
 |------------|----------|------|-----------|
-| `input.png` | YES | file path | Source RPG Maker XP autotile. Must be exactly 96×128 px. |
+| `autotiles/input.png` | YES | file path | Source RPG Maker XP autotile. Must be exactly 96×128 px. |
 | `tsx_path` | NO | file path | Target `.tsx`. If omitted: `<input_dir>/<stem>_tiled.tsx`. Extension forced to `.tsx`. |
 | `png_path` | NO | file path | Target strip PNG. If omitted: `tsx_path` with `.png` extension. Extension forced to `.png`. |
 
@@ -97,15 +97,17 @@ For each of the 4 corners (`tl`, `tr`, `bl`, `br`), the rule is:
 
 ### TSX structure
 
+The script generates the TSX dynamically using the following XML template, sourcing the Tiled version and Wang color from module-level constants `TILED_VERSION = "1.10.0"` and `WANG_COLOR = "#55aa00"` respectively:
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.12.1" name="{stem}"
+<tileset version="1.10" tiledversion="{tiled_version}" name="{stem}"
          tilewidth="32" tileheight="32" spacing="0" margin="0"
          tilecount="16" columns="16">
   <image source="{relative_path_to_png}" width="512" height="32"/>
   <wangsets>
     <wangset name="{stem}" type="edge" tile="-1">
-      <wangcolor name="{stem}" color="#55aa00" tile="-1" probability="1"/>
+      <wangcolor name="{stem}" color="{wang_color}" tile="-1" probability="1"/>
       <wangtile tileid="0"  wangid="0,0,0,0,0,0,0,0"/>
       <wangtile tileid="1"  wangid="1,0,0,0,0,0,0,0"/>
       ...
@@ -131,7 +133,7 @@ For each of the 4 corners (`tl`, `tr`, `bl`, `br`), the rule is:
 | No CLI argument | `len(sys.argv) < 2` | 1 | Usage string with arg descriptions |
 | Input file missing | `Path.exists() == False` | 1 | `"ERROR: File not found: {input_path}"` |
 | Wrong image size | `src.size != (96, 128)` | 1 | `"ERROR: Expected 96×128 px autotile, got {w}×{h}."` |
-| I/O errors on write | *(not handled)* | unhandled exception | Python traceback |
+| I/O errors on write | Catch `OSError` | 1 | `"ERROR: Cannot write file: {e}"` |
 
 ---
 
@@ -198,6 +200,56 @@ python3 scripts/autotiles/rpgmaker_autotile_to_tiled.py <input> [tsx] [png]
 | **Always do** | Output TSX with `<image source>` as relative path; validate 96×128 size; force `.tsx`/`.png` extensions |
 | **Ask first** | Expanding to 47-tile blob mode; adding batch-processing; changing the Wang color scheme |
 | **Never do** | Overwrite the original source PNG; emit absolute paths in TSX |
+
+---
+
+## Cross-Spec Contracts
+
+### Produces
+| Path / Identifier | Format | Schema location | Consumers |
+|---|---|---|---|
+| Target PNG strip | PNG (RGBA) | This spec § "Purpose" | Tiled Map Editor |
+| Target TSX XML | TSX (XML) | This spec § "TSX structure" | Tiled Map Editor |
+
+### Consumes
+| Path / Identifier | Format | Schema location | Producer |
+|---|---|---|---|
+| Source RPG Maker autotile | PNG (RGBA) | This spec § "Purpose" | RPG Maker XP / Artist |
+
+### Public Interface
+| Type | Identifier | Documented at |
+|---|---|---|
+| CLI Command | `python3 scripts/autotiles/rpgmaker_autotile_to_tiled.py` | This spec § "CLI" |
+| Public function | `convert` | This spec § "Public Functions" |
+
+### External Invocations
+| Type | Invoked | Defined in |
+|---|---|---|
+| Python Library | `PIL` | External library (Pillow) |
+
+### Tracked Concepts
+| Concept | Status in this spec | Mentioned in |
+|---|---|---|
+| 16-Tile Edge-Only | Implemented | This spec |
+
+---
+
+## Project File Tree
+
+The following files are managed by this specification:
+```
+scripts/
+  autotiles/
+    rpgmaker_autotile_to_tiled.py      # [DEV-TOOL] Main autotile converter script
+assets/
+  images/
+    autotiles/
+      input.png                        # [DEV-TOOL] Input RPG Maker XP autotile (96x128)
+      foo.png                          # [DEV-TOOL] Generated PNG strip (512x32)
+  tiled/
+    autotiles/
+      foo.tsx                          # [DEV-TOOL] Generated Tiled TSX
+```
 
 ---
 
@@ -354,7 +406,7 @@ except OSError as e:
 
 **Location:** `main` path resolution
 
-**Problem:** If `sys.argv[2]` is `foo.png` (not `.tsx`), `Path.with_suffix(".tsx")` converts it to `foo.tsx`. But if `sys.argv[3]` is also `foo.tsx`, the PNG and TSX output to the same stem with different extensions — harmless. However, if user passes identical paths for both, `png_path == tsx_path.with_suffix(".png")` which is the default, so the default path logic is self-consistent. No action needed.
+**Problem:** If `sys.argv[2]` is `autotiles/foo.png` (not `.tsx`), `Path.with_suffix(".tsx")` converts it to `autotiles/foo.tsx`. But if `sys.argv[3]` is also `autotiles/foo.tsx`, the PNG and TSX output to the same stem with different extensions — harmless. However, if user passes identical paths for both, `png_path == tsx_path.with_suffix(".png")` which is the default, so the default path logic is self-consistent. No action needed.
 
 ---
 

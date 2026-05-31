@@ -16,7 +16,7 @@
 | **F1** | CLI tool with arguments `--input`, `--output-dir`, and `--direction` | Section 5.1 (CLI Reference) |
 | **F2** | Lossless column-by-column vertical shear PIL engine | Section 5.2 (Transformation Engine) |
 | **F3** | Slicing and layout compilation into $32\times32$ tilesets | Section 5.3 (Tiling Layout) |
-| **F4** | Batch processing of `asset1.png`, `asset2.png`, and `asset3.png` | Section 5.4 (Batch Pipeline) |
+| **F4** | Batch processing of `input/asset1.png`, `input/asset2.png`, and `input/asset3.png` | Section 5.4 (Batch Pipeline) |
 | **F5** | Gitignore configuration for untracked inputs and tracked folder | Section 5.5 (Git Safety) |
 
 ---
@@ -36,7 +36,7 @@
 | # | Assumption | Risk | Validation |
 |---|---|---|---|
 | 1 | $32\times32$ Grid Alignment | Low | Verified via PIL size check on input files |
-| 2 | Height scaling formula is $H + W$ | Low | Verified in Python prototype script |
+| 2 | Height scaling formula is $H + 32$ | Low | Verified in Python prototype script |
 | 3 | Pillow is installed in the system | Low | Verified by import check in python |
 
 ---
@@ -94,14 +94,23 @@ python3 scripts/assets/flat_wall_to_diagonal.py \
 * Default `--direction`: `both`.
 
 ### 5.2 Transformation Engine (Vertical Shear)
-The script uses column-by-column vertical shifting.
+The script uses column-by-column vertical shifting, applied per 32-pixel tile boundary to preserve coordinate alignment across multi-tile sheets.
 For a flat image source of size $W \times H$:
-1. Create a new transparent RGBA canvas of size $W \times (H + W)$.
-2. Loop over each column $x$ from $0$ to $W - 1$:
-   * Crop a $1$-pixel wide column at $x$ with height $H$: `col = src.crop((x, 0, x + 1, H))`
-   * **NW-to-SE (slope = 1.0):** Paste column `col` at $X = x$, $Y = x$.
-   * **NE-to-SW (slope = -1.0):** Paste column `col` at $X = x$, $Y = W - 1 - x$.
-3. Save the resulting image as lossless PNG (RGBA).
+
+1. **Validation:**
+   Verify that dimensions are multiples of 32:
+   ```python
+   if src.width % 32 != 0 or src.height % 32 != 0:
+       sys.exit(f"ERROR: Image dimensions must be multiples of 32, got {src.width}x{src.height}")
+   ```
+2. Create a new transparent RGBA canvas of size $W \times (H + 32)$.
+3. Loop over each tile column $c$ from $0$ to $(W / 32) - 1$:
+   * For each local column $dx$ from $0$ to $31$:
+     * Calculate global coordinate $x = c \times 32 + dx$.
+     * Crop a $1$-pixel wide column at $x$ with height $H$: `col = src.crop((x, 0, x + 1, H))`
+     * **NW-to-SE (slope = 1.0):** Paste column `col` at $X = x$, $Y = dx$.
+     * **NE-to-SW (slope = -1.0):** Paste column `col` at $X = x$, $Y = 31 - dx$.
+4. Save the resulting image as lossless PNG (RGBA).
 
 This lossless vertical shift preserves pixel boundaries perfectly, ensuring the pixel art style remains sharp (nearest-neighbor style, with zero blur or interpolation).
 
@@ -127,6 +136,9 @@ The following files are managed by this specification:
 scripts/
   input/
     .gitignore                        # [DEV-TOOL] Git ignore rules for raw inputs
+    asset1.png                        # [DEV-TOOL] Flat wall input asset 1
+    asset2.png                        # [DEV-TOOL] Flat wall input asset 2
+    asset3.png                        # [DEV-TOOL] Flat wall input asset 3
   assets/
     flat_wall_to_diagonal.py          # [DEV-TOOL] Main transformation python script
 assets/
@@ -138,6 +150,12 @@ assets/
       asset2_ne_sw.png                # [DEV-TOOL] Produced NE-SW diagonal window frame
       asset3_nw_se.png                # [DEV-TOOL] Produced NW-SE diagonal brick wall
       asset3_ne_sw.png                # [DEV-TOOL] Produced NE-SW diagonal brick wall
+docs/
+  tooling/
+    strategic/
+      diagonal_wall_blueprint.md      # [DOC] Strategic blueprint for diagonal wall tool
+requirements.txt                      # [CONFIG] Python dependencies
+pyproject.toml                        # [CONFIG] Python project settings
 ```
 
 ---
@@ -149,7 +167,7 @@ assets/
 | 1 | Rotational Resampling | Rotating the image by $45^\circ$ using standard rotation algorithms, which introduces sub-pixel sampling blur. | Use column-by-column cropping and pasting (vertical shear), translating pixels along whole-pixel boundaries with zero scaling. |
 | 2 | Horizontal Stretching | Stretching the horizontal width to match the diagonal hypotenuse length ($\approx 1.414 \times W$), which distorts patterns. | Keep horizontal columns exactly 1-pixel wide, relying on vertical shear slope to create the perspective incline naturally. |
 | 3 | Committing Untracked Assets | Forgetting to ignore input PNG files, resulting in committing heavy, untracked binary assets to the git repo. | Add `*` in `scripts/input/.gitignore` and ensure `git add` does not stage input PNGs. |
-| 4 | Hardcoded Paths | Hardcoding absolute paths like `/Users/adrien.parasote/` in the script, which breaks portability. | Resolve all paths relative to the script location or workspace root using `pathlib.Path(__file__).resolve()`. |
+| 4 | Hardcoded Paths | Hardcoding absolute paths like `/home/user/` in the script, which breaks portability. | Resolve all paths relative to the script location or workspace root using `pathlib.Path(__file__).resolve()`. |
 | 5 | Lossy Output Compilations | Saving output tilesets as JPEG or lossy PNG, creating compression artifacts around pixel edges. | Always save using `RGBA` format and lossless PNG compression (`Image.save(path, format='PNG')`). |
 
 ---
@@ -159,9 +177,9 @@ assets/
 ### Unit Tests (Minimum 5)
 * **UT-001 (Path Resolution):** Test that the CLI tool correctly parses relative paths and converts them to absolute paths relative to workspace root using `pathlib`.
 * **UT-002 (Input Verification):** Test that the tool detects missing input files and fails gracefully with a standard console error message.
-* **UT-003 (Lossless Dimensions):** Test that a flat input of width $W$ and height $H$ correctly produces an output canvas of width $W$ and height $H + W$.
-* **UT-004 (Column Shifting NW-SE):** Verify that the column $x$ of the source is pasted at Y-offset $x$ in the output image (pixel-by-pixel color verification).
-* **UT-005 (Column Shifting NE-SW):** Verify that the column $x$ of the source is pasted at Y-offset $W - 1 - x$ in the output image.
+* **UT-003 (Lossless Dimensions):** Test that a flat input of width $W$ and height $H$ correctly produces an output canvas of width $W$ and height $H + 32$.
+* **UT-004 (Column Shifting NW-SE):** Verify that the column $x$ of the source is pasted at Y-offset $x \pmod{32}$ in the output image (pixel-by-pixel color verification).
+* **UT-005 (Column Shifting NE-SW):** Verify that the column $x$ of the source is pasted at Y-offset $31 - (x \pmod{32})$ in the output image.
 
 ### Integration Tests (Minimum 3)
 * **IT-001 (Batch Directory Processing):** Verify that running the script with `--input-dir` containing multiple flat assets successfully batch converts all files in one execution.
