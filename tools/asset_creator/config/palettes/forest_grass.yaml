@@ -1,0 +1,11 @@
+name: forest_grass
+colors:
+  - "#2d5a1e"
+  - "#3e7c27"
+  - "#5a9e3a"
+  - "#7bc04f"
+roles:
+  shadow: 0
+  base: 1
+  highlight: 2
+  accent: 3

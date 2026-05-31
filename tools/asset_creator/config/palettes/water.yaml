@@ -1,0 +1,11 @@
+name: water
+colors:
+  - "#1a3a5c"
+  - "#2a5a8a"
+  - "#3a7ab8"
+  - "#5a9ad8"
+roles:
+  shadow: 0
+  base: 1
+  highlight: 2
+  accent: 3

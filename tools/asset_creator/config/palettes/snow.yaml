@@ -1,0 +1,11 @@
+name: snow
+colors:
+  - "#c8d8e8"
+  - "#dce8f0"
+  - "#eaf0f6"
+  - "#f5f8fc"
+roles:
+  shadow: 0
+  base: 1
+  highlight: 2
+  accent: 3

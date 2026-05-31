@@ -1,0 +1,70 @@
+terrains:
+  grass:
+    palette: forest_grass
+    texture:
+      type: noise
+      scale: 0.15
+      octaves: 3
+      persistence: 0.5
+      thresholds: [-0.2, 0.4, 0.8]
+    edge:
+      style: organic
+      width: 3
+      noise_scale: 0.3
+    border:
+      shadow_width: 1
+      highlight_width: 1
+
+  dirt:
+    palette: dry_dirt
+    texture:
+      type: noise
+      scale: 0.2
+      octaves: 2
+      persistence: 0.6
+      thresholds: [-0.2, 0.4, 0.8]
+    edge:
+      style: organic
+      width: 2
+      noise_scale: 0.25
+
+  paving_stone:
+    palette: stone_path
+    texture:
+      type: stippled
+      density: 0.5
+    edge:
+      style: straight
+      width: 2
+
+  sand:
+    palette: sand
+    texture:
+      type: noise
+      scale: 0.1
+      octaves: 2
+      persistence: 0.4
+      thresholds: [-0.2, 0.4, 0.8]
+    edge:
+      style: dithered
+      width: 4
+
+  snow:
+    palette: snow
+    texture:
+      type: stippled
+      density: 0.3
+    edge:
+      style: dithered
+      width: 3
+
+  water:
+    palette: water
+    texture:
+      type: noise
+      scale: 0.12
+      octaves: 2
+    edge:
+      style: organic
+      width: 2
+    # Note: V1 = static water only. V2 adds animated frames.

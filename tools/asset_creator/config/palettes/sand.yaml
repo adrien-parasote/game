@@ -1,0 +1,11 @@
+name: sand
+colors:
+  - "#c2a645"
+  - "#d4b85a"
+  - "#e6ca6f"
+  - "#f0d88a"
+roles:
+  shadow: 0
+  base: 1
+  highlight: 2
+  accent: 3
