@@ -14,7 +14,6 @@ exclude = [
     ".git",
     ".pytest_cache",
     ".ruff_cache",
-    "venv",
     "scripts"
 ]
 
@@ -35,7 +34,6 @@ max-statements = 50
 exclude = [
     "**/node_modules",
     "**/__pycache__",
-    "venv",
     "game/venv",
     "tools/venv",
     ".agents"
