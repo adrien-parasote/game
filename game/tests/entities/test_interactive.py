@@ -308,6 +308,7 @@ class TestInteractiveLightingCoverage:
     def _ent(self, is_on=True):
         """Build a minimal entity with lighting attributes."""
         from src.entities.interactive_lighting import InteractiveLightingMixin
+
         ent = MagicMock(spec=InteractiveLightingMixin)
         ent.is_on = is_on
         ent.halo_size = 48
@@ -328,6 +329,7 @@ class TestInteractiveLightingCoverage:
     def test_update_flicker_is_on(self):
         """L71-78 — _update_flicker updates f_scale when is_on."""
         from src.entities.interactive_lighting import InteractiveLightingMixin
+
         ent = self._ent(is_on=True)
         InteractiveLightingMixin._update_flicker(ent, dt=0.016, ticks_ms=1000)
         assert ent.f_scale != 0
@@ -335,6 +337,7 @@ class TestInteractiveLightingCoverage:
     def test_update_flicker_is_off_resets(self):
         """L98-99 — _update_flicker resets f_alpha/f_scale when off."""
         from src.entities.interactive_lighting import InteractiveLightingMixin
+
         ent = self._ent(is_on=False)
         InteractiveLightingMixin._update_flicker(ent, dt=0.016, ticks_ms=1000)
         assert ent.f_alpha == 1.0
@@ -343,6 +346,7 @@ class TestInteractiveLightingCoverage:
     def test_update_flicker_animated_source(self):
         """L71-78 — animated light source uses frame-based flicker."""
         from src.entities.interactive_lighting import InteractiveLightingMixin
+
         ent = self._ent(is_on=True)
         ent.is_light_source = True
         ent.is_animated = True
@@ -608,7 +612,7 @@ class TestBridgeSubtype:
 
 
 def _make_bridge_entity(tiled_width: int = 160, tiled_height: int = 224):
-    """Build a bridge entity using realistic Tiled dimensions (160×224 px)."""
+    """Build a bridge entity using realistic Tiled dimensions (160x224 px)."""
     group = pygame.sprite.Group()
     obstacles = pygame.sprite.Group()
     with patch("src.entities.interactive.SpriteSheet") as mock_ss:

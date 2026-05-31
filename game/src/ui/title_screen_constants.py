@@ -63,7 +63,7 @@ BG_LIGHT_COLOR = (255, 120, 20)
 HALO_DEBUG = False  # Set to True to re-enable calibration crosshairs
 
 # Mushroom bioluminescent glows — filled by scripts/apply_calibration.py
-# Format: (x, y, radius, (R, G, B))  — coords in logical 1280×720 space
+# Format: (x, y, radius, (R, G, B))  — coords in logical 1280x720 space
 MUSHROOM_LIGHTS = [
     (196, 520, 22, (70, 220, 200)),  # cyan large
     (217, 528, 22, (70, 220, 200)),  # cyan large

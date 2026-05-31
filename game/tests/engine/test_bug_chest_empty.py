@@ -8,12 +8,15 @@ from src.engine.game import Game
 
 @pytest.fixture(autouse=True)
 def skip_display_init():
-    with patch("pygame.display.set_mode") as mock_set_mode, \
-         patch("pygame.display.set_caption"), \
-         patch("pygame.display.toggle_fullscreen"), \
-         patch("pygame.display.update"):
+    with (
+        patch("pygame.display.set_mode") as mock_set_mode,
+        patch("pygame.display.set_caption"),
+        patch("pygame.display.toggle_fullscreen"),
+        patch("pygame.display.update"),
+    ):
         mock_set_mode.return_value.get_size.return_value = (800, 600)
         yield
+
 
 def test_chest_loot_is_loaded_correctly(tmp_path):
     """
@@ -22,18 +25,15 @@ def test_chest_loot_is_loaded_correctly(tmp_path):
     """
     # Create fake propertytypes.json
     prop_file = tmp_path / "propertytypes.json"
-    prop_file.write_text(json.dumps({
-        "potion_red": {"name": "Potion Rouge", "stack_max": 10}
-    }))
+    prop_file.write_text(json.dumps({"potion_red": {"name": "Potion Rouge", "stack_max": 10}}))
 
     # Create fake loot_table.json
     loot_file = tmp_path / "loot_table.json"
-    loot_file.write_text(json.dumps({
-        "chest_debug_1": [{"item_id": "potion_red", "quantity": 1}]
-    }))
+    loot_file.write_text(json.dumps({"chest_debug_1": [{"item_id": "potion_red", "quantity": 1}]}))
 
     # Patch os.path.join so game.py uses our tmp files instead of actual assets
     original_join = os.path.join
+
     def fake_join(*args):
         path = original_join(*args)
         if "propertytypes.json" in path:

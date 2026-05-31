@@ -2,6 +2,7 @@
 
 Validates and exports tileset strip PNG files for use in Tiled Map Editor.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -22,14 +23,10 @@ def validate_tileset(image: Image.Image, tile_size: int = TILE_SIZE) -> list[str
     errors: list[str] = []
 
     if image.height != tile_size:
-        errors.append(
-            f"Image height {image.height}px does not match tile size {tile_size}px"
-        )
+        errors.append(f"Image height {image.height}px does not match tile size {tile_size}px")
 
     if image.width % tile_size != 0:
-        errors.append(
-            f"Image width {image.width}px is not a multiple of tile size {tile_size}px"
-        )
+        errors.append(f"Image width {image.width}px is not a multiple of tile size {tile_size}px")
 
     if image.height == tile_size and image.width % tile_size == 0:
         tile_count = image.width // tile_size
@@ -66,9 +63,7 @@ def export_png(
     """
     errors = validate_tileset(tileset_image, tile_size)
     if errors:
-        raise ValueError(
-            "Tileset validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
-        )
+        raise ValueError("Tileset validation failed:\n" + "\n".join(f"  - {e}" for e in errors))
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

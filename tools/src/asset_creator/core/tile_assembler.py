@@ -1,12 +1,13 @@
 """Tile assembler for blob terrain tiles.
 
-Assembles 47 blob tiles (32×32) from a SubTileSet by decoding bitmasks
+Assembles 47 blob tiles (32x32) from a SubTileSet by decoding bitmasks
 and selecting the appropriate sub-tile for each quadrant.
 
 Bitmask layout: NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, SE=128.
 Wang ID order (Tiled): Top, TopRight, Right, BottomRight, Bottom,
                        BottomLeft, Left, TopLeft (L-MAP-002).
 """
+
 from __future__ import annotations
 
 from asset_creator.core.constants import (
@@ -21,6 +22,7 @@ from PIL import Image
 # ---------------------------------------------------------------------------
 # Sub-tile selection
 # ---------------------------------------------------------------------------
+
 
 def select_subtile(
     subtile_set: SubTileSet,
@@ -39,7 +41,7 @@ def select_subtile(
         diagonal: Whether the diagonal neighbor exists (NW, NE, SW, SE).
 
     Returns:
-        The selected 16×16 sub-tile image.
+        The selected 16x16 sub-tile image.
     """
     if cardinal_1 and cardinal_2:
         tile_type = SubTileType.FILL if diagonal else SubTileType.INNER_CORNER
@@ -54,6 +56,7 @@ def select_subtile(
 # ---------------------------------------------------------------------------
 # Bitmask decoding
 # ---------------------------------------------------------------------------
+
 
 def _decode_bitmask(bitmask: int) -> dict[str, bool]:
     """Decode a bitmask into neighbor flags.
@@ -76,10 +79,11 @@ def _decode_bitmask(bitmask: int) -> dict[str, bool]:
 # Tile assembly
 # ---------------------------------------------------------------------------
 
-def assemble_tile(subtile_set: SubTileSet, bitmask: int) -> Image.Image:
-    """Assemble one 32×32 tile from the sub-tile set based on bitmask.
 
-    Each tile is composed of 4 quadrants (16×16 each):
+def assemble_tile(subtile_set: SubTileSet, bitmask: int) -> Image.Image:
+    """Assemble one 32x32 tile from the sub-tile set based on bitmask.
+
+    Each tile is composed of 4 quadrants (16x16 each):
     - TL at (0,0): vertical=N, horizontal=W, diagonal=NW
     - TR at (16,0): vertical=N, horizontal=E, diagonal=NE
     - BL at (0,16): vertical=S, horizontal=W, diagonal=SW
@@ -90,7 +94,7 @@ def assemble_tile(subtile_set: SubTileSet, bitmask: int) -> Image.Image:
         bitmask: 8-bit neighbor bitmask.
 
     Returns:
-        A 32×32 RGBA tile image.
+        A 32x32 RGBA tile image.
     """
     neighbors = _decode_bitmask(bitmask)
 
@@ -98,29 +102,41 @@ def assemble_tile(subtile_set: SubTileSet, bitmask: int) -> Image.Image:
 
     # TL quadrant at (0,0): vertical=N, horizontal=W, diagonal=NW
     tl = select_subtile(
-        subtile_set, Quadrant.TL,
-        neighbors["n"], neighbors["w"], neighbors["nw"],
+        subtile_set,
+        Quadrant.TL,
+        neighbors["n"],
+        neighbors["w"],
+        neighbors["nw"],
     )
     tile.paste(tl, (0, 0))
 
     # TR quadrant at (SUBTILE_SIZE,0): vertical=N, horizontal=E, diagonal=NE
     tr = select_subtile(
-        subtile_set, Quadrant.TR,
-        neighbors["n"], neighbors["e"], neighbors["ne"],
+        subtile_set,
+        Quadrant.TR,
+        neighbors["n"],
+        neighbors["e"],
+        neighbors["ne"],
     )
     tile.paste(tr, (SUBTILE_SIZE, 0))
 
     # BL quadrant at (0,SUBTILE_SIZE): vertical=S, horizontal=W, diagonal=SW
     bl = select_subtile(
-        subtile_set, Quadrant.BL,
-        neighbors["s"], neighbors["w"], neighbors["sw"],
+        subtile_set,
+        Quadrant.BL,
+        neighbors["s"],
+        neighbors["w"],
+        neighbors["sw"],
     )
     tile.paste(bl, (0, SUBTILE_SIZE))
 
     # BR quadrant at (SUBTILE_SIZE,SUBTILE_SIZE): vertical=S, horizontal=E, diagonal=SE
     br = select_subtile(
-        subtile_set, Quadrant.BR,
-        neighbors["s"], neighbors["e"], neighbors["se"],
+        subtile_set,
+        Quadrant.BR,
+        neighbors["s"],
+        neighbors["e"],
+        neighbors["se"],
     )
     tile.paste(br, (SUBTILE_SIZE, SUBTILE_SIZE))
 
@@ -134,7 +150,7 @@ def assemble_tileset(subtile_set: SubTileSet) -> Image.Image:
         subtile_set: The set of 20 sub-tiles to compose from.
 
     Returns:
-        A (47×32, 32) RGBA strip image containing all blob tiles.
+        A (47x32, 32) RGBA strip image containing all blob tiles.
     """
     strip = Image.new("RGBA", (NUM_BLOB_TILES * TILE_SIZE, TILE_SIZE))
     for idx, bitmask in enumerate(BLOB_BITMASKS):
@@ -146,6 +162,7 @@ def assemble_tileset(subtile_set: SubTileSet) -> Image.Image:
 # ---------------------------------------------------------------------------
 # Wang ID generation
 # ---------------------------------------------------------------------------
+
 
 def blob_wang_id(bitmask: int) -> str:
     """Convert a bitmask to Tiled mixed-Wang wangid string.

@@ -31,7 +31,7 @@ class TestAssetManagerFontFallback:
         am._fonts = {}
 
         # Simuler un fichier existant mais Font() qui lève une Exception
-        with patch("src.engine.asset_manager.os.path.exists", return_value=True):
+        with patch("src.engine.asset_manager.os.path.exists", return_value=True):  # noqa: SIM117
             with patch("src.engine.asset_manager.pygame.font.Font") as mock_font_cls:
                 mock_font_cls.side_effect = Exception("corrupt font")
                 result = am.get_font("bad_font.ttf", 16)
@@ -54,7 +54,7 @@ class TestLootTableBranches:
 
         lt = LootTable()
         # Injecter directement via load() avec un JSON mocké
-        with patch("src.engine.loot_table.os.path.exists", return_value=True):
+        with patch("src.engine.loot_table.os.path.exists", return_value=True):  # noqa: SIM117
             with patch("builtins.open", create=True) as mock_open:
                 mock_open.return_value.__enter__ = lambda s: s
                 mock_open.return_value.__exit__ = lambda *a: None
@@ -72,7 +72,7 @@ class TestLootTableBranches:
         from src.engine.loot_table import LootTable
 
         lt = LootTable()
-        with patch("src.engine.loot_table.os.path.exists", return_value=True):
+        with patch("src.engine.loot_table.os.path.exists", return_value=True):  # noqa: SIM117
             with patch("builtins.open", create=True):
                 with patch("src.engine.loot_table.json.load") as mock_json:
                     mock_json.return_value = ["not", "a", "dict"]  # liste au lieu de dict
@@ -217,7 +217,7 @@ class TestRenderManagerBranches:
 
         screen = pygame.Surface((400, 400))
         # Ne doit pas lever
-        try:
+        try:  # noqa: SIM105
             rm._render_sprite_occlusion_pass(screen, pygame.Rect(0, 0, 400, 400))
         except Exception:
             pass  # méthode peut ne pas exister, on teste juste le no-crash
@@ -238,6 +238,7 @@ class TestInventoryDrawBranches:
     def test_inventory_draw_import(self):
         """Import de inventory_draw sans crash."""
         from src.ui import inventory_draw
+
         assert inventory_draw is not None
 
 
@@ -250,6 +251,7 @@ class TestInventoryInputBranches:
     def test_inventory_input_import(self):
         """Import de inventory_input sans crash."""
         from src.ui import inventory_input
+
         assert inventory_input is not None
 
 
@@ -275,6 +277,7 @@ class TestInteractiveHaloColorFallback:
             )
         # La couleur doit être le fallback (liste ou tuple valide)
         from src.entities.interactive import HALO_DEFAULT_COLOR
+
         assert entity.halo_color == HALO_DEFAULT_COLOR
 
 
@@ -289,4 +292,5 @@ class TestGameStateManagerBranches:
     def test_game_state_manager_import(self):
         """Import de game_state_manager sans crash."""
         from src.engine import game_state_manager
+
         assert game_state_manager is not None

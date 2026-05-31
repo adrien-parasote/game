@@ -59,7 +59,9 @@ def facing_toward(
     return (facing == "down" and dy > 0) or (facing == "up" and dy < 0)
 
 
-def _is_front_facing(o_dir: str, p_state: str, dx: float, dy: float, x_aligned: bool, y_aligned: bool) -> bool:
+def _is_front_facing(
+    o_dir: str, p_state: str, dx: float, dy: float, x_aligned: bool, y_aligned: bool
+) -> bool:
     if x_aligned:
         if o_dir == "up" and p_state == "down" and dy < 0:
             return True
@@ -73,7 +75,9 @@ def _is_front_facing(o_dir: str, p_state: str, dx: float, dy: float, x_aligned: 
     return False
 
 
-def _is_back_facing(o_dir: str, p_state: str, dx: float, dy: float, x_aligned: bool, y_aligned: bool) -> bool:
+def _is_back_facing(
+    o_dir: str, p_state: str, dx: float, dy: float, x_aligned: bool, y_aligned: bool
+) -> bool:
     if x_aligned:
         if o_dir == "up" and p_state == "up" and dy > 0:
             return True

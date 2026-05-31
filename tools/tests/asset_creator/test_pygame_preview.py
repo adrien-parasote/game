@@ -1,4 +1,5 @@
 """Tests for pygame preview module."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -19,16 +20,20 @@ mock_pygame.K_SPACE = 32
 mock_pygame.K_UP = 273
 mock_pygame.K_DOWN = 274
 
+
 @pytest.fixture
 def preview_module():
     """Fixture to safely patch pygame and import pygame_preview."""
     with patch.dict("sys.modules", {"pygame": mock_pygame}):
         from asset_creator.preview import pygame_preview
+
         yield pygame_preview
+
 
 def test_pygame_preview_import(preview_module) -> None:
     """Importing the pygame preview module succeeds with mocked pygame."""
     assert preview_module is not None
+
 
 def test_run_preview_quit(preview_module) -> None:
     """Test run_preview loop exits on QUIT event."""
@@ -44,6 +49,7 @@ def test_run_preview_quit(preview_module) -> None:
     mock_pygame.display.set_mode.assert_called()
     mock_pygame.quit.assert_called()
 
+
 def test_run_preview_escape(preview_module) -> None:
     """Test run_preview loop exits on Escape key."""
     image = Image.new("RGBA", (256, 256), "white")
@@ -57,10 +63,12 @@ def test_run_preview_escape(preview_module) -> None:
 
     mock_pygame.quit.assert_called()
 
+
 def test_run_preview_with_subtiles(preview_module) -> None:
     """Test run_preview handling subtiles."""
     image = Image.new("RGBA", (256, 256), "white")
     from asset_creator.core.subtile import SubTileSet
+
     subtiles = SubTileSet(tiles={})
 
     quit_event = MagicMock()

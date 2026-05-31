@@ -96,6 +96,7 @@ class TestSetupLighting:
     def test_setup_lighting_normal(self):
         """_setup_lighting remplit light_mask_cache avec LIGHT_MASK_CACHE_COUNT éléments."""
         from src.entities.interactive_constants import LIGHT_MASK_CACHE_COUNT
+
         ent = _make_mixin(halo_size=48)
         ent.light_mask_cache = []
         InteractiveLightingMixin._setup_lighting(ent)
@@ -104,6 +105,7 @@ class TestSetupLighting:
     def test_setup_lighting_zero_halo_uses_fallback(self):
         """Ligne 42 : scaled_size <= 0 => append self.light_mask (branche else)."""
         from src.entities.interactive_constants import LIGHT_MASK_CACHE_COUNT
+
         # halo_size=0 => int(round(0 * scale)) == 0 pour toutes les itérations
         ent = _make_mixin(halo_size=0)
         ent.light_mask = pygame.Surface((2, 2))

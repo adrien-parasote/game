@@ -5,6 +5,7 @@ import pygame
 if TYPE_CHECKING:
     from src.map.manager import MapManager
 
+
 class AnimationMapManager:
     """Handles the resolution of animated map tiles."""
 

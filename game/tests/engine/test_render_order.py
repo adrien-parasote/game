@@ -25,6 +25,7 @@ from src.engine.render_manager import RenderManager
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_render_manager():
     """Create a minimal RenderManager with mocked game object."""
     game = MagicMock()
@@ -51,6 +52,7 @@ def _make_render_manager():
 # ---------------------------------------------------------------------------
 # TC-RENDER-001: ordre de rendu par layer (statique + animé entrelacés)
 # ---------------------------------------------------------------------------
+
 
 class TestBackgroundLayerRenderOrder:
     """
@@ -94,11 +96,13 @@ class TestBackgroundLayerRenderOrder:
 
         # Animated chunks: only 00-layer has animated water tiles
         water_anim_img = MagicMock(name="water_anim_img")
+
         # get_visible_animated_chunks called with layer_id=7 → yields water
         # called with layer_id=8 → yields nothing
         def animated_chunks(viewport, layer_id=None):
             if layer_id is None or layer_id == 7:
                 yield (0, 0, 1001, 0)  # water tile on 00-layer, depth=0
+
         map_mgr.get_visible_animated_chunks.side_effect = animated_chunks
 
         rm.game.map_manager = map_mgr
@@ -109,8 +113,10 @@ class TestBackgroundLayerRenderOrder:
 
         # Track blit call order
         blit_order = []
+
         def track_blit(img, pos):
             blit_order.append(img)
+
         def track_fblits(lst):
             for img, _pos in lst:
                 blit_order.append(img)
@@ -142,6 +148,7 @@ class TestBackgroundLayerRenderOrder:
 # ---------------------------------------------------------------------------
 # TC-RENDER-002: draw_foreground skips occlusion during scripted walk
 # ---------------------------------------------------------------------------
+
 
 class TestOcclusionSkippedDuringWalk:
     """TC-RENDER-002: During intra-map scripted walk, draw_foreground must
@@ -199,10 +206,11 @@ class TestOcclusionSkippedDuringWalk:
         result = rm.draw_foreground()
 
         # New contract: returns list[tuple], not bool
-        assert isinstance(result, list) and len(result) > 0, (
+        assert isinstance(result, list) and len(result) > 0, (  # noqa: PT018
             f"draw_foreground() must return non-empty list when player is occluded, got: {result!r}"
         )
-        assert isinstance(result[0], tuple) and len(result[0]) == 3
+        assert isinstance(result[0], tuple)
+        assert len(result[0]) == 3
         assert isinstance(result[0][0], pygame.Rect)
         assert isinstance(result[0][1], int)
         # result[0][2] is tile_img: Surface or None
@@ -229,10 +237,10 @@ class TestOcclusionSkippedDuringWalk:
         assert len(normal_blits) == 1, "normal tile image must be used instead"
 
 
-
 # ---------------------------------------------------------------------------
 # TC-RENDER-003: draw_scene does not apply occlusion alpha to player during walk
 # ---------------------------------------------------------------------------
+
 
 class TestDrawSceneOcclusionDuringWalk:
     """TC-RENDER-003: When scripted walk is active, draw_scene must not call
@@ -250,7 +258,9 @@ class TestDrawSceneOcclusionDuringWalk:
 
         # Stub out subsystem calls so draw_scene runs end-to-end
         rm.draw_background = MagicMock()
-        rm.draw_foreground = MagicMock(return_value=[(pygame.Rect(0, 0, 32, 32), 2, None)])  # 3-tuple contract
+        rm.draw_foreground = MagicMock(
+            return_value=[(pygame.Rect(0, 0, 32, 32), 2, None)]
+        )  # 3-tuple contract
         rm.draw_hud = MagicMock()
 
         player_image = MagicMock(name="player_image")

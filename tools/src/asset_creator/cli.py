@@ -5,6 +5,7 @@ Provides commands:
 - list: List available terrain presets
 - preview: Preview an existing tileset PNG
 """
+
 from __future__ import annotations
 
 import argparse
@@ -49,34 +50,43 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Generate a terrain tileset (PNG + TSX).",
     )
     gen.add_argument(
-        "--terrain", required=True,
+        "--terrain",
+        required=True,
         help="Terrain preset name (e.g. grass) or path to custom YAML.",
     )
     gen.add_argument(
-        "--output-dir", type=Path, default=DEFAULT_PNG_DIR,
+        "--output-dir",
+        type=Path,
+        default=DEFAULT_PNG_DIR,
         help=f"Output directory for PNG (default: {DEFAULT_PNG_DIR}).",
     )
     gen.add_argument(
-        "--tsx-dir", type=Path, default=DEFAULT_TSX_DIR,
+        "--tsx-dir",
+        type=Path,
+        default=DEFAULT_TSX_DIR,
         help=f"Output directory for TSX (default: {DEFAULT_TSX_DIR}).",
     )
     gen.add_argument(
-        "--seed", type=int, default=0,
+        "--seed",
+        type=int,
+        default=0,
         help="Random seed for reproducible generation (default: 0).",
     )
     gen.add_argument(
-        "--variants", type=int, default=1,
+        "--variants",
+        type=int,
+        default=1,
         help="Number of variants to generate (default: 1).",
     )
     gen.add_argument(
-        "--preview", action="store_true",
+        "--preview",
+        action="store_true",
         help="Open Pygame preview before exporting.",
     )
     gen.add_argument(
         "--name",
         help="Output filename stem (default: terrain name, e.g. 'grass').",
     )
-
 
     # ── list ──────────────────────────────────────────────────────────────
     subparsers.add_parser("list", help="List available terrain presets.")
@@ -111,10 +121,7 @@ def _resolve_terrain_config(terrain_arg: str) -> tuple[str, dict]:
     presets = get_builtin_presets()
     if terrain_arg not in presets:
         available = ", ".join(sorted(presets.keys()))
-        sys.exit(
-            f"ERROR: Unknown terrain '{terrain_arg}'. "
-            f"Available presets: {available}"
-        )
+        sys.exit(f"ERROR: Unknown terrain '{terrain_arg}'. Available presets: {available}")
     return terrain_arg, presets
 
 
@@ -152,13 +159,19 @@ def _generate_terrain(
         texture = generate_noise_texture_v2(TILE_SIZE, TILE_SIZE, palette, params, seed=seed)
     else:
         texture = generate_pattern_texture(
-            TILE_SIZE, TILE_SIZE, palette, config.texture.texture_type, params, seed=seed,
+            TILE_SIZE,
+            TILE_SIZE,
+            palette,
+            config.texture.texture_type,
+            params,
+            seed=seed,
         )
 
     # Apply detail overlay
     if config.detail.detail_type != "none":
         texture = apply_detail_overlay(
-            texture, palette,
+            texture,
+            palette,
             detail_type=config.detail.detail_type,
             density=config.detail.density,
             seed=seed,
@@ -177,11 +190,10 @@ def _generate_terrain(
     if show_preview:
         try:
             from asset_creator.preview.pygame_preview import run_preview
+
             run_preview(tileset_image, subtiles)
         except ImportError:
-            sys.stdout.write(
-                "WARNING: Pygame preview not available. Exporting directly.\n"
-            )
+            sys.stdout.write("WARNING: Pygame preview not available. Exporting directly.\n")
 
     stem = name_stem or terrain_name
     png_path = output_dir / f"{stem}.png"
@@ -205,9 +217,13 @@ def cmd_generate(args: argparse.Namespace) -> None:
             name_stem = f"{base}-v{variant_idx + 1}"
 
         png_path, tsx_path = _generate_terrain(
-            terrain_name, presets, seed,
-            args.output_dir, args.tsx_dir,
-            name_stem, args.preview,
+            terrain_name,
+            presets,
+            seed,
+            args.output_dir,
+            args.tsx_dir,
+            name_stem,
+            args.preview,
         )
         sys.stdout.write(f"✅ PNG: {png_path}\n✅ TSX: {tsx_path}\n")
 
@@ -238,6 +254,7 @@ def cmd_preview(args: argparse.Namespace) -> None:
 
     try:
         from asset_creator.preview.pygame_preview import run_preview
+
         run_preview(image, subtile_set=None)
     except ImportError:
         sys.exit("ERROR: Pygame preview not available.")
@@ -247,6 +264,7 @@ def cmd_gui(_args: argparse.Namespace) -> None:
     """Handle the 'gui' command — launch interactive Dear PyGui window."""
     try:
         from asset_creator.gui.app import run_gui
+
         run_gui()
     except ImportError:
         sys.exit("ERROR: Dear PyGui not available. Install with: pip install dearpygui")

@@ -35,8 +35,15 @@ def test_setup_logging_adds_handlers_and_prevents_duplication():
         # We expect exactly one TimedRotatingFileHandler and one StreamHandler (console)
         assert len(logger.handlers) == 2
 
-        file_handlers = [h for h in logger.handlers if isinstance(h, logging.handlers.TimedRotatingFileHandler)]
-        console_handlers = [h for h in logger.handlers if isinstance(h, logging.StreamHandler) and not isinstance(h, logging.handlers.TimedRotatingFileHandler)]
+        file_handlers = [
+            h for h in logger.handlers if isinstance(h, logging.handlers.TimedRotatingFileHandler)
+        ]
+        console_handlers = [
+            h
+            for h in logger.handlers
+            if isinstance(h, logging.StreamHandler)
+            and not isinstance(h, logging.handlers.TimedRotatingFileHandler)
+        ]
 
         assert len(file_handlers) == 1
         assert len(console_handlers) == 1

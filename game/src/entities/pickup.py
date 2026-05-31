@@ -34,12 +34,30 @@ class PickupItem(BaseEntity):
 
         # Load Sprite
         sheet_path = str(
-            (Path(__file__).parent / ".." / ".." / ".." / "assets" / "images" / "sprites" / sprite_sheet).resolve()
+            (
+                Path(__file__).parent
+                / ".."
+                / ".."
+                / ".."
+                / "assets"
+                / "images"
+                / "sprites"
+                / sprite_sheet
+            ).resolve()
         )
         if not os.path.exists(sheet_path):
             # Try icons folder as fallback
             sheet_path = str(
-                (Path(__file__).parent / ".." / ".." / ".." / "assets" / "images" / "icons" / sprite_sheet).resolve()
+                (
+                    Path(__file__).parent
+                    / ".."
+                    / ".."
+                    / ".."
+                    / "assets"
+                    / "images"
+                    / "icons"
+                    / sprite_sheet
+                ).resolve()
             )
 
         sheet = SpriteSheet(sheet_path)

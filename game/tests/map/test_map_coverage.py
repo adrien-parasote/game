@@ -15,12 +15,13 @@ def test_animation_manager_edge_cases():
 
     # L30: total_duration <= 0
     tile_data = MagicMock()
-    tile_data.frames = [(100, 0)] # gid 100, duration 0
+    tile_data.frames = [(100, 0)]  # gid 100, duration 0
     tile_data.image = MagicMock(spec=pygame.Surface)
     mock_map.tiles.get.side_effect = lambda tid: tile_data if tid == 1 else None
 
     # L46: fallback to base image when frame_gid missing in manager
     assert amm.get_current_frame_image(1) == tile_data.image
+
 
 def test_map_layout_orthogonal():
     """Test OrthogonalLayout (coverage for L27, 30)."""

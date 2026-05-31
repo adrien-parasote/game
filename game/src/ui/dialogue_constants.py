@@ -15,4 +15,4 @@ DIALOGUE_ARROW_Y_OFFSET: int = 140
 
 # Text rendering colors (parchment theme)
 DIALOGUE_SHADOW_COLOR: tuple[int, int, int] = (180, 170, 150)  # Light shadow on parchment
-DIALOGUE_TEXT_COLOR: tuple[int, int, int] = (60, 40, 30)       # Dark brown, high contrast
+DIALOGUE_TEXT_COLOR: tuple[int, int, int] = (60, 40, 30)  # Dark brown, high contrast

@@ -12,10 +12,11 @@ class Settings:
     Centralized game configuration settings.
     Loads data from settings.json if available, otherwise uses defaults.
     """
+
     MAP_SIZE = 32
 
     # Internal Defaults (Fallback)
-    _DEFAULTS = {
+    _DEFAULTS = {  # noqa: RUF012
         "version": "0.0.0",
         "display": {
             "width": 1280,
@@ -73,7 +74,11 @@ class Settings:
             with open(filepath) as f:
                 config = json.load(f)
                 for section, values in config.items():
-                    if section in data and isinstance(values, dict) and isinstance(data[section], dict):
+                    if (
+                        section in data
+                        and isinstance(values, dict)
+                        and isinstance(data[section], dict)
+                    ):
                         data[section].update(values)
                     else:
                         data[section] = values
@@ -102,7 +107,9 @@ class Settings:
         cls.WINDOW_WIDTH: int = data["display"]["width"]
         cls.WINDOW_HEIGHT: int = data["display"]["height"]
         cls.FPS: int = data["display"]["fps"]
-        cls.DT_MAX: float = 0.1  # Max dt in seconds — prevents physics tunneling on freeze (≥10FPS floor)
+        cls.DT_MAX: float = (
+            0.1  # Max dt in seconds — prevents physics tunneling on freeze (≥10FPS floor)
+        )
         cls.GAME_TITLE: str = data["display"]["title"]
 
         cls.FULLSCREEN: bool = data["display"]["fullscreen"]
@@ -148,7 +155,9 @@ class Settings:
         ui_data = data.get("ui", {})
         cls.TEXT_SPEED: float = ui_data.get("text_speed", 0.05)
         cls.CURSOR_SIZE: int = ui_data.get("cursor_size", 48)
-        cls.ENABLE_FAILED_INTERACTION_EMOTE: bool = ui_data.get("enable_failed_interaction_emote", True)
+        cls.ENABLE_FAILED_INTERACTION_EMOTE: bool = ui_data.get(
+            "enable_failed_interaction_emote", True
+        )
 
         npc_data = data.get("npc", {})
         cls.NPC_SPEED: float = npc_data.get("speed", 40)
@@ -169,6 +178,6 @@ class Settings:
         cls.FONT_SIZE_NARRATIVE: int = font_data.get("size_narrative", 14)
         cls.FONT_SIZE_TECH: int = font_data.get("size_tech", 12)
 
+
 # Initialize on import
 Settings.load()
-

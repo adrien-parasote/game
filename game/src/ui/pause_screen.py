@@ -185,7 +185,7 @@ class PauseScreen:
     # ── Public API ────────────────────────────────────────────────────────────
 
     def handle_event(self, event: pygame.Event) -> GameEvent | None:
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:  # noqa: SIM102
             if self.state == "SAVE_MENU":
                 self.state = "MAIN"
                 return None

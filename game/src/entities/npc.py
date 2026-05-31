@@ -33,7 +33,16 @@ class NPC(BaseEntity):
 
         # Load Spritesheet
         sheet_path = str(
-            (Path(__file__).parent / ".." / ".." / ".." / "assets" / "images" / "characters" / sheet_name).resolve()
+            (
+                Path(__file__).parent
+                / ".."
+                / ".."
+                / ".."
+                / "assets"
+                / "images"
+                / "characters"
+                / sheet_name
+            ).resolve()
         )
         sheet = SpriteSheet(sheet_path)
         self.frames = sheet.load_grid(sheet_cols, sheet_rows)

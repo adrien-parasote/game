@@ -28,5 +28,5 @@ TILES: dict = {
 }
 
 # Bubble rendering colors
-BUBBLE_CENTER_FILL: tuple[int, int, int] = (255, 255, 255)    # White fill for the inner content area
+BUBBLE_CENTER_FILL: tuple[int, int, int] = (255, 255, 255)  # White fill for the inner content area
 BUBBLE_NAME_TEXT_COLOR: tuple[int, int, int] = (255, 255, 255)  # Name plate text color

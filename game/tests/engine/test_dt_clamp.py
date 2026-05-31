@@ -4,6 +4,7 @@ Spec: game/docs/specs/remediation_01_dt_text_cache.md § Step 1
 
 These tests are written RED-first: they will FAIL until the clamp is implemented.
 """
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,6 +12,7 @@ import pytest
 # ---------------------------------------------------------------------------
 # TC-DT-001 — GSM run() with long tick → dt passed to _handle_playing ≤ 0.1
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.tc("TC-DT-001")
 def test_gsm_dt_clamped_on_long_tick():
@@ -53,6 +55,7 @@ def test_gsm_dt_clamped_on_long_tick():
 # TC-DT-002 — GSM run() with normal 16ms tick → dt ≈ 0.016 (not over-clamped)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.tc("TC-DT-002")
 def test_gsm_dt_not_clamped_on_normal_tick():
     """A normal 16ms tick must not be clamped below 0.016."""
@@ -88,6 +91,7 @@ def test_gsm_dt_not_clamped_on_normal_tick():
 # ---------------------------------------------------------------------------
 # TC-DT-004 — Static check: every clock.tick call followed by min() within 2 lines
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.tc("TC-DT-004")
 def test_static_clock_tick_followed_by_clamp():

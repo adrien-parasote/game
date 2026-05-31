@@ -1,5 +1,5 @@
 """
-Convert a RPG Maker XP autotile (96×128, static or animated) to a Tiled-compatible
+Convert a RPG Maker XP autotile (96x128, static or animated) to a Tiled-compatible
 47-tile blob Wang tileset.
 
 Differences vs 16-tile edge-only:
@@ -39,11 +39,53 @@ DEFAULT_MS = 400
 # These 47 values cover all visually distinct blob tile configurations.
 
 BLOB_BITMASKS = (
-    0, 2, 8, 10, 11, 16, 18, 22, 24, 26, 27, 30, 31,
-    64, 66, 72, 74, 75, 80, 82, 86, 88, 90, 91, 94, 95,
-    104, 106, 107, 120, 122, 123, 126, 127,
-    208, 210, 214, 216, 218, 219, 222, 223,
-    248, 250, 251, 254, 255,
+    0,
+    2,
+    8,
+    10,
+    11,
+    16,
+    18,
+    22,
+    24,
+    26,
+    27,
+    30,
+    31,
+    64,
+    66,
+    72,
+    74,
+    75,
+    80,
+    82,
+    86,
+    88,
+    90,
+    91,
+    94,
+    95,
+    104,
+    106,
+    107,
+    120,
+    122,
+    123,
+    126,
+    127,
+    208,
+    210,
+    214,
+    216,
+    218,
+    219,
+    222,
+    223,
+    248,
+    250,
+    251,
+    254,
+    255,
 )  # exactly 47 entries
 
 BLOB_COUNT = len(BLOB_BITMASKS)  # 47
@@ -52,7 +94,7 @@ BLOB_COUNT = len(BLOB_BITMASKS)  # 47
 BITMASK_TO_IDX = {bm: idx for idx, bm in enumerate(BLOB_BITMASKS)}
 
 # ── RPG Maker XP sub-tile grid ────────────────────────────────────────────────
-# Source autotile: 96×128 px = 6 cols × 8 rows of 16×16 sub-tiles.
+# Source autotile: 96x128 px = 6 cols x 8 rows of 16x16 sub-tiles.
 #
 #  Col  0   1   2   3   4   5
 # Row 0 A-TL A-TR B-TL B-TR C-TL C-TR    A=isolated, B=inner-corner, C=variant
@@ -70,35 +112,52 @@ BITMASK_TO_IDX = {bm: idx for idx, bm in enumerate(BLOB_BITMASKS)}
 #   B-BL (2,1): shown when S=1, W=1 but SW=0
 #   B-BR (3,1): shown when S=1, E=1 but SE=0
 
+
 def _sub(frame: Image.Image, col: int, row: int) -> Image.Image:
-    """Crop one 16×16 sub-tile from a 96×128 frame."""
+    """Crop one 16x16 sub-tile from a 96x128 frame."""
     x, y = col * SUBTILE, row * SUBTILE
     return frame.crop((x, y, x + SUBTILE, y + SUBTILE))
 
 
 def _quarter_tl(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
-    if c1 and c2: return (2, 4) if diag else (4, 0)
-    if c1: return (0, 4)
-    if c2: return (2, 2)
+    if c1 and c2:
+        return (2, 4) if diag else (4, 0)
+    if c1:
+        return (0, 4)
+    if c2:
+        return (2, 2)
     return (0, 0) if iso else (0, 2)
 
+
 def _quarter_tr(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
-    if c1 and c2: return (3, 4) if diag else (5, 0)
-    if c1: return (5, 4)
-    if c2: return (3, 2)
+    if c1 and c2:
+        return (3, 4) if diag else (5, 0)
+    if c1:
+        return (5, 4)
+    if c2:
+        return (3, 2)
     return (1, 0) if iso else (5, 2)
 
+
 def _quarter_bl(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
-    if c1 and c2: return (2, 5) if diag else (4, 1)
-    if c1: return (0, 5)
-    if c2: return (2, 7)
+    if c1 and c2:
+        return (2, 5) if diag else (4, 1)
+    if c1:
+        return (0, 5)
+    if c2:
+        return (2, 7)
     return (0, 1) if iso else (0, 7)
 
+
 def _quarter_br(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
-    if c1 and c2: return (3, 5) if diag else (5, 1)
-    if c1: return (5, 5)
-    if c2: return (3, 7)
+    if c1 and c2:
+        return (3, 5) if diag else (5, 1)
+    if c1:
+        return (5, 5)
+    if c2:
+        return (3, 7)
     return (1, 1) if iso else (5, 7)
+
 
 def _quarter(corner: str, c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
     """Return (col, row) sub-tile for one quadrant of a blob tile.
@@ -109,30 +168,34 @@ def _quarter(corner: str, c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[in
     diag: diagonal neighbor (NW, NE, SW, SE respectively)
     iso: True when ALL four cardinals are absent (full isolation)
     """
-    if corner == "tl": return _quarter_tl(c1, c2, diag, iso)
-    if corner == "tr": return _quarter_tr(c1, c2, diag, iso)
-    if corner == "bl": return _quarter_bl(c1, c2, diag, iso)
-    if corner == "br": return _quarter_br(c1, c2, diag, iso)
+    if corner == "tl":
+        return _quarter_tl(c1, c2, diag, iso)
+    if corner == "tr":
+        return _quarter_tr(c1, c2, diag, iso)
+    if corner == "bl":
+        return _quarter_bl(c1, c2, diag, iso)
+    if corner == "br":
+        return _quarter_br(c1, c2, diag, iso)
     raise ValueError(f"Unknown corner: {corner!r}")
 
 
 def _build_blob_tile(frame: Image.Image, bitmask: int) -> Image.Image:
-    """Assemble one 32×32 blob tile from the 8-neighbor bitmask."""
+    """Assemble one 32x32 blob tile from the 8-neighbor bitmask."""
     nw = bool(bitmask & 1)
-    n  = bool(bitmask & 2)
+    n = bool(bitmask & 2)
     ne = bool(bitmask & 4)
-    w  = bool(bitmask & 8)
-    e  = bool(bitmask & 16)
+    w = bool(bitmask & 8)
+    e = bool(bitmask & 16)
     sw = bool(bitmask & 32)
-    s  = bool(bitmask & 64)
+    s = bool(bitmask & 64)
     se = bool(bitmask & 128)
     iso = not (n or s or w or e)
 
     tile = Image.new("RGBA", (TILE_SIZE, TILE_SIZE))
     for corner, c1, c2, diag, dx, dy in (
-        ("tl", n, w, nw, 0,      0),
+        ("tl", n, w, nw, 0, 0),
         ("tr", n, e, ne, SUBTILE, 0),
-        ("bl", s, w, sw, 0,      SUBTILE),
+        ("bl", s, w, sw, 0, SUBTILE),
         ("br", s, e, se, SUBTILE, SUBTILE),
     ):
         col, row = _quarter(corner, c1, c2, diag, iso)
@@ -144,7 +207,7 @@ def _build_blob_tile(frame: Image.Image, bitmask: int) -> Image.Image:
 
 
 def _build_blob_strip(src: Image.Image, n_frames: int) -> Image.Image:
-    """Build horizontal strip: N frames × 47 tiles × 32 px, 32 px tall."""
+    """Build horizontal strip: N frames x 47 tiles x 32 px, 32 px tall."""
     total = n_frames * BLOB_COUNT
     strip = Image.new("RGBA", (TILE_SIZE * total, TILE_SIZE))
 
@@ -161,29 +224,46 @@ def _build_blob_strip(src: Image.Image, n_frames: int) -> Image.Image:
 
 
 def _blob_mask(
-    nw: bool, n: bool, ne: bool,
-    w: bool,            e: bool,
-    sw: bool, s: bool, se: bool,
+    nw: bool,
+    n: bool,
+    ne: bool,
+    w: bool,
+    e: bool,
+    sw: bool,
+    s: bool,
+    se: bool,
 ) -> int:
     """Compute blob bitmask: clear diagonals whose adjacent cardinals are absent."""
-    if not n: nw = ne = False
-    if not s: sw = se = False
-    if not w: nw = sw = False
-    if not e: ne = se = False
-    return (int(nw) | int(n)<<1 | int(ne)<<2 | int(w)<<3
-            | int(e)<<4 | int(sw)<<5 | int(s)<<6 | int(se)<<7)
+    if not n:
+        nw = ne = False
+    if not s:
+        sw = se = False
+    if not w:
+        nw = sw = False
+    if not e:
+        ne = se = False
+    return (
+        int(nw)
+        | int(n) << 1
+        | int(ne) << 2
+        | int(w) << 3
+        | int(e) << 4
+        | int(sw) << 5
+        | int(s) << 6
+        | int(se) << 7
+    )
 
 
 def _blob_wang_id(bitmask: int) -> str:
     """Tiled mixed-Wang wangid: Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left, TopLeft."""
     nw = (bitmask >> 0) & 1
-    n  = (bitmask >> 1) & 1
+    n = (bitmask >> 1) & 1
     ne = (bitmask >> 2) & 1
-    e  = (bitmask >> 4) & 1
+    e = (bitmask >> 4) & 1
     se = (bitmask >> 7) & 1
-    s  = (bitmask >> 6) & 1
+    s = (bitmask >> 6) & 1
     sw = (bitmask >> 5) & 1
-    w  = (bitmask >> 3) & 1
+    w = (bitmask >> 3) & 1
     # Tiled order: Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left, TopLeft
     return f"{n},{ne},{e},{se},{s},{sw},{w},{nw}"
 
@@ -192,47 +272,82 @@ def _blob_wang_id(bitmask: int) -> str:
 
 
 def _generate_tsx(
-    png_path: Path, tsx_path: Path,
-    name: str, n_frames: int, frame_duration: int,
+    png_path: Path,
+    tsx_path: Path,
+    name: str,
+    n_frames: int,
+    frame_duration: int,
 ) -> None:
     total = n_frames * BLOB_COUNT
     rel_png = os.path.relpath(png_path, tsx_path.parent)
 
-    root = ET.Element("tileset", {
-        "version": "1.10", "tiledversion": TILED_VERSION,
-        "name": name,
-        "tilewidth": str(TILE_SIZE), "tileheight": str(TILE_SIZE),
-        "spacing": "0", "margin": "0",
-        "tilecount": str(total), "columns": str(total),
-    })
-    ET.SubElement(root, "image", {
-        "source": rel_png,
-        "width": str(TILE_SIZE * total),
-        "height": str(TILE_SIZE),
-    })
+    root = ET.Element(
+        "tileset",
+        {
+            "version": "1.10",
+            "tiledversion": TILED_VERSION,
+            "name": name,
+            "tilewidth": str(TILE_SIZE),
+            "tileheight": str(TILE_SIZE),
+            "spacing": "0",
+            "margin": "0",
+            "tilecount": str(total),
+            "columns": str(total),
+        },
+    )
+    ET.SubElement(
+        root,
+        "image",
+        {
+            "source": rel_png,
+            "width": str(TILE_SIZE * total),
+            "height": str(TILE_SIZE),
+        },
+    )
 
     if n_frames > 1:
         for slot in range(BLOB_COUNT):
             tile_el = ET.SubElement(root, "tile", {"id": str(slot)})
             anim_el = ET.SubElement(tile_el, "animation")
             for fi in range(n_frames):
-                ET.SubElement(anim_el, "frame", {
-                    "tileid": str(fi * BLOB_COUNT + slot),
-                    "duration": str(frame_duration),
-                })
+                ET.SubElement(
+                    anim_el,
+                    "frame",
+                    {
+                        "tileid": str(fi * BLOB_COUNT + slot),
+                        "duration": str(frame_duration),
+                    },
+                )
 
     wangsets = ET.SubElement(root, "wangsets")
-    wangset = ET.SubElement(wangsets, "wangset", {
-        "name": name, "type": "mixed", "tile": "-1",
-    })
-    ET.SubElement(wangset, "wangcolor", {
-        "name": name, "color": WANG_COLOR, "tile": "-1", "probability": "1",
-    })
+    wangset = ET.SubElement(
+        wangsets,
+        "wangset",
+        {
+            "name": name,
+            "type": "mixed",
+            "tile": "-1",
+        },
+    )
+    ET.SubElement(
+        wangset,
+        "wangcolor",
+        {
+            "name": name,
+            "color": WANG_COLOR,
+            "tile": "-1",
+            "probability": "1",
+        },
+    )
     for slot, bm in enumerate(BLOB_BITMASKS):
-        ET.SubElement(wangset, "wangtile", {
-            "tileid": str(slot),
-            "wangid": _blob_wang_id(bm),
-        })
+        ET.SubElement(
+            wangset,
+            "wangtile",
+            {
+                "tileid": str(slot),
+                "wangid": _blob_wang_id(bm),
+            },
+        )
 
     try:
         ET.ElementTree(root).write(tsx_path, encoding="utf-8", xml_declaration=True)
@@ -244,7 +359,10 @@ def _generate_tsx(
 
 
 def convert(
-    input_path: Path, tsx_path: Path, png_path: Path, frame_duration: int,
+    input_path: Path,
+    tsx_path: Path,
+    png_path: Path,
+    frame_duration: int,
 ) -> None:
     if not input_path.exists():
         sys.exit(f"ERROR: File not found: {input_path}")
@@ -284,7 +402,7 @@ def convert(
 
     rel = os.path.relpath(png_path, tsx_path.parent)
     sys.stdout.write(
-        f"✅ PNG : {png_path} ({strip.size[0]}×{strip.size[1]} px)\n"
+        f"✅ PNG : {png_path} ({strip.size[0]}x{strip.size[1]} px)\n"
         f"✅ TSX : {tsx_path} (ref: {rel})\n\n"
         f"   {n_frames} frame(s) · 47 tiles blob (8 voisins, sans artefacts de coins)\n\n"
         "Import dans Tiled :\n"
@@ -301,7 +419,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="RPG Maker XP autotile → Tiled 47-tile blob Wang tileset."
     )
-    parser.add_argument("input", type=Path, help="Autotile source PNG (96×128 ou N×96×128)")
+    parser.add_argument("input", type=Path, help="Autotile source PNG (96x128 ou Nx96x128)")
     parser.add_argument("--tsx", type=Path, default=None, metavar="PATH")
     parser.add_argument("--png", type=Path, default=None, metavar="PATH")
     parser.add_argument("--frame-duration", type=int, default=DEFAULT_MS, metavar="MS")

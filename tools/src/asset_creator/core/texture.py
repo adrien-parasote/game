@@ -111,7 +111,12 @@ def _compute_multi_octave_noise(
 
     for _ in range(params.octaves):
         value += amplitude * sample_toroidal_noise(
-            x, y, width, height, params.scale * frequency, noise_gen,
+            x,
+            y,
+            width,
+            height,
+            params.scale * frequency,
+            noise_gen,
         )
         amplitude *= params.persistence
         frequency *= params.lacunarity
@@ -160,20 +165,11 @@ def _ramp_color_dithered(
     frac = idx_f - lower
 
     # Bayer threshold
-    threshold = (
-        BAYER_4X4[y % matrix_size][x % matrix_size]
-        / (matrix_size * matrix_size)
-    )
+    threshold = BAYER_4X4[y % matrix_size][x % matrix_size] / (matrix_size * matrix_size)
 
-    if frac > threshold:
-        color_idx = min(lower + 1, n)
-    else:
-        color_idx = lower
+    color_idx = min(lower + 1, n) if frac > threshold else lower
 
     return colors[color_idx]
-
-
-
 
 
 def generate_noise_texture_v2(
@@ -210,23 +206,35 @@ def generate_noise_texture_v2(
         for x in range(width):
             # Base shape noise (toroidal for seamless tiling)
             base_value = _compute_multi_octave_noise(
-                x, y, width, height, params, base_noise,
+                x,
+                y,
+                width,
+                height,
+                params,
+                base_noise,
             )
 
             # Normalize to [0, 1]
             t = (base_value + 1.0) / 2.0
 
             # Per-pixel detail jitter
-            detail = detail_noise.noise2(
-                x * params.detail_scale,
-                y * params.detail_scale,
-            ) * params.detail_strength
+            detail = (
+                detail_noise.noise2(
+                    x * params.detail_scale,
+                    y * params.detail_scale,
+                )
+                * params.detail_strength
+            )
             t = max(0.0, min(1.0, t + detail))
 
             # Map to color
             if params.use_dithering:
                 rgb = _ramp_color_dithered(
-                    t, palette, x, y, params.dither_matrix_size,
+                    t,
+                    palette,
+                    x,
+                    y,
+                    params.dither_matrix_size,
                 )
             else:
                 rgb = _ramp_color_smooth(t, palette)
@@ -237,7 +245,9 @@ def generate_noise_texture_v2(
 
 
 def _generate_solid(
-    width: int, height: int, palette: Palette,
+    width: int,
+    height: int,
+    palette: Palette,
 ) -> Image.Image:
     """Fill with base color."""
     base = palette.get_color(PaletteRole.BASE)
@@ -246,7 +256,9 @@ def _generate_solid(
 
 
 def _generate_dithered(
-    width: int, height: int, palette: Palette,
+    width: int,
+    height: int,
+    palette: Palette,
 ) -> Image.Image:
     """Alternate pixels between base and shadow using checkerboard."""
     base = palette.get_color(PaletteRole.BASE)
@@ -265,7 +277,11 @@ def _generate_dithered(
 
 
 def _generate_stippled(
-    width: int, height: int, palette: Palette, density: float, seed: int,
+    width: int,
+    height: int,
+    palette: Palette,
+    density: float,
+    seed: int,
 ) -> Image.Image:
     """Scatter accent dots at density probability using seeded random."""
     base = palette.get_color(PaletteRole.BASE)
@@ -285,7 +301,9 @@ def _generate_stippled(
 
 
 def _generate_striped(
-    width: int, height: int, palette: Palette,
+    width: int,
+    height: int,
+    palette: Palette,
 ) -> Image.Image:
     """Horizontal stripes alternating base/shadow."""
     base = palette.get_color(PaletteRole.BASE)
@@ -342,7 +360,11 @@ def generate_pattern_texture(
         return _generate_stippled(width, height, palette, params.density, seed)
     if pattern_type == "noise":
         return generate_noise_texture_v2(
-            width, height, palette, params, seed,
+            width,
+            height,
+            palette,
+            params,
+            seed,
         )
     if pattern_type == "striped":
         return _generate_striped(width, height, palette)

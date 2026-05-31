@@ -26,7 +26,7 @@ class ChestTransferMixin:
                 entry["quantity"] = remaining
                 break
 
-    def _transfer_inventory_to_chest(self: "ChestUIProtocol") -> None:
+    def _transfer_inventory_to_chest(self: "ChestUIProtocol") -> None:  # noqa: C901
         """Auto-transfer from player inventory to chest."""
         if not self._chest_entity or not self._player:
             return

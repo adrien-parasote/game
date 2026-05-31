@@ -5,6 +5,7 @@ Covers:
 - TC-006 to TC-007: find_closest_bitmask_index lookups
 - TC-008: generate_empty_grid dimensions
 """
+
 from __future__ import annotations
 
 from asset_creator.core.minimap import (
@@ -19,7 +20,7 @@ class TestComputeBitmask:
     """Tests for compute_bitmask(grid, x, y)."""
 
     def test_tc001_empty_grid_all_zeros(self) -> None:
-        """TC-001: Empty 4×4 grid → bitmask == 0 for all cells."""
+        """TC-001: Empty 4x4 grid → bitmask == 0 for all cells."""
         grid = [[False] * 4 for _ in range(4)]
         for y in range(4):
             for x in range(4):
@@ -41,7 +42,7 @@ class TestComputeBitmask:
         assert compute_bitmask(grid, 2, 1) == 8 + 16  # W=8, E=16 → 24
 
     def test_tc004_2x2_block_correct_bitmasks(self) -> None:
-        """TC-004: 2×2 block at (1,1),(2,1),(1,2),(2,2) → correct 3-neighbor bitmasks."""
+        """TC-004: 2x2 block at (1,1),(2,1),(1,2),(2,2) → correct 3-neighbor bitmasks."""
         grid = [[False] * 4 for _ in range(4)]
         grid[1][1] = True
         grid[1][2] = True
@@ -61,7 +62,7 @@ class TestComputeBitmask:
         assert compute_bitmask(grid, 2, 2) == 2 + 8 + 1  # 11
 
     def test_tc005_full_grid_inner_cell_255(self) -> None:
-        """TC-005: Full 4×4 grid → inner cells like (1,1) have bitmask == 255."""
+        """TC-005: Full 4x4 grid → inner cells like (1,1) have bitmask == 255."""
         grid = [[True] * 4 for _ in range(4)]
         assert compute_bitmask(grid, 1, 1) == 255
         assert compute_bitmask(grid, 2, 2) == 255
@@ -110,7 +111,7 @@ class TestGenerateEmptyGrid:
     """Tests for generate_empty_grid(cols, rows)."""
 
     def test_tc008_dimensions(self) -> None:
-        """TC-008: generate_empty_grid(10, 8) → 8 rows × 10 cols, all False."""
+        """TC-008: generate_empty_grid(10, 8) → 8 rows x 10 cols, all False."""
         grid = generate_empty_grid(10, 8)
         assert len(grid) == 8
         for row in grid:
@@ -118,7 +119,7 @@ class TestGenerateEmptyGrid:
             assert all(cell is False for cell in row)
 
     def test_small_grid(self) -> None:
-        """generate_empty_grid(2, 3) → 3 rows × 2 cols."""
+        """generate_empty_grid(2, 3) → 3 rows x 2 cols."""
         grid = generate_empty_grid(2, 3)
         assert len(grid) == 3
         for row in grid:

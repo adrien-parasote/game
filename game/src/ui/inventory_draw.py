@@ -94,7 +94,9 @@ class InventoryDrawMixin:
                 if icon:
                     screen.blit(icon, icon.get_rect(center=(x, y)))
                 if item.quantity > 1:
-                    qty_text = self._render_text(self.tech_font, f"x{item.quantity}", COLOR_TEXT_STONE)
+                    qty_text = self._render_text(
+                        self.tech_font, f"x{item.quantity}", COLOR_TEXT_STONE
+                    )
                     margin = int(8 * s)
                     screen.blit(
                         qty_text,
@@ -131,7 +133,9 @@ class InventoryDrawMixin:
                 if icon:
                     screen.blit(icon, icon.get_rect(center=pos))
                 if item.quantity > 1:
-                    qty_text = self._render_text(self.tech_font, f"x{item.quantity}", COLOR_TEXT_STONE)
+                    qty_text = self._render_text(
+                        self.tech_font, f"x{item.quantity}", COLOR_TEXT_STONE
+                    )
                     margin = int(8 * s)
                     screen.blit(
                         qty_text,
@@ -218,7 +222,7 @@ class InventoryDrawMixin:
         lines: list[str] = []
         current_line: list[str] = []
         for word in words:
-            test_line = " ".join(current_line + [word])
+            test_line = " ".join([*current_line, word])
             if self.narrative_font.size(test_line)[0] < max_w:
                 current_line.append(word)
             else:
@@ -239,9 +243,7 @@ class InventoryDrawMixin:
     ) -> None:
         """Draw LVL, HP, and GOLD in the stats bar."""
         # LVL (Left part of green bar)
-        lvl_text = self._render_text(
-            self.noble_font, f"LVL {self.player.level}", COLOR_TEXT_STONE
-        )
+        lvl_text = self._render_text(self.noble_font, f"LVL {self.player.level}", COLOR_TEXT_STONE)
         lvl_rect = lvl_text.get_rect(midleft=(stats_x, stats_y))
         screen.blit(lvl_text, lvl_rect)
 
@@ -255,10 +257,6 @@ class InventoryDrawMixin:
         screen.blit(hp_text, hp_rect)
 
         # GOLD (Right)
-        gold_text = self._render_text(
-            self.noble_font, f"GOLD {self.player.gold}", COLOR_TEXT_STONE
-        )
-        gold_rect = gold_text.get_rect(
-            midright=(self.bg_rect.x + int(INV_GOLD_X * s), stats_y)
-        )
+        gold_text = self._render_text(self.noble_font, f"GOLD {self.player.gold}", COLOR_TEXT_STONE)
+        gold_rect = gold_text.get_rect(midright=(self.bg_rect.x + int(INV_GOLD_X * s), stats_y))
         screen.blit(gold_text, gold_rect)

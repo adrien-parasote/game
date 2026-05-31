@@ -5,15 +5,16 @@ from src.config import Settings
 
 
 class TestCameraGroupCoverage:
-
     def test_init_no_display(self):
         from src.entities.groups import CameraGroup
+
         with patch.object(pygame.display, "get_surface", return_value=None):
             cg = CameraGroup()
         assert cg.half_width == 0
 
     def test_calculate_offset_no_rect(self):
         from src.entities.groups import CameraGroup
+
         cg = CameraGroup()
         sprite = MagicMock(rect=None)
         assert cg.calculate_offset(sprite) == cg.offset
@@ -25,6 +26,7 @@ class TestCameraGroupCoverage:
         display state across the test session.
         """
         from src.entities.groups import CameraGroup
+
         cg = CameraGroup()
         # Force deterministic screen size — avoids dependency on pygame display state
         cg.half_width = 640
@@ -38,6 +40,7 @@ class TestCameraGroupCoverage:
 
     def test_calculate_offset_large_world_clamps(self):
         from src.entities.groups import CameraGroup
+
         cg = CameraGroup()
         cg.world_size = (9000, 9000)
         sprite = MagicMock()
@@ -47,24 +50,27 @@ class TestCameraGroupCoverage:
 
     def test_set_world_size(self):
         from src.entities.groups import CameraGroup
+
         cg = CameraGroup()
         cg.set_world_size(1920, 1080)
         assert cg.world_size == (1920, 1080)
 
     def test_custom_draw_moving_sprite_invalidates_cache(self):
         from src.entities.groups import CameraGroup
+
         cg = CameraGroup()
         cg._cache_dirty = False
         moving = MagicMock()
         moving.is_moving = True
         surf = pygame.Surface((800, 600))
-        with patch.object(cg, "sprites", return_value=[moving]):
+        with patch.object(cg, "sprites", return_value=[moving]):  # noqa: SIM117
             with patch.object(cg, "get_sorted_sprites", return_value=[]):
                 cg.custom_draw(surf)
         assert cg._cache_dirty
 
     def test_debug_rect_drawn_for_onscreen_sprite(self):
         from src.entities.groups import CameraGroup
+
         cg = CameraGroup()
         sprite = MagicMock()
         sprite.is_moving = False
@@ -73,7 +79,7 @@ class TestCameraGroupCoverage:
         original = Settings.DEBUG
         Settings.DEBUG = True
         try:
-            with patch.object(cg, "sprites", return_value=[]):
+            with patch.object(cg, "sprites", return_value=[]):  # noqa: SIM117
                 with patch.object(cg, "get_sorted_sprites", return_value=[sprite]):
                     with patch("pygame.draw.rect") as mock_rect:
                         cg.custom_draw(pygame.Surface((800, 600)))
@@ -107,9 +113,10 @@ class TestCameraGroupSortY:
     def test_default_sort_uses_rect_bottom(self):
         """Sprites without sort_y are ordered by rect.bottom ascending."""
         from src.entities.groups import CameraGroup
+
         cg = CameraGroup()
         sp_high = self._make_sprite(bottom=200)  # lower in scene
-        sp_low = self._make_sprite(bottom=100)   # higher in scene
+        sp_low = self._make_sprite(bottom=100)  # higher in scene
         with patch.object(cg, "sprites", return_value=[sp_high, sp_low]):
             cg._cache_dirty = True
             result = cg.get_sorted_sprites()
@@ -122,6 +129,7 @@ class TestCameraGroupSortY:
         a player with rect.bottom=300 renders after (in front of) the bridge.
         """
         from src.entities.groups import CameraGroup
+
         cg = CameraGroup()
         bridge = self._make_sprite(bottom=500, sort_y=100)
         player = self._make_sprite(bottom=300)
@@ -139,6 +147,7 @@ class TestCameraGroupSortY:
         Expected render order: bridge, npc, player.
         """
         from src.entities.groups import CameraGroup
+
         cg = CameraGroup()
         bridge = self._make_sprite(bottom=500, sort_y=50)
         npc = self._make_sprite(bottom=150)
@@ -151,6 +160,7 @@ class TestCameraGroupSortY:
     def test_no_rect_sprite_uses_zero(self):
         """Sprite with rect=None and no sort_y defaults to 0 (rendered first)."""
         from src.entities.groups import CameraGroup
+
         cg = CameraGroup()
         no_rect = MagicMock()
         no_rect.rect = None

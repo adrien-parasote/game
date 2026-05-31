@@ -192,7 +192,8 @@ def test_arrow_rects_computed_after_open():
 def test_arrow_up_rect_is_left_of_down():
     ui = ChestUI()
     ui.open(object(), make_player())
-    assert ui._arrow_up_rect is not None and ui._arrow_down_rect is not None
+    assert ui._arrow_up_rect is not None
+    assert ui._arrow_down_rect is not None
     assert ui._arrow_up_rect.left < ui._arrow_down_rect.left
 
 
@@ -202,7 +203,8 @@ def test_update_hover_chest_arrows():
     """update_hover sets _hovered_chest_arrow when mouse is over chest arrow buttons."""
     ui = ChestUI()
     ui.open(object(), make_player())
-    assert ui._arrow_up_rect is not None and ui._arrow_down_rect is not None
+    assert ui._arrow_up_rect is not None
+    assert ui._arrow_down_rect is not None
     ui.update_hover(ui._arrow_up_rect.center)
     assert ui._hovered_chest_arrow == "up"
     assert ui._hovered_chest_slot is None
@@ -498,7 +500,8 @@ class TestResolveIconName:
     def test_resolve_with_player(self):
         """Resolves icon from inventory item_data."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         name = ui._resolve_icon_name("sword")
         assert name == "sword.png"
 
@@ -526,7 +529,8 @@ class TestResolveIconName:
 class TestTransferDraggedToChest:
     def test_chest_to_chest_same_slot_noop(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._chest_entity.contents[0] = {"item_id": "sword", "quantity": 1}
         ui._dragging_item = {
             "item_id": "sword",
@@ -541,7 +545,8 @@ class TestTransferDraggedToChest:
 
     def test_chest_to_chest_empty_target(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._chest_entity.contents[0] = {"item_id": "sword", "quantity": 1}
         ui._dragging_item = {
             "item_id": "sword",
@@ -556,7 +561,8 @@ class TestTransferDraggedToChest:
 
     def test_chest_to_chest_stacking(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._chest_entity.contents[0] = {"item_id": "potion", "quantity": 3}
         ui._chest_entity.contents[1] = {"item_id": "potion", "quantity": 4}
         ui._dragging_item = {
@@ -572,7 +578,8 @@ class TestTransferDraggedToChest:
 
     def test_chest_to_chest_swap(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._chest_entity.contents[0] = {"item_id": "sword", "quantity": 1}
         ui._chest_entity.contents[1] = {"item_id": "shield", "quantity": 1}
         ui._dragging_item = {
@@ -588,7 +595,8 @@ class TestTransferDraggedToChest:
 
     def test_inv_to_chest_empty_target(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._player.inventory.slots[0] = _item("sword")
         ui._dragging_item = {
             "item_id": "sword",
@@ -603,7 +611,8 @@ class TestTransferDraggedToChest:
 
     def test_inv_to_chest_stacking(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._chest_entity.contents[0] = {"item_id": "potion", "quantity": 3}
         src = _item("potion", qty=5, stack_max=10)
         ui._player.inventory.slots[0] = src
@@ -620,7 +629,8 @@ class TestTransferDraggedToChest:
 
     def test_inv_to_chest_swap(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._chest_entity.contents[0] = {"item_id": "shield", "quantity": 1}
         ui._player.inventory.slots[0] = _item("sword")
         ui._dragging_item = {
@@ -637,7 +647,8 @@ class TestTransferDraggedToChest:
     @pytest.mark.tc("CHEST-T-08")
     def test_no_dragging_noop(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._dragging_item = None
         ui._transfer_dragged_to_chest(0)  # no crash
 
@@ -650,7 +661,8 @@ class TestTransferDraggedToChest:
 class TestTransferDraggedToInventory:
     def test_inv_to_inv_same_slot_noop(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._player.inventory.slots[0] = _item("sword")
         ui._dragging_item = {
             "item_id": "sword",
@@ -663,7 +675,8 @@ class TestTransferDraggedToInventory:
 
     def test_inv_to_inv_empty_target(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         item = _item("sword")
         ui._player.inventory.slots[0] = item
         ui._dragging_item = {
@@ -679,7 +692,8 @@ class TestTransferDraggedToInventory:
 
     def test_inv_to_inv_stacking(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         src = _item("potion", qty=3, stack_max=10)
         target = _item("potion", qty=4, stack_max=10)
         ui._player.inventory.slots[0] = src
@@ -697,7 +711,8 @@ class TestTransferDraggedToInventory:
 
     def test_inv_to_inv_swap(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         a = _item("sword")
         b = _item("shield")
         ui._player.inventory.slots[0] = a
@@ -715,7 +730,8 @@ class TestTransferDraggedToInventory:
 
     def test_chest_to_inv_empty_target(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._chest_entity.contents[0] = {"item_id": "sword", "quantity": 1}
         ui._dragging_item = {
             "item_id": "sword",
@@ -730,7 +746,8 @@ class TestTransferDraggedToInventory:
 
     def test_chest_to_inv_stacking(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         target = _item("potion", qty=4, stack_max=10)
         ui._player.inventory.slots[0] = target
         ui._chest_entity.contents[0] = {"item_id": "potion", "quantity": 3}
@@ -747,7 +764,8 @@ class TestTransferDraggedToInventory:
 
     def test_chest_to_inv_swap(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         target = _item("shield", qty=1)
         ui._player.inventory.slots[0] = target
         ui._chest_entity.contents[0] = {"item_id": "sword", "quantity": 1}
@@ -764,7 +782,8 @@ class TestTransferDraggedToInventory:
 
     def test_no_dragging_noop(self):
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._dragging_item = None
         ui._transfer_dragged_to_inventory(0)  # no crash
 
@@ -778,7 +797,8 @@ class TestTransferInventoryToChestStacking:
     def test_stacking_into_existing_chest_entry(self):
         """Items stack into existing chest entries before using new slots."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._chest_entity.contents[0] = {"item_id": "potion", "quantity": 3}
         ui._player.inventory.slots[0] = _item("potion", qty=5, stack_max=10)
         ui._transfer_inventory_to_chest()
@@ -797,7 +817,8 @@ class TestDrawSlotsWithItems:
     def test_draw_chest_slots_with_items(self):
         """Drawing chest slots with items renders quantity badges."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._chest_entity.contents[0] = {"item_id": "potion", "quantity": 5}
         ui._slot_positions = [pygame.Rect(50, 50, 49, 49)]
         ui._slot_img = pygame.Surface((49, 49))
@@ -810,7 +831,8 @@ class TestDrawSlotsWithItems:
     def test_draw_chest_slots_skips_dragged(self):
         """Drawing chest slots skips the dragged item."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._chest_entity.contents[0] = {"item_id": "sword", "quantity": 1}
         ui._slot_positions = [pygame.Rect(50, 50, 49, 49)]
         ui._slot_img = pygame.Surface((49, 49))
@@ -830,7 +852,8 @@ class TestDrawSlotsWithItems:
     def test_draw_chest_slots_no_slot_img_fallback(self):
         """When _slot_img is None, draws rect outline instead."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._slot_positions = [pygame.Rect(50, 50, 49, 49)]
         ui._slot_img = None
         ui._hover_img = None
@@ -841,7 +864,8 @@ class TestDrawSlotsWithItems:
     def test_draw_chest_slots_with_hover(self):
         """Drawing hover overlay on a chest slot."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._slot_positions = [pygame.Rect(50, 50, 49, 49)]
         ui._slot_img = pygame.Surface((49, 49))
         ui._hover_img = pygame.Surface((49, 49))
@@ -860,7 +884,8 @@ class TestDrawInvSlots:
     def test_draw_inv_slots_with_items(self):
         """Drawing inventory slots with items."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         item = _item("potion", qty=3, stack_max=10, icon="potion.png")
         ui._player.inventory.slots[0] = item
         ui._inv_slot_positions = [pygame.Rect(100, 100, 49, 49)]
@@ -875,7 +900,8 @@ class TestDrawInvSlots:
     def test_draw_inv_slots_skips_dragged(self):
         """Drawing inventory slots skips dragged item."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         item = _item("sword", icon="sword.png")
         ui._player.inventory.slots[0] = item
         ui._inv_slot_positions = [pygame.Rect(100, 100, 49, 49)]
@@ -897,7 +923,8 @@ class TestDrawInvSlots:
     def test_draw_inv_slots_no_slot_img_fallback(self):
         """When _slot_img is None, draws rect outline."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._inv_slot_positions = [pygame.Rect(100, 100, 49, 49)]
         ui._slot_img = None
         ui._hover_img = None
@@ -909,7 +936,8 @@ class TestDrawInvSlots:
     def test_draw_inv_slots_hover_overlay(self):
         """Drawing hover overlay on inventory slot."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._inv_slot_positions = [pygame.Rect(100, 100, 49, 49)]
         ui._slot_img = pygame.Surface((49, 49))
         ui._hover_img = pygame.Surface((49, 49))
@@ -929,7 +957,8 @@ class TestDrawInvArrows:
     def test_draw_left_arrow_when_scrollable(self):
         """Left arrow renders when can_scroll_left and hovered."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._inv_offset = 18  # can scroll left
         ui._hovered_inv_arrow = "left"
         ui._inv_arrow_left_rect = pygame.Rect(10, 10, 60, 60)
@@ -941,7 +970,8 @@ class TestDrawInvArrows:
     def test_draw_right_arrow_when_scrollable(self):
         """Right arrow renders when can_scroll_right and hovered."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._player.inventory.capacity = 28
         ui._inv_offset = 0  # can scroll right
         ui._hovered_inv_arrow = "right"
@@ -961,7 +991,8 @@ class TestDrawDraggedItem:
     def test_draw_dragged_item_with_icon(self):
         """Draws icon at drag position."""
         ui = _chest_ui()
-        assert ui._player is not None and ui._chest_entity is not None
+        assert ui._player is not None
+        assert ui._chest_entity is not None
         ui._slot_img = pygame.Surface((49, 49))
         dummy_icon = pygame.Surface((41, 41))
         ui._icon_cache["sword.png@41"] = dummy_icon
@@ -1008,7 +1039,7 @@ class TestLoadInvBackground:
     def test_load_inv_bg_missing_file(self, caplog):
         """Missing inv background returns a placeholder Surface (AssetManager fallback)."""
         ui = ChestUI()
-        with caplog.at_level(logging.ERROR):
+        with caplog.at_level(logging.ERROR):  # noqa: SIM117
             with patch("src.ui.chest_draw.ASSET_INV_BG", "nonexistent.png"):
                 result = ui._load_inv_background()
         assert isinstance(result, pygame.Surface)
@@ -1073,7 +1104,8 @@ def test_capacity_no_player():
 def test_get_chest_contents_pads_to_max():
     """Contents are padded with None to CHEST_MAX_SLOTS."""
     ui = _chest_ui()
-    assert ui._player is not None and ui._chest_entity is not None
+    assert ui._player is not None
+    assert ui._chest_entity is not None
     ui._chest_entity.contents = [{"item_id": "sword", "quantity": 1}]
     contents = ui._get_chest_contents()
     assert len(contents) == CHEST_MAX_SLOTS

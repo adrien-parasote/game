@@ -23,4 +23,4 @@ TORCH_ALPHA_QUANTIZE: int = 20  # Intensity quantization step for torch mask cac
 
 # Day/night beam colorimetry — used in _get_beam_surface_for_time()
 BEAM_COLOR_MOON: tuple[int, int, int] = (160, 180, 255)  # Cool moonlight tint
-BEAM_COLOR_SUN: tuple[int, int, int] = (255, 248, 220)   # Warm sunlight tint
+BEAM_COLOR_SUN: tuple[int, int, int] = (255, 248, 220)  # Warm sunlight tint

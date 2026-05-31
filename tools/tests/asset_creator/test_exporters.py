@@ -1,4 +1,5 @@
 """Tests for PNG and TSX exporters (TC-017 through TC-019)."""
+
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
@@ -188,16 +189,12 @@ class TestRelativePath:
 
     def test_same_directory(self) -> None:
         """PNG and TSX in the same directory."""
-        result = compute_relative_path(
-            Path("/a/b/img.png"), Path("/a/b/out.tsx")
-        )
+        result = compute_relative_path(Path("/a/b/img.png"), Path("/a/b/out.tsx"))
         assert result == "img.png"
 
     def test_sibling_directories(self) -> None:
         """PNG in sibling images/ dir, TSX in tiled/ dir."""
-        result = compute_relative_path(
-            Path("/a/images/img.png"), Path("/a/tiled/out.tsx")
-        )
+        result = compute_relative_path(Path("/a/images/img.png"), Path("/a/tiled/out.tsx"))
         assert result == "../images/img.png"
 
     def test_deeper_nesting(self) -> None:

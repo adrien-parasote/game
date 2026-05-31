@@ -126,9 +126,7 @@ class TestBackgroundLayerExcludesDepth2Tiles:
         surface = mm.get_layer_surface(1, pygame, max_bg_depth=1)
         assert surface is not None
         pixel = surface.get_at((32, 32))[:3]
-        assert pixel == (0, 200, 0), (
-            f"depth=0 tile was NOT drawn in background surface: {pixel}."
-        )
+        assert pixel == (0, 200, 0), f"depth=0 tile was NOT drawn in background surface: {pixel}."
 
 
 # ---------------------------------------------------------------------------
@@ -202,7 +200,7 @@ class TestCustomDrawRendersDepth2Sprites:
 
         sprite = _make_sprite(depth=2, rect=pygame.Rect(0, 0, 32, 32), color=(255, 0, 0))
 
-        with patch.object(cg, "sprites", return_value=[]):
+        with patch.object(cg, "sprites", return_value=[]):  # noqa: SIM117
             with patch.object(cg, "get_sorted_sprites", return_value=[sprite]):
                 cg.custom_draw(surface, min_depth=2)
 
@@ -220,7 +218,7 @@ class TestCustomDrawRendersDepth2Sprites:
 
         sprite = _make_sprite(depth=2, rect=pygame.Rect(0, 0, 32, 32), color=(255, 0, 0))
 
-        with patch.object(cg, "sprites", return_value=[]):
+        with patch.object(cg, "sprites", return_value=[]):  # noqa: SIM117
             with patch.object(cg, "get_sorted_sprites", return_value=[sprite]):
                 cg.custom_draw(surface, max_depth=1)
 
@@ -307,9 +305,7 @@ class TestDrawSceneRenderOrder:
             "custom_draw(max_depth=0) was never called — pure background sprites not drawn."
         )
         bg_idx = call_order.index("custom_draw(max_depth=0)")
-        assert bg_idx < fg_idx, (
-            "Background sprite pass must come BEFORE draw_foreground."
-        )
+        assert bg_idx < fg_idx, "Background sprite pass must come BEFORE draw_foreground."
 
 
 # ---------------------------------------------------------------------------
@@ -420,4 +416,4 @@ class TestLayerMaxDepths:
             "The wall tile must be drawn in draw_foreground."
         )
         assert chunks[0][2] == 10  # tile_id
-        assert chunks[0][3] == 2   # depth
+        assert chunks[0][3] == 2  # depth

@@ -6,6 +6,7 @@ Extracted from preview/pygame_preview.py for reuse in GUI and CLI.
 Bitmask layout: NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, SE=128.
 Diagonals only count if both adjacent cardinals are filled.
 """
+
 from __future__ import annotations
 
 from asset_creator.core.tile_assembler import BLOB_BITMASKS
@@ -39,7 +40,7 @@ def compute_bitmask(grid: list[list[bool]], x: int, y: int) -> int:
 
     Returns:
         8-bit bitmask (0–255).
-    """
+    """  # noqa: RUF002
     rows = len(grid)
     cols = len(grid[0])
 
@@ -81,7 +82,7 @@ def find_closest_bitmask_index(bitmask: int) -> int:
 
     Returns:
         Index into BLOB_BITMASKS (0–46).
-    """
+    """  # noqa: RUF002
     if bitmask in BLOB_BITMASKS:
         return BLOB_BITMASKS.index(bitmask)
 

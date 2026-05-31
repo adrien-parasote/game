@@ -62,7 +62,7 @@ class TitleScreen(TitleLightsMixin, TitleDrawMixin):
         sw, sh = screen.get_size()
         self._sw = sw
         self._sh = sh
-        # Scale factors: BACKGROUND_LIGHTS coords are in logical 1280×720 space
+        # Scale factors: BACKGROUND_LIGHTS coords are in logical 1280x720 space
         self._light_scale_x = sw / 1280.0
         self._light_scale_y = sh / 720.0
         logging.debug(
@@ -214,7 +214,9 @@ class TitleScreen(TitleLightsMixin, TitleDrawMixin):
         self._draw_background_lights()
         self._draw_mushroom_lights()
 
-        title_text = self._i18n.get("menu.main_title", "L'Éveil de l'Héritier")  # Proper noun — game title stays in French
+        title_text = self._i18n.get(
+            "menu.main_title", "L'Éveil de l'Héritier"
+        )  # Proper noun — game title stays in French
         self._blit_halo_text(
             title_text, LOGO_ZONE_W // 2, LOGO_Y, self._title_font, LOGO_MAIN_COLOR, LOGO_MAIN_HALO
         )
@@ -263,7 +265,7 @@ class TitleScreen(TitleLightsMixin, TitleDrawMixin):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.state = "MAIN_MENU"
             return None
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # noqa: SIM102
             if self.back_btn_rect.collidepoint(event.pos):
                 self.state = "MAIN_MENU"
         return None
@@ -278,7 +280,7 @@ class TitleScreen(TitleLightsMixin, TitleDrawMixin):
             return None
 
         slot_idx = self._load_menu.get_clicked_slot(event)
-        if slot_idx is not None:
+        if slot_idx is not None:  # noqa: SIM102
             # check if there is data
             if self._load_menu._slots_info[slot_idx] is not None:
                 return GameEvent(type=GameEventType.LOAD_REQUESTED, slot_id=slot_idx + 1)

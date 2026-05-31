@@ -37,7 +37,11 @@ class GameHUD:
 
     @staticmethod
     def _hud_asset_path(filename: str) -> str:
-        return str((Path(__file__).parent / ".." / ".." / ".." / "assets" / "images" / "HUD" / filename).resolve())
+        return str(
+            (
+                Path(__file__).parent / ".." / ".." / ".." / "assets" / "images" / "HUD" / filename
+            ).resolve()
+        )
 
     def _load_image(self, filename: str) -> pygame.Surface:
         path = self._hud_asset_path(filename)

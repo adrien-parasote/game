@@ -1,4 +1,5 @@
 """Tests for CLI interface (TC-020..022) and Terrain config (TC-023..024)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -90,13 +91,19 @@ class TestCliGenerateCommand:
         parser = _build_parser()
         png_dir = tmp_path / "png"
         tsx_dir = tmp_path / "tsx"
-        args = parser.parse_args([
-            "generate",
-            "--terrain", "grass",
-            "--output-dir", str(png_dir),
-            "--tsx-dir", str(tsx_dir),
-            "--seed", "0",
-        ])
+        args = parser.parse_args(
+            [
+                "generate",
+                "--terrain",
+                "grass",
+                "--output-dir",
+                str(png_dir),
+                "--tsx-dir",
+                str(tsx_dir),
+                "--seed",
+                "0",
+            ]
+        )
         cmd_generate(args)
         assert (png_dir / "grass.png").exists()
         assert (tsx_dir / "grass.tsx").exists()
@@ -106,13 +113,19 @@ class TestCliGenerateCommand:
         parser = _build_parser()
         png_dir = tmp_path / "png"
         tsx_dir = tmp_path / "tsx"
-        args = parser.parse_args([
-            "generate",
-            "--terrain", "dirt",
-            "--output-dir", str(png_dir),
-            "--tsx-dir", str(tsx_dir),
-            "--name", "my-terrain",
-        ])
+        args = parser.parse_args(
+            [
+                "generate",
+                "--terrain",
+                "dirt",
+                "--output-dir",
+                str(png_dir),
+                "--tsx-dir",
+                str(tsx_dir),
+                "--name",
+                "my-terrain",
+            ]
+        )
         cmd_generate(args)
         assert (png_dir / "my-terrain.png").exists()
         assert (tsx_dir / "my-terrain.tsx").exists()
@@ -122,13 +135,19 @@ class TestCliGenerateCommand:
         parser = _build_parser()
         png_dir = tmp_path / "png"
         tsx_dir = tmp_path / "tsx"
-        args = parser.parse_args([
-            "generate",
-            "--terrain", "sand",
-            "--output-dir", str(png_dir),
-            "--tsx-dir", str(tsx_dir),
-            "--variants", "2",
-        ])
+        args = parser.parse_args(
+            [
+                "generate",
+                "--terrain",
+                "sand",
+                "--output-dir",
+                str(png_dir),
+                "--tsx-dir",
+                str(tsx_dir),
+                "--variants",
+                "2",
+            ]
+        )
         cmd_generate(args)
         assert (png_dir / "sand-v1.png").exists()
         assert (png_dir / "sand-v2.png").exists()
@@ -215,7 +234,9 @@ class TestTerrainConfig:
         assert texture.texture_type == "noise"
         assert texture.octaves == 3
 
+
 # ── TC-024: Extended CLI operations ───────────────────────────────────────────
+
 
 class TestCliExtended:
     """TC-024: Extended CLI commands and edge cases."""
@@ -227,6 +248,7 @@ class TestCliExtended:
         parser = _build_parser()
         args = parser.parse_args(["preview", "/path/does/not/exist.png"])
         from asset_creator.cli import cmd_preview
+
         with pytest.raises(SystemExit):
             cmd_preview(args)
         mock_exit.assert_called_once()
@@ -240,16 +262,18 @@ class TestCliExtended:
         mock_dpg.is_dearpygui_running.return_value = False
         with patch.dict("sys.modules", {"dearpygui": MagicMock(), "dearpygui.dearpygui": mock_dpg}):
             from asset_creator.cli import cmd_gui
-            try:
+
+            try:  # noqa: SIM105
                 cmd_gui(args)
             except Exception:
-                pass # expected if inner modules fail
+                pass  # expected if inner modules fail
 
     @patch("asset_creator.cli.sys.exit")
     def test_main_no_args(self, mock_exit: MagicMock) -> None:
         """main() without args exits."""
         mock_exit.side_effect = SystemExit(2)
         from asset_creator.cli import main
+
         with patch("sys.argv", ["asset_creator"]):
             with pytest.raises(SystemExit):
                 main()
@@ -260,6 +284,7 @@ class TestCliExtended:
         """resolve terrain with unknown name exits."""
         mock_exit.side_effect = SystemExit(1)
         from asset_creator.cli import _resolve_terrain_config
+
         with pytest.raises(SystemExit):
             _resolve_terrain_config("nonexistent_terrain")
         mock_exit.assert_called_once()
@@ -271,7 +296,8 @@ class TestCliExtended:
         empty_yaml = tmp_path / "empty.yaml"
         empty_yaml.write_text("not_a_dict", encoding="utf-8")
         from asset_creator.cli import _resolve_terrain_config
-        with pytest.raises(ValueError):
+
+        with pytest.raises(ValueError):  # noqa: PT011
             _resolve_terrain_config(str(empty_yaml))
 
     def test_generate_pattern_texture(self, tmp_path: Path) -> None:
@@ -279,13 +305,19 @@ class TestCliExtended:
         parser = _build_parser()
         png_dir = tmp_path / "png"
         tsx_dir = tmp_path / "tsx"
-        args = parser.parse_args([
-            "generate",
-            "--terrain", "paving_stone",
-            "--output-dir", str(png_dir),
-            "--tsx-dir", str(tsx_dir),
-        ])
+        args = parser.parse_args(
+            [
+                "generate",
+                "--terrain",
+                "paving_stone",
+                "--output-dir",
+                str(png_dir),
+                "--tsx-dir",
+                str(tsx_dir),
+            ]
+        )
         from asset_creator.cli import cmd_generate
+
         cmd_generate(args)
         assert (png_dir / "paving_stone.png").exists()
 
@@ -293,18 +325,27 @@ class TestCliExtended:
     def test_generate_preview_no_pygame(self, mock_write: MagicMock, tmp_path: Path) -> None:
         """generate with --preview warns if pygame missing."""
         parser = _build_parser()
-        args = parser.parse_args([
-            "generate",
-            "--terrain", "grass",
-            "--output-dir", str(tmp_path),
-            "--tsx-dir", str(tmp_path),
-            "--preview",
-        ])
+        args = parser.parse_args(
+            [
+                "generate",
+                "--terrain",
+                "grass",
+                "--output-dir",
+                str(tmp_path),
+                "--tsx-dir",
+                str(tmp_path),
+                "--preview",
+            ]
+        )
         from asset_creator.cli import cmd_generate
+
         with patch.dict("sys.modules", {"asset_creator.preview.pygame_preview": None}):
             cmd_generate(args)
         # Should warn about Pygame
-        assert any("WARNING: Pygame preview not available" in call[0][0] for call in mock_write.call_args_list)
+        assert any(
+            "WARNING: Pygame preview not available" in call[0][0]
+            for call in mock_write.call_args_list
+        )
 
     @patch("asset_creator.cli.sys.exit")
     def test_cmd_preview_no_pygame(self, mock_exit: MagicMock, tmp_path: Path) -> None:
@@ -312,6 +353,7 @@ class TestCliExtended:
         # Create dummy image
         png_path = tmp_path / "dummy.png"
         from PIL import Image
+
         Image.new("RGBA", (10, 10)).save(png_path)
 
         parser = _build_parser()
@@ -319,9 +361,7 @@ class TestCliExtended:
         from asset_creator.cli import cmd_preview
 
         mock_exit.side_effect = SystemExit(1)
-        with patch.dict("sys.modules", {"asset_creator.preview.pygame_preview": None}):
+        with patch.dict("sys.modules", {"asset_creator.preview.pygame_preview": None}):  # noqa: SIM117
             with pytest.raises(SystemExit):
                 cmd_preview(args)
         mock_exit.assert_called_with("ERROR: Pygame preview not available.")
-
-

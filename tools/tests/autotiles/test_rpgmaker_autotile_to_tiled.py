@@ -22,7 +22,9 @@ from tools.src.autotiles.rpgmaker_autotile_to_tiled import (
 )
 
 
-def _make_autotile(width: int = 96, height: int = 128, color: tuple = (0, 200, 0, 255)) -> Image.Image:
+def _make_autotile(
+    width: int = 96, height: int = 128, color: tuple = (0, 200, 0, 255)
+) -> Image.Image:
     """Create a synthetic RGBA autotile image filled with a solid color."""
     img = Image.new("RGBA", (width, height), color)
     return img
@@ -153,7 +155,7 @@ def test_ut009_quarter_source_top_and_left_tl():
 
 
 # ---------------------------------------------------------------------------
-# IT-001 — Full pipeline: produces 512×32 PNG and valid TSX with 16 wangtile elements
+# IT-001 — Full pipeline: produces 512x32 PNG and valid TSX with 16 wangtile elements
 # ---------------------------------------------------------------------------
 
 
@@ -168,7 +170,7 @@ def test_it001_full_pipeline_produces_correct_outputs(tmp_path):
     # PNG dimensions
     result_img = Image.open(png)
     assert result_img.size == (TILE_SIZE * TILE_COUNT, TILE_SIZE), (
-        f"Expected {TILE_SIZE * TILE_COUNT}×{TILE_SIZE}, got {result_img.size}"
+        f"Expected {TILE_SIZE * TILE_COUNT}x{TILE_SIZE}, got {result_img.size}"
     )
 
     # TSX is valid XML with 16 wangtile elements

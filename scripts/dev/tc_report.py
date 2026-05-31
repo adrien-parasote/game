@@ -16,25 +16,26 @@ import re
 import sys
 from collections import defaultdict
 
-SPECS_DIR = "game/docs/specs"
+SPEC_DIRS = ["game/docs/specs", "tools/docs/specs"]
 TRACEABILITY_OUTPUT = "docs/traceability.md"
 
 
-def extract_spec_tc_ids(specs_dir: str) -> tuple[dict[str, str], dict[str, list[str]]]:
+def extract_spec_tc_ids(spec_dirs: list[str]) -> tuple[dict[str, str], dict[str, list[str]]]:
     """Parse specs to extract TC-ID → spec name mappings."""
     tc_to_spec = {}
     spec_tcs = defaultdict(list)
 
-    for spec in sorted(glob.glob(f"{specs_dir}/*.md")):
-        with open(spec) as f:
-            content = f.read()
-        name = os.path.basename(spec)
-        for tc_id, _func_name in re.findall(
-            r"\|\s*([\w-]+)\s*\|\s*`(test_[^`]+)`\s*\|\s*`\.\./\.\./[^`]+`",
-            content,
-        ):
-            tc_to_spec[tc_id] = name
-            spec_tcs[name].append(tc_id)
+    for spec_dir in spec_dirs:
+        for spec in sorted(glob.glob(f"{spec_dir}/*.md")):
+            with open(spec) as f:
+                content = f.read()
+            name = os.path.basename(spec)
+            for tc_id, _func_name in re.findall(
+                r"\|\s*([\w-]+)\s*\|\s*`(test_[^`]+)`\s*\|\s*`\.\./\.\./[^`]+`",
+                content,
+            ):
+                tc_to_spec[tc_id] = name
+                spec_tcs[name].append(tc_id)
 
     return tc_to_spec, spec_tcs
 
@@ -172,7 +173,7 @@ def main() -> None:
     # Move up 3 directories from scripts/dev/tc_report.py to reach workspace root
     os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-    tc_to_spec, spec_tcs = extract_spec_tc_ids(SPECS_DIR)
+    tc_to_spec, spec_tcs = extract_spec_tc_ids(SPEC_DIRS)
     tc_to_tests = _scan_source_for_markers()
     generate_report(tc_to_spec, spec_tcs, tc_to_tests, markdown=args.markdown)
 

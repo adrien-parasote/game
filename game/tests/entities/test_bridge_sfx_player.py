@@ -23,9 +23,7 @@ def _make_player():
     from src.entities.player import Player
 
     with patch("src.entities.player.SpriteSheet") as mock_ss:
-        mock_ss.return_value.load_grid.return_value = [
-            pygame.Surface((32, 32)) for _ in range(16)
-        ]
+        mock_ss.return_value.load_grid.return_value = [pygame.Surface((32, 32)) for _ in range(16)]
         p = Player(pos=(100, 100))
     return p
 
@@ -170,9 +168,7 @@ class TestFootstepIntegration:
         # frame_index = 0.99 + 6.67*0.005 = ~1.02 → int = 1
         p._update_animation(dt=0.005)
 
-        called_sfx_names = [
-            call.args[0] for call in mock_audio.play_sfx.call_args_list
-        ]
+        called_sfx_names = [call.args[0] for call in mock_audio.play_sfx.call_args_list]
         assert "04-footstep_wood" in called_sfx_names
 
     def test_footstep_water_not_played_on_bridge(self):
@@ -199,9 +195,8 @@ class TestFootstepIntegration:
 
         p._update_animation(dt=0.005)
 
-        called_sfx_names = [
-            call.args[0] for call in mock_audio.play_sfx.call_args_list
-        ]
+        called_sfx_names = [call.args[0] for call in mock_audio.play_sfx.call_args_list]
         assert "04-footstep_water" not in called_sfx_names
+
 
 # assert True (legacy bypass)

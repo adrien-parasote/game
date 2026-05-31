@@ -252,9 +252,9 @@ def test_world_state_roundtrip(manager, tmp_saves_dir):
 def test_slot_id_out_of_range_raises(manager):
     """save() avec slot_id hors [1..3] lève ValueError."""
     game = _make_mock_game("/tmp")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # noqa: PT011
         manager.save(0, game)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # noqa: PT011
         manager.save(4, game)
 
 
@@ -282,7 +282,7 @@ def test_save_io_error_does_not_crash(manager, tmp_saves_dir, caplog):
     import logging
 
     game = _make_mock_game(tmp_saves_dir)
-    with patch("builtins.open", side_effect=OSError("disk full")):
+    with patch("builtins.open", side_effect=OSError("disk full")):  # noqa: SIM117
         with caplog.at_level(logging.ERROR):
             # Ne doit pas lever d'exception
             manager.save(1, game)

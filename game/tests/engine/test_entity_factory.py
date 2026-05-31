@@ -24,12 +24,17 @@ class TestSpawnPickupQuantityRestore:
 
         factory = EntityFactory(game)
 
-        ent = {"id": 42, "x": 64, "y": 64, "properties": {
-            "entity_type": "object",
-            "object_id": "herb",
-            "sprite_sheet": "herb.png",
-            "quantity": 10,  # sera remplacé par 3 depuis world_state
-        }}
+        ent = {
+            "id": 42,
+            "x": 64,
+            "y": 64,
+            "properties": {
+                "entity_type": "object",
+                "object_id": "herb",
+                "sprite_sheet": "herb.png",
+                "quantity": 10,  # sera remplacé par 3 depuis world_state
+            },
+        }
         props = ent["properties"]
 
         surf = pygame.Surface((32, 32))
@@ -48,12 +53,17 @@ class TestSpawnPickupQuantityRestore:
         game.world_state.get.return_value = {"collected": True}
 
         factory = EntityFactory(game)
-        ent = {"id": 10, "x": 64, "y": 64, "properties": {
-            "entity_type": "object",
-            "object_id": "coin",
-            "sprite_sheet": "coin.png",
-            "quantity": 1,
-        }}
+        ent = {
+            "id": 10,
+            "x": 64,
+            "y": 64,
+            "properties": {
+                "entity_type": "object",
+                "object_id": "coin",
+                "sprite_sheet": "coin.png",
+                "quantity": 1,
+            },
+        }
 
         with patch("src.engine.entity_factory.PickupItem") as MockPickup:
             factory.spawn_pickup(ent, ent["properties"])

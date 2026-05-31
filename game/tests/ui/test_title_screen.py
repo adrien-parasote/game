@@ -122,7 +122,7 @@ def title_screen(mock_screen, mock_save_manager):
 
 @pytest.mark.tc("GF-035")
 def test_title_screen_light_scale_factors(mock_save_manager):
-    """GF-034 : _light_scale_x/y calculés depuis screen.get_size() — espace logique 1280×720."""
+    """GF-034 : _light_scale_x/y calculés depuis screen.get_size() — espace logique 1280x720."""
     mock_screen = MagicMock(spec=pygame.Surface)
     mock_screen.get_size.return_value = (2560, 1440)
     with (
@@ -152,7 +152,8 @@ def test_title_click_new_game_returns_event(title_screen):
     rect = title_screen.menu_item_rects[0]  # Nouvelle Partie
     event = _make_mouse_event(rect.center)
     result = title_screen.handle_event(event)
-    assert result is not None and result.type == GameEventType.NEW_GAME
+    assert result is not None
+    assert result.type == GameEventType.NEW_GAME
 
 
 def test_title_click_charger_transitions_to_load_menu(title_screen):
@@ -168,7 +169,8 @@ def test_title_click_quitter_returns_quit_event(title_screen):
     rect = title_screen.menu_item_rects[3]  # Quitter
     event = _make_mouse_event(rect.center)
     result = title_screen.handle_event(event)
-    assert result is not None and result.type == GameEventType.QUIT
+    assert result is not None
+    assert result.type == GameEventType.QUIT
 
 
 # ── TC-012 : ESC depuis LOAD_MENU → MAIN_MENU ────────────────────────────────

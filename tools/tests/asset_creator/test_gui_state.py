@@ -3,6 +3,7 @@
 Verifies AppState creation from presets, conversion to core configs,
 and frozen immutability.
 """
+
 from __future__ import annotations
 
 import dataclasses
@@ -201,12 +202,10 @@ class TestAppStateFrozen:
 class TestAllPresets:
     """TC-014: state_from_preset works for all 6 presets without exceptions."""
 
-    ALL_PRESET_NAMES = ["grass", "dirt", "paving_stone", "sand", "snow", "water"]
+    ALL_PRESET_NAMES = ["grass", "dirt", "paving_stone", "sand", "snow", "water"]  # noqa: RUF012
 
     @pytest.mark.parametrize("preset_name", ALL_PRESET_NAMES)
-    def test_preset_loads_without_exception(
-        self, preset_name: str, presets: dict
-    ) -> None:
+    def test_preset_loads_without_exception(self, preset_name: str, presets: dict) -> None:
         state = state_from_preset(preset_name, presets)
         assert isinstance(state, AppState)
         assert state.terrain_name == preset_name

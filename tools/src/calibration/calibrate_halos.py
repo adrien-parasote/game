@@ -126,7 +126,7 @@ def _draw_points(screen: pygame.Surface, fire: list, mush: list) -> None:
         pygame.draw.circle(screen, color, (x, y), r, 1)
 
 
-def _handle_event(event, running, mode, fire_pts, mush_pts, screen):
+def _handle_event(event, running, mode, fire_pts, mush_pts, screen):  # noqa: C901
     if event.type == pygame.QUIT:
         return False, mode, screen
 

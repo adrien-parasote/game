@@ -141,10 +141,10 @@ def test_save_menu_overlay_back_clicked(mock_screen, mock_save_manager):
 
 
 class TestSaveMenuCoverage:
-
     def test_save_slot_ui_init_loads_bg(self):
         """SaveSlotUI init: covers L29-33 with mock AssetManager."""
         from src.ui.save_menu import SaveSlotUI
+
         am = MagicMock()
         am.get_font.return_value = pygame.font.SysFont(None, 24)
         with patch("pygame.image.load") as mock_load:
@@ -157,12 +157,16 @@ class TestSaveMenuCoverage:
     def test_save_menu_overlay_init(self):
         """SaveMenuOverlay init covers L75-76."""
         from src.ui.save_menu import SaveMenuOverlay
+
         screen = pygame.Surface((800, 600))
         sm = MagicMock()
         sm.list_saves.return_value = []
-        with patch("pygame.image.load", return_value=MagicMock(
-            convert_alpha=lambda: pygame.Surface((800, 600))
-        )):
-            with patch("pygame.transform.smoothscale", return_value=pygame.Surface((800, 600))):
-                overlay = SaveMenuOverlay(screen=screen, save_manager=sm, title="Sauvegardes")
+        with (
+            patch(
+                "pygame.image.load",
+                return_value=MagicMock(convert_alpha=lambda: pygame.Surface((800, 600))),
+            ),
+            patch("pygame.transform.smoothscale", return_value=pygame.Surface((800, 600))),
+        ):
+            overlay = SaveMenuOverlay(screen=screen, save_manager=sm, title="Sauvegardes")
         assert overlay is not None

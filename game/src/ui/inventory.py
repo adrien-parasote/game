@@ -52,7 +52,6 @@ class InventoryUI(InventoryDrawMixin, InventoryInputMixin):
         self._load_and_scale_assets()
         self._init_layout_constants()
 
-
     def _init_state(self):
         self.is_open = False
         self.active_tab = 0  # 0: Inventory, 1-3: Other
@@ -78,7 +77,9 @@ class InventoryUI(InventoryDrawMixin, InventoryInputMixin):
         self.scale_factor = INV_TARGET_WIDTH / original_width
 
         def _scale(img, ratio=self.scale_factor):
-            return pygame.transform.smoothscale(img, (int(img.get_width() * ratio), int(img.get_height() * ratio)))
+            return pygame.transform.smoothscale(
+                img, (int(img.get_width() * ratio), int(img.get_height() * ratio))
+            )
 
         # Rescale all visual assets
         self.bg = _scale(self.bg)

@@ -19,12 +19,14 @@ Includes: BaseEntity, Player, NPC, InteractiveEntity, and Emote logic.
 @pytest.fixture
 def mock_spritesheet():
     """Mock SpriteSheet to avoid disk I/O and handle headless mode."""
-    with patch(
-        "src.graphics.spritesheet.SpriteSheet.load_grid",
-        return_value=[pygame.Surface((32, 48)) for _ in range(16)],
+    with (
+        patch(
+            "src.graphics.spritesheet.SpriteSheet.load_grid",
+            return_value=[pygame.Surface((32, 48)) for _ in range(16)],
+        ),
+        patch("src.graphics.spritesheet.SpriteSheet.__init__", return_value=None),
     ):
-        with patch("src.graphics.spritesheet.SpriteSheet.__init__", return_value=None):
-            yield
+        yield
 
 
 # --- BaseEntity Tests ---
@@ -492,7 +494,6 @@ def test_pickup_logic():
     assert pickup.quantity == 5
 
 
-
 def test_player_can_move_on_large_map():
     game_mock = MagicMock()
     game_mock.map_manager.width = 50
@@ -507,4 +508,3 @@ def test_player_can_move_on_large_map():
     player.start_move()
 
     assert player.target_pos.x > 1024
-

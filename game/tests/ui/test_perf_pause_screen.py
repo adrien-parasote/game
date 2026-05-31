@@ -8,6 +8,7 @@ Covers:
 
 Spec: game/docs/specs/perf-constants-spec.md#feature-p-perf-01c--pre-render-pause-menu-items
 """
+
 from unittest.mock import MagicMock, patch
 
 import pygame
@@ -18,7 +19,7 @@ from src.ui.pause_screen_constants import _BUTTON_DEFAULTS
 
 @pytest.fixture
 def _surfaces():
-    """Return a real 10×10 Surface for mock renders."""
+    """Return a real 10x10 Surface for mock renders."""
     pygame.font.init()
     return pygame.Surface((10, 10), pygame.SRCALPHA)
 
@@ -47,6 +48,7 @@ def pause_screen(_surfaces):
 
 # ── UT-001 ─────────────────────────────────────────────────────────────────
 
+
 def test_pause_screen_has_pre_rendered_idle(pause_screen):
     """UT-001: _rendered_idle must be populated at __init__ with len == button count."""
     assert hasattr(pause_screen, "_rendered_idle"), (
@@ -74,6 +76,7 @@ def test_pause_screen_has_pre_rendered_hover(pause_screen):
 
 # ── UT-002 ─────────────────────────────────────────────────────────────────
 
+
 def test_pause_screen_draw_uses_cached_surfaces(pause_screen):
     """UT-002: draw() must blit pre-rendered surfaces — no new Surface alloc."""
     pause_screen._hovered_btn = 0
@@ -98,7 +101,8 @@ def test_pause_screen_draw_uses_cached_surfaces(pause_screen):
 
 # ── UT-003 ─────────────────────────────────────────────────────────────────
 
-def test_make_halo_surface_fallback_when_no_gaussian_blur(_surfaces):
+
+def test_make_halo_surface_fallback_when_no_gaussian_blur(_surfaces):  # noqa: PT019
     """UT-003: _make_halo_surface must work even if gaussian_blur raises AttributeError."""
     pygame.font.init()
 

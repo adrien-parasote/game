@@ -96,7 +96,9 @@ def test_close_chest_does_not_use_sfx_attr_directly():
     """TC-001 regression: _close_chest() must NOT read chest.sfx directly — sfx attr is ''."""
     game = _make_game_with_player_at((500, 500))
     # sfx is empty (migrated), only sfx_close is set
-    chest = _ChestSprite(sfx_open="02-open_chest", sfx_close="02-open_chest", sfx="", initial_is_on=True)
+    chest = _ChestSprite(
+        sfx_open="02-open_chest", sfx_close="02-open_chest", sfx="", initial_is_on=True
+    )
 
     im = InteractionManager(game)
     im._open_chest_entity = chest
@@ -139,7 +141,10 @@ def test_open_chest_plays_sfx_open():
 
     im = InteractionManager(game)
 
-    with patch("pygame.key.get_pressed", return_value={__import__("src.config", fromlist=["Settings"]).Settings.INTERACT_KEY: True}):
+    with patch(
+        "pygame.key.get_pressed",
+        return_value={__import__("src.config", fromlist=["Settings"]).Settings.INTERACT_KEY: True},
+    ):
         im.handle_interactions()
 
     # After interact(), is_on=True → _resolve_sfx returns sfx_open
@@ -159,7 +164,10 @@ def test_open_chest_silent_when_no_sfx_open():
 
     im = InteractionManager(game)
 
-    with patch("pygame.key.get_pressed", return_value={__import__("src.config", fromlist=["Settings"]).Settings.INTERACT_KEY: True}):
+    with patch(
+        "pygame.key.get_pressed",
+        return_value={__import__("src.config", fromlist=["Settings"]).Settings.INTERACT_KEY: True},
+    ):
         im.handle_interactions()
 
     game.audio_manager.play_sfx.assert_not_called()

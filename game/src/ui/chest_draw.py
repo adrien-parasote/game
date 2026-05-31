@@ -37,7 +37,7 @@ class ChestDrawMixin:
         title_surf = getattr(self, "_title_surf", None)
         if title_surf is None:
             title_surf = self._title_font.render(CHEST_TITLE_TEXT, True, CHEST_TEXT_COLOR)
-            try:
+            try:  # noqa: SIM105
                 self._title_surf = title_surf
             except AttributeError:
                 pass  # FakeChest in tests may not declare _title_surf
@@ -45,8 +45,7 @@ class ChestDrawMixin:
         cy = self._title_rect.centery + _TITLE_OFFSET_Y
         screen.blit(title_surf, title_surf.get_rect(center=(cx, cy)))
 
-
-    def _draw_slots(self: "ChestUIProtocol", screen: pygame.Surface) -> None:
+    def _draw_slots(self: "ChestUIProtocol", screen: pygame.Surface) -> None:  # noqa: C901
         """Render chest slot frames, item icons, quantities, and hover overlay."""
         if self._qty_font is None:
             self._qty_font = pygame.font.Font(Settings.FONT_TECH, Settings.FONT_SIZE_TECH)
@@ -125,7 +124,7 @@ class ChestDrawMixin:
             rect = self._arrow_up_hover_img.get_rect(center=self._arrow_down_rect.center)
             screen.blit(self._arrow_up_hover_img, rect)
 
-    def _draw_inv_slots(self: "ChestUIProtocol", screen: pygame.Surface) -> None:
+    def _draw_inv_slots(self: "ChestUIProtocol", screen: pygame.Surface) -> None:  # noqa: C901
         """Render player inventory slot frames, item icons, quantities and hover overlay."""
         if self._qty_font is None:
             self._qty_font = pygame.font.Font(Settings.FONT_TECH, Settings.FONT_SIZE_TECH)
@@ -168,11 +167,8 @@ class ChestDrawMixin:
 
             qty = getattr(item, "quantity", 1)
             if qty > 1:
-                if qty not in self._qty_cache:
-                    if self._qty_font is not None:
-                        self._qty_cache[qty] = self._qty_font.render(
-                            f"x{qty}", True, CHEST_TEXT_COLOR
-                        )
+                if qty not in self._qty_cache and self._qty_font is not None:
+                    self._qty_cache[qty] = self._qty_font.render(f"x{qty}", True, CHEST_TEXT_COLOR)
                 qty_surf = self._qty_cache.get(qty)
                 if qty_surf is not None:
                     qty_rect = qty_surf.get_rect(

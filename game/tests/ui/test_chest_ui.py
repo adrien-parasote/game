@@ -1,4 +1,3 @@
-
 from src.entities.interactive import InteractiveEntity
 from src.entities.player import Player
 from src.ui.chest import ChestUI
@@ -9,14 +8,17 @@ class DummyChest(InteractiveEntity):
         self.contents = contents
         self.sub_type = "chest"
 
+
 class DummyPlayer(Player):
     def __init__(self):
         self.inventory = DummyInventory()
+
 
 class DummyInventory:
     def __init__(self):
         self.slots = [None] * 20
         self.item_data = {}
+
 
 def test_chest_ui_get_contents(setup_pygame):
     ui = ChestUI()

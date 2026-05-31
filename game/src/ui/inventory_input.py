@@ -88,7 +88,7 @@ class InventoryInputMixin:
         elif key == Settings.MOVE_RIGHT:
             self.preview_state = "right"
 
-    def _transfer_dragged_to_equipment(self: "InventoryUIProtocol", target_name: str) -> None:
+    def _transfer_dragged_to_equipment(self: "InventoryUIProtocol", target_name: str) -> None:  # noqa: C901
         """Transfer dragged item to the equipment slot."""
         if not self._dragging_item or not self.player:
             return
@@ -132,7 +132,7 @@ class InventoryInputMixin:
                 # Equip successful, we got a swapped item. Put it in grid
                 inv.slots[src_idx] = swapped
 
-    def _transfer_dragged_to_grid(self: "InventoryUIProtocol", target_idx: int) -> None:
+    def _transfer_dragged_to_grid(self: "InventoryUIProtocol", target_idx: int) -> None:  # noqa: C901
         """Transfer dragged item to a grid slot."""
         if not self._dragging_item or not self.player:
             return

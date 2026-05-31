@@ -11,6 +11,7 @@ try:
         oklch_to_rgb,
         rgb_to_oklch,
     )
+
     HAS_COLOR_RAMP = True
 except ImportError:
     HAS_COLOR_RAMP = False
@@ -22,18 +23,27 @@ class TestRgbOklchRoundTrip:
     """TC-025: rgb_to_oklch + oklch_to_rgb round-trip matches original ±1."""
 
     _COLORS: tuple[tuple[int, int, int], ...] = (
-        (255, 0, 0),      # pure red
-        (0, 255, 0),      # pure green
-        (0, 0, 255),      # pure blue
+        (255, 0, 0),  # pure red
+        (0, 255, 0),  # pure green
+        (0, 0, 255),  # pure blue
         (255, 255, 255),  # white
-        (0, 0, 0),        # black
-        (97, 132, 71),    # mid-tone green (existing grass palette)
+        (0, 0, 0),  # black
+        (97, 132, 71),  # mid-tone green (existing grass palette)
     )
 
     @pytest.mark.tc("TC-025")
-    @pytest.mark.parametrize("rgb", _COLORS, ids=[
-        "pure_red", "pure_green", "pure_blue", "white", "black", "mid_green",
-    ])
+    @pytest.mark.parametrize(
+        "rgb",
+        _COLORS,
+        ids=[
+            "pure_red",
+            "pure_green",
+            "pure_blue",
+            "white",
+            "black",
+            "mid_green",
+        ],
+    )
     def test_round_trip(self, rgb: tuple[int, int, int]) -> None:
         """RGB -> OKLCh -> RGB must match original within ±1 per channel."""
         L, C, h = rgb_to_oklch(*rgb)
@@ -85,7 +95,7 @@ class TestRampLightnessMonotonicity:
         for i in range(1, len(lightness_values)):
             assert lightness_values[i] >= lightness_values[i - 1] - 1e-9, (
                 f"Lightness decreased at index {i}: "
-                f"{lightness_values[i-1]:.4f} -> {lightness_values[i]:.4f}"
+                f"{lightness_values[i - 1]:.4f} -> {lightness_values[i]:.4f}"
             )
 
     @pytest.mark.tc("TC-027")
@@ -98,7 +108,7 @@ class TestRampLightnessMonotonicity:
         for i in range(1, len(lightness_values)):
             assert lightness_values[i] >= lightness_values[i - 1] - 1e-9, (
                 f"Lightness decreased at index {i}: "
-                f"{lightness_values[i-1]:.4f} -> {lightness_values[i]:.4f}"
+                f"{lightness_values[i - 1]:.4f} -> {lightness_values[i]:.4f}"
             )
 
 
@@ -160,11 +170,11 @@ class TestRampSrgbValidity:
     @pytest.mark.parametrize(
         "base_rgb",
         [
-            (97, 132, 71),    # mid-tone green
-            (10, 10, 10),     # very dark
+            (97, 132, 71),  # mid-tone green
+            (10, 10, 10),  # very dark
             (245, 245, 245),  # very bright
-            (255, 0, 0),      # saturated red
-            (0, 0, 255),      # saturated blue
+            (255, 0, 0),  # saturated red
+            (0, 0, 255),  # saturated blue
         ],
         ids=["mid_green", "very_dark", "very_bright", "saturated_red", "saturated_blue"],
     )
@@ -178,9 +188,7 @@ class TestRampSrgbValidity:
                 assert isinstance(val, int), (
                     f"Channel {ch_idx} at index {i} is {type(val)}, expected int"
                 )
-                assert 0 <= val <= 255, (
-                    f"Channel {ch_idx} at index {i} out of range: {val}"
-                )
+                assert 0 <= val <= 255, f"Channel {ch_idx} at index {i} out of range: {val}"
 
 
 class TestInterpolateOklch:

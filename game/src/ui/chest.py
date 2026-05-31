@@ -4,7 +4,6 @@ Implements the UI that appears when a chest is opened.
 Refactored to delegate layout, transfer, and rendering to mixins.
 """
 
-
 import pygame
 from src.ui.chest_constants import (
     _INV_SLOTS_VISIBLE,

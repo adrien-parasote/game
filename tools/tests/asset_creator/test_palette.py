@@ -313,7 +313,8 @@ class TestExtendedPaletteRamp:
 
     @pytest.mark.tc("TC-031")
     def test_extended_colors_count_matches_steps(
-        self, tmp_path: Path,
+        self,
+        tmp_path: Path,
     ) -> None:
         """extended_colors must contain exactly ramp.steps colors."""
         yaml_file = tmp_path / "ramp.yaml"
@@ -406,6 +407,4 @@ class TestExtendedPaletteUniqueness:
         palette = load_palette(yaml_file)
         colors = palette.extended_colors
 
-        assert len(set(colors)) == len(colors), (
-            f"Duplicate colors found in extended ramp: {colors}"
-        )
+        assert len(set(colors)) == len(colors), f"Duplicate colors found in extended ramp: {colors}"

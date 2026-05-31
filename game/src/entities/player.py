@@ -25,7 +25,16 @@ class Player(BaseEntity):
 
         # Load Spritesheet
         sheet_path = str(
-            (Path(__file__).parent / ".." / ".." / ".." / "assets" / "images" / "characters" / "01-character.png").resolve()
+            (
+                Path(__file__).parent
+                / ".."
+                / ".."
+                / ".."
+                / "assets"
+                / "images"
+                / "characters"
+                / "01-character.png"
+            ).resolve()
         )
         sheet = SpriteSheet(sheet_path)
         self.frames = sheet.load_grid(4, 4)
@@ -135,9 +144,7 @@ class Player(BaseEntity):
                     return entity_material
 
         if self.game and self.game.map_manager:
-            return self.game.map_manager.get_terrain_material_at(
-                int(self.pos.x), int(self.pos.y)
-            )
+            return self.game.map_manager.get_terrain_material_at(int(self.pos.x), int(self.pos.y))
         return None
 
     @override

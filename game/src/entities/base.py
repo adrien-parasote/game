@@ -71,15 +71,9 @@ class BaseEntity(pygame.sprite.Sprite):
 
             requested_dir = None
             if abs(self.direction.x) > abs(self.direction.y):
-                if self.direction.x > 0:
-                    requested_dir = "right"
-                else:
-                    requested_dir = "left"
+                requested_dir = "right" if self.direction.x > 0 else "left"
             else:
-                if self.direction.y > 0:
-                    requested_dir = "down"
-                else:
-                    requested_dir = "up"
+                requested_dir = "down" if self.direction.y > 0 else "up"
 
             if "any" not in allowed_directions and requested_dir not in allowed_directions:
                 return  # Movement blocked by current tile's exit constraints
@@ -104,7 +98,7 @@ class BaseEntity(pygame.sprite.Sprite):
         self.target_pos.y = max(half_h, min(self.target_pos.y, world_height - half_h))
 
         # Check custom collisions (e.g. MapManager wall tiles)
-        if self.walkable_func is not None:
+        if self.walkable_func is not None:  # noqa: SIM102
             if not self.walkable_func(self.target_pos.x, self.target_pos.y, requester=self):
                 self.target_pos = pygame.math.Vector2(self.pos)
                 return

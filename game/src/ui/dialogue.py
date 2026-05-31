@@ -118,7 +118,7 @@ class DialogueManager:
         current_line_words = []
 
         for word in words:
-            test_line = " ".join(current_line_words + [word]) if current_line_words else word
+            test_line = " ".join([*current_line_words, word]) if current_line_words else word
             if self.font_message.size(test_line)[0] <= max_w:
                 current_line_words.append(word)
             else:
@@ -233,9 +233,7 @@ class DialogueManager:
 
             if accumulated_chars + len(line) <= chars_to_show:
                 # Full line is visible: blit this horizontal strip from the pre-rendered page_surf
-                strip_rect = pygame.Rect(
-                    0, int(y_offset), page_surf.get_width(), int(line_height)
-                )
+                strip_rect = pygame.Rect(0, int(y_offset), page_surf.get_width(), int(line_height))
                 screen.blit(page_surf, (message_x, message_y + y_offset), strip_rect)
                 accumulated_chars += line_len_with_space
             else:
@@ -243,9 +241,7 @@ class DialogueManager:
                 chars_in_this_line = chars_to_show - accumulated_chars
                 text_to_draw = line[:chars_in_this_line]
                 if text_to_draw:
-                    shadow_surf = self.font_message.render(
-                        text_to_draw, True, self._shadow_color
-                    )
+                    shadow_surf = self.font_message.render(text_to_draw, True, self._shadow_color)
                     screen.blit(
                         shadow_surf,
                         (
@@ -253,9 +249,7 @@ class DialogueManager:
                             message_y + y_offset + self._shadow_offset,
                         ),
                     )
-                    line_surf = self.font_message.render(
-                        text_to_draw, True, self._text_color
-                    )
+                    line_surf = self.font_message.render(text_to_draw, True, self._text_color)
                     screen.blit(line_surf, (message_x, message_y + y_offset))
                 accumulated_chars = chars_to_show
 

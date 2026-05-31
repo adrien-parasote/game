@@ -123,7 +123,7 @@ class TestOffPositionRestoreState:
 class TestOffPositionFrameRendering:
     def test_get_frame_uses_off_col_when_off(self):
         """_get_frame picks the correct column based on col_index when OFF."""
-        # Build entity with 2-col sheet (simulated with 8 frames: 4 rows × 2 cols)
+        # Build entity with 2-col sheet (simulated with 8 frames: 4 rows x 2 cols)
         entity = _make_entity(position=0, off_position=1, is_on=False, is_animated=True)
         # Manually inject a 2-col frame grid so index arithmetic is predictable
         entity._sheet_cols = 2

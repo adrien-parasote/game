@@ -12,6 +12,7 @@ Covers:
 
 Spec: game/docs/specs/perf-constants-spec.md
 """
+
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -19,6 +20,7 @@ import pygame
 import pytest
 
 # ── UT-004 ─────────────────────────────────────────────────────────────────
+
 
 def test_save_menu_refresh_populates_cached_title_surfs():
     """UT-004: SaveMenuOverlay.refresh() must set _cached_title_surfs (list of 3)."""
@@ -31,8 +33,13 @@ def test_save_menu_refresh_populates_cached_title_surfs():
     mock_sm = MagicMock()
     mock_sm.list_slots.return_value = [
         SlotInfo(
-            slot_id=1, saved_at="2025-01-01 12:00", playtime_seconds=3600.0,
-            map_name="Map", map_display_name="Map", player_name="Hero", level=5,
+            slot_id=1,
+            saved_at="2025-01-01 12:00",
+            playtime_seconds=3600.0,
+            map_name="Map",
+            map_display_name="Map",
+            player_name="Hero",
+            level=5,
         ),
         None,
         None,
@@ -53,6 +60,7 @@ def test_save_menu_refresh_populates_cached_title_surfs():
 
 
 # ── UT-007 ─────────────────────────────────────────────────────────────────
+
 
 def test_dialogue_manager_uses_constant_colors():
     """UT-007: DialogueManager._shadow_color and _text_color must match constants."""
@@ -75,6 +83,7 @@ def test_dialogue_manager_uses_constant_colors():
 
 
 # ── UT-008 ─────────────────────────────────────────────────────────────────
+
 
 def test_chest_draw_title_uses_constant_text():
     """UT-008: _draw_title() must render CHEST_TITLE_TEXT, not a hardcoded string."""
@@ -111,6 +120,7 @@ def test_chest_draw_title_uses_constant_text():
 
 # ── UT-009 ─────────────────────────────────────────────────────────────────
 
+
 def test_chest_draw_title_font_lazy_init_only_once():
     """UT-009: _title_font must be created once and reused on subsequent calls."""
     from src.ui.chest_draw import ChestDrawMixin
@@ -146,6 +156,7 @@ def test_chest_draw_title_font_lazy_init_only_once():
 
 # ── UT-010 ─────────────────────────────────────────────────────────────────
 
+
 def test_save_slot_ui_uses_constant_bg_size():
     """UT-010: SaveSlotUI must pass (SAVE_SLOT_BG_W, SAVE_SLOT_BG_H) to smoothscale."""
     from src.ui.save_menu import SaveSlotUI
@@ -161,7 +172,7 @@ def test_save_slot_ui_uses_constant_bg_size():
         scaled_sizes.append(size)
         return pygame.Surface(size)
 
-    with patch("pygame.transform.smoothscale", side_effect=capture_scale):
+    with patch("pygame.transform.smoothscale", side_effect=capture_scale):  # noqa: SIM117
         with patch("pygame.image.load", return_value=pygame.Surface((427, 200))):
             slot = SaveSlotUI(mock_am)
 
@@ -172,6 +183,7 @@ def test_save_slot_ui_uses_constant_bg_size():
 
 
 # ── IT-001 ─────────────────────────────────────────────────────────────────
+
 
 def test_no_french_comment_in_source():
     """IT-001: No '# Sauvegarder' comment must exist in any .py source file."""
@@ -185,12 +197,13 @@ def test_no_french_comment_in_source():
             stripped = line.strip()
             if stripped.startswith("#") and "Sauvegarder" in stripped:
                 violations.append(f"{py_file}:{i}: {line.rstrip()}")
-    assert not violations, (
-        "French comment '# Sauvegarder' found in source:\n" + "\n".join(violations)
+    assert not violations, "French comment '# Sauvegarder' found in source:\n" + "\n".join(
+        violations
     )
 
 
 # ── IT-003 ─────────────────────────────────────────────────────────────────
+
 
 def test_save_menu_constants_importable():
     """IT-003: save_menu_constants must import without error."""

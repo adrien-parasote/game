@@ -91,7 +91,9 @@ class CameraGroup(pygame.sprite.Group):
             self._cache_dirty = False
         return self._sorted_cache
 
-    def custom_draw(self, surface: pygame.Surface, min_depth: int | None = None, max_depth: int | None = None):
+    def custom_draw(  # noqa: C901
+        self, surface: pygame.Surface, min_depth: int | None = None, max_depth: int | None = None
+    ):
         """Draw sprites with already calculated camera offset and Y-sorting."""
         # Invalidate sort cache if any sprite is currently moving
         if not self._cache_dirty:
@@ -129,7 +131,7 @@ class CameraGroup(pygame.sprite.Group):
                 # Debug Hitbox Rendering
                 if Settings.DEBUG:
                     debug_rect = sprite.rect.move(self.offset.x, self.offset.y)
-                    try:
+                    try:  # noqa: SIM105
                         pygame.draw.rect(surface, (255, 0, 0), debug_rect, 1)
                     except TypeError:
                         # Fallback for mock surfaces in tests where pygame.draw.rect fails

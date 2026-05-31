@@ -3,6 +3,7 @@
 Shows the tileset strip and a simulated mini-map using the generated tiles.
 Press ESC or close the window to exit.
 """
+
 from __future__ import annotations
 
 import random
@@ -43,7 +44,9 @@ def _pil_to_surface(pil_image: Image.Image) -> Surface:
         raise RuntimeError("Pygame is not installed")
     raw = pil_image.tobytes("raw", "RGBA")
     surface = pygame.image.fromstring(
-        raw, pil_image.size, "RGBA",
+        raw,
+        pil_image.size,
+        "RGBA",
     )
     return surface
 
@@ -95,8 +98,10 @@ def _draw_minimap(
                     screen.blit(tile_surfaces[tile_idx], (px, py))
             else:
                 pygame.draw.rect(
-                    screen, PREVIEW_GRID_COLOR,
-                    (px, py, TILE_SIZE, TILE_SIZE), 1,
+                    screen,
+                    PREVIEW_GRID_COLOR,
+                    (px, py, TILE_SIZE, TILE_SIZE),
+                    1,
                 )
 
 
@@ -111,7 +116,7 @@ def run_preview(
     - Bottom: a simulated mini-map showing tiles in context
 
     Args:
-        tileset_image: The assembled tileset strip (47×32, 32).
+        tileset_image: The assembled tileset strip (47x32, 32).
         subtile_set: Optional SubTileSet (unused in current version).
     """
     if pygame is None:
@@ -160,7 +165,8 @@ def run_preview(
 
         label2 = font.render(
             "Mini-map Preview (SPACE = regenerate, ESC = quit)",
-            True, PREVIEW_TEXT_COLOR,
+            True,
+            PREVIEW_TEXT_COLOR,
         )
         screen.blit(label2, (map_x, map_y - 16))
 

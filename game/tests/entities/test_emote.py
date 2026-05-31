@@ -10,7 +10,7 @@ def _make_manager_with_frames():
     """Return an EmoteManager with mocked spritesheet frames."""
     from src.entities.emote import EmoteManager
 
-    fake_frames = [pygame.Surface((16, 16)) for _ in range(40)]  # 5 cols × 8 rows
+    fake_frames = [pygame.Surface((16, 16)) for _ in range(40)]  # 5 cols x 8 rows
     with patch("src.entities.emote.SpriteSheet") as mock_ss:
         mock_ss.return_value.load_grid.return_value = fake_frames
         player = MagicMock()
@@ -34,7 +34,7 @@ class TestEmoteManagerInit:
             return "images" not in path  # le path primaire contient 'images', pas le fallback
 
         fake_frames = [pygame.Surface((16, 16)) for _ in range(40)]
-        with patch("src.entities.emote.os.path.exists", side_effect=fake_exists):
+        with patch("src.entities.emote.os.path.exists", side_effect=fake_exists):  # noqa: SIM117
             with patch("src.entities.emote.SpriteSheet") as mock_ss:
                 mock_ss.return_value.load_grid.return_value = fake_frames
                 player = MagicMock()
@@ -83,5 +83,6 @@ class TestEmoteTrigger:
 
         manager.trigger("love")
         audio.play_sfx.assert_called_once_with("03-emote", source_id="player_emote")
+
 
 # assert True (legacy bypass)

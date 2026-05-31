@@ -67,9 +67,7 @@ class MapLoader:
         if bgm:
             self.game.audio_manager.play_bgm(bgm)
 
-        self.game.map_size = max(
-            self.game.map_manager.width, self.game.map_manager.height
-        )
+        self.game.map_size = max(self.game.map_manager.width, self.game.map_manager.height)
 
         world_width_px = self.game.map_manager.width * self.game.tile_size
         world_height_px = self.game.map_manager.height * self.game.tile_size
@@ -80,9 +78,7 @@ class MapLoader:
         self._clear_groups()
 
         self.game._current_map_name = map_name
-        self.game._entity_factory.spawn_entities(
-            map_result.get("entities", []), map_name
-        )
+        self.game._entity_factory.spawn_entities(map_result.get("entities", []), map_name)
 
         spawn_pos = self._resolve_spawn(
             map_result, target_spawn_id, world_width_px, world_height_px
@@ -163,8 +159,7 @@ class MapLoader:
             if target_spawn_id and props.get("spawn_id") == target_spawn_id:
                 return (ent["x"] + half_tile, ent["y"] + half_tile)
             if not target_spawn_id and (
-                props.get("is_initial_spawn") is True
-                or props.get("is_initial_pawn") is True
+                props.get("is_initial_spawn") is True or props.get("is_initial_pawn") is True
             ):
                 return (ent["x"] + half_tile, ent["y"] + half_tile)
 

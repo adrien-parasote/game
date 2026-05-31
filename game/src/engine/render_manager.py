@@ -6,6 +6,7 @@ from src.engine.asset_manager import AssetManager
 type BlitSequence = list[tuple[pygame.Surface, tuple[int, int]]]
 type OccludingRect = list[tuple[pygame.Rect, int, pygame.Surface | None]]
 
+
 class RenderManager:
     """Handles all visual rendering logic for the game scene, decoupling it from the main event loop."""
 
@@ -80,11 +81,13 @@ class RenderManager:
             # Collect rect for ALL tiles depth > player — NPCs may be behind tiles
             # that the player doesn't touch, so we can't filter by player collision here.
             if depth > player_depth:
-                occluding_rects.append((
-                    pygame.Rect(screen_pos, (tile_size, tile_size)),
-                    depth,
-                    tile_data.image,  # pixel-perfect mask resolved from tile image
-                ))
+                occluding_rects.append(
+                    (
+                        pygame.Rect(screen_pos, (tile_size, tile_size)),
+                        depth,
+                        tile_data.image,  # pixel-perfect mask resolved from tile image
+                    )
+                )
 
             if not walk_active and depth > player_depth:
                 # Depth-occlusion: use semi-transparent image when player overlaps
@@ -117,11 +120,13 @@ class RenderManager:
                     anim_fg_blits.append((img, screen_pos))
                     # Current frame passed in tuple so pixel-perfect mask is resolved
                     # per-frame by AssetManager (each frame Surface has a unique id).
-                    occluding_rects.append((
-                        pygame.Rect(screen_pos, (tile_size, tile_size)),
-                        depth,
-                        img,
-                    ))
+                    occluding_rects.append(
+                        (
+                            pygame.Rect(screen_pos, (tile_size, tile_size)),
+                            depth,
+                            img,
+                        )
+                    )
         if anim_fg_blits:
             self.game.screen.fblits(anim_fg_blits)
 
@@ -230,7 +235,7 @@ class RenderManager:
                 # composite already holds the opaque sprite pixels (A=255 for body).
                 # We blit the mask crop into _alpha_surf (just as a cropping helper),
                 # then BLEND_RGBA_MULT onto composite — no clear, no set_alpha juggling.
-                #   composite.A = sprite.A × mask.A / 255
+                #   composite.A = sprite.A x mask.A / 255
                 #   → opaque tile pixel  (mask.A=OCCLUSION_ALPHA): sprite dims to OCCLUSION_ALPHA
                 #   → transparent tile pixel (mask.A=255):          sprite stays at 255
                 tile_crop_rect = pygame.Rect(
@@ -244,12 +249,12 @@ class RenderManager:
                 self._alpha_surf.fill((0, 0, 0, 0))
                 self._alpha_surf.blit(mask, (0, 0), area=tile_crop_rect)
                 composite.blit(
-                    self._alpha_surf, local_rect.topleft,
+                    self._alpha_surf,
+                    local_rect.topleft,
                     special_flags=pygame.BLEND_RGBA_MULT,
                 )
 
         return composite, used_composites
-
 
     def _apply_partial_occlusion(
         self, occluding_rects: OccludingRect
@@ -318,13 +323,13 @@ class RenderManager:
     def _update_animated_tile_cache(self, cam_offset: pygame.Vector2) -> None:
         """Pre-compute animated tile cache once per frame for the current viewport."""
         self._viewport_world.update(
-            -cam_offset.x, -cam_offset.y,
-            self._screen_rect.width, self._screen_rect.height,
+            -cam_offset.x,
+            -cam_offset.y,
+            self._screen_rect.width,
+            self._screen_rect.height,
         )
         self._frame_anim_all = []
-        self._frame_anim_by_layer = {
-            lid: [] for lid in self.game.map_manager.layer_order
-        }
+        self._frame_anim_by_layer = {lid: [] for lid in self.game.map_manager.layer_order}
         if self.game.anim_map_manager:
             tile_size = self.game.tile_size
             for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(
@@ -337,7 +342,7 @@ class RenderManager:
                 for lid in self.game.map_manager.layer_order:
                     if lid in self.game.map_manager.layers:
                         layer_data = self.game.map_manager.layers[lid]
-                        if 0 <= row < len(layer_data) and 0 <= col < len(layer_data[row]):
+                        if 0 <= row < len(layer_data) and 0 <= col < len(layer_data[row]):  # noqa: SIM102
                             if layer_data[row][col] == tile_id:
                                 self._frame_anim_by_layer[lid].append((px, py, tile_id, depth))
                                 break
@@ -411,7 +416,9 @@ class RenderManager:
         self._update_animated_tile_cache(cam_offset)
 
         self.draw_background()
-        self.game.visible_sprites.custom_draw(self.game.screen, max_depth=self.game.player.depth - 1)
+        self.game.visible_sprites.custom_draw(
+            self.game.screen, max_depth=self.game.player.depth - 1
+        )
 
         occluding_rects = self.draw_foreground()
 
@@ -565,7 +572,6 @@ class RenderManager:
         wading_surf.set_alpha(wading_alpha)
         composite.blit(wading_surf, (0, local_wading_top))
         return composite
-
 
     def _apply_grass_wading_to_images(
         self,

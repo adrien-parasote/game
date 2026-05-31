@@ -336,6 +336,7 @@ def test_game_viewport_rect_reused_across_updates():
     # The old allocation pattern should be gone
     assert "screen_rect.move(" not in src or "_viewport_world_rect" in src
 
+
 # assert True (legacy bypass)
 
 # assert True (legacy bypass)

@@ -29,6 +29,7 @@ def _save(tmp_path: Path, width: int = 96, height: int = 128) -> Path:
 # UT-001 — _assemble_tile : dimensions correctes
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 def test_ut001_assemble_tile_size():
     from tools.src.autotiles.rpgmaker_blob_autotile_to_tiled import _build_blob_tile
@@ -41,6 +42,7 @@ def test_ut001_assemble_tile_size():
 # ---------------------------------------------------------------------------
 # UT-002 — _blob_mask : règle diagonal (cardinal absent → diagonal=0)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.unit
 def test_ut002_blob_mask_diagonal_cleared():
@@ -62,6 +64,7 @@ def test_ut002_blob_mask_diagonal_cleared():
 # UT-003 — _blob_wang_id : bitmask 255 (entouré complet)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 def test_ut003_wang_id_full():
     from tools.src.autotiles.rpgmaker_blob_autotile_to_tiled import _blob_wang_id
@@ -73,6 +76,7 @@ def test_ut003_wang_id_full():
 # UT-004 — _blob_wang_id : bitmask 0 (isolé)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 def test_ut004_wang_id_isolated():
     from tools.src.autotiles.rpgmaker_blob_autotile_to_tiled import _blob_wang_id
@@ -81,8 +85,9 @@ def test_ut004_wang_id_isolated():
 
 
 # ---------------------------------------------------------------------------
-# UT-005 — Strip statique : dimensions (N=1 → 49×32, 32)
+# UT-005 — Strip statique : dimensions (N=1 → 49x32, 32)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.unit
 def test_ut005_strip_size_static():
@@ -90,12 +95,15 @@ def test_ut005_strip_size_static():
 
     src = _synthetic(96, 128)
     strip = _build_blob_strip(src, n_frames=1)
-    assert strip.size == (BLOB_SLOTS * TILE_SIZE, TILE_SIZE), f"Got {strip.size} expected ({BLOB_SLOTS * TILE_SIZE}, 32)"
+    assert strip.size == (BLOB_SLOTS * TILE_SIZE, TILE_SIZE), (
+        f"Got {strip.size} expected ({BLOB_SLOTS * TILE_SIZE}, 32)"
+    )
 
 
 # ---------------------------------------------------------------------------
 # UT-006 — Slot 0 (isolated bitmask=0) is non-transparent (A tile used)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.unit
 def test_ut006_isolated_tile_assembled():
@@ -114,6 +122,7 @@ def test_ut006_isolated_tile_assembled():
 # UT-007 — Validation height ≠ 128
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 def test_ut007_invalid_height(tmp_path):
     from tools.src.autotiles.rpgmaker_blob_autotile_to_tiled import convert
@@ -128,6 +137,7 @@ def test_ut007_invalid_height(tmp_path):
 # UT-008 — Validation width % 96 ≠ 0
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 def test_ut008_invalid_width(tmp_path):
     from tools.src.autotiles.rpgmaker_blob_autotile_to_tiled import convert
@@ -141,6 +151,7 @@ def test_ut008_invalid_width(tmp_path):
 # ---------------------------------------------------------------------------
 # IT-001 — Pipeline statique complet
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.integration
 def test_it001_static_pipeline(tmp_path):
@@ -178,6 +189,7 @@ def test_it001_static_pipeline(tmp_path):
 # IT-002 — Pipeline animé N=4
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 def test_it002_animated_pipeline_4_frames(tmp_path):
     from tools.src.autotiles.rpgmaker_blob_autotile_to_tiled import convert
@@ -209,6 +221,7 @@ def test_it002_animated_pipeline_4_frames(tmp_path):
 # IT-003 — BITMASK_TO_IDX[255] == 46 (center full tile)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.integration
 def test_it003_bitmask_255_is_slot_46():
     from tools.src.autotiles.rpgmaker_blob_autotile_to_tiled import BITMASK_TO_IDX
@@ -219,6 +232,7 @@ def test_it003_bitmask_255_is_slot_46():
 # ---------------------------------------------------------------------------
 # IT-004 — Image source relative dans le TSX
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.integration
 def test_it004_image_source_relative(tmp_path):

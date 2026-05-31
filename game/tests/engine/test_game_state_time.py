@@ -18,6 +18,7 @@ from src.engine.time_system import TimeSystem
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="session", autouse=True)
 def pygame_init():
     """Initialize pygame once for all tests."""
@@ -25,17 +26,21 @@ def pygame_init():
     yield
     pygame.quit()
 
+
 @pytest.fixture
 def tmp_saves_dir(tmp_path):
     return str(tmp_path / "saves")
+
 
 @pytest.fixture
 def manager(tmp_saves_dir):
     return SaveManager(saves_dir=tmp_saves_dir)
 
+
 def _make_mock_game(tmp_saves_dir):
     """Create a minimal mock Game with required attributes for saving."""
     from unittest.mock import MagicMock
+
     game = MagicMock()
     game.map_manager = MagicMock()
     game.map_manager.name = "Mocked Map"
@@ -51,9 +56,12 @@ def _make_mock_game(tmp_saves_dir):
     game.player.gold = 0
     # Inventory stub (reuse real class for simplicity)
     from src.engine.inventory_system import Inventory, Item
+
     inv = Inventory(capacity=28)
     inv.slots[3] = Item(id="sword_iron", name="Épée", description="", quantity=1, stack_max=1)
-    inv.equipment["LEFT_HAND"] = Item(id="sword_iron", name="Épée", description="", quantity=1, stack_max=1)
+    inv.equipment["LEFT_HAND"] = Item(
+        id="sword_iron", name="Épée", description="", quantity=1, stack_max=1
+    )
     game.player.inventory = inv
     # TimeSystem stub: initial_hour=6, advance by 120 game-minutes
     ts = TimeSystem(initial_hour=6)
@@ -62,14 +70,17 @@ def _make_mock_game(tmp_saves_dir):
     game.time_system = ts
     # WorldState stub
     from src.engine.world_state import WorldState
+
     ws = WorldState()
     ws.set("castle_hall_chest_01", {"is_on": True})
     game.world_state = ws
     return game
 
+
 # ---------------------------------------------------------------------------
 # Test cases
 # ---------------------------------------------------------------------------
+
 
 def test_new_game_time_reset(manager, tmp_saves_dir):
     gsm = GameStateManager()
@@ -87,10 +98,10 @@ def test_new_game_time_reset(manager, tmp_saves_dir):
     # Time should be reset to the initial value defined by Settings
     reset_minutes = gsm._game.time_system._total_minutes
     expected_initial = (
-        Settings.INITIAL_SEASON * Settings.DAYS_PER_SEASON * 24 * 60
-        + Settings.INITIAL_HOUR * 60
+        Settings.INITIAL_SEASON * Settings.DAYS_PER_SEASON * 24 * 60 + Settings.INITIAL_HOUR * 60
     )
     assert reset_minutes == expected_initial
+
 
 def test_load_game_time_restored(manager, tmp_saves_dir):
     """Regression TC-GF-031: loaded game time must exactly match saved time."""

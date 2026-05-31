@@ -316,10 +316,10 @@ def test_is_walkable_non_walkable_depth0_on_top_blocks():
     )
 
 
-
 # ---------------------------------------------------------------------------
 # Directional constraints
 # ---------------------------------------------------------------------------
+
 
 def test_map_manager_get_direction_flags():
     """get_direction_flags returns top layer's set or {'any'} if out of bounds."""
@@ -515,9 +515,7 @@ def test_depth1_tile_contributes_direction_but_not_walkability():
         f"Expected {{up, left, right}} but got {direction_result}. "
         "get_direction_flags doit inclure les tiles depth≥1."
     )
-    assert "down" not in direction_result, (
-        "'down' doit être bloqué par le garde-corps depth=2."
-    )
+    assert "down" not in direction_result, "'down' doit être bloqué par le garde-corps depth=2."
 
 
 def test_decor_depth2_walkable_false_no_direction_does_not_constrain():
@@ -670,6 +668,7 @@ def test_get_visible_animated_chunks_static_map(map_manager):
     chunks = list(map_manager.get_visible_animated_chunks(viewport))
     assert len(chunks) == 0
 
+
 def test_get_visible_animated_chunks_with_animated_tile(map_data):
     """Animated chunks should yield animated tiles, while static chunks should ignore them."""
     layout = MagicMock()
@@ -706,6 +705,7 @@ def test_get_visible_animated_chunks_with_animated_tile(map_data):
     assert len(anim_chunks) == 1
     assert anim_chunks[0][2] == 2  # tile_id is 2
 
+
 def test_get_layer_surface_ignores_animated_tiles(map_data):
     """Static cache rendering should skip animated tiles leaving a transparent hole."""
     layout = MagicMock()
@@ -715,7 +715,7 @@ def test_get_layer_surface_ignores_animated_tiles(map_data):
     # Setup tile 1 to be animated
     anim_tile = MagicMock()
     anim_tile.image = pygame.Surface((32, 32))
-    anim_tile.image.fill((255, 0, 0)) # Red
+    anim_tile.image.fill((255, 0, 0))  # Red
     anim_tile.frames = [(1, 150), (2, 150)]
     anim_tile.depth = 0
 
@@ -894,10 +894,7 @@ def test_get_terrain_material_at_plank_over_grass_no_roof():
 
     manager = MapManager(map_data, layout)
     result = manager.get_terrain_material_at(15, 0)
-    assert result == "wood", (
-        f"Expected 'wood' (plank depth=1 over grass) but got '{result}'."
-    )
-
+    assert result == "wood", f"Expected 'wood' (plank depth=1 over grass) but got '{result}'."
 
 
 def test_tile_depth_overrides_layer_depth():
@@ -913,13 +910,11 @@ def test_tile_depth_overrides_layer_depth():
     map_data = {
         "layer_order": [1],
         "layer_names": {1: "00-ground"},
-        "layers": {
-            1: [[0, 1, 2]]
-        },
+        "layers": {1: [[0, 1, 2]]},
         "tiles": {
             1: MockTile(depth=0),
             2: MockTile(depth=2),
-        }
+        },
     }
 
     layout = OrthogonalLayout(32)
@@ -968,8 +963,8 @@ def test_foreground_layer_yields_all_tiles_regardless_of_tile_depth():
         # Layer 1: order=0 (background), Layer 2: order=2 (foreground)
         "layer_order_values": {1: 0, 2: 2},
         "layers": {
-            1: [[1, 0]],   # background tile (depth=0)
-            2: [[2, 0]],   # foreground-order tile but depth=0
+            1: [[1, 0]],  # background tile (depth=0)
+            2: [[2, 0]],  # foreground-order tile but depth=0
         },
         "tiles": {
             1: _MockTile(depth=0),
@@ -984,9 +979,13 @@ def test_foreground_layer_yields_all_tiles_regardless_of_tile_depth():
 
     # Tile 2 (in order=2 foreground layer) must be yielded even though depth=0
     tile_ids = [c[2] for c in chunks]
-    assert 2 in tile_ids, "Foreground-order layer tile with depth=0 must be visible in foreground pass"
+    assert 2 in tile_ids, (
+        "Foreground-order layer tile with depth=0 must be visible in foreground pass"
+    )
     # Tile 1 (in order=0 background layer, depth=0) must NOT be yielded
-    assert 1 not in tile_ids, "Background-order layer tile with depth=0 must not appear in foreground pass"
+    assert 1 not in tile_ids, (
+        "Background-order layer tile with depth=0 must not appear in foreground pass"
+    )
 
 
 def test_order_property_used_for_layer_sorting():

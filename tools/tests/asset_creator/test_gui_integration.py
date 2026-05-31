@@ -3,6 +3,7 @@
 Tests regenerate_tileset, export, canvas bitmask flow, and preset switching
 WITHOUT requiring a DPG display. All tests use the headless pipeline functions.
 """
+
 from __future__ import annotations
 
 import tempfile
@@ -28,7 +29,7 @@ def presets() -> dict:
 
 
 class TestIT001FullPipeline:
-    """IT-001: Full pipeline produces 47 tiles of 32×32."""
+    """IT-001: Full pipeline produces 47 tiles of 32x32."""
 
     def test_regenerate_returns_47_tiles(self, presets: dict) -> None:
         state = state_from_preset("grass", presets)
@@ -49,11 +50,11 @@ class TestIT001FullPipeline:
 
 
 class TestIT002CanvasBitmask:
-    """IT-002: Paint 3×3 block, check center bitmask = 255."""
+    """IT-002: Paint 3x3 block, check center bitmask = 255."""
 
     def test_center_bitmask_all_neighbors(self) -> None:
         cs = CanvasState(cols=5, rows=5)
-        # Paint 3×3 block at (1,1) to (3,3)
+        # Paint 3x3 block at (1,1) to (3,3)
         for y in range(1, 4):
             for x in range(1, 4):
                 cs.grid[y][x] = True
@@ -127,9 +128,6 @@ class TestIT004Export:
             tree = ET.parse(tsx_path)
             root = tree.getroot()
             assert root.tag == "tileset"
-
-
-
 
 
 class TestIT006FullDataFlow:

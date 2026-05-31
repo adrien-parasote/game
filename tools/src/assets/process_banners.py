@@ -25,18 +25,22 @@ def create_mech_tree_image(size=18):
         rad = math.radians(angle)
         x = int(cx + r_outer * math.cos(rad))
         y = int(cy + r_outer * math.sin(rad))
-        draw.rectangle([x-1, y-1, x+1, y+1], fill=gold_base)
+        draw.rectangle([x - 1, y - 1, x + 1, y + 1], fill=gold_base)
 
     # Gear body
-    draw.ellipse([cx - r_outer + 1, cy - r_outer + 1, cx + r_outer - 1, cy + r_outer - 1], fill=gold_base)
+    draw.ellipse(
+        [cx - r_outer + 1, cy - r_outer + 1, cx + r_outer - 1, cy + r_outer - 1], fill=gold_base
+    )
     # Inner hole
-    draw.ellipse([cx - r_inner + 1, cy - r_inner + 1, cx + r_inner - 1, cy + r_inner - 1], fill=(0,0,0,0))
+    draw.ellipse(
+        [cx - r_inner + 1, cy - r_inner + 1, cx + r_inner - 1, cy + r_inner - 1], fill=(0, 0, 0, 0)
+    )
 
     # Branches inside gear
-    draw.line([cx, cy-r_inner, cx, cy+r_inner], fill=gold_base, width=1)
-    draw.line([cx-r_inner, cy, cx+r_inner, cy], fill=gold_base, width=1)
-    draw.line([cx-2, cy-2, cx+2, cy+2], fill=gold_base, width=1)
-    draw.line([cx-2, cy+2, cx+2, cy-2], fill=gold_base, width=1)
+    draw.line([cx, cy - r_inner, cx, cy + r_inner], fill=gold_base, width=1)
+    draw.line([cx - r_inner, cy, cx + r_inner, cy], fill=gold_base, width=1)
+    draw.line([cx - 2, cy - 2, cx + 2, cy + 2], fill=gold_base, width=1)
+    draw.line([cx - 2, cy + 2, cx + 2, cy - 2], fill=gold_base, width=1)
 
     # 2. Trunk
     # A sturdy mechanical trunk
@@ -64,9 +68,9 @@ def create_mech_tree_image(size=18):
 
                 # Border outline (simple)
                 is_border = False
-                for dx, dy in [(-1,0), (1,0), (0,-1), (0,1)]:
-                    nx, ny = x+dx, y+dy
-                    if 0 <= nx < size and 0 <= ny < size:
+                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < size and 0 <= ny < size:  # noqa: SIM102
                         if img.getpixel((nx, ny))[3] == 0:
                             is_border = True
                             break
@@ -74,6 +78,7 @@ def create_mech_tree_image(size=18):
                     pixels[x, y] = gold_border
 
     return img
+
 
 def apply_gear_to_banners(input_path, output_path):
     img = Image.open(input_path).convert("RGBA")
@@ -88,7 +93,7 @@ def apply_gear_to_banners(input_path, output_path):
 
     for i in range(12):
         bx = i * banner_width + 16  # Center X for a 32-pixel wide banner
-        by = 31                     # Center Y of the fabric in the 64-pixel high banner
+        by = 31  # Center Y of the fabric in the 64-pixel high banner
 
         patch_x1 = bx - gw // 2
         patch_y1 = by - gh // 2
@@ -104,8 +109,9 @@ def apply_gear_to_banners(input_path, output_path):
                     lums.append(lum)
 
         lums.sort()
-        base_lum = lums[len(lums)//2] if lums else 1
-        if base_lum == 0: base_lum = 1
+        base_lum = lums[len(lums) // 2] if lums else 1
+        if base_lum == 0:
+            base_lum = 1
 
         for y in range(gh):
             for x in range(gw):
@@ -132,5 +138,9 @@ def apply_gear_to_banners(input_path, output_path):
 
     img.save(output_path)
 
+
 if __name__ == "__main__":
-    apply_gear_to_banners("/Users/adrien.parasote/Documents/perso/game/assets/images/sprites/banners.png", "/Users/adrien.parasote/Documents/perso/game/assets/images/sprites/banners_mech_tree.png")
+    apply_gear_to_banners(
+        "/Users/adrien.parasote/Documents/perso/game/assets/images/sprites/banners.png",
+        "/Users/adrien.parasote/Documents/perso/game/assets/images/sprites/banners_mech_tree.png",
+    )

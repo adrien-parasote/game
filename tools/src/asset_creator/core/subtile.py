@@ -1,10 +1,11 @@
 """Sub-tile generation for blob terrain tiles.
 
-Generates 20 distinct 16×16 sub-tiles grouped by quadrant (TL, TR, BL, BR)
+Generates 20 distinct 16x16 sub-tiles grouped by quadrant (TL, TR, BL, BR)
 and type (FILL, EDGE_V, EDGE_H, OUTER_CORNER, INNER_CORNER).
 
 Edge masks are computed using distance fields with optional noise modulation.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
 
 class Quadrant(Enum):
-    """Quadrant position within a 32×32 tile."""
+    """Quadrant position within a 32x32 tile."""
 
     TL = "tl"
     TR = "tr"
@@ -49,7 +50,7 @@ class SubTileType(Enum):
 
 @dataclass(frozen=True)
 class SubTileSet:
-    """Immutable collection of 20 sub-tiles (4 quadrants × 5 types)."""
+    """Immutable collection of 20 sub-tiles (4 quadrants x 5 types)."""
 
     tiles: dict[tuple[Quadrant, SubTileType], Image.Image]
 
@@ -59,7 +60,7 @@ class SubTileSet:
 
 
 # ---------------------------------------------------------------------------
-# Quadrant crop regions (from 32×32 base texture)
+# Quadrant crop regions (from 32x32 base texture)
 # ---------------------------------------------------------------------------
 
 _QUADRANT_CROPS: dict[Quadrant, tuple[int, int, int, int]] = {
@@ -79,7 +80,10 @@ def _crop_quadrant(texture: Image.Image, quadrant: Quadrant) -> Image.Image:
 # Distance field computation
 # ---------------------------------------------------------------------------
 
-def _distance_v(width: int, height: int, quadrant: Quadrant, edge_width: int) -> NDArray[np.float64]:
+
+def _distance_v(
+    width: int, height: int, quadrant: Quadrant, edge_width: int
+) -> NDArray[np.float64]:
     """Vertical distance field for EDGE_V mask.
 
     TL/BL: distance from left edge (x=0).
@@ -93,7 +97,9 @@ def _distance_v(width: int, height: int, quadrant: Quadrant, edge_width: int) ->
     return np.tile(row, (height, 1))
 
 
-def _distance_h(width: int, height: int, quadrant: Quadrant, edge_width: int) -> NDArray[np.float64]:
+def _distance_h(
+    width: int, height: int, quadrant: Quadrant, edge_width: int
+) -> NDArray[np.float64]:
     """Horizontal distance field for EDGE_H mask.
 
     TL/TR: distance from top edge (y=0).
@@ -110,6 +116,7 @@ def _distance_h(width: int, height: int, quadrant: Quadrant, edge_width: int) ->
 # ---------------------------------------------------------------------------
 # Noise generation
 # ---------------------------------------------------------------------------
+
 
 def _generate_noise_simplex(
     width: int,
@@ -226,7 +233,8 @@ def _make_mask_inner_corner(
 # Border effects
 # ---------------------------------------------------------------------------
 
-def _apply_border_effects(
+
+def _apply_border_effects(  # noqa: C901
     pixels: NDArray[np.uint8],
     mask: NDArray[np.uint8],
 ) -> NDArray[np.uint8]:
@@ -294,6 +302,7 @@ def _apply_border_effects(
 # Sub-tile generation
 # ---------------------------------------------------------------------------
 
+
 def _generate_single_subtile(
     base_crop: Image.Image,
     quadrant: Quadrant,
@@ -309,16 +318,36 @@ def _generate_single_subtile(
     mask_generators = {
         SubTileType.FILL: lambda: _make_mask_fill(width, height),
         SubTileType.EDGE_V: lambda: _make_mask_edge_v(
-            width, height, quadrant, edge_width, noise, noise_scale,
+            width,
+            height,
+            quadrant,
+            edge_width,
+            noise,
+            noise_scale,
         ),
         SubTileType.EDGE_H: lambda: _make_mask_edge_h(
-            width, height, quadrant, edge_width, noise, noise_scale,
+            width,
+            height,
+            quadrant,
+            edge_width,
+            noise,
+            noise_scale,
         ),
         SubTileType.OUTER_CORNER: lambda: _make_mask_outer_corner(
-            width, height, quadrant, edge_width, noise, noise_scale,
+            width,
+            height,
+            quadrant,
+            edge_width,
+            noise,
+            noise_scale,
         ),
         SubTileType.INNER_CORNER: lambda: _make_mask_inner_corner(
-            width, height, quadrant, edge_width, noise, noise_scale,
+            width,
+            height,
+            quadrant,
+            edge_width,
+            noise,
+            noise_scale,
         ),
     }
 
@@ -343,13 +372,13 @@ def generate_subtiles(
     """Generate all 20 sub-tiles from a base texture.
 
     Args:
-        base_texture: Seamless RGBA texture, at least 32×32.
+        base_texture: Seamless RGBA texture, at least 32x32.
         edge_config: Dict with keys 'style' ('organic'|'straight'|'dithered'),
                      'width' (int edge width), 'noise_scale' (float).
         seed: Random seed for deterministic noise generation.
 
     Returns:
-        SubTileSet with 20 sub-tiles (4 quadrants × 5 types).
+        SubTileSet with 20 sub-tiles (4 quadrants x 5 types).
 
     Raises:
         ValueError: If base_texture is too small or not RGBA.
@@ -374,7 +403,12 @@ def generate_subtiles(
 
         for tile_type in SubTileType:
             tiles[(quadrant, tile_type)] = _generate_single_subtile(
-                crop, quadrant, tile_type, edge_width, noise, noise_scale,
+                crop,
+                quadrant,
+                tile_type,
+                edge_width,
+                noise,
+                noise_scale,
             )
 
     return SubTileSet(tiles=tiles)

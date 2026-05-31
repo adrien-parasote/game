@@ -1,6 +1,5 @@
 """Tests for TimeSystem (time_system.py)."""
 
-
 import pytest
 from src.config import Settings
 from src.engine.time_system import (

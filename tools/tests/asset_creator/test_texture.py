@@ -15,10 +15,10 @@ from asset_creator.core.texture import (
 TEST_PALETTE = Palette(
     name="test",
     colors=(
-        (45, 90, 30),   # shadow
+        (45, 90, 30),  # shadow
         (62, 124, 39),  # base
         (90, 158, 58),  # highlight
-        (123, 192, 79), # accent
+        (123, 192, 79),  # accent
     ),
     roles={
         PaletteRole.SHADOW: 0,
@@ -52,11 +52,7 @@ class TestNoiseTexture:
         params = TextureParams(texture_type="noise")
         img = generate_noise_texture_v2(16, 16, TEST_PALETTE, params, seed=42)
 
-        has_opaque = any(
-            img.getpixel((x, y))[3] > 0
-            for y in range(16)
-            for x in range(16)
-        )
+        has_opaque = any(img.getpixel((x, y))[3] > 0 for y in range(16) for x in range(16))
         assert has_opaque, "Texture must not be fully transparent"
 
     def test_noise_texture_various_sizes(self) -> None:
@@ -75,7 +71,12 @@ class TestPatternTexture:
         """Solid pattern must fill entirely with the base color."""
         params = TextureParams(texture_type="solid")
         img = generate_pattern_texture(
-            16, 16, TEST_PALETTE, "solid", params, seed=0,
+            16,
+            16,
+            TEST_PALETTE,
+            "solid",
+            params,
+            seed=0,
         )
 
         base_color = TEST_PALETTE.get_color(PaletteRole.BASE)
@@ -91,7 +92,12 @@ class TestPatternTexture:
         """Dithered pattern must alternate base/shadow in checkerboard."""
         params = TextureParams(texture_type="dithered")
         img = generate_pattern_texture(
-            16, 16, TEST_PALETTE, "dithered", params, seed=0,
+            16,
+            16,
+            TEST_PALETTE,
+            "dithered",
+            params,
+            seed=0,
         )
 
         base_color = TEST_PALETTE.get_color(PaletteRole.BASE)
@@ -111,7 +117,12 @@ class TestPatternTexture:
         """Stippled pattern must only use base and accent colors."""
         params = TextureParams(texture_type="stippled", density=0.5)
         img = generate_pattern_texture(
-            16, 16, TEST_PALETTE, "stippled", params, seed=42,
+            16,
+            16,
+            TEST_PALETTE,
+            "stippled",
+            params,
+            seed=42,
         )
 
         base_color = TEST_PALETTE.get_color(PaletteRole.BASE)
@@ -129,7 +140,12 @@ class TestPatternTexture:
         """Striped pattern must have horizontal stripes of base/shadow."""
         params = TextureParams(texture_type="striped")
         img = generate_pattern_texture(
-            16, 16, TEST_PALETTE, "striped", params, seed=0,
+            16,
+            16,
+            TEST_PALETTE,
+            "striped",
+            params,
+            seed=0,
         )
 
         base_color = TEST_PALETTE.get_color(PaletteRole.BASE)
@@ -148,7 +164,12 @@ class TestPatternTexture:
         params = TextureParams(texture_type="noise")
         noise_img = generate_noise_texture_v2(16, 16, TEST_PALETTE, params, seed=42)
         pattern_img = generate_pattern_texture(
-            16, 16, TEST_PALETTE, "noise", params, seed=42,
+            16,
+            16,
+            TEST_PALETTE,
+            "noise",
+            params,
+            seed=42,
         )
 
         assert noise_img.tobytes() == pattern_img.tobytes()
@@ -159,7 +180,12 @@ class TestPatternTexture:
         for pattern_type in ("solid", "dithered", "stippled", "noise", "striped"):
             params = TextureParams(texture_type=pattern_type)
             img = generate_pattern_texture(
-                16, 16, TEST_PALETTE, pattern_type, params, seed=0,
+                16,
+                16,
+                TEST_PALETTE,
+                pattern_type,
+                params,
+                seed=0,
             )
             assert img.size == (16, 16), f"Pattern '{pattern_type}' has wrong size"
             assert img.mode == "RGBA", f"Pattern '{pattern_type}' has wrong mode"
@@ -244,10 +270,20 @@ class TestSeedReproducibility:
         """Stippled pattern with same seed must be identical."""
         params = TextureParams(texture_type="stippled", density=0.3)
         img1 = generate_pattern_texture(
-            16, 16, TEST_PALETTE, "stippled", params, seed=42,
+            16,
+            16,
+            TEST_PALETTE,
+            "stippled",
+            params,
+            seed=42,
         )
         img2 = generate_pattern_texture(
-            16, 16, TEST_PALETTE, "stippled", params, seed=42,
+            16,
+            16,
+            TEST_PALETTE,
+            "stippled",
+            params,
+            seed=42,
         )
 
         assert img1.tobytes() == img2.tobytes()
@@ -261,10 +297,10 @@ def extended_palette() -> Palette:
     return Palette(
         name="test_v2",
         colors=(
-            (45, 90, 30),   # shadow
+            (45, 90, 30),  # shadow
             (62, 124, 39),  # base
             (90, 158, 58),  # highlight
-            (123, 192, 79), # accent
+            (123, 192, 79),  # accent
         ),
         roles={
             PaletteRole.SHADOW: 0,
@@ -287,14 +323,19 @@ class TestV2SmoothRampTexture:
 
     @pytest.mark.tc("TC-035")
     def test_v2_texture_uses_more_than_4_unique_colors(
-        self, extended_palette: Palette,
+        self,
+        extended_palette: Palette,
     ) -> None:
         """V2 texture with smooth ramp must use at least 7 unique colors."""
         params = TextureParams(
             use_dithering=True,
         )
         img = generate_noise_texture_v2(
-            32, 32, extended_palette, params, seed=42,
+            32,
+            32,
+            extended_palette,
+            params,
+            seed=42,
         )
 
         unique_colors: set[tuple[int, int, int]] = set()
@@ -304,18 +345,22 @@ class TestV2SmoothRampTexture:
                 unique_colors.add((r, g, b))
 
         assert len(unique_colors) >= 7, (
-            f"Expected at least 7 unique colors, got {len(unique_colors)}: "
-            f"{unique_colors}"
+            f"Expected at least 7 unique colors, got {len(unique_colors)}: {unique_colors}"
         )
 
     @pytest.mark.tc("TC-036")
     def test_v2_texture_correct_dimensions(
-        self, extended_palette: Palette,
+        self,
+        extended_palette: Palette,
     ) -> None:
         """V2 texture must have correct dimensions and RGBA mode."""
         params = TextureParams()
         img = generate_noise_texture_v2(
-            32, 32, extended_palette, params, seed=42,
+            32,
+            32,
+            extended_palette,
+            params,
+            seed=42,
         )
 
         assert img.size == (32, 32)
@@ -323,7 +368,8 @@ class TestV2SmoothRampTexture:
 
     @pytest.mark.tc("TC-037")
     def test_v2_texture_tiles_seamlessly(
-        self, extended_palette: Palette,
+        self,
+        extended_palette: Palette,
     ) -> None:
         """V2 texture must tile seamlessly — edges wrap via toroidal noise."""
         from asset_creator.core.texture import (
@@ -338,48 +384,76 @@ class TestV2SmoothRampTexture:
         noise_gen = OpenSimplex(seed=42)
         for y in range(size):
             val_left = _compute_multi_octave_noise(
-                0, y, size, size, params, noise_gen,
+                0,
+                y,
+                size,
+                size,
+                params,
+                noise_gen,
             )
             val_right = _compute_multi_octave_noise(
-                size, y, size, size, params, noise_gen,
+                size,
+                y,
+                size,
+                size,
+                params,
+                noise_gen,
             )
             assert abs(val_left - val_right) < 1e-10, (
-                f"y={y}: noise at x=0 ({val_left}) != "
-                f"noise at x=width ({val_right})"
+                f"y={y}: noise at x=0 ({val_left}) != noise at x=width ({val_right})"
             )
 
         for x in range(size):
             val_top = _compute_multi_octave_noise(
-                x, 0, size, size, params, noise_gen,
+                x,
+                0,
+                size,
+                size,
+                params,
+                noise_gen,
             )
             val_bottom = _compute_multi_octave_noise(
-                x, size, size, size, params, noise_gen,
+                x,
+                size,
+                size,
+                size,
+                params,
+                noise_gen,
             )
             assert abs(val_top - val_bottom) < 1e-10, (
-                f"x={x}: noise at y=0 ({val_top}) != "
-                f"noise at y=height ({val_bottom})"
+                f"x={x}: noise at y=0 ({val_top}) != noise at y=height ({val_bottom})"
             )
 
     @pytest.mark.tc("TC-038")
     def test_v2_texture_seed_reproducibility(
-        self, extended_palette: Palette,
+        self,
+        extended_palette: Palette,
     ) -> None:
         """Same seed must produce identical V2 textures."""
         params = TextureParams(
             use_dithering=True,
         )
         img1 = generate_noise_texture_v2(
-            32, 32, extended_palette, params, seed=42,
+            32,
+            32,
+            extended_palette,
+            params,
+            seed=42,
         )
         img2 = generate_noise_texture_v2(
-            32, 32, extended_palette, params, seed=42,
+            32,
+            32,
+            extended_palette,
+            params,
+            seed=42,
         )
 
         assert img1.tobytes() == img2.tobytes()
 
     @pytest.mark.tc("TC-039")
     def test_v2_bayer_dithering_no_dominant_color(
-        self, extended_palette: Palette,
+        self,
+        extended_palette: Palette,
     ) -> None:
         """With dithering enabled, no single color should occupy >40% of pixels."""
         from collections import Counter
@@ -388,7 +462,11 @@ class TestV2SmoothRampTexture:
             use_dithering=True,
         )
         img = generate_noise_texture_v2(
-            32, 32, extended_palette, params, seed=42,
+            32,
+            32,
+            extended_palette,
+            params,
+            seed=42,
         )
 
         color_counts: Counter[tuple[int, int, int]] = Counter()
@@ -400,7 +478,4 @@ class TestV2SmoothRampTexture:
 
         for color, count in color_counts.items():
             ratio = count / total
-            assert ratio <= 0.40, (
-                f"Color {color} occupies {ratio:.1%} of pixels "
-                f"(max 40% allowed)"
-            )
+            assert ratio <= 0.40, f"Color {color} occupies {ratio:.1%} of pixels (max 40% allowed)"

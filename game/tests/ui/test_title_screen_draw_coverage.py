@@ -26,6 +26,7 @@ class MockTitleScreen(TitleDrawMixin, TitleLightsMixin):
         self._halo_scale_max = 1.05
         self._halo_n_buckets = 10
 
+
 def test_title_draw_mixin_halo_fallback():
     """Test fallback when gaussian_blur is missing or fails (L75-76, L124-129)."""
     ts = MockTitleScreen()
@@ -39,29 +40,32 @@ def test_title_draw_mixin_halo_fallback():
         ts._blit_halo_text("Test", 100, 100, ts._menu_item_font, (255, 255, 255), (0, 0, 0))
         assert ts._screen.blit.called
 
+
 def test_title_draw_mixin_blit_engraved_fallback():
     """Test _blit_engraved fallback (L144-151)."""
     ts = MockTitleScreen()
-    ts._blit_engraved("Test", 100, 100) # Uses self._menu_item_font
+    ts._blit_engraved("Test", 100, 100)  # Uses self._menu_item_font
     assert ts._screen.blit.call_count == 3
 
-    ts._blit_engraved("Test", 100, 100, font=ts._back_label_font) # Uses explicit font
+    ts._blit_engraved("Test", 100, 100, font=ts._back_label_font)  # Uses explicit font
     assert ts._screen.blit.call_count == 6
+
 
 def test_title_lights_mixin_debug_and_clamping():
     """Test lights mixin with HALO_DEBUG and extreme flicker clamping."""
     ts = MockTitleScreen()
 
     # Mock BACKGROUND_LIGHTS and MUSHROOM_LIGHTS to have items
-    with patch("src.ui.title_screen_lights.BACKGROUND_LIGHTS", [(10, 10, 20)]), \
-         patch("src.ui.title_screen_lights.MUSHROOM_LIGHTS", [(20, 20, 15, (255, 0, 0))]), \
-         patch("src.ui.title_screen_lights.HALO_DEBUG", True):
-
+    with (
+        patch("src.ui.title_screen_lights.BACKGROUND_LIGHTS", [(10, 10, 20)]),
+        patch("src.ui.title_screen_lights.MUSHROOM_LIGHTS", [(20, 20, 15, (255, 0, 0))]),
+        patch("src.ui.title_screen_lights.HALO_DEBUG", True),
+    ):
         # Init halos first
         ts._init_light_halos()
 
         # Test background lights (L104-106)
-        ts._light_time = 1000.0 # Force flicker variance
+        ts._light_time = 1000.0  # Force flicker variance
         with patch("pygame.draw.line"), patch("pygame.draw.circle"):
             ts._draw_background_lights()
             ts._draw_mushroom_lights()
@@ -79,7 +83,6 @@ def test_draw_options_overlay_not_hovered_uses_engraved():
     ts._i18n = MagicMock()
     ts._i18n.get.return_value = "Retour"
     ts._back_hovered = False  # branche else → _blit_engraved (ligne 188)
-
 
     # _blit_engraved appelle self._screen.blit trois fois
     initial_blit_count = ts._screen.blit.call_count

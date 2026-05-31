@@ -27,11 +27,12 @@ def entity():
 
     return ent
 
+
 def test_start_move_direction_any(entity):
     """TC-005: Try moving 'up' on tile with direction: 'any'"""
     # entity is at (48,48), which is tx=1, ty=1
     entity.game.map_manager.get_direction_flags.return_value = {"any"}
-    entity.direction = pygame.math.Vector2(0, -1) # up
+    entity.direction = pygame.math.Vector2(0, -1)  # up
 
     entity.start_move()
 
@@ -40,10 +41,11 @@ def test_start_move_direction_any(entity):
     assert entity.target_pos.y == 48 - Settings.TILE_SIZE
     entity.game.map_manager.get_direction_flags.assert_called_once_with(1, 1)
 
+
 def test_start_move_direction_constrained_blocked(entity):
     """TC-003: Try moving 'left' on tile with direction: 'up' -> Blocked"""
     entity.game.map_manager.get_direction_flags.return_value = {"up"}
-    entity.direction = pygame.math.Vector2(-1, 0) # left
+    entity.direction = pygame.math.Vector2(-1, 0)  # left
 
     entity.start_move()
 
@@ -52,16 +54,18 @@ def test_start_move_direction_constrained_blocked(entity):
     assert entity.target_pos.x == 48
     entity.game.map_manager.get_direction_flags.assert_called_once_with(1, 1)
 
+
 def test_start_move_direction_constrained_allowed(entity):
     """TC-003 subset: Try moving 'up' on tile with direction: 'up' -> Allowed"""
     entity.game.map_manager.get_direction_flags.return_value = {"up"}
-    entity.direction = pygame.math.Vector2(0, -1) # up
+    entity.direction = pygame.math.Vector2(0, -1)  # up
 
     entity.start_move()
 
     # Movement allowed by exit constraint
     assert entity.is_moving is True
     assert entity.target_pos.y == 48 - Settings.TILE_SIZE
+
 
 def test_start_move_cardinal_priority(entity):
     """IT-001 subset: Cardinal priority logic resolves diagonals properly."""

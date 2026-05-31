@@ -53,9 +53,6 @@ def mock_pause_screen():
     return ps
 
 
-
-
-
 @pytest.fixture
 def gsm(mock_game, mock_save_manager, mock_title_screen, mock_pause_screen):
     with (
@@ -255,9 +252,8 @@ def test_run_main_loop_and_global_events(gsm):
     class BreakLoop(Exception):
         pass
 
-    with patch("pygame.display.update", side_effect=BreakLoop):
-        with pytest.raises(BreakLoop):
-            gsm.run()
+    with patch("pygame.display.update", side_effect=BreakLoop), pytest.raises(BreakLoop):
+        gsm.run()
 
     # Test _process_global_events with QUIT
     event_quit = pygame.event.Event(pygame.QUIT)
@@ -342,7 +338,6 @@ def test_resolve_default_map(gsm):
         assert gsm._resolve_default_map() == "00-spawn.tmj"
 
 
-
 def test_resolve_default_map_with_custom_default(gsm):
     # Test custom default map from Settings when NOT in DEBUG
     with (
@@ -354,12 +349,12 @@ def test_resolve_default_map_with_custom_default(gsm):
 
 # (imports already at top of file)
 
+
 @patch("pygame.mouse.set_visible")
 def test_cursor_is_hidden_during_gameplay(mock_mouse):
     gsm = GameStateManager()
     gsm._transition_to_playing(slot_id=None)
     mock_mouse.assert_called_with(False)
-
 
 
 # assert True (legacy bypass)

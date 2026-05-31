@@ -66,9 +66,7 @@ class TestChestLayoutComputeInvPanel:
         ui._inv_bg = None
         ui._inv_bg_rect = None
         # Appel direct de la méthode privée avec la signature correcte
-        ui._compute_inv_layout(
-            slot_size=49, step=56, screen_w=1280, screen_h=720, arrow_scale=1.0
-        )
+        ui._compute_inv_layout(slot_size=49, step=56, screen_w=1280, screen_h=720, arrow_scale=1.0)
         assert ui._inv_bg_rect is None
 
 

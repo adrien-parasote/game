@@ -150,7 +150,9 @@ class TestEntityFactorySpawn:
         # InteractiveEntity constructor called with groups containing visible_sprites and interactives
         MockEntity.assert_called_once()
         call_kwargs = MockEntity.call_args
-        groups_arg = call_kwargs.kwargs.get("groups", call_kwargs.args[1] if len(call_kwargs.args) > 1 else [])
+        groups_arg = call_kwargs.kwargs.get(
+            "groups", call_kwargs.args[1] if len(call_kwargs.args) > 1 else []
+        )
         assert game.visible_sprites in groups_arg
         assert game.interactives in groups_arg
 
@@ -174,7 +176,9 @@ class TestEntityFactorySpawn:
         # Teleport constructor called with teleports_group list
         MockTeleport.assert_called_once()
         call_args = MockTeleport.call_args
-        groups_arg = call_args.args[1] if len(call_args.args) > 1 else call_args.kwargs.get("groups", [])
+        groups_arg = (
+            call_args.args[1] if len(call_args.args) > 1 else call_args.kwargs.get("groups", [])
+        )
         assert game.teleports_group in groups_arg
 
     @pytest.mark.tc("TC-EF-06")
@@ -197,7 +201,9 @@ class TestEntityFactorySpawn:
         # NPC constructor called with visible_sprites and npcs groups
         MockNPC.assert_called_once()
         call_kwargs = MockNPC.call_args
-        groups_arg = call_kwargs.kwargs.get("groups", call_kwargs.args[1] if len(call_kwargs.args) > 1 else [])
+        groups_arg = call_kwargs.kwargs.get(
+            "groups", call_kwargs.args[1] if len(call_kwargs.args) > 1 else []
+        )
         assert game.visible_sprites in groups_arg
         assert game.npcs in groups_arg
 

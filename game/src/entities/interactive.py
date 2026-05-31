@@ -31,21 +31,43 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
 
     # Position to Direction mapping for interaction validation
     # Standard RPG spritesheet layout: 0=Down, 1=Left, 2=Right, 3=Up
-    POSITION_TO_DIR = {0: "down", 1: "left", 2: "right", 3: "up"}
+    POSITION_TO_DIR = {0: "down", 1: "left", 2: "right", 3: "up"}  # noqa: RUF012
 
     def __init__(
-        self, pos: tuple, groups: list[pygame.sprite.Group], sub_type: str,
-        sprite_sheet: str, position: int = 3, depth: int = 1, start_row: int = 0,
-        end_row: int = 3, width: int = 32, height: int = 32,
+        self,
+        pos: tuple,
+        groups: list[pygame.sprite.Group],
+        sub_type: str,
+        sprite_sheet: str,
+        position: int = 3,
+        depth: int = 1,
+        start_row: int = 0,
+        end_row: int = 3,
+        width: int = 32,
+        height: int = 32,
         obstacles_group: pygame.sprite.Group | None = None,
-        tiled_width: int | None = None, tiled_height: int | None = None,
-        is_passable: bool = False, is_animated: bool = False, is_on: bool | None = None,
-        off_position: int = -1, halo_size: int = 0, halo_color: str = "[255, 255, 255]",
-        halo_alpha: int = HALO_DEFAULT_ALPHA, particles: bool = False,
-        particle_count: int = 0, element_id: str | None = None, target_id: str | None = None,
-        activate_from_anywhere: bool = False, facing_direction: str | None = None,
-        sfx: str = "", sfx_open: str = "", sfx_close: str = "", sfx_ambient: str = "",
-        material: str = "", day_night_driven: bool = False, trigger_only: bool = False,
+        tiled_width: int | None = None,
+        tiled_height: int | None = None,
+        is_passable: bool = False,
+        is_animated: bool = False,
+        is_on: bool | None = None,
+        off_position: int = -1,
+        halo_size: int = 0,
+        halo_color: str = "[255, 255, 255]",
+        halo_alpha: int = HALO_DEFAULT_ALPHA,
+        particles: bool = False,
+        particle_count: int = 0,
+        element_id: str | None = None,
+        target_id: str | None = None,
+        activate_from_anywhere: bool = False,
+        facing_direction: str | None = None,
+        sfx: str = "",
+        sfx_open: str = "",
+        sfx_close: str = "",
+        sfx_ambient: str = "",
+        material: str = "",
+        day_night_driven: bool = False,
+        trigger_only: bool = False,
     ):
         # 1. Properties & State Initialization
         self.target_id = target_id
@@ -117,7 +139,6 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         # For day_night_driven: return pre-computed cache (updated in update())
         return self._is_on_cache
 
-
     def _compute_is_on(self) -> bool:
         """Compute is_on state for day_night_driven entities. Called only in update()."""
         if self.light_control == "forced_on":
@@ -134,10 +155,30 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self._static_is_on = value
 
     def _parse_properties(
-        self, sub_type, start_row, end_row, is_on, is_animated, depth, position,
-        off_position, halo_size, halo_color, halo_alpha, particles, particle_count,
-        activate_from_anywhere, sprite_sheet, facing_direction, sfx, sfx_open,
-        sfx_close, sfx_ambient, material, day_night_driven, trigger_only,
+        self,
+        sub_type,
+        start_row,
+        end_row,
+        is_on,
+        is_animated,
+        depth,
+        position,
+        off_position,
+        halo_size,
+        halo_color,
+        halo_alpha,
+        particles,
+        particle_count,
+        activate_from_anywhere,
+        sprite_sheet,
+        facing_direction,
+        sfx,
+        sfx_open,
+        sfx_close,
+        sfx_ambient,
+        material,
+        day_night_driven,
+        trigger_only,
     ):
         """Parse raw properties and initialize basic state."""
         self.sub_type = sub_type
@@ -153,7 +194,17 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self._parse_direction(facing_direction, position)
         self._parse_state(is_on, is_animated, halo_size)
         self._parse_halo(halo_size, halo_color, halo_alpha)
-        self._parse_misc(particles, particle_count, activate_from_anywhere, sfx, sfx_open, sfx_close, sfx_ambient, material, trigger_only)
+        self._parse_misc(
+            particles,
+            particle_count,
+            activate_from_anywhere,
+            sfx,
+            sfx_open,
+            sfx_close,
+            sfx_ambient,
+            material,
+            trigger_only,
+        )
 
     def _parse_day_night(self, day_night_driven):
         self.day_night_driven = day_night_driven
@@ -162,7 +213,6 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self._is_on_cache: bool = False
         self.light_control = "auto" if day_night_driven else "none"
         self._time_system = None  # setter auto-refreshes cache using light_control above
-
 
     @property
     def _time_system(self):
@@ -176,7 +226,6 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self.__time_system = value
         if self.day_night_driven and value is not None:
             self._is_on_cache = self._compute_is_on()
-
 
     def _parse_direction(self, facing_direction, position):
         if facing_direction:
@@ -217,15 +266,25 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
             self.halo_color = HALO_DEFAULT_COLOR
 
         if self.halo_size > 0:
-            logging.debug(f"InteractiveEntity {self.sub_type} halo: alpha={self.halo_alpha}, size={self.halo_size}")
+            logging.debug(
+                f"InteractiveEntity {self.sub_type} halo: alpha={self.halo_alpha}, size={self.halo_size}"
+            )
 
         self.flicker_phase = random.uniform(0, 2 * math.pi)
         self.f_alpha = 1.0
         self.f_scale = 1.0
 
     def _parse_misc(
-        self, particles, particle_count, activate_from_anywhere,
-        sfx, sfx_open, sfx_close, sfx_ambient, material, trigger_only,
+        self,
+        particles,
+        particle_count,
+        activate_from_anywhere,
+        sfx,
+        sfx_open,
+        sfx_close,
+        sfx_ambient,
+        material,
+        trigger_only,
     ):
         self.particles = particles
         self.particle_count = particle_count
@@ -252,7 +311,16 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         sheet_path = ""
         if sprite_sheet and sprite_sheet.strip():
             sheet_path = str(
-                (Path(__file__).parent / ".." / ".." / ".." / "assets" / "images" / "sprites" / sprite_sheet).resolve()
+                (
+                    Path(__file__).parent
+                    / ".."
+                    / ".."
+                    / ".."
+                    / "assets"
+                    / "images"
+                    / "sprites"
+                    / sprite_sheet
+                ).resolve()
             )
 
         sheet = SpriteSheet(sheet_path) if sheet_path else None
@@ -305,9 +373,8 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
             self.rect.centerx, self.rect.bottom - INTERACTIVE_POS_Y_OFFSET
         )
 
-        if self.obstacles_group is not None:
-            if self._should_start_in_obstacles():
-                self.obstacles_group.add(self)
+        if self.obstacles_group is not None and self._should_start_in_obstacles():
+            self.obstacles_group.add(self)
 
     def _should_start_in_obstacles(self) -> bool:
         """Return True if this entity must be in obstacles_group at spawn.
@@ -425,7 +492,7 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
 
         # Ambient Audio
         has_ambient = bool(self.sfx_ambient)
-        if has_ambient and self.game and self.game.audio_manager:
+        if has_ambient and self.game and self.game.audio_manager:  # noqa: SIM102
             if self.is_on and self.game.player:
                 dist = self.pos.distance_to(self.game.player.pos)
                 self.game.audio_manager.propose_ambient(self.sfx_ambient, dist)

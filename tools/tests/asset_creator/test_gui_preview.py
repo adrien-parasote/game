@@ -3,6 +3,7 @@
 Verifies PIL image conversion, nearest-neighbor scaling,
 and tile strip extraction — all without Dear PyGui dependency.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -18,7 +19,7 @@ class TestPilToDpgRgba:
     """TC-015 & TC-016: pil_to_dpg_rgba output length and value range."""
 
     def test_output_length_32x32(self) -> None:
-        """TC-015: 32×32 RGBA image → len(result) == 32 * 32 * 4."""
+        """TC-015: 32x32 RGBA image → len(result) == 32 * 32 * 4."""
         img = Image.new("RGBA", (32, 32), (128, 64, 32, 255))
         result = pil_to_dpg_rgba(img)
         assert len(result) == 32 * 32 * 4
@@ -68,13 +69,13 @@ class TestScaleNearest:
     """TC-017: scale_nearest preserves pixel art sharpness."""
 
     def test_scaled_dimensions(self) -> None:
-        """4×4 image scaled by 8 → 32×32."""
+        """4x4 image scaled by 8 → 32x32."""
         img = Image.new("RGBA", (4, 4), (0, 0, 0, 255))
         result = scale_nearest(img, factor=8)
         assert result.size == (32, 32)
 
     def test_checkerboard_pixel_blocks(self) -> None:
-        """Each original pixel becomes an 8×8 block of same color."""
+        """Each original pixel becomes an 8x8 block of same color."""
         img = Image.new("RGBA", (4, 4), (0, 0, 0, 255))
         # Create checkerboard: alternate black and white
         pixels = img.load()
@@ -88,7 +89,7 @@ class TestScaleNearest:
         result = scale_nearest(img, factor=8)
         result_pixels = result.load()
 
-        # Check that each 8×8 block is uniform
+        # Check that each 8x8 block is uniform
         for orig_y in range(4):
             for orig_x in range(4):
                 expected_color = pixels[orig_x, orig_y]
@@ -126,7 +127,7 @@ class TestExtractTilesFromStrip:
         assert len(tiles) == 47
 
     def test_each_tile_is_32x32(self) -> None:
-        """TC-019: Each extracted tile is 32×32."""
+        """TC-019: Each extracted tile is 32x32."""
         strip_width = 47 * 32
         strip = Image.new("RGBA", (strip_width, 32), (0, 0, 0, 255))
         tiles = extract_tiles_from_strip(strip)
@@ -152,9 +153,7 @@ class TestExtractTilesFromStrip:
         """Each tile has the correct content from the strip."""
         # Create strip with 3 tiles of different colors
         strip = Image.new("RGBA", (96, 32), (0, 0, 0, 0))
-        for i, color in enumerate(
-            [(255, 0, 0, 255), (0, 255, 0, 255), (0, 0, 255, 255)]
-        ):
+        for i, color in enumerate([(255, 0, 0, 255), (0, 255, 0, 255), (0, 0, 255, 255)]):
             for x in range(32):
                 for y in range(32):
                     strip.putpixel((i * 32 + x, y), color)

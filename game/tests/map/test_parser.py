@@ -14,11 +14,10 @@ def test_tmj_parser_file_not_found():
 def test_tmj_parser_invalid_format():
     parser = TmjParser()
     # Mock open and exists
-    with patch("os.path.exists", return_value=True):
-        with patch("builtins.open", MagicMock()):
-            with patch("json.load", return_value={"wrong_key": []}):
-                with pytest.raises(ValueError):
-                    parser.load_map("dummy.tmj")
+    with patch("os.path.exists", return_value=True), patch("builtins.open", MagicMock()):  # noqa: SIM117
+        with patch("json.load", return_value={"wrong_key": []}):
+            with pytest.raises(ValueError):  # noqa: PT011
+                parser.load_map("dummy.tmj")
 
 
 @patch("src.map.tmj_parser.os.path.exists", return_value=True)
@@ -64,7 +63,7 @@ def test_tmj_parser_full_load(mock_exists):
         # Side effect to return TMJ first, then TSX
         mock_open.side_effect = [io.StringIO(json.dumps(tmj_data)), io.StringIO(tsx_content)]
 
-        with patch("json.load", return_value=tmj_data):
+        with patch("json.load", return_value=tmj_data):  # noqa: SIM117
             with patch("xml.etree.ElementTree.parse") as mock_xml:
                 # Mock XML tree
                 mock_tree = MagicMock()
@@ -115,7 +114,7 @@ def test_tmj_parser_tsx_errors_and_properties(mock_exists):
             io.StringIO(json.dumps(tmj_data)),
             io.StringIO(bad_tsx_no_image.strip()),
         ]
-        with patch("json.load", return_value=tmj_data):
+        with patch("json.load", return_value=tmj_data):  # noqa: SIM117
             with pytest.raises(ValueError, match="No <image> tag found"):
                 parser.load_map("dummy.tmj")
 
@@ -126,7 +125,7 @@ def test_tmj_parser_tsx_errors_and_properties(mock_exists):
 
     with patch("builtins.open") as mock_open:
         mock_open.side_effect = [io.StringIO(json.dumps(tmj_data)), io.StringIO(good_tsx.strip())]
-        with patch("json.load", return_value=tmj_data):
+        with patch("json.load", return_value=tmj_data):  # noqa: SIM117
             with patch("src.engine.asset_manager.AssetManager.get_image") as mock_img:
                 mock_surf = MagicMock()
                 mock_img.return_value = mock_surf
@@ -160,16 +159,14 @@ def test_tmj_parser_tsx_file_not_found():
     def exists_side_effect(path):
         if path == "dummy.tmj":
             return True
-        if "tiles.tsx" in path:
-            return False
-        return True
+        return "tiles.tsx" not in path
 
     import io
 
-    with patch("src.map.tmj_parser.os.path.exists", side_effect=exists_side_effect):
+    with patch("src.map.tmj_parser.os.path.exists", side_effect=exists_side_effect):  # noqa: SIM117
         with patch("builtins.open") as mock_open:
             mock_open.return_value = io.StringIO(json.dumps(tmj_data))
-            with patch("json.load", return_value=tmj_data):
+            with patch("json.load", return_value=tmj_data):  # noqa: SIM117
                 with pytest.raises(FileNotFoundError, match="Tileset file not found"):
                     parser.load_map("dummy.tmj")
 
@@ -186,18 +183,16 @@ def test_tmj_parser_image_not_found():
     tsx_content = '<?xml version="1.0" encoding="UTF-8"?>\n<tileset name="test" tilewidth="32" tileheight="32" tilecount="1" columns="1">\n<image source="missing.png" width="32" height="32"/>\n</tileset>'
 
     def exists_side_effect(path):
-        if "missing.png" in path:
-            return False
-        return True
+        return "missing.png" not in path
 
     import io
 
-    with patch("src.map.tmj_parser.os.path.exists", side_effect=exists_side_effect):
+    with patch("src.map.tmj_parser.os.path.exists", side_effect=exists_side_effect):  # noqa: SIM117
         with patch("builtins.open") as mock_open:
             mock_open.side_effect = [
                 io.StringIO(json.dumps(tmj_data)),
                 io.StringIO(tsx_content.strip()),
             ]
-            with patch("json.load", return_value=tmj_data):
+            with patch("json.load", return_value=tmj_data):  # noqa: SIM117
                 with pytest.raises(FileNotFoundError, match="Tileset image not found"):
                     parser.load_map("dummy.tmj")

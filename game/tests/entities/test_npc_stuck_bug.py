@@ -28,13 +28,12 @@ def pygame_init(setup_pygame):
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_npc(pos=(100, 100), wander_radius=1):
     from src.entities.npc import NPC
 
     with patch("src.entities.npc.SpriteSheet") as mock_ss:
-        mock_ss.return_value.load_grid.return_value = [
-            pygame.Surface((32, 32)) for _ in range(16)
-        ]
+        mock_ss.return_value.load_grid.return_value = [pygame.Surface((32, 32)) for _ in range(16)]
         npc = NPC(pos=pos, wander_radius=wander_radius)
     return npc
 
@@ -57,6 +56,7 @@ def _make_ef_with_game():
 # ---------------------------------------------------------------------------
 # BUG-1 : spawn_npc must set npc.game
 # ---------------------------------------------------------------------------
+
 
 class TestSpawnNpcSetsGame:
     """BUG-1: EntityFactory.spawn_npc() must assign npc.game = self.game."""
@@ -112,14 +112,13 @@ class TestSpawnNpcSetsGame:
             "NPC movement target was NOT clamped as expected by the bug"
         )
         # And the original target y=1200 should NOT have been checked
-        assert checked_y != 1200, (
-            "The correct target y=1200 was checked — bug may already be fixed"
-        )
+        assert checked_y != 1200, "The correct target y=1200 was checked — bug may already be fixed"
 
 
 # ---------------------------------------------------------------------------
 # BUG-2 : NPC.start_move() must clear direction on blocked move
 # ---------------------------------------------------------------------------
+
 
 class TestNpcStartMoveClearsDirectionWhenBlocked:
     """BUG-2: direction must be zeroed when walkable_func blocks movement."""

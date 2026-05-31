@@ -27,9 +27,9 @@ FLICKER_ALPHA_NOISE_AMP: float = 0.01  # Random noise amplitude (static entity)
 FLICKER_SCALE_AMPLITUDE: float = 0.03  # Halo size oscillation amplitude (±)
 
 # Flicker wave frequencies (multipliers on time_sec in radians/s)
-FLICKER_MAIN_FREQ: float = 1.5  # Primary candle flicker frequency (× π rad/s)
-FLICKER_JITTER_FREQ: float = 4.2  # Secondary jitter frequency (× π rad/s)
-FLICKER_SCALE_FREQ: float = 1.2  # Halo scale oscillation frequency (× π rad/s)
+FLICKER_MAIN_FREQ: float = 1.5  # Primary candle flicker frequency (x π rad/s)
+FLICKER_JITTER_FREQ: float = 4.2  # Secondary jitter frequency (x π rad/s)
+FLICKER_SCALE_FREQ: float = 1.2  # Halo scale oscillation frequency (x π rad/s)
 FLICKER_SCALE_PHASE_OFFSET: float = 0.5  # Phase offset for scale vs alpha waves
 
 # Halo default fallback color when parsing fails

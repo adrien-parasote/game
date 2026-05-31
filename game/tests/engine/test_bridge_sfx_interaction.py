@@ -27,6 +27,7 @@ class _SfxEntity(pygame.sprite.Sprite):
     def interact(self, player=None):
         pass  # is_on already set to desired post-toggle state in test
 
+
 def _make_entity(sfx="", sfx_open="", sfx_close="", is_on=True):
     """Build a minimal mock entity with SFX attributes."""
     entity = MagicMock()
@@ -106,9 +107,7 @@ class TestResolveSfxIntegration:
         im = InteractionManager(game)
         im.toggle_entity_by_id("drawbridge")
 
-        game.audio_manager.play_sfx.assert_called_once_with(
-            "bridge_open", "drawbridge"
-        )
+        game.audio_manager.play_sfx.assert_called_once_with("bridge_open", "drawbridge")
 
     @pytest.mark.tc("BRIDGE-I-002")
     def test_trigger_object_plays_sfx_close_when_toggled_off(self):
@@ -128,9 +127,7 @@ class TestResolveSfxIntegration:
         im = InteractionManager(game)
         im.toggle_entity_by_id("drawbridge")
 
-        game.audio_manager.play_sfx.assert_called_once_with(
-            "bridge_close", "drawbridge"
-        )
+        game.audio_manager.play_sfx.assert_called_once_with("bridge_close", "drawbridge")
 
     def test_legacy_sfx_still_plays_via_toggle(self):
         """Regression: lever with only sfx still plays sfx via toggle_entity_by_id."""
@@ -144,9 +141,7 @@ class TestResolveSfxIntegration:
         im = InteractionManager(game)
         im.toggle_entity_by_id("lever_1")
 
-        game.audio_manager.play_sfx.assert_called_once_with(
-            "01-lever", "lever_1"
-        )
+        game.audio_manager.play_sfx.assert_called_once_with("01-lever", "lever_1")
 
     def test_no_sfx_played_when_all_empty(self):
         """Regression: entity with all sfx empty → audio_manager.play_sfx not called."""
@@ -161,6 +156,7 @@ class TestResolveSfxIntegration:
         im.toggle_entity_by_id("silent_obj")
 
         game.audio_manager.play_sfx.assert_not_called()
+
 
 # assert True (legacy bypass)
 

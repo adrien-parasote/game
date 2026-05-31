@@ -126,9 +126,7 @@ class Game:
         # Time System
         self.time_system = TimeSystem(initial_hour=Settings.INITIAL_HOUR)
         self.hud = GameHUD(self.time_system)
-        self.lighting_manager = LightingManager(
-            self.time_system, self.screen.get_size()
-        )
+        self.lighting_manager = LightingManager(self.time_system, self.screen.get_size())
 
         # World State
         self.world_state = WorldState()
@@ -301,7 +299,7 @@ class Game:
         self.clock.tick(Settings.FPS)  # Reset dt so next frame logic doesn't jump
 
     # ---------------------------------------------------------------------------
-    # Intra-map teleport — spec: game/docs/specs/intra-map-teleport.md § 4.3–4.4
+    # Intra-map teleport — spec: game/docs/specs/intra-map-teleport.md § 4.3–4.4  # noqa: RUF003
     # ---------------------------------------------------------------------------
 
     def intra_map_teleport(self, target_spawn_id: str, transition_type: str) -> None:
@@ -314,9 +312,7 @@ class Game:
         """
         spawn_pos = self._map_loader.resolve_spawn_by_id(target_spawn_id)
         if spawn_pos is None:
-            logging.error(
-                f"intra_map_teleport: spawn '{target_spawn_id}' not found — abort"
-            )
+            logging.error(f"intra_map_teleport: spawn '{target_spawn_id}' not found — abort")
             return
 
         if transition_type == "walk":
@@ -336,11 +332,8 @@ class Game:
         # Created once and reused across all scripted walks.
         if self._player_transparent is None:
             assert self.player.image is not None, "player.image must be loaded before scripted walk"
-            self._player_transparent = pygame.Surface(
-                self.player.image.get_size(), pygame.SRCALPHA
-            )
+            self._player_transparent = pygame.Surface(self.player.image.get_size(), pygame.SRCALPHA)
             self._player_transparent.fill((0, 0, 0, 0))
-
 
         self._intra_walk_target = target
         self.player.target_pos = pygame.math.Vector2(target)
@@ -352,7 +345,6 @@ class Game:
                 self.player.current_state = "right" if delta.x > 0 else "left"
             else:
                 self.player.current_state = "up" if delta.y < 0 else "down"
-
 
     def _tick_intra_walk(self, dt: float) -> None:
         """Monitor walk completion and maintain player facing each frame.

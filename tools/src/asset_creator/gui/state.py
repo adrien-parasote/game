@@ -3,6 +3,7 @@
 Immutable state pattern — each parameter change creates a new AppState.
 Widget values are synced to/from the state via read/write functions.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -117,7 +118,9 @@ def state_from_preset(
         New AppState populated from the preset's config values.
     """
     config: TerrainConfig = presets[terrain_name]
-    palette_path = Path(__file__).parent.parent / "config" / "palettes" / f"{config.palette_name}.yaml"
+    palette_path = (
+        Path(__file__).parent.parent / "config" / "palettes" / f"{config.palette_name}.yaml"
+    )
     pal = load_palette(palette_path)
     return AppState(
         terrain_name=terrain_name,

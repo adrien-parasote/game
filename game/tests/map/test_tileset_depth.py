@@ -20,14 +20,15 @@ from src.map.tmj_parser import TmjParser
 DECORATIONS_TSX = "assets/tiled/tiles/02-decorations.tsx"
 WATER_TSX = "assets/tiled/autotiles/01-water.tsx"
 
-BRIDGE_TILE_X = 3   # column 3 (0-indexed)
-BRIDGE_TILE_Y = 6   # row 6
+BRIDGE_TILE_X = 3  # column 3 (0-indexed)
+BRIDGE_TILE_Y = 6  # row 6
 COLUMNS = 12
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _effective_depth(tsx_path: str, local_id: int) -> int:
     tree = ET.parse(tsx_path)
@@ -65,6 +66,7 @@ def _effective_walkable(tsx_path: str, local_id: int) -> bool:
 # TC-BRIDGE-001
 # ---------------------------------------------------------------------------
 
+
 class TestBridgeTile:
     """TC-BRIDGE-001: tile de pont (x+3, y+6 = local_id=75) doit avoir depth=0, walkable=True."""
 
@@ -96,6 +98,7 @@ class TestBridgeTile:
 # TC-PARSER-CLASS-001 : flattening des class properties Tiled
 # ---------------------------------------------------------------------------
 
+
 class TestClassPropertyFlattening:
     """TC-PARSER-CLASS-001: _parse_tileset_properties doit flattener les class properties."""
 
@@ -111,11 +114,11 @@ class TestClassPropertyFlattening:
     def test_flat_bool_property_still_works(self):
         """TC-PARSER-CLASS-001a: regression — les props flat existantes ne sont pas cassées."""
         xml = (
-            '<tileset>'
-            '  <properties>'
+            "<tileset>"
+            "  <properties>"
             '    <property name="walkable" type="bool" value="false"/>'
-            '  </properties>'
-            '</tileset>'
+            "  </properties>"
+            "</tileset>"
         )
         props = self._parse_props(xml)
         assert props["walkable"] is False
@@ -127,17 +130,17 @@ class TestClassPropertyFlattening:
         Ces enfants doivent être flattened dans le dict résultat.
         """
         xml = (
-            '<tileset>'
-            '  <properties>'
+            "<tileset>"
+            "  <properties>"
             '    <property name="material" value="water"/>'
             '    <property name="tileset" type="class" propertytype="00-tileset">'
-            '      <properties>'
+            "      <properties>"
             '        <property name="walkable" type="bool" value="false"/>'
             '        <property name="depth" type="int" value="0"/>'
-            '      </properties>'
-            '    </property>'
-            '  </properties>'
-            '</tileset>'
+            "      </properties>"
+            "    </property>"
+            "  </properties>"
+            "</tileset>"
         )
         props = self._parse_props(xml)
         assert props.get("walkable") is False, (
@@ -153,16 +156,16 @@ class TestClassPropertyFlattening:
         la prop flat (déclarée avant) a priorité.
         """
         xml = (
-            '<tileset>'
-            '  <properties>'
+            "<tileset>"
+            "  <properties>"
             '    <property name="walkable" type="bool" value="true"/>'
             '    <property name="container" type="class" propertytype="foo">'
-            '      <properties>'
+            "      <properties>"
             '        <property name="walkable" type="bool" value="false"/>'
-            '      </properties>'
-            '    </property>'
-            '  </properties>'
-            '</tileset>'
+            "      </properties>"
+            "    </property>"
+            "  </properties>"
+            "</tileset>"
         )
         props = self._parse_props(xml)
         # Flat prop declared first → its value is set, class child should not overwrite it
@@ -172,6 +175,7 @@ class TestClassPropertyFlattening:
 # ---------------------------------------------------------------------------
 # TC-WATER-001 : eau non-walkable via le parseur Python
 # ---------------------------------------------------------------------------
+
 
 class TestWaterTileset:
     """TC-WATER-001: le parseur Python doit lire walkable=false du tileset eau."""

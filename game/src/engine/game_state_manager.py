@@ -189,7 +189,7 @@ class GameStateManager:
         # Preserve the current screen dimensions by reusing the existing display
         # (Game.__init__ will reinitialize pygame display, which is acceptable)
         self._game = Game(skip_map_load=True)
-        # Re‑create UI screens with the new game's screen reference
+        # Re‑create UI screens with the new game's screen reference  # noqa: RUF003
         self._title_screen = TitleScreen(self._game.screen, self._save_manager)
         self._pause_screen = PauseScreen(self._game.screen, self._save_manager)
 
@@ -333,4 +333,3 @@ class GameStateManager:
             except Exception as e:
                 logging.error(f"GSM: Could not read world.world: {e}")
         return default_map
-

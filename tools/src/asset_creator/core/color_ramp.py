@@ -25,7 +25,9 @@ def _linear_to_srgb(c: float) -> float:
 
 
 def _linear_rgb_to_oklab(
-    r: float, g: float, b: float,
+    r: float,
+    g: float,
+    b: float,
 ) -> tuple[float, float, float]:
     """Convert linear RGB to Oklab (L, a, b).
 
@@ -43,27 +45,17 @@ def _linear_rgb_to_oklab(
     s_cbrt = math.copysign(abs(s_) ** (1 / 3), s_) if s_ != 0 else 0.0
 
     # M2: LMS_cbrt -> Lab
-    big_l = (
-        0.2104542553 * l_cbrt
-        + 0.7936177850 * m_cbrt
-        - 0.0040720468 * s_cbrt
-    )
-    a_val = (
-        1.9779984951 * l_cbrt
-        - 2.4285922050 * m_cbrt
-        + 0.4505937099 * s_cbrt
-    )
-    b_val = (
-        0.0259040371 * l_cbrt
-        + 0.7827717662 * m_cbrt
-        - 0.8086757660 * s_cbrt
-    )
+    big_l = 0.2104542553 * l_cbrt + 0.7936177850 * m_cbrt - 0.0040720468 * s_cbrt
+    a_val = 1.9779984951 * l_cbrt - 2.4285922050 * m_cbrt + 0.4505937099 * s_cbrt
+    b_val = 0.0259040371 * l_cbrt + 0.7827717662 * m_cbrt - 0.8086757660 * s_cbrt
 
     return (big_l, a_val, b_val)
 
 
 def _oklab_to_linear_rgb(
-    big_l: float, a: float, b: float,
+    big_l: float,
+    a: float,
+    b: float,
 ) -> tuple[float, float, float]:
     """Convert Oklab (L, a, b) to linear RGB.
 
@@ -82,21 +74,9 @@ def _oklab_to_linear_rgb(
     s_cubed = s_ * s_ * s_
 
     # M1^-1: LMS -> linear sRGB (true inverse of M1, computed via numpy)
-    r = (
-        +4.0562053820035 * l_cubed
-        - 3.2568174131119 * m_cubed
-        + 0.2047061204385 * s_cubed
-    )
-    g = (
-        -1.2380901986143 * l_cubed
-        + 2.5345477404013 * m_cubed
-        - 0.3025076460534 * s_cubed
-    )
-    b_val = (
-        -0.1560256026350 * l_cubed
-        - 0.3271460588888 * m_cubed
-        + 1.5134402238170 * s_cubed
-    )
+    r = +4.0562053820035 * l_cubed - 3.2568174131119 * m_cubed + 0.2047061204385 * s_cubed
+    g = -1.2380901986143 * l_cubed + 2.5345477404013 * m_cubed - 0.3025076460534 * s_cubed
+    b_val = -0.1560256026350 * l_cubed - 0.3271460588888 * m_cubed + 1.5134402238170 * s_cubed
 
     return (r, g, b_val)
 
@@ -126,7 +106,9 @@ def rgb_to_oklch(r: int, g: int, b: int) -> tuple[float, float, float]:
 
 
 def oklch_to_rgb(
-    big_l: float, c: float, h: float,
+    big_l: float,
+    c: float,
+    h: float,
 ) -> tuple[int, int, int]:
     """Convert OKLCh back to clamped sRGB (0-255).
 
@@ -234,10 +216,7 @@ def generate_hue_shifted_ramp(
         new_c = max(0.0, c_base + chroma_adj)
 
         # Hue: shift based on direction
-        if t < 0:
-            hue_shift = shadow_hue_shift * abs(t)
-        else:
-            hue_shift = highlight_hue_shift * t
+        hue_shift = shadow_hue_shift * abs(t) if t < 0 else highlight_hue_shift * t
         new_h = (h_base + hue_shift) % 360
 
         ramp.append(oklch_to_rgb(new_l, new_c, new_h))

@@ -32,15 +32,18 @@ def reset_asset_manager():
 @pytest.fixture
 def mock_spritesheet():
     """Global mock for spritesheet loading to prevent missing file errors."""
-    with patch(
-        "src.graphics.spritesheet.SpriteSheet.load_grid",
-        return_value=[pygame.Surface((32, 48)) for _ in range(16)],
-    ):
-        with patch(
+    with (
+        patch(
+            "src.graphics.spritesheet.SpriteSheet.load_grid",
+            return_value=[pygame.Surface((32, 48)) for _ in range(16)],
+        ),
+        patch(
             "src.graphics.spritesheet.SpriteSheet.load_grid_by_size",
             return_value=[pygame.Surface((32, 32)) for _ in range(16)],
-        ):
-            with patch("src.graphics.spritesheet.SpriteSheet.__init__", return_value=None):
-                yield
+        ),
+        patch("src.graphics.spritesheet.SpriteSheet.__init__", return_value=None),
+    ):
+        yield
+
 
 # assert True (legacy bypass)

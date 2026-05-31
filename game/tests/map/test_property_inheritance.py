@@ -21,6 +21,7 @@ from src.map.tmj_parser import TmjParser
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_parser() -> TmjParser:
     """Create a TmjParser with no project file."""
     with patch("src.map.tmj_parser.os.path.exists", return_value=False):
@@ -41,20 +42,23 @@ def _load_with_tsx(tsx_content: str, tmj_data: dict | None = None) -> dict:
     mock_surf = MagicMock()
     mock_surf.subsurface.return_value.copy.return_value = MagicMock()
 
-    with patch("src.map.tmj_parser.os.path.exists", return_value=True):
+    with patch("src.map.tmj_parser.os.path.exists", return_value=True):  # noqa: SIM117
         with patch("builtins.open") as mock_open:
             mock_open.side_effect = [
                 io.StringIO(json.dumps(tmj_data)),
                 io.StringIO(tsx_content),
             ]
-            with patch("json.load", return_value=tmj_data):
-                with patch("src.engine.asset_manager.AssetManager.get_image", return_value=mock_surf):
+            with patch("json.load", return_value=tmj_data):  # noqa: SIM117
+                with patch(
+                    "src.engine.asset_manager.AssetManager.get_image", return_value=mock_surf
+                ):
                     return parser.load_map("dummy.tmj")
 
 
 # ---------------------------------------------------------------------------
 # TSX builders
 # ---------------------------------------------------------------------------
+
 
 def _tsx(tileset_props: str = "", tile_entries: str = "") -> str:
     return (
@@ -86,6 +90,7 @@ def _tile(tid: int, **kwargs) -> str:
 # ---------------------------------------------------------------------------
 # TC-PROP-001 : tile NOT in XML → hérite toutes les props du tileset
 # ---------------------------------------------------------------------------
+
 
 class TestTileNotInXML:
     """TC-PROP-001: tile absente du XML hérite depth, walkable, et props custom du tileset."""
@@ -125,6 +130,7 @@ class TestTileNotInXML:
 # TC-PROP-002 : tile dans le XML avec AUCUNE propriété → hérite tileset
 # ---------------------------------------------------------------------------
 
+
 class TestTileInXMLNoProperties:
     """TC-PROP-002: tile déclarée dans XML mais sans <properties> hérite tileset."""
 
@@ -150,6 +156,7 @@ class TestTileInXMLNoProperties:
 # ---------------------------------------------------------------------------
 # TC-PROP-003 : tile avec seulement depth → walkable hérite du tileset
 # ---------------------------------------------------------------------------
+
 
 class TestPartialTileOverride:
     """TC-PROP-003: override partiel — seul depth est défini, walkable hérite du tileset."""
@@ -179,13 +186,16 @@ class TestPartialTileOverride:
 # TC-PROP-004 : tile avec prop custom supplémentaire → s'ajoute aux props tileset
 # ---------------------------------------------------------------------------
 
+
 class TestTileAdditionalProperties:
     """TC-PROP-004: prop custom uniquement sur la tile → présente dans properties."""
 
     def test_tile_only_prop_is_captured(self):
         tsx = _tsx(
             tileset_props=_ts_props(depth=("int", "0"), walkable=("bool", "true")),
-            tile_entries=_tile(0, depth=("int", "0"), walkable=("bool", "true"), material=("string", "stone")),
+            tile_entries=_tile(
+                0, depth=("int", "0"), walkable=("bool", "true"), material=("string", "stone")
+            ),
         )
         result = _load_with_tsx(tsx)
         tile = result["tiles"][1]
@@ -210,6 +220,7 @@ class TestTileAdditionalProperties:
 # ---------------------------------------------------------------------------
 # TC-PROP-005 : ni tileset ni tile → hard defaults (depth=0, walkable=True)
 # ---------------------------------------------------------------------------
+
 
 class TestHardDefaults:
     """TC-PROP-005: aucune prop nulle part → hard defaults appliqués."""
@@ -237,6 +248,7 @@ class TestHardDefaults:
 # TC-PROP-006 : tile override complet → toutes les props tileset surchargées
 # ---------------------------------------------------------------------------
 
+
 class TestFullTileOverride:
     """TC-PROP-006: tile définit toutes les props → aucune inheritance du tileset."""
 
@@ -254,6 +266,7 @@ class TestFullTileOverride:
 # ---------------------------------------------------------------------------
 # TC-PROP-007 : tileset a direction, tile sans direction → héritage direction
 # ---------------------------------------------------------------------------
+
 
 class TestDirectionInheritance:
     """TC-PROP-007: direction définie au niveau tileset héritée par la tile."""

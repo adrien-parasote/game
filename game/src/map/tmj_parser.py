@@ -158,19 +158,35 @@ class TmjParser:
             raise FileNotFoundError(f"Tileset image not found: {img_path}")
 
         from src.engine.asset_manager import AssetManager
+
         sheet = AssetManager().get_image(img_path)
 
         tileset_props = self._parse_tileset_properties(root)
-        custom_props, animations = self._parse_tile_properties_and_anims(root, firstgid, tileset_props)
+        custom_props, animations = self._parse_tile_properties_and_anims(
+            root, firstgid, tileset_props
+        )
 
         tilecount = int(
-            root.get("tilecount", (sheet.get_width() // tilewidth) * (sheet.get_height() // tileheight))
+            root.get(
+                "tilecount", (sheet.get_width() // tilewidth) * (sheet.get_height() // tileheight)
+            )
         )
 
         for i in range(tilecount):
-            self._process_single_tile(i, columns, tilewidth, tileheight, firstgid, sheet, tileset_props, custom_props, animations, tile_dict)
+            self._process_single_tile(
+                i,
+                columns,
+                tilewidth,
+                tileheight,
+                firstgid,
+                sheet,
+                tileset_props,
+                custom_props,
+                animations,
+                tile_dict,
+            )
 
-    def _parse_tileset_properties(self, root: ET.Element) -> dict[str, Any]:
+    def _parse_tileset_properties(self, root: ET.Element) -> dict[str, Any]:  # noqa: C901
         tileset_props = {}
         ts_properties_node = root.find("properties")
         if ts_properties_node is None:
@@ -211,7 +227,9 @@ class TmjParser:
 
         return tileset_props
 
-    def _parse_tile_properties_and_anims(self, root: ET.Element, firstgid: int, tileset_props: dict[str, Any]) -> tuple[dict[int, dict], dict[int, list]]:
+    def _parse_tile_properties_and_anims(  # noqa: C901
+        self, root: ET.Element, firstgid: int, tileset_props: dict[str, Any]
+    ) -> tuple[dict[int, dict], dict[int, list]]:
         custom_props = {}
         animations = {}
         for tile in root.findall("tile"):
@@ -245,12 +263,29 @@ class TmjParser:
             if anim_node is not None:
                 frames = []
                 for frame in anim_node.findall("frame"):
-                    frames.append((firstgid + int(frame.get("tileid") or "0"), int(frame.get("duration") or "0")))
+                    frames.append(
+                        (
+                            firstgid + int(frame.get("tileid") or "0"),
+                            int(frame.get("duration") or "0"),
+                        )
+                    )
                 if frames:
                     animations[local_id] = frames
         return custom_props, animations
 
-    def _process_single_tile(self, i: int, columns: int, tilewidth: int, tileheight: int, firstgid: int, sheet: pygame.Surface, tileset_props: dict, custom_props: dict, animations: dict, tile_dict: dict):
+    def _process_single_tile(
+        self,
+        i: int,
+        columns: int,
+        tilewidth: int,
+        tileheight: int,
+        firstgid: int,
+        sheet: pygame.Surface,
+        tileset_props: dict,
+        custom_props: dict,
+        animations: dict,
+        tile_dict: dict,
+    ):
         global_id = firstgid + i
         x = (i % columns) * tilewidth
         y = (i // columns) * tileheight
@@ -265,6 +300,7 @@ class TmjParser:
         occluded = None
         if props["depth"] > 0:
             from src.config import Settings
+
             occluded = surface.copy()
             occluded.set_alpha(Settings.OCCLUSION_ALPHA)
 

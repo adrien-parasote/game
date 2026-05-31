@@ -22,7 +22,11 @@ class I18nManager:
     def load(self, locale: str):
         """Load a language file from assets/langs/{locale}.json."""
         self.current_locale = locale
-        path = str((Path(__file__).parent / ".." / ".." / ".." / "assets" / "langs" / f"{locale}.json").resolve())
+        path = str(
+            (
+                Path(__file__).parent / ".." / ".." / ".." / "assets" / "langs" / f"{locale}.json"
+            ).resolve()
+        )
 
         try:
             if os.path.exists(path):

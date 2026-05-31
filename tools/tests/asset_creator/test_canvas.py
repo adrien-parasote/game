@@ -3,6 +3,7 @@
 Tests CanvasState initialization, grid manipulation, clear behavior,
 mode switching, and coordinate conversion — no DPG required.
 """
+
 from __future__ import annotations
 
 from asset_creator.gui.canvas import CanvasState, grid_to_canvas_coords

@@ -3,6 +3,7 @@
 Manages the paint canvas grid for both autotile and standalone modes.
 DPG-specific rendering lives in app.py — this module is testable without DPG.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

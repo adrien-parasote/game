@@ -4,6 +4,7 @@ Contains the regenerate_tileset, generate_standalone_tile, and export
 functions extracted so that integration tests can exercise the full
 pipeline without a display.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -45,6 +46,7 @@ def _build_texture(
 
     # Override palette colors with user-customised values from state
     from asset_creator.core.palette import Palette, RampConfig
+
     custom_colors = (
         state.color_shadow,
         state.color_base,
@@ -89,7 +91,12 @@ def _build_texture(
         texture = generate_noise_texture_v2(32, 32, palette, params, seed=state.seed)
     else:
         texture = generate_pattern_texture(
-            32, 32, palette, config.texture.texture_type, params, seed=state.seed,
+            32,
+            32,
+            palette,
+            config.texture.texture_type,
+            params,
+            seed=state.seed,
         )
 
     if config.detail.detail_type != "none":

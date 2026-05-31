@@ -3,6 +3,7 @@
 Applies procedural stamps (grass blades, dirt specks, stone cracks, sand grains)
 on top of the base texture for visual richness.
 """
+
 from __future__ import annotations
 
 import inspect
@@ -89,7 +90,7 @@ def _add_dirt_specks(
         raise RuntimeError("Failed to load image pixels")
     colors = list(palette.extended_colors)
 
-    dark = colors[0]   # darkest
+    dark = colors[0]  # darkest
     light = colors[-1]  # brightest
 
     for y in range(h):
@@ -210,10 +211,8 @@ def apply_detail_overlay(
         return img.copy()
 
     if detail_type not in _OVERLAY_TYPES:
-        valid = sorted(_OVERLAY_TYPES.keys()) + ["none"]
-        raise ValueError(
-            f"Unknown detail type '{detail_type}'. Valid types: {valid}"
-        )
+        valid = [*sorted(_OVERLAY_TYPES.keys()), "none"]
+        raise ValueError(f"Unknown detail type '{detail_type}'. Valid types: {valid}")
 
     density = max(0.0, min(0.5, density))  # Clamp
 

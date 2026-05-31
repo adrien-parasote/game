@@ -16,11 +16,11 @@ def map_manager_mock():
 
     frame1 = MagicMock()
     frame1.image = pygame.Surface((32, 32))
-    frame1.image.fill((255, 0, 0)) # Red
+    frame1.image.fill((255, 0, 0))  # Red
 
     frame2 = MagicMock()
     frame2.image = pygame.Surface((32, 32))
-    frame2.image.fill((0, 255, 0)) # Green
+    frame2.image.fill((0, 255, 0))  # Green
 
     mm.tiles = {
         100: tile_data,
@@ -30,7 +30,8 @@ def map_manager_mock():
 
     return mm
 
-@patch('pygame.time.get_ticks')
+
+@patch("pygame.time.get_ticks")
 def test_animation_map_manager_frame_cycle(mock_get_ticks, map_manager_mock):
     """IT-003: Frame Cycle Accuracy"""
     anim_manager = AnimationMapManager(map_manager_mock)
@@ -59,6 +60,7 @@ def test_animation_map_manager_frame_cycle(mock_get_ticks, map_manager_mock):
     mock_get_ticks.return_value = 300
     img = anim_manager.get_current_frame_image(100)
     assert img == map_manager_mock.tiles[101].image
+
 
 def test_animation_map_manager_static_fallback(map_manager_mock):
     """Verify fallback to base image if frames list is missing or empty."""

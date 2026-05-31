@@ -59,7 +59,9 @@ class SaveSlotUI:
     def get_size(self) -> tuple[int, int]:
         return self._bg.get_size()
 
-    def _draw_thumbnail(self, surface: pygame.Surface, rect: pygame.Rect, thumbnail: pygame.Surface | None) -> None:
+    def _draw_thumbnail(
+        self, surface: pygame.Surface, rect: pygame.Rect, thumbnail: pygame.Surface | None
+    ) -> None:
         thumb_rect = pygame.Rect(
             rect.x + SAVE_THUMB_X, rect.y + SAVE_THUMB_Y, SAVE_THUMB_SIZE, SAVE_THUMB_SIZE
         )
@@ -104,9 +106,9 @@ class SaveSlotUI:
         else:
             hours = int(info.playtime_seconds // 3600)
             minutes = int((info.playtime_seconds % 3600) // 60)
-            time_str = self._i18n.get(
-                "save_menu.time", "Time: {hours:02d}h {minutes:02d}m"
-            ).format(hours=hours, minutes=minutes)
+            time_str = self._i18n.get("save_menu.time", "Time: {hours:02d}h {minutes:02d}m").format(
+                hours=hours, minutes=minutes
+            )
             time_text = self._font_small.render(time_str, True, SAVE_DETAIL_COLOR)
             surface.blit(time_text, (text_x, details_y + SAVE_DETAIL_LINE_SPACING))
 

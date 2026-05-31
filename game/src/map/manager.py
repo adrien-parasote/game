@@ -31,9 +31,7 @@ class MapManager:
         # layer_depths: layer_id -> order value.
         # Used to decide if the layer is rendered in the background (order <= player.depth)
         # or foreground (order > player.depth). This is the layer-level Z position.
-        self.layer_depths = {
-            lid: order_values.get(lid, 0) for lid in self.layer_order
-        }
+        self.layer_depths = {lid: order_values.get(lid, 0) for lid in self.layer_order}
 
         # layer_max_depths: max per-tile depth within each layer.
         # Used in get_visible_chunks to skip layers that have no foreground tiles.
@@ -53,7 +51,9 @@ class MapManager:
         self.cached_surfaces = {}
         self._window_cache = None
 
-    def get_layer_surface(self, layer_id: int, pygame_module, max_bg_depth: int = 1) -> pygame.Surface | None:
+    def get_layer_surface(
+        self, layer_id: int, pygame_module, max_bg_depth: int = 1
+    ) -> pygame.Surface | None:
         """Get or create a pre-rendered surface for a specific layer."""
         # We cache by layer_id. If max_bg_depth changes, this could be an issue, but player depth is static at 1.
         if layer_id in self.cached_surfaces:
@@ -115,8 +115,6 @@ class MapManager:
             return bool(tile.walkable)
 
         return False  # No depth=0 ground tile at this position
-
-
 
     def get_direction_flags(self, x: int, y: int) -> set[str]:
         """Return the intersection of direction_flags across all layers at (x, y).
@@ -197,7 +195,6 @@ class MapManager:
                         if min_depth is not None and not is_foreground_layer and depth <= min_depth:
                             continue
                         yield (x * ts, py, tile_id, depth)
-
 
     def get_visible_animated_chunks(
         self, viewport_rect: pygame.Rect, layer_id: int | None = None
@@ -342,4 +339,3 @@ class MapManager:
             return None
 
         return None
-

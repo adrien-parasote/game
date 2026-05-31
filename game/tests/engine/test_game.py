@@ -592,11 +592,13 @@ def test_font_tiers_exist():
 def _make_game():
     with patch("src.engine.game.Game._load_map"):
         from src.engine.game import Game
+
         return Game()
 
 
 def _make_ef():
     from src.engine.entity_factory import EntityFactory
+
     game = MagicMock()
     game.visible_sprites = MagicMock()
     game.interactives = MagicMock()
@@ -612,13 +614,11 @@ def _make_ef():
     return EntityFactory(game)
 
 
-
-
 class TestGameCoverage:
-
     @patch("src.engine.game.Game._load_map")
-    def test_start_initial_ambients_delegates(self, _):
+    def test_start_initial_ambients_delegates(self, _):  # noqa: PT019
         from src.engine.game import Game
+
         game = Game()
         game._map_loader._start_initial_ambients = MagicMock()
         pos = pygame.math.Vector2(100, 100)
@@ -626,7 +626,7 @@ class TestGameCoverage:
         game._map_loader._start_initial_ambients.assert_called_once_with(pos)
 
     @patch("src.engine.game.Game._load_map")
-    def test_trigger_npc_bubble_no_msg_warns(self, _, caplog):
+    def test_trigger_npc_bubble_no_msg_warns(self, _, caplog):  # noqa: PT019
         game = _make_game()
         game._current_map_name = "00-map.tmj"
         game.i18n.get = MagicMock(return_value=None)
@@ -636,7 +636,7 @@ class TestGameCoverage:
         assert game._npc_bubble is None
 
     @patch("src.engine.game.Game._load_map")
-    def test_trigger_npc_bubble_sets_state(self, _):
+    def test_trigger_npc_bubble_sets_state(self, _):  # noqa: PT019
         game = _make_game()
         game._current_map_name = "00-map.tmj"
         game.i18n.get = MagicMock(return_value="Hello!")
@@ -646,14 +646,14 @@ class TestGameCoverage:
         assert game._npc_bubble["page"] == 0
 
     @patch("src.engine.game.Game._load_map")
-    def test_advance_npc_bubble_none_noop(self, _):
+    def test_advance_npc_bubble_none_noop(self, _):  # noqa: PT019
         game = _make_game()
         game._npc_bubble = None
         game._advance_npc_bubble()  # no raise
         assert game._npc_bubble is None
 
     @patch("src.engine.game.Game._load_map")
-    def test_advance_npc_bubble_no_font_noop(self, _):
+    def test_advance_npc_bubble_no_font_noop(self, _):  # noqa: PT019
         game = _make_game()
         game._npc_bubble = {"npc": MagicMock(), "text": "Hi", "page": 0}
         game.speech_bubble.font = None
@@ -661,7 +661,7 @@ class TestGameCoverage:
         assert game._npc_bubble["page"] == 0
 
     @patch("src.engine.game.Game._load_map")
-    def test_advance_npc_bubble_increments_page(self, _):
+    def test_advance_npc_bubble_increments_page(self, _):  # noqa: PT019
         game = _make_game()
         game._npc_bubble = {"npc": MagicMock(), "text": "Hi", "page": 0}
         game.speech_bubble.font = MagicMock()
@@ -670,7 +670,7 @@ class TestGameCoverage:
         assert game._npc_bubble["page"] == 1
 
     @patch("src.engine.game.Game._load_map")
-    def test_advance_npc_bubble_closes_on_last(self, _):
+    def test_advance_npc_bubble_closes_on_last(self, _):  # noqa: PT019
         game = _make_game()
         npc = MagicMock()
         npc.state = "interact"
@@ -683,14 +683,16 @@ class TestGameCoverage:
         assert npc.state == "idle"
 
     @patch("src.engine.game.Game._load_map")
-    def test_get_state_has_keys(self, _):
+    def test_get_state_has_keys(self, _):  # noqa: PT019
         game = _make_game()
         s = game.get_state()
-        assert "map_name" in s and "player_pos" in s
+        assert "map_name" in s
+        assert "player_pos" in s
 
     @patch("src.engine.game.Game._load_map")
-    def test_run_frame_returns_game_event(self, _):
+    def test_run_frame_returns_game_event(self, _):  # noqa: PT019
         from src.engine.game_events import GameEvent
+
         game = _make_game()
         game._handle_events = MagicMock()
         game._update = MagicMock()
@@ -698,7 +700,7 @@ class TestGameCoverage:
         assert isinstance(game.run_frame(0.016), GameEvent)
 
     @patch("src.engine.game.Game._load_map")
-    def test_update_resolves_pending_npc_stopped(self, _):
+    def test_update_resolves_pending_npc_stopped(self, _):  # noqa: PT019
         game = _make_game()
         npc = MagicMock()
         npc.is_moving = False
@@ -707,4 +709,3 @@ class TestGameCoverage:
         game._update(0.016)
         game._trigger_npc_bubble.assert_called_once_with(npc, "elem")
         assert game._pending_npc_dialogue is None
-

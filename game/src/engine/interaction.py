@@ -242,7 +242,7 @@ class InteractionManager(InteractionEmoteMixin):
         """Walkability checking adapter — delegates to CollisionChecker."""
         return not self._collision_checker.check(px_center, py_center, requester)
 
-    def check_teleporters(self, was_moving: bool):
+    def check_teleporters(self, was_moving: bool):  # noqa: C901
         """Active spatial check testing if interaction just resolved over teleport rect."""
         just_arrived = was_moving and not self.game.player.is_moving
         intent_active = (
@@ -303,6 +303,7 @@ class InteractionManager(InteractionEmoteMixin):
         entity.is_on must reflect the NEW state (post-toggle) at call time.
         Only string values are considered valid (guards against MagicMock attrs).
         """
+
         def _get_str(obj, attr):
             val = getattr(obj, attr, "")
             return val if isinstance(val, str) else ""
@@ -311,7 +312,7 @@ class InteractionManager(InteractionEmoteMixin):
             return _get_str(entity, "sfx_open") or _get_str(entity, "sfx")
         return _get_str(entity, "sfx_close") or _get_str(entity, "sfx")
 
-    def toggle_entity_by_id(self, target_id: str, depth: int = 0):
+    def toggle_entity_by_id(self, target_id: str, depth: int = 0):  # noqa: C901
         """Toggle the state of any entity matching element_id == target_id."""
         if not target_id:
             return
@@ -324,11 +325,19 @@ class InteractionManager(InteractionEmoteMixin):
 
         for group in (self.game.interactives, self.game.npcs):
             for entity in group:
-                if getattr(entity, "element_id", None) == target_id:
+                if getattr(entity, "element_id", None) == target_id:  # noqa: SIM102
                     if hasattr(entity, "interact"):
-                        if getattr(entity, "sub_type", "") == "bridge" and getattr(entity, "is_on", False):
-                            if self.game.player.rect and entity.rect and self.game.player.rect.colliderect(entity.rect):
-                                logging.warning(f"Cannot remote-toggle bridge {target_id}: player is on it.")
+                        if getattr(entity, "sub_type", "") == "bridge" and getattr(  # noqa: SIM102
+                            entity, "is_on", False
+                        ):
+                            if (
+                                self.game.player.rect
+                                and entity.rect
+                                and self.game.player.rect.colliderect(entity.rect)
+                            ):
+                                logging.warning(
+                                    f"Cannot remote-toggle bridge {target_id}: player is on it."
+                                )
                                 continue
 
                         entity.interact(self.game.player)

@@ -4,6 +4,7 @@ construct it during draw().
 
 Spec: game/docs/specs/perf-constants-spec.md#feature-p-perf-01a--i18nmanager-cache-in-hud
 """
+
 from unittest.mock import MagicMock, patch
 
 import pygame
@@ -39,12 +40,14 @@ def hud(mock_time_system):
 
 # ── UT-005a: __init__ stores _i18n attribute ──────────────────────────────
 
+
 def test_hud_init_stores_i18n(hud):
     """UT-005: GameHUD.__init__ must cache I18nManager as self._i18n."""
     assert hasattr(hud, "_i18n"), "_i18n attribute must be set at __init__"
 
 
 # ── UT-005b: draw() does NOT construct a new I18nManager ─────────────────
+
 
 def test_hud_draw_does_not_construct_i18n(mock_time_system):
     """UT-005: draw() must reuse self._i18n, never call I18nManager()."""

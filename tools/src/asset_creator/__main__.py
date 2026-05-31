@@ -1,4 +1,5 @@
 """CLI entry point for the Asset Creator Tool."""
+
 from __future__ import annotations
 
 from asset_creator.cli import main

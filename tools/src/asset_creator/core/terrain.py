@@ -3,6 +3,7 @@
 Defines the configuration hierarchy for terrain generation:
 TerrainConfig -> TextureConfig, EdgeConfig, BorderConfig.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -140,9 +141,7 @@ def load_terrain_presets(path: Path) -> dict[str, TerrainConfig]:
         raw = yaml.safe_load(f)
 
     if not isinstance(raw, dict) or "terrains" not in raw:
-        raise ValueError(
-            f"Invalid terrain presets file: expected 'terrains' key in {path}"
-        )
+        raise ValueError(f"Invalid terrain presets file: expected 'terrains' key in {path}")
 
     result: dict[str, TerrainConfig] = {}
     for name, config_data in raw["terrains"].items():

@@ -181,7 +181,7 @@ class AudioManager:
         current_min = self._ambient_proposals.get(name, float("inf"))
         self._ambient_proposals[name] = min(current_min, distance)
 
-    def flush_ambient(self) -> None:
+    def flush_ambient(self) -> None:  # noqa: C901
         """Apply proposals accumulated this frame.
 
         - One audio channel per unique sound name.

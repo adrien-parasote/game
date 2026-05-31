@@ -589,7 +589,7 @@ def test_interaction_toggle_bridge_guard():
     mock_bridge = DummySprite("bridge_1")
     mock_bridge.sub_type = "bridge"
     mock_bridge.is_on = True  # bridge is down/walkable
-    mock_bridge.rect = pygame.Rect(110, 110, 32, 32) # Collides with player
+    mock_bridge.rect = pygame.Rect(110, 110, 32, 32)  # Collides with player
 
     game.interactives = pygame.sprite.Group()
     game.interactives.add(mock_bridge)
@@ -600,7 +600,9 @@ def test_interaction_toggle_bridge_guard():
 
         # Assert interact was NOT called due to the guard
         assert not mock_bridge.interact_called
-        mock_logging.warning.assert_called_with("Cannot remote-toggle bridge bridge_1: player is on it.")
+        mock_logging.warning.assert_called_with(
+            "Cannot remote-toggle bridge bridge_1: player is on it."
+        )
 
     # Now move player away
     game.player.rect = pygame.Rect(0, 0, 32, 32)

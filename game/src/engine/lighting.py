@@ -126,7 +126,7 @@ class LightingManager:
         b = self.time_system.brightness
         color = self._lerp_color(
             BEAM_COLOR_MOON,  # cool moonlight
-            BEAM_COLOR_SUN,   # warm sunlight (soft, not too yellow)
+            BEAM_COLOR_SUN,  # warm sunlight (soft, not too yellow)
             b,
         )
         # Max opacity: ~75% at noon, ~25% at midnight
@@ -166,7 +166,7 @@ class LightingManager:
         Blend: slant = sun_slant * brightness + moon_slant * (1 - brightness)
         """
         wt = self.time_system.world_time
-        frac_hour = wt.hour + wt.minute / 60.0  # 0.0 – 23.999
+        frac_hour = wt.hour + wt.minute / 60.0  # 0.0 – 23.999  # noqa: RUF003
         b = self.time_system.brightness  # 0=midnight, 1=noon
 
         # Sun: cosine anchored at 6h

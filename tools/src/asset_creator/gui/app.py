@@ -3,6 +3,7 @@
 Main window with controls, tile preview, paint canvas, and log panel.
 Generation pipeline logic is in gui.pipeline (testable without DPG).
 """
+
 from __future__ import annotations
 
 import dataclasses
@@ -45,9 +46,11 @@ _EDGE_REVERSE = {v: k for k, v in _EDGE_LABELS.items()}
 
 # ── History entry ────────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class HistoryEntry:
     """A snapshot of app state at a point in time."""
+
     index: int
     state: AppState
     mode: str
@@ -72,6 +75,7 @@ _restoring_history: bool = False  # prevents re-adding while restoring
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 
+
 def _log(msg: str) -> None:
     """Append a message to the log panel."""
     timestamp = time.strftime("%H:%M:%S")
@@ -89,6 +93,7 @@ def _log(msg: str) -> None:
 
 # ── Color picker helpers ─────────────────────────────────────────────────────
 
+
 def _dpg_color_to_rgb(tag: str) -> tuple[int, int, int]:
     """Read a DPG color picker value and return (r, g, b) ints 0-255."""
     val = dpg.get_value(tag)  # [r, g, b, a] floats 0-255
@@ -101,6 +106,7 @@ def _set_dpg_color(tag: str, rgb: tuple[int, int, int]) -> None:
 
 
 # ── Slider helpers ───────────────────────────────────────────────────────────
+
 
 def _make_empty_cell_rgba(size: int) -> list[float]:
     """Create a solid dark fill for empty canvas cells."""
@@ -198,6 +204,7 @@ def _update_all_canvas() -> None:
 
 # ── Callbacks ────────────────────────────────────────────────────────────────
 
+
 def _push_history() -> None:
     """Save current state to history (unless restoring)."""
     if _restoring_history or _state is None:
@@ -262,7 +269,9 @@ def _on_history_select(sender: Any = None, app_data: Any = None, user_data: Any 
         dpg.configure_item("edge_header", show=(entry.mode == "autotile"))
     # Update export button
     if dpg.does_item_exist("btn_export"):
-        lbl = "Export Standalone Tile" if entry.mode == "standalone" else "Export Autotile PNG + TSX"
+        lbl = (
+            "Export Standalone Tile" if entry.mode == "standalone" else "Export Autotile PNG + TSX"
+        )
         dpg.configure_item("btn_export", label=lbl)
     _do_regenerate()
     _restoring_history = False
@@ -318,7 +327,9 @@ def _read_state_from_widgets() -> AppState:
         detail_density=dpg.get_value("slider_detail_density"),
         detail_max_height=dpg.get_value("slider_detail_height"),
         detail_max_length=dpg.get_value("slider_detail_length"),
-        edge_style=_EDGE_LABELS.get(dpg.get_value("combo_edge_style"), dpg.get_value("combo_edge_style")),
+        edge_style=_EDGE_LABELS.get(
+            dpg.get_value("combo_edge_style"), dpg.get_value("combo_edge_style")
+        ),
         edge_width=dpg.get_value("slider_edge_width"),
         edge_noise_scale=dpg.get_value("slider_edge_noise"),
         seed=dpg.get_value("input_seed"),
@@ -454,6 +465,7 @@ def _sync_widgets_from_state() -> None:
 
 # ── Mouse handler ────────────────────────────────────────────────────────────
 
+
 def _handle_mouse_input() -> None:
     """Check canvas hover + mouse buttons for paint/erase each frame."""
     if _canvas is None or not dpg.does_item_exist("canvas_drawlist"):
@@ -504,6 +516,7 @@ def _erase_cell(gx: int, gy: int) -> None:
 
 # ── Debounce render callback ────────────────────────────────────────────────
 
+
 def _frame_tick() -> None:
     """Called each frame — handles debounced regeneration."""
     global _pending_regen
@@ -514,29 +527,30 @@ def _frame_tick() -> None:
 
 # ── Theme ────────────────────────────────────────────────────────────────────
 
-def _apply_theme() -> None:
+
+def _apply_theme() -> None:  # noqa: PLR0915
     """Apply macOS Sonoma dark mode theme following Apple HIG."""
     # ── macOS system colors (dark mode) ──
     # Backgrounds
-    bg_window = (30, 30, 30, 255)        # NSColor.windowBackgroundColor
-    bg_sidebar = (44, 44, 46, 255)       # NSColor.controlBackgroundColor
-    bg_elevated = (58, 58, 60, 255)      # elevated surface
-    bg_control = (72, 72, 74, 255)       # NSColor.tertiarySystemFill
+    bg_window = (30, 30, 30, 255)  # NSColor.windowBackgroundColor
+    bg_sidebar = (44, 44, 46, 255)  # NSColor.controlBackgroundColor
+    bg_elevated = (58, 58, 60, 255)  # elevated surface
+    bg_control = (72, 72, 74, 255)  # NSColor.tertiarySystemFill
     bg_control_hover = (84, 84, 86, 255)
     bg_control_active = (99, 99, 102, 255)  # NSColor.systemGray
 
     # Accent (system blue)
-    accent = (10, 132, 255, 255)          # NSColor.systemBlue
+    accent = (10, 132, 255, 255)  # NSColor.systemBlue
     accent_hover = (40, 152, 255, 255)
     accent_active = (64, 169, 255, 255)
 
     # Text
-    text_primary = (235, 235, 240, 255)   # NSColor.labelColor
+    text_primary = (235, 235, 240, 255)  # NSColor.labelColor
     text_secondary = (174, 174, 178, 255)  # NSColor.secondaryLabelColor
 
     # Separators & scrollbars
-    separator = (68, 68, 70, 120)         # NSColor.separatorColor
-    scrollbar_bg = (30, 30, 30, 0)        # transparent (macOS overlay style)
+    separator = (68, 68, 70, 120)  # NSColor.separatorColor
+    scrollbar_bg = (30, 30, 30, 0)  # transparent (macOS overlay style)
     scrollbar_grab = (110, 110, 115, 140)
     scrollbar_hover = (140, 140, 145, 180)
 
@@ -545,92 +559,102 @@ def _apply_theme() -> None:
     header_hover = (58, 58, 60, 255)
     header_active = (72, 72, 74, 255)
 
-    with dpg.theme() as global_theme:
-        with dpg.theme_component(dpg.mvAll):
-            # Backgrounds
-            dpg.add_theme_color(dpg.mvThemeCol_WindowBg, bg_window)
-            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, bg_sidebar)
-            dpg.add_theme_color(dpg.mvThemeCol_PopupBg, bg_elevated)
-            dpg.add_theme_color(dpg.mvThemeCol_MenuBarBg, bg_sidebar)
+    with dpg.theme() as global_theme, dpg.theme_component(dpg.mvAll):
+        # Backgrounds
+        dpg.add_theme_color(dpg.mvThemeCol_WindowBg, bg_window)
+        dpg.add_theme_color(dpg.mvThemeCol_ChildBg, bg_sidebar)
+        dpg.add_theme_color(dpg.mvThemeCol_PopupBg, bg_elevated)
+        dpg.add_theme_color(dpg.mvThemeCol_MenuBarBg, bg_sidebar)
 
-            # Controls
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, bg_control)
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, bg_control_hover)
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, bg_control_active)
+        # Controls
+        dpg.add_theme_color(dpg.mvThemeCol_FrameBg, bg_control)
+        dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, bg_control_hover)
+        dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, bg_control_active)
 
-            # Accent elements
-            dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, accent)
-            dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, accent_active)
-            dpg.add_theme_color(dpg.mvThemeCol_CheckMark, accent)
-            dpg.add_theme_color(dpg.mvThemeCol_Button, accent)
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, accent_hover)
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, accent_active)
+        # Accent elements
+        dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, accent)
+        dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, accent_active)
+        dpg.add_theme_color(dpg.mvThemeCol_CheckMark, accent)
+        dpg.add_theme_color(dpg.mvThemeCol_Button, accent)
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, accent_hover)
+        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, accent_active)
 
-            # Headers (collapsing, selectable)
-            dpg.add_theme_color(dpg.mvThemeCol_Header, header_bg)
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, header_hover)
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, header_active)
+        # Headers (collapsing, selectable)
+        dpg.add_theme_color(dpg.mvThemeCol_Header, header_bg)
+        dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, header_hover)
+        dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, header_active)
 
-            # Tab (if used)
-            dpg.add_theme_color(dpg.mvThemeCol_Tab, bg_sidebar)
-            dpg.add_theme_color(dpg.mvThemeCol_TabHovered, bg_elevated)
-            dpg.add_theme_color(dpg.mvThemeCol_TabActive, bg_elevated)
+        # Tab (if used)
+        dpg.add_theme_color(dpg.mvThemeCol_Tab, bg_sidebar)
+        dpg.add_theme_color(dpg.mvThemeCol_TabHovered, bg_elevated)
+        dpg.add_theme_color(dpg.mvThemeCol_TabActive, bg_elevated)
 
-            # Text
-            dpg.add_theme_color(dpg.mvThemeCol_Text, text_primary)
-            dpg.add_theme_color(dpg.mvThemeCol_TextDisabled, text_secondary)
+        # Text
+        dpg.add_theme_color(dpg.mvThemeCol_Text, text_primary)
+        dpg.add_theme_color(dpg.mvThemeCol_TextDisabled, text_secondary)
 
-            # Separators & borders
-            dpg.add_theme_color(dpg.mvThemeCol_Separator, separator)
-            dpg.add_theme_color(dpg.mvThemeCol_Border, separator)
+        # Separators & borders
+        dpg.add_theme_color(dpg.mvThemeCol_Separator, separator)
+        dpg.add_theme_color(dpg.mvThemeCol_Border, separator)
 
-            # Scrollbars (overlay style)
-            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarBg, scrollbar_bg)
-            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrab, scrollbar_grab)
-            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabHovered, scrollbar_hover)
-            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabActive, scrollbar_hover)
+        # Scrollbars (overlay style)
+        dpg.add_theme_color(dpg.mvThemeCol_ScrollbarBg, scrollbar_bg)
+        dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrab, scrollbar_grab)
+        dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabHovered, scrollbar_hover)
+        dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabActive, scrollbar_hover)
 
-            # Title bar
-            dpg.add_theme_color(dpg.mvThemeCol_TitleBg, bg_sidebar)
-            dpg.add_theme_color(dpg.mvThemeCol_TitleBgActive, bg_elevated)
+        # Title bar
+        dpg.add_theme_color(dpg.mvThemeCol_TitleBg, bg_sidebar)
+        dpg.add_theme_color(dpg.mvThemeCol_TitleBgActive, bg_elevated)
 
-            # ── Geometry (macOS HIG) ──
-            dpg.add_theme_style(dpg.mvStyleVar_WindowRounding, 10)
-            dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 7)
-            dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 5)
-            dpg.add_theme_style(dpg.mvStyleVar_PopupRounding, 7)
-            dpg.add_theme_style(dpg.mvStyleVar_ScrollbarRounding, 5)
-            dpg.add_theme_style(dpg.mvStyleVar_GrabRounding, 5)
-            dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 5)
-            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 8, 5)
-            dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 6)
-            dpg.add_theme_style(dpg.mvStyleVar_ItemInnerSpacing, 6, 4)
-            dpg.add_theme_style(dpg.mvStyleVar_ScrollbarSize, 8)
-            dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 10, 10)
-            dpg.add_theme_style(dpg.mvStyleVar_ChildBorderSize, 1)
+        # ── Geometry (macOS HIG) ──
+        dpg.add_theme_style(dpg.mvStyleVar_WindowRounding, 10)
+        dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 7)
+        dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 5)
+        dpg.add_theme_style(dpg.mvStyleVar_PopupRounding, 7)
+        dpg.add_theme_style(dpg.mvStyleVar_ScrollbarRounding, 5)
+        dpg.add_theme_style(dpg.mvStyleVar_GrabRounding, 5)
+        dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 5)
+        dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 8, 5)
+        dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 6)
+        dpg.add_theme_style(dpg.mvStyleVar_ItemInnerSpacing, 6, 4)
+        dpg.add_theme_style(dpg.mvStyleVar_ScrollbarSize, 8)
+        dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 10, 10)
+        dpg.add_theme_style(dpg.mvStyleVar_ChildBorderSize, 1)
     dpg.bind_theme(global_theme)
 
 
 # ── Layout: labeled sliders ─────────────────────────────────────────────────
 
+
 def _add_slider_f(label: str, tag: str, val: float, lo: float, hi: float) -> None:
     """Label on line 1, slider on line 2."""
     dpg.add_text(label)
     dpg.add_slider_float(
-        default_value=val, min_value=lo, max_value=hi,
-        tag=tag, callback=_on_param_change, width=-1,
+        default_value=val,
+        min_value=lo,
+        max_value=hi,
+        tag=tag,
+        callback=_on_param_change,
+        width=-1,
     )
+
 
 def _add_slider_i(label: str, tag: str, val: int, lo: int, hi: int) -> None:
     """Label on line 1, slider on line 2."""
     dpg.add_text(label)
     dpg.add_slider_int(
-        default_value=val, min_value=lo, max_value=hi,
-        tag=tag, callback=_on_param_change, width=-1,
+        default_value=val,
+        min_value=lo,
+        max_value=hi,
+        tag=tag,
+        callback=_on_param_change,
+        width=-1,
     )
 
 
 # ── Layout builders ─────────────────────────────────────────────────────────
+
 
 def _build_left_panel() -> None:
     """Build controls panel with collapsible sections."""
@@ -641,8 +665,11 @@ def _build_left_panel() -> None:
         # ── Terrain Preset (always visible) ──
         dpg.add_text("Terrain Preset")
         dpg.add_combo(
-            preset_names, default_value=_state.terrain_name,
-            tag="combo_terrain", callback=_on_preset_change, width=-1,
+            preset_names,
+            default_value=_state.terrain_name,
+            tag="combo_terrain",
+            callback=_on_preset_change,
+            width=-1,
         )
         dpg.add_spacer(height=4)
 
@@ -653,12 +680,16 @@ def _build_left_panel() -> None:
             _add_slider_f("Persistence", "slider_persistence", _state.persistence, 0.0, 1.0)
             _add_slider_f("Lacunarity", "slider_lacunarity", _state.lacunarity, 1.0, 4.0)
             dpg.add_checkbox(
-                label="Smooth ramp", default_value=_state.use_smooth_ramp,
-                tag="check_smooth_ramp", callback=_on_param_change,
+                label="Smooth ramp",
+                default_value=_state.use_smooth_ramp,
+                tag="check_smooth_ramp",
+                callback=_on_param_change,
             )
             dpg.add_checkbox(
-                label="Dithering", default_value=_state.use_dithering,
-                tag="check_dithering", callback=_on_param_change,
+                label="Dithering",
+                default_value=_state.use_dithering,
+                tag="check_dithering",
+                callback=_on_param_change,
             )
 
         # ── Palette Colors ──
@@ -693,17 +724,21 @@ def _build_left_panel() -> None:
             dpg.add_combo(
                 list(_EDGE_LABELS.keys()),
                 default_value=_EDGE_REVERSE.get(_state.edge_style, _state.edge_style),
-                tag="combo_edge_style", callback=_on_param_change, width=-1,
+                tag="combo_edge_style",
+                callback=_on_param_change,
+                width=-1,
             )
             _add_slider_i("Width", "slider_edge_width", _state.edge_width, 1, 8)
             _add_slider_f("Noise Scale", "slider_edge_noise", _state.edge_noise_scale, 0.0, 1.0)
 
         # ── Seed ──
-        with dpg.collapsing_header(label="Seed", default_open=True):
+        with dpg.collapsing_header(label="Seed", default_open=True):  # noqa: SIM117
             with dpg.group(horizontal=True):
                 dpg.add_input_int(
                     default_value=_state.seed,
-                    tag="input_seed", callback=_on_param_change, width=-60,
+                    tag="input_seed",
+                    callback=_on_param_change,
+                    width=-60,
                 )
                 dpg.add_button(label="Rand", callback=_on_random_seed, width=50)
 
@@ -712,23 +747,30 @@ def _build_left_panel() -> None:
             dpg.add_text("PNG Directory")
             dpg.add_input_text(
                 default_value=_state.output_dir,
-                tag="input_output_dir", width=-1,
+                tag="input_output_dir",
+                width=-1,
             )
             dpg.add_text("TSX Directory")
             dpg.add_input_text(
                 default_value=_state.tsx_dir,
-                tag="input_tsx_dir", width=-1,
+                tag="input_tsx_dir",
+                width=-1,
             )
 
         dpg.add_spacer(height=8)
         dpg.add_button(
-            label="Regenerate", callback=lambda: _do_regenerate(),
-            width=-1, height=30,
+            label="Regenerate",
+            callback=lambda: _do_regenerate(),
+            width=-1,
+            height=30,
         )
         dpg.add_spacer(height=4)
         dpg.add_button(
-            label="Export PNG + TSX", callback=_on_export,
-            width=-1, height=30, tag="btn_export",
+            label="Export PNG + TSX",
+            callback=_on_export,
+            width=-1,
+            height=30,
+            tag="btn_export",
         )
         dpg.add_spacer(height=4)
         dpg.add_text("", tag="status_text", color=(180, 220, 200, 255))
@@ -757,8 +799,11 @@ def _build_center_panel() -> None:
             dpg.add_text("Canvas")
             dpg.add_spacer(width=12)
             dpg.add_radio_button(
-                ["autotile", "standalone"], default_value="autotile",
-                tag="radio_mode", callback=_on_mode_change, horizontal=True,
+                ["autotile", "standalone"],
+                default_value="autotile",
+                tag="radio_mode",
+                callback=_on_mode_change,
+                horizontal=True,
             )
             dpg.add_spacer(width=12)
             dpg.add_text("Left-Click = Paint, Right-Click = Erase", color=(130, 135, 140, 255))
@@ -768,7 +813,9 @@ def _build_center_panel() -> None:
         dpg.add_spacer(height=4)
 
         with dpg.drawlist(
-            width=canvas_w, height=canvas_h, tag="canvas_drawlist",
+            width=canvas_w,
+            height=canvas_h,
+            tag="canvas_drawlist",
         ):
             for y in range(CANVAS_ROWS):
                 for x in range(CANVAS_COLS):
@@ -776,17 +823,17 @@ def _build_center_panel() -> None:
                     x0 = x * CELL_SIZE
                     y0 = y * CELL_SIZE
                     dpg.draw_image(
-                        tex_tag, (x0, y0),
+                        tex_tag,
+                        (x0, y0),
                         (x0 + CELL_SIZE, y0 + CELL_SIZE),
                     )
-
 
         dpg.add_spacer(height=6)
         dpg.add_separator()
         dpg.add_spacer(height=4)
 
         # ── Log ──
-        with dpg.collapsing_header(label="Log", default_open=False):
+        with dpg.collapsing_header(label="Log", default_open=False):  # noqa: SIM117
             with dpg.child_window(height=120, tag="log_window", border=True):
                 dpg.add_text("", tag="log_text", wrap=0, color=(160, 170, 160, 255))
 
@@ -812,20 +859,25 @@ def _register_textures() -> None:
 
     with dpg.texture_registry():
         dpg.add_dynamic_texture(
-            preview_size, preview_size, preview_data,
+            preview_size,
+            preview_size,
+            preview_data,
             tag="preview_texture",
         )
         for y in range(CANVAS_ROWS):
             for x in range(CANVAS_COLS):
                 tag = f"cell_{x}_{y}"
                 dpg.add_dynamic_texture(
-                    CELL_SIZE, CELL_SIZE, list(empty_cell),
+                    CELL_SIZE,
+                    CELL_SIZE,
+                    list(empty_cell),
                     tag=tag,
                 )
                 _cell_textures[(x, y)] = tag
 
 
 # ── Main entry point ────────────────────────────────────────────────────────
+
 
 def run_gui() -> None:
     """Launch the Asset Creator V3 GUI."""
@@ -852,11 +904,10 @@ def run_gui() -> None:
         t0 = _tiles[0]
         _log(f"Tile[0] mode={t0.mode}, size={t0.size}, px(16,16)={t0.getpixel((16, 16))}")
 
-    with dpg.window(tag="primary_window"):
-        with dpg.group(horizontal=True):
-            _build_left_panel()
-            _build_center_panel()
-            _build_history_panel()
+    with dpg.window(tag="primary_window"), dpg.group(horizontal=True):
+        _build_left_panel()
+        _build_center_panel()
+        _build_history_panel()
 
     # Update preview with generated tiles
     _update_preview_texture()

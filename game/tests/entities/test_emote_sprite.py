@@ -12,6 +12,7 @@ def _make_frames(n: int = 4) -> list[pygame.Surface]:
 
 def _make_player(cx: int = 100, top: int = 200) -> object:
     from unittest.mock import MagicMock
+
     player = MagicMock()
     player.rect = pygame.Rect(cx - 8, top - 32, 16, 32)
     return player
@@ -21,6 +22,7 @@ class TestEmoteSpriteLifecycle:
     def test_initial_state(self):
         """Sprite starts at frame 0, elapsed=0, and is alive."""
         from src.entities.emote_sprite import EmoteSprite
+
         frames = _make_frames()
         player = _make_player()
         group = pygame.sprite.Group()
@@ -33,6 +35,7 @@ class TestEmoteSpriteLifecycle:
     def test_killed_after_duration(self):
         """Sprite kills itself when elapsed >= duration."""
         from src.entities.emote_sprite import EmoteSprite
+
         frames = _make_frames()
         player = _make_player()
         group = pygame.sprite.Group()
@@ -44,6 +47,7 @@ class TestEmoteSpriteLifecycle:
     def test_still_alive_before_duration(self):
         """Sprite is still alive when elapsed < duration."""
         from src.entities.emote_sprite import EmoteSprite
+
         frames = _make_frames()
         player = _make_player()
         group = pygame.sprite.Group()
@@ -57,6 +61,7 @@ class TestEmoteSpriteAnimation:
     def test_frame_advances_over_time(self):
         """Frame index advances as time passes."""
         from src.entities.emote_sprite import EmoteSprite
+
         frames = _make_frames(4)
         player = _make_player()
         group = pygame.sprite.Group()
@@ -68,6 +73,7 @@ class TestEmoteSpriteAnimation:
     def test_frame_stays_in_bounds(self):
         """Frame index never exceeds number of frames."""
         from src.entities.emote_sprite import EmoteSprite
+
         frames = _make_frames(2)
         player = _make_player()
         group = pygame.sprite.Group()
@@ -81,6 +87,7 @@ class TestEmoteSpriteRise:
     def test_rises_over_time(self):
         """Sprite bottom moves upward as elapsed increases."""
         from src.entities.emote_sprite import EmoteSprite
+
         frames = _make_frames()
         player = _make_player()
         group = pygame.sprite.Group()
@@ -93,6 +100,7 @@ class TestEmoteSpriteRise:
     def test_follows_player_x(self):
         """Sprite centerx tracks player centerx when player moves."""
         from src.entities.emote_sprite import EmoteSprite
+
         frames = _make_frames()
         player = _make_player(cx=100)
         group = pygame.sprite.Group()

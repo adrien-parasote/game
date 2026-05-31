@@ -33,7 +33,16 @@ class TestUpdateParticles:
         """Existing particles age and die when life reaches 0."""
         ent = _make_mixin(is_on=False)
         ent.particles_list = [
-            {"x": 100, "y": 100, "vx": 0, "vy": -5, "life": 0.01, "max_life": 1.0, "size": 1, "phase": 0.0},
+            {
+                "x": 100,
+                "y": 100,
+                "vx": 0,
+                "vy": -5,
+                "life": 0.01,
+                "max_life": 1.0,
+                "size": 1,
+                "phase": 0.0,
+            },
         ]
         InteractiveParticleMixin._update_particles(ent, dt=1.0)
         assert ent.particles_list == []
@@ -41,7 +50,16 @@ class TestUpdateParticles:
     def test_alive_particles_keep_moving(self):
         """Particles with remaining life move along their velocity."""
         ent = _make_mixin(is_on=False)
-        p = {"x": 100.0, "y": 100.0, "vx": 1.0, "vy": -5.0, "life": 1.0, "max_life": 2.0, "size": 1, "phase": 0.0}
+        p = {
+            "x": 100.0,
+            "y": 100.0,
+            "vx": 1.0,
+            "vy": -5.0,
+            "life": 1.0,
+            "max_life": 2.0,
+            "size": 1,
+            "phase": 0.0,
+        }
         ent.particles_list = [p]
         InteractiveParticleMixin._update_particles(ent, dt=0.1)
         assert ent.particles_list[0]["y"] < 100.0  # moved up
@@ -77,7 +95,16 @@ class TestDrawParticles:
         """Draw must paint at least one pixel on the surface for a visible particle."""
         ent = _make_mixin()
         ent.particles_list = [
-            {"x": 10.0, "y": 10.0, "vx": 0, "vy": 0, "life": 0.5, "max_life": 1.0, "size": 3, "phase": 0.0},
+            {
+                "x": 10.0,
+                "y": 10.0,
+                "vx": 0,
+                "vy": 0,
+                "life": 0.5,
+                "max_life": 1.0,
+                "size": 3,
+                "phase": 0.0,
+            },
         ]
         surface = pygame.Surface((200, 200))
         surface.fill((0, 0, 0))
@@ -85,17 +112,18 @@ class TestDrawParticles:
         InteractiveParticleMixin._draw_particles(ent, surface, cam)
         # At least one pixel near (10,10) must have been painted (not black)
         painted = any(
-            surface.get_at((x, y))[:3] != (0, 0, 0)
-            for x in range(7, 14)
-            for y in range(7, 14)
+            surface.get_at((x, y))[:3] != (0, 0, 0) for x in range(7, 14) for y in range(7, 14)
         )
-        assert painted, "Expected particle to paint at least one pixel near (10,10) but surface remained black"
+        assert painted, (
+            "Expected particle to paint at least one pixel near (10,10) but surface remained black"
+        )
 
 
 class TestUpdateParticlesLine22:
     def test_spawns_zero_fallback_forces_one_spawn(self):
         """Ligne 22 : quand expected_spawns < 1 ET random < 0.3, spawns est forcé à 1."""
         from unittest.mock import patch as _patch
+
         ent = _make_mixin(is_on=True)
         ent.particle_count = 5
         ent.particles_list = []
@@ -106,7 +134,10 @@ class TestUpdateParticlesLine22:
         #   ligne 21: 0.1 < 0.3 → spawns = 1
         #   ligne 36: 0.5 < 0.9 → size = 1
         random_values = iter([0.99, 0.1, 0.5])
-        with _patch("src.entities.interactive_particles.random.random", side_effect=lambda: next(random_values)):
+        with _patch(  # noqa: SIM117
+            "src.entities.interactive_particles.random.random",
+            side_effect=lambda: next(random_values),
+        ):
             with _patch("src.entities.interactive_particles.random.uniform", return_value=1.0):
                 InteractiveParticleMixin._update_particles(ent, dt=0.001)
 

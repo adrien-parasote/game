@@ -8,6 +8,7 @@ from PIL import Image
 
 try:
     from asset_creator.core.palette import RampConfig
+
     HAS_V2_PALETTE = True
 except ImportError:
     HAS_V2_PALETTE = False
@@ -23,10 +24,10 @@ def extended_palette() -> Palette:
     return Palette(
         name="test_v2",
         colors=(
-            (45, 90, 30),   # shadow
+            (45, 90, 30),  # shadow
             (62, 124, 39),  # base
             (90, 158, 58),  # highlight
-            (123, 192, 79), # accent
+            (123, 192, 79),  # accent
         ),
         roles={
             PaletteRole.SHADOW: 0,
@@ -87,8 +88,7 @@ class TestOverlayDimensions:
         """Output image must have the same size as input."""
         from asset_creator.core.detail_overlay import apply_detail_overlay
 
-        for detail_type in ("grass_blades", "dirt_specks", "stone_cracks",
-                            "sand_grains", "none"):
+        for detail_type in ("grass_blades", "dirt_specks", "stone_cracks", "sand_grains", "none"):
             result = apply_detail_overlay(
                 img=base_image,
                 palette=extended_palette,
@@ -101,8 +101,7 @@ class TestOverlayDimensions:
                 f"{base_image.size} to {result.size}"
             )
             assert result.mode == base_image.mode, (
-                f"Overlay '{detail_type}' changed mode from "
-                f"{base_image.mode} to {result.mode}"
+                f"Overlay '{detail_type}' changed mode from {base_image.mode} to {result.mode}"
             )
 
 
@@ -118,8 +117,7 @@ class TestOverlaySeedReproducibility:
         """Same seed must produce pixel-identical overlay result."""
         from asset_creator.core.detail_overlay import apply_detail_overlay
 
-        for detail_type in ("grass_blades", "dirt_specks", "stone_cracks",
-                            "sand_grains"):
+        for detail_type in ("grass_blades", "dirt_specks", "stone_cracks", "sand_grains"):
             result1 = apply_detail_overlay(
                 img=base_image,
                 palette=extended_palette,
@@ -135,8 +133,7 @@ class TestOverlaySeedReproducibility:
                 seed=42,
             )
             assert result1.tobytes() == result2.tobytes(), (
-                f"Overlay '{detail_type}' produced different results "
-                f"with same seed"
+                f"Overlay '{detail_type}' produced different results with same seed"
             )
 
 
@@ -160,13 +157,9 @@ class TestNoneOverlay:
             seed=42,
         )
 
-        assert result.tobytes() == base_image.tobytes(), (
-            "'none' overlay modified pixels"
-        )
+        assert result.tobytes() == base_image.tobytes(), "'none' overlay modified pixels"
         # Must be a copy, not the same object
-        assert result is not base_image, (
-            "'none' overlay must return a copy, not the original"
-        )
+        assert result is not base_image, "'none' overlay must return a copy, not the original"
 
 
 class TestBladeColorsFromRamp:
@@ -207,8 +200,7 @@ class TestBladeColorsFromRamp:
 
         for pixel_color in modified_pixels:
             assert pixel_color in blade_palette, (
-                f"Blade pixel color {pixel_color} not in "
-                f"top 3 ramp colors {blade_palette}"
+                f"Blade pixel color {pixel_color} not in top 3 ramp colors {blade_palette}"
             )
 
 

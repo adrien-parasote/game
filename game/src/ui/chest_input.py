@@ -8,7 +8,7 @@ from src.ui.chest_constants import _INV_SLOTS_VISIBLE
 class ChestInputMixin:
     """Mixin handling input events and drag-and-drop logic for ChestUI."""
 
-    def _handle_mouse_down(self, event: pygame.event.Event) -> None:
+    def _handle_mouse_down(self, event: pygame.event.Event) -> None:  # noqa: C901
         pos = event.pos
 
         # Inventory scroll (page-based jumps)

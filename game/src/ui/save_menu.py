@@ -57,9 +57,7 @@ class SaveMenuOverlay:
 
         # Load asset manager fonts
         am = AssetManager()
-        self._font_title = am.get_font(
-            Settings.FONT_NOBLE, int(Settings.FONT_SIZE_NOBLE * 1.5)
-        )
+        self._font_title = am.get_font(Settings.FONT_NOBLE, int(Settings.FONT_SIZE_NOBLE * 1.5))
 
         self._slot_ui = SaveSlotUI(am)
 
@@ -134,7 +132,6 @@ class SaveMenuOverlay:
         return out
 
     def _compute_layout(self) -> None:
-
         slot_w, slot_h = self._slot_ui.get_size()
         spacing = SAVE_SLOT_SPACING
         total_h = (slot_h * 3) + (spacing * 2)
@@ -180,9 +177,9 @@ class SaveMenuOverlay:
                     self._font_title.render(display_name, True, SAVE_TITLE_COLOR)
                 )
                 # Pre-render detail level text
-                level_str = self._i18n.get(
-                    "save_menu.level", "Niveau: {level}"
-                ).format(level=info.level)
+                level_str = self._i18n.get("save_menu.level", "Niveau: {level}").format(
+                    level=info.level
+                )
                 self._cached_level_surfs.append(
                     self._font_small.render(level_str, True, SAVE_DETAIL_COLOR)
                     if hasattr(self, "_font_small")
@@ -273,7 +270,7 @@ class SaveMenuOverlay:
 
     def is_back_clicked(self, event: pygame.Event) -> bool:
         """Return True if the Back button was clicked."""
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # noqa: SIM102
             if self.back_btn_rect.collidepoint(event.pos):
                 return True
         return False

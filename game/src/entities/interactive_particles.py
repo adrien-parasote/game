@@ -13,31 +13,28 @@ class InteractiveParticleMixin:
 
     def _update_particles(self, dt: float) -> None:
         """Spawn and update particle physics."""
-        if self.particles and self.is_on:
-            if len(self.particles_list) < self.particle_count:
-                expected_spawns = (self.particle_count / 1.5) * dt
-                spawns = int(expected_spawns)
-                if random.random() < (expected_spawns - spawns):
-                    spawns += 1
-                if spawns == 0 and random.random() < 0.3:
-                    spawns = 1
-                for _ in range(spawns):
-                    if self.rect:
-                        life = random.uniform(1.0, 2.0)
-                        self.particles_list.append(
-                            {
-                                "x": self.rect.centerx + random.uniform(-4, 4),
-                                "y": self.rect.top
-                                + (self.rect.height * 0.33)
-                                + random.uniform(-2, 2),
-                                "vx": random.uniform(-2.0, 2.0),
-                                "vy": random.uniform(-10.0, -5.0),
-                                "life": life,
-                                "max_life": life,
-                                "size": 1 if random.random() < 0.9 else 2,
-                                "phase": random.uniform(0, math.pi * 2),
-                            }
-                        )
+        if self.particles and self.is_on and len(self.particles_list) < self.particle_count:
+            expected_spawns = (self.particle_count / 1.5) * dt
+            spawns = int(expected_spawns)
+            if random.random() < (expected_spawns - spawns):
+                spawns += 1
+            if spawns == 0 and random.random() < 0.3:
+                spawns = 1
+            for _ in range(spawns):
+                if self.rect:
+                    life = random.uniform(1.0, 2.0)
+                    self.particles_list.append(
+                        {
+                            "x": self.rect.centerx + random.uniform(-4, 4),
+                            "y": self.rect.top + (self.rect.height * 0.33) + random.uniform(-2, 2),
+                            "vx": random.uniform(-2.0, 2.0),
+                            "vy": random.uniform(-10.0, -5.0),
+                            "life": life,
+                            "max_life": life,
+                            "size": 1 if random.random() < 0.9 else 2,
+                            "phase": random.uniform(0, math.pi * 2),
+                        }
+                    )
 
         if self.particles_list:
             alive = []

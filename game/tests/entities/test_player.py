@@ -42,6 +42,7 @@ class TestPlayerInit:
     def test_rect_is_tile_size(self):
         """Player hitbox is always Settings.TILE_SIZE regardless of sprite."""
         from src.config import Settings
+
         p = _make_player(pos=(50, 50))
         assert p.rect.width == Settings.TILE_SIZE
         assert p.rect.height == Settings.TILE_SIZE
@@ -126,8 +127,10 @@ class TestPlayerUpdate:
     def test_update_calls_move_and_animation(self):
         """update() calls both move() and _update_animation()."""
         p = _make_player()
-        with patch.object(p, "move") as mock_move, \
-             patch.object(p, "_update_animation") as mock_anim:
+        with (
+            patch.object(p, "move") as mock_move,
+            patch.object(p, "_update_animation") as mock_anim,
+        ):
             p.update(0.016)
             mock_move.assert_called_once_with(0.016)
             mock_anim.assert_called_once_with(0.016)

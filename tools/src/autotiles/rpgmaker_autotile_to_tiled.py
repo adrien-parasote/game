@@ -1,12 +1,12 @@
 """
 Convert a RPG Maker XP autotile PNG to a Tiled-compatible tileset.
 
-RPG Maker XP autotile layout (96×128, tiles are 32×32):
-  - Divided into 6 columns × 8 rows of 16×16 half-tiles
+RPG Maker XP autotile layout (96x128, tiles are 32x32):
+  - Divided into 6 columns x 8 rows of 16x16 half-tiles
   - Each of the 16 Wang edge combinations is assembled from 4 half-tiles
 
 Outputs:
-  - <name>_tiled.png : strip of 16 tiles (32×32 each → 512×32)
+  - <name>_tiled.png : strip of 16 tiles (32x32 each → 512x32)
   - <name>_tiled.tsx : Tiled tileset XML with Wang data pre-configured
 
 Usage:
@@ -29,11 +29,11 @@ TILED_VERSION = "1.10.0"
 WANG_COLOR = "#55aa00"
 
 TILE_SIZE = 32
-HALF = TILE_SIZE // 2  # 16 px — each tile assembled from 2×2 half-tiles
+HALF = TILE_SIZE // 2  # 16 px — each tile assembled from 2x2 half-tiles
 TILE_COUNT = 16
 
-# ── Half-tile source positions (col, row) in the 16×16 half-tile grid ────────
-# Autotile 3×4 grid of 32×32 tiles (= 6×8 grid of 16×16 half-tiles):
+# ── Half-tile source positions (col, row) in the 16x16 half-tile grid ────────
+# Autotile 3x4 grid of 32x32 tiles (= 6x8 grid of 16x16 half-tiles):
 #   A(0,0) isolated   B(1,0) inner-corners  C(2,0) variant
 #   D(0,1) left edge  E(1,1) top edge       F(2,1) right edge
 #   G(0,2) left edge  H(1,2) CENTER (full)  I(2,2) right edge
@@ -66,12 +66,14 @@ _Q = {
 
 
 def _half_tile(src: Image.Image, col: int, row: int) -> Image.Image:
-    """Crop a 16×16 half-tile from source at grid position (col, row)."""
+    """Crop a 16x16 half-tile from source at grid position (col, row)."""
     x, y = col * HALF, row * HALF
     return src.crop((x, y, x + HALF, y + HALF))
 
 
-def _quarter_source(top: bool, right: bool, bottom: bool, left: bool, corner: str) -> tuple[int, int]:
+def _quarter_source(
+    top: bool, right: bool, bottom: bool, left: bool, corner: str
+) -> tuple[int, int]:
     """Return the half-tile source (col, row) for one corner of a tile.
 
     Key names in _Q refer to the SOURCE tile, not the destination corner:
@@ -115,7 +117,7 @@ def _quarter_source(top: bool, right: bool, bottom: bool, left: bool, corner: st
 
 
 def _build_tile(src: Image.Image, mask: int) -> Image.Image:
-    """Compose one 32×32 tile from the autotile source using a 4-bit edge mask.
+    """Compose one 32x32 tile from the autotile source using a 4-bit edge mask.
 
     Bit mask: bit0=Top, bit1=Right, bit2=Bottom, bit3=Left (1 = neighbour present).
     """
@@ -143,7 +145,7 @@ def _wang_id(mask: int) -> str:
     t = int(bool(mask & 1))
     r = int(bool(mask & 2))
     b = int(bool(mask & 4))
-    l = int(bool(mask & 8))
+    l = int(bool(mask & 8))  # noqa: E741
 
     return f"{t},0,{r},0,{b},0,{l},0"
 
@@ -152,43 +154,40 @@ def _generate_tsx(png_path: Path, tsx_path: Path, name: str) -> None:
     """Write a Tiled TSX file with Wang terrain data (Edge-only)."""
     rel_png_path = os.path.relpath(png_path, tsx_path.parent)
 
-    root = ET.Element("tileset", {
-        "version": "1.10",
-        "tiledversion": TILED_VERSION,
-        "name": name,
-        "tilewidth": str(TILE_SIZE),
-        "tileheight": str(TILE_SIZE),
-        "spacing": "0",
-        "margin": "0",
-        "tilecount": str(TILE_COUNT),
-        "columns": str(TILE_COUNT),
-    })
+    root = ET.Element(
+        "tileset",
+        {
+            "version": "1.10",
+            "tiledversion": TILED_VERSION,
+            "name": name,
+            "tilewidth": str(TILE_SIZE),
+            "tileheight": str(TILE_SIZE),
+            "spacing": "0",
+            "margin": "0",
+            "tilecount": str(TILE_COUNT),
+            "columns": str(TILE_COUNT),
+        },
+    )
 
-    ET.SubElement(root, "image", {
-        "source": rel_png_path,
-        "width": str(TILE_SIZE * TILE_COUNT),
-        "height": str(TILE_SIZE),
-    })
+    ET.SubElement(
+        root,
+        "image",
+        {
+            "source": rel_png_path,
+            "width": str(TILE_SIZE * TILE_COUNT),
+            "height": str(TILE_SIZE),
+        },
+    )
 
     wangsets = ET.SubElement(root, "wangsets")
-    wangset = ET.SubElement(wangsets, "wangset", {
-        "name": name,
-        "type": "edge",
-        "tile": "-1"
-    })
+    wangset = ET.SubElement(wangsets, "wangset", {"name": name, "type": "edge", "tile": "-1"})
 
-    ET.SubElement(wangset, "wangcolor", {
-        "name": name,
-        "color": WANG_COLOR,
-        "tile": "-1",
-        "probability": "1"
-    })
+    ET.SubElement(
+        wangset, "wangcolor", {"name": name, "color": WANG_COLOR, "tile": "-1", "probability": "1"}
+    )
 
     for i in range(TILE_COUNT):
-        ET.SubElement(wangset, "wangtile", {
-            "tileid": str(i),
-            "wangid": _wang_id(i)
-        })
+        ET.SubElement(wangset, "wangtile", {"tileid": str(i), "wangid": _wang_id(i)})
 
     try:
         tree = ET.ElementTree(root)
@@ -203,7 +202,7 @@ def convert(input_path: Path, tsx_path: Path, png_path: Path) -> None:
 
     if src.size != (96, 128):
         sys.exit(
-            f"ERROR: Expected 96×128 px autotile, got {src.size[0]}×{src.size[1]}."
+            f"ERROR: Expected 96x128 px autotile, got {src.size[0]}x{src.size[1]}."
             " Make sure this is a RPG Maker XP autotile."
         )
 
@@ -227,7 +226,7 @@ def convert(input_path: Path, tsx_path: Path, png_path: Path) -> None:
     _generate_tsx(png_path, tsx_path, tsx_path.stem)
 
     rel_path = os.path.relpath(png_path, tsx_path.parent)
-    sys.stdout.write(f"✅ PNG: {png_path} ({strip.size[0]}×{strip.size[1]} px)\n")
+    sys.stdout.write(f"✅ PNG: {png_path} ({strip.size[0]}x{strip.size[1]} px)\n")
     sys.stdout.write(f"✅ TSX: {tsx_path} (ref: {rel_path})\n\n")
     sys.stdout.write(
         "Import dans Tiled:\n"

@@ -1,7 +1,7 @@
 # src/ui/speech_bubble.py
 """Speech bubble rendering using nine-patch PNG tiles.
 
-The bubble is built from 32×32 tiles located in `assets/images/HUD/`:
+The bubble is built from 32x32 tiles located in `assets/images/HUD/`:
 13-21 (bottom/right/top/… corners) and 22 for pagination arrow.
 The tail (queue) is tile 21-bubble_queue.png.
 """
@@ -105,7 +105,7 @@ class SpeechBubble:
         current: list[str] = []
 
         for word in words:
-            candidate = " ".join(current + [word]) if current else word
+            candidate = " ".join([*current, word]) if current else word
             if self.font.size(candidate)[0] <= inner_max_width:
                 current.append(word)
             else:
@@ -181,7 +181,6 @@ class SpeechBubble:
             return None
         name_surf = font_to_use.render(speaker_name, True, BUBBLE_NAME_TEXT_COLOR)
 
-
         name_w = name_surf.get_width()
         plate_padding_x = 16
         target_w = name_w + plate_padding_x * 2
@@ -190,15 +189,11 @@ class SpeechBubble:
         plate_h = 32
         edge_w = 16
 
-        left_tile = pygame.transform.smoothscale(
-            self.tiles["name_plate_left"], (edge_w, plate_h)
-        )
+        left_tile = pygame.transform.smoothscale(self.tiles["name_plate_left"], (edge_w, plate_h))
         center_tile = pygame.transform.smoothscale(
             self.tiles["name_plate_center"], (edge_w, plate_h)
         )
-        right_tile = pygame.transform.smoothscale(
-            self.tiles["name_plate_right"], (edge_w, plate_h)
-        )
+        right_tile = pygame.transform.smoothscale(self.tiles["name_plate_right"], (edge_w, plate_h))
 
         # Minimum width is left + right
         target_w = max(edge_w * 2, target_w)

@@ -14,6 +14,7 @@ def test_manager_import():
 # Helpers
 # ===========================================================================
 
+
 def _make_tile(material: str | None = None, depth: int = 0) -> MagicMock:
     """Build a mock tile with the given material property and depth."""
     tile = MagicMock()
@@ -34,7 +35,7 @@ def _make_map_manager(
     """Build a MapManager with a single layer containing `tile` at (grid_x, grid_y)."""
     tile_id = 99 if tile is not None else 0
 
-    # Build a 5×5 grid with the tile at (grid_x, grid_y)
+    # Build a 5x5 grid with the tile at (grid_x, grid_y)
     grid = [[0] * map_w for _ in range(map_h)]
     if tile_id != 0:
         grid[grid_y][grid_x] = tile_id

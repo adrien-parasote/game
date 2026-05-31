@@ -90,8 +90,8 @@ class TestSpeechBubbleMaxWidth(unittest.TestCase):
         bubble = _make_bubble(max_width_px=224)
         blit = MagicMock()
         bubble.draw(_make_surface(), _char_rect(), "word " * 50, blit_func=blit)
-        self.assertLessEqual(bubble.max_width_px, 224)
-        self.assertTrue(blit.called)
+        assert bubble.max_width_px <= 224
+        assert blit.called
 
     @pytest.mark.tc("UT-SPB-02")
     def test_wrap_uses_padding_not_tile_size(self):
@@ -103,7 +103,7 @@ class TestSpeechBubbleMaxWidth(unittest.TestCase):
         # So at most floor(80/36) words per line
         assert bubble.font is not None
         for line in lines:
-            self.assertLessEqual(bubble.font.size(line)[0], 80)
+            assert bubble.font.size(line)[0] <= 80
 
 
 class TestSpeechBubblePosition(unittest.TestCase):
@@ -118,11 +118,11 @@ class TestSpeechBubblePosition(unittest.TestCase):
         bubble.draw(_make_surface(), rect, "Hello", blit_func=blit)
 
         # Single blit call for the entire bubble (including integrated tail)
-        self.assertEqual(blit.call_count, 1)
+        assert blit.call_count == 1
         bg_surf, (bx, by) = blit.call_args_list[0][0]
 
         expected_y = rect.top - bubble.tail_gap - bg_surf.get_height()
-        self.assertEqual(by, expected_y)
+        assert by == expected_y
 
 
 class TestSpeechBubblePagination(unittest.TestCase):
@@ -134,7 +134,7 @@ class TestSpeechBubblePagination(unittest.TestCase):
         """Long text produces more than one page of wrapped lines."""
         bubble = _make_bubble()
         total_pages = bubble.get_total_pages(self._long_text())
-        self.assertGreater(total_pages, 1)
+        assert total_pages > 1
 
     @pytest.mark.tc("UT-SPB-05")
     def test_arrow_drawn_for_multi_page_text(self):
@@ -143,7 +143,7 @@ class TestSpeechBubblePagination(unittest.TestCase):
         blit = MagicMock()
         # Should not raise; arrow is composited inside bg (not via blit_func)
         bubble.draw(_make_surface(), _char_rect(), self._long_text(), blit_func=blit)
-        self.assertEqual(blit.call_count, 1)  # Integrated bubble is one blit
+        assert blit.call_count == 1  # Integrated bubble is one blit
 
     @pytest.mark.tc("UT-SPB-06")
     def test_page_index_clamped(self):
@@ -152,7 +152,7 @@ class TestSpeechBubblePagination(unittest.TestCase):
         blit = MagicMock()
         # Should not raise
         bubble.draw(_make_surface(), _char_rect(), "Short text", page=999, blit_func=blit)
-        self.assertTrue(blit.called)
+        assert blit.called
 
 
 class TestSpeechBubbleFontGuard(unittest.TestCase):
@@ -169,7 +169,7 @@ class TestSpeechBubbleFontGuard(unittest.TestCase):
             ml.side_effect = mock_load
             bubble = SpeechBubble()
         # font deliberately NOT set
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             bubble.draw(_make_surface(), _char_rect(), "Hello", blit_func=MagicMock())
 
 
@@ -200,18 +200,19 @@ class TestSpeechBubbleNamePlate(unittest.TestCase):
             bubble.draw(_make_surface(), _char_rect(), "Hello", speaker_name="Hero", blit_func=blit)
 
             # Should blit twice: once for bubble, once for name plate
-            self.assertEqual(blit.call_count, 2)
+            assert blit.call_count == 2
 
             # Verify the second blit contains the name plate surface
             name_plate_surf, pos = blit.call_args_list[1][0]
-            self.assertIsInstance(name_plate_surf, pygame.Surface)
-            self.assertGreater(name_plate_surf.get_width(), 0)
+            assert isinstance(name_plate_surf, pygame.Surface)
+            assert name_plate_surf.get_width() > 0
 
 
 class TestSpeechBubbleMissingBranches(unittest.TestCase):
     @staticmethod
     def _make_bubble_no_font():
         """SpeechBubble sans font, avec mock qui gère name_plate."""
+
         def mock_load(path):
             if "23-bubble_name" in path:
                 return pygame.Surface((96, 64))
@@ -223,7 +224,7 @@ class TestSpeechBubbleMissingBranches(unittest.TestCase):
     def test_wrap_text_raises_when_font_not_set(self):
         """Ligne 93 : _wrap_text() RuntimeError quand font=None."""
         bubble = self._make_bubble_no_font()
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             bubble._wrap_text("Hello world")
 
     def test_wrap_text_returns_text_when_inner_width_zero(self):
@@ -233,18 +234,18 @@ class TestSpeechBubbleMissingBranches(unittest.TestCase):
         bubble.max_width_px = 1
         bubble.pad_x = 10
         result = bubble._wrap_text("hello world")
-        self.assertEqual(result, ["hello world"])
+        assert result == ["hello world"]
 
     def test_get_total_pages_returns_one_without_font(self):
         """Ligne 282 : get_total_pages() retourne 1 si font non défini."""
         bubble = self._make_bubble_no_font()
         result = bubble.get_total_pages("Some long text here")
-        self.assertEqual(result, 1)
+        assert result == 1
 
     def test_load_tiles_raises_file_not_found(self):
         """Ligne 69 : FileNotFoundError quand un asset PNG est manquant."""
-        with mock.patch("src.ui.speech_bubble.os.path.exists", return_value=False):
-            with self.assertRaises(FileNotFoundError):
+        with mock.patch("src.ui.speech_bubble.os.path.exists", return_value=False):  # noqa: SIM117
+            with pytest.raises(FileNotFoundError):
                 SpeechBubble()
 
 

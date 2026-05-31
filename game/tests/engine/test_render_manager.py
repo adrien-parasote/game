@@ -167,7 +167,6 @@ def test_draw_foreground_animated_tile_depth2_included():
     assert any(depth == 2 for _, depth, _ in result)
 
 
-
 # ---------------------------------------------------------------------------
 # UT-004 — draw_foreground() with walk_active: still collects rects (caller guards)
 # ---------------------------------------------------------------------------
@@ -242,7 +241,7 @@ def test_apply_partial_occlusion_partial_intersection_creates_composite():
     game.visible_sprites.offset = pygame.math.Vector2(0, 0)
     game.player.depth = 1
 
-    # Sprite 32×48, positioned so bottom 16px overlap the tile
+    # Sprite 32x48, positioned so bottom 16px overlap the tile
     original_image = pygame.Surface((32, 48), pygame.SRCALPHA)
     original_image.fill((255, 0, 0, 255))  # solid red, fully opaque
     sprite = MagicMock()
@@ -310,7 +309,7 @@ def test_apply_partial_occlusion_two_tiles_both_applied():
     rm = RenderManager(game)
     # Two separate tiles, each covering part of the sprite
     occluding_rects = [
-        (pygame.Rect(0, 0, 32, 32), 2, None),   # top half of sprite
+        (pygame.Rect(0, 0, 32, 32), 2, None),  # top half of sprite
         (pygame.Rect(0, 32, 32, 32), 2, None),  # bottom half of sprite
     ]
     result = rm._apply_partial_occlusion(occluding_rects)
@@ -400,8 +399,10 @@ def test_it001_draw_foreground_triggers_partial_occlusion():
     rm = RenderManager(game)
     occluding = [(pygame.Rect(0, 0, 32, 32), 2, None)]
 
-    with patch.object(rm, 'draw_foreground', return_value=occluding), \
-         patch.object(rm, '_apply_partial_occlusion', return_value={}) as mock_apo:
+    with (
+        patch.object(rm, "draw_foreground", return_value=occluding),
+        patch.object(rm, "_apply_partial_occlusion", return_value={}) as mock_apo,
+    ):
         rm.draw_scene()
         mock_apo.assert_called_once_with(occluding)
 
@@ -431,6 +432,7 @@ def test_it002_npc_semi_occluded_swap_and_restore():
     # Create a real sprite-like object to track image swap
     class FakeSprite:
         pass
+
     npc = FakeSprite()
     original_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
     npc.image = original_surf
@@ -440,8 +442,10 @@ def test_it002_npc_semi_occluded_swap_and_restore():
     occluding = [(pygame.Rect(0, 0, 32, 32), 2, None)]
 
     # _apply_partial_occlusion swaps image and returns the saved dict
-    with patch.object(rm, 'draw_foreground', return_value=occluding), \
-         patch.object(rm, '_apply_partial_occlusion', return_value={npc: original_surf}) as mock_apo:
+    with (
+        patch.object(rm, "draw_foreground", return_value=occluding),
+        patch.object(rm, "_apply_partial_occlusion", return_value={npc: original_surf}) as mock_apo,
+    ):
         # Simulate what draw_scene does with the returned saved_images
         npc.image = composite_surf  # simulates swap done by _apply_partial_occlusion
         rm.draw_scene()
@@ -480,7 +484,7 @@ def test_it003_scripted_walk_skips_player_but_processes_npcs():
     result = rm._apply_partial_occlusion(occluding_rects)
 
     assert player_sprite not in result  # player skipped
-    assert npc_sprite in result          # NPC processed
+    assert npc_sprite in result  # NPC processed
 
 
 # ---------------------------------------------------------------------------
@@ -509,7 +513,8 @@ def test_it004_draw_foreground_returns_list_not_bool():
     assert result is not True  # explicit: must never be bool True
     assert result is not False  # explicit: must never be bool False
     for item in result:
-        assert isinstance(item, tuple) and len(item) == 3
+        assert isinstance(item, tuple)
+        assert len(item) == 3
         assert isinstance(item[0], pygame.Rect)
         assert isinstance(item[1], int)
         # item[2] is tile_img: Surface or None
@@ -518,6 +523,7 @@ def test_it004_draw_foreground_returns_list_not_bool():
 # ===========================================================================
 # GRASS WADING — GW-UT-001..008
 # ===========================================================================
+
 
 def _make_game_for_grass_wading(*, on_grass: bool = True, walk_active: bool = False) -> MagicMock:
     """Helper: build a minimal game mock for grass wading tests (_apply_grass_wading_to_images)."""
@@ -533,8 +539,15 @@ def _make_game_for_grass_wading(*, on_grass: bool = True, walk_active: bool = Fa
     return game
 
 
-def _make_sprite(*, x: int = 100, y: int = 100, w: int = 32, h: int = 48,
-                depth: int = 1, image: pygame.Surface | None = None) -> MagicMock:
+def _make_sprite(
+    *,
+    x: int = 100,
+    y: int = 100,
+    w: int = 32,
+    h: int = 48,
+    depth: int = 1,
+    image: pygame.Surface | None = None,
+) -> MagicMock:
     """Helper: build a sprite-like mock for wading tests."""
     sprite = MagicMock()
     sprite.image = image if image is not None else pygame.Surface((w, h), pygame.SRCALPHA)
@@ -689,6 +702,7 @@ def test_grass_wading_walk_active_skips_player():
 # GRASS WADING — Integration Tests GW-IT-001..003
 # ===========================================================================
 
+
 def _make_draw_scene_game() -> MagicMock:
     """Helper: minimal game mock for draw_scene integration tests."""
     game = MagicMock()
@@ -721,9 +735,11 @@ def test_gwit001_draw_scene_grass_under_player_no_exception():
     game.map_manager.get_grass_tile_image_at.return_value = grass_surf
 
     rm = RenderManager(game)
-    with patch.object(rm, "draw_foreground", return_value=[]), \
-         patch.object(rm, "draw_background"), \
-         patch.object(rm, "draw_hud"):
+    with (
+        patch.object(rm, "draw_foreground", return_value=[]),
+        patch.object(rm, "draw_background"),
+        patch.object(rm, "draw_hud"),
+    ):
         rm.draw_scene()  # must not raise
 
 
@@ -797,13 +813,15 @@ def test_grass_wading_does_not_blit_black_bar():
     for x in range(0, w, 8):
         for y in range(0, max(0, wading_top - 2)):  # leave a 2px margin near boundary
             color = composite.get_at((x, y))
-            assert color.r > 200, \
+            assert color.r > 200, (
                 f"Upper body pixel at ({x},{y}) was overwritten — expected red, got {color}"
+            )
 
 
 # ===========================================================================
 # PIXEL-PERFECT OCCLUSION — OCC-UT-001..005
 # ===========================================================================
+
 
 def _make_sprite_for_occ(image: pygame.Surface, rect: pygame.Rect, depth: int = 1):
     """Helper: build a minimal sprite mock for occlusion tests."""
@@ -848,7 +866,7 @@ def test_occ_ut002_partial_tile_only_opaque_half_occluded():
     tile_size = 32
     # Build partial tile: left 16px transparent, right 16px opaque
     partial_tile = pygame.Surface((tile_size, tile_size), pygame.SRCALPHA)
-    partial_tile.fill((0, 0, 0, 0))           # fully transparent base
+    partial_tile.fill((0, 0, 0, 0))  # fully transparent base
     right_rect = pygame.Rect(16, 0, 16, 32)
     partial_tile.fill((150, 100, 50, 255), right_rect)  # right half opaque
 
@@ -967,7 +985,7 @@ def test_occ_ut005_asset_manager_cache_no_recompute():
     # Flush any existing cache entry
     am._occlusion_masks.pop(id(partial_surf), None)
 
-    with patch.object(am, '_build_occlusion_mask', wraps=am._build_occlusion_mask) as mock_build:
+    with patch.object(am, "_build_occlusion_mask", wraps=am._build_occlusion_mask) as mock_build:
         result1 = am.get_occlusion_mask(partial_surf)
         result2 = am.get_occlusion_mask(partial_surf)
 

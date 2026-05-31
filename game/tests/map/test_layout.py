@@ -1,4 +1,3 @@
-
 import pytest
 from src.config import Settings
 from src.map.layout import OrthogonalLayout

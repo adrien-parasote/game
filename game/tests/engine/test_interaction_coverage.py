@@ -276,7 +276,7 @@ class TestInteractionManagerCoverage:
         im = InteractionManager(game)
 
         obj = MagicMock()
-        obj.pos = pygame.math.Vector2(300, 300) # way out of range
+        obj.pos = pygame.math.Vector2(300, 300)  # way out of range
         obj.is_passable = False
         obj.activate_from_anywhere = False
 
@@ -290,7 +290,7 @@ class TestInteractionManagerCoverage:
         im = InteractionManager(game)
 
         pickup = MagicMock()
-        pickup.pos = pygame.math.Vector2(300, 300) # way out of range
+        pickup.pos = pygame.math.Vector2(300, 300)  # way out of range
         game.pickups = [pickup]
 
         game.player.pos = pygame.math.Vector2(100, 100)
@@ -309,7 +309,7 @@ class TestInteractionManagerCoverage:
         im._open_chest_entity = chest
         game.chest_ui.is_open = True
 
-        im._check_chest_auto_close() # should return early without errors
+        im._check_chest_auto_close()  # should return early without errors
         chest.interact.assert_not_called()
 
     def test_check_teleporters_not_moving_and_no_intent(self):
@@ -320,7 +320,7 @@ class TestInteractionManagerCoverage:
         im = InteractionManager(game)
 
         # If it didn't return early, it would try to access teleports_group and raise an AttributeError or similar
-        del game.teleports_group # ensure it doesn't even access it
+        del game.teleports_group  # ensure it doesn't even access it
         im.check_teleporters(was_moving=False)
 
     def test_check_teleporters_no_rect_or_no_collision(self):
@@ -333,12 +333,12 @@ class TestInteractionManagerCoverage:
         tp_no_rect.rect = None
 
         tp_no_coll = MagicMock()
-        tp_no_coll.rect = pygame.Rect(300, 300, 32, 32) # no collision
+        tp_no_coll.rect = pygame.Rect(300, 300, 32, 32)  # no collision
 
         game.teleports_group = [tp_no_rect, tp_no_coll]
         im = InteractionManager(game)
 
-        im.check_teleporters(was_moving=True) # just_arrived is True
+        im.check_teleporters(was_moving=True)  # just_arrived is True
         game.transition_map.assert_not_called()
 
     def test_check_teleporters_direction_guards(self):
@@ -355,7 +355,7 @@ class TestInteractionManagerCoverage:
 
         game.teleports_group = [tp_arrival]
         im = InteractionManager(game)
-        im.check_teleporters(was_moving=True) # just_arrived is True
+        im.check_teleporters(was_moving=True)  # just_arrived is True
         game.transition_map.assert_not_called()
 
         # 2. Skip on intent when required_direction is "any" (prevent trapping player)
@@ -367,7 +367,7 @@ class TestInteractionManagerCoverage:
         tp_intent_any.required_direction = "any"
 
         game.teleports_group = [tp_intent_any]
-        im.check_teleporters(was_moving=False) # intent_active is True
+        im.check_teleporters(was_moving=False)  # intent_active is True
         game.transition_map.assert_not_called()
 
         # 3. Skip on intent when direction mismatch
@@ -376,7 +376,7 @@ class TestInteractionManagerCoverage:
         tp_intent_mismatch.required_direction = "down"
 
         game.teleports_group = [tp_intent_mismatch]
-        im.check_teleporters(was_moving=False) # intent_active is True
+        im.check_teleporters(was_moving=False)  # intent_active is True
         game.transition_map.assert_not_called()
 
     def test_check_teleporters_triggers_with_sfx(self):
@@ -441,9 +441,8 @@ class TestInteractionManagerCoverage:
             {
                 "is_on": entity.is_on,
                 "light_control": "manual",
-            }
+            },
         )
-
 
 
 # ---------------------------------------------------------------------------

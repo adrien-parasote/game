@@ -52,6 +52,6 @@ _INV_ARROW_EDGE_OFFSET = 20  # px — inset from the panel edge
 # Draw constants
 # ---------------------------------------------------------------------------
 CHEST_TITLE_TEXT: str = "Chest"
-CHEST_TEXT_COLOR: tuple[int, int, int] = (60, 40, 30)   # Dark brown — parchment theme
+CHEST_TEXT_COLOR: tuple[int, int, int] = (60, 40, 30)  # Dark brown — parchment theme
 CHEST_SLOT_FALLBACK_COLOR: tuple[int, int, int] = (200, 200, 200)
 CHEST_INV_SLOT_FALLBACK_COLOR: tuple[int, int, int] = (180, 180, 180)

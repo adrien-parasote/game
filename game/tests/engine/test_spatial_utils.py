@@ -46,33 +46,25 @@ def test_get_facing_vector_unknown_state():
 
 @pytest.mark.tc("TC-SU-06")
 def test_facing_toward_right_horizontal():
-    result = facing_toward(
-        pygame.math.Vector2(0, 0), "right", pygame.math.Vector2(10, 0)
-    )
+    result = facing_toward(pygame.math.Vector2(0, 0), "right", pygame.math.Vector2(10, 0))
     assert result is True
 
 
 @pytest.mark.tc("TC-SU-07")
 def test_facing_toward_left_horizontal():
-    result = facing_toward(
-        pygame.math.Vector2(10, 0), "left", pygame.math.Vector2(0, 0)
-    )
+    result = facing_toward(pygame.math.Vector2(10, 0), "left", pygame.math.Vector2(0, 0))
     assert result is True
 
 
 @pytest.mark.tc("TC-SU-08")
 def test_facing_toward_down_vertical():
-    result = facing_toward(
-        pygame.math.Vector2(0, 0), "down", pygame.math.Vector2(0, 10)
-    )
+    result = facing_toward(pygame.math.Vector2(0, 0), "down", pygame.math.Vector2(0, 10))
     assert result is True
 
 
 @pytest.mark.tc("TC-SU-09")
 def test_facing_toward_wrong_direction():
-    result = facing_toward(
-        pygame.math.Vector2(0, 0), "left", pygame.math.Vector2(10, 0)
-    )
+    result = facing_toward(pygame.math.Vector2(0, 0), "left", pygame.math.Vector2(10, 0))
     assert result is False
 
 
@@ -139,14 +131,19 @@ def test_verify_orientation_default_false():
 # Extra branch coverage — _is_front_facing and _is_back_facing
 # ---------------------------------------------------------------------------
 
+
 def test_is_front_facing_down_branch():
     """Ligne 67 : o_dir='down', p_state='up', dy > 0 → front-facing True."""
     from src.engine.spatial_utils import _is_front_facing
+
     # y_aligned est inutilisé ici — seul x_aligned et la branche down importent
     result = _is_front_facing(
-        o_dir="down", p_state="up",
-        dx=0.0, dy=10.0,       # dy > 0 → player below, object faces down
-        x_aligned=True, y_aligned=False
+        o_dir="down",
+        p_state="up",
+        dx=0.0,
+        dy=10.0,  # dy > 0 → player below, object faces down
+        x_aligned=True,
+        y_aligned=False,
     )
     assert result is True
 
@@ -154,10 +151,9 @@ def test_is_front_facing_down_branch():
 def test_is_back_facing_left_branch():
     """Ligne 84 : o_dir='left', p_state='left', dx > 0 → back-facing True (open door)."""
     from src.engine.spatial_utils import _is_back_facing
+
     result = _is_back_facing(
-        o_dir="left", p_state="left",
-        dx=5.0, dy=0.0,
-        x_aligned=False, y_aligned=True
+        o_dir="left", p_state="left", dx=5.0, dy=0.0, x_aligned=False, y_aligned=True
     )
     assert result is True
 
@@ -165,10 +161,9 @@ def test_is_back_facing_left_branch():
 def test_is_back_facing_right_branch():
     """Ligne 86 : o_dir='right', p_state='right', dx < 0 → back-facing True (open door)."""
     from src.engine.spatial_utils import _is_back_facing
+
     result = _is_back_facing(
-        o_dir="right", p_state="right",
-        dx=-5.0, dy=0.0,
-        x_aligned=False, y_aligned=True
+        o_dir="right", p_state="right", dx=-5.0, dy=0.0, x_aligned=False, y_aligned=True
     )
     assert result is True
 
@@ -176,9 +171,13 @@ def test_is_back_facing_right_branch():
 def test_is_back_facing_returns_false_when_no_match():
     """Ligne 87 : return False quand aucune condition de back-facing n'est satisfaite."""
     from src.engine.spatial_utils import _is_back_facing
+
     result = _is_back_facing(
-        o_dir="up", p_state="down",  # combinaison non gérée par back-facing
-        dx=0.0, dy=10.0,
-        x_aligned=True, y_aligned=False
+        o_dir="up",
+        p_state="down",  # combinaison non gérée par back-facing
+        dx=0.0,
+        dy=10.0,
+        x_aligned=True,
+        y_aligned=False,
     )
     assert result is False

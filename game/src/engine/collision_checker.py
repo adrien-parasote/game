@@ -21,7 +21,7 @@ class CollisionChecker:
     def __init__(self, game: Any) -> None:
         self.game = game
 
-    def check(
+    def check(  # noqa: C901
         self,
         px_center: float,
         py_center: float,
@@ -43,7 +43,7 @@ class CollisionChecker:
         # 0. Walkable overrides (passable bridges/drawbridges open above non-walkable tiles)
         tile_overridden = False
         for entity in getattr(self.game, "walkable_override_entities", ()):
-            if entity.rect and entity.rect.collidepoint(px_center, py_center):
+            if entity.rect and entity.rect.collidepoint(px_center, py_center):  # noqa: SIM102
                 # Only override if not animating (drawbridges and doors block while animating)
                 if not getattr(entity, "is_animating", False):
                     tile_overridden = True

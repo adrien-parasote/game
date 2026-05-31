@@ -6,6 +6,7 @@ Uses Image.NEAREST for pixel art scaling (no bilinear blur).
 NOTE: This module does NOT import dearpygui. Functions here are pure
 PIL/numpy utilities that can be tested without a GUI.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -47,14 +48,11 @@ def extract_tiles_from_strip(
     """Extract individual tiles from a horizontal tileset strip.
 
     Args:
-        strip: Horizontal strip image (width = N × tile_size).
+        strip: Horizontal strip image (width = N x tile_size).
         tile_size: Size of each square tile.
 
     Returns:
         List of tile PIL Images (copies, not views).
     """
     count = strip.width // tile_size
-    return [
-        strip.crop((i * tile_size, 0, (i + 1) * tile_size, tile_size))
-        for i in range(count)
-    ]
+    return [strip.crop((i * tile_size, 0, (i + 1) * tile_size, tile_size)) for i in range(count)]

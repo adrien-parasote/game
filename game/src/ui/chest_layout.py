@@ -73,7 +73,6 @@ class ChestLayoutMixin:
         assert self._bg is not None, "_compute_panel_rects called with _bg=None"
         self._bg_rect = self._bg.get_rect(midtop=(screen_w // 2, 10))
 
-
         left, top, right, bottom = _TITLE_ZONE_REL
         self._title_rect = pygame.Rect(
             self._bg_rect.left + int(left * bg_w),
@@ -113,7 +112,6 @@ class ChestLayoutMixin:
         origin_y = (
             self._content_rect.top + (self._content_rect.height - grid_h) // 2 + _GRID_OFFSET_Y
         )
-
 
         self._slot_positions.clear()
         for row in range(_SLOT_ROWS):

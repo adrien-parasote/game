@@ -1,7 +1,7 @@
 """RED tests for Phase 1.5 — verify asset methods exist on ChestDrawMixin.
 
-TC-CA-01..TC-CA-08 from game/docs/specs/phase-1.5-chest-refactoring.md
-IT-CA-01..IT-CA-05 regression/integration tests.
+TC-0001..TC-0008 from game/docs/specs/phase-1.5-chest-refactoring.md
+IT-0001..IT-0005 regression/integration tests.
 """
 
 import os
@@ -26,11 +26,11 @@ def make_chest_ui() -> ChestUI:
 
 
 # ---------------------------------------------------------------------------
-# TC-CA-01 — _load_background: absent asset → None + log error
+# TC-0001 — _load_background: absent asset → None + log error
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("TC-CA-01")
+@pytest.mark.tc("TC-0001")
 def test_load_background_missing_asset_returns_none(caplog):
     """_load_background with AssetManager fallback returns a Surface (not None).
 
@@ -46,11 +46,11 @@ def test_load_background_missing_asset_returns_none(caplog):
 
 
 # ---------------------------------------------------------------------------
-# TC-CA-02 — _load_inv_background: absent asset → None + log error
+# TC-0002 — _load_inv_background: absent asset → None + log error
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("TC-CA-02")
+@pytest.mark.tc("TC-0002")
 def test_load_inv_background_missing_asset_returns_none(caplog):
     """_load_inv_background with AssetManager fallback returns a Surface."""
     ui = make_chest_ui()
@@ -61,11 +61,11 @@ def test_load_inv_background_missing_asset_returns_none(caplog):
 
 
 # ---------------------------------------------------------------------------
-# TC-CA-03 — _load_slot_image: absent asset → None + log warning
+# TC-0003 — _load_slot_image: absent asset → None + log warning
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("TC-CA-03")
+@pytest.mark.tc("TC-0003")
 def test_load_slot_image_missing_asset_returns_none(caplog):
     """_load_slot_image returns None when asset is absent (32x32 fallback detection)."""
     ui = make_chest_ui()
@@ -77,11 +77,11 @@ def test_load_slot_image_missing_asset_returns_none(caplog):
 
 
 # ---------------------------------------------------------------------------
-# TC-CA-04 — _load_cursor: invalid path → None + log warning
+# TC-0004 — _load_cursor: invalid path → None + log warning
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("TC-CA-04")
+@pytest.mark.tc("TC-0004")
 def test_load_cursor_invalid_path_returns_none(caplog):
     """_load_cursor with missing file returns a scaled placeholder Surface (not None)."""
     ui = make_chest_ui()
@@ -91,11 +91,11 @@ def test_load_cursor_invalid_path_returns_none(caplog):
 
 
 # ---------------------------------------------------------------------------
-# TC-CA-05 — _load_and_scale_arrow: invalid path → None + log warning
+# TC-0005 — _load_and_scale_arrow: invalid path → None + log warning
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("TC-CA-05")
+@pytest.mark.tc("TC-0005")
 def test_load_and_scale_arrow_invalid_path_returns_none(caplog):
     """_load_and_scale_arrow with missing file returns a scaled placeholder Surface."""
     ui = make_chest_ui()
@@ -105,11 +105,11 @@ def test_load_and_scale_arrow_invalid_path_returns_none(caplog):
 
 
 # ---------------------------------------------------------------------------
-# TC-CA-06 — _get_item_icon cache hit: second call does not re-load
+# TC-0006 — _get_item_icon cache hit: second call does not re-load
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("TC-CA-06")
+@pytest.mark.tc("TC-0006")
 def test_get_item_icon_cache_hit_no_second_io():
     """_get_item_icon must return cached surface on second call."""
     ui = make_chest_ui()
@@ -126,11 +126,11 @@ def test_get_item_icon_cache_hit_no_second_io():
 
 
 # ---------------------------------------------------------------------------
-# TC-CA-07 — _get_item_icon: absent file → None cached
+# TC-0007 — _get_item_icon: absent file → None cached
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("TC-CA-07")
+@pytest.mark.tc("TC-0007")
 def test_get_item_icon_absent_file_caches_none(tmp_path):
     """_get_item_icon must cache None and return None when file is absent."""
     ui = make_chest_ui()
@@ -140,11 +140,11 @@ def test_get_item_icon_absent_file_caches_none(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# TC-CA-08 — _get_item_icon: auto-appends .png extension
+# TC-0008 — _get_item_icon: auto-appends .png extension
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("TC-CA-08")
+@pytest.mark.tc("TC-0008")
 def test_get_item_icon_appends_png_extension(tmp_path):
     """_get_item_icon must append .png if missing."""
     ui = make_chest_ui()
@@ -158,11 +158,11 @@ def test_get_item_icon_appends_png_extension(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# IT-CA-01 — regression: _load_background accessible via ChestUI (mixin)
+# IT-0001 — regression: _load_background accessible via ChestUI (mixin)
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("IT-CA-01")
+@pytest.mark.tc("IT-0001")
 def test_load_background_accessible_via_chest_ui():
     """ChestUI must expose _load_background via ChestDrawMixin inheritance."""
     ui = ChestUI()
@@ -171,11 +171,11 @@ def test_load_background_accessible_via_chest_ui():
 
 
 # ---------------------------------------------------------------------------
-# IT-CA-02 — regression: ChestUI instanciable (no AttributeError)
+# IT-0002 — regression: ChestUI instanciable (no AttributeError)
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("IT-CA-02")
+@pytest.mark.tc("IT-0002")
 def test_chest_ui_instantiation_no_error():
     """ChestUI() must not raise AttributeError or ImportError."""
     ui = ChestUI()
@@ -184,11 +184,11 @@ def test_chest_ui_instantiation_no_error():
 
 
 # ---------------------------------------------------------------------------
-# IT-CA-03 — regression: _get_item_icon accessible via self in ChestDrawMixin
+# IT-0003 — regression: _get_item_icon accessible via self in ChestDrawMixin
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("IT-CA-03")
+@pytest.mark.tc("IT-0003")
 def test_get_item_icon_accessible_via_mixin():
     """ChestDrawMixin must provide _get_item_icon (accessed via ChestUI)."""
     ui = ChestUI()
@@ -197,11 +197,11 @@ def test_get_item_icon_accessible_via_mixin():
 
 
 # ---------------------------------------------------------------------------
-# IT-CA-04 — no double definition: methods absent from ChestUI class body
+# IT-0004 — no double definition: methods absent from ChestUI class body
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("IT-CA-04")
+@pytest.mark.tc("IT-0004")
 def test_asset_methods_not_defined_in_chest_ui_class():
     """After refactoring, _load_background must NOT be in ChestUI.__dict__
     (it must come from ChestDrawMixin via MRO, not be redefined on ChestUI)."""
@@ -215,11 +215,11 @@ def test_asset_methods_not_defined_in_chest_ui_class():
 
 
 # ---------------------------------------------------------------------------
-# IT-CA-05 — methods present on ChestDrawMixin after move
+# IT-0005 — methods present on ChestDrawMixin after move
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.tc("IT-CA-05")
+@pytest.mark.tc("IT-0005")
 def test_asset_methods_present_on_chest_draw_mixin():
     """After refactoring, _load_background and _get_item_icon must be on ChestDrawMixin."""
     assert hasattr(ChestDrawMixin, "_load_background"), (

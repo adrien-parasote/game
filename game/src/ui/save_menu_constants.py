@@ -7,7 +7,7 @@ from src.ui.pause_screen_constants import ENGRAVE_LIGHT, ENGRAVE_SHADOW, ENGRAVE
 from src.ui.ui_colors import COLOR_TEXT_STONE
 
 # ---------------------------------------------------------------------------
-# SaveSlotUI — slot background card (source asset: 427×200 px)
+# SaveSlotUI — slot background card (source asset: 427x200 px)
 # ---------------------------------------------------------------------------
 SAVE_SLOT_BG_W: int = 427
 SAVE_SLOT_BG_H: int = 200
@@ -21,7 +21,7 @@ SAVE_SLOT_GEM_COORDS: list[tuple[int, int]] = [
     (414, 171),
 ]
 
-# Thumbnail sub-rect within the 427×200 card (px from card origin)
+# Thumbnail sub-rect within the 427x200 card (px from card origin)
 SAVE_THUMB_X: int = 56
 SAVE_THUMB_Y: int = 59
 SAVE_THUMB_SIZE: int = 82
@@ -47,8 +47,8 @@ SAVE_DETAIL_LINE_SPACING: int = 30
 SAVE_PANEL_W: int = 600
 SAVE_PANEL_H: int = 800
 SAVE_PANEL_FILL: tuple[int, int, int, int] = (10, 18, 22, 220)
-SAVE_PANEL_Y_OFFSET: int = 30   # shift from vertical center
-SAVE_SLOT_SPACING: int = 20     # px gap between slot cards
+SAVE_PANEL_Y_OFFSET: int = 30  # shift from vertical center
+SAVE_SLOT_SPACING: int = 20  # px gap between slot cards
 
 # ---------------------------------------------------------------------------
 # Back button
@@ -63,7 +63,7 @@ BACK_FONT_SIZE: int = 22
 BACK_FONT_PATH: str = "assets/fonts/cormorant-garamond-regular.ttf"
 BACK_TEXT_COLOR: tuple[int, int, int] = (150, 255, 220)
 BACK_HALO_COLOR: tuple[int, int, int] = (0, 180, 150)
-BACK_LABEL_GAP: int = 8   # px between icon and label
+BACK_LABEL_GAP: int = 8  # px between icon and label
 
 # Engraving colors (re-exported from pause_screen_constants — canonical source)
 __all__ = [

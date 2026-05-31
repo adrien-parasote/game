@@ -40,31 +40,31 @@ class TestInventoryEquipment(unittest.TestCase):
             "SHOES",
         ]
         for slot in expected_slots:
-            self.assertIn(slot, self.inventory.equipment)
-            self.assertIsNone(self.inventory.equipment[slot])
+            assert slot in self.inventory.equipment
+            assert self.inventory.equipment[slot] is None
 
     def test_equip_item_valid(self):
         """Test equipping an item to a valid slot."""
         item = self.inventory.create_item("test_sword", 1)
         swapped = self.inventory.equip_item("RIGHT_HAND", item)
-        self.assertIsNone(swapped)
+        assert swapped is None
         assert self.inventory.equipment["RIGHT_HAND"] is not None
-        self.assertEqual(self.inventory.equipment["RIGHT_HAND"].id, "test_sword")
+        assert self.inventory.equipment["RIGHT_HAND"].id == "test_sword"
 
     def test_equip_item_invalid_slot(self):
         """Test equipping an item to a slot it doesn't belong to."""
         item = self.inventory.create_item("test_sword", 1)
         swapped = self.inventory.equip_item("HEAD", item)
         # Should return the item back because it can't be equipped there
-        self.assertEqual(swapped, item)
-        self.assertIsNone(self.inventory.equipment["HEAD"])
+        assert swapped == item
+        assert self.inventory.equipment["HEAD"] is None
 
     def test_equip_item_no_equip_slot(self):
         """Test equipping an item that has no equip_slot property."""
         item = self.inventory.create_item("generic_item", 1)
         swapped = self.inventory.equip_item("BAG", item)
-        self.assertEqual(swapped, item)
-        self.assertIsNone(self.inventory.equipment["BAG"])
+        assert swapped == item
+        assert self.inventory.equipment["BAG"] is None
 
     def test_equip_item_swap(self):
         """Test equipping an item to a slot that already has an item."""
@@ -74,8 +74,8 @@ class TestInventoryEquipment(unittest.TestCase):
         self.inventory.equip_item("RIGHT_HAND", sword1)
         swapped = self.inventory.equip_item("RIGHT_HAND", sword2)
 
-        self.assertEqual(swapped, sword1)
-        self.assertEqual(self.inventory.equipment["RIGHT_HAND"], sword2)
+        assert swapped == sword1
+        assert self.inventory.equipment["RIGHT_HAND"] == sword2
 
     def test_unequip_item(self):
         """Test unequipping an item."""
@@ -83,13 +83,13 @@ class TestInventoryEquipment(unittest.TestCase):
         self.inventory.equip_item("HEAD", item)
 
         unequipped = self.inventory.unequip_item("HEAD")
-        self.assertEqual(unequipped, item)
-        self.assertIsNone(self.inventory.equipment["HEAD"])
+        assert unequipped == item
+        assert self.inventory.equipment["HEAD"] is None
 
     def test_unequip_empty_slot(self):
         """Test unequipping an empty slot returns None."""
         unequipped = self.inventory.unequip_item("BAG")
-        self.assertIsNone(unequipped)
+        assert unequipped is None
 
 
 if __name__ == "__main__":

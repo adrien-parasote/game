@@ -22,6 +22,7 @@ def _make_game():
     """Construct a Game instance with _load_map patched out."""
     with patch("src.engine.game.Game._load_map"):
         from src.engine.game import Game
+
         return Game()
 
 
@@ -133,10 +134,12 @@ def test_resolve_spawn_by_id_finds_correct_entity():
     """TC-004: resolve_spawn_by_id("door_exit") reads map_manager._entities,
     finds the spawn_point with spawn_id="door_exit", and returns (x + half_tile, y + half_tile).
     """
-    ml = _make_map_loader(entities=[
-        _spawn_entity("wrong_spawn", 0, 0),
-        _spawn_entity("door_exit", 64, 96),
-    ])
+    ml = _make_map_loader(
+        entities=[
+            _spawn_entity("wrong_spawn", 0, 0),
+            _spawn_entity("door_exit", 64, 96),
+        ]
+    )
 
     result = ml.resolve_spawn_by_id("door_exit")
 
@@ -152,9 +155,11 @@ def test_resolve_spawn_by_id_finds_correct_entity():
 @pytest.mark.tc("TC-005")
 def test_resolve_spawn_by_id_returns_none_on_miss(caplog):
     """TC-005: No entity with the matching spawn_id → returns None and logs a warning."""
-    ml = _make_map_loader(entities=[
-        _spawn_entity("other_spawn", 10, 10),
-    ])
+    ml = _make_map_loader(
+        entities=[
+            _spawn_entity("other_spawn", 10, 10),
+        ]
+    )
 
     with caplog.at_level(logging.WARNING):
         result = ml.resolve_spawn_by_id("missing_spawn")
@@ -296,7 +301,7 @@ def test_check_teleporters_routes_intra_map():
     # Build a teleport that overlaps with the player and targets the SAME map
     tp = MagicMock()
     tp.rect = pygame.Rect(0, 0, 32, 32)  # collides with player
-    tp.target_map = "castle.tmj"         # SAME as _current_map_name
+    tp.target_map = "castle.tmj"  # SAME as _current_map_name
     tp.target_spawn_id = "inner_door"
     tp.transition_type = "walk"
     tp.required_direction = "any"
@@ -330,7 +335,7 @@ def test_check_teleporters_routes_cross_map():
 
     tp = MagicMock()
     tp.rect = pygame.Rect(0, 0, 32, 32)
-    tp.target_map = "dungeon.tmj"        # DIFFERENT map
+    tp.target_map = "dungeon.tmj"  # DIFFERENT map
     tp.target_spawn_id = "spawn_1"
     tp.transition_type = "fade"
     tp.required_direction = "any"
@@ -412,10 +417,7 @@ def test_player_invisible_during_walk(mock_load):
         "player.image must be _player_transparent during walk"
     )
     # And it must be fully transparent (SRCALPHA fill=(0,0,0,0))
-    assert game.player.image.get_at((0, 0)).a == 0, (
-        "Transparent surface pixel alpha must be 0"
-    )
-
+    assert game.player.image.get_at((0, 0)).a == 0, "Transparent surface pixel alpha must be 0"
 
 
 # ===========================================================================

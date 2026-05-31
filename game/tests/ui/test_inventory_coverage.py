@@ -224,7 +224,7 @@ class TestDragMotionAndDrop:
         }
         ui.hovered_slot = ("equipment", "RIGHT_HAND")
 
-        with patch.object(ui, "_transfer_dragged_to_equipment") as mock_xfer:
+        with patch.object(ui, "_transfer_dragged_to_equipment") as mock_xfer:  # noqa: SIM117
             with patch.object(ui, "update_hover"):
                 event = MagicMock()
                 event.type = pygame.MOUSEBUTTONUP
@@ -246,7 +246,7 @@ class TestDragMotionAndDrop:
         }
         ui.hovered_slot = ("grid", 5)
 
-        with patch.object(ui, "_transfer_dragged_to_grid") as mock_xfer:
+        with patch.object(ui, "_transfer_dragged_to_grid") as mock_xfer:  # noqa: SIM117
             with patch.object(ui, "update_hover"):
                 event = MagicMock()
                 event.type = pygame.MOUSEBUTTONUP
@@ -750,6 +750,7 @@ class TestDrawInfoZone:
                 "description": "Restaure 50 PV.",
             }
             ui._draw_info_zone(screen)
+
 
 # assert True (legacy bypass)
 

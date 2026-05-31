@@ -2,6 +2,7 @@
 
 Generates .tsx (XML) files with Wang set definitions for blob autotiling.
 """
+
 from __future__ import annotations
 
 import os
@@ -46,41 +47,60 @@ def export_tsx(
     png_path = Path(png_path)
     rel_png = compute_relative_path(png_path, output_path)
 
-    root = ET.Element("tileset", {
-        "version": "1.10",
-        "tiledversion": TILED_VERSION,
-        "name": name,
-        "tilewidth": str(tile_size),
-        "tileheight": str(tile_size),
-        "tilecount": str(tile_count),
-        "columns": str(tile_count),
-    })
+    root = ET.Element(
+        "tileset",
+        {
+            "version": "1.10",
+            "tiledversion": TILED_VERSION,
+            "name": name,
+            "tilewidth": str(tile_size),
+            "tileheight": str(tile_size),
+            "tilecount": str(tile_count),
+            "columns": str(tile_count),
+        },
+    )
 
-    ET.SubElement(root, "image", {
-        "source": rel_png,
-        "width": str(tile_size * tile_count),
-        "height": str(tile_size),
-    })
+    ET.SubElement(
+        root,
+        "image",
+        {
+            "source": rel_png,
+            "width": str(tile_size * tile_count),
+            "height": str(tile_size),
+        },
+    )
 
     wangsets = ET.SubElement(root, "wangsets")
-    wangset = ET.SubElement(wangsets, "wangset", {
-        "name": name,
-        "type": "mixed",
-        "tile": "-1",
-    })
+    wangset = ET.SubElement(
+        wangsets,
+        "wangset",
+        {
+            "name": name,
+            "type": "mixed",
+            "tile": "-1",
+        },
+    )
 
-    ET.SubElement(wangset, "wangcolor", {
-        "name": name,
-        "color": WANG_COLOR,
-        "tile": "-1",
-        "probability": "1",
-    })
+    ET.SubElement(
+        wangset,
+        "wangcolor",
+        {
+            "name": name,
+            "color": WANG_COLOR,
+            "tile": "-1",
+            "probability": "1",
+        },
+    )
 
     for slot, bitmask in enumerate(BLOB_BITMASKS):
-        ET.SubElement(wangset, "wangtile", {
-            "tileid": str(slot),
-            "wangid": blob_wang_id(bitmask),
-        })
+        ET.SubElement(
+            wangset,
+            "wangtile",
+            {
+                "tileid": str(slot),
+                "wangid": blob_wang_id(bitmask),
+            },
+        )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 

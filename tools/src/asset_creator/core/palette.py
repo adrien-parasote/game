@@ -94,13 +94,15 @@ class Palette:
         """
         if self.ramp_config is None:
             raise ValueError(f"Palette '{self.name}' must have a valid ramp configuration.")
-        return tuple(generate_hue_shifted_ramp(
-            self.ramp_config.base_color,
-            num_steps=self.ramp_config.steps,
-            shadow_hue_shift=self.ramp_config.shadow_hue_shift,
-            highlight_hue_shift=self.ramp_config.highlight_hue_shift,
-            lightness_range=self.ramp_config.lightness_range,
-        ))
+        return tuple(
+            generate_hue_shifted_ramp(
+                self.ramp_config.base_color,
+                num_steps=self.ramp_config.steps,
+                shadow_hue_shift=self.ramp_config.shadow_hue_shift,
+                highlight_hue_shift=self.ramp_config.highlight_hue_shift,
+                lightness_range=self.ramp_config.lightness_range,
+            )
+        )
 
     def interpolate(self, t: float) -> tuple[int, int, int]:
         """Map a value in [0,1] to a color on the extended ramp.
@@ -144,8 +146,7 @@ def _parse_hex_color(hex_str: str) -> tuple[int, int, int]:
     match = _HEX_PATTERN.match(hex_str.strip())
     if match is None:
         raise ValueError(
-            f"Invalid hex color '{hex_str}'. Expected format: '#RRGGBB' "
-            f"(e.g. '#2d5a1e')."
+            f"Invalid hex color '{hex_str}'. Expected format: '#RRGGBB' (e.g. '#2d5a1e')."
         )
     hex_digits = match.group(1)
     return (
@@ -214,9 +215,7 @@ def load_palette(path: Path) -> Palette:
 
     raw_roles = raw["roles"]
     if not isinstance(raw_roles, dict):
-        raise ValueError(
-            f"Palette '{raw['name']}' roles must be a mapping, got: {type(raw_roles)}"
-        )
+        raise ValueError(f"Palette '{raw['name']}' roles must be a mapping, got: {type(raw_roles)}")
 
     roles: dict[PaletteRole, int] = {}
     for role_name, idx in raw_roles.items():
@@ -250,5 +249,8 @@ def load_palette(path: Path) -> Palette:
     )
 
     return Palette(
-        name=raw["name"], colors=colors, roles=roles, ramp_config=ramp_config,
+        name=raw["name"],
+        colors=colors,
+        roles=roles,
+        ramp_config=ramp_config,
     )

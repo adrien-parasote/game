@@ -35,9 +35,9 @@ SEASON_LABELS: dict = {
 class WorldTime:
     """Immutable snapshot of the current in-game time."""
 
-    hour: int  # 0–23
-    minute: int  # 0–59
-    day: int  # 0–N total days elapsed
+    hour: int  # 0–23  # noqa: RUF003
+    minute: int  # 0–59  # noqa: RUF003
+    day: int  # 0–N total days elapsed  # noqa: RUF003
 
 
 class TimeSystem:

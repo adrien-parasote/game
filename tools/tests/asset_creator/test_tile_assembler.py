@@ -3,6 +3,7 @@
 Tests blob tile assembly from SubTileSet without depending
 on the full palette/texture pipeline.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -21,8 +22,9 @@ from PIL import Image
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _make_colored_subtile(r: int, g: int, b: int, alpha: int = 255) -> Image.Image:
-    """Create a solid-color 16×16 RGBA image."""
+    """Create a solid-color 16x16 RGBA image."""
     return Image.new("RGBA", (16, 16), (r, g, b, alpha))
 
 
@@ -56,13 +58,14 @@ def mock_subtile_set() -> SubTileSet:
 # TC-011: assemble_tileset produces strip with 47 tiles
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.tc("TC-011")
 @pytest.mark.unit
 class TestTilesetStrip:
     """TC-011: assemble_tileset produces strip with 47 tiles."""
 
     def test_strip_width(self, mock_subtile_set: SubTileSet) -> None:
-        """Strip width should be 47 × 32 = 1504 pixels."""
+        """Strip width should be 47 x 32 = 1504 pixels."""
         strip = assemble_tileset(mock_subtile_set)
         assert strip.size == (47 * 32, 32)
 
@@ -77,13 +80,14 @@ class TestTilesetStrip:
 
 
 # ---------------------------------------------------------------------------
-# TC-012: All tiles are 32×32 RGBA
+# TC-012: All tiles are 32x32 RGBA
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.tc("TC-012")
 @pytest.mark.unit
 class TestTileDimensions:
-    """TC-012: All assembled tiles are 32×32 RGBA."""
+    """TC-012: All assembled tiles are 32x32 RGBA."""
 
     @pytest.mark.parametrize("bitmask", BLOB_BITMASKS)
     def test_tile_size_and_mode(
@@ -92,7 +96,7 @@ class TestTileDimensions:
         bitmask: int,
     ) -> None:
         tile = assemble_tile(mock_subtile_set, bitmask)
-        assert tile.size == (32, 32), f"Expected 32×32 for bitmask {bitmask}"
+        assert tile.size == (32, 32), f"Expected 32x32 for bitmask {bitmask}"
         assert tile.mode == "RGBA", f"Expected RGBA for bitmask {bitmask}"
 
 
@@ -100,13 +104,15 @@ class TestTileDimensions:
 # TC-013: Bitmask 0 (isolated) uses OUTER_CORNER for all quadrants
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.tc("TC-013")
 @pytest.mark.unit
 class TestIsolatedTile:
     """TC-013: Bitmask 0 (isolated) uses OUTER_CORNER for all quadrants."""
 
     def test_all_quadrants_are_outer_corner(
-        self, mock_subtile_set: SubTileSet,
+        self,
+        mock_subtile_set: SubTileSet,
     ) -> None:
         """With no neighbors, all quadrants should use OUTER_CORNER."""
         # Verify select_subtile returns OUTER_CORNER for each quadrant
@@ -123,7 +129,8 @@ class TestIsolatedTile:
             )
 
     def test_assembled_tile_matches(
-        self, mock_subtile_set: SubTileSet,
+        self,
+        mock_subtile_set: SubTileSet,
     ) -> None:
         """The assembled tile for bitmask 0 should be composed of 4 OUTER_CORNERs."""
         tile = assemble_tile(mock_subtile_set, 0)
@@ -144,13 +151,15 @@ class TestIsolatedTile:
 # TC-014: Bitmask 255 (full center) uses FILL for all quadrants
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.tc("TC-014")
 @pytest.mark.unit
 class TestFullCenterTile:
     """TC-014: Bitmask 255 (full center) uses FILL for all quadrants."""
 
     def test_all_quadrants_are_fill(
-        self, mock_subtile_set: SubTileSet,
+        self,
+        mock_subtile_set: SubTileSet,
     ) -> None:
         """With all neighbors present, all quadrants should use FILL."""
         for quadrant, args in [
@@ -166,7 +175,8 @@ class TestFullCenterTile:
             )
 
     def test_assembled_tile_matches(
-        self, mock_subtile_set: SubTileSet,
+        self,
+        mock_subtile_set: SubTileSet,
     ) -> None:
         """The assembled tile for bitmask 255 should be composed of 4 FILLs."""
         tile = assemble_tile(mock_subtile_set, 255)
@@ -187,6 +197,7 @@ class TestFullCenterTile:
 # TC-015: blob_wang_id correctness
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.tc("TC-015")
 @pytest.mark.unit
 class TestBlobWangId:
@@ -201,9 +212,9 @@ class TestBlobWangId:
         [
             (0, "0,0,0,0,0,0,0,0"),
             (255, "1,1,1,1,1,1,1,1"),
-            (2, "1,0,0,0,0,0,0,0"),     # N only
-            (18, "1,0,1,0,0,0,0,0"),     # N + E
-            (22, "1,1,1,0,0,0,0,0"),     # N + E + NE
+            (2, "1,0,0,0,0,0,0,0"),  # N only
+            (18, "1,0,1,0,0,0,0,0"),  # N + E
+            (22, "1,1,1,0,0,0,0,0"),  # N + E + NE
         ],
     )
     def test_known_values(self, bitmask: int, expected_wangid: str) -> None:
@@ -216,14 +227,13 @@ class TestBlobWangId:
             parts = wangid.split(",")
             assert len(parts) == 8, f"Bitmask {bitmask}: expected 8 parts, got {len(parts)}"
             for part in parts:
-                assert part in ("0", "1"), (
-                    f"Bitmask {bitmask}: unexpected value '{part}' in wangid"
-                )
+                assert part in ("0", "1"), f"Bitmask {bitmask}: unexpected value '{part}' in wangid"
 
 
 # ---------------------------------------------------------------------------
 # TC-016: No tile in the strip is fully transparent
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.tc("TC-016")
 @pytest.mark.unit
@@ -231,7 +241,8 @@ class TestNoFullyTransparentTile:
     """TC-016: No tile in the strip is fully transparent (L-MAP-003)."""
 
     def test_no_fully_transparent_tile(
-        self, mock_subtile_set: SubTileSet,
+        self,
+        mock_subtile_set: SubTileSet,
     ) -> None:
         strip = assemble_tileset(mock_subtile_set)
         strip_arr = np.array(strip)
@@ -246,12 +257,14 @@ class TestNoFullyTransparentTile:
 # Additional selection logic tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 class TestSelectSubtile:
     """Test the select_subtile dispatch logic."""
 
     def test_cardinal1_only_returns_edge_v(
-        self, mock_subtile_set: SubTileSet,
+        self,
+        mock_subtile_set: SubTileSet,
     ) -> None:
         """Only vertical neighbor → EDGE_V."""
         result = select_subtile(mock_subtile_set, Quadrant.TL, True, False, False)
@@ -259,7 +272,8 @@ class TestSelectSubtile:
         assert np.array_equal(np.array(result), np.array(expected))
 
     def test_cardinal2_only_returns_edge_h(
-        self, mock_subtile_set: SubTileSet,
+        self,
+        mock_subtile_set: SubTileSet,
     ) -> None:
         """Only horizontal neighbor → EDGE_H."""
         result = select_subtile(mock_subtile_set, Quadrant.TL, False, True, False)
@@ -267,7 +281,8 @@ class TestSelectSubtile:
         assert np.array_equal(np.array(result), np.array(expected))
 
     def test_both_cardinals_with_diagonal_returns_fill(
-        self, mock_subtile_set: SubTileSet,
+        self,
+        mock_subtile_set: SubTileSet,
     ) -> None:
         """Both cardinals + diagonal → FILL."""
         result = select_subtile(mock_subtile_set, Quadrant.TL, True, True, True)
@@ -275,7 +290,8 @@ class TestSelectSubtile:
         assert np.array_equal(np.array(result), np.array(expected))
 
     def test_both_cardinals_without_diagonal_returns_inner_corner(
-        self, mock_subtile_set: SubTileSet,
+        self,
+        mock_subtile_set: SubTileSet,
     ) -> None:
         """Both cardinals without diagonal → INNER_CORNER."""
         result = select_subtile(mock_subtile_set, Quadrant.TL, True, True, False)
@@ -283,7 +299,8 @@ class TestSelectSubtile:
         assert np.array_equal(np.array(result), np.array(expected))
 
     def test_no_neighbors_returns_outer_corner(
-        self, mock_subtile_set: SubTileSet,
+        self,
+        mock_subtile_set: SubTileSet,
     ) -> None:
         """No neighbors → OUTER_CORNER."""
         result = select_subtile(mock_subtile_set, Quadrant.BR, False, False, False)

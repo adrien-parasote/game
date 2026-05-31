@@ -6,6 +6,7 @@ TC-HUD-001 à TC-HUD-003 : cache sur GameHUD
 TC-INV-CACHE-001 à TC-INV-CACHE-005 : cache sur InventoryDrawMixin
 TC-CHEST-001 : cache sur ChestDrawMixin
 """
+
 from unittest.mock import MagicMock, patch
 
 import pygame
@@ -13,6 +14,7 @@ import pytest
 from src.ui.hud import GameHUD
 
 # ── Fixtures communes ────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def mock_time_system():
@@ -59,16 +61,17 @@ def screen():
 
 # ── TC-HUD-001 ───────────────────────────────────────────────────────────────
 
+
 @pytest.mark.tc("TC-HUD-001")
 def test_hud_font_render_called_once_on_double_draw_same_label(hud, mock_time_system, screen):
-    """GameHUD.draw() called 2× with same time_label → cache hit: render NOT called again."""
+    """GameHUD.draw() called 2x with same time_label → cache hit: render NOT called again."""
     mock_time_system.time_label = "12:00"
     wt = MagicMock()
     wt.day = 0
     mock_time_system.world_time = wt
 
     hud.draw(screen)
-    render_count_after_first = hud._font.render.call_count  # 2 unique texts × 2 passes = 4
+    render_count_after_first = hud._font.render.call_count  # 2 unique texts x 2 passes = 4
     hud.draw(screen)
     render_count_after_second = hud._font.render.call_count
 
@@ -81,6 +84,7 @@ def test_hud_font_render_called_once_on_double_draw_same_label(hud, mock_time_sy
 
 
 # ── TC-HUD-002 ───────────────────────────────────────────────────────────────
+
 
 @pytest.mark.tc("TC-HUD-002")
 def test_hud_cache_miss_on_new_label(hud, mock_time_system, screen):
@@ -99,12 +103,11 @@ def test_hud_cache_miss_on_new_label(hud, mock_time_system, screen):
     render_count_after_second = hud._font.render.call_count
 
     new_renders = render_count_after_second - render_count_after_first
-    assert new_renders >= 1, (
-        f"Expected ≥ 1 new render call after label change. Got {new_renders}"
-    )
+    assert new_renders >= 1, f"Expected ≥ 1 new render call after label change. Got {new_renders}"
 
 
 # ── TC-HUD-003 ───────────────────────────────────────────────────────────────
+
 
 @pytest.mark.tc("TC-HUD-003")
 def test_hud_cache_attribute_present(hud):
@@ -116,6 +119,7 @@ def test_hud_cache_attribute_present(hud):
 
 
 # ── TC-INV-CACHE-001 ──────────────────────────────────────────────────────────
+
 
 @pytest.mark.tc("TC-INV-CACHE-001")
 def test_inventory_text_cache_attribute():
@@ -157,6 +161,7 @@ def test_inventory_text_cache_attribute():
 
 
 # ── TC-CHEST-001 ──────────────────────────────────────────────────────────────
+
 
 @pytest.mark.tc("TC-CHEST-001")
 def test_chest_no_font_render_in_draw_on_second_call():

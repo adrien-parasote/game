@@ -23,6 +23,7 @@ def mock_game():
 
     return game
 
+
 def test_render_manager_draw_background_animated(mock_game):
     """Test background rendering with animated tiles (L39-42)."""
     rm = RenderManager(mock_game)
@@ -37,18 +38,20 @@ def test_render_manager_draw_background_animated(mock_game):
     rm.draw_background()
     assert mock_game.screen.fblits.called
 
+
 def test_render_manager_draw_foreground_animated(mock_game):
     """Test foreground rendering with animated tiles (L93-96)."""
     rm = RenderManager(mock_game)
 
     mock_game.anim_map_manager.get_current_frame_image.return_value = MagicMock(spec=pygame.Surface)
-    mock_game.map_manager.get_visible_chunks.return_value = [] # no normal tiles
+    mock_game.map_manager.get_visible_chunks.return_value = []  # no normal tiles
 
     # Pre-populate F3 cache with a depth-15 tile (depth 15 > player 10 → foreground)
     rm._frame_anim_all = [(0, 0, 1, 15)]
 
     rm.draw_foreground()
     assert mock_game.screen.fblits.called
+
 
 def test_render_manager_draw_scene_with_emotes_and_chest(mock_game):
     """Test draw_scene covers emotes (L146-147) and open chest (L169)."""

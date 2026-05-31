@@ -379,11 +379,10 @@ def test_lighting_manager_uses_actual_screen_size(mock_set_mode, mock_toggle_ful
     assert game.lighting_manager.screen_size == (2560, 1440)
 
 
-
 class TestLightingCoverage:
-
     def _lm(self):
         from src.engine.lighting import LightingManager
+
         ts = MagicMock()
         ts.brightness = 0.5
         ts.hour = 12.0
@@ -430,4 +429,3 @@ class TestLightingCoverage:
         torch.halo_size = 0
         result = lm.create_overlay([], [torch], pygame.math.Vector2(0, 0))
         assert isinstance(result, pygame.Surface)
-
