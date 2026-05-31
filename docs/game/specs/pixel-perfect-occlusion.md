@@ -89,6 +89,8 @@ def _build_occlusion_mask(self, tile_surf: pygame.Surface) -> pygame.Surface | N
     return mask if has_transparency else None
 ```
 
+> **Design decision:** `tile_a > 0` (any non-zero alpha) is intentional. In practice, tile art uses binary alpha (0 or 255) — there are no semi-transparent tile pixels. This threshold correctly distinguishes "pixel present" from "pixel absent" without needing a higher threshold like 128.
+
 **`id(tile_surf)` key:** safe because `AssetManager.get_image()` always returns the same Surface
 object for a given path. Animated tile frames (distinct Surface objects) automatically get
 their own key.
@@ -258,7 +260,7 @@ def _create_composite_occlusion_surface(
 | Recompute mask each frame | Always call `AssetManager.get_occlusion_mask()` | Cache by `id` → zero recompute |
 | Store mask in `TileMapData` | Keep mask in `AssetManager` | `TileMapData` is parse-time; mask scope is session |
 | Call `set_alpha()` on the full `composite` | Only `set_alpha()` on `_alpha_surf` (local zone) | Global alpha contaminates all zones |
-| Forget `set_alpha(None)` before `BLEND_RGBA_MULT` | Always reset before blending | Residual global alpha interferes with multiply result |
+| Forget `set_alpha(None)` before `BLEND_RGBA_MULT` | Ensure no residual `set_alpha()` value on surfaces before `BLEND_RGBA_MULT` — the current implementation avoids this by using freshly constructed SRCALPHA surfaces | Residual global alpha interferes with multiply result |
 
 ---
 

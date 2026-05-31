@@ -536,69 +536,6 @@ All existing tests cover runtime behavior. These test cases are verification scr
 | Then | Zero matches |
 | Type | unit |
 
-### TC-002 — Zero French characters remain (unit)
-
-| Field | Value |
-|-------|-------|
-| Given | All FR→EN translations applied |
-| When | `grep -rn "[àâæçéèêëîïôœùûüÿÀÂÆÇÉÈÊËÎÏÔŒÙÛÜŸ]" src/ --include="*.py"` |
-| Then | Zero matches returned |
-| Type | unit |
-
-### TC-003 — No loose magic color tuples (unit)
-
-| Field | Value |
-|-------|-------|
-| Given | All magic color constants applied |
-| When | `grep -rn "(255, 255, 255)\|(60, 40, 30)\|(220, 200, 150)\|(255, 0, 255)\|(0, 0, 255)" src/ --include="*.py"` |
-| Then | All matches are ONLY in `*_constants.py` or `ui_colors.py` or `engine_constants.py` |
-| Type | unit |
-
-### TC-004 — Full pytest suite zero regressions (integration)
-
-| Field | Value |
-|-------|-------|
-| Given | All changes applied |
-| When | `python -m pytest tests/ -x -q --tb=short` |
-| Then | Exit code 0, same pass count as baseline |
-| Type | integration |
-
-### TC-005 — engine_constants.py importable as leaf module (unit)
-
-| Field | Value |
-|-------|-------|
-| Given | `src/engine/engine_constants.py` created |
-| When | `python -c "from src.engine.engine_constants import COLOR_PLACEHOLDER_MAGENTA, COLOR_PLACEHOLDER_BLUE; assert COLOR_PLACEHOLDER_MAGENTA == (255, 0, 255); assert COLOR_PLACEHOLDER_BLUE == (0, 0, 255)"` |
-| Then | No error, assertions pass |
-| Type | unit |
-
-### TC-006 — ui_colors.py exports COLOR_BLACK and COLOR_WHITE (unit)
-
-| Field | Value |
-|-------|-------|
-| Given | `src/ui/ui_colors.py` updated |
-| When | `python -c "from src.ui.ui_colors import COLOR_BLACK, COLOR_WHITE; assert COLOR_BLACK == (0,0,0); assert COLOR_WHITE == (255,255,255)"` |
-| Then | No error, assertions pass |
-| Type | unit |
-
-### TC-007 — SAVE_TITLE_COLOR replaces hardcoded tuple in save_menu.py (unit)
-
-| Field | Value |
-|-------|-------|
-| Given | `save_menu.py` updated at line 224 |
-| When | `grep -n "220, 200, 150" src/ui/save_menu.py` |
-| Then | Zero matches — the hardcoded tuple is gone |
-| Type | unit |
-
-### TC-008 — PANEL_W/PANEL_H replace hardcoded sizes in pause_screen.py (unit)
-
-| Field | Value |
-|-------|-------|
-| Given | `pause_screen.py` updated at lines 95, 98 |
-| When | `grep -n "(480, 480)" src/ui/pause_screen.py` |
-| Then | Zero matches |
-| Type | unit |
-
 ---
 
 ## Error Handling Matrix
@@ -616,12 +553,12 @@ All existing tests cover runtime behavior. These test cases are verification scr
 
 ## Deep Links
 
-- `src/ui/ui_colors.py` — existing color constants: [ui_colors.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/ui_colors.py#L1)
-- `src/entities/interactive_constants.py` — existing entity constants: [interactive_constants.py](file:///Users/adrien.parasote/Documents/perso/game/src/entities/interactive_constants.py#L1)
-- `src/ui/speech_bubble_constants.py` — existing bubble constants: [speech_bubble_constants.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/speech_bubble_constants.py#L1)
-- `src/ui/save_menu_constants.py` — SAVE_TITLE_COLOR defined here: [save_menu_constants.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/save_menu_constants.py#L36)
-- `src/ui/pause_screen_constants.py` — PANEL_W/PANEL_H defined here: [pause_screen_constants.py](file:///Users/adrien.parasote/Documents/perso/game/src/ui/pause_screen_constants.py#L11-L12)
-- `docs/specs/development-quality.md` — related quality spec: [development-quality.md](file:///Users/adrien.parasote/Documents/perso/game/docs/specs/development-quality.md#L1)
+- `src/ui/ui_colors.py` — existing color constants: [ui_colors.py](../../src/ui/ui_colors.py#L1)
+- `src/entities/interactive_constants.py` — existing entity constants: [interactive_constants.py](../../src/entities/interactive_constants.py#L1)
+- `src/ui/speech_bubble_constants.py` — existing bubble constants: [speech_bubble_constants.py](../../src/ui/speech_bubble_constants.py#L1)
+- `src/ui/save_menu_constants.py` — SAVE_TITLE_COLOR defined here: [save_menu_constants.py](../../src/ui/save_menu_constants.py#L36)
+- `src/ui/pause_screen_constants.py` — PANEL_W/PANEL_H defined here: [pause_screen_constants.py](../../src/ui/pause_screen_constants.py#L11-L12)
+- `docs/specs/development-quality.md` — related quality spec: [development-quality.md](./development-quality.md)
 - Implementation plan (DISCOVER output): [implementation_plan.md](file:///Users/adrien.parasote/.gemini/antigravity-ide/brain/3e726d7b-ddd4-4dd3-987b-4de921bf4b9f/implementation_plan.md#L1)
 
 ---

@@ -75,6 +75,8 @@ To enhance visual hierarchy and game identity, a three-tier font system is estab
 - **Technical (Data/Numbers)**: `FONT_TECH = "assets/fonts/m5x7.ttf"` (Size: 20)
   - Used for quantities (`x99`), stats (`HP`, `LVL`), and currency counters (`GOLD`).
 
+> **Note:** m5x7 is a pixel font with native 5×7 glyph size. Sizes 22 (≈3× native) and 20 are the validated rendering sizes for this project — confirmed to produce clean pixel-aligned output with Pygame CE's font renderer.
+
 ---
 
 ## 5. I18nManager

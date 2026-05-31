@@ -82,6 +82,10 @@ For automated traps, switches, or remote doors:
 - **Interaction Constraints**: Player must be orthogonally aligned (`abs(dx) < 20` or `abs(dy) < 20`) and facing the item.
 - **On Top Exception**: If the player is standing directly on the item (distance < 16px), interaction is allowed regardless of orientation.
 
+> **Implementation note:** Distance comparisons use squared values (`dist_sq < threshold_sq`) to avoid `sqrt()` overhead. See [engine-core.md §7.1.1](./engine-core.md) for the authoritative threshold constants (`_RANGE_SQ_48`, `_RANGE_SQ_16`).
+
+> **Alignment constant:** The value `20` in `abs(dx) < 20` / `abs(dy) < 20` is an intentional inline constant (not a named Settings constant), representing roughly half a tile width (16px) plus a small margin for alignment tolerance.
+
 ### 5.2 Collection & Inventory Stacking
 1. Checks `player.inventory.can_add(item_id, quantity)` to see if there's enough space.
 2. If full, triggers `frustration` emote on the player; item remains on the ground.

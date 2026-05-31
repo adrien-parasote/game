@@ -57,6 +57,8 @@ entity_frect.x += velocity_x * dt
 sprite_frect = surface.get_frect(topleft=(x, y))
 ```
 
+> **⚠️ Project override (ADR-008):** This project uses `Vector2` + `Rect` (integer coordinates). FRect migration has been deferred — see [ADR-008](../ADRs/ADR-008-frect-migration.md). Do NOT apply FRect in this codebase.
+
 ### 2.3 Systematic Conversion of Pixel Formats
 Never forget to convert images immediately after loading them. Otherwise, Pygame must convert the pixel format at each frame during the `blit`, which destroys performance.
 * `.convert()`: For opaque images (no transparency).
@@ -312,6 +314,8 @@ class Game:
 | Instantiating objects (`Vector2`, `FRect`, `Surface`) in the main loop | Garbage Collector explosion, causing regular framerate micro-stutters. | Instantiate once in the constructor (`__init__`) and modify existing properties (e.g., using `move_towards_ip`). |
 | Rendering text or loading fonts at each frame | Dramatic FPS drop (< 15 FPS) because font texture generation is extremely heavy for the CPU. | Load fonts once and pre-calculate/cache text surfaces. |
 | Using `pygame.display.flip()` if only a small part of the screen changes | Unnecessary data transfer to the screen. | Use `pygame.display.update(rect_list)` to limit the update to moving areas (Dirty Rects). |
+
+> **Project note:** This project uses `pygame.display.flip()` (full-frame rendering with Y-sort). Dirty rect tracking is not implemented.
 | Using raw paths with hardcoded slashes (`/` or `\`) | Instant crash when porting the game from one OS to another (e.g., from macOS to Windows). | Always build paths using `os.path.join` or `pathlib.Path`. |
 | Omitting `.convert()` or `.convert_alpha()` on a surface | Loss of 200% to 300% in image display speed (CPU forced to decode bits at each frame). | Apply conversion as soon as the graphic asset is loaded. |
 | Omitting Delta Time (`dt`) clamping | Glitching through walls, major physical collision bugs during sudden framerate drops or debug pauses. | Rigidly clamp the maximum value of `dt`. |
@@ -334,6 +338,8 @@ To guarantee that these high standards are maintained, configure your static ana
   "reportMissingTypeStubs": false
 }
 ```
+
+> **Project note:** The project uses `basic` mode (see [remediation_02](./remediation_02_saves_assets_pyright.md)). `strict` is aspirational — it would currently produce 158+ errors due to missing pygame-ce type stubs.
 
 ### Ruff Configuration (`pyproject.toml`)
 ```toml

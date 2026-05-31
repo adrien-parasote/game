@@ -214,6 +214,8 @@ Each of the 10 files listed above — **only the `pygame.image.load` lines**. No
 
 **Removed Suppressions (were ghost suppressions — 0 extra errors):**
 - `reportGeneralTypeIssues` (was `"none"`)
+
+> **Note:** `reportGeneralTypeIssues` has been deprecated in modern Pyright versions and split into specific rules. This suppression may already be absent or generate a deprecation warning.
 - `reportOptionalSubscript` (was `"none"`)
 - `reportOptionalCall` (was `"none"`)
 - `reportOptionalIterable` (was `"none"`)

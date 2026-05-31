@@ -17,6 +17,7 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 - **Visuals**: Uses SpriteSheet with a configurable grid. Default is `4×4` (4 cols × 4 rows, frames 32×48px). Override via `sheet_cols` / `sheet_rows` Tiled properties.
   - `frames_per_dir = sheet_cols` drives animation cycling (columns = animation frames, rows = directions).
   - Guards use **one spritesheet per facing direction** (e.g. `05-guard_left.png`, `05-guard_right.png`) with `sheet_cols=4, sheet_rows=4` (32×96px frames). Since the asset only contains one visual direction duplicated across all 4 rows, `interact()` changing `current_facing` will select a different row but visually display the same sprite.
+  > **Asset selection:** The Tiled object's `image` property points to the specific directional file (e.g., `05-guard_left.png`). The NPC class loads only that one file at spawn time. No runtime spritesheet switching occurs.
 - **States**: `idle`, `wander`, `interact`.
 - **Sub-type**: Controlled by the `sub_type` Tiled property (enum `21-sub_type`):
   - `npc` (default): wandering AI active, `process_ai()` runs normally. Animation cycles columns only when `is_moving=True`; resets to frame 0 at idle.
@@ -117,6 +118,17 @@ The engine skips update logic for NPCs that are off-screen to reduce CPU overhea
 |----------|-------------------|---------------|
 | `npc` | `is_moving == True` only (and `state != 'interact'`) | Yes, when stopped (after 2 consecutive stopped frames) |
 | `static_npc` | **Always** outside dialogue (continuous cycle if `state != 'interact'`, independent of `is_moving`. The conditional animation block MUST explicitly increment `frame_index` if `sub_type == 'static_npc'` and `state != 'interact'`, or if `is_moving`) | No (ignore normal stopped reset; freeze the current frame in dialogue) |
+
+```python
+# Animation decision logic in _update_animation()
+should_animate = self.is_moving or (self.sub_type == 'static_npc' and self.state != 'interact')
+should_reset_frame = not self.is_moving and self._was_moving and self.sub_type != 'static_npc'
+
+if should_animate:
+    self.frame_index += self.animation_speed * dt
+if should_reset_frame:
+    self.frame_index = 0
+```
 
 #### Speeds
 - **Animation speed**: Same calculation rules for both subtypes, based on entity speed: `self.animation_speed = (1.0 / 0.15) * self.speed / Settings.PLAYER_SPEED`.

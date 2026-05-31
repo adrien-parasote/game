@@ -56,6 +56,7 @@ Each window beam is a trapezoid surface computed pixel-by-pixel:
   ```
   This creates a natural, rounded pool of illumination on the floor.
 - **Performance**: Pure Python `pygame.Surface.set_at()` with a cache of up to 64 pre-rendered beams.
+- **Cache Key Quantization**: Cache key is quantized to `(round(slant_offset, 1), width)` — 0.1 resolution prevents frame-by-frame cache misses from continuous hour changes.
 
 ### 2.3 Solar/Lunar Slant Rotation
 Beam slant shifts continuously as a function of the time of day:

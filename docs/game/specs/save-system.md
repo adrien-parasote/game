@@ -28,6 +28,8 @@ Extended `SlotInfo` properties:
 - During a save sequence, a squared player-centered screenshot crop of **120×120 pixels** must be saved to disk at `saves/slot_{id}_thumb.png`.
 - `SaveManager` exposes `save_thumbnail(slot_id, surface)` and `load_thumbnail(slot_id) -> pygame.Surface | None`.
 
+> **Thumbnail rendering:** The 120×120 thumbnail is rendered at 1:1 scale (no resizing). Blit position within the slot surface is determined by the slot layout constants.
+
 ### 1.2 Save Slot Rendering
 
 The slot utilizes the background image asset `assets/images/menu/03-save_slot.png` (427x200 pixels).
@@ -62,6 +64,8 @@ The `SaveMenuOverlay` includes a "Back" button positioned at the bottom left of 
 |----------|---------------|-----|
 | Load the entire JSON file just to display slot metadata in the menu | Only read root-level metadata in `_read_slot_info` | Optimizes save slot menu loading times |
 | Overwrite the existing save file directly on write | Write to a temporary `.tmp` file and then rename | Prevents save file corruption if the game crashes mid-save |
+
+> **Atomic write detail:** The temporary file MUST be in the same directory as the target (e.g., `saves/slot_{id}.tmp`). Use `os.replace()` for the atomic rename — `os.rename()` may fail across filesystem boundaries.
 | Handle slot clicks directly inside the `SaveSlotUI` component | Delegate collision detection and click handling to the parent overlay (`PauseScreen` / `TitleScreen`) | The parent overlay must emit the appropriate `GameEvent` transitions |
 | Capture screenshots with the Pause menu UI visible | Capture the screenshot immediately before opening the Pause menu or render the game scene offscreen | The thumbnail must reflect in-game play, not overlay menus |
 | Apply the hover glow using a simple opaque solid color | Render using the `pygame.BLEND_RGBA_ADD` flag | Guarantees a glowing/luminous effect consistent with the visual direction |
@@ -136,3 +140,17 @@ The `SaveMenuOverlay` includes a "Back" button positioned at the bottom left of 
 | GF-010 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py` |
 | GF-011 | `test_save_io_error_does_not_crash` | `../../tests/engine/test_save_manager.py` |
 | CORE-W-01 | `test_world_state_roundtrip` | `../../tests/engine/test_save_manager.py` |
+
+---
+
+## Cross-Spec Contracts
+
+| Direction | Interface | Consumer/Producer |
+|-----------|-----------|-------------------|
+| Produces | `SaveManager.save(slot_id)` | Called by `PauseScreen`, `AutoSave` |
+| Produces | `SaveManager.load(slot_id)` | Called by `TitleScreen`, `SaveMenu` |
+| Produces | `SaveManager.list_slots()` | Called by `SaveMenu` for slot rendering |
+| Consumes | `game._playtime_seconds` | Read during save to persist play time |
+| Consumes | `game.player.pos`, `game.player.current_facing` | Read during save |
+| Consumes | `WorldState` registry | Serialized during save, deserialized during load |
+| Consumes | `game.inventory` | Serialized during save |

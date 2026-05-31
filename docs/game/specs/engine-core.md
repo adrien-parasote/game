@@ -164,6 +164,8 @@ Strict UI priority layers prevent overlapping menus and input conflicts:
 
 ## 9. Night Cycles & Halos
 
+> **Note:** The authoritative brightness/darkness calculation is in [lighting-system.md](./lighting-system.md). The formula below is a simplified overview for reference.
+
 - **Sine Brightness**: Sinusoidal factor: `0.5 + 0.5 * sin(2π * hour/24 - π/2)`.
 - **Night Shader**: A full-screen black overlay `(0, 0, 0)` with alpha reflecting darkness (max 180 alpha at midnight).
 - **Breathing Glows**: Halos scale cyclically between `97%` and `103%` size to simulate glowing breathing effects.

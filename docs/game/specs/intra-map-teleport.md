@@ -175,7 +175,12 @@ def _start_intra_walk(self, target: pygame.math.Vector2) -> None:
     self._intra_walk_target = target
     self.player.target_pos = target
     self.player.is_moving = True
-    # Set initial player facing direction
+    # Note: player.direction is NOT explicitly set here.
+    # BaseEntity.move(dt) computes translation direction from
+    # (target_pos - pos).normalize() internally when is_moving=True,
+    # so explicitly setting player.direction is NOT required —
+    # the target_pos drives the movement.
+    # Set initial player facing direction (visual state only)
     delta = target - self.player.pos
     if delta.magnitude() > 0:
         if abs(delta.x) >= abs(delta.y):
@@ -258,7 +263,7 @@ The walk state intercepts the normal update path **before** `player.input()`:
 
 **Problem:** During scripted walk the player sprite is hidden (`_player_transparent`). The occlusion system still ran, detecting `player.rect` overlap with foreground tiles and blitting `occluded_image` (semi-transparent tiles) — creating visible flickering artifacts.
 
-**Fix:** `draw_foreground()` checks `_intra_walk_target` and skips the occluded-tile blit when walk is active. `draw_scene()` skips `_apply_partial_occlusion()` entirely when walk is active.
+**Fix:** `draw_foreground()` checks `_intra_walk_target` and skips the occluded-tile blit when walk is active. `draw_scene()` always calls `_apply_partial_occlusion()`, which internally skips the player sprite when walk is active (see [camera-rendering.md §4.3.3](./camera-rendering.md) anti-pattern: "Guard `_apply_partial_occlusion` globally in `draw_scene()`").
 
 ```python
 # draw_foreground() — occluded-tile blit guard (walk_active skips the colliderect path)
@@ -272,20 +277,21 @@ else:
     normal_blits.append((tile_data.image, screen_pos))
 ```
 
-`draw_scene()` adds a symmetric guard before calling `_apply_partial_occlusion()`:
+`draw_scene()` always calls `_apply_partial_occlusion()` — the player-skip is handled internally:
 ```python
 walk_active = getattr(self.game, "_intra_walk_target", None) is not None
-saved_images = {}
-if not walk_active:
-    saved_images = self._apply_partial_occlusion(occluding_rects)
+# _apply_partial_occlusion is ALWAYS called — it skips the player internally when walk_active
+saved_images = self._apply_partial_occlusion(occluding_rects)
 # ...custom_draw...
 for sprite, original_image in saved_images.items():
     sprite.image = original_image
 ```
 
+> ⚠️ **Anti-pattern (from [camera-rendering.md §8](./camera-rendering.md)):** Do NOT guard `_apply_partial_occlusion()` globally with `if not walk_active:`. A global guard disables occlusion for all NPCs in the scene, not just the player.
+
 **Rules:**
 - `draw_foreground()` returns `list[tuple[pygame.Rect, int]]` — always a list, never `False`. During walk, occluding rects are still collected (the guard only skips the sprite occlusion application, not the rect collection).
-- `_apply_partial_occlusion()` is the mechanism that applies alpha to sprite zones — NOT called during walk.
+- `_apply_partial_occlusion()` is always called; it internally skips the player sprite when `walk_active` is true.
 - `player.image.set_alpha()` is **never** called on sprites (replaced by composite pattern).
 - Normal (non-walk) partial occlusion behavior is **unchanged** — regression TC-RENDER-002a.
 

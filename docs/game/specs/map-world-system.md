@@ -80,6 +80,8 @@ The rendering system uses two independent depth axes that must never be conflate
 3. **Pass 3 (Foreground)**: Layers with `order > 1` (all tiles) + Layers with `order <= 1` rendering tiles where `tile.depth > 1`.
 4. **Pass 4 (Sprites Over)**: Entities with `depth > 1` (always drawn after all tiles).
 
+> **Note:** This is a simplified overview. The authoritative rendering pipeline (including Y-sorting and composite management) is specified in [camera-rendering.md](./camera-rendering.md).
+
 ### 4.2 Core Interfaces
 
 #### `is_walkable(x: int, y: int) -> bool`
@@ -91,6 +93,17 @@ Returns the exit constraints intersection:
 - `{"any"}` behaves as a neutral joker (ignored in accumulation).
 - Restrictive constraints from active layers are intersected. If all layers are neutral, returns `{"any"}`.
 
+```python
+def get_direction_flags(self, x: int, y: int) -> set[str]:
+    restrictive = []
+    for layer in reversed(self._layers):  # top to bottom
+        flags = tile.direction_flags  # from TileMapData
+        if flags != {"any"}:
+            restrictive.append(flags)
+    if not restrictive:
+        return {"any"}
+    return set.intersection(*restrictive)
+```
 #### `get_terrain_material_at(pixel_x: int, pixel_y: int) -> str | None`
 Top-down layer scan at a given pixel position. Skip tiles with `tile.depth > 1` (floats and roofs ignored). Returns the `material` property of the topmost tile with `depth <= 1`.
 

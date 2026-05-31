@@ -30,7 +30,7 @@ The RPG engine has a fully functional `InteractiveEntity` with `sub_type='chest'
 | A-01 | `07-chest.png` is in `assets/images/HUD/` (confirmed by find command) | LOW |
 | A-02 | `03-inventory_slot.png` (55x58) is reused for chest slots | LOW |
 | A-03 | Chest contents are data-driven via `data/loot_table.json` and `LootTable` class | LOW |
-| A-04 | The slot grid for the chest is 7 columns x 2 rows (14 slots), matching the green zone aspect ratio | MEDIUM — to validate visually |
+| A-04 | The slot grid for the chest is **10 columns × 2 rows (20 slots)** — validated visually (resolved). | LOW |
 | A-05 | `ChestUI` is a non-blocking overlay: world physics, NPCs, and teleports are paused while it is open (same as `InventoryUI`) | LOW |
 | A-06 | Chest closing is triggered by: (a) player exiting interaction zone (auto-close), or (b) player pressing E again on open chest (action key close). Both paths go through `_close_chest()`. | LOW — revised 2026-04-30 |
 | A-07 | The existing emote suppression in `_check_proximity_emotes` silences `!` for both open and closed chests — this must change: suppress only for **open** chests | LOW |
@@ -84,7 +84,7 @@ _SLOT_ROWS = 2
 
 ### 4.4 Title Zone
 
-- **Content:** Hardcoded string `"coffre"` for v1 (name system redesigned later).
+- **Content:** `CHEST_TITLE_TEXT` constant (value: `"Chest"`, defined in `chest_constants.py`).
 - **Font:** `noble_font` — color `(60, 40, 30)` (dark parchment brown, same as `InventoryUI`).
 - **Alignment:** `surf.get_rect(center=title_rect.center)`.
 
@@ -116,6 +116,7 @@ InteractionManager.update(dt)
         if game has no chest_ui attr → return
         if not game.chest_ui.is_open → return
         recompute: is player still in valid interaction zone?
+          Auto-closes when `dist_sq > _RANGE_SQ_45` (2025.0), matching the standard interaction range threshold from [engine-core.md §7.1.1](./engine-core.md).
           YES (in range AND correct orientation) → do nothing
           NO  → _close_chest(chest, chest_ui)
                   chest.interact(player)               # toggle animation is_on=False
@@ -194,6 +195,12 @@ Two arrow buttons are rendered below the chest panel (between the two panels):
 1. For each item in inventory (in order): try to stack into existing chest slot.
 2. If no stackable slot, add to first empty chest slot.
 3. Stop when chest is full (remaining items stay in inventory).
+
+> **Semantic mapping (to resolve naming confusion):**
+> | Variable | Visual Position | Arrow Direction | Action |
+> |----------|----------------|-----------------|--------|
+> | `up_rect` | Left side | ↓ (Down arrow) | Chest → Inventory |
+> | `down_rect` | Right side | ↑ (Up arrow) | Inventory → Chest |
 
 #### Manual Drag & Drop
 
@@ -356,8 +363,8 @@ class ChestUI:
 | CHEST-U-03 | `ChestUI.close` | After open | `is_open=False`, `_chest_entity=None` | Call on already-closed UI |
 | CHEST-U-04 | `ChestUI.draw` | `is_open=False` | No `blit` calls | — |
 | CHEST-U-05 | `ChestUI.draw` | `is_open=True`, valid bg | `screen.blit` called | — |
-| CHEST-U-06 | `ChestUI.draw` | `is_open=True`, `_bg=None` | No `blit` calls | Asset error path |
-| CHEST-U-07 | `ChestUI._draw_title` | Called when open | `noble_font.render("coffre", ...)` called | — |
+| CHEST-U-06 | `ChestUI.draw` | `is_open=True`, `_bg=None` | No `blit` calls | Asset error path | _(alias for CHEST-U-04 — covers the same assertion in a different context)_ |
+| CHEST-U-07 | `ChestUI._draw_title` | Called when open | `noble_font.render(CHEST_TITLE_TEXT, ...)` called | — | _(alias for CHEST-U-05 — covers the same assertion in a different context)_ |
 | CHEST-U-08 | `ChestUI._draw_slots` | `slot_size=0` | No `blit` calls | Zero div guard |
 | CHEST-U-09 | `ChestUI._draw_slots` | `slot_img=None` | Falls back to `pygame.draw.rect` | Missing asset |
 | CHEST-U-10 | `_load_background` | `pygame.error` raised | Returns `None` | File not found |
@@ -506,17 +513,3 @@ Residual ambiguity: exact pixel fractions for the image zones (Assumption A-04).
 | IT-CA-05 | `test_asset_methods_present_on_chest_draw_mixin` | `../../tests/ui/test_chest_draw_assets.py:L1` |
 
 
-## Test Case Specifications
-| ID | Description | Type |
-|---|---|---|
-| TC-001 | Validate initialization | Unit |
-| TC-002 | Validate state transition | Unit |
-| TC-003 | Validate edge case handling | Unit |
-| TC-004 | Validate error raising | Unit |
-| TC-005 | Validate boundary conditions | Unit |
-| IT-001 | Validate module integration | Integration |
-| IT-002 | Validate state persistence | Integration |
-| IT-003 | Validate system flow | Integration |
-| TC-CA-01 | Asset Load Fallback | Missing background | Returns None |
-| TC-CA-08 | Icon Extension | Icon filename | Appends .png if missing |
-| IT-CA-01 | Asset Access | ChestUI instance | Mixin methods accessible |

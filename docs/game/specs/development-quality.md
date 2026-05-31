@@ -1,6 +1,6 @@
 # Technical Specification — Development Quality, Automation & Verification [Reference]
 
-> **Document Type:** Reference
+> **Document Type:** Implementation
 > **Source Files:** `scripts/build/release.py`, `src/config.py`, `src/engine/game.py`, `src/entities/groups.py`, `tests/conftest.py`
 
 This reference specification consolidates the development quality gates, domain-driven test suite architectures, version release pipelines, internal debugging configurations, and multilingual translation dictionaries.
@@ -29,6 +29,8 @@ Runs comprehensive system verification prior to merge:
 - **Test Pass Rate**: 100% pass rate in the complete test suite.
 - **Coverage Minimums**: Global coverage must exceed **90%** of all lines, with **100%** coverage enforced on the following critical modules:
   - `inventory_system.py`, `npc.py`, `audio.py`, `map/manager.py`, `spritesheet.py`, `emote_sprite.py`, `teleport.py`.
+
+> **Project-specific override:** This project targets 90% global coverage (stricter than the Stream Coding default of 80%) due to the critical nature of game engine code. Critical modules (player movement, save/load, collision) target 100%.
 
 ---
 
@@ -161,3 +163,12 @@ All technical features and in-game names must be mapped uniformly:
 | TC-REL-01 | `test_validate_version` | `../../tests/scripts/build/test_release.py` |
 | TC-REL-02 | `test_update_version` | `../../tests/scripts/build/test_release.py` |
 | TC-REL-03 | `test_run_git_commands` | `../../tests/scripts/build/test_release.py` |
+
+---
+
+## 9. Deep Links
+- **Release script**: [release.py L1](../../scripts/build/release.py#L1)
+- **Config / Settings**: [config.py L1](../../src/config.py#L1)
+- **Game loop**: [game.py L1](../../src/engine/game.py#L1)
+- **Test conftest (global)**: [conftest.py L1](../../tests/conftest.py#L1)
+- **Release tests**: [test_release.py L1](../../tests/scripts/build/test_release.py#L1)

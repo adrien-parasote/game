@@ -67,6 +67,7 @@ Defines player storage (capacity of 28 grid slots, 7 columns × 4 rows) and 8 fi
   1. **Stack Pass**: Scans active slots with matching `id` and `quantity < stack_max` to fill existing stacks.
   2. **Empty Slot Pass**: Spills remaining quantities into empty slots up to `stack_max`. Returns any remaining overflow that doesn't fit.
 - **`equip_item(slot_name, item)`**: Validates `item.id` against `propertytypes.json`. Returns the item untouched if `equip_slot` does not match the target slot. If valid, swaps with existing slot contents and returns the previously equipped item.
+  > When swapping equipment and the inventory is full, the equip operation is denied — the item stays in its current slot. The caller (InventoryUI) is responsible for placing returned items back at the drag source slot.
 
 ---
 
@@ -96,7 +97,7 @@ Reads `loot_table.json` once at startup to prepare and distribute item drops to 
 
 ### 4.1 Stacks Allocation & Capacity Trimming
 - **Tiled Binding**: Primary chest key matches Tiled `element_id`.
-- **Capacity constraint**: Chests are restricted to 20 slots (`Settings.CHEST_MAX_SLOTS`).
+- **Capacity constraint**: Chests are restricted to 20 slots (`CHEST_MAX_SLOTS`, module-level constant in `src/engine/loot_table.py`).
 - **Deep Copy Invariant**: `LootTable.get_contents(element_id)` MUST return deep copies of the stored Item models:
   ```python
   return [item.copy() for item in self._tables[element_id]]

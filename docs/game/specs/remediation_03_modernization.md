@@ -104,7 +104,7 @@ Complex annotations identified in `render_manager.py`:
 ```python
 # Currently inline (duplicated or unreadable):
 list[tuple[pygame.Surface, tuple[int, int]]]   # list of blits
-list[tuple[pygame.Rect, int]]                   # occluding rects
+list[tuple[pygame.Rect, int, pygame.Surface | None]]  # occluding rects (rect, depth, mask)
 ```
 
 ### Implementation
@@ -113,7 +113,7 @@ list[tuple[pygame.Rect, int]]                   # occluding rects
 ```python
 # Python 3.12 type aliases
 type BlitSequence = list[tuple[pygame.Surface, tuple[int, int]]]
-type OccludingRect = list[tuple[pygame.Rect, int]]
+type OccludingRect = list[tuple[pygame.Rect, int, pygame.Surface | None]]
 ```
 
 **Usage in method signatures:**
@@ -242,6 +242,8 @@ grep -rn "import os" src/     # → only files using os.environ, os.path.exists,
 | # | Anti-Pattern | Violation | Correct Behavior |
 |---|---|---|---|
 | 1 | `@override` on an implemented abstract method | Decorating a method with `@override` that implements `@abstractmethod` | `@override` = replaces a **concrete** parent method. Check [`entities-system.md`](./entities-system.md#base-entity) for hierarchy |
+
+> **Note:** `@override` on abstract method implementations is valid per PEP 698. This was skipped in the Phase 1 migration to limit scope, not because it's incorrect.
 | 2 | Type aliases for simple types | `type Name = str` or `type Count = int` | Alias only composite types: ≥2 levels of nesting or length > 40 chars |
 | 3 | `type Alias = ...` in the middle of a file | Declaring an alias after `def` or `class` | Aliases go after imports, before the first `def` or `class` |
 | 4 | Modifying method body when adding `@override` | Combining the addition of `@override` with a body refactor | `@override` is strictly an annotation decorator. Zero body modification |

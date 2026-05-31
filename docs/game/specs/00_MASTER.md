@@ -76,10 +76,11 @@ This document serves as the Master Index and Architectural Registry for the 15 c
 | `TILE_SIZE` | `config.py` | `32` | Chunks, boundaries, entity collisions |
 | `WINDOW_WIDTH` | `config.py` | `1280` | Viewport dimensions, UI overlays |
 | `WINDOW_HEIGHT` | `config.py` | `720` | Viewport dimensions, UI overlays |
-| `MAX_DT_CLAMP` | `config.py` | `10.0` | Physics framerate delta clamping |
+| `DT_MAX` | `config.py` | `0.1` | Physics framerate delta clamping (caps dt for physics/rendering) |
+| `MAX_DT_CLAMP` | `time_system.py` | `10.0` | In-game time acceleration clamping (NOT physics — limits simulated time skip per frame) |
 | `PAGE_COMPLETE` | `ui/dialogue.py` | `1` | Dialogue pagination status |
 | `SHADOW_COLOR` | `config.py` | `(0, 0, 0)` | Text shadow color |
-| `SHADOW_OFFSET` | `config.py` | `(1, 1)` | Text shadow offset |
+| `SHADOW_OFFSET` | `config.py` | `1` | Text shadow offset (scalar `int`, applied to both X and Y) |
 | `STATIC_LABELS` | `config.py` | `{}` | Pre-rendered static UI text labels |
 | `TEXT_COLOR` | `config.py` | `(255, 255, 255)` | Default UI text color |
 
@@ -91,7 +92,7 @@ This document serves as the Master Index and Architectural Registry for the 15 c
 |----------|---------------|-----|
 | Load assets directly in game updates | Queue assets at boot using `AssetManager` | Mid-game disk I/O causes severe stuttering |
 | Capture generic `except:` without logs | Specify exception types and log warnings | Silencing exceptions creates invisible, untraceable bugs |
-| Concatenate filesystem path chunks | Standardize routing with `os.path.join` | Platform-specific slash directions break portability |
+| Concatenate filesystem path chunks | Standardize routing with `pathlib.Path` | Platform-specific slash directions break portability (codebase migrated to pathlib — see [remediation_03](./remediation_03_modernization.md)) |
 | Bypass the TDD fail-first gate | Create a RED test before the logic fix | Bypassing TDD increases regression rates on release |
 
 ---

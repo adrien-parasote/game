@@ -175,16 +175,23 @@ The player's footstep material is resolved dynamically frame-by-frame:
 ### 6.1 Resolution Priority
 1. **Interactive Entities Override**: If the player is overlapping an active collision/interaction boundary of an entity that defines a material, this material takes absolute priority.
    - For a `Drawbridge` entity, the footprint material is dynamically overridden to `wood` if the drawbridge's state is `EXTENDED`. If the state is `RETRACTED` (and walkability constraints permit traversal), it falls back to the map tile's material.
-2. **Background Tile**: Query the top layer of the map at the player's central tile coordinate. Read the custom property `footstep_material` (string).
+2. **Background Tile**: Query the top layer of the map at the player's central tile coordinate. Read the custom property `material` (string).
    - If a custom property is defined, it is loaded.
    - If absent, it returns `None` and the player falls back to the generic `04-footstep` sound effect.
 
 > [!NOTE]
 > The "stone for indoors, grass for outdoors" default described previously was aspirational.
 > The current implementation returns `None` when no tile has a `material` property set,
-> and the player uses the generic footstep sound as fallback. There is no indoor/outdoor
+> and the player falls back to the generic `04-footstep` sound effect. There is no indoor/outdoor
 > map classification mechanism in the engine. If one is needed, add a `map_type` custom
 > property (`"indoor"` | `"outdoor"`) to the Tiled map object.
+
+### 6.3 Spatial Volume for Positional SFX
+For non-ambient SFX triggered at a world position (e.g., NPC footsteps, environmental triggers), volume is computed with a linear distance falloff:
+```python
+volume = max(0.0, 1.0 - distance / MAX_AUDIO_DISTANCE)
+```
+Linear falloff to zero at `MAX_AUDIO_DISTANCE` (= `AMBIENT_MAX_DISTANCE`, 300px). Beyond this radius, the sound is not played.
 
 ### 6.2 Drawbridge Mechanical Sound States
 An interactive bridge has 4 states (defined in `src/entities/interactive.py`):
@@ -220,8 +227,8 @@ An interactive bridge has 4 states (defined in `src/entities/interactive.py`):
 | Missing SFX file | `os.path.exists()` in `play_sfx` | Log warning | Return `False` | WARN |
 | Missing ambient file | `os.path.exists()` in `flush_ambient` | Log warning | Skip sound, continue | WARN |
 | No free channel | `sound.play()` returns `None` | Log warning | Sound not started | WARN |
-| Missing footstep SFX file | `FileNotFoundError` during sound load | Play fallback footstep sound | Stone or grass fallback sound | ERROR |
-| Invalid material property | String parsed does not match known materials | Interpret as default material | Default `stone` footstep sound | WARN |
+| Missing footstep SFX file | `FileNotFoundError` during sound load | Play fallback footstep sound | Falls back to the generic `04-footstep` sound effect. | ERROR |
+| Invalid material property | String parsed does not match known materials | Interpret as default material | Falls back to the generic `04-footstep` sound effect. | WARN |
 
 ---
 

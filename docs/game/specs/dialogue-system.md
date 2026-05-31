@@ -78,6 +78,8 @@ All tiles are 32×32 pixels and loaded from `assets/images/HUD/`:
 | Arrow | Cursor | `22-bubble_arrow.png` |
 | Name | Plate | `23-bubble_name.png` |
 
+> **Note:** The `21-` prefix is a file naming convention (asset category), not a positional index. `21-bubble_bottom_right.png` (corner tile) and `21-bubble_queue.png` (tail/pointer) are separate assets sharing the same category prefix.
+
 ### 3.2 Nine-Patch Construction Algorithm
 1. Calculate bounds based on wrapped text size:
    - `width = max(text_width + 60, name_plate_width + 30, 224)` (rounded up to 32px multiples). The `224` is the **minimum bubble surface width** (7 tiles × 32px), distinct from the text content wrap width (also 224px, see [npc-system.md §SpeechBubble](./npc-system.md)).
@@ -131,7 +133,7 @@ The bubble is anchored above the NPC's head in world-space. Drawing utilizes a c
 ### 5.2 Integration & UI Tests
 | Test ID | Test Function | File |
 |---------|---------------|------|
-| TC-DLG-01 | `test_dialogue_pagination` | `../../tests/ui/test_inventory.py` | ⚠️ Misplaced — should be moved to `test_dialogue.py` |
+| TC-DLG-01 | `test_dialogue_pagination` | `../../tests/ui/test_inventory.py` | ⚠️ **Known tech debt:** This test is currently in `test_inventory.py` and should be moved to `test_dialogue.py` in a future cleanup pass. |
 
 ---
 

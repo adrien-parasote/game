@@ -333,6 +333,9 @@ def _apply_grass_wading_to_images(
             continue
         if getattr(sprite, "depth", 1) < self.game.player.depth:
             continue  # Pass 2 sprites are already below the grass layer
+
+        # walk_active is computed as:
+        # walk_active = getattr(self.game, '_intra_walk_target', None) is not None
         if walk_active and sprite == self.game.player:
             continue  # Player is invisible during scripted walk
 
@@ -408,6 +411,8 @@ for sprite, original_image in saved_images.items():
 for sprite, original_image in wading_saved.items():
     sprite.image = original_image
 ```
+
+> **Constraint:** `_apply_grass_wading_to_images` MUST always receive `pre_occlusion_originals` from the preceding `_apply_partial_occlusion` call, even if the dict is empty (`{}`). This prevents stale occlusion composites from being restored as originals — if `pre_occlusion_originals` were omitted, a sprite already composited by occlusion would be added to `wading_only_originals` with its *composited* image as the "original", causing permanent contamination after restore.
 
 **Grass tile alignment**: the grass crop is aligned to the 32×32 tile grid (not to the sprite position) to prevent the texture from sliding as the sprite moves within a tile.
 
