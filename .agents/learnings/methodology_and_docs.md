@@ -707,3 +707,16 @@ When refactoring a modular system with interdependent files, centralize all magi
 
 **Evidence:** Created `tools/asset_creator/core/constants.py` and successfully migrated tile dimensions, preview layouts, noise levels, and Pygame/Dear PyGui color tokens from 7 different submodules. All 361 unit/integration tests passed cleanly on the first pass with zero circular imports.
 
+---
+
+### L-DOC-012 · 2026-05-31 · U · Perfect
+**Ruff Pro-Max Configuration for Methodology Enforcement**
+
+Activating the strict Ruff configuration (`"SIM", "PT", "RUF", "C90"`) instantly surfaced ~300 stylistic, formatting, and structural issues that previously went undetected. Aligning the static analyzer to the exact boundaries required by the specs (`max-statements = 50`) offloads the structural enforcement of the Stream Coding methodology from manual review loops directly into the pre-commit pipeline.
+
+**Pattern:**
+1. Add strictly aligned config: `[tool.ruff.lint.pylint] max-statements = 50`
+2. Extend `select` to enforce simplicity and Pytest rules: `["SIM", "PT", "RUF", "C90"]`
+3. Explicitly allow exceptions via `# noqa: PLR0915` only when thoroughly justified (e.g., UI theme definitions) instead of raising the global limit.
+
+**Evidence:** Applied to monorepo urbanization on 2026-05-31. Caught 50+ lines violation in `theme.py` immediately. Caught >300 docstring ambiguous unicode characters (`×` vs `x`).
