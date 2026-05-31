@@ -18,6 +18,7 @@
 | Game Engine & Architecture | [game_engine.md](learnings/game_engine.md) | 26 | Architecture, refactoring, performance engine |
 | Map & Rendering | [map_rendering.md](learnings/map_rendering.md) | 24 | Map loading, rendering pipeline, depth, autotiles |
 | UI & UX | [ui.md](learnings/ui.md) | 24 | Tout travail UI (ChestUI, PauseScreen, dialogue, halos) |
+| Tooling & Utilities | [tooling.md](learnings/tooling.md) | 3 | Développement d'outils, scripts de conversion, Asset Creator |
 | Methodology, Agent & Docs | [methodology_and_docs.md](learnings/methodology_and_docs.md) | 33 | Workflow agents, spec writing, doc urbanization |
 
 ## Convention de nommage des IDs

@@ -1,132 +1,234 @@
-# 🎯 Blueprint — Asset Creator Tool
+# Strategic Blueprint — Asset Creator V3: Interactive UI
+
+> **Date:** 2026-05-31
+> **Status:** IMPLEMENTED
+> **Research:** [Python GUI Frameworks](../research/python_gui_frameworks.md) — Decision: ADOPT Dear PyGui
+
+---
 
 ## 1. What exact problem are you solving?
 
-**Persona:** Adrien, développeur solo + AI assistant, créant un RPG 2D pixel art ("L'Éveil de l'Héritier").
+**Persona:** Solo game developer building a top-down 2D RPG with procedural tileset generation.
 
-**Problème actuel:**
-- Les autotiles sont au format RPG Maker XP (96×128) — un format intermédiaire obsolète
-- Créer un nouveau terrain demande : dessiner en format RPG Maker → exécuter un script de conversion → importer dans Tiled
-- Aucun outil ne permet de générer directement des tilesets Tiled-natifs depuis une description de terrain
-- La création d'assets pixel art est manuelle et chronophage
+**Current pain:** The CLI-based workflow requires:
+1. Editing YAML files by hand to tweak texture parameters
+2. Running `python -m tools.asset_creator generate --terrain grass --quality v2 --preview` to see results
+3. Closing Pygame, editing YAML again, re-running the command
+4. No way to compare parameters side-by-side or iterate quickly
 
-**Outcome mesurable:**
-- Générer un tileset complet (47 tuiles blob + TSX Wang) pour un nouveau terrain en < 5 minutes
-- Zéro étape de conversion — output directement compatible Tiled
-- Qualité pixel art cohérente entre tous les terrains (palette partagée)
+**Measurable outcome:** A developer can adjust any texture parameter (scale, octaves, persistence, detail type, etc.) via sliders/dropdowns and see a **single tile preview + minimap** update **in < 1 second**, without leaving the application. The complete workflow — from parameter tweaking to PNG + TSX export — happens entirely within the GUI.
+
+---
 
 ## 2. What are your success metrics?
 
-| Métrique | Cible | Mesure |
-|----------|-------|--------|
-| Temps de génération d'un terrain complet | < 5 min (vs ~30 min actuellement) | Chrono CLI |
-| Qualité visuelle | Seamless tiling, pas de jointures visibles | Test dans Tiled |
-| Couverture terrains | 6 types (herbe, terre, eau, pavés, sable, neige) | Nombre de presets |
-| Tests unitaires | ≥ 80% couverture | pytest --cov |
-| Format natif Tiled | 100% compatible — import direct sans conversion | Test Tiled |
+| Metric | Target | Timeline |
+|--------|--------|----------|
+| Iteration speed | < 1s from parameter change to tile + minimap preview update | V3.0 |
+| Parameter coverage | 100% of `TextureParams` + `DetailConfig` + `EdgeConfig` exposed as widgets | V3.0 |
+| Complete workflow | Full pipeline in GUI: preset select → tweak params → preview tile + minimap → export PNG + TSX | V3.0 |
+| Export workflow | 1-click PNG + TSX export with output path selection | V3.0 |
+| Terrain switching | Instant preset switching via dropdown | V3.0 |
+| CLI preservation | CLI still works independently (no regression) | V3.0 |
+| Test coverage | ≥ 80% on new GUI-adjacent code (state management, callbacks) | V3.0 |
+
+---
 
 ## 3. Why will you win?
 
-**Avantage structurel:** L'algorithme blob 47-tuiles existe déjà dans le projet (prouvé, testé). On réutilise la logique d'assemblage de sub-tiles et de génération TSX Wang. Ce qu'on ajoute : un **pipeline de génération** en amont au lieu d'un extracteur de format RPG Maker.
+**Structural advantage:** The V1/V2 generation pipeline is already modular and well-tested (263 tests). The pipeline takes frozen dataclass configs → produces PIL Images. The GUI is a thin interactive layer on top of the same pipeline — no engine rewrite needed.
 
-**Avantage données:** Le projet a des learnings validés sur le format Tiled exact (L-MAP-002 : wangid order), les pièges de debugging (L-MAP-003 : transparent tiles), et les conventions d'assets (naming `NN-category[-variant].png`).
+**Framework fit:** Dear PyGui's raw texture API (PIL → numpy → GPU) eliminates the image conversion bottleneck that plagues other frameworks (Flet=base64, CustomTkinter=CTkImage GC). The 32×32 tiles are tiny — regeneration is fast.
+
+**Existing pipeline is pure functions:** `generate_noise_texture_v2()`, `apply_detail_overlay()`, `generate_subtiles()`, `assemble_tileset()` are all stateless. The UI just calls them with new parameters each time.
+
+---
 
 ## 4. What's the core architecture decision?
 
-**Architecture : CLI modulaire avec preview Pygame**
+### ADR-001: GUI replaces Pygame preview, CLI preserved
 
-```
-tools/asset_creator/
-├── __init__.py
-├── __main__.py              ← CLI entry point
-├── cli.py                   ← argparse interface
-├── config/
-│   ├── terrain_presets.yaml  ← presets (grass, dirt, water...)
-│   └── palettes/             ← palette files (hex, Lospec cache)
-├── core/
-│   ├── palette.py            ← palette loading/management
-│   ├── terrain.py            ← terrain definition (dataclass)
-│   ├── subtile.py            ← 16×16 sub-tile generation
-│   ├── tile_assembler.py     ← 47-tile blob assembly from sub-tiles
-│   └── texture.py            ← procedural texture generation (noise, patterns)
-├── exporters/
-│   ├── png_exporter.py       ← PNG strip output
-│   └── tsx_exporter.py       ← TSX Wang set XML output
-├── preview/
-│   └── pygame_preview.py     ← visual preview window
-└── generators/
-    ├── base.py               ← abstract generator
-    ├── noise_generator.py    ← opensimplex-based
-    ├── pattern_generator.py  ← rule-based patterns
-    └── ai_generator.py       ← AI-assisted generation (future)
-```
+**Decision:** The Dear PyGui GUI **replaces** `preview/pygame_preview.py` as the interactive visualization tool. The CLI (`cli.py`) is preserved for scripted/automated workflows.
 
-**Décisions clés:**
-- **Outil indépendant** dans `tools/` — pas de dépendance vers `src/`
-- **Sub-tile first** : tout terrain = 13 sub-tiles (16×16) → assemblées en 47 tuiles (32×32)
-- **Config-driven** : chaque terrain décrit en YAML (palette, type de texture, paramètres)
-- **Exporteurs séparés** : PNG et TSX découplés pour tester indépendamment
+**Trade-off analysis:**
+
+| Option | Pro | Con |
+|--------|-----|-----|
+| **A. Replace Pygame, keep CLI** ✅ | Clean separation: UI for interactive use, CLI for automation. No breaking change. | Two entry points to maintain. |
+| B. Replace both CLI + Pygame | Single entry point. | Breaks scripted workflows. Regression risk on automation. |
+| C. Embed CLI in GUI only | Users can still type commands. | UX anti-pattern — defeats the purpose of a GUI. |
+
+**Rationale:** Option A. The CLI is used in automation (e.g., batch generation). The GUI is for interactive design. They share the same core pipeline.
+
+### ADR-002: Thin GUI wrapper pattern
+
+**Decision:** The GUI does NOT contain generation logic. It builds `TextureParams`, `DetailConfig`, `EdgeConfig` dataclasses from widget state and calls existing pipeline functions. All generation logic stays in `core/`.
+
+**Rationale:** This keeps the core testable without GUI dependencies. The GUI module depends on core, never the reverse.
+
+### ADR-003: Minimap logic extraction
+
+**Decision:** Extract minimap rendering logic (`_compute_bitmask_for_cell`, `_find_closest_bitmask_index`, `_generate_minimap_grid`) from `preview/pygame_preview.py` into a shared `core/minimap.py` module. Both the Dear PyGui UI and the Pygame preview (if kept as legacy) can use it.
+
+**Rationale:** The minimap is pure computation — bitmask → tile index mapping. It should not be locked inside a rendering framework.
+
+---
 
 ## 5. What's the tech stack rationale?
 
-| Choix | Justification |
-|-------|---------------|
-| **Python 3.12+** | Même version que le projet, pas de friction |
-| **Pillow** | Déjà utilisé dans les scripts existants, référence pixel art |
-| **NumPy** | Performance pour manipulation de pixels en masse |
-| **opensimplex** | Noise procédural sans brevets, pur Python, tileable |
-| **Pygame** (preview) | Déjà dépendance du projet, léger pour une fenêtre de preview |
-| **PyYAML** | Config lisible, standard |
-| **xml.etree** (stdlib) | TSX output, déjà utilisé dans les scripts existants |
-| **pytest** | Framework de test du projet |
+| Choice | Rationale |
+|--------|-----------|
+| **Dear PyGui 2.3** | GPU-accelerated raw texture API. Perfect for real-time PIL preview. 2 MB, MIT, macOS ARM native. See [research](../research/python_gui_frameworks.md). |
+| **numpy** | Required for Dear PyGui raw texture pipeline (PIL → float32 array). Already used by subtile.py. |
+| **Existing stack preserved** | Pillow, opensimplex, PyYAML — no changes. |
+| **Pygame-CE** | Demoted from hard dependency to optional (CLI `--preview` flag). GUI replaces it for interactive use. |
+
+---
 
 ## 6. What are the features?
 
-Ordonnées par dépendance d'implémentation :
+Ordered by implementation dependency:
 
-| # | Feature | Description | Dépend de |
-|---|---------|-------------|-----------|
-| F1 | **Palette system** | Charger/définir des palettes (custom YAML + Lospec) | — |
-| F2 | **Sub-tile generator** | Générer les 13 sub-tiles (16×16) pour un terrain via noise/patterns | F1 |
-| F3 | **Tile assembler** | Assembler 47 tuiles blob (32×32) depuis les 13 sub-tiles | F2 |
-| F4 | **PNG exporter** | Exporter le strip PNG (47×32 px × 32 px) | F3 |
-| F5 | **TSX exporter** | Générer le .tsx Wang set XML natif Tiled | F3 |
-| F6 | **Terrain presets** | Presets YAML pour herbe, terre, eau, pavés, sable, neige | F1, F2 |
-| F7 | **CLI interface** | `python -m tools.asset_creator generate --terrain grass` | F4, F5, F6 |
-| F8 | **Pygame preview** | Fenêtre de preview pour visualiser les tuiles avant export | F3 |
-| F9 | **Variantes** | Générer N variantes d'un même terrain (seed différente) | F2 |
-| F10 | **AI generation** | Génération avancée via descriptions textuelles | F2 |
+| # | Feature | Dependencies | Priority |
+|---|---------|-------------|----------|
+| F1 | **Bitmask engine extraction** — extract `compute_bitmask`, `find_closest_bitmask_index` from `pygame_preview.py` into `core/minimap.py` | None (refactor) | 🔴 Required |
+| F2 | **GUI window + layout** | Dear PyGui install | 🔴 Required |
+| F3 | **Terrain preset selector** | F2 | 🔴 Required |
+| F4 | **Texture parameter sliders** | F2, F3 | 🔴 Required |
+| F5 | **Single tile preview** (base texture, 4× zoomed) | F2, F4 (raw texture API) | 🔴 Required |
+| F6 | **Paint canvas** — interactive grid, two modes (see below) | F1, F5 | 🔴 Required |
+| F6a | ↳ **Autotile mode** — click/drag paints terrain on/off, bitmasks auto-computed, correct Wang tile displayed per cell | F1, F6 | 🔴 Required |
+| F6b | ↳ **Standalone mode** — tile palette (47 tiles), click canvas to place selected tile freely | F6 | 🔴 Required |
+| F6c | ↳ **Canvas tools** — paint (LMB), erase (RMB), clear all | F6 | 🔴 Required |
+| F7 | **Detail overlay controls** | F4 | 🔴 Required |
+| F8 | **Edge style controls** | F4 | 🔴 Required |
+| F9 | **Seed control** (input + randomize) | F4 | 🔴 Required |
+| F10 | **Quality toggle** (V1/V2) | F4 | 🔴 Required |
+| F11 | **Output path selection** (file dialog) | F2 | 🔴 Required |
+| F12 | **Export button** (PNG + TSX) | F5, F11 | 🔴 Required |
+| F13 | **Palette color preview** | F3 | 🟢 Nice-to-have |
+
+### Paint Canvas — Detailed Description
+
+**Autotile mode** (like Tiled's terrain brush):
+- Canvas = N×M grid of 32×32 cells (default 16×12)
+- Left click / drag = mark cell as "terrain" (filled)
+- Right click / drag = erase cell (empty)
+- On each change, recalculate 8-direction bitmask for affected cells + neighbors
+- Display the correct Wang blob tile (from the 47-tile set) for each filled cell
+- Empty cells show a neutral background (checkerboard or transparent)
+
+**Standalone mode** (like Tiled's stamp brush):
+- Tile palette panel shows all 47 tiles from current tileset
+- Click a tile to select it
+- Click canvas cell to place the selected tile
+- Right click = erase
+- No bitmask computation — free placement
+
+**Canvas interactions:**
+- Mode toggle: radio button or tab switch
+- Clear button: reset entire canvas
+- Canvas auto-updates when texture parameters change (regenerates all placed tiles)
+
+### UI Layout (conceptual)
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  Asset Creator V3                                       [—][×] │
+├───────────────────┬──────────────────────────────────────────────┤
+│ ▾ Terrain Preset  │                                              │
+│ ┌───────────────┐ │  ┌──────────┐                                │
+│ │ grass       ▾ │ │  │  32×32   │  TILE PREVIEW (4× zoom)        │
+│ └───────────────┘ │  │  → 128px │                                │
+│                   │  └──────────┘                                │
+│ ▾ Quality         │                                              │
+│ ○ V1  ● V2        │  ┌─ Paint Canvas ────────────────────────┐   │
+│                   │  │  Mode: ● Autotile  ○ Standalone       │   │
+│ ▾ Texture         │  │  ┌──┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┐  │   │
+│ scale     ═══●═══ │  │  │  │▓▓│▓▓│▓▓│  │  │▓▓│▓▓│  │  │  │  │   │
+│ octaves   ═══●═══ │  │  ├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤  │   │
+│ persist   ═══●═══ │  │  │  │▓▓│▓▓│▓▓│▓▓│  │▓▓│▓▓│▓▓│  │  │  │   │
+│ lacunar   ═══●═══ │  │  ├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤  │   │
+│ detail_s  ═══●═══ │  │  │  │  │▓▓│▓▓│▓▓│▓▓│▓▓│▓▓│  │  │  │  │   │
+│ detail_str═══●═══ │  │  ├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤  │   │
+│ ☑ dithering       │  │  │  │  │  │▓▓│▓▓│▓▓│▓▓│  │  │  │  │  │   │
+│ ☑ smooth ramp     │  │  ├──┼──┼──┼──┼──┼──┼──┼──┼──┼──┼──┤  │   │
+│                   │  │  │  │  │  │  │▓▓│▓▓│  │  │  │  │  │  │   │
+│ ▾ Detail Overlay  │  │  └──┴──┴──┴──┴──┴──┴──┴──┴──┴──┴──┘  │   │
+│ ┌───────────────┐ │  │  LMB=paint  RMB=erase  [Clear]        │   │
+│ │grass_blades ▾ │ │  └───────────────────────────────────────┘   │
+│ └───────────────┘ │                                              │
+│ density   ═══●═══ │  ┌───────────┐ ┌──────────────────┐          │
+│ max_height═══●═══ │  │ Regenerate│ │ Export PNG + TSX │          │
+│                   │  └───────────┘ └──────────────────┘          │
+│ ▾ Edge Style      │                                              │
+│ ┌───────────────┐ │  Seed: [42______] [🎲 Random]                │
+│ │ organic    ▾  │ │  Output: [assets/images/autotiles] [📂]      │
+│ └───────────────┘ │  Name:  [grass_______________]               │
+│ width     ═══●═══ │                                              │
+│ noise_sc  ═══●═══ │                                              │
+└───────────────────┴──────────────────────────────────────────────┘
+```
+
+**▓▓ = terrain peint (autotile mode)** — chaque cellule affiche la tile Wang correspondante à son bitmask.
+**En standalone mode**, les ▓▓ sont remplacés par la tile sélectionnée dans la palette.
+
+---
 
 ## 7. What are you NOT building?
 
-| Exclusion | Raison |
-|-----------|--------|
-| **Éditeur pixel art** | Aseprite/LibreSprite existent, on génère pas on dessine pas |
-| **Map editor** | Tiled existe et est utilisé, on ne le remplace pas |
-| **Remplacement du game engine** | Aucune dépendance vers `src/`, outil 100% standalone |
-| **Import RPG Maker** | On élimine ce format, les scripts existants restent pour la rétrocompat |
-| **Éditeur de map dans Pygame** | La preview montre les tuiles, pas un éditeur de carte |
-| **Animation de tuiles** | Hors scope V1 — les autotiles animés (eau) viendront plus tard |
-| **Transitions multi-terrain** | V1 = 1 terrain vs vide (couleur 0). Multi-terrain = V2 |
+| Excluded | Rationale |
+|----------|-----------|
+| **Palette editor** (add/remove/reorder colors) | Palettes are managed via YAML files. Out of scope for V3. |
+| **Preset YAML editor** in GUI | Use a text editor. GUI reads presets, doesn't write them. |
+| **Undo/redo stack** | Overkill for a parameter-tweaking tool. Just change the slider back. |
+| **Multi-terrain view** | One terrain at a time. Batch generation stays in CLI. |
+| **Animated water preview** | V2 spec notes "V1 = static water only". Not V3 scope. |
+| **Custom palette creation** from GUI | Palette YAML is the source of truth. |
+| **Plugin system** | Single-purpose tool. YAGNI. |
+| **Docking panels / window management** | One fixed layout. Not a full IDE. |
+
+---
+
+## Assumptions
+
+| # | Assumption | Risk | Status |
+|---|-----------|------|--------|
+| A1 | Dear PyGui 2.3.1 works on Python 3.13 macOS ARM | Low | VERIFIED — `pip install --dry-run` successful, wheel exists |
+| A2 | 32×32 tile regeneration is fast enough for slider callbacks (< 200ms) | Low | ASSUMED — single tile gen is ~10ms based on V2 tests. Full tileset (47 tiles) may be ~500ms. |
+| A3 | Dear PyGui raw texture API supports RGBA float32 | Low | CITED — [Dear PyGui docs](https://dearpygui.readthedocs.io/en/latest/documentation/textures.html) |
+| A4 | numpy is the only new dependency needed | Low | VERIFIED — Dear PyGui has no transitive deps besides numpy |
+| A5 | Bitmask engine extraction is non-breaking | Low | ASSUMED — pure computation, no Pygame dependency in the logic itself |
+| A6 | Dear PyGui mouse input events (click, drag) work for canvas painting | Low | CITED — [Dear PyGui input handling docs](https://dearpygui.readthedocs.io/en/latest/documentation/input-polling.html) |
+| A7 | Canvas with 16×12 = 192 raw textures performs well in Dear PyGui | Medium | ASSUMED — each is 32×32 = tiny. But 192 texture updates on param change could be heavy. |
 
 ---
 
 ## Gap Discovery
 
-| # | Gap | Impact si non résolu | Owner |
+| # | Gap | Impact if unresolved | Owner |
 |---|-----|---------------------|-------|
-| 1 | **Format exact des sub-tiles** : les 13 sub-tiles sont-elles exactement les mêmes que celles extraites du format RPG Maker, ou doit-on les redéfinir pour le format natif Tiled ? | Mauvais assemblage → tuiles cassées dans Tiled | Research (vérifier avec l'algo blob existant) |
-| 2 | **Qualité "IA/algorithmes avancés"** : qu'est-ce que "génération avancée" signifie concrètement ? Stable Diffusion local ? API externe ? Algorithmes procéduraux sophistiqués ? | Sur-engineering ou sous-livraison | User (clarifier les attentes) |
-| 3 | **Preview Pygame** : doit-elle simuler l'auto-tiling (placer les 47 tuiles sur une mini-map de test) ou juste afficher le strip ? | Complexité de la preview (simple grid vs map simulée) | User |
-| 4 | **Eau animée** : exclue de V1, mais est-ce un bloquant pour les maps actuelles ? | L'eau reste au format RPG Maker converti si non traité | User |
-| 5 | **Cohérence palette inter-terrains** : comment s'assurer que herbe + terre + eau utilisent des couleurs cohérentes ensemble ? | Terrains visuellement incohérents quand mélangés sur une map | Design (palette globale vs par-terrain) |
+| 1 | **Full tileset regeneration time** — 47 tiles × subtile generation + assembly. Is it < 1s for real-time preview, or do we need debounce/async? | If > 1s, slider interaction feels laggy. Need debounce or background generation. | Research (benchmark) |
+| 2 | **Dear PyGui image scaling** — tiles are 32×32 but need to display larger (e.g., 4x zoom = 128×128). Does raw texture support scaling, or do we resize PIL images before feeding? | Blurry or pixelated preview if scaling is wrong. Pixel art needs nearest-neighbor, not bilinear. | Research (DPG docs) |
+| 3 | **Canvas click detection** — Dear PyGui's `add_image` + mouse position polling for a grid of textures. Do we use a drawlist, image buttons, or manual hit-testing? | Wrong approach = broken click/drag painting. | Research (DPG docs) |
+| 4 | **Canvas performance on param change** — when a slider changes, all 192 canvas cells need their tiles regenerated + textures updated. Is this fast enough? | If too slow, need lazy update (only repaint visible/filled cells). | Research (benchmark) |
 
 ---
 
-## Relevant Learnings
+## Resolved Gaps (user decisions)
 
-| ID | Pattern | Impact sur ce projet |
-|----|---------|---------------------|
-| L-MAP-002 | wangid exact order: `N,NE,E,SE,S,SW,W,NW` | Le TSX exporter DOIT utiliser cet ordre exact |
-| L-MAP-003 | Transparent tiles vs missing IDs | Le PNG exporter doit vérifier qu'aucune tuile n'est 100% transparente |
-| A-MAP-004 | "topmost ≠ underfoot" depth semantics | Les tuiles générées doivent avoir les bonnes custom properties (depth, walkable) |
+| # | Gap | Decision |
+|---|-----|----------|
+| R1 | Preset modification workflow | **Changes lost on preset switch.** Presets are read-only. No save-to-YAML from GUI. |
+| R2 | Pygame-CE dependency fate | **Keep as optional** for CLI `--preview`. GUI replaces it for interactive use. |
+
+---
+
+## Next Step
+
+→ Once gaps are resolved, proceed to **📋 SPEC** stage with module-level specs for:
+1. `core/minimap.py` — extracted bitmask engine (compute_bitmask, find_closest_index)
+2. `gui/app.py` — Dear PyGui application + layout
+3. `gui/canvas.py` — paint canvas (autotile + standalone modes)
+4. `gui/state.py` — UI state management (dataclass → widget binding)
+5. `gui/preview.py` — PIL → raw texture pipeline

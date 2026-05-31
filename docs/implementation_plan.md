@@ -1,54 +1,41 @@
-# Plan d'implémentation — Extraction de constantes et Traduction (Tooling)
+# Plan d'implémentation — Fusion et Urbanisation des Noms (Tooling Docs)
 
-Ce plan décrit l'extraction systématique des constantes magiques du module `tools/asset_creator/` vers un fichier centralisé `constants.py`, ainsi que la traduction de tous les commentaires et logs en français restants vers l'anglais.
+Suite à ta remarque, nous allons fusionner et renommer les fichiers pour faire disparaître les notions de "V1", "V2" ou "V3". Puisque les outils sont implémentés et fonctionnels, seule la version "actuelle" a de l'importance. L'historique n'a plus lieu d'encombrer l'arborescence.
 
 ---
 
 ## User Review Required
 
 > [!IMPORTANT]
-> Ce refactoring est garanti sans régression. Les 361 tests unitaires et d'intégration existants dans `tests/tools/asset_creator/` seront exécutés pour valider la non-régression à chaque étape.
+> Cette action va **supprimer** les fichiers obsolètes (V1/V2, Edge) et **renommer** les fichiers V3 en noms définitifs, clairs et sans version.
+> Les liens internes (Deep Links) et le Master Index (`README.md`) seront tous mis à jour.
+> 
+> Merci de valider ce plan de renommage/suppression.
 
 ---
 
 ## Proposed Changes
 
-### Centralisation des constantes
+### 1. Asset Creator (Fusion V3 / V2 / V1)
+* **[DELETE]** `docs/tooling/specs/asset_creator_spec.md` (Obsolète)
+* **[DELETE]** `docs/tooling/strategic/asset_creator_blueprint.md` (V1, obsolète)
+* **[RENAME]** `asset_creator_spec.md` ➔ `asset_creator_spec.md` (Spec officielle unique)
+* **[RENAME]** `asset_creator_blueprint.md` ➔ `asset_creator_blueprint.md` (Blueprint officiel unique)
 
-#### [NEW] [constants.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/core/constants.py)
-* Création d'un module centralisé contenant toutes les dimensions de tuiles (`TILE_SIZE = 32`, `SUBTILE_SIZE = 16`, `NUM_BLOB_TILES = 47`), les configurations de bruit par défaut (`DEFAULT_NOISE_SCALE`, `DEFAULT_OCTAVES`, `DEFAULT_PERSISTENCE`, `DEFAULT_LACUNARITY`), les facteurs d'effets de bordure (`BORDER_SHADOW_FACTOR`, `BORDER_HIGHLIGHT_FACTOR`), la matrice de Bayer (`BAYER_4X4`), les répertoires d'export par défaut, les couleurs de l'application et les paramètres de preview Pygame.
+### 2. Autotile Pipeline (Fusion Blob / Edge)
+* **[DELETE]** `docs/tooling/specs/autotile_pipeline_spec.md` (Ancienne approche "Edge", obsolète)
+* **[RENAME]** `autotile_pipeline_spec.md` ➔ `autotile_pipeline_spec.md` (Spec officielle unique)
 
-#### [MODIFY] [subtile.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/core/subtile.py)
-* Import et utilisation des constantes centralisées (comme `TILE_SIZE`, `SUBTILE_SIZE`, `BORDER_SHADOW_FACTOR`, `BORDER_HIGHLIGHT_FACTOR`).
-
-#### [MODIFY] [texture.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/core/texture.py)
-* Remplacement de la matrice `BAYER_4X4` et des paramètres de bruit par défaut par des imports de `constants.py`.
-
-#### [MODIFY] [tile_assembler.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/core/tile_assembler.py)
-* Remplacement de `BLOB_BITMASKS` et des tailles de tuiles par les constantes partagées.
-
-#### [MODIFY] [pipeline.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/gui/pipeline.py)
-* Remplacement des dimensions magiques de tuiles par `TILE_SIZE` et `NUM_BLOB_TILES`.
-
-#### [MODIFY] [state.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/gui/state.py)
-* Utilisation des chemins et des couleurs par défaut centralisés.
-
-#### [MODIFY] [app.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/gui/app.py)
-* Intégration des constantes de taille de tuile pour la peinture et le rendu DPG.
-
-#### [MODIFY] [pygame_preview.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/preview/pygame_preview.py)
-* Utilisation des constantes de grille de preview et de couleurs d'arrière-plan.
-
-### Traduction Français → Anglais
-
-* Audit de tous les fichiers de `tools/asset_creator` pour traduire les commentaires en français restants (principalement dans la CLI, l'UI et les explications d'algorithmes) vers l'anglais.
+### 3. Mise à jour des Liens Croisés (Cross-Spec & README)
+* **[MODIFY]** `docs/tooling/README.md` : Mise à jour pour pointer vers les nouveaux fichiers sans version (et retrait de la section "Historique Legacy" qui n'a plus lieu d'être).
+* **[MODIFY]** Tous les fichiers dans `docs/tooling/` et `.agents/learnings/tooling.md` : Recherche et remplacement global des anciens noms (`asset_creator_spec.md`, `autotile_pipeline_spec.md`, etc.) par leurs nouveaux noms "urbanisés".
 
 ---
 
 ## Verification Plan
 
 ### Automated Tests
+* Lancement du validateur de Spec pour s'assurer qu'aucun `Deep Link` n'a été brisé (le validateur vérifie l'existence des fichiers liés) :
 ```bash
-# Lancer toute la suite de tests pour s'assurer que le refactoring conserve 100% de la logique
-./venv/bin/pytest tests/tools/
+python3 .agents/skills/spec-gate/scripts/spec_precheck.py --dir docs/tooling/specs
 ```

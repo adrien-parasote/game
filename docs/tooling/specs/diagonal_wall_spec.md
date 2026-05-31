@@ -95,23 +95,9 @@ python3 scripts/assets/flat_wall_to_diagonal.py \
 * Default `--direction`: `both`.
 
 ### 5.2 Transformation Engine (Vertical Shear)
-The script uses column-by-column vertical shifting, applied per 32-pixel tile boundary to preserve coordinate alignment across multi-tile sheets.
-For a flat image source of size $W \times H$:
 
-1. **Validation:**
-   Verify that dimensions are multiples of 32:
-   ```python
-   if src.width % 32 != 0 or src.height % 32 != 0:
-       sys.exit(f"ERROR: Image dimensions must be multiples of 32, got {src.width}x{src.height}")
-   ```
-2. Create a new transparent RGBA canvas of size $W \times (H + W)$.
-3. Loop over each column $x$ from $0$ to $W - 1$:
-   * Crop a $1$-pixel wide column at $x$ with height $H$: `col = src.crop((x, 0, x + 1, H))`
-   * **NW-to-SE (slope = 1.0):** Paste column `col` at $X = x$, $Y = x$.
-   * **NE-to-SW (slope = -1.0):** Paste column `col` at $X = x$, $Y = (W - 1) - x$.
-4. Save the resulting image as lossless PNG (RGBA).
-
-This lossless vertical shift preserves pixel boundaries perfectly, ensuring the pixel art style remains sharp (nearest-neighbor style, with zero blur or interpolation).
+The engine reads a base texture tile (e.g. 32x32) and applies a vertical shear offset for the sides of the wall block.
+The algorithm splits the bounding box into a top area (unshifted), a sheared edge, and a dark shadow/bottom area. It generates three independent layers (Top Base, Shadows, Sides) and combines them into the final output projection.
 
 ### 5.3 Tiling Layout
 The generated PNG is a single vertical strip of width $W$. For a $32$-pixel wide grid:

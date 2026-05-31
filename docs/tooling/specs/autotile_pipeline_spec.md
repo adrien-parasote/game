@@ -144,44 +144,9 @@ Identique au script animé. Si `width == 96` → static (pas d'animation). Si `w
 
 ## Algorithm
 
-```python
-def convert(input_path, tsx_path, png_path, frame_duration):
-    src = _open_and_validate(input_path)   # OSError → sys.exit
-    n_frames = src.width // 96
-
-    strip = _build_blob_strip(src, n_frames)
-    strip.save(png_path)
-
-    _generate_tsx(png_path, tsx_path, tsx_path.stem, n_frames, frame_duration)
-    _print_success(...)
-
-def _build_blob_strip(src, n_frames):
-    # 49 slots per frame
-    total = n_frames * 49
-    strip = Image.new("RGBA", (32 * total, 32))
-
-    for frame_idx in range(n_frames):
-        frame = src.crop((frame_idx*96, 0, (frame_idx+1)*96, 128))
-        for slot, combo in enumerate(BLOB_COMBINATIONS):
-            if combo:
-                tile = _assemble_tile(frame, combo)
-            else:
-                tile = Image.new("RGBA", (32, 32))  # transparent
-            x = (frame_idx * 49 + slot) * 32
-            strip.paste(tile, (x, 0))
-    return strip
-
-def _assemble_tile(frame, combo):
-    # combo = (TL, BR, TR, BL) sub-tile coords
-    tile = Image.new("RGBA", (32, 32))
-    offsets = [(0,0), (16,16), (16,0), (0,16)]
-    for (col, row), (dx, dy) in zip(combo, offsets):
-        sub = frame.crop((col*16, row*16, col*16+16, row*16+16))
-        tile.paste(sub, (dx, dy))
-    return tile
-```
-
----
+The module exposes a main `convert` function that coordinates the image and XML generation.
+- **Image Assembly**: Reconstructs the 47-tile blob strip by cropping and pasting 16x16 sub-tiles from the source image according to predefined corner combinations.
+- **XML Generation**: Dynamically writes the TSX Wangset using a standardized XML template.
 
 ## Error Handling Matrix
 
