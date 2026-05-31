@@ -598,3 +598,100 @@ If the script does not support single-file targeting, dynamically isolate the ta
 
 *Last updated: 2026-05-28 — added L-DOC-011 scripts folder urbanization pattern, A-AGENT-006 directory-level batch isolation.*
 
+---
+
+### L-AGENT-006 · 2026-05-31 · U · Perfect
+**Parallel subagent orchestration with independent module boundaries produces zero-conflict builds**
+
+When building a multi-module system (Asset Creator V1→V2→V3), defining strict module boundaries in the spec enables parallel subagent execution with zero merge conflicts. Each subagent gets a self-contained scope: its own source file(s), its own test file(s), and explicit dependency declarations.
+
+**Pattern — in the spec, define for each build step:**
+1. **Input files** — what already exists that this step reads (read-only)
+2. **Output files** — what this step creates (exclusive write)
+3. **Wait-for** — which other steps must complete first (dependency DAG)
+
+```yaml
+# Example from Asset Creator V3 orchestration:
+Step 1 (minimap):   outputs=[core/minimap.py, test_minimap.py]    wait=[]
+Step 2 (state):     outputs=[gui/state.py, test_gui_state.py]      wait=[]
+Step 3 (preview):   outputs=[gui/preview.py, test_gui_preview.py]  wait=[]
+Step 4 (canvas):    outputs=[gui/canvas.py, test_canvas.py]         wait=[Step1]
+Step 5 (app+cli):   outputs=[gui/app.py, gui/pipeline.py, cli.py]  wait=[Step1,2,3,4]
+```
+
+**Evidence:** 5 subagents ran in parallel (2 for V2, 3 for V3). Steps 1-3 ran simultaneously with zero conflicts. 371 tests green on first full integration. Total wall-clock ~2h for what would be ~6h sequential.
+
+---
+
+### L-SPEC-003 · 2026-05-31 · U · Perfect
+**Extract DPG-independent modules to enable testing without GUI context**
+
+Separating framework-agnostic logic (state, preview conversion, canvas grid, generation pipeline) from DPG-specific rendering code enables full test coverage without needing a display or GPU context. The framework-dependent code (`app.py`) is the only file that imports `dearpygui`.
+
+**Pattern — split into 3 layers:**
+1. **Pure data** (testable, no imports): `state.py` (frozen dataclass), `canvas.py` (grid state + coord helpers)
+2. **Pure computation** (testable, PIL/numpy only): `preview.py` (PIL→float32), `pipeline.py` (generation + export)
+3. **Framework glue** (NOT unit-tested): `app.py` (DPG widgets, callbacks, textures)
+
+```python
+# ❌ Everything in app.py — untestable
+import dearpygui.dearpygui as dpg
+class App:
+    def regenerate(self): ...  # Can't test without display
+
+# ✅ Pipeline in separate module — fully testable
+# gui/pipeline.py (no DPG imports)
+def regenerate_tileset(state, presets): ...  # Pure computation
+def do_export_autotile(state, tiles): ...   # Pure I/O
+```
+
+**Evidence:** 371 tests including 108 GUI-related tests (state, preview, canvas, integration) — all run in headless CI without `dearpygui` installed. `app.py` is the only untestable module.
+
+---
+
+### A-SPEC-005 · 2026-05-31 · U · Minor Rework
+**GUI specs underestimate size and miss interactive features that emerge from real use**
+
+The V3 GUI spec estimated `app.py` at ~300-400 lines. Reality: 881 lines in `app.py` alone, 1,365 total across 5 GUI files. More critically, the spec was designed from a "CLI with sliders" mental model and missed 4 features that only became obvious when the user actually interacted with the GUI:
+
+| Feature missed | Why it was missed | User intervention |
+|----------------|-------------------|-------------------|
+| Color pickers (4 pickers) | Spec assumed palette from YAML only | User: "la partie de selection des couleurs" |
+| History panel with undo | Spec assumed "regenerate = enough" | User: "l'historique" |
+| macOS dark theme | Spec said "default DPG theme" | User: "standard UI/UX de mac os" |
+| French UI labels | Spec was English | User: "le text est toujours en anglais" |
+
+**Anti-pattern:** Writing a GUI spec from a CLI developer's perspective — "I'll expose the same params as sliders" — without considering the interactive workflow the user will actually follow.
+
+**Fix — add to GUI specs:**
+1. **User workflow narrative**: Write "User opens app → adjusts X → sees Y → exports Z" as a first-class section
+2. **Interaction patterns table**: List every feedback loop (param change → preview update, history undo, color override)
+3. **Size estimate multiplier**: Apply 3× to initial line-count estimates for GUI specs (DPG callback boilerplate, theme code, layout groups)
+4. **Localization section**: If the project has French UI elsewhere, spec must mandate French labels
+
+**Evidence:** 6 user interventions on UI/UX features not in spec. `app.py` 2.5× estimated size. 4 features (F_HIST, F_COLOR, F_MACUI, F_LOG) added post-spec.
+
+---
+
+### L-ARCH-010 · 2026-05-31 · P · Minor Rework
+**DPG `width=-1` (fluid sizing) only works on the LAST `child_window` in a horizontal group**
+
+In Dear PyGui, when multiple `child_window` elements are in a `horizontal` group, `width=-1` (fill remaining space) only works correctly on the **rightmost** element. Placing it on a middle panel causes overlapping or zero-width rendering.
+
+**Workaround — fixed+fluid layout:**
+```python
+# ❌ Doesn't work: middle panel with width=-1
+with dpg.group(horizontal=True):
+    dpg.add_child_window(width=280)   # left: config
+    dpg.add_child_window(width=-1)    # center: BROKEN — DPG ignores this
+    dpg.add_child_window(width=300)   # right: history
+
+# ✅ Works: rightmost panel gets width=-1
+with dpg.group(horizontal=True):
+    dpg.add_child_window(width=280)   # left: config (fixed)
+    dpg.add_child_window(width=max(canvas_w + 40, 620))  # center: calculated
+    dpg.add_child_window(width=-1)    # right: fills remainder ✅
+```
+
+**Evidence:** Center panel was invisible (0px width) until the layout was restructured. User reported "la partie central n'est plus assez grand". Fixed by making history panel (rightmost) the fluid one.
+
