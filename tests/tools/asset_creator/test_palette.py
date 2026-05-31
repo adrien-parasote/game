@@ -8,7 +8,7 @@ import pytest
 import yaml
 
 from tools.asset_creator.core.color_ramp import rgb_to_oklch
-from tools.asset_creator.core.palette import Palette, PaletteRole, load_palette, RampConfig
+from tools.asset_creator.core.palette import Palette, PaletteRole, RampConfig, load_palette
 
 PALETTES_DIR = Path(__file__).resolve().parents[3] / "tools" / "asset_creator" / "config" / "palettes"
 
