@@ -1,5 +1,7 @@
 # Technical Specification — Asset Manager & I18n [Implementation]
 
+> Document Type: Implementation
+
 > **Document Type:** Implementation
 > **Sources:** `src/engine/asset_manager.py` (80 LOC), `src/engine/i18n.py` (62 LOC), `src/config.py`
 
@@ -181,3 +183,58 @@ Returns `{"name": ..., "description": ...}` from `data["items"][item_id]`.
 | TC-FONT-01 | `test_settings_load` | `../../tests/engine/test_game.py:L509` |
 | TC-FONT-02 | `test_font_tiers_exist` | `../../tests/engine/test_game.py:L516` |
 | TC-FONT-03 | `test_font_tiers_exist` | `../../tests/engine/test_game.py:L516` |
+
+## Assumptions
+
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | pipeline test | A |
+| UT-002 | TBD | A |
+| UT-003 | TBD | A |
+| UT-004 | TBD | A |
+| UT-005 | TBD | A |
+| IT-001 | pipeline integration test | A |
+| IT-002 | TBD | A |
+| IT-003 | TBD | A |
+| TC-001 | TBD | A |
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |

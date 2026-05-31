@@ -1,58 +1,53 @@
-# Plan: 2D Diagonal Wall Tile Transformation Utility
+# Spec Gate Remediation Plan
 
-> **Document Type:** Implementation Plan  
-> **Date:** 2026-05-28  
-> **Status:** SPEC Gate Pending (User Approval Required)  
-> **Covers:** F1 (CLI Tool), F2 (Vertical Shear PIL Engine), F3 (Automatic Grid Slicing), F4 (Batch Processing), F5 (Gitignore Safety)
-
----
-
-## User Review Required
-
-> [!IMPORTANT]
-> **Git Tracking Strategy:** To satisfy your requirement, a `.gitignore` has been successfully created at `scripts/input/.gitignore` which excludes all files (e.g. `asset1.png`, `asset2.png`, `asset3.png`) except the `.gitignore` itself. This guarantees that your input directory is committed and tracked, while the heavy binary assets are safely ignored.
-
----
-
-## Open Questions
-
-Zero open questions remain. All choices regarding geometric algorithms, grid alignment, CLI signature, and output structures have been successfully resolved during the **DISCOVER** and **STRATEGY** phases.
-
----
+The `spec_precheck.py` tool found 18 FAIL and 34 PARTIAL issues across the `docs/game/specs/` directory. These issues block the LLM scoring step and the `/adversarial-review` process.
 
 ## Proposed Changes
 
-### Component: Developer Utility Scripts
+We need to fix the structural gaps in the following specification files to make them fully AI-ready and compliant with the Stream Coding methodology.
 
-#### [NEW] [flat_wall_to_diagonal.py](file:///Users/adrien.parasote/Documents/perso/game/scripts/assets/flat_wall_to_diagonal.py)
-* **Main Script:** Implement a pure Python CLI utility that parses arguments (`--input-dir`, `--output-dir`, `--direction`).
-* **PIL Shear Algorithm:** Loop through columns, slice $1$-pixel vertical strips, and translate them vertically to generate perfect, crisp $45^\circ$ diagonal tilesets (NW-SE and NE-SW slopes) without sub-pixel blur.
-* **Batch Execution:** Scan `scripts/input/` for PNG files, process `asset1.png` ($32\times96$), `asset2.png` ($96\times192$), and `asset3.png` ($128\times224$), and output the results.
-* **Auto-Directory Creation:** Ensure any missing output folders are created automatically.
+### `00_MASTER.md`
+- [MODIFY] Add `> Document Type: Strategic` label at the top. Since it's a master/strategic doc, this should resolve the missing anti-patterns check if appropriately typed, or we add an anti-patterns section if it's meant to be an Implementation doc.
 
-### Component: Game Assets
+### Documents Missing Type Labels
+- [MODIFY] Add `> Document Type: Implementation` to the following files:
+  - `asset-i18n.md`
+  - `audio-system.md`
+  - `development-quality.md`
+  - `dialogue-system.md`
+  - `engine-core.md`
+  - `entities-system.md`
+  - `inventory-system.md`
+  - `lighting-system.md`
+  - `map-world-system.md`
+  - `performance-system.md`
+  - `pygame_ce_python_312_best_practices.md`
 
-#### [NEW] [asset1_nw_se.png](file:///Users/adrien.parasote/Documents/perso/game/assets/images/tilesets/asset1_nw_se.png)
-#### [NEW] [asset1_ne_sw.png](file:///Users/adrien.parasote/Documents/perso/game/assets/images/tilesets/asset1_ne_sw.png)
-#### [NEW] [asset2_nw_se.png](file:///Users/adrien.parasote/Documents/perso/game/assets/images/tilesets/asset2_nw_se.png)
-#### [NEW] [asset2_ne_sw.png](file:///Users/adrien.parasote/Documents/perso/game/assets/images/tilesets/asset2_ne_sw.png)
-#### [NEW] [asset3_nw_se.png](file:///Users/adrien.parasote/Documents/perso/game/assets/images/tilesets/asset3_nw_se.png)
-#### [NEW] [asset3_ne_sw.png](file:///Users/adrien.parasote/Documents/perso/game/assets/images/tilesets/asset3_ne_sw.png)
+### Documents Missing `Cross-Spec Contracts`
+- [MODIFY] Add `## Cross-Spec Contracts` with `### Produces`, `### Consumes`, and `### Public Interface` to:
+  - `chest-ui.md`
+  - `npc-system.md`
+  - `pixel-perfect-occlusion.md`
+  - `code-quality-constants-i18n.md`
+  - `camera-rendering.md` (add missing strict subsections)
 
----
+### Documents with Missing Anti-patterns or Test Cases Formatting
+- [MODIFY] `dialogue-system.md`: Add 1 more anti-pattern to reach the 5-entry minimum.
+- [MODIFY] `pygame_ce_python_312_best_practices.md`: Add missing Anti-patterns section.
+- [MODIFY] `chest-ui.md`: Fix non-standard test IDs (e.g. `IT-CA-01` -> `IT-001`, `TC-CA-01` -> `TC-001`).
+
+### Deep Links without Anchors
+- [MODIFY] Fix links in `00_MASTER.md`, `chest-ui.md`, `code-quality-constants-i18n.md`, `dialogue-system.md`, and `engine-core.md` by appending section anchors (e.g., `#L1`).
+
+## User Review Required
+
+> [!WARNING]
+> Please review whether `00_MASTER.md` should be considered an `Implementation` document or a `Strategic` document. If it's Strategic, I will label it as such, which bypasses the anti-patterns check.
+
+> [!IMPORTANT]
+> The automated spec checks enforce rigorous formatting (e.g. strict test ID formats, mandatory headers). Should I proceed with executing these structural fixes across the specifications?
 
 ## Verification Plan
-
-### Automated Tests
-1. **Spec Pre-check Validation:** Run `/spec-gate` validation to guarantee the spec remains at $100\%$ compliance.
-2. **Deterministic Script Execution:** Run the newly created utility in both directions to verify output compilation.
-3. **Automated Unit & Integration Tests:** Add detailed test cases in a new test file `tests/scripts/test_flat_wall_to_diagonal.py` covering:
-   * CLI argument resolution and defaults.
-   * Graceful path error handling.
-   * Column-by-column vertical translation coordinate offsets.
-   * Output dimensions checks ($W \times (H + W)$).
-   * Execution of batch processing on test fixtures.
-   * Run the test suite: `venv/bin/pytest tests/scripts/test_flat_wall_to_diagonal.py`
-
-### Manual Verification
-- Visual inspection of the generated diagonal assets (`asset3_nw_se.png` ($128\times352$) and `asset3_ne_sw.png` ($128\times352$)) in the scratch or output directories to confirm perfect geometric rendering, sharp pixel edges, and seamless continuity.
+1. Re-run `python3 .agents/skills/spec-gate/scripts/spec_precheck.py --dir ./docs/game/specs/` to verify that there are zero `FAIL` or `PARTIAL` results.
+2. Proceed with the LLM-based Spec Gate AI Scoring (16-item checklist).
+3. If scoring is 10/10, proceed with the `/adversarial-review` epistemic pre-scan and cross-model run.

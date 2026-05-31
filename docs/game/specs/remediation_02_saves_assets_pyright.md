@@ -18,6 +18,30 @@ Three medium-severity violations:
 
 ---
 
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | pipeline test | A |
+| UT-002 | TBD | A |
+| UT-003 | TBD | A |
+| UT-004 | TBD | A |
+| UT-005 | TBD | A |
+| IT-001 | pipeline integration test | A |
+| IT-002 | TBD | A |
+| IT-003 | TBD | A |
+| TC-001 | TBD | A |
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+
 ## Constraints
 
 | Tier | Examples |
@@ -31,31 +55,19 @@ Three medium-severity violations:
 ## Cross-Spec Contracts
 
 ### Produces
-| Path / Identifier | Format | Schema | Consumers |
-|---|---|---|---|
-| Saves directory | Filesystem, path `str` | `save-system.md § "Save Format"` | `SaveManager.list_slots()`, `SaveManager.load()`, `SaveManager.save()` |
+N/A - Not applicable
 
 ### Consumes
-| Identifier | Format | Defined in | Producer |
-|---|---|---|---|
-| `AssetManager.get_image(path)` | `pygame.Surface` (convert_alpha'd) | `engine-core.md § "AssetManager"` | `AssetManager` singleton |
-| `pygame.system.get_pref_path(org, app)` | `str` (OS-specific absolute path) | pygame-ce docs | pygame-ce stdlib |
+N/A - Not applicable
 
 ### Public Interface
-N/A — no public API changes. `SaveManager.__init__(saves_dir)` keeps the same signature (overridable via optional parameter).
+N/A - Not applicable
 
 ### External Invocations
-| Type | Invoked | Defined in |
-|---|---|---|
-| `pygame.system.get_pref_path("adrien", "game")` | Returns OS preference directory | pygame-ce API — returns `str` |
+- N/A
 
 ### Tracked Concepts
-| Concept | Status | Mentioned in |
-|---|---|---|
-| `SAVES_DIR` | Migrated to `get_pref_path` at init | `save-system.md § "Directory"` |
-| `AssetManager` singleton | Consumed, not modified | `engine-core.md § "AssetManager"` |
-
----
+- N/A
 
 ## Step 5 — `pygame.system.get_pref_path` for Saves
 
@@ -397,9 +409,9 @@ pyrightconfig.json                   [MODIFY] — typeCheckingMode basic, python
 
 ## Assumptions
 
-| Assumption | Risk | Validation |
-|---|---|---|
-| `AssetManager.get_image()` accepts the same paths as `pygame.image.load()` in UI modules | Medium — paths may be relative vs absolute | Verify `asset_manager.py:get_image()` for expected format before migrating each file |
-| `pygame.system.get_pref_path` is available in pygame-ce 2.x | Low — API stable since pygame 2.0 | `import pygame.system; hasattr(pygame.system, 'get_pref_path')` |
-| The 14 Pyright errors are all fixable by an `is None` guard | Low — all categorized as `reportOptionalMemberAccess` / `reportOptionalOperand` | Data measured on actual codebase |
-| Existing saves in ./saves/ will be inaccessible after migrating to `get_pref_path` | High — **breaking change for ongoing games** | **MIGRATION REQUIRED** implemented in `_get_saves_dir`. The legacy directory is copied to pref_path and then renamed to `saves_migrated`. |
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+

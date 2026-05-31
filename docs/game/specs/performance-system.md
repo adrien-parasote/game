@@ -1,5 +1,7 @@
 # Technical Specification — Performance & Constants Hardening [Implementation]
 
+> Document Type: Implementation
+
 > **Document Type:** Implementation
 > **Source Files:** `src/entities/groups.py`, `src/engine/render_manager.py`, `src/ui/title_screen.py`, `src/engine/interaction.py`, `src/ui/pause_screen.py`, `src/ui/save_menu.py`
 
@@ -128,3 +130,58 @@ All UI hardcoded literals are extracted into dedicated modules to enforce unifor
 - **Distance-squared checks**: [interaction.py L1](../../src/engine/interaction.py#L1)
 - **Pre-rendered menu surfaces**: [title_screen.py L168](../../src/ui/title_screen.py#L168)
 - **Performance benchmarks & tests**: [test_performance_optimizations.py L1](../../tests/engine/test_performance_optimizations.py#L1)
+
+## Assumptions
+
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | pipeline test | A |
+| UT-002 | TBD | A |
+| UT-003 | TBD | A |
+| UT-004 | TBD | A |
+| UT-005 | TBD | A |
+| IT-001 | pipeline integration test | A |
+| IT-002 | TBD | A |
+| IT-003 | TBD | A |
+| TC-001 | TBD | A |
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |

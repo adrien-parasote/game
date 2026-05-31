@@ -116,7 +116,7 @@ InteractionManager.update(dt)
         if game has no chest_ui attr → return
         if not game.chest_ui.is_open → return
         recompute: is player still in valid interaction zone?
-          Auto-closes when `dist_sq > _RANGE_SQ_45` (2025.0), matching the standard interaction range threshold from [engine-core.md §7.1.1](./engine-core.md).
+          Auto-closes when `dist_sq > _RANGE_SQ_45` (2025.0), matching the standard interaction range threshold from [engine-core.md §7.1.1](./engine-core.md#L1).
           YES (in range AND correct orientation) → do nothing
           NO  → _close_chest(chest, chest_ui)
                   chest.interact(player)               # toggle animation is_on=False
@@ -498,18 +498,67 @@ Residual ambiguity: exact pixel fractions for the image zones (Assumption A-04).
 | CHEST-I-10 | `test_handle_interaction_npc` | `../../tests/engine/test_interaction.py:L169` |
 | CHEST-I-11 | `test_interaction_cooldown` | `../../tests/engine/test_interaction.py:L33` |
 | CHEST-I-12 | `test_interaction_cooldown` | `../../tests/engine/test_interaction.py:L33` |
-| TC-CA-01 | `test_load_background_missing_asset_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
-| TC-CA-02 | `test_load_inv_background_missing_asset_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
-| TC-CA-03 | `test_load_slot_image_missing_asset_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
-| TC-CA-04 | `test_load_cursor_invalid_path_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
-| TC-CA-05 | `test_load_and_scale_arrow_invalid_path_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
-| TC-CA-06 | `test_get_item_icon_cache_hit_no_second_io` | `../../tests/ui/test_chest_draw_assets.py:L1` |
-| TC-CA-07 | `test_get_item_icon_absent_file_caches_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
-| TC-CA-08 | `test_get_item_icon_appends_png_extension` | `../../tests/ui/test_chest_draw_assets.py:L1` |
-| IT-CA-01 | `test_load_background_accessible_via_chest_ui` | `../../tests/ui/test_chest_draw_assets.py:L1` |
-| IT-CA-02 | `test_chest_ui_instantiation_no_error` | `../../tests/ui/test_chest_draw_assets.py:L1` |
-| IT-CA-03 | `test_get_item_icon_accessible_via_mixin` | `../../tests/ui/test_chest_draw_assets.py:L1` |
-| IT-CA-04 | `test_asset_methods_not_defined_in_chest_ui_class` | `../../tests/ui/test_chest_draw_assets.py:L1` |
-| IT-CA-05 | `test_asset_methods_present_on_chest_draw_mixin` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-0001 | `test_load_background_missing_asset_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-0002 | `test_load_inv_background_missing_asset_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-0003 | `test_load_slot_image_missing_asset_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-0004 | `test_load_cursor_invalid_path_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-0005 | `test_load_and_scale_arrow_invalid_path_returns_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-0006 | `test_get_item_icon_cache_hit_no_second_io` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-0007 | `test_get_item_icon_absent_file_caches_none` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| TC-0008 | `test_get_item_icon_appends_png_extension` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| IT-0001 | `test_load_background_accessible_via_chest_ui` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| IT-0002 | `test_chest_ui_instantiation_no_error` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| IT-0003 | `test_get_item_icon_accessible_via_mixin` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| IT-0004 | `test_asset_methods_not_defined_in_chest_ui_class` | `../../tests/ui/test_chest_draw_assets.py:L1` |
+| IT-0005 | `test_asset_methods_present_on_chest_draw_mixin` | `../../tests/ui/test_chest_draw_assets.py:L1` |
 
 
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Assumptions
+
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | TBD | TBD |
+| IT-001 | TBD | TBD |
+| TC-001 | TBD | TBD |
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |

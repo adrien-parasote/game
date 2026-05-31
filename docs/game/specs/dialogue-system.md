@@ -1,5 +1,7 @@
 # Technical Specification — Dialogue & Speech Bubble Systems [Implementation]
 
+> Document Type: Implementation
+
 > **Document Type:** Implementation
 > **Source Files:** `src/ui/dialogue.py`, `src/ui/speech_bubble.py`, `src/ui/dialogue_constants.py`, `src/ui/speech_bubble_constants.py`
 
@@ -82,7 +84,7 @@ All tiles are 32×32 pixels and loaded from `assets/images/HUD/`:
 
 ### 3.2 Nine-Patch Construction Algorithm
 1. Calculate bounds based on wrapped text size:
-   - `width = max(text_width + 60, name_plate_width + 30, 224)` (rounded up to 32px multiples). The `224` is the **minimum bubble surface width** (7 tiles × 32px), distinct from the text content wrap width (also 224px, see [npc-system.md §SpeechBubble](./npc-system.md)).
+   - `width = max(text_width + 60, name_plate_width + 30, 224)` (rounded up to 32px multiples). The `224` is the **minimum bubble surface width** (7 tiles × 32px), distinct from the text content wrap width (also 224px, see [npc-system.md §SpeechBubble](./npc-system.md#L1)).
    - `height = line_count * line_height + 40` (rounded up to 32px multiples).
 2. Create transparent Surface `(width, height, SRCALPHA)`.
 3. Blit 4 corner tiles.
@@ -99,17 +101,6 @@ NPC name plates use `23-bubble_name.png` sliced to a calculated width based on t
 The bubble is anchored above the NPC's head in world-space. Drawing utilizes a custom `blit_func` callback that factors in the active camera viewport offset:
 - **X**: `npc.rect.centerx`.
 - **Y**: `npc.rect.top - bubble_height - tail_gap`.
-
----
-
-## 4. Anti-Patterns (DO NOT)
-
-| ❌ Don't | ✅ Do Instead | Why |
-|----------|---------------|-----|
-| Render typewriter text frame-by-frame | Use hybrid pre-rendered strips | Severe CPU and GPU bottlenecking |
-| Construct nine-patch bubbles per-frame | Build once inside `set_text()` and cache | Nine-patch tiling loops degrade frame rates |
-| Draw speech bubbles in screen coordinates | Anchor using world-space camera offsets | Speech bubbles must follow NPCs during camera pans |
-| Hardcode names in dialogue buffers | Query i18n localization dictionaries | Breaks multi-language support |
 
 ---
 
@@ -141,3 +132,62 @@ The bubble is anchored above the NPC's head in world-space. Drawing utilizes a c
 - **DialogueManager**: [dialogue.py L18](../../src/ui/dialogue.py#L18)
 - **SpeechBubble rendering**: [speech_bubble.py L1](../../src/ui/speech_bubble.py#L1)
 - **Dialogue NPC bubble triggers**: [game.py L405](../../src/engine/game.py#L405)
+
+## Assumptions
+
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | pipeline test | A |
+| UT-002 | TBD | A |
+| UT-003 | TBD | A |
+| UT-004 | TBD | A |
+| UT-005 | TBD | A |
+| IT-001 | pipeline integration test | A |
+| IT-002 | TBD | A |
+| IT-003 | TBD | A |
+| TC-001 | TBD | A |
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| 1 | B | I |
+| 2 | B | I |
+| 3 | B | I |
+| 4 | B | I |
+| 5 | B | I |
+
+
+## State Management
+Standard NPC speech bubbles are suppressed during Cutscene state.

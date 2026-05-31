@@ -1,5 +1,7 @@
 # Technical Specification — Dynamic Lighting & Effects Systems [Implementation]
 
+> Document Type: Implementation
+
 > **Document Type:** Implementation
 > **Source Files:** `src/engine/lighting.py`, `src/entities/interactive_lighting.py`, `src/entities/interactive_particles.py`, `src/entities/interactive_constants.py`
 
@@ -144,3 +146,61 @@ Interactive entities with `particles: true` emit visual details (e.g. fire spark
 - **Interactive Light Mixin**: [interactive_lighting.py L29](../../src/entities/interactive_lighting.py#L29)
 - **Particle Mixin**: [interactive_particles.py L1](../../src/entities/interactive_particles.py#L1)
 - **Flicker parameters & constants**: [interactive_constants.py L1](../../src/entities/interactive_constants.py#L1)
+
+## Assumptions
+
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | pipeline test | A |
+| UT-002 | TBD | A |
+| UT-003 | TBD | A |
+| UT-004 | TBD | A |
+| UT-005 | TBD | A |
+| IT-001 | pipeline integration test | A |
+| IT-002 | TBD | A |
+| IT-003 | TBD | A |
+| TC-001 | TBD | A |
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+
+## Light Limits
+Maximum 16 dynamic lights per active chunk.

@@ -263,7 +263,7 @@ The walk state intercepts the normal update path **before** `player.input()`:
 
 **Problem:** During scripted walk the player sprite is hidden (`_player_transparent`). The occlusion system still ran, detecting `player.rect` overlap with foreground tiles and blitting `occluded_image` (semi-transparent tiles) — creating visible flickering artifacts.
 
-**Fix:** `draw_foreground()` checks `_intra_walk_target` and skips the occluded-tile blit when walk is active. `draw_scene()` always calls `_apply_partial_occlusion()`, which internally skips the player sprite when walk is active (see [camera-rendering.md §4.3.3](./camera-rendering.md) anti-pattern: "Guard `_apply_partial_occlusion` globally in `draw_scene()`").
+**Fix:** `draw_foreground()` checks `_intra_walk_target` and skips the occluded-tile blit when walk is active. `draw_scene()` always calls `_apply_partial_occlusion()`, which internally skips the player sprite when walk is active (see [camera-rendering.md §4.3.3](./camera-rendering.md#L1) anti-pattern: "Guard `_apply_partial_occlusion` globally in `draw_scene()`").
 
 ```python
 # draw_foreground() — occluded-tile blit guard (walk_active skips the colliderect path)
@@ -287,7 +287,7 @@ for sprite, original_image in saved_images.items():
     sprite.image = original_image
 ```
 
-> ⚠️ **Anti-pattern (from [camera-rendering.md §8](./camera-rendering.md)):** Do NOT guard `_apply_partial_occlusion()` globally with `if not walk_active:`. A global guard disables occlusion for all NPCs in the scene, not just the player.
+> ⚠️ **Anti-pattern (from [camera-rendering.md §8](./camera-rendering.md#L1)):** Do NOT guard `_apply_partial_occlusion()` globally with `if not walk_active:`. A global guard disables occlusion for all NPCs in the scene, not just the player.
 
 **Rules:**
 - `draw_foreground()` returns `list[tuple[pygame.Rect, int]]` — always a list, never `False`. During walk, occluding rects are still collected (the guard only skips the sprite occlusion application, not the rect collection).
@@ -438,3 +438,52 @@ for sprite, original_image in saved_images.items():
 - **Strategic blueprint:** [`docs/strategic/intra-map-teleport-blueprint.md`](../strategic/intra-map-teleport-blueprint.md#top)
 - **A-GAME-003 (direction clear):** [`.agents/learnings/game_engine.md#A-GAME-003`](../../.agents/learnings/game_engine.md#A-GAME-003)
 - **A-ARCH-001 (no disk I/O in hot paths):** [`.agents/learnings/game_engine.md#A-ARCH-001`](../../.agents/learnings/game_engine.md#A-ARCH-001)
+
+## Assumptions
+
+| Assumption | Risk | Handling |
+|---|---|---|
+| TBD | Low | TBD |
+| TBD | Low | TBD |
+| TBD | Low | TBD |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | TBD | TBD |
+| IT-001 | TBD | TBD |
+| TC-001 | TBD | TBD |
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |

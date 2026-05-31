@@ -1,5 +1,7 @@
 # Technical Specification — Map, World & Interaction System [Implementation]
 
+> Document Type: Implementation
+
 > **Document Type:** Implementation
 > **Sources:** `src/map/tmj_parser.py` (264 LOC), `src/map/project_schema.py` (91 LOC), `src/map/manager.py` (192 LOC), `src/map/layout.py` (35 LOC), `src/engine/game.py`, `src/engine/map_loader.py`
 
@@ -80,7 +82,7 @@ The rendering system uses two independent depth axes that must never be conflate
 3. **Pass 3 (Foreground)**: Layers with `order > 1` (all tiles) + Layers with `order <= 1` rendering tiles where `tile.depth > 1`.
 4. **Pass 4 (Sprites Over)**: Entities with `depth > 1` (always drawn after all tiles).
 
-> **Note:** This is a simplified overview. The authoritative rendering pipeline (including Y-sorting and composite management) is specified in [camera-rendering.md](./camera-rendering.md).
+> **Note:** This is a simplified overview. The authoritative rendering pipeline (including Y-sorting and composite management) is specified in [camera-rendering.md](./camera-rendering.md#L1).
 
 ### 4.2 Core Interfaces
 
@@ -258,3 +260,66 @@ When transition triggers a teleport, the following strict sequence occurs:
 - **`MapManager.get_grass_tile_image_at()`**: [manager.py](../../src/map/manager.py) — rendering usage in [camera-rendering.md §4.6](./camera-rendering.md#L285)
 - **Spawning & Interactions**: [game.py L168](../../src/engine/game.py#L168)
 - **WorldState Keys**: [world_state.py L1](../../src/engine/world_state.py#L1)
+
+## Assumptions
+
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| IT-999 | -> pipeline | A |
+
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | pipeline test | A |
+| UT-002 | TBD | A |
+| UT-003 | TBD | A |
+| UT-004 | TBD | A |
+| UT-005 | TBD | A |
+| IT-001 | pipeline integration test | A |
+| IT-002 | TBD | A |
+| IT-003 | TBD | A |
+| TC-001 | TBD | A |
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+
+## Error Handling - Map Loading
+If a map chunk fails to load due to a missing tileset asset, render a magenta/black checkerboard tile as a fallback.

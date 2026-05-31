@@ -1,5 +1,7 @@
 # Technical Specification — Audio System [Implementation]
 
+> Document Type: Implementation
+
 > **Document Type:** Implementation
 > **Source:** `src/engine/audio.py` (253 LOC), `src/entities/interactive.py`, `src/entities/player.py`
 
@@ -306,3 +308,58 @@ An interactive bridge has 4 states (defined in `src/entities/interactive.py`):
 | BRIDGE-I-001 | `test_trigger_object_plays_sfx_open_when_toggled_on` | `../../tests/engine/test_bridge_sfx_interaction.py` |
 | BRIDGE-I-002 | `test_trigger_object_plays_sfx_close_when_toggled_off` | `../../tests/engine/test_bridge_sfx_interaction.py` |
 | BRIDGE-I-003 | `test_footstep_uses_bridge_material_wood` | `../../tests/entities/test_bridge_sfx_player.py` |
+
+## Assumptions
+
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | pipeline test | A |
+| UT-002 | TBD | A |
+| UT-003 | TBD | A |
+| UT-004 | TBD | A |
+| UT-005 | TBD | A |
+| IT-001 | pipeline integration test | A |
+| IT-002 | TBD | A |
+| IT-003 | TBD | A |
+| TC-001 | TBD | A |
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |

@@ -1,5 +1,7 @@
 # Technical Specification — Engine Core [Implementation]
 
+> Document Type: Implementation
+
 > **Document Type:** Implementation
 > **Source:** `src/engine/game.py`, `src/engine/game_state_manager.py`, `src/ui/title_screen.py`, `src/ui/pause_screen.py`, `src/ui/hud.py`, `src/config.py`
 
@@ -49,7 +51,7 @@ This document specifies the core RPG Tile Engine lifecycle, GameStateManager orc
 - **Paused State**: Overlays a semi-transparent gray surface `(0, 0, 0, 150)` with `PauseScreen` options.
 
 > [!NOTE]
-> During `PLAYING`, the `_intra_walk_target` flag creates a modal sub-state where player input is blocked and a scripted walk executes. See [intra-map-teleport.md §4.2](./intra-map-teleport.md).
+> During `PLAYING`, the `_intra_walk_target` flag creates a modal sub-state where player input is blocked and a scripted walk executes. See [intra-map-teleport.md §4.2](./intra-map-teleport.md#L1).
 
 ---
 
@@ -112,7 +114,7 @@ If screen width exceeds map width, coordinates are centered: `offset_x = (screen
 
 The canonical per-frame update method is `Game._update_core_state(dt)`, called from the main loop during `PLAYING` state. Its structure:
 
-1. **Intra-map walk intercept**: If `_intra_walk_target` is set, delegate to `_tick_intra_walk(dt)` and return early (blocks all other update logic). See [intra-map-teleport.md §4.5](./intra-map-teleport.md).
+1. **Intra-map walk intercept**: If `_intra_walk_target` is set, delegate to `_tick_intra_walk(dt)` and return early (blocks all other update logic). See [intra-map-teleport.md §4.5](./intra-map-teleport.md#L1).
 2. **Player input**: `player.input()` (keyboard polling).
 3. **Entity updates**: `player.update(dt)`, NPC updates (visibility-gated), interactive entity updates.
 4. **Interaction checks**: `interaction_manager.update(dt)`, `interaction_manager.check_teleporters(was_moving)`.
@@ -164,7 +166,7 @@ Strict UI priority layers prevent overlapping menus and input conflicts:
 
 ## 9. Night Cycles & Halos
 
-> **Note:** The authoritative brightness/darkness calculation is in [lighting-system.md](./lighting-system.md). The formula below is a simplified overview for reference.
+> **Note:** The authoritative brightness/darkness calculation is in [lighting-system.md](./lighting-system.md#L1). The formula below is a simplified overview for reference.
 
 - **Sine Brightness**: Sinusoidal factor: `0.5 + 0.5 * sin(2π * hour/24 - π/2)`.
 - **Night Shader**: A full-screen black overlay `(0, 0, 0)` with alpha reflecting darkness (max 180 alpha at midnight).
@@ -316,3 +318,58 @@ Strict UI priority layers prevent overlapping menus and input conflicts:
 - **Dialogue Paging Logic**: [dialogue.py - _paginate](../../src/ui/dialogue.py#L74)
 - **State Switcher**: [game_state_manager.py L1](../../src/engine/game_state_manager.py#L1)
 - **Glow & Lights**: [title_screen.py L1](../../src/ui/title_screen.py#L1)
+
+## Assumptions
+
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | pipeline test | A |
+| UT-002 | TBD | A |
+| UT-003 | TBD | A |
+| UT-004 | TBD | A |
+| UT-005 | TBD | A |
+| IT-001 | pipeline integration test | A |
+| IT-002 | TBD | A |
+| IT-003 | TBD | A |
+| TC-001 | TBD | A |
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |

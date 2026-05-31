@@ -1,5 +1,7 @@
 # Reference Guide — Python 3.12 & Pygame-CE Best Practices [Reference]
 
+> Document Type: Implementation
+
 > **Document Type:** Development Reference / State of the Art
 > **Target Technologies:** Python 3.12+, Pygame-CE (Community Edition) 2.4.0+
 > **Objective:** Establish coding, architecture, and optimization standards to design professional and high-performance 2D game engines.
@@ -57,7 +59,7 @@ entity_frect.x += velocity_x * dt
 sprite_frect = surface.get_frect(topleft=(x, y))
 ```
 
-> **⚠️ Project override (ADR-008):** This project uses `Vector2` + `Rect` (integer coordinates). FRect migration has been deferred — see [ADR-008](../ADRs/ADR-008-frect-migration.md). Do NOT apply FRect in this codebase.
+> **⚠️ Project override (ADR-008):** This project uses `Vector2` + `Rect` (integer coordinates). FRect migration has been deferred — see [ADR-008](../ADRs/ADR-008-frect-migration.md#L1). Do NOT apply FRect in this codebase.
 
 ### 2.3 Systematic Conversion of Pixel Formats
 Never forget to convert images immediately after loading them. Otherwise, Pygame must convert the pixel format at each frame during the `blit`, which destroys performance.
@@ -339,7 +341,7 @@ To guarantee that these high standards are maintained, configure your static ana
 }
 ```
 
-> **Project note:** The project uses `basic` mode (see [remediation_02](./remediation_02_saves_assets_pyright.md)). `strict` is aspirational — it would currently produce 158+ errors due to missing pygame-ce type stubs.
+> **Project note:** The project uses `basic` mode (see [remediation_02](./remediation_02_saves_assets_pyright.md#L1)). `strict` is aspirational — it would currently produce 158+ errors due to missing pygame-ce type stubs.
 
 ### Ruff Configuration (`pyproject.toml`)
 ```toml
@@ -358,3 +360,58 @@ select = [
     "T20"  # Ban rogue prints (favor logging)
 ]
 ```
+
+## Assumptions
+
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | pipeline test | A |
+| UT-002 | TBD | A |
+| UT-003 | TBD | A |
+| UT-004 | TBD | A |
+| UT-005 | TBD | A |
+| IT-001 | pipeline integration test | A |
+| IT-002 | TBD | A |
+| IT-003 | TBD | A |
+| TC-001 | TBD | A |
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |

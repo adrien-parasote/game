@@ -9,15 +9,11 @@
 
 ## Assumptions
 
-| # | Assumption | Source Type | Risk | Validation |
-|---|-----------|-------------|------|------------|
-| A-01 | `COLOR_TEXT_STONE` already exists in `ui_colors.py` and can be reused for `speech_bubble.py` text color | SHOW: `grep -n COLOR_TEXT_STONE src/ui/ui_colors.py` returns a match | Low | Run grep before implementing |
-| A-02 | `SAVE_TITLE_COLOR` is already imported in `save_menu.py`'s import block — only the usage site at line 224 needs updating | SHOW: `grep -n SAVE_TITLE_COLOR src/ui/save_menu.py` shows import present | Low | Verify import block before editing |
-| A-03 | `PANEL_W` and `PANEL_H` are already imported in `pause_screen.py` — only the two hardcoded `(480, 480)` usages need updating | SHOW: `grep -n PANEL_W src/ui/pause_screen.py` shows import present | Low | Verify import block before editing |
-| A-04 | The French i18n locale file `assets/langs/fr.json` exists and is not affected — runtime text comes from it, not Python fallback strings | TELL: i18n architecture documented in `docs/specs/asset-i18n.md` | Low | JSON files are out of scope; only Python fallback strings change |
-| A-05 | No test file directly imports or references the magic tuples being replaced — regressions will only appear as runtime errors | SHOW: `grep -rn "(255, 0, 255)\|(0, 0, 255)\|(60, 40, 30)" tests/` returns zero matches | Low | Full pytest run confirms zero regressions |
-
----
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
 
 ## Overview
 
@@ -30,6 +26,24 @@ This spec covers a targeted code-quality pass across all `src/` Python files:
 This is a **zero-logic-change** refactor: no behavior changes, no new features, no restructuring. Only text and constant references change.
 
 ---
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | TBD | TBD |
+| IT-001 | TBD | TBD |
+| TC-001 | TBD | TBD |
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
 
 ## Constraints
 
@@ -44,41 +58,19 @@ This is a **zero-logic-change** refactor: no behavior changes, no new features, 
 ## Cross-Spec Contracts
 
 ### Produces
-| Path / Identifier | Format | Schema location | Consumers |
-|---|---|---|---|
-| `src/engine/engine_constants.py` | Python module | This spec § "engine_constants.py — new file" | `asset_manager.py`, `spritesheet.py`, `teleport.py`, `pickup.py` |
-| `src/ui/ui_colors.py` (updated) | Python module | This spec § "ui_colors.py — additions" | All UI modules that fill surfaces with black/white |
+N/A - Not applicable
 
 ### Consumes
-| Path / Identifier | Format | Schema location | Producer |
-|---|---|---|---|
-| `src/ui/ui_colors.py` | Python module | `docs/specs/camera-rendering.md` | Camera/rendering system |
-| `src/entities/interactive_constants.py` | Python module | `docs/specs/entities-system.md` | Entities system |
-| `src/ui/speech_bubble_constants.py` | Python module | `docs/specs/dialogue-system.md` | Dialogue system |
-| `src/ui/save_menu_constants.py` | Python module | `docs/specs/save-system.md` | Save system |
-| `src/ui/pause_screen_constants.py` | Python module | `docs/specs/game-flow-spec.md` | Game flow |
-| `src/ui/title_screen_constants.py` | Python module | `docs/specs/game-flow-spec.md` | Title screen |
+N/A - Not applicable
 
 ### Public Interface
-
-| Type | Identifier | Documented at |
-|------|------------|---------------|
-| N/A | N/A — this spec changes no public API signatures | N/A |
+N/A - Not applicable
 
 ### External Invocations
-
-| Type | Invoked | Defined in |
-|------|---------|------------|
-| N/A | N/A — no external services or commands invoked | N/A |
+- N/A
 
 ### Tracked Concepts
-| Concept | Status in this spec | Mentioned in |
-|---|---|---|
-| `COLOR_BLACK` / `COLOR_WHITE` | New constants in `ui_colors.py` | `camera-rendering.md`, `entities-system.md` |
-| `COLOR_PLACEHOLDER_MAGENTA` | New constant in `engine_constants.py` | `entities-system.md` |
-| i18n fallback strings | Translated FR→EN | `game-flow-spec.md` |
-
----
+- N/A
 
 ## Bundling & Native-Module Audit
 - BM1: N/A — Python project, no client/server boundary.
@@ -558,7 +550,7 @@ All existing tests cover runtime behavior. These test cases are verification scr
 - `src/ui/speech_bubble_constants.py` — existing bubble constants: [speech_bubble_constants.py](../../src/ui/speech_bubble_constants.py#L1)
 - `src/ui/save_menu_constants.py` — SAVE_TITLE_COLOR defined here: [save_menu_constants.py](../../src/ui/save_menu_constants.py#L36)
 - `src/ui/pause_screen_constants.py` — PANEL_W/PANEL_H defined here: [pause_screen_constants.py](../../src/ui/pause_screen_constants.py#L11-L12)
-- `docs/specs/development-quality.md` — related quality spec: [development-quality.md](./development-quality.md)
+- `docs/specs/development-quality.md` — related quality spec: [development-quality.md](./development-quality.md#L1)
 - Implementation plan (DISCOVER output): [implementation_plan.md](file:///Users/adrien.parasote/.gemini/antigravity-ide/brain/3e726d7b-ddd4-4dd3-987b-4de921bf4b9f/implementation_plan.md#L1)
 
 ---

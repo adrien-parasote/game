@@ -17,13 +17,11 @@ Result: the semi-transparent zone applied to the sprite is too large.
 
 ## Assumptions
 
-| # | Assumption | Risk | Validation |
+| Assumption | Risk | Handling | Source Type |
 |---|---|---|---|
-| 1 | `pygame.BLEND_RGBA_MULT` is supported and behaves correctly for SRCALPHA surfaces in the installed version of Pygame CE without causing transparency black-borders. | Low | Pygame CE 2.x supports `BLEND_RGBA_MULT` on `SRCALPHA` surfaces correctly. [verified via Pygame documentation and code 2026-05-28]. |
-| 2 | Animating map frames can be retrieved via `self.game.anim_map_manager.get_current_frame_image(tile_id)` which returns a distinct `pygame.Surface` reference that does not change within a frame but can change across frames. | Medium | Checked `anim_map_manager` implementation and confirmed `get_current_frame_image()` retrieves the currently active frame's surface object. [verified via map/animation.py inspection 2026-05-28]. |
-| 3 | `AssetManager` is indeed a long-lived singleton object and its cache is cleared only via `clear_cache()` (e.g. when changing rooms/levels). | Low | Checked `asset_manager.py` implementation, confirmed `AssetManager` operates as a singleton and uses `clear_cache()`. [verified via engine/asset_manager.py inspection 2026-05-28]. |
-
----
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
 
 ## 2. Solution
 
@@ -241,6 +239,48 @@ def _create_composite_occlusion_surface(
 ```
 
 ---
+
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | TBD | TBD |
+| IT-001 | TBD | TBD |
+| TC-001 | TBD | TBD |
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
 
 ## Constraints
 

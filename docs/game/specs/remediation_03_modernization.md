@@ -19,6 +19,24 @@ Four low-severity improvements to modernize the codebase toward Python 3.12:
 
 ---
 
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | TBD | TBD |
+| IT-001 | TBD | TBD |
+| TC-001 | TBD | TBD |
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+
 ## Constraints
 
 | Tier | Examples |
@@ -32,25 +50,19 @@ Four low-severity improvements to modernize the codebase toward Python 3.12:
 ## Cross-Spec Contracts
 
 ### Produces
-| Identifier | Format | Consumers |
-|---|---|---|
-| `docs/ADRs/ADR-008-frect.md` | Markdown | Future reference for FRect decision |
+N/A - Not applicable
 
 ### Consumes
-N/A — purely local modifications.
+N/A - Not applicable
 
 ### Public Interface
-N/A.
+N/A - Not applicable
 
 ### External Invocations
-N/A.
+- N/A
 
 ### Tracked Concepts
-| Concept | Status | Mentioned in |
-|---|---|---|
-| `FRect` | Documented decision (ADR-008): not migrated in Phase 1 | `camera-rendering.md`, `entities-system.md` |
-
----
+- N/A
 
 ## Step 8 — `@override` on Inherited Methods
 
@@ -249,7 +261,7 @@ grep -rn "import os" src/     # → only files using os.environ, os.path.exists,
 | 4 | Modifying method body when adding `@override` | Combining the addition of `@override` with a body refactor | `@override` is strictly an annotation decorator. Zero body modification |
 | 5 | `pathlib.Path` mixed with `str` without conversion | `pygame.image.load(Path("assets/img.png"))` if the API expects `str` | Always verify the target API. Use `str(path)` if necessary at the call site |
 | 6 | ADR-008 without revision conditions | "Do not migrate FRect" without defining when to review the decision | Document the 3 revision conditions in [`ADR-008`](../ADRs/ADR-008-frect-migration.md#revision-conditions) |
-| 7 | Pathlib migration on shared files without tests | Migrate `asset_manager.py` without verifying that existing tests cover paths | Run tests after migrating each file. Verify coverage via [`verification-loop`](./../agents/skills/verification-loop/SKILL.md) |
+| 7 | Pathlib migration on shared files without tests | Migrate `asset_manager.py` without verifying that existing tests cover paths | Run tests after migrating each file. Verify coverage via [`verification-loop`](./../agents/skills/verification-loop/SKILL.md#L1) |
 
 ---
 
@@ -359,9 +371,9 @@ docs/
 
 ## Assumptions
 
-| Assumption | Risk | Validation |
-|---|---|---|
-| `BaseEntity.update(dt)` has the same signature as `Player.update(dt)` | Low | Verify `base.py` signature before `@override` |
-| `pygame.sprite.Group.add/remove` accept `*sprites` (same signature) | Low | Verified in pygame-ce docs |
-| `type` statement is available (Python 3.12+) | Low | `python --version` = 3.12 in venv |
-| Step 11 (pathlib) does not break existing relative paths | Medium — `Path.resolve()` makes relative paths absolute | Verify each path before migrating |
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+

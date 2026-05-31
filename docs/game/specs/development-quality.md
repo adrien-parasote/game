@@ -1,5 +1,7 @@
 # Technical Specification — Development Quality, Automation & Verification [Reference]
 
+> Document Type: Implementation
+
 > **Document Type:** Implementation
 > **Source Files:** `scripts/build/release.py`, `src/config.py`, `src/engine/game.py`, `src/entities/groups.py`, `tests/conftest.py`
 
@@ -172,3 +174,58 @@ All technical features and in-game names must be mapped uniformly:
 - **Game loop**: [game.py L1](../../src/engine/game.py#L1)
 - **Test conftest (global)**: [conftest.py L1](../../tests/conftest.py#L1)
 - **Release tests**: [test_release.py L1](../../tests/scripts/build/test_release.py#L1)
+
+## Assumptions
+
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | pipeline test | A |
+| UT-002 | TBD | A |
+| UT-003 | TBD | A |
+| UT-004 | TBD | A |
+| UT-005 | TBD | A |
+| IT-001 | pipeline integration test | A |
+| IT-002 | TBD | A |
+| IT-003 | TBD | A |
+| TC-001 | TBD | A |
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |

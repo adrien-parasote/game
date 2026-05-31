@@ -41,7 +41,7 @@ The `NPC` class inherits from `BaseEntity` and implements specific AI behaviors.
 - Nine-patch bubble rendered **above** the NPC's sprite using nine-patch 32×32 tiles from `assets/images/HUD/`.
 - Tail (`21-bubble_queue.png`) anchored to `npc.rect.top` with configurable `tail_gap`.
 - **Name Plate**: Renders NPC name at top-left using `23-bubble_name.png` (using subsurface slicing for variable width).
-- Text content auto-wrapped to `max_width_px=224` (7 tiles × 32px) using narrative font. This is the **text content wrap width**, distinct from the minimum bubble surface width (also 224px, see [dialogue-system.md §3.2](./dialogue-system.md)).
+- Text content auto-wrapped to `max_width_px=224` (7 tiles × 32px) using narrative font. This is the **text content wrap width**, distinct from the minimum bubble surface width (also 224px, see [dialogue-system.md §3.2](./dialogue-system.md#L1)).
 - Layout governed by constants: `_PADDING_TOP = 20`, `_PADDING_BOTTOM = 0`, `_PADDING_X = 30`. Max 4 lines per page.
 - Pagination via `page` index stored in `Game._npc_bubble`; `22-bubble_arrow.png` shown on multi-page.
 
@@ -172,6 +172,32 @@ if should_reset_frame:
 | Missing Dialogue Key | i18n lookup returns `None` | Log warning, no bubble shown | NPC stays in `interact` state until player moves away |
 | Missing Map Properties | `props.get()` returns `None` | Use engine defaults (NPC speed, etc.) | Log Warning |
 
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | TBD | TBD |
+| IT-001 | TBD | TBD |
+| TC-001 | TBD | TBD |
+
 ## Anti-patterns
 
 | ❌ Anti-Pattern | Impact | ✅ Correct Behavior |
@@ -211,10 +237,10 @@ if should_reset_frame:
 | IT-N-02 | `test_npc_interact_freezes_ai` | `../../tests/entities/test_entities.py` |
 
 ## Assumptions
-| # | Assumption | Risk | Validation |
+
+| Assumption | Risk | Handling | Source Type |
 |---|---|---|---|
-| 1 | The spritesheet of a `static_npc` follows the character layout (rows=directions, cols=frames) | Low | In-game visual + test TC-006 |
-| 2 | `facing_direction` is taken into account for all NPCs (dynamic and static) | Low | TC-009 |
-| 3 | `animation_speed` uses the same scaling formula for all NPCs | Low | TC-006 |
-| 4 | A `static_npc` with a single sprite file (a fixed direction) will never change row — `interact()` updates `current_facing` but the displayed image is constrained by the available frames | Medium | In-game visual test |
-| 5 | `_action_timer` remains 0 for a `static_npc` (AI never executes) | Low | Existing TC-005 |
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+

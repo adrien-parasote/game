@@ -1,5 +1,7 @@
 # Technical Specification — Entities & Objects System [Implementation]
 
+> Document Type: Implementation
+
 > **Document Type:** Implementation
 > **Source Files:** `src/entities/interactive.py`, `src/entities/pickup.py`, `src/entities/emote.py`, `src/entities/emote_sprite.py`, `src/engine/interaction.py`
 
@@ -82,7 +84,7 @@ For automated traps, switches, or remote doors:
 - **Interaction Constraints**: Player must be orthogonally aligned (`abs(dx) < 20` or `abs(dy) < 20`) and facing the item.
 - **On Top Exception**: If the player is standing directly on the item (distance < 16px), interaction is allowed regardless of orientation.
 
-> **Implementation note:** Distance comparisons use squared values (`dist_sq < threshold_sq`) to avoid `sqrt()` overhead. See [engine-core.md §7.1.1](./engine-core.md) for the authoritative threshold constants (`_RANGE_SQ_48`, `_RANGE_SQ_16`).
+> **Implementation note:** Distance comparisons use squared values (`dist_sq < threshold_sq`) to avoid `sqrt()` overhead. See [engine-core.md §7.1.1](./engine-core.md#L1) for the authoritative threshold constants (`_RANGE_SQ_48`, `_RANGE_SQ_16`).
 
 > **Alignment constant:** The value `20` in `abs(dx) < 20` / `abs(dy) < 20` is an intentional inline constant (not a named Settings constant), representing roughly half a tile width (16px) plus a small margin for alignment tolerance.
 
@@ -206,3 +208,55 @@ Asset: `assets/images/sprites/04-emotes.png` (5 columns × 8 rows).
 - **Ground pickups logic**: [pickup.py L1](../../src/entities/pickup.py#L1)
 - **Emote manager & sprites**: [emote.py L1](../../src/entities/emote.py#L1)
 - **Walkable override set updates**: [game.py L119](../../src/engine/game.py#L119)
+
+## Assumptions
+
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | TBD | TBD |
+| IT-001 | TBD | TBD |
+| TC-001 | TBD | TBD |
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+
+## Z-Index Sorting
+If Y-coordinates match, sort by Entity ID (lowest first) as a tie-breaker.

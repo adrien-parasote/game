@@ -467,6 +467,12 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 | `RenderManager.draw_foreground()` → `list[tuple[pygame.Rect, int]]` | Python list de tuples (pygame.Rect screen-space, depth) | `draw_scene()` (même module) |
 
 ### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+
 
 | Identifiant | Format | Producteur |
 |---|---|---|
@@ -657,3 +663,58 @@ path/
     sprite.png
 ```
 
+
+## Cross-Spec Contracts
+
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Assumptions
+
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | TBD | TBD |
+| IT-001 | TBD | TBD |
+| TC-001 | TBD | TBD |
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |

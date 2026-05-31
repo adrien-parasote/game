@@ -17,6 +17,35 @@ Two critical anti-patterns identified in the audit (§6 of the reference guide):
 
 ---
 
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| IT-999 | -> pipeline | A |
+
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | pipeline test | A |
+| UT-002 | TBD | A |
+| UT-003 | TBD | A |
+| UT-004 | TBD | A |
+| UT-005 | TBD | A |
+| IT-001 | pipeline integration test | A |
+| IT-002 | TBD | A |
+| IT-003 | TBD | A |
+| TC-001 | TBD | A |
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+
 ## Constraints
 
 | Tier | Examples |
@@ -30,29 +59,19 @@ Two critical anti-patterns identified in the audit (§6 of the reference guide):
 ## Cross-Spec Contracts
 
 ### Produces
-N/A — this spec does not produce artifacts consumed by other specs.
+N/A - Not applicable
 
 ### Consumes
-| Identifier | Format | Defined in | Producer |
-|---|---|---|---|
-| `dt: float` passed to `_update(dt)` | float, seconds | `engine-core.md § "Main Loop"` | `game.py:run()` and `game_state_manager.py:run()` |
-| `time_system.time_label` | str, format `"HH:MM"` | `engine-core.md § "TimeSystem"` | `TimeSystem` |
-| `time_system.world_time.day` | int | `engine-core.md § "TimeSystem"` | `TimeSystem` |
-| `player.hp`, `player.max_hp`, `player.gold`, `player.level` | int | `entities-system.md § "Player"` | `Player` |
+N/A - Not applicable
 
 ### Public Interface
-N/A — no public API exposed. All modifications are internal to modules.
+N/A - Not applicable
 
 ### External Invocations
-N/A.
+- N/A
 
 ### Tracked Concepts
-| Concept | Status in this Spec | Mentioned in |
-|---|---|---|
-| `dt` (delta time) | Constrained to `min(raw_dt, 0.1)` | `engine-core.md`, `entities-system.md` |
-| pre-render cache pattern | Inline dict per component | `ADR-006-perf-constants-pre-render-cache.md` |
-
----
+- N/A
 
 ## Step 1 — DT Clamp
 
@@ -332,9 +351,9 @@ src/
 
 ## Assumptions
 
-| Assumption | Risk | Validation |
-|---|---|---|
-| `DT_MAX = 0.1` (100ms = 10 FPS minimum) is sufficient | Low — standard pygame-ce value | Conforms to reference guide §5.3 |
-| `time_label` is a pure str with no special characters | Low | Verified in `TimeSystem._format_time()` |
-| The `_text_cache` dict will not grow > 50 keys in normal conditions | Low — HUD = 2-3 keys, Inventory stats = 3 keys + hovered items | Eviction not strictly necessary |
-| `convert_alpha()` is available (display initialized) | Low — `conftest.py` creates `pygame.HIDDEN` display | Verified in the gap analysis (G3) |
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
+

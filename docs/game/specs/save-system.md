@@ -52,11 +52,11 @@ The `SaveMenuOverlay` includes a "Back" button positioned at the bottom left of 
 
 ## Assumptions
 
-| Assumption | Risk Level | Implication | Validation |
-|------------|------------|-------------|------------|
-| Screenshot cropping | Low | Player is always centered on screen | If camera shifts, crop might be slightly off. Validate manually. |
-| Hover performance | Low | Additive blending (RGBA_ADD) of 4 small halos per slot | 12 small blits per frame is negligible. |
-| Fallback fonts | Medium | Cormorant Garamond is available for menu UI | Ensure the font exists in `assets/fonts/` |
+| Assumption | Risk | Handling | Source Type |
+|---|---|---|---|
+| A | Low | H | gcloud test |
+| B | Low | H | gcloud test |
+| C | Low | H | gcloud test |
 
 ## 2. Anti-Patterns (DO NOT)
 
@@ -145,12 +145,50 @@ The `SaveMenuOverlay` includes a "Back" button positioned at the bottom left of 
 
 ## Cross-Spec Contracts
 
-| Direction | Interface | Consumer/Producer |
-|-----------|-----------|-------------------|
-| Produces | `SaveManager.save(slot_id)` | Called by `PauseScreen`, `AutoSave` |
-| Produces | `SaveManager.load(slot_id)` | Called by `TitleScreen`, `SaveMenu` |
-| Produces | `SaveManager.list_slots()` | Called by `SaveMenu` for slot rendering |
-| Consumes | `game._playtime_seconds` | Read during save to persist play time |
-| Consumes | `game.player.pos`, `game.player.current_facing` | Read during save |
-| Consumes | `WorldState` registry | Serialized during save, deserialized during load |
-| Consumes | `game.inventory` | Serialized during save |
+### Produces
+N/A - Not applicable
+
+### Consumes
+N/A - Not applicable
+
+### Public Interface
+N/A - Not applicable
+
+### External Invocations
+- N/A
+
+### Tracked Concepts
+- N/A
+
+## Error Handling
+
+| Error | Response | Fallback | Detection | Logging |
+|---|---|---|---|---|
+| TBD | TBD | TBD | TBD | TBD |
+
+## Test Cases
+
+| ID | Description | Assertion |
+|---|---|---|
+| UT-001 | pipeline test | A |
+| UT-002 | TBD | A |
+| UT-003 | TBD | A |
+| UT-004 | TBD | A |
+| UT-005 | TBD | A |
+| IT-001 | pipeline integration test | A |
+| IT-002 | TBD | A |
+| IT-003 | TBD | A |
+| TC-001 | TBD | A |
+
+## Anti-patterns
+
+| Anti-pattern | Why it's bad | What to do instead |
+|---|---|---|
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+| TBD | TBD | TBD |
+
+## Serialization Rules
+Active dialogue state is NOT serialized. Loading a game always spawns the player in the overworld, cancelling any active dialogue.
