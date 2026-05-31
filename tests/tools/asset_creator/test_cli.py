@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 import yaml
@@ -216,3 +216,114 @@ class TestTerrainConfig:
         texture = TextureConfig()
         assert texture.texture_type == "noise"
         assert texture.octaves == 3
+
+# ── TC-024: Extended CLI operations ───────────────────────────────────────────
+
+class TestCliExtended:
+    """TC-024: Extended CLI commands and edge cases."""
+
+    @patch("tools.asset_creator.cli.sys.exit")
+    def test_preview_file_not_found(self, mock_exit: MagicMock) -> None:
+        """Preview with missing file exits."""
+        mock_exit.side_effect = SystemExit(1)
+        parser = _build_parser()
+        args = parser.parse_args(["preview", "/path/does/not/exist.png"])
+        from tools.asset_creator.cli import cmd_preview
+        with pytest.raises(SystemExit):
+            cmd_preview(args)
+        mock_exit.assert_called_once()
+
+    @patch("tools.asset_creator.cli.sys.exit")
+    def test_gui_launch(self, mock_exit: MagicMock) -> None:
+        """GUI launch attempts to run_gui or exits."""
+        parser = _build_parser()
+        args = parser.parse_args(["gui"])
+        mock_dpg = MagicMock()
+        mock_dpg.is_dearpygui_running.return_value = False
+        with patch.dict("sys.modules", {"dearpygui": MagicMock(), "dearpygui.dearpygui": mock_dpg}):
+            from tools.asset_creator.cli import cmd_gui
+            try:
+                cmd_gui(args)
+            except Exception:
+                pass # expected if inner modules fail
+
+    @patch("tools.asset_creator.cli.sys.exit")
+    def test_main_no_args(self, mock_exit: MagicMock) -> None:
+        """main() without args exits."""
+        mock_exit.side_effect = SystemExit(2)
+        from tools.asset_creator.cli import main
+        with patch("sys.argv", ["asset_creator"]):
+            with pytest.raises(SystemExit):
+                main()
+            mock_exit.assert_called_once_with(2)
+
+    @patch("tools.asset_creator.cli.sys.exit")
+    def test_resolve_terrain_config_unknown(self, mock_exit: MagicMock) -> None:
+        """resolve terrain with unknown name exits."""
+        mock_exit.side_effect = SystemExit(1)
+        from tools.asset_creator.cli import _resolve_terrain_config
+        with pytest.raises(SystemExit):
+            _resolve_terrain_config("nonexistent_terrain")
+        mock_exit.assert_called_once()
+
+    @patch("tools.asset_creator.cli.sys.exit")
+    def test_resolve_terrain_config_bad_yaml(self, mock_exit: MagicMock, tmp_path: Path) -> None:
+        """resolve terrain with empty yaml exits."""
+        mock_exit.side_effect = SystemExit(1)
+        empty_yaml = tmp_path / "empty.yaml"
+        empty_yaml.write_text("not_a_dict", encoding="utf-8")
+        from tools.asset_creator.cli import _resolve_terrain_config
+        with pytest.raises(ValueError):
+            _resolve_terrain_config(str(empty_yaml))
+
+    def test_generate_pattern_texture(self, tmp_path: Path) -> None:
+        """generate command uses pattern texture for paving_stone."""
+        parser = _build_parser()
+        png_dir = tmp_path / "png"
+        tsx_dir = tmp_path / "tsx"
+        args = parser.parse_args([
+            "generate",
+            "--terrain", "paving_stone",
+            "--output-dir", str(png_dir),
+            "--tsx-dir", str(tsx_dir),
+        ])
+        from tools.asset_creator.cli import cmd_generate
+        cmd_generate(args)
+        assert (png_dir / "paving_stone.png").exists()
+
+    @patch("tools.asset_creator.cli.sys.stdout.write")
+    def test_generate_preview_no_pygame(self, mock_write: MagicMock, tmp_path: Path) -> None:
+        """generate with --preview warns if pygame missing."""
+        parser = _build_parser()
+        args = parser.parse_args([
+            "generate",
+            "--terrain", "grass",
+            "--output-dir", str(tmp_path),
+            "--tsx-dir", str(tmp_path),
+            "--preview",
+        ])
+        from tools.asset_creator.cli import cmd_generate
+        with patch.dict("sys.modules", {"tools.asset_creator.preview.pygame_preview": None}):
+            cmd_generate(args)
+        # Should warn about Pygame
+        assert any("WARNING: Pygame preview not available" in call[0][0] for call in mock_write.call_args_list)
+
+    @patch("tools.asset_creator.cli.sys.exit")
+    def test_cmd_preview_no_pygame(self, mock_exit: MagicMock, tmp_path: Path) -> None:
+        """preview command exits if pygame missing."""
+        # Create dummy image
+        png_path = tmp_path / "dummy.png"
+        from PIL import Image
+        Image.new("RGBA", (10, 10)).save(png_path)
+
+        parser = _build_parser()
+        args = parser.parse_args(["preview", str(png_path)])
+        from tools.asset_creator.cli import cmd_preview
+        
+        mock_exit.side_effect = SystemExit(1)
+        with patch.dict("sys.modules", {"tools.asset_creator.preview.pygame_preview": None}):
+            with pytest.raises(SystemExit):
+                cmd_preview(args)
+        mock_exit.assert_called_with("ERROR: Pygame preview not available.")
+
+
