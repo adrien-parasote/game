@@ -1045,3 +1045,48 @@ class TimeSystem:
 
 ---
 
+
+### L-TEST-019 · 2026-05-31 · U · Minor Rework
+**`.tddexempt` supporte les globs — liste individuelle de fichiers = anti-pattern**
+
+Quand `tdd_check.py` signale des modules non-couverts en raison d'une structure de tests non-miroir (flat par domaine vs miroir exact du chemin source), la première réaction est de lister chaque fichier individuellement dans `.tddexempt`. C'est une erreur : le fichier supporte nativement les globs `**/*.py`.
+
+```
+# ❌ 131 lignes individuelles — fragile, maintenance coûteuse
+tools/src/asset_creator/core/color_ramp.py
+tools/src/asset_creator/core/tile_assembler.py
+# ... × 129
+
+# ✅ 10 globs — auto-couvrent les nouveaux fichiers du domaine
+tools/src/asset_creator/*.py
+tools/src/asset_creator/**/*.py
+game/src/ui/*.py
+game/src/engine/*.py
+# ...
+```
+
+**Piège :** `**/*.py` ne couvre pas les fichiers à la racine du répertoire (`asset_creator/cli.py`). Ajouter `*.py` ET `**/*.py` pour le répertoire racine.
+
+**Règle :** Au premier usage de `.tddexempt`, évaluer si un glob par domaine suffit avant de lister des fichiers individuels. Appliquer le test : "si j'ajoute un nouveau fichier dans ce domaine, est-ce qu'il est couvert automatiquement ?"
+
+**Evidence :** 131 lignes → 10 globs. Correction demandée explicitement par l'utilisateur après avoir observé le résultat initial.
+
+**Cause de la rework :** L'agent a créé la liste exhaustive sans d'abord vérifier si `.tddexempt` supportait les globs.
+
+---
+
+### A-TDD-001 · 2026-05-31 · U · Minor Rework
+**`tdd_check.py` miroir de chemin incompatible avec les projets multi-repo à venvs séparés**
+
+`tdd_check.py` reconstruit le chemin de test depuis la racine du projet : `source/a/b/c.py` → cherche `tests/source/a/b/test_c.py`. Dans un monorepo multi-domaine (`game/src/`, `tools/src/`), les tests vivent dans `game/tests/engine/` et `tools/tests/asset_creator/` — jamais dans un `tests/` racine.
+
+**Conséquence :** Le TDD Gate signale 131 modules "non-couverts" alors qu'ils ont 446+ tests. La solution n'est PAS de restructurer les tests (cassant, sans valeur) mais d'utiliser `.tddexempt` avec des globs de domaine.
+
+**Règle :** Dans un monorepo multi-domaine, créer `.tddexempt` avec des globs dès la première utilisation de `tdd_check.py`. Ne pas attendre que le gate échoue pour le faire.
+
+**Evidence :** 131 faux positifs résolus en 10 globs. TDD GATE PASS 100% (131/131 exempt, 0/0 non-couverts).
+
+---
+
+*Last updated: 2026-05-31 — L-TEST-019, A-TDD-001 from calibration test-retrofit + .tddexempt glob session.*
+
