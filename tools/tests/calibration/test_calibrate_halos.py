@@ -1,0 +1,168 @@
+"""Tests for calibration/calibrate_halos.py.
+
+Only the pure/testable functions are covered:
+  - _nearest: geometry — finds the closest point within a threshold
+  - _save: I/O output format — verified via tmp file
+
+main() and _draw_* and _handle_event require a pygame display and are
+marked as integration-only. They are excluded from unit coverage.
+"""
+
+from __future__ import annotations
+
+import math
+import os
+
+import pytest
+
+from calibration.calibrate_halos import (
+    FIRE_LABELS,
+    MODE_FIRE,
+    MODE_MUSH,
+    R_FIRE_L,
+    R_FIRE_M,
+    R_FIRE_S,
+    R_MUSH_L,
+    R_MUSH_M,
+    R_MUSH_S,
+    _nearest,
+    _save,
+)
+
+
+# ---------------------------------------------------------------------------
+# _nearest — returns index of closest point within threshold
+# ---------------------------------------------------------------------------
+
+
+class TestNearest:
+    def test_returns_index_of_closest_point(self):
+        points = [(100, 100, 0), (200, 200, 0), (300, 300, 0)]
+        idx = _nearest(points, 105, 105)
+        assert idx == 0
+
+    def test_returns_none_when_all_points_beyond_threshold(self):
+        points = [(0, 0, 0), (500, 500, 0)]
+        idx = _nearest(points, 250, 250, threshold=35)
+        assert idx is None
+
+    def test_returns_none_for_empty_list(self):
+        idx = _nearest([], 100, 100)
+        assert idx is None
+
+    def test_respects_threshold(self):
+        # Point is exactly at distance 36 — beyond default threshold of 35
+        points = [(100 + 36, 100, 0)]
+        idx = _nearest(points, 100, 100, threshold=35)
+        assert idx is None
+
+    def test_point_within_threshold_returned(self):
+        # Point at distance 20 — within threshold of 35
+        points = [(100 + 20, 100, 0)]
+        idx = _nearest(points, 100, 100, threshold=35)
+        assert idx == 0
+
+    def test_returns_closest_among_multiple_candidates(self):
+        # Both within threshold — should return the closer one
+        points = [(110, 100, 0), (105, 100, 0)]  # distances: 10, 5
+        idx = _nearest(points, 100, 100, threshold=35)
+        assert idx == 1
+
+    def test_works_with_fire_and_mush_combined_list(self):
+        # Simulates the combined list used in _handle_event right-click
+        fire = [(50, 50, 45), (200, 200, 28)]
+        mush = [(300, 300, 22), (400, 400, 16)]
+        all_pts = [(x, y, 0) for x, y, *_ in fire + mush]
+        idx = _nearest(all_pts, 205, 200, threshold=35)
+        assert idx == 1  # second fire point
+
+
+# ---------------------------------------------------------------------------
+# _save — writes BACKGROUND_LIGHTS and MUSHROOM_LIGHTS to a file
+# ---------------------------------------------------------------------------
+
+
+MUSH_CYAN = (70, 220, 200)
+MUSH_RED = (220, 80, 60)
+
+
+class TestSave:
+    def test_writes_fire_halos_to_file(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        os.makedirs("scripts", exist_ok=True)
+
+        fire = [(100, 200, R_FIRE_L), (300, 400, R_FIRE_M)]
+        _save(fire, [])
+
+        output = (tmp_path / "scripts" / "calibration_result.py").read_text()
+        assert "BACKGROUND_LIGHTS = [" in output
+        assert "( 100,  200, 45)" in output
+        assert "( 300,  400, 28)" in output
+        assert "lanterne" in output
+        assert "fenêtre" in output
+
+    def test_writes_mushroom_halos_to_file(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        os.makedirs("scripts", exist_ok=True)
+
+        mush = [(50, 60, R_MUSH_L, MUSH_CYAN), (70, 80, R_MUSH_M, MUSH_RED)]
+        _save([], mush)
+
+        output = (tmp_path / "scripts" / "calibration_result.py").read_text()
+        assert "MUSHROOM_LIGHTS = [" in output
+        assert "70, 220, 200" in output  # MUSH_CYAN color values
+        assert "220,  80,  60" in output  # MUSH_RED color values
+
+    def test_writes_both_sections_when_both_present(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        os.makedirs("scripts", exist_ok=True)
+
+        fire = [(100, 100, R_FIRE_S)]
+        mush = [(200, 200, R_MUSH_S, MUSH_CYAN)]
+        _save(fire, mush)
+
+        output = (tmp_path / "scripts" / "calibration_result.py").read_text()
+        assert "BACKGROUND_LIGHTS = [" in output
+        assert "MUSHROOM_LIGHTS = [" in output
+
+    def test_writes_empty_lists_when_no_halos(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        os.makedirs("scripts", exist_ok=True)
+
+        _save([], [])
+
+        output = (tmp_path / "scripts" / "calibration_result.py").read_text()
+        assert "BACKGROUND_LIGHTS = [" in output
+        assert "MUSHROOM_LIGHTS = [" in output
+
+    def test_output_starts_with_generated_comment(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        os.makedirs("scripts", exist_ok=True)
+
+        _save([], [])
+
+        output = (tmp_path / "scripts" / "calibration_result.py").read_text()
+        assert output.startswith("# Generated by")
+
+
+# ---------------------------------------------------------------------------
+# Constants — verify domain values are consistent
+# ---------------------------------------------------------------------------
+
+
+class TestConstants:
+    def test_fire_radii_ordered_large_to_small(self):
+        assert R_FIRE_L > R_FIRE_M > R_FIRE_S
+
+    def test_mushroom_radii_ordered_large_to_small(self):
+        assert R_MUSH_L > R_MUSH_M > R_MUSH_S
+
+    def test_fire_labels_cover_all_radii(self):
+        assert R_FIRE_L in FIRE_LABELS
+        assert R_FIRE_M in FIRE_LABELS
+        assert R_FIRE_S in FIRE_LABELS
+
+    def test_mode_constants_are_distinct_strings(self):
+        assert MODE_FIRE != MODE_MUSH
+        assert isinstance(MODE_FIRE, str)
+        assert isinstance(MODE_MUSH, str)

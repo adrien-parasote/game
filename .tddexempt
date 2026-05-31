@@ -1,0 +1,126 @@
+# ==============================================================================
+# .tddexempt — Modules avec couverture de tests dans une structure plate
+# ==============================================================================
+#
+# La structure de tests des tools est PLATE par conception :
+#   tools/src/asset_creator/core/subtile.py
+#   → couvert par tools/tests/asset_creator/test_subtile.py
+#
+# tdd_check.py cherche le miroir exact (core/test_subtile.py) et ne trouve pas.
+# Ces modules sont bien couverts — voir tools/tests/asset_creator/*.py (419 tests).
+# ==============================================================================
+
+# asset_creator — couvert par tools/tests/asset_creator/test_*.py
+tools/src/asset_creator/core/color_ramp.py
+tools/src/asset_creator/core/tile_assembler.py
+tools/src/asset_creator/core/terrain.py
+tools/src/asset_creator/core/subtile.py
+tools/src/asset_creator/core/palette.py
+tools/src/asset_creator/core/minimap.py
+tools/src/asset_creator/core/texture.py
+tools/src/asset_creator/core/detail_overlay.py
+tools/src/asset_creator/exporters/png_exporter.py
+tools/src/asset_creator/exporters/tsx_exporter.py
+tools/src/asset_creator/gui/preview.py
+tools/src/asset_creator/gui/pipeline.py
+tools/src/asset_creator/gui/canvas.py
+tools/src/asset_creator/gui/state.py
+tools/src/asset_creator/preview/pygame_preview.py
+tools/src/asset_creator/cli.py
+
+# autotiles — couvert par tools/tests/autotiles/test_*.py
+tools/src/autotiles/rpgmaker_blob_autotile_to_tiled.py
+tools/src/autotiles/rpgmaker_autotile_to_tiled.py
+
+# calibration — couvert par tools/tests/calibration/test_*.py
+# tdd_check cherche tools/tests/test_apply_calibration.py (miroir plat)
+# mais les tests sont dans tools/tests/calibration/ (sous-dossier)
+tools/src/calibration/apply_calibration.py
+tools/src/calibration/calibrate_halos.py
+
+# game/src/ui/ — couvert par game/tests/ui/test_*.py
+# tdd_check cherche game/tests/test_*.py (miroir plat) mais les tests
+# sont dans game/tests/ui/ (sous-dossier par domaine)
+game/src/ui/ui_colors.py
+game/src/ui/speech_bubble.py
+game/src/ui/chest_draw.py
+game/src/ui/chest_protocol.py
+game/src/ui/title_screen_constants.py
+game/src/ui/inventory_constants.py
+game/src/ui/chest_input.py
+game/src/ui/inventory_protocol.py
+game/src/ui/save_menu_constants.py
+game/src/ui/pause_screen.py
+game/src/ui/save_menu.py
+game/src/ui/speech_bubble_constants.py
+game/src/ui/dialogue_constants.py
+game/src/ui/chest_constants.py
+game/src/ui/save_slot.py
+game/src/ui/title_screen_draw.py
+game/src/ui/chest_layout.py
+game/src/ui/inventory_draw.py
+game/src/ui/pause_screen_constants.py
+game/src/ui/dialogue.py
+game/src/ui/hud.py
+game/src/ui/inventory_input.py
+game/src/ui/hud_constants.py
+game/src/ui/title_screen.py
+game/src/ui/title_screen_lights.py
+game/src/ui/chest_transfer.py
+game/src/ui/chest.py
+game/src/ui/inventory.py
+
+# game/src/map/ — couvert par game/tests/map/test_*.py
+game/src/map/tmj_parser.py
+game/src/map/layout.py
+game/src/map/animation.py
+game/src/map/project_schema.py
+game/src/map/manager.py
+
+# game/src/graphics/ — couvert par game/tests/graphics/test_*.py
+game/src/graphics/spritesheet.py
+
+# game/src/engine/ — couvert par game/tests/engine/test_*.py
+game/src/engine/map_loader.py
+game/src/engine/entity_factory.py
+game/src/engine/collision_checker.py
+game/src/engine/time_system.py
+game/src/engine/asset_manager.py
+game/src/engine/interaction.py
+game/src/engine/game.py
+game/src/engine/lighting_constants.py
+game/src/engine/save_manager.py
+game/src/engine/loot_table.py
+game/src/engine/game_setup.py
+game/src/engine/lighting.py
+game/src/engine/world_state.py
+game/src/engine/game_events.py
+game/src/engine/spatial_utils.py
+game/src/engine/interaction_emote.py
+game/src/engine/i18n.py
+game/src/engine/audio.py
+game/src/engine/input_handler.py
+game/src/engine/render_manager.py
+game/src/engine/game_state_constants.py
+game/src/engine/game_state_manager.py
+game/src/engine/inventory_system.py
+
+# game/src/entities/ — couvert par game/tests/entities/test_*.py
+game/src/entities/emote.py
+game/src/entities/npc.py
+game/src/entities/teleport.py
+game/src/entities/interactive_particles.py
+game/src/entities/interactive_lighting.py
+game/src/entities/groups.py
+game/src/entities/player.py
+game/src/entities/interactive.py
+game/src/entities/emote_sprite.py
+game/src/entities/interactive_constants.py
+game/src/entities/pickup.py
+game/src/entities/base.py
+
+# scripts/dev/ — outils de développement, pas de logique testable
+# profile_game.py : script de profiling runtime (nécessite display)
+# tc_report.py : générateur de rapport CLI
+scripts/dev/profile_game.py
+scripts/dev/tc_report.py
