@@ -30,3 +30,13 @@ ignore = ["E501"]
 
 [tool.ruff.lint.pylint]
 max-statements = 50
+
+[tool.pyright]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "venv",
+    "game/venv",
+    "tools/venv",
+    ".agents"
+]

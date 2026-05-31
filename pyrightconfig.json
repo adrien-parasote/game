@@ -1,19 +1,18 @@
 {
-  "pythonVersion": "3.12",
-  "pythonPlatform": "Darwin",
-  "extraPaths": [".", "game", "tools/src"],
   "exclude": [
+    "**/node_modules",
     "**/__pycache__",
-    ".venv",
     "venv",
-    "**/tests",
+    "game/venv",
+    "tools/venv",
     ".agents",
-    "scripts",
-    "build",
-    "dist"
+    "tools/tests",
+    "game/tests"
   ],
-  "typeCheckingMode": "basic",
-  "reportMissingModuleSource": "none",
-  "reportMissingImports": "warning",
+  "extraPaths": [
+    ".",
+    "game",
+    "tools/src"
+  ],
   "reportAttributeAccessIssue": "none"
 }
