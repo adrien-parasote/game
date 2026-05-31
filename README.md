@@ -27,6 +27,37 @@ A professional-grade, modular RPG engine built with **Python 3.12** and **Pygame
 - **💬 Dialogue & NPCs**: Advanced NPC logic with speech bubbles, branching dialogue choices, and pathway patrol patterns.
 - **📦 Inventory & Save State**: Data-driven inventory systems, loot drops, and persistent slot saves with PNG screenshot thumbnails.
 
+## 🎨 Asset Creator Tool
+
+A **procedural tileset generator** located in `tools/asset_creator/`, with both a CLI and a full GUI for creating game-ready tilesets.
+
+### Features
+
+- **OKLCh color ramp** generation with 4-color palette customization.
+- **47-tile Wang blob autotile** for seamless terrain transitions.
+- **Noise-based textures** with detail overlays and configurable edge styles.
+- **Config-driven** via YAML presets and palettes.
+
+### GUI (Dear PyGui)
+
+- Real-time tile preview with parameter sliders.
+- Paint canvas (autotile Wang blob + standalone modes).
+- History panel with undo.
+- Export to **PNG + TSX** (Tiled-compatible).
+- macOS dark mode theme (Apple HIG).
+
+### Usage
+
+```bash
+# GUI mode
+python -m tools.asset_creator gui
+
+# CLI mode
+python -m tools.asset_creator generate grass --seed 42
+python -m tools.asset_creator list
+python -m tools.asset_creator preview grass
+```
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -61,6 +92,7 @@ We maintain an **80%+ test coverage** and enforce strict quality gates.
 - `src/entities/`: Component-based entity system (Player, NPCs, Interactives).
 - `src/systems/`: Specialized logic (Lighting, Audio, Dialogue, UI).
 - `docs/specs/`: **Source of Truth**. Technical and strategic documentation.
+- `tools/asset_creator/`: Procedural tileset generation tool (CLI + GUI).
 - `.agents/`: Stream Coding methodology, skills, and architectural rules.
 
 ## 📜 Methodology: Stream Coding v6.0
