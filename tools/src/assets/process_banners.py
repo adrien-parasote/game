@@ -1,5 +1,6 @@
 import math
 
+from typing import Any, cast
 from PIL import Image, ImageDraw
 
 
@@ -55,7 +56,7 @@ def create_mech_tree_image(size=18):
     draw.rectangle([cx - 5, size - 3, cx + 5, size - 2], fill=gold_base)
 
     # Add some shading (brodé effect)
-    pixels = img.load()
+    pixels = cast(Any, img.load())
     for y in range(size):
         for x in range(size):
             r, g, b, a = pixels[x, y]
@@ -71,7 +72,7 @@ def create_mech_tree_image(size=18):
                 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     nx, ny = x + dx, y + dy
                     if 0 <= nx < size and 0 <= ny < size:  # noqa: SIM102
-                        if img.getpixel((nx, ny))[3] == 0:
+                        if cast(Any, img.getpixel((nx, ny)))[3] == 0:
                             is_border = True
                             break
                 if is_border:
@@ -88,8 +89,8 @@ def apply_gear_to_banners(input_path, output_path):
 
     gear = create_mech_tree_image(18)
     gw, gh = gear.size
-    gear_pixels = gear.load()
-    img_pixels = img.load()
+    gear_pixels = cast(Any, gear.load())
+    img_pixels = cast(Any, img.load())
 
     for i in range(12):
         bx = i * banner_width + 16  # Center X for a 32-pixel wide banner
