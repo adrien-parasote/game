@@ -410,6 +410,7 @@ class TestCliGenerate:
             variants=1,
             preview=False,
             name=None,
+            quality="v2",
         )
 
         cmd_generate(args)
@@ -437,6 +438,7 @@ class TestCliGenerate:
             variants=3,
             preview=False,
             name=None,
+            quality="v2",
         )
 
         cmd_generate(args)
@@ -461,6 +463,7 @@ class TestCliGenerate:
             variants=1,
             preview=False,
             name="my_dirt_tileset",
+            quality="v2",
         )
 
         cmd_generate(args)

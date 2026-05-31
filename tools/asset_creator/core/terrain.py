@@ -39,6 +39,22 @@ class TextureConfig:
     lacunarity: float = 2.0
     thresholds: tuple[float, ...] = (-0.2, 0.4, 0.8)
     density: float = 0.3
+    # V2 additions
+    use_smooth_ramp: bool = False
+    detail_scale: float = 0.5
+    detail_strength: float = 0.06
+    use_dithering: bool = False
+    dither_matrix_size: int = 4
+
+
+@dataclass(frozen=True)
+class DetailConfig:
+    """V2 detail overlay configuration."""
+
+    detail_type: str = "none"  # grass_blades | dirt_specks | stone_cracks | sand_grains | none
+    density: float = 0.12
+    max_height: int = 4
+    max_length: int = 4
 
 
 @dataclass(frozen=True)
@@ -50,6 +66,7 @@ class TerrainConfig:
     texture: TextureConfig = field(default_factory=TextureConfig)
     edge: EdgeConfig = field(default_factory=EdgeConfig)
     border: BorderConfig = field(default_factory=BorderConfig)
+    detail: DetailConfig = field(default_factory=DetailConfig)
 
 
 def _parse_texture_config(data: dict) -> TextureConfig:
@@ -66,6 +83,22 @@ def _parse_texture_config(data: dict) -> TextureConfig:
         lacunarity=data.get("lacunarity", 2.0),
         thresholds=thresholds,
         density=data.get("density", 0.3),
+        # V2 fields
+        use_smooth_ramp=data.get("use_smooth_ramp", False),
+        detail_scale=data.get("detail_scale", 0.5),
+        detail_strength=data.get("detail_strength", 0.06),
+        use_dithering=data.get("use_dithering", False),
+        dither_matrix_size=data.get("dither_matrix_size", 4),
+    )
+
+
+def _parse_detail_config(data: dict) -> DetailConfig:
+    """Parse detail overlay config from YAML dict."""
+    return DetailConfig(
+        detail_type=data.get("type", "none"),
+        density=data.get("density", 0.12),
+        max_height=data.get("max_height", 4),
+        max_length=data.get("max_length", 4),
     )
 
 
@@ -123,6 +156,7 @@ def load_terrain_presets(path: Path) -> dict[str, TerrainConfig]:
         texture = _parse_texture_config(config_data.get("texture", {}))
         edge = _parse_edge_config(config_data.get("edge", {}))
         border = _parse_border_config(config_data.get("border", {}))
+        detail = _parse_detail_config(config_data.get("detail", {}))
 
         result[name] = TerrainConfig(
             name=name,
@@ -130,6 +164,7 @@ def load_terrain_presets(path: Path) -> dict[str, TerrainConfig]:
             texture=texture,
             edge=edge,
             border=border,
+            detail=detail,
         )
 
     return result

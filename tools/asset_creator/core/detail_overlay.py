@@ -5,6 +5,7 @@ on top of the base texture for visual richness.
 """
 from __future__ import annotations
 
+import inspect
 import random
 
 from PIL import Image
@@ -218,5 +219,12 @@ def apply_detail_overlay(
     density = max(0.0, min(0.5, density))  # Clamp
 
     result = img.copy()
-    _OVERLAY_TYPES[detail_type](result, palette, seed, density=density, **kwargs)
+    overlay_fn = _OVERLAY_TYPES[detail_type]
+
+    # Filter kwargs to only include params the overlay function accepts
+    sig = inspect.signature(overlay_fn)
+    valid_params = set(sig.parameters.keys()) - {"img", "palette", "seed", "density"}
+    filtered_kwargs = {k: v for k, v in kwargs.items() if k in valid_params}
+
+    overlay_fn(result, palette, seed, density=density, **filtered_kwargs)
     return result
