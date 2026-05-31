@@ -11,20 +11,13 @@ from __future__ import annotations
 
 from PIL import Image
 
-from tools.asset_creator.core.subtile import Quadrant, SubTileSet, SubTileType
-
-# ---------------------------------------------------------------------------
-# Blob bitmask table (47 unique blob configurations)
-# ---------------------------------------------------------------------------
-
-BLOB_BITMASKS: tuple[int, ...] = (
-    0, 2, 8, 10, 11, 16, 18, 22, 24, 26, 27, 30, 31,
-    64, 66, 72, 74, 75, 80, 82, 86, 88, 90, 91, 94, 95,
-    104, 106, 107, 120, 122, 123, 126, 127,
-    208, 210, 214, 216, 218, 219, 222, 223,
-    248, 250, 251, 254, 255,
+from tools.asset_creator.core.constants import (
+    BLOB_BITMASKS,
+    NUM_BLOB_TILES,
+    SUBTILE_SIZE,
+    TILE_SIZE,
 )
-
+from tools.asset_creator.core.subtile import Quadrant, SubTileSet, SubTileType
 
 # ---------------------------------------------------------------------------
 # Sub-tile selection
@@ -102,7 +95,7 @@ def assemble_tile(subtile_set: SubTileSet, bitmask: int) -> Image.Image:
     """
     neighbors = _decode_bitmask(bitmask)
 
-    tile = Image.new("RGBA", (32, 32))
+    tile = Image.new("RGBA", (TILE_SIZE, TILE_SIZE))
 
     # TL quadrant at (0,0): vertical=N, horizontal=W, diagonal=NW
     tl = select_subtile(
@@ -111,26 +104,26 @@ def assemble_tile(subtile_set: SubTileSet, bitmask: int) -> Image.Image:
     )
     tile.paste(tl, (0, 0))
 
-    # TR quadrant at (16,0): vertical=N, horizontal=E, diagonal=NE
+    # TR quadrant at (SUBTILE_SIZE,0): vertical=N, horizontal=E, diagonal=NE
     tr = select_subtile(
         subtile_set, Quadrant.TR,
         neighbors["n"], neighbors["e"], neighbors["ne"],
     )
-    tile.paste(tr, (16, 0))
+    tile.paste(tr, (SUBTILE_SIZE, 0))
 
-    # BL quadrant at (0,16): vertical=S, horizontal=W, diagonal=SW
+    # BL quadrant at (0,SUBTILE_SIZE): vertical=S, horizontal=W, diagonal=SW
     bl = select_subtile(
         subtile_set, Quadrant.BL,
         neighbors["s"], neighbors["w"], neighbors["sw"],
     )
-    tile.paste(bl, (0, 16))
+    tile.paste(bl, (0, SUBTILE_SIZE))
 
-    # BR quadrant at (16,16): vertical=S, horizontal=E, diagonal=SE
+    # BR quadrant at (SUBTILE_SIZE,SUBTILE_SIZE): vertical=S, horizontal=E, diagonal=SE
     br = select_subtile(
         subtile_set, Quadrant.BR,
         neighbors["s"], neighbors["e"], neighbors["se"],
     )
-    tile.paste(br, (16, 16))
+    tile.paste(br, (SUBTILE_SIZE, SUBTILE_SIZE))
 
     return tile
 
@@ -144,10 +137,10 @@ def assemble_tileset(subtile_set: SubTileSet) -> Image.Image:
     Returns:
         A (47×32, 32) RGBA strip image containing all blob tiles.
     """
-    strip = Image.new("RGBA", (47 * 32, 32))
+    strip = Image.new("RGBA", (NUM_BLOB_TILES * TILE_SIZE, TILE_SIZE))
     for idx, bitmask in enumerate(BLOB_BITMASKS):
         tile = assemble_tile(subtile_set, bitmask)
-        strip.paste(tile, (idx * 32, 0))
+        strip.paste(tile, (idx * TILE_SIZE, 0))
     return strip
 
 

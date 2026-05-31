@@ -1,74 +1,47 @@
-# Plan d'implémentation — Nettoyage de la V1 (Tooling)
+# Plan d'implémentation — Extraction de constantes et Traduction (Tooling)
 
-Ce plan décrit la suppression complète de la logique V1 (basée sur un découpage de bruit à 4 couleurs) dans le code, la documentation et les tests de l'outil de création d'assets, afin de simplifier la base de code et ne conserver que le pipeline V2 haute qualité (rampes OKLCh et dithering).
+Ce plan décrit l'extraction systématique des constantes magiques du module `tools/asset_creator/` vers un fichier centralisé `constants.py`, ainsi que la traduction de tous les commentaires et logs en français restants vers l'anglais.
 
 ---
 
 ## User Review Required
 
-> [!WARNING]
-> La suppression de la V1 supprime la compatibilité descendante pour toute palette YAML externe ou personnalisée qui n'inclurait pas la section `ramp`. Les palettes devront obligatoirement spécifier une configuration de rampe de couleurs (`ramp`). Les 6 palettes par défaut du projet possèdent déjà cette configuration.
-
-> [!NOTE]
-> Plusieurs tests unitaires historiques axés sur le comportement V1 seront complètement supprimés.
+> [!IMPORTANT]
+> Ce refactoring est garanti sans régression. Les 361 tests unitaires et d'intégration existants dans `tests/tools/asset_creator/` seront exécutés pour valider la non-régression à chaque étape.
 
 ---
 
 ## Proposed Changes
 
-### Documentation de l'outil
+### Centralisation des constantes
 
-#### [DELETE] [asset_creator_spec.md](file:///Users/adrien.parasote/Documents/perso/game/docs/tooling/specs/asset_creator_spec.md)
-* Suppression complète de la spécification originale V1.
+#### [NEW] [constants.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/core/constants.py)
+* Création d'un module centralisé contenant toutes les dimensions de tuiles (`TILE_SIZE = 32`, `SUBTILE_SIZE = 16`, `NUM_BLOB_TILES = 47`), les configurations de bruit par défaut (`DEFAULT_NOISE_SCALE`, `DEFAULT_OCTAVES`, `DEFAULT_PERSISTENCE`, `DEFAULT_LACUNARITY`), les facteurs d'effets de bordure (`BORDER_SHADOW_FACTOR`, `BORDER_HIGHLIGHT_FACTOR`), la matrice de Bayer (`BAYER_4X4`), les répertoires d'export par défaut, les couleurs de l'application et les paramètres de preview Pygame.
 
-#### [MODIFY] [README.md](file:///Users/adrien.parasote/Documents/perso/game/docs/README.md)
-* Retirer les références et liens vers `asset_creator_spec.md`.
-
-#### [MODIFY] [asset_creator_v2_texture_quality.md](file:///Users/adrien.parasote/Documents/perso/game/docs/tooling/specs/asset_creator_v2_texture_quality.md)
-* Nettoyer les références à la V1 et supprimer les notes de rétrocompatibilité.
-
-#### [MODIFY] [asset_creator_v3_gui.md](file:///Users/adrien.parasote/Documents/perso/game/docs/tooling/specs/asset_creator_v3_gui.md)
-* Nettoyer les mentions et cas de tests liés à la V1.
-
----
-
-### Moteur de création d'assets (`tools/asset_creator`)
-
-#### [MODIFY] [palette.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/core/palette.py)
-* Rendre le champ `ramp` du fichier YAML obligatoire. Lever une `ValueError` explicite si le bloc `ramp` est absent.
-* Nettoyer la propriété `extended_colors` pour ne plus avoir de fallback sur `self.colors`.
+#### [MODIFY] [subtile.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/core/subtile.py)
+* Import et utilisation des constantes centralisées (comme `TILE_SIZE`, `SUBTILE_SIZE`, `BORDER_SHADOW_FACTOR`, `BORDER_HIGHLIGHT_FACTOR`).
 
 #### [MODIFY] [texture.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/core/texture.py)
-* Supprimer la fonction `generate_noise_texture` (moteur V1).
-* Renommer ou simplifier `generate_pattern_texture` pour qu'elle délègue directement à `generate_noise_texture_v2`.
-* Simplifier `TextureParams` en retirant les paramètres V1 obsolètes (`thresholds` et `use_smooth_ramp`, ce dernier devenant implicitement toujours vrai).
+* Remplacement de la matrice `BAYER_4X4` et des paramètres de bruit par défaut par des imports de `constants.py`.
 
-#### [MODIFY] [cli.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/cli.py)
-* Retirer l'option de ligne de commande `--quality`.
-* Nettoyer la fonction `_generate_terrain` pour appeler directement le pipeline V2 (textures et détails).
+#### [MODIFY] [tile_assembler.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/core/tile_assembler.py)
+* Remplacement de `BLOB_BITMASKS` et des tailles de tuiles par les constantes partagées.
+
+#### [MODIFY] [pipeline.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/gui/pipeline.py)
+* Remplacement des dimensions magiques de tuiles par `TILE_SIZE` et `NUM_BLOB_TILES`.
 
 #### [MODIFY] [state.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/gui/state.py)
-* Supprimer l'attribut `quality` de l'état de l'application et de la fonction `state_from_preset`.
+* Utilisation des chemins et des couleurs par défaut centralisés.
 
-#### [MODIFY] [app.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/gui/app.py) & [pipeline.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/gui/pipeline.py)
-* Supprimer les vérifications de `state.quality == "v2"` (puisque tout passe désormais en V2).
+#### [MODIFY] [app.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/gui/app.py)
+* Intégration des constantes de taille de tuile pour la peinture et le rendu DPG.
 
----
+#### [MODIFY] [pygame_preview.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/preview/pygame_preview.py)
+* Utilisation des constantes de grille de preview et de couleurs d'arrière-plan.
 
-### Tests unitaires et d'intégration (`tests/tools`)
+### Traduction Français → Anglais
 
-#### [MODIFY] [test_texture.py](file:///Users/adrien.parasote/Documents/perso/game/tests/tools/asset_creator/test_texture.py)
-* Supprimer les tests `test_v1_texture_still_works` et `test_v1_pattern_noise_still_delegates_correctly`.
-* Adapter les autres tests aux modifications de signatures de `TextureParams`.
-
-#### [MODIFY] [test_palette.py](file:///Users/adrien.parasote/Documents/perso/game/tests/tools/asset_creator/test_palette.py)
-* Supprimer les tests de compatibilité V1 (`test_v1_palette_no_ramp_section`, `test_v1_extended_colors_returns_original`, `test_v1_interpolate_works`).
-
-#### [MODIFY] [test_cli.py](file:///Users/adrien.parasote/Documents/perso/game/tests/tools/asset_creator/test_cli.py)
-* Supprimer les cas de test de génération basés sur `--quality v1`.
-
-#### [MODIFY] [test_gui_state.py](file:///Users/adrien.parasote/Documents/perso/game/tests/tools/asset_creator/test_gui_state.py) & [test_gui_integration.py](file:///Users/adrien.parasote/Documents/perso/game/tests/tools/asset_creator/test_gui_integration.py)
-* Supprimer la classe `TestIT005V1Quality` et les tests de validation de la qualité V1.
+* Audit de tous les fichiers de `tools/asset_creator` pour traduire les commentaires en français restants (principalement dans la CLI, l'UI et les explications d'algorithmes) vers l'anglais.
 
 ---
 
@@ -76,6 +49,6 @@ Ce plan décrit la suppression complète de la logique V1 (basée sur un découp
 
 ### Automated Tests
 ```bash
-# Lancer toute la suite de tests pour valider le refactoring et s'assurer que tout reste au vert en V2
-venv/bin/pytest tests/tools/asset_creator/
+# Lancer toute la suite de tests pour s'assurer que le refactoring conserve 100% de la logique
+./venv/bin/pytest tests/tools/
 ```

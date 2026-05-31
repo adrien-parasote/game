@@ -8,11 +8,22 @@ from __future__ import annotations
 
 import math
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from opensimplex import OpenSimplex
 from PIL import Image
 
+from tools.asset_creator.core.constants import (
+    BAYER_4X4,
+    DEFAULT_DENSITY,
+    DEFAULT_DETAIL_SCALE,
+    DEFAULT_DETAIL_STRENGTH,
+    DEFAULT_DITHER_MATRIX_SIZE,
+    DEFAULT_LACUNARITY,
+    DEFAULT_NOISE_SCALE,
+    DEFAULT_OCTAVES,
+    DEFAULT_PERSISTENCE,
+)
 from tools.asset_creator.core.palette import Palette, PaletteRole
 
 
@@ -30,15 +41,15 @@ class TextureParams:
     """
 
     texture_type: str = "noise"
-    scale: float = 0.15
-    octaves: int = 3
-    persistence: float = 0.5
-    lacunarity: float = 2.0
-    density: float = 0.3
-    detail_scale: float = 0.5
-    detail_strength: float = 0.06
+    scale: float = DEFAULT_NOISE_SCALE
+    octaves: int = DEFAULT_OCTAVES
+    persistence: float = DEFAULT_PERSISTENCE
+    lacunarity: float = DEFAULT_LACUNARITY
+    density: float = DEFAULT_DENSITY
+    detail_scale: float = DEFAULT_DETAIL_SCALE
+    detail_strength: float = DEFAULT_DETAIL_STRENGTH
     use_dithering: bool = False
-    dither_matrix_size: int = 4
+    dither_matrix_size: int = DEFAULT_DITHER_MATRIX_SIZE
 
 
 def sample_toroidal_noise(
@@ -109,16 +120,8 @@ def _compute_multi_octave_noise(
     return value
 
 
-# ---------------------------------------------------------------------------
 # V2 smooth ramp constants and helpers
 # ---------------------------------------------------------------------------
-
-BAYER_4X4 = (
-    ( 0,  8,  2, 10),
-    (12,  4, 14,  6),
-    ( 3, 11,  1,  9),
-    (15,  7, 13,  5),
-)
 
 
 def _ramp_color_smooth(

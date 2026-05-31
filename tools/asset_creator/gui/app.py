@@ -9,12 +9,12 @@ import dataclasses
 import random
 import time
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 import dearpygui.dearpygui as dpg
 from PIL import Image
 
+from tools.asset_creator.core.constants import TILE_SIZE
 from tools.asset_creator.core.minimap import (
     compute_bitmask,
     find_closest_bitmask_index,
@@ -32,8 +32,8 @@ from tools.asset_creator.gui.state import AppState, state_from_preset
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-CELL_SIZE = 32
-PREVIEW_SCALE = 4  # 32 -> 128
+CELL_SIZE = TILE_SIZE
+PREVIEW_SCALE = 4  # TILE_SIZE -> 128
 CANVAS_COLS = 16
 CANVAS_ROWS = 12
 LEFT_PANEL_WIDTH = 280
@@ -141,7 +141,7 @@ def _update_preview_texture() -> None:
     data = pil_to_dpg_rgba(preview_img)
     dpg.set_value("preview_texture", data)
     px = composited.getpixel((16, 16))
-    _log(f"Preview updated - mode={mode}, sample_px={px}")
+    _log(f"Preview refreshed - mode={mode}, sample_px={px}")
 
 
 def _tile_for_cell(x: int, y: int) -> list[float]:
@@ -215,7 +215,7 @@ def _push_history() -> None:
     )
     _history.append(entry)
     _rebuild_history_panel()
-    _log(f"Historique #{entry.index}: {desc}")
+    _log(f"History #{entry.index}: {desc}")
 
 
 def _rebuild_history_panel() -> None:
@@ -245,7 +245,7 @@ def _on_history_select(sender: Any = None, app_data: Any = None, user_data: Any 
     if idx < 0 or idx >= len(_history):
         return
     entry = _history[idx]
-    _log(f"Restauration historique #{idx}: {entry.description}")
+    _log(f"Restoring history #{idx}: {entry.description}")
     _restoring_history = True
     # Deselect all history items, then select the clicked one
     for h in _history:
@@ -263,7 +263,7 @@ def _on_history_select(sender: Any = None, app_data: Any = None, user_data: Any 
         dpg.configure_item("edge_header", show=(entry.mode == "autotile"))
     # Update export button
     if dpg.does_item_exist("btn_export"):
-        lbl = "Exporter Tile PNG" if entry.mode == "standalone" else "Exporter PNG + TSX"
+        lbl = "Export Standalone Tile" if entry.mode == "standalone" else "Export Autotile PNG + TSX"
         dpg.configure_item("btn_export", label=lbl)
     _do_regenerate()
     _restoring_history = False
@@ -282,20 +282,20 @@ def _do_regenerate() -> None:
         _standalone_tile = generate_standalone_tile(_state, _presets)
         _tiles = []
         elapsed = time.time() - start
-        _log(f"Tile standalone generee en {elapsed:.2f}s")
+        _log(f"Standalone tile generated in {elapsed:.2f}s")
         _update_preview_texture()
         _update_all_canvas()
         if dpg.does_item_exist("status_text"):
-            dpg.set_value("status_text", "Tile standalone prete")
+            dpg.set_value("status_text", "Standalone tile ready")
     else:
         _tiles = regenerate_tileset(_state, _presets)
         _standalone_tile = None
         elapsed = time.time() - start
-        _log(f"{len(_tiles)} autotiles generes en {elapsed:.2f}s")
+        _log(f"{len(_tiles)} autotiles generated in {elapsed:.2f}s")
         _update_preview_texture()
         _update_all_canvas()
         if dpg.does_item_exist("status_text"):
-            dpg.set_value("status_text", f"Regenere ({len(_tiles)} tiles)")
+            dpg.set_value("status_text", f"Regenerated ({len(_tiles)} tiles)")
 
     _push_history()
 
@@ -375,7 +375,7 @@ def _on_clear_canvas(sender: Any = None, app_data: Any = None, _user: Any = None
     if _canvas is not None:
         _canvas.clear()
         _update_all_canvas()
-        _log("Canvas efface")
+        _log("Canvas cleared")
 
 
 def _on_mode_change(sender: Any = None, app_data: Any = None, _user: Any = None) -> None:
@@ -412,15 +412,15 @@ def _on_export(sender: Any = None, app_data: Any = None, _user: Any = None) -> N
             png_path, tsx_path = do_export_autotile(_state, _tiles)
             msg = f"Exporte: {png_path.name}, {tsx_path.name}"
         else:
-            _log("ERREUR: Rien a exporter")
+            _log("ERROR: Nothing to export")
             return
         _log(msg)
         if dpg.does_item_exist("status_text"):
             dpg.set_value("status_text", msg)
     except (OSError, ValueError) as exc:
-        _log(f"Erreur export: {exc}")
+        _log(f"Export error: {exc}")
         if dpg.does_item_exist("status_text"):
-            dpg.set_value("status_text", f"Erreur export: {exc}")
+            dpg.set_value("status_text", f"Export error: {exc}")
 
 
 def _sync_widgets_from_state() -> None:
@@ -640,7 +640,7 @@ def _build_left_panel() -> None:
     preset_names = sorted(_presets.keys())
     with dpg.child_window(width=LEFT_PANEL_WIDTH, tag="left_panel"):
         # ── Terrain Preset (always visible) ──
-        dpg.add_text("Preset terrain")
+        dpg.add_text("Terrain Preset")
         dpg.add_combo(
             preset_names, default_value=_state.terrain_name,
             tag="combo_terrain", callback=_on_preset_change, width=-1,
@@ -652,22 +652,22 @@ def _build_left_panel() -> None:
             _add_slider_f("Scale", "slider_scale", _state.scale, 0.01, 1.0)
             _add_slider_i("Octaves", "slider_octaves", _state.octaves, 1, 8)
             _add_slider_f("Persistence", "slider_persistence", _state.persistence, 0.0, 1.0)
-            _add_slider_f("Lacunarite", "slider_lacunarity", _state.lacunarity, 1.0, 4.0)
+            _add_slider_f("Lacunarity", "slider_lacunarity", _state.lacunarity, 1.0, 4.0)
             dpg.add_checkbox(
-                label="Rampe lisse", default_value=_state.use_smooth_ramp,
+                label="Smooth ramp", default_value=_state.use_smooth_ramp,
                 tag="check_smooth_ramp", callback=_on_param_change,
             )
             dpg.add_checkbox(
-                label="Tramage", default_value=_state.use_dithering,
+                label="Dithering", default_value=_state.use_dithering,
                 tag="check_dithering", callback=_on_param_change,
             )
 
-        # ── Couleurs de palette ──
-        with dpg.collapsing_header(label="Couleurs", default_open=True):
+        # ── Palette Colors ──
+        with dpg.collapsing_header(label="Colors", default_open=True):
             _color_labels = [
-                ("Ombre", "picker_shadow", _state.color_shadow),
+                ("Shadow", "picker_shadow", _state.color_shadow),
                 ("Base", "picker_base", _state.color_base),
-                ("Lumiere", "picker_highlight", _state.color_highlight),
+                ("Highlight", "picker_highlight", _state.color_highlight),
                 ("Accent", "picker_accent", _state.color_accent),
             ]
             for label, tag, rgb in _color_labels:
@@ -682,40 +682,40 @@ def _build_left_panel() -> None:
 
         # ── Detail Overlay ──
         with dpg.collapsing_header(label="Detail", default_open=False):
-            _add_slider_f("Echelle detail", "slider_detail_scale", _state.detail_scale, 0.0, 2.0)
-            _add_slider_f("Intensite", "slider_detail_strength", _state.detail_strength, 0.0, 0.3)
-            _add_slider_f("Densite", "slider_detail_density", _state.detail_density, 0.0, 1.0)
-            _add_slider_i("Hauteur max", "slider_detail_height", _state.detail_max_height, 1, 16)
-            _add_slider_i("Longueur max", "slider_detail_length", _state.detail_max_length, 1, 16)
+            _add_slider_f("Detail scale", "slider_detail_scale", _state.detail_scale, 0.0, 2.0)
+            _add_slider_f("Strength", "slider_detail_strength", _state.detail_strength, 0.0, 0.3)
+            _add_slider_f("Density", "slider_detail_density", _state.detail_density, 0.0, 1.0)
+            _add_slider_i("Max height", "slider_detail_height", _state.detail_max_height, 1, 16)
+            _add_slider_i("Max length", "slider_detail_length", _state.detail_max_length, 1, 16)
 
         # ── Edge (autotile only) ──
-        with dpg.collapsing_header(label="Bordure", default_open=False, tag="edge_header"):
-            dpg.add_text("Style de bordure")
+        with dpg.collapsing_header(label="Border", default_open=False, tag="edge_header"):
+            dpg.add_text("Border Style")
             dpg.add_combo(
                 list(_EDGE_LABELS.keys()),
                 default_value=_EDGE_REVERSE.get(_state.edge_style, _state.edge_style),
                 tag="combo_edge_style", callback=_on_param_change, width=-1,
             )
-            _add_slider_i("Largeur", "slider_edge_width", _state.edge_width, 1, 8)
-            _add_slider_f("Echelle bruit", "slider_edge_noise", _state.edge_noise_scale, 0.0, 1.0)
+            _add_slider_i("Width", "slider_edge_width", _state.edge_width, 1, 8)
+            _add_slider_f("Noise Scale", "slider_edge_noise", _state.edge_noise_scale, 0.0, 1.0)
 
         # ── Seed ──
-        with dpg.collapsing_header(label="Graine", default_open=True):
+        with dpg.collapsing_header(label="Seed", default_open=True):
             with dpg.group(horizontal=True):
                 dpg.add_input_int(
                     default_value=_state.seed,
                     tag="input_seed", callback=_on_param_change, width=-60,
                 )
-                dpg.add_button(label="Alea", callback=_on_random_seed, width=50)
+                dpg.add_button(label="Rand", callback=_on_random_seed, width=50)
 
         # ── Output ──
-        with dpg.collapsing_header(label="Sortie", default_open=False):
-            dpg.add_text("Dossier PNG")
+        with dpg.collapsing_header(label="Output", default_open=False):
+            dpg.add_text("PNG Directory")
             dpg.add_input_text(
                 default_value=_state.output_dir,
                 tag="input_output_dir", width=-1,
             )
-            dpg.add_text("Dossier TSX")
+            dpg.add_text("TSX Directory")
             dpg.add_input_text(
                 default_value=_state.tsx_dir,
                 tag="input_tsx_dir", width=-1,
@@ -723,12 +723,12 @@ def _build_left_panel() -> None:
 
         dpg.add_spacer(height=8)
         dpg.add_button(
-            label="Regenerer", callback=lambda: _do_regenerate(),
+            label="Regenerate", callback=lambda: _do_regenerate(),
             width=-1, height=30,
         )
         dpg.add_spacer(height=4)
         dpg.add_button(
-            label="Exporter PNG + TSX", callback=_on_export,
+            label="Export PNG + TSX", callback=_on_export,
             width=-1, height=30, tag="btn_export",
         )
         dpg.add_spacer(height=4)
@@ -745,7 +745,7 @@ def _build_center_panel() -> None:
     CENTER_PANEL_WIDTH = max(canvas_w + 40, 620)
 
     with dpg.child_window(width=CENTER_PANEL_WIDTH, tag="center_panel"):
-        dpg.add_text("Apercu tile (4x)")
+        dpg.add_text("Tile Preview (4x)")
         with dpg.drawlist(width=preview_size, height=preview_size):
             dpg.draw_image("preview_texture", (0, 0), (preview_size, preview_size))
 
@@ -753,7 +753,7 @@ def _build_center_panel() -> None:
         dpg.add_separator()
         dpg.add_spacer(height=4)
 
-        # ── Selecteur de mode ──
+        # ── Mode Selector ──
         with dpg.group(horizontal=True):
             dpg.add_text("Canvas")
             dpg.add_spacer(width=12)
@@ -762,9 +762,9 @@ def _build_center_panel() -> None:
                 tag="radio_mode", callback=_on_mode_change, horizontal=True,
             )
             dpg.add_spacer(width=12)
-            dpg.add_text("Gauche=peindre  Droit=effacer", color=(130, 135, 140, 255))
+            dpg.add_text("Left-Click = Paint, Right-Click = Erase", color=(130, 135, 140, 255))
             dpg.add_spacer(width=12)
-            dpg.add_button(label="Effacer", callback=_on_clear_canvas)
+            dpg.add_button(label="Clear", callback=_on_clear_canvas)
 
         dpg.add_spacer(height=4)
 
@@ -786,8 +786,8 @@ def _build_center_panel() -> None:
         dpg.add_separator()
         dpg.add_spacer(height=4)
 
-        # ── Journal ──
-        with dpg.collapsing_header(label="Journal", default_open=False):
+        # ── Log ──
+        with dpg.collapsing_header(label="Log", default_open=False):
             with dpg.child_window(height=120, tag="log_window", border=True):
                 dpg.add_text("", tag="log_text", wrap=0, color=(160, 170, 160, 255))
 
@@ -795,7 +795,7 @@ def _build_center_panel() -> None:
 def _build_history_panel() -> None:
     """Build right panel: history list."""
     with dpg.child_window(width=-1, tag="history_panel"):
-        dpg.add_text("Historique")
+        dpg.add_text("History")
         dpg.add_spacer(height=4)
         with dpg.child_window(height=-1, tag="history_list", border=True):
             pass  # filled dynamically by _rebuild_history_panel
@@ -833,7 +833,7 @@ def run_gui() -> None:
     global _state, _canvas, _tiles, _presets
 
     dpg.create_context()
-    dpg.create_viewport(title="Createur de Tiles V3", width=1400, height=850)
+    dpg.create_viewport(title="Asset Creator V3", width=1400, height=850)
 
     _presets = get_builtin_presets()
     _state = state_from_preset("grass", _presets)
@@ -842,16 +842,16 @@ def run_gui() -> None:
     _apply_theme()
     _register_textures()
 
-    _log("Demarrage Createur de Tiles V3...")
+    _log("Starting Asset Creator V3...")
     _log(f"Presets: {sorted(_presets.keys())}")
-    _log(f"Preset initial: {_state.terrain_name}")
+    _log(f"Initial preset: {_state.terrain_name}")
 
-    # Generation initiale
+    # Initial generation
     _tiles = regenerate_tileset(_state, _presets)
-    _log(f"Generation initiale: {len(_tiles)} tiles")
+    _log(f"Initial generation: {len(_tiles)} tiles")
     if _tiles:
         t0 = _tiles[0]
-        _log(f"Tile[0] mode={t0.mode}, taille={t0.size}, px(16,16)={t0.getpixel((16, 16))}")
+        _log(f"Tile[0] mode={t0.mode}, size={t0.size}, px(16,16)={t0.getpixel((16, 16))}")
 
     with dpg.window(tag="primary_window"):
         with dpg.group(horizontal=True):
@@ -870,7 +870,7 @@ def run_gui() -> None:
     dpg.show_viewport()
     dpg.set_primary_window("primary_window", True)
 
-    _log("Interface prete")
+    _log("Interface ready")
 
     # Main loop with debounce tick
     while dpg.is_dearpygui_running():

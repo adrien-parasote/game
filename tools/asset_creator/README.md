@@ -1,152 +1,152 @@
 # Asset Creator Tool
 
-Outil de génération de tilesets blob (47 tuiles) pour [Tiled Map Editor](https://www.mapeditor.org/), avec **GUI interactive** et **CLI**.
+Blob tileset (47 tiles) generation tool for [Tiled Map Editor](https://www.mapeditor.org/), featuring an **interactive GUI** and **CLI**.
 
-Génère des fichiers **PNG** (tileset strip) + **TSX** (Wang set XML) directement utilisables dans Tiled, à partir de palettes de couleurs et de textures procédurales.
+Generates **PNG** files (horizontal tileset strip) + **TSX** files (Wang set XML) directly usable in Tiled, built from color palettes and procedural textures.
 
-## GUI Interactive (V3)
+## Interactive GUI (V3)
 
-Lancez l'interface graphique Dear PyGui pour créer des tilesets en temps réel :
+Launch the Dear PyGui graphical interface to create tilesets in real time:
 
 ```bash
 python3 -m tools.asset_creator gui
 ```
 
-### Fonctionnalités
+### Features
 
-- **Aperçu temps réel** — prévisualisation 4× d'une tuile avec mise à jour instantanée
-- **Sliders de paramètres** — texture, détail, bordure, seed
-- **Palette couleurs** — 4 pickers (Ombre, Base, Lumière, Accent) avec rampe OKLCh
-- **Canvas de peinture** — mode autotile (Wang blob 47 tiles) + mode standalone
-- **Historique** — panneau avec undo : cliquer pour restaurer un état précédent
-- **Export** — PNG + TSX directement depuis l'interface
-- **Thème macOS** — dark mode natif (Apple HIG)
+- **Real-time Preview** — 4× preview of a single tile with instant updates
+- **Parameter Sliders** — control texture, detail, border, and seed
+- **Color Palette** — 4 color pickers (Shadow, Base, Highlight, Accent) with OKLCh gradient generation
+- **Painting Canvas** — autotile mode (Wang blob 47 tiles) + standalone mode
+- **History** — panel with undo functionality: click to restore any previous state
+- **Export** — PNG + TSX directly from the interface
+- **macOS Theme** — native dark mode appearance (Apple HIG)
 
 ## CLI
 
 ```bash
-# Lister les terrains disponibles
+# List available terrains
 python3 -m tools.asset_creator list
 
-# Générer un tileset herbe
+# Generate a grass tileset
 python3 -m tools.asset_creator generate --terrain grass
 
-# Générer en qualité V2 (rampe OKLCh + dithering + détails)
+# Generate with V2 quality (OKLCh gradient + dithering + details)
 python3 -m tools.asset_creator generate --terrain grass --quality v2
 
-# Générer avec un seed spécifique + preview Pygame
+# Generate with a specific seed + Pygame preview
 python3 -m tools.asset_creator generate --terrain dirt --seed 42 --preview
 
-# Générer 3 variantes
+# Generate 3 variants
 python3 -m tools.asset_creator generate --terrain water --variants 3
 
-# Nom de fichier personnalisé
+# Custom output name
 python3 -m tools.asset_creator generate --terrain sand --name desert_sand
 
-# Previewer un tileset existant
+# Preview an existing tileset
 python3 -m tools.asset_creator preview assets/images/autotiles/grass.png
 ```
 
-## Terrains disponibles
+## Available Terrains
 
 | Preset | Palette | Texture | Edge |
 |--------|---------|---------|------|
-| `grass` | forest_grass (verts) | noise | organic |
-| `dirt` | dry_dirt (bruns) | noise | organic |
-| `paving_stone` | stone_path (gris) | stippled | straight |
-| `sand` | sand (jaunes sable) | noise | dithered |
-| `snow` | snow (blancs/bleus) | stippled | dithered |
-| `water` | water (bleus) | noise | organic |
+| `grass` | forest_grass (greens) | noise | organic |
+| `dirt` | dry_dirt (browns) | noise | organic |
+| `paving_stone` | stone_path (greys) | stippled | straight |
+| `sand` | sand (sand yellows) | noise | dithered |
+| `snow` | snow (whites/blues) | stippled | dithered |
+| `water` | water (blues) | noise | organic |
 
-## Sortie
+## Output
 
-Par défaut :
-- **PNG** → `assets/images/autotiles/<nom>.png` — strip horizontal de 47 tuiles 32×32
-- **TSX** → `assets/tiled/autotiles/<nom>.tsx` — Wang set type `mixed` pour autotiling blob
+By default:
+- **PNG** → `assets/images/autotiles/<name>.png` — horizontal strip of 47 tiles (32×32 each)
+- **TSX** → `assets/tiled/autotiles/<name>.tsx` — Wang set with `mixed` type for blob autotiling
 
-Les fichiers TSX référencent le PNG via un chemin relatif et sont directement importables dans Tiled.
+TSX files reference the PNG via a relative path and are directly importable into Tiled.
 
 ## Architecture
 
 ```
 tools/asset_creator/
-├── __main__.py          # Point d'entrée (python3 -m tools.asset_creator)
-├── cli.py               # Commandes CLI (generate, list, preview, gui)
+├── __main__.py          # Entry point (python3 -m tools.asset_creator)
+├── cli.py               # CLI commands (generate, list, preview, gui)
 ├── config/
-│   ├── palettes/        # 6 palettes YAML (4 couleurs + rôles + rampe V2)
-│   └── terrain_presets.yaml  # Définitions des terrains
+│   ├── palettes/        # 6 YAML palettes (4 colors + roles + V2 gradient config)
+│   └── terrain_presets.yaml  # Terrain definitions
 ├── core/
-│   ├── color_ramp.py    # Espace couleur OKLCh, rampes avec hue-shift
-│   ├── detail_overlay.py  # Détails procéduraux (herbe, terre, pierre, sable)
-│   ├── minimap.py       # Calcul bitmask Wang blob (framework-agnostique)
-│   ├── palette.py       # Chargement palette YAML → Palette dataclass
+│   ├── color_ramp.py    # OKLCh color space, gradients with hue-shift
+│   ├── detail_overlay.py  # Procedural details (grass blades, dirt specks, stone cracks, sand grains)
+│   ├── minimap.py       # Wang blob bitmask computation (framework-agnostic)
+│   ├── palette.py       # YAML palette loader → Palette dataclass
 │   ├── subtile.py       # 20 sub-tiles 16×16 (4 quadrants × 5 types)
-│   ├── terrain.py       # Configuration terrain (TerrainConfig, DetailConfig, EdgeConfig)
-│   ├── texture.py       # Génération procédurale (noise toroïdal, patterns, V2 smooth ramp)
-│   └── tile_assembler.py  # Assemblage 47 tuiles blob depuis les sub-tiles
+│   ├── terrain.py       # Terrain configuration (TerrainConfig, DetailConfig, EdgeConfig)
+│   ├── texture.py       # Procedural generation (toroidal noise, patterns, V2 smooth ramp)
+│   └── tile_assembler.py  # Blob autotile assembly (47 tiles) from sub-tiles
 ├── exporters/
-│   ├── png_exporter.py  # Export PNG avec validation
-│   └── tsx_exporter.py  # Export TSX (Wang set XML)
+│   ├── png_exporter.py  # PNG export with validation
+│   └── tsx_exporter.py  # TSX export (Wang set XML)
 ├── gui/
-│   ├── app.py           # Application Dear PyGui (fenêtre, layout, callbacks)
-│   ├── canvas.py        # État du canvas de peinture (CanvasState)
-│   ├── pipeline.py      # Pipeline de génération (texture → tiles → export)
-│   ├── preview.py       # Conversion PIL → DPG texture (RGBA float32)
-│   └── state.py         # AppState (dataclass gelée), chargement presets
+│   ├── app.py           # Dear PyGui application (window, layout, callbacks)
+│   ├── canvas.py        # Painting canvas state (CanvasState)
+│   ├── pipeline.py      # Generation pipeline (texture → tiles → export)
+│   ├── preview.py       # PIL → DPG texture conversion (RGBA float32)
+│   └── state.py         # AppState (frozen dataclass), presets loader
 └── preview/
-    └── pygame_preview.py  # Preview Pygame legacy (strip + mini-map)
+    └── pygame_preview.py  # Pygame legacy previewer (strip + mini-map)
 ```
 
-## Pipeline de génération
+## Generation Pipeline
 
-### V1 (basique)
+### V1 (basic)
 ```
-Palette YAML ─→ Texture procédurale ─→ 20 Sub-tiles ─→ 47 Blob tiles ─→ PNG + TSX
+YAML Palette ─→ Procedural Texture ─→ 20 Sub-tiles ─→ 47 Blob tiles ─→ PNG + TSX
      │                  │                     │                │
-  4 couleurs      bruit toroïdal         masques d'edge    bitmask NW/N/NE
-  + rôles         (seamless tiling)      + bordures        W/E/SW/S/SE
+  4 colors        toroidal noise         edge masks       NW/N/NE bitmask
+  + roles         (seamless tiling)      + borders        W/E/SW/S/SE
 ```
 
-### V2 (qualité améliorée)
+### V2 (improved quality)
 ```
-Palette YAML ─→ Rampe OKLCh ─→ Interpolation smooth ─→ Dithering Bayer
+YAML Palette ─→ OKLCh Gradient ─→ Smooth Interpolation ─→ Bayer Dithering
      │              │                   │                     │
-  4 couleurs    hue-shift          perceptuellement       matrice ordonnée
-  + ramp_config  ombre/lumière    uniforme (Oklab)       (2×2, 4×4, 8×8)
+  4 colors     hue-shift          perceptually           ordered matrix
+  + ramp_config shadow/highlight   uniform (Oklab)       (2×2, 4×4, 8×8)
                                                                │
                                                     ─→ Detail overlay ─→ Sub-tiles ─→ ...
-                                                         (herbe, terre,
-                                                          pierre, sable)
+                                                         (grass blades, dirt
+                                                          specks, stone cracks)
 ```
 
-1. **Palette** — 4 couleurs (shadow, base, highlight, accent) depuis un fichier YAML
-2. **Rampe OKLCh** *(V2)* — génération d'une rampe 7-11 couleurs avec hue-shift (ombres froides, lumières chaudes)
-3. **Texture** — bruit Simplex 4D toroïdal pour du tiling parfaitement seamless, ou patterns (solid, dithered, stippled, striped)
-4. **Interpolation smooth** *(V2)* — mapping continu dans l'espace OKLCh (pas de banding)
-5. **Dithering** *(V2)* — matrice de Bayer ordonnée pour transitions douces
-6. **Detail overlay** *(V2)* — stamps procéduraux (brins d'herbe, grains de terre, fissures de pierre, grains de sable)
-7. **Sub-tiles** — 20 pièces de 16×16 (fill, edge_v, edge_h, outer_corner, inner_corner) × 4 quadrants
-8. **Assemblage** — composition des 47 configurations blob (bitmask 8 voisins) en sélectionnant le bon sub-tile par quadrant
-9. **Export** — PNG strip validé (pas de tuile transparente) + TSX avec Wang IDs
+1. **Palette** — 4 colors (shadow, base, highlight, accent) loaded from a YAML file.
+2. **OKLCh Gradient** *(V2)* — generates a 7-11 color gradient with hue-shift (cool shadows, warm highlights).
+3. **Texture** — toroidal 4D Simplex noise for perfectly seamless tiling, or patterns (solid, dithered, stippled, striped).
+4. **Smooth Interpolation** *(V2)* — continuous mapping in OKLCh space (avoids banding).
+5. **Dithering** *(V2)* — ordered Bayer matrix for smooth transitions.
+6. **Detail Overlay** *(V2)* — procedural stamps (grass blades, dirt specks, stone cracks, sand grains).
+7. **Sub-tiles** — 20 parts of 16×16 (fill, edge_v, edge_h, outer_corner, inner_corner) × 4 quadrants.
+8. **Assembly** — composition of the 47 blob configurations (8-neighbor bitmask) by selecting the correct sub-tile per quadrant.
+9. **Export** — validated PNG strip (no transparent tiles) + TSX file with Wang IDs.
 
-## Créer un terrain personnalisé
+## Creating a Custom Terrain
 
-### 1. Créer une palette
+### 1. Create a Palette
 
 ```yaml
-# config/palettes/ma_palette.yaml
-name: ma_palette
+# config/palettes/my_palette.yaml
+name: my_palette
 colors:
-  - "#2d5a1e"   # shadow (le plus sombre)
+  - "#2d5a1e"   # shadow (the darkest)
   - "#3e7c27"   # base
   - "#5a9e3a"   # highlight
-  - "#7bc04f"   # accent (le plus clair)
+  - "#7bc04f"   # accent (the lightest)
 roles:
   shadow: 0
   base: 1
   highlight: 2
   accent: 3
-# Optionnel — rampe V2 avec hue-shift
+# Optional — V2 gradient with hue-shift
 ramp:
   base_color: "#5a9e3a"
   steps: 9
@@ -155,22 +155,22 @@ ramp:
   lightness_range: 0.25
 ```
 
-### 2. Ajouter le terrain dans `config/terrain_presets.yaml`
+### 2. Add the Terrain in `config/terrain_presets.yaml`
 
 ```yaml
 terrains:
-  mon_terrain:
-    palette: ma_palette
+  my_terrain:
+    palette: my_palette
     texture:
       type: noise        # noise | solid | dithered | stippled | striped
-      scale: 0.15         # échelle du bruit (plus petit = plus lisse)
-      octaves: 3          # couches de détail
-      persistence: 0.5    # atténuation par octave
-      thresholds: [-0.2, 0.4, 0.8]  # seuils de mapping couleur
+      scale: 0.15         # noise scale (smaller = smoother)
+      octaves: 3          # layers of detail (octaves)
+      persistence: 0.5    # persistence per octave
+      thresholds: [-0.2, 0.4, 0.8]  # color mapping thresholds
     edge:
       style: organic      # organic | straight | dithered
-      width: 3            # largeur de transition en pixels
-      noise_scale: 0.3    # amplitude du bruit sur les bords
+      width: 3            # transition width in pixels
+      noise_scale: 0.3    # noise amplitude on edges
     detail:
       type: grass_blades  # grass_blades | dirt_specks | stone_cracks | sand_grains | none
       density: 0.12
@@ -178,44 +178,44 @@ terrains:
       max_length: 4
 ```
 
-### 3. Générer
+### 3. Generate
 
 ```bash
 # Via CLI
-python3 -m tools.asset_creator generate --terrain mon_terrain --quality v2 --preview
+python3 -m tools.asset_creator generate --terrain my_terrain --quality v2 --preview
 
 # Via GUI
 python3 -m tools.asset_creator gui
 ```
 
-## Preview Pygame (legacy)
+## Pygame Preview (legacy)
 
-La preview Pygame affiche :
-- **En haut** : le strip complet des 47 tuiles
-- **En bas** : une mini-map aléatoire montrant les tuiles en contexte
+The Pygame preview displays:
+- **Top**: the complete strip of 47 tiles
+- **Bottom**: a random mini-map showing the tiles in a layout context
 
-Contrôles :
-- `ESPACE` — régénérer la mini-map
-- `ESC` — quitter
+Controls:
+- `SPACE` — regenerate the mini-map
+- `ESC` — quit
 
-## Dépendances
+## Dependencies
 
-- `Pillow` — manipulation d'images
-- `opensimplex` — bruit Simplex pour les textures procédurales
-- `numpy` — calculs numériques (rampe OKLCh, dithering)
-- `PyYAML` — lecture des fichiers de configuration
-- `dearpygui` — GUI interactive (V3)
-- `pygame-ce` — preview legacy (optionnel)
+- `Pillow` — image manipulation
+- `opensimplex` — Simplex noise for procedural textures
+- `numpy` — numerical computations (OKLCh gradient, dithering)
+- `PyYAML` — configuration file loading
+- `dearpygui` — interactive GUI (V3)
+- `pygame-ce` — legacy preview (optional)
 
 ## Tests
 
 ```bash
-# Tous les tests (371 tests)
+# All tests (371 tests)
 python3 -m pytest tests/tools/asset_creator/ -v
 
-# Uniquement les tests d'intégration
+# Integration tests only
 python3 -m pytest tests/tools/asset_creator/test_integration.py -v
 
-# Tests GUI (état, preview, canvas)
+# GUI tests (state, preview, canvas)
 python3 -m pytest tests/tools/asset_creator/test_gui_state.py tests/tools/asset_creator/test_gui_preview.py tests/tools/asset_creator/test_canvas.py -v
 ```

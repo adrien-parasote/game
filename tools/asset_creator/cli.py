@@ -13,6 +13,12 @@ from pathlib import Path
 
 from PIL import Image
 
+from tools.asset_creator.core.constants import (
+    DEFAULT_OUTPUT_DIR,
+    DEFAULT_TSX_DIR,
+    TILE_SIZE,
+)
+from tools.asset_creator.core.detail_overlay import apply_detail_overlay
 from tools.asset_creator.core.palette import load_palette
 from tools.asset_creator.core.subtile import generate_subtiles
 from tools.asset_creator.core.terrain import get_builtin_presets, load_terrain_presets
@@ -21,14 +27,13 @@ from tools.asset_creator.core.texture import (
     generate_noise_texture_v2,
     generate_pattern_texture,
 )
-from tools.asset_creator.core.detail_overlay import apply_detail_overlay
 from tools.asset_creator.core.tile_assembler import assemble_tileset
 from tools.asset_creator.exporters.png_exporter import export_png
 from tools.asset_creator.exporters.tsx_exporter import export_tsx
 
 PALETTE_DIR = Path(__file__).parent / "config" / "palettes"
-DEFAULT_PNG_DIR = Path("assets/images/autotiles")
-DEFAULT_TSX_DIR = Path("assets/tiled/autotiles")
+DEFAULT_PNG_DIR = Path(DEFAULT_OUTPUT_DIR)
+DEFAULT_TSX_DIR = Path(DEFAULT_TSX_DIR)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -145,10 +150,10 @@ def _generate_terrain(
     )
 
     if config.texture.texture_type == "noise":
-        texture = generate_noise_texture_v2(32, 32, palette, params, seed=seed)
+        texture = generate_noise_texture_v2(TILE_SIZE, TILE_SIZE, palette, params, seed=seed)
     else:
         texture = generate_pattern_texture(
-            32, 32, palette, config.texture.texture_type, params, seed=seed,
+            TILE_SIZE, TILE_SIZE, palette, config.texture.texture_type, params, seed=seed,
         )
 
     # Apply detail overlay

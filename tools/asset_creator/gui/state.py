@@ -9,8 +9,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from tools.asset_creator.core.constants import (
+    DEFAULT_COLOR_ACCENT,
+    DEFAULT_COLOR_BASE,
+    DEFAULT_COLOR_HIGHLIGHT,
+    DEFAULT_COLOR_SHADOW,
+    DEFAULT_OUTPUT_DIR,
+    DEFAULT_TSX_DIR,
+)
 from tools.asset_creator.core.palette import PaletteRole, load_palette
-
 from tools.asset_creator.core.terrain import (
     DetailConfig,
     EdgeConfig,
@@ -53,15 +60,15 @@ class AppState:
     seed: int = 0
 
     # Export
-    output_dir: str = "assets/images/autotiles"
-    tsx_dir: str = "assets/tiled/autotiles"
+    output_dir: str = DEFAULT_OUTPUT_DIR
+    tsx_dir: str = DEFAULT_TSX_DIR
     name: str = "grass"
 
     # Palette colors (RGBA tuples, overridable via color pickers)
-    color_shadow: tuple[int, int, int] = (45, 90, 30)
-    color_base: tuple[int, int, int] = (62, 124, 39)
-    color_highlight: tuple[int, int, int] = (90, 158, 58)
-    color_accent: tuple[int, int, int] = (123, 192, 79)
+    color_shadow: tuple[int, int, int] = DEFAULT_COLOR_SHADOW
+    color_base: tuple[int, int, int] = DEFAULT_COLOR_BASE
+    color_highlight: tuple[int, int, int] = DEFAULT_COLOR_HIGHLIGHT
+    color_accent: tuple[int, int, int] = DEFAULT_COLOR_ACCENT
 
     def to_texture_config(self) -> TextureConfig:
         """Convert to TextureConfig for generation pipeline."""

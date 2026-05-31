@@ -9,6 +9,15 @@ import random
 import sys
 from typing import TYPE_CHECKING
 
+from tools.asset_creator.core.constants import (
+    PREVIEW_BG_COLOR,
+    PREVIEW_GRID_COLOR,
+    PREVIEW_GRID_COLS,
+    PREVIEW_GRID_ROWS,
+    PREVIEW_MINIMAP_MARGIN,
+    PREVIEW_TEXT_COLOR,
+    TILE_SIZE,
+)
 from tools.asset_creator.core.minimap import (
     compute_bitmask,
     find_closest_bitmask_index,
@@ -26,14 +35,7 @@ except ImportError:
     pygame = None  # type: ignore[assignment]
 
 
-TILE_SIZE = 32
-GRID_COLS = 12
-GRID_ROWS = 8
-MINIMAP_MARGIN = 16
 STRIP_HEIGHT_AREA = TILE_SIZE + 20
-BG_COLOR = (30, 30, 30)
-GRID_COLOR = (50, 50, 50)
-TEXT_COLOR = (200, 200, 200)
 
 
 def _pil_to_surface(pil_image: Image.Image) -> Surface:
@@ -82,8 +84,8 @@ def _draw_minimap(
     """Draw the mini-map preview grid."""
     if pygame is None:
         raise RuntimeError("Pygame is not installed")
-    for gy in range(GRID_ROWS):
-        for gx in range(GRID_COLS):
+    for gy in range(PREVIEW_GRID_ROWS):
+        for gx in range(PREVIEW_GRID_COLS):
             px = map_x + gx * TILE_SIZE
             py = map_y + gy * TILE_SIZE
 
@@ -94,7 +96,7 @@ def _draw_minimap(
                     screen.blit(tile_surfaces[tile_idx], (px, py))
             else:
                 pygame.draw.rect(
-                    screen, GRID_COLOR,
+                    screen, PREVIEW_GRID_COLOR,
                     (px, py, TILE_SIZE, TILE_SIZE), 1,
                 )
 
@@ -117,12 +119,12 @@ def run_preview(
         sys.stderr.write("ERROR: pygame-ce is required for preview.\n")
         return
 
-    minimap_w = GRID_COLS * TILE_SIZE
-    minimap_h = GRID_ROWS * TILE_SIZE
+    minimap_w = PREVIEW_GRID_COLS * TILE_SIZE
+    minimap_h = PREVIEW_GRID_ROWS * TILE_SIZE
 
     strip_w = tileset_image.width
-    win_w = max(strip_w, minimap_w) + MINIMAP_MARGIN * 2
-    win_h = STRIP_HEIGHT_AREA + MINIMAP_MARGIN * 3 + minimap_h + 40
+    win_w = max(strip_w, minimap_w) + PREVIEW_MINIMAP_MARGIN * 2
+    win_h = STRIP_HEIGHT_AREA + PREVIEW_MINIMAP_MARGIN * 3 + minimap_h + 40
 
     pygame.init()
     screen = pygame.display.set_mode((win_w, win_h))
@@ -130,7 +132,7 @@ def run_preview(
 
     strip_surface = _pil_to_surface(tileset_image)
     tile_surfaces = _extract_tile_surfaces(strip_surface)
-    grid = _generate_minimap_grid(GRID_COLS, GRID_ROWS)
+    grid = _generate_minimap_grid(PREVIEW_GRID_COLS, PREVIEW_GRID_ROWS)
     font = pygame.font.Font(None, 20)
 
     running = True
@@ -142,24 +144,24 @@ def run_preview(
                 if event.key == pygame.K_ESCAPE:
                     running = False
                 elif event.key == pygame.K_SPACE:
-                    grid = _generate_minimap_grid(GRID_COLS, GRID_ROWS)
+                    grid = _generate_minimap_grid(PREVIEW_GRID_COLS, PREVIEW_GRID_ROWS)
 
-        screen.fill(BG_COLOR)
+        screen.fill(PREVIEW_BG_COLOR)
 
         # ── Draw strip ────────────────────────────────────────────────
         strip_x = (win_w - strip_w) // 2
-        strip_y = MINIMAP_MARGIN
-        label = font.render("Tileset Strip (47 blob tiles)", True, TEXT_COLOR)
+        strip_y = PREVIEW_MINIMAP_MARGIN
+        label = font.render("Tileset Strip (47 blob tiles)", True, PREVIEW_TEXT_COLOR)
         screen.blit(label, (strip_x, strip_y - 2))
         screen.blit(strip_surface, (strip_x, strip_y + 16))
 
         # ── Draw mini-map ─────────────────────────────────────────────
         map_x = (win_w - minimap_w) // 2
-        map_y = STRIP_HEIGHT_AREA + MINIMAP_MARGIN * 2 + 10
+        map_y = STRIP_HEIGHT_AREA + PREVIEW_MINIMAP_MARGIN * 2 + 10
 
         label2 = font.render(
             "Mini-map Preview (SPACE = regenerate, ESC = quit)",
-            True, TEXT_COLOR,
+            True, PREVIEW_TEXT_COLOR,
         )
         screen.blit(label2, (map_x, map_y - 16))
 

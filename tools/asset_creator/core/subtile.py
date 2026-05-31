@@ -14,6 +14,17 @@ from typing import TYPE_CHECKING
 import numpy as np
 from PIL import Image
 
+from tools.asset_creator.core.constants import (
+    BORDER_HIGHLIGHT_FACTOR,
+    BORDER_SHADOW_FACTOR,
+    DEFAULT_EDGE_NOISE_SCALE,
+    DEFAULT_EDGE_WIDTH,
+    DEFAULT_NOISE_SCALE,
+    MASK_THRESHOLD,
+    SUBTILE_SIZE,
+    TILE_SIZE,
+)
+
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
@@ -53,15 +64,15 @@ class SubTileSet:
 # ---------------------------------------------------------------------------
 
 _QUADRANT_CROPS: dict[Quadrant, tuple[int, int, int, int]] = {
-    Quadrant.TL: (0, 0, 16, 16),
-    Quadrant.TR: (16, 0, 32, 16),
-    Quadrant.BL: (0, 16, 16, 32),
-    Quadrant.BR: (16, 16, 32, 32),
+    Quadrant.TL: (0, 0, SUBTILE_SIZE, SUBTILE_SIZE),
+    Quadrant.TR: (SUBTILE_SIZE, 0, TILE_SIZE, SUBTILE_SIZE),
+    Quadrant.BL: (0, SUBTILE_SIZE, SUBTILE_SIZE, TILE_SIZE),
+    Quadrant.BR: (SUBTILE_SIZE, SUBTILE_SIZE, TILE_SIZE, TILE_SIZE),
 }
 
 
 def _crop_quadrant(texture: Image.Image, quadrant: Quadrant) -> Image.Image:
-    """Crop a 16×16 region from the texture for the given quadrant."""
+    """Crop a subtile region from the texture for the given quadrant."""
     return texture.crop(_QUADRANT_CROPS[quadrant])
 
 
@@ -112,7 +123,7 @@ def _generate_noise_simplex(
 
     gen = OpenSimplex(seed=seed + hash(quadrant.value))
     noise = np.zeros((height, width), dtype=np.float64)
-    scale = 0.15  # Controls noise frequency
+    scale = DEFAULT_NOISE_SCALE  # Controls noise frequency
     for y in range(height):
         for x in range(width):
             noise[y, x] = gen.noise2(x * scale, y * scale)
@@ -148,8 +159,6 @@ def _get_noise(
 # Mask generation
 # ---------------------------------------------------------------------------
 
-_MASK_THRESHOLD = 0.5
-
 
 def _make_mask_fill(width: int, height: int) -> NDArray[np.uint8]:
     """FILL mask: all pixels opaque."""
@@ -167,7 +176,7 @@ def _make_mask_edge_v(
     """EDGE_V mask using vertical distance field + noise."""
     dist = _distance_v(width, height, quadrant, edge_width)
     field = dist + noise * noise_scale
-    return np.where(field > _MASK_THRESHOLD, 255, 0).astype(np.uint8)
+    return np.where(field > MASK_THRESHOLD, 255, 0).astype(np.uint8)
 
 
 def _make_mask_edge_h(
@@ -181,7 +190,7 @@ def _make_mask_edge_h(
     """EDGE_H mask using horizontal distance field + noise."""
     dist = _distance_h(width, height, quadrant, edge_width)
     field = dist + noise * noise_scale
-    return np.where(field > _MASK_THRESHOLD, 255, 0).astype(np.uint8)
+    return np.where(field > MASK_THRESHOLD, 255, 0).astype(np.uint8)
 
 
 def _make_mask_outer_corner(
@@ -196,7 +205,7 @@ def _make_mask_outer_corner(
     dist_v = _distance_v(width, height, quadrant, edge_width)
     dist_h = _distance_h(width, height, quadrant, edge_width)
     field = np.minimum(dist_v, dist_h) + noise * noise_scale
-    return np.where(field > _MASK_THRESHOLD, 255, 0).astype(np.uint8)
+    return np.where(field > MASK_THRESHOLD, 255, 0).astype(np.uint8)
 
 
 def _make_mask_inner_corner(
@@ -211,7 +220,7 @@ def _make_mask_inner_corner(
     dist_v = _distance_v(width, height, quadrant, edge_width)
     dist_h = _distance_h(width, height, quadrant, edge_width)
     field = np.maximum(dist_v, dist_h) + noise * noise_scale
-    return np.where(field > _MASK_THRESHOLD, 255, 0).astype(np.uint8)
+    return np.where(field > MASK_THRESHOLD, 255, 0).astype(np.uint8)
 
 
 # ---------------------------------------------------------------------------
@@ -231,8 +240,8 @@ def _apply_border_effects(
     result = pixels.copy()
     opaque = mask > 0
 
-    shadow_factor = 0.7
-    highlight_factor = 1.2
+    shadow_factor = BORDER_SHADOW_FACTOR
+    highlight_factor = BORDER_HIGHLIGHT_FACTOR
 
     for y in range(height):
         for x in range(width):
@@ -346,16 +355,16 @@ def generate_subtiles(
     Raises:
         ValueError: If base_texture is too small or not RGBA.
     """
-    if base_texture.size[0] < 32 or base_texture.size[1] < 32:
-        msg = f"Base texture must be at least 32×32, got {base_texture.size}"
+    if base_texture.size[0] < TILE_SIZE or base_texture.size[1] < TILE_SIZE:
+        msg = f"Base texture must be at least {TILE_SIZE}x{TILE_SIZE}, got {base_texture.size}"
         raise ValueError(msg)
 
     # Ensure RGBA mode
     texture = base_texture.convert("RGBA") if base_texture.mode != "RGBA" else base_texture
 
     style = str(edge_config.get("style", "organic"))
-    edge_width = int(edge_config.get("width", 4))  # type: ignore[arg-type]
-    noise_scale = float(edge_config.get("noise_scale", 0.3))  # type: ignore[arg-type]
+    edge_width = int(edge_config.get("width", DEFAULT_EDGE_WIDTH))  # type: ignore[arg-type]
+    noise_scale = float(edge_config.get("noise_scale", DEFAULT_EDGE_NOISE_SCALE))  # type: ignore[arg-type]
 
     tiles: dict[tuple[Quadrant, SubTileType], Image.Image] = {}
 

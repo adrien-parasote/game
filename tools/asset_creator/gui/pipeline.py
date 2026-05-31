@@ -10,6 +10,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from tools.asset_creator.core.constants import TILE_SIZE
 from tools.asset_creator.core.detail_overlay import apply_detail_overlay
 from tools.asset_creator.core.palette import load_palette
 from tools.asset_creator.core.subtile import generate_subtiles
@@ -51,7 +52,7 @@ def _build_texture(
         state.color_highlight,
         state.color_accent,
     )
-    
+
     # Re-create the ramp configuration using the user's custom base color
     ramp_config = None
     if base_palette.ramp_config is not None:
@@ -150,10 +151,10 @@ def regenerate_tileset(
     }
     subtiles = generate_subtiles(texture, edge_config, seed=state.seed)
     tileset_strip = assemble_tileset(subtiles)
-    return extract_tiles_from_strip(tileset_strip, tile_size=32)
+    return extract_tiles_from_strip(tileset_strip, tile_size=TILE_SIZE)
 
 
-def tiles_to_strip(tiles: list[Image.Image], tile_size: int = 32) -> Image.Image:
+def tiles_to_strip(tiles: list[Image.Image], tile_size: int = TILE_SIZE) -> Image.Image:
     """Reassemble individual tiles into a horizontal strip.
 
     Args:
@@ -189,7 +190,7 @@ def do_export_autotile(
     out_png = Path(png_dir) if png_dir else Path(state.output_dir)
     out_tsx = Path(tsx_dir) if tsx_dir else Path(state.tsx_dir)
 
-    strip = tiles_to_strip(tiles, 32)
+    strip = tiles_to_strip(tiles, TILE_SIZE)
     png_path = out_png / f"{state.name}.png"
     tsx_path = out_tsx / f"{state.name}.tsx"
 
