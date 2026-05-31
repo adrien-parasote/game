@@ -13,6 +13,13 @@
             "width": 1888,
             "x": 0,
             "y": -1376
+        },
+        {
+            "fileName": "../maps/01-castel.tmj",
+            "height": 2560,
+            "width": 2560,
+            "x": 0,
+            "y": -3936
         }
     ],
     "onlyShowAdjacentMaps": false,

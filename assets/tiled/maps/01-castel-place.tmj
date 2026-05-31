@@ -580,7 +580,7 @@
         {
          "name":"name",
          "type":"string",
-         "value":"Place du "
+         "value":"Place centrale"
         }],
  "renderorder":"right-down",
  "tiledversion":"1.12.1",

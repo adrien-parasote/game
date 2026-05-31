@@ -1897,7 +1897,7 @@
         {
          "name":"name",
          "type":"string",
-         "value":"Entr\u00e9e chateau"
+         "value":"Entr\u00e9e"
         }],
  "renderorder":"right-down",
  "tiledversion":"1.12.1",
