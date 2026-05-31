@@ -443,6 +443,49 @@ class RenderManager:
         self._render_lighting_and_effects(night_alpha, window_positions, cam_offset)
         self._render_ui_overlays(cam_offset)
 
+    def _blit_grass_tile_intersections(
+        self,
+        wading_surf: pygame.Surface,
+        grass_img: pygame.Surface,
+        cam_offset: pygame.Vector2,
+        tile_size: int,
+        wading_screen_left: int,
+        wading_screen_right: int,
+        wading_screen_top: int,
+        wading_screen_bottom: int,
+        col_start: int,
+        col_end: int,
+        row_start: int,
+        row_end: int,
+    ) -> None:
+        """Helper to blit overlapping grass tile segments onto the wading surface."""
+        for col in range(col_start, col_end + 1):
+            for row in range(row_start, row_end + 1):
+                tile_world_x = col * tile_size
+                tile_world_y = row * tile_size
+                tile_screen_x = tile_world_x + cam_offset.x
+                tile_screen_y = tile_world_y + cam_offset.y
+
+                # Intersection between this tile and the wading screen zone
+                isect_left = max(wading_screen_left, tile_screen_x)
+                isect_top = max(wading_screen_top, tile_screen_y)
+                isect_right = min(wading_screen_right, tile_screen_x + tile_size)
+                isect_bottom = min(wading_screen_bottom, tile_screen_y + tile_size)
+                isect_w = isect_right - isect_left
+                isect_h = isect_bottom - isect_top
+                if isect_w <= 0 or isect_h <= 0:
+                    continue
+
+                # Crop coordinates on the grass tile image
+                crop_x = int(isect_left - tile_screen_x)
+                crop_y = int(isect_top - tile_screen_y)
+                grass_crop = pygame.Rect(crop_x, crop_y, int(isect_w), int(isect_h))
+
+                # Destination on the wading surface (local to the wading zone)
+                dest_x = int(isect_left - wading_screen_left)
+                dest_y = int(isect_top - wading_screen_top)
+                wading_surf.blit(grass_img, (dest_x, dest_y), area=grass_crop)
+
     def _build_wading_composite(
         self,
         sprite,
@@ -505,36 +548,25 @@ class RenderManager:
         self._wading_surf.fill((0, 0, 0, 0))
         wading_surf = self._wading_surf
 
-        for col in range(col_start, col_end + 1):
-            for row in range(row_start, row_end + 1):
-                tile_world_x = col * tile_size
-                tile_world_y = row * tile_size
-                tile_screen_x = tile_world_x + cam_offset.x
-                tile_screen_y = tile_world_y + cam_offset.y
-
-                # Intersection between this tile and the wading screen zone
-                isect_left = max(wading_screen_left, tile_screen_x)
-                isect_top = max(wading_screen_top, tile_screen_y)
-                isect_right = min(wading_screen_right, tile_screen_x + tile_size)
-                isect_bottom = min(wading_screen_bottom, tile_screen_y + tile_size)
-                isect_w = isect_right - isect_left
-                isect_h = isect_bottom - isect_top
-                if isect_w <= 0 or isect_h <= 0:
-                    continue
-
-                # Crop coordinates on the grass tile image
-                crop_x = int(isect_left - tile_screen_x)
-                crop_y = int(isect_top - tile_screen_y)
-                grass_crop = pygame.Rect(crop_x, crop_y, int(isect_w), int(isect_h))
-
-                # Destination on the wading surface (local to the wading zone)
-                dest_x = int(isect_left - wading_screen_left)
-                dest_y = int(isect_top - wading_screen_top)
-                wading_surf.blit(grass_img, (dest_x, dest_y), area=grass_crop)
+        self._blit_grass_tile_intersections(
+            wading_surf,
+            grass_img,
+            cam_offset,
+            tile_size,
+            wading_screen_left,
+            wading_screen_right,
+            wading_screen_top,
+            wading_screen_bottom,
+            col_start,
+            col_end,
+            row_start,
+            row_end,
+        )
 
         wading_surf.set_alpha(wading_alpha)
         composite.blit(wading_surf, (0, local_wading_top))
         return composite
+
 
     def _apply_grass_wading_to_images(
         self,

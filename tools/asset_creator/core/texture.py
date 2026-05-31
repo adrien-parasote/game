@@ -37,6 +37,12 @@ class TextureParams:
     lacunarity: float = 2.0
     thresholds: list[float] = field(default_factory=lambda: [-0.2, 0.4, 0.8])
     density: float = 0.3
+    # V2 additions
+    use_smooth_ramp: bool = False
+    detail_scale: float = 0.5
+    detail_strength: float = 0.06
+    use_dithering: bool = False
+    dither_matrix_size: int = 4
 
 
 def sample_toroidal_noise(
@@ -131,6 +137,68 @@ def _noise_to_color(
     return palette.get_color(PaletteRole.ACCENT)
 
 
+# ---------------------------------------------------------------------------
+# V2 smooth ramp constants and helpers
+# ---------------------------------------------------------------------------
+
+BAYER_4X4 = (
+    ( 0,  8,  2, 10),
+    (12,  4, 14,  6),
+    ( 3, 11,  1,  9),
+    (15,  7, 13,  5),
+)
+
+
+def _ramp_color_smooth(
+    t: float,
+    palette: Palette,
+) -> tuple[int, int, int]:
+    """Map normalized value [0,1] to palette ramp via smooth interpolation."""
+    return palette.interpolate(t)
+
+
+def _ramp_color_dithered(
+    t: float,
+    palette: Palette,
+    x: int,
+    y: int,
+    matrix_size: int = 4,
+) -> tuple[int, int, int]:
+    """Map value to palette ramp with Bayer ordered dithering.
+
+    Uses the Bayer matrix threshold to select between adjacent ramp
+    colors, producing a dithered gradient without smooth blending.
+
+    Args:
+        t: Normalized value in [0, 1].
+        palette: Palette with extended_colors ramp.
+        x: Pixel x coordinate (for Bayer pattern).
+        y: Pixel y coordinate (for Bayer pattern).
+        matrix_size: Bayer matrix size (must match BAYER_4X4).
+
+    Returns:
+        RGB color tuple from the extended ramp.
+    """
+    colors = palette.extended_colors
+    n = len(colors) - 1
+    idx_f = t * n
+    lower = int(idx_f)
+    frac = idx_f - lower
+
+    # Bayer threshold
+    threshold = (
+        BAYER_4X4[y % matrix_size][x % matrix_size]
+        / (matrix_size * matrix_size)
+    )
+
+    if frac > threshold:
+        color_idx = min(lower + 1, n)
+    else:
+        color_idx = lower
+
+    return colors[color_idx]
+
+
 def generate_noise_texture(
     width: int,
     height: int,
@@ -153,6 +221,8 @@ def generate_noise_texture(
     noise_gen = OpenSimplex(seed=seed)
     img = Image.new("RGBA", (width, height))
     pixels = img.load()
+    if pixels is None:
+        raise RuntimeError("Failed to load image pixels")
 
     for y in range(height):
         for x in range(width):
@@ -160,6 +230,66 @@ def generate_noise_texture(
                 x, y, width, height, params, noise_gen,
             )
             rgb = _noise_to_color(value, palette, params.thresholds)
+            pixels[x, y] = (*rgb, 255)
+
+    return img
+
+
+def generate_noise_texture_v2(
+    width: int,
+    height: int,
+    palette: Palette,
+    params: TextureParams,
+    seed: int = 0,
+) -> Image.Image:
+    """Generate V2 texture with smooth ramp + micro-variation + dithering.
+
+    Uses the extended palette ramp instead of 4-color thresholds.
+    Adds a detail noise layer for per-pixel variation.
+    Optionally applies Bayer ordered dithering at color boundaries.
+
+    Args:
+        width: Image width in pixels.
+        height: Image height in pixels.
+        palette: Palette with ramp_config and extended_colors.
+        params: Noise generation parameters (V2 fields used).
+        seed: Random seed for reproducibility.
+
+    Returns:
+        RGBA PIL Image with smooth ramp coloring.
+    """
+    base_noise = OpenSimplex(seed=seed)
+    detail_noise = OpenSimplex(seed=seed + 1000)
+    img = Image.new("RGBA", (width, height))
+    pixels = img.load()
+    if pixels is None:
+        raise RuntimeError("Failed to load image pixels")
+
+    for y in range(height):
+        for x in range(width):
+            # Base shape noise (toroidal for seamless tiling)
+            base_value = _compute_multi_octave_noise(
+                x, y, width, height, params, base_noise,
+            )
+
+            # Normalize to [0, 1]
+            t = (base_value + 1.0) / 2.0
+
+            # Per-pixel detail jitter
+            detail = detail_noise.noise2(
+                x * params.detail_scale,
+                y * params.detail_scale,
+            ) * params.detail_strength
+            t = max(0.0, min(1.0, t + detail))
+
+            # Map to color
+            if params.use_dithering:
+                rgb = _ramp_color_dithered(
+                    t, palette, x, y, params.dither_matrix_size,
+                )
+            else:
+                rgb = _ramp_color_smooth(t, palette)
+
             pixels[x, y] = (*rgb, 255)
 
     return img
@@ -182,6 +312,8 @@ def _generate_dithered(
     shadow = palette.get_color(PaletteRole.SHADOW)
     img = Image.new("RGBA", (width, height))
     pixels = img.load()
+    if pixels is None:
+        raise RuntimeError("Failed to load image pixels")
 
     for y in range(height):
         for x in range(width):
@@ -199,6 +331,8 @@ def _generate_stippled(
     accent = palette.get_color(PaletteRole.ACCENT)
     img = Image.new("RGBA", (width, height))
     pixels = img.load()
+    if pixels is None:
+        raise RuntimeError("Failed to load image pixels")
     rng = random.Random(seed)
 
     for y in range(height):
@@ -217,6 +351,8 @@ def _generate_striped(
     shadow = palette.get_color(PaletteRole.SHADOW)
     img = Image.new("RGBA", (width, height))
     pixels = img.load()
+    if pixels is None:
+        raise RuntimeError("Failed to load image pixels")
 
     for y in range(height):
         color = base if y % 2 == 0 else shadow
@@ -264,6 +400,10 @@ def generate_pattern_texture(
     if pattern_type == "stippled":
         return _generate_stippled(width, height, palette, params.density, seed)
     if pattern_type == "noise":
+        if params.use_smooth_ramp:
+            return generate_noise_texture_v2(
+                width, height, palette, params, seed,
+            )
         return generate_noise_texture(width, height, palette, params, seed)
     if pattern_type == "striped":
         return _generate_striped(width, height, palette)

@@ -13,6 +13,13 @@ from tools.asset_creator.core.texture import (
     sample_toroidal_noise,
 )
 
+try:
+    from tools.asset_creator.core.palette import RampConfig
+    from tools.asset_creator.core.texture import generate_noise_texture_v2
+    HAS_V2_TEXTURE = True
+except ImportError:
+    HAS_V2_TEXTURE = False
+
 # Shared test palette
 TEST_PALETTE = Palette(
     name="test",
@@ -53,7 +60,8 @@ class TestNoiseTexture:
         for y in range(16):
             for x in range(16):
                 r, g, b, a = img.getpixel((x, y))
-                assert (r, g, b) in palette_rgb, (
+                pixel_color = (r, g, b)
+                assert pixel_color in palette_rgb, (
                     f"Pixel ({x},{y}) color ({r},{g},{b}) not in palette"
                 )
                 assert a == 255, f"Pixel ({x},{y}) has alpha={a}, expected 255"
@@ -95,7 +103,8 @@ class TestPatternTexture:
         for y in range(16):
             for x in range(16):
                 r, g, b, a = img.getpixel((x, y))
-                assert (r, g, b) == base_color
+                pixel_color = (r, g, b)
+                assert pixel_color == base_color
                 assert a == 255
 
     @pytest.mark.tc("TC-005")
@@ -113,7 +122,8 @@ class TestPatternTexture:
             for x in range(16):
                 r, g, b, a = img.getpixel((x, y))
                 expected = base_color if (x + y) % 2 == 0 else shadow_color
-                assert (r, g, b) == expected, (
+                pixel_color = (r, g, b)
+                assert pixel_color == expected, (
                     f"Pixel ({x},{y}): got ({r},{g},{b}), expected {expected}"
                 )
 
@@ -132,7 +142,8 @@ class TestPatternTexture:
         for y in range(16):
             for x in range(16):
                 r, g, b, a = img.getpixel((x, y))
-                assert (r, g, b) in valid_colors
+                pixel_color = (r, g, b)
+                assert pixel_color in valid_colors
 
     @pytest.mark.tc("TC-005")
     def test_striped_pattern_alternates_rows(self) -> None:
@@ -149,7 +160,8 @@ class TestPatternTexture:
             expected = base_color if y % 2 == 0 else shadow_color
             for x in range(16):
                 r, g, b, a = img.getpixel((x, y))
-                assert (r, g, b) == expected
+                pixel_color = (r, g, b)
+                assert pixel_color == expected
 
     @pytest.mark.tc("TC-005")
     def test_noise_pattern_delegates_to_noise_texture(self) -> None:
@@ -266,3 +278,201 @@ class TestSeedReproducibility:
         )
 
         assert img1.tobytes() == img2.tobytes()
+
+
+# ---------------------------------------------------------------------------
+# V2 smooth ramp texture tests
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def extended_palette() -> Palette:
+    """Palette with V2 ramp config for testing."""
+    from tools.asset_creator.core.palette import RampConfig
+
+    return Palette(
+        name="test_v2",
+        colors=(
+            (45, 90, 30),   # shadow
+            (62, 124, 39),  # base
+            (90, 158, 58),  # highlight
+            (123, 192, 79), # accent
+        ),
+        roles={
+            PaletteRole.SHADOW: 0,
+            PaletteRole.BASE: 1,
+            PaletteRole.HIGHLIGHT: 2,
+            PaletteRole.ACCENT: 3,
+        },
+        ramp_config=RampConfig(
+            base_color=(90, 158, 58),
+            steps=9,
+            shadow_hue_shift=-15.0,
+            highlight_hue_shift=10.0,
+            lightness_range=0.25,
+        ),
+    )
+
+
+@pytest.mark.skipif(not HAS_V2_TEXTURE, reason="V2 texture smooth ramp not implemented yet")
+class TestV2SmoothRampTexture:
+    """V2 texture generation with smooth ramp interpolation."""
+
+    @pytest.mark.tc("TC-035")
+    def test_v2_texture_uses_more_than_4_unique_colors(
+        self, extended_palette: Palette,
+    ) -> None:
+        """V2 texture with smooth ramp must use at least 7 unique colors."""
+        from tools.asset_creator.core.texture import generate_noise_texture_v2
+
+        params = TextureParams(
+            use_smooth_ramp=True,
+            use_dithering=True,
+        )
+        img = generate_noise_texture_v2(
+            32, 32, extended_palette, params, seed=42,
+        )
+
+        unique_colors: set[tuple[int, int, int]] = set()
+        for y in range(32):
+            for x in range(32):
+                r, g, b, _a = img.getpixel((x, y))
+                unique_colors.add((r, g, b))
+
+        assert len(unique_colors) >= 7, (
+            f"Expected at least 7 unique colors, got {len(unique_colors)}: "
+            f"{unique_colors}"
+        )
+
+    @pytest.mark.tc("TC-036")
+    def test_v2_texture_correct_dimensions(
+        self, extended_palette: Palette,
+    ) -> None:
+        """V2 texture must have correct dimensions and RGBA mode."""
+        from tools.asset_creator.core.texture import generate_noise_texture_v2
+
+        params = TextureParams(use_smooth_ramp=True)
+        img = generate_noise_texture_v2(
+            32, 32, extended_palette, params, seed=42,
+        )
+
+        assert img.size == (32, 32)
+        assert img.mode == "RGBA"
+
+    @pytest.mark.tc("TC-037")
+    def test_v2_texture_tiles_seamlessly(
+        self, extended_palette: Palette,
+    ) -> None:
+        """V2 texture must tile seamlessly — edges wrap via toroidal noise."""
+        from opensimplex import OpenSimplex
+
+        from tools.asset_creator.core.texture import (
+            _compute_multi_octave_noise,
+            generate_noise_texture_v2,
+        )
+
+        params = TextureParams(use_smooth_ramp=True)
+        size = 32
+
+        # Verify underlying noise wraps at boundaries
+        noise_gen = OpenSimplex(seed=42)
+        for y in range(size):
+            val_left = _compute_multi_octave_noise(
+                0, y, size, size, params, noise_gen,
+            )
+            val_right = _compute_multi_octave_noise(
+                size, y, size, size, params, noise_gen,
+            )
+            assert abs(val_left - val_right) < 1e-10, (
+                f"y={y}: noise at x=0 ({val_left}) != "
+                f"noise at x=width ({val_right})"
+            )
+
+        for x in range(size):
+            val_top = _compute_multi_octave_noise(
+                x, 0, size, size, params, noise_gen,
+            )
+            val_bottom = _compute_multi_octave_noise(
+                x, size, size, size, params, noise_gen,
+            )
+            assert abs(val_top - val_bottom) < 1e-10, (
+                f"x={x}: noise at y=0 ({val_top}) != "
+                f"noise at y=height ({val_bottom})"
+            )
+
+    @pytest.mark.tc("TC-038")
+    def test_v2_texture_seed_reproducibility(
+        self, extended_palette: Palette,
+    ) -> None:
+        """Same seed must produce identical V2 textures."""
+        from tools.asset_creator.core.texture import generate_noise_texture_v2
+
+        params = TextureParams(
+            use_smooth_ramp=True,
+            use_dithering=True,
+        )
+        img1 = generate_noise_texture_v2(
+            32, 32, extended_palette, params, seed=42,
+        )
+        img2 = generate_noise_texture_v2(
+            32, 32, extended_palette, params, seed=42,
+        )
+
+        assert img1.tobytes() == img2.tobytes()
+
+    @pytest.mark.tc("TC-039")
+    def test_v2_bayer_dithering_no_dominant_color(
+        self, extended_palette: Palette,
+    ) -> None:
+        """With dithering enabled, no single color should occupy >40% of pixels."""
+        from collections import Counter
+
+        from tools.asset_creator.core.texture import generate_noise_texture_v2
+
+        params = TextureParams(
+            use_smooth_ramp=True,
+            use_dithering=True,
+        )
+        img = generate_noise_texture_v2(
+            32, 32, extended_palette, params, seed=42,
+        )
+
+        color_counts: Counter[tuple[int, int, int]] = Counter()
+        total = 32 * 32
+        for y in range(32):
+            for x in range(32):
+                r, g, b, _a = img.getpixel((x, y))
+                color_counts[(r, g, b)] += 1
+
+        for color, count in color_counts.items():
+            ratio = count / total
+            assert ratio <= 0.40, (
+                f"Color {color} occupies {ratio:.1%} of pixels "
+                f"(max 40% allowed)"
+            )
+
+    @pytest.mark.tc("TC-040")
+    def test_v1_texture_still_works(self) -> None:
+        """V1 noise texture must still produce only 4 palette role colors."""
+        params = TextureParams(use_smooth_ramp=False)
+        img = generate_noise_texture(16, 16, TEST_PALETTE, params, seed=42)
+
+        palette_rgb = set(TEST_PALETTE.colors)
+        for y in range(16):
+            for x in range(16):
+                r, g, b, a = img.getpixel((x, y))
+                assert (r, g, b) in palette_rgb, (
+                    f"V1 pixel ({x},{y}) color ({r},{g},{b}) not in palette"
+                )
+                assert a == 255
+
+    @pytest.mark.tc("TC-040")
+    def test_v1_pattern_noise_still_delegates_correctly(self) -> None:
+        """Pattern type 'noise' with V1 params must still delegate to V1."""
+        params = TextureParams(use_smooth_ramp=False)
+        noise_img = generate_noise_texture(
+            16, 16, TEST_PALETTE, params, seed=42,
+        )
+        pattern_img = generate_pattern_texture(
+            16, 16, TEST_PALETTE, "noise", params, seed=42,
+        )
+        assert noise_img.tobytes() == pattern_img.tobytes()

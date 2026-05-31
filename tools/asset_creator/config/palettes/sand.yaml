@@ -9,3 +9,9 @@ roles:
   base: 1
   highlight: 2
   accent: 3
+ramp:
+  base_color: "#d4b85a"
+  steps: 9
+  shadow_hue_shift: -20
+  highlight_hue_shift: 10
+  lightness_range: 0.25

@@ -1,18 +1,24 @@
 """Palette system for the Asset Creator Tool.
 
 Defines color palettes with named roles (shadow, base, highlight, accent)
-loaded from YAML configuration files.
+loaded from YAML configuration files. V2 adds optional ramp configuration
+for hue-shifted extended color ramps via OKLCh color space.
 """
 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import yaml
+
+from tools.asset_creator.core.color_ramp import (
+    generate_hue_shifted_ramp,
+    interpolate_oklch,
+)
 
 if TYPE_CHECKING:
     pass
@@ -28,6 +34,25 @@ class PaletteRole(Enum):
 
 
 @dataclass(frozen=True)
+class RampConfig:
+    """V2 ramp generation parameters.
+
+    Attributes:
+        base_color: Anchor RGB color for the ramp midpoint.
+        steps: Number of colors in the generated ramp (typically 7-11).
+        shadow_hue_shift: Hue shift in degrees for darkest shadow.
+        highlight_hue_shift: Hue shift in degrees for brightest highlight.
+        lightness_range: Total lightness spread around the base.
+    """
+
+    base_color: tuple[int, int, int]
+    steps: int = 9
+    shadow_hue_shift: float = -30.0
+    highlight_hue_shift: float = 20.0
+    lightness_range: float = 0.35
+
+
+@dataclass(frozen=True)
 class Palette:
     """Immutable color palette with named roles.
 
@@ -35,11 +60,13 @@ class Palette:
         name: Human-readable palette name (e.g. 'forest_grass').
         colors: Tuple of RGB color tuples (0-255 per channel).
         roles: Mapping from PaletteRole to color index in the colors tuple.
+        ramp_config: Optional V2 ramp generation parameters.
     """
 
     name: str
     colors: tuple[tuple[int, int, int], ...]
     roles: dict[PaletteRole, int]
+    ramp_config: RampConfig | None = field(default=None)
 
     def get_color(self, role: PaletteRole) -> tuple[int, int, int]:
         """Return the RGB color tuple assigned to the given role.
@@ -59,6 +86,46 @@ class Palette:
             Dict mapping each PaletteRole to its (r, g, b) color.
         """
         return {role: self.colors[idx] for role, idx in self.roles.items()}
+
+    @property
+    def extended_colors(self) -> tuple[tuple[int, int, int], ...]:
+        """Extended color ramp (typically 7-11 colors).
+
+        If ramp_config is present, generates a hue-shifted ramp.
+        Otherwise, returns the original V1 colors.
+        """
+        if self.ramp_config is not None:
+            return tuple(generate_hue_shifted_ramp(
+                self.ramp_config.base_color,
+                num_steps=self.ramp_config.steps,
+                shadow_hue_shift=self.ramp_config.shadow_hue_shift,
+                highlight_hue_shift=self.ramp_config.highlight_hue_shift,
+                lightness_range=self.ramp_config.lightness_range,
+            ))
+        return self.colors
+
+    def interpolate(self, t: float) -> tuple[int, int, int]:
+        """Map a value in [0,1] to a color on the extended ramp.
+
+        Uses OKLCh interpolation between adjacent ramp colors.
+
+        Args:
+            t: Position in the ramp. 0.0 = darkest, 1.0 = brightest.
+
+        Returns:
+            Interpolated RGB color tuple.
+        """
+        colors = self.extended_colors
+        t = max(0.0, min(1.0, t))
+        n = len(colors) - 1
+        idx = t * n
+        lower = int(idx)
+        upper = min(lower + 1, n)
+        frac = idx - lower
+
+        if frac < 0.001:
+            return colors[lower]
+        return interpolate_oklch(colors[lower], colors[upper], frac)
 
 
 _HEX_PATTERN = re.compile(r"^#([0-9a-fA-F]{6})$")
@@ -99,10 +166,10 @@ def _validate_yaml_fields(data: dict) -> None:
     Raises:
         ValueError: If any required field is missing.
     """
-    for field in ("name", "colors", "roles"):
-        if field not in data:
+    for req_field in ("name", "colors", "roles"):
+        if req_field not in data:
             raise ValueError(
-                f"Palette YAML is missing required field '{field}'. "
+                f"Palette YAML is missing required field '{req_field}'. "
                 f"Expected fields: name, colors, roles."
             )
 
@@ -170,4 +237,19 @@ def load_palette(path: Path) -> Palette:
             )
         roles[role] = idx
 
-    return Palette(name=raw["name"], colors=colors, roles=roles)
+    # V2: parse optional ramp configuration
+    ramp_config = None
+    if "ramp" in raw:
+        ramp_data = raw["ramp"]
+        ramp_base_color = _parse_hex_color(ramp_data["base_color"])
+        ramp_config = RampConfig(
+            base_color=ramp_base_color,
+            steps=ramp_data.get("steps", 9),
+            shadow_hue_shift=float(ramp_data.get("shadow_hue_shift", -30.0)),
+            highlight_hue_shift=float(ramp_data.get("highlight_hue_shift", 20.0)),
+            lightness_range=float(ramp_data.get("lightness_range", 0.35)),
+        )
+
+    return Palette(
+        name=raw["name"], colors=colors, roles=roles, ramp_config=ramp_config,
+    )

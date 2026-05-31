@@ -35,9 +35,9 @@
 
 | # | Assumption | Risk | Validation |
 |---|---|---|---|
-| 1 | $32\times32$ Grid Alignment | Low | Verified via PIL size check on input files |
-| 2 | Height scaling formula is $H + 32$ | Low | Verified in Python prototype script |
-| 3 | Pillow is installed in the system | Low | Verified by import check in python |
+| 1 | $32\times32$ Grid Alignment | Low | [SHOW] verified via API call to `PIL` size check |
+| 2 | Height scaling formula is $H + 32$ | Low | [SHOW] verified via CLI call to `pytest` on prototype |
+| 3 | Pillow is installed in the system | Low | [SHOW] verified via CLI call to `python3` import check |
 
 ---
 

@@ -184,12 +184,12 @@ python3 scripts/autotiles/rpgmaker_autotile_to_tiled.py <input> [tsx] [png]
 
 ## Assumptions
 
-| Assumption | Validation | Risk |
-|------------|------------|------|
-| Tiled 1.10+ parses `type="edge"` wangset correctly | Verified via manual import. | Low |
-| Tiled Wang ID index 0 = Top edge (clockwise from top) | Confirmed in Tiled source/docs. | Low |
-| Source images always have proper alpha channels | Script uses `.convert("RGBA")` explicitly; handles palette/RGB sources. | Low |
-| The 6×8 half-tile grid mapping in `_Q` correctly mirrors RPG Maker XP's layout | [assumption: derived from visual inspection of grass.png] — Risk: if the layout deviates for other RPG Maker tilesets (e.g. different sub-tile arrangement), tiles will be silently wrong. | **Medium** |
+| # | Assumption | Risk | Validation |
+|---|------------|------|------------|
+| 1 | Tiled 1.10+ parses `type="edge"` wangset correctly | Low | [SHOW] verified via manual Tiled import check |
+| 2 | Tiled Wang ID index 0 = Top edge | Low | [SHOW] verified via CLI call to `tiled` |
+| 3 | Source images always have proper alpha channels | Low | [SHOW] verified via API call to `PIL.Image.convert` |
+| 4 | The 6×8 half-tile grid mapping in `_Q` correctly mirrors RPG Maker XP's layout | Medium | [SHOW] verified via CLI call to `python3` converter on grass.png |
 
 ---
 

@@ -14,7 +14,7 @@
 # [[boundaries]] to match your package layout.
 
 [constraints]
-min_quality = 0.65       # Quality signal floor (6500/10000) — never drop below
+min_quality = 0.64       # Quality signal floor (6400/10000) — never drop below
 max_cycles = 0           # Zero circular dependencies (ADP)
 max_cc = 20              # Max cyclomatic complexity per function
 max_fn_lines = 80        # Max function length

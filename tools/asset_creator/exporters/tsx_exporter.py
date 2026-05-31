@@ -10,7 +10,6 @@ from pathlib import Path
 
 from tools.asset_creator.core.tile_assembler import BLOB_BITMASKS, blob_wang_id
 
-
 TILED_VERSION = "1.10.0"
 WANG_COLOR = "#4488ff"
 TILE_SIZE = 32

@@ -7,16 +7,15 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from tools.asset_creator.cli import _build_parser, cmd_list, cmd_generate
+from tools.asset_creator.cli import _build_parser, cmd_generate, cmd_list
 from tools.asset_creator.core.terrain import (
-    EdgeConfig,
     BorderConfig,
+    EdgeConfig,
     TerrainConfig,
     TextureConfig,
     get_builtin_presets,
     load_terrain_presets,
 )
-
 
 # ── TC-020: CLI parser ───────────────────────────────────────────────────────
 

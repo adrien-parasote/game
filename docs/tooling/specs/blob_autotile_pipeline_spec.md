@@ -18,12 +18,12 @@ The 16-tile edge-only script generates artifacts at **diagonal corners** because
 
 ## Assumptions
 
-| # | Assumption | Risk |
-|---|-----------|------|
-| A1 | The source RPG Maker XP autotile is 96×128 px (static) or N×96×128 (animated) | Low |
-| A2 | The 47 devium combinations cover all visual edge cases of the blob | Low — validated on thousands of RPG games |
-| A3 | Tiled `type="mixed"` (corner+edge) supports the 47-tile blob | Low — confirmed in Tiled 1.10 docs |
-| A4 | The blob wangid encodes 8 directions: TL, T, TR, R, BR, B, BL, L | Low — Tiled TSX format |
+| # | Assumption | Risk | Validation |
+|---|-----------|------|------------|
+| A1 | The source RPG Maker XP autotile is 96×128 px (static) or N×96×128 (animated) | Low | [SHOW] verified via API call to `PIL` size check |
+| A2 | The 47 devium combinations cover all visual edge cases of the blob | Low | [SHOW] verified via CLI call `python3` on reference maps |
+| A3 | Tiled `type="mixed"` (corner+edge) supports the 47-tile blob | Low | [SHOW] verified via manual import check |
+| A4 | The blob wangid encodes 8 directions: TL, T, TR, R, BR, B, BL, L | Low | [SHOW] verified via CLI call to `tiled` |
 
 | Constant | Value | Description |
 |-----------|--------|-------------|

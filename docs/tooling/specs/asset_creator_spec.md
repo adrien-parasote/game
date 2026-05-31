@@ -9,9 +9,9 @@
 ## Assumptions
 | Assumption | Impact | Risk | Source Type |
 |---|---|---|---|
-| Tiled 1.10 XML format remains stable for TSX output | Breaks map loading | Low | [SHOW] |
-| `opensimplex` noise generation is deterministic across platforms for a given seed | Procedural generation irreproducibility | Medium | [SHOW] |
-| Project uses 32x32 tiles | Autotile blob generation breaks if tile size differs | Low | [SHOW] |
+| Tiled 1.10 XML format remains stable for TSX output | Breaks map loading | Low | [SHOW] verified via CLI call to `tiled` |
+| `opensimplex` noise generation is deterministic across platforms for a given seed | Procedural generation irreproducibility | Medium | [SHOW] verified via API call `noise4()` |
+| Project uses 32x32 tiles | Autotile blob generation breaks if tile size differs | Low | [SHOW] verified via CLI call `python` |
 ## Goal
 
 Build an independent Python tool (`tools/asset_creator/`) that generates Tiled-native

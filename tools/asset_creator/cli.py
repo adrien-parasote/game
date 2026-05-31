@@ -25,7 +25,6 @@ from tools.asset_creator.core.tile_assembler import assemble_tileset
 from tools.asset_creator.exporters.png_exporter import export_png
 from tools.asset_creator.exporters.tsx_exporter import export_tsx
 
-
 PALETTE_DIR = Path(__file__).parent / "config" / "palettes"
 DEFAULT_PNG_DIR = Path("assets/images/autotiles")
 DEFAULT_TSX_DIR = Path("assets/tiled/autotiles")

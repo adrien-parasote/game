@@ -82,3 +82,4 @@ logs/
 # Temporary isolated asset scripts workspace
 scripts/input_*
 scripts/output_*
+.agents/cross_spec_report.md

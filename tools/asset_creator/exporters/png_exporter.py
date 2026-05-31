@@ -8,7 +8,6 @@ from pathlib import Path
 
 from PIL import Image
 
-
 TILE_SIZE = 32
 
 
@@ -68,7 +67,7 @@ def export_png(
     errors = validate_tileset(tileset_image, tile_size)
     if errors:
         raise ValueError(
-            f"Tileset validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
+            "Tileset validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
         )
 
     output_path = Path(output_path)

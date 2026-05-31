@@ -9,16 +9,18 @@ import random
 import sys
 from typing import TYPE_CHECKING
 
+from tools.asset_creator.core.tile_assembler import BLOB_BITMASKS
+
+if TYPE_CHECKING:
+    from PIL import Image
+    from pygame import Surface
+
+    from tools.asset_creator.core.subtile import SubTileSet
+
 try:
     import pygame
 except ImportError:
     pygame = None  # type: ignore[assignment]
-
-if TYPE_CHECKING:
-    from PIL import Image
-    from tools.asset_creator.core.subtile import SubTileSet
-
-from tools.asset_creator.core.tile_assembler import BLOB_BITMASKS
 
 
 TILE_SIZE = 32
@@ -31,8 +33,10 @@ GRID_COLOR = (50, 50, 50)
 TEXT_COLOR = (200, 200, 200)
 
 
-def _pil_to_surface(pil_image: Image.Image) -> pygame.Surface:
+def _pil_to_surface(pil_image: Image.Image) -> Surface:
     """Convert a PIL RGBA Image to a Pygame Surface."""
+    if pygame is None:
+        raise RuntimeError("Pygame is not installed")
     raw = pil_image.tobytes("raw", "RGBA")
     surface = pygame.image.fromstring(
         raw, pil_image.size, "RGBA",
@@ -100,6 +104,47 @@ def _find_closest_bitmask_index(bitmask: int) -> int:
     return best_idx
 
 
+def _extract_tile_surfaces(strip_surface: Surface) -> list[Surface]:
+    """Extract individual tiles from the strip surface."""
+    if pygame is None:
+        raise RuntimeError("Pygame is not installed")
+    tile_surfaces: list[Surface] = []
+    tile_count = strip_surface.get_width() // TILE_SIZE
+    for i in range(tile_count):
+        sub = strip_surface.subsurface(
+            pygame.Rect(i * TILE_SIZE, 0, TILE_SIZE, TILE_SIZE),
+        )
+        tile_surfaces.append(sub.copy())
+    return tile_surfaces
+
+
+def _draw_minimap(
+    screen: Surface,
+    grid: list[list[bool]],
+    tile_surfaces: list[Surface],
+    map_x: int,
+    map_y: int,
+) -> None:
+    """Draw the mini-map preview grid."""
+    if pygame is None:
+        raise RuntimeError("Pygame is not installed")
+    for gy in range(GRID_ROWS):
+        for gx in range(GRID_COLS):
+            px = map_x + gx * TILE_SIZE
+            py = map_y + gy * TILE_SIZE
+
+            if grid[gy][gx]:
+                bitmask = _compute_bitmask_for_cell(grid, gx, gy)
+                tile_idx = _find_closest_bitmask_index(bitmask)
+                if tile_idx < len(tile_surfaces):
+                    screen.blit(tile_surfaces[tile_idx], (px, py))
+            else:
+                pygame.draw.rect(
+                    screen, GRID_COLOR,
+                    (px, py, TILE_SIZE, TILE_SIZE), 1,
+                )
+
+
 def run_preview(
     tileset_image: Image.Image,
     subtile_set: SubTileSet | None = None,
@@ -130,18 +175,8 @@ def run_preview(
     pygame.display.set_caption("Asset Creator — Preview")
 
     strip_surface = _pil_to_surface(tileset_image)
-
-    # Extract individual tiles from the strip
-    tile_surfaces: list[pygame.Surface] = []
-    tile_count = tileset_image.width // TILE_SIZE
-    for i in range(tile_count):
-        sub = strip_surface.subsurface(
-            pygame.Rect(i * TILE_SIZE, 0, TILE_SIZE, TILE_SIZE),
-        )
-        tile_surfaces.append(sub.copy())
-
+    tile_surfaces = _extract_tile_surfaces(strip_surface)
     grid = _generate_minimap_grid(GRID_COLS, GRID_ROWS)
-
     font = pygame.font.Font(None, 20)
 
     running = True
@@ -174,21 +209,7 @@ def run_preview(
         )
         screen.blit(label2, (map_x, map_y - 16))
 
-        for gy in range(GRID_ROWS):
-            for gx in range(GRID_COLS):
-                px = map_x + gx * TILE_SIZE
-                py = map_y + gy * TILE_SIZE
-
-                if grid[gy][gx]:
-                    bitmask = _compute_bitmask_for_cell(grid, gx, gy)
-                    tile_idx = _find_closest_bitmask_index(bitmask)
-                    if tile_idx < len(tile_surfaces):
-                        screen.blit(tile_surfaces[tile_idx], (px, py))
-                else:
-                    pygame.draw.rect(
-                        screen, GRID_COLOR,
-                        (px, py, TILE_SIZE, TILE_SIZE), 1,
-                    )
+        _draw_minimap(screen, grid, tile_surfaces, map_x, map_y)
 
         pygame.display.flip()
         pygame.time.Clock().tick(30)
