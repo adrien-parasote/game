@@ -50,7 +50,7 @@ def _add_grass_blades(
     for _ in range(num_blades):
         bx = rng.randint(0, w - 1)
         by = rng.randint(max_height, h - 1)
-        blade_h = rng.randint(2, max_height)
+        blade_h = rng.randint(2, max(2, max_height))
 
         for j in range(blade_h):
             py = by - j
@@ -131,7 +131,7 @@ def _add_stone_cracks(
     for _ in range(num_cracks):
         cx = rng.randint(0, w - 1)
         cy = rng.randint(0, h - 1)
-        length = rng.randint(2, max_length)
+        length = rng.randint(2, max(2, max_length))
 
         for _ in range(length):
             if 0 <= cx < w and 0 <= cy < h:

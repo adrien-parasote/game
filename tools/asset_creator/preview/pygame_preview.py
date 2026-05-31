@@ -9,7 +9,10 @@ import random
 import sys
 from typing import TYPE_CHECKING
 
-from tools.asset_creator.core.tile_assembler import BLOB_BITMASKS
+from tools.asset_creator.core.minimap import (
+    compute_bitmask,
+    find_closest_bitmask_index,
+)
 
 if TYPE_CHECKING:
     from PIL import Image
@@ -55,55 +58,6 @@ def _generate_minimap_grid(cols: int, rows: int) -> list[list[bool]]:
     return grid
 
 
-def _compute_bitmask_for_cell(
-    grid: list[list[bool]], x: int, y: int,
-) -> int:
-    """Compute the blob bitmask for a cell in the grid."""
-    rows = len(grid)
-    cols = len(grid[0])
-
-    def _get(dx: int, dy: int) -> bool:
-        nx, ny = x + dx, y + dy
-        if 0 <= nx < cols and 0 <= ny < rows:
-            return grid[ny][nx]
-        return False
-
-    n = _get(0, -1)
-    s = _get(0, 1)
-    w = _get(-1, 0)
-    e = _get(1, 0)
-    nw = _get(-1, -1) and n and w
-    ne = _get(1, -1) and n and e
-    sw = _get(-1, 1) and s and w
-    se = _get(1, 1) and s and e
-
-    return (
-        int(nw)
-        | (int(n) << 1)
-        | (int(ne) << 2)
-        | (int(w) << 3)
-        | (int(e) << 4)
-        | (int(sw) << 5)
-        | (int(s) << 6)
-        | (int(se) << 7)
-    )
-
-
-def _find_closest_bitmask_index(bitmask: int) -> int:
-    """Find the index of the closest valid bitmask in BLOB_BITMASKS."""
-    if bitmask in BLOB_BITMASKS:
-        return BLOB_BITMASKS.index(bitmask)
-    # Fallback: find closest by popcount distance
-    best_idx = 0
-    best_dist = 256
-    for idx, valid_bm in enumerate(BLOB_BITMASKS):
-        dist = bin(bitmask ^ valid_bm).count("1")
-        if dist < best_dist:
-            best_dist = dist
-            best_idx = idx
-    return best_idx
-
-
 def _extract_tile_surfaces(strip_surface: Surface) -> list[Surface]:
     """Extract individual tiles from the strip surface."""
     if pygame is None:
@@ -134,8 +88,8 @@ def _draw_minimap(
             py = map_y + gy * TILE_SIZE
 
             if grid[gy][gx]:
-                bitmask = _compute_bitmask_for_cell(grid, gx, gy)
-                tile_idx = _find_closest_bitmask_index(bitmask)
+                bitmask = compute_bitmask(grid, gx, gy)
+                tile_idx = find_closest_bitmask_index(bitmask)
                 if tile_idx < len(tile_surfaces):
                     screen.blit(tile_surfaces[tile_idx], (px, py))
             else:

@@ -88,6 +88,9 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     prev.add_argument("png_path", type=Path, help="Path to the tileset PNG.")
 
+    # ── gui ───────────────────────────────────────────────────────────────
+    subparsers.add_parser("gui", help="Launch interactive GUI.")
+
     return parser
 
 
@@ -249,6 +252,15 @@ def cmd_preview(args: argparse.Namespace) -> None:
         sys.exit("ERROR: Pygame preview not available.")
 
 
+def cmd_gui(_args: argparse.Namespace) -> None:
+    """Handle the 'gui' command — launch interactive Dear PyGui window."""
+    try:
+        from tools.asset_creator.gui.app import run_gui
+        run_gui()
+    except ImportError:
+        sys.exit("ERROR: Dear PyGui not available. Install with: pip install dearpygui")
+
+
 def main() -> None:
     """Main CLI entry point."""
     parser = _build_parser()
@@ -258,6 +270,7 @@ def main() -> None:
         "generate": cmd_generate,
         "list": cmd_list,
         "preview": cmd_preview,
+        "gui": cmd_gui,
     }
 
     handler = commands.get(args.command)
