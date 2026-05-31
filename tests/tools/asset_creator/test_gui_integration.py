@@ -130,18 +130,7 @@ class TestIT004Export:
             assert root.tag == "tileset"
 
 
-class TestIT005V1Quality:
-    """IT-005: V1 quality disables smooth ramp and dithering."""
 
-    def test_v1_quality_no_smooth_ramp(self, presets: dict) -> None:
-        state = state_from_preset("grass", presets, quality="v1")
-        tex_config = state.to_texture_config()
-        assert tex_config.use_smooth_ramp is False
-
-    def test_v1_quality_no_dithering(self, presets: dict) -> None:
-        state = state_from_preset("grass", presets, quality="v1")
-        tex_config = state.to_texture_config()
-        assert tex_config.use_dithering is False
 
 
 class TestIT006FullDataFlow:

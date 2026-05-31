@@ -18,7 +18,6 @@ from tools.asset_creator.core.subtile import generate_subtiles
 from tools.asset_creator.core.terrain import get_builtin_presets, load_terrain_presets
 from tools.asset_creator.core.texture import (
     TextureParams,
-    generate_noise_texture,
     generate_noise_texture_v2,
     generate_pattern_texture,
 )
@@ -73,10 +72,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--name",
         help="Output filename stem (default: terrain name, e.g. 'grass').",
     )
-    gen.add_argument(
-        "--quality", choices=["v1", "v2"], default="v2",
-        help="Texture quality pipeline: v1 (4-color threshold) or v2 (smooth ramp + dithering). Default: v2.",
-    )
+
 
     # ── list ──────────────────────────────────────────────────────────────
     subparsers.add_parser("list", help="List available terrain presets.")
@@ -126,7 +122,6 @@ def _generate_terrain(
     tsx_dir: Path,
     name_stem: str | None,
     show_preview: bool,
-    quality: str = "v2",
 ) -> tuple[Path, Path]:
     """Generate a single terrain tileset.
 
@@ -136,35 +131,28 @@ def _generate_terrain(
     palette_path = PALETTE_DIR / f"{config.palette_name}.yaml"
     palette = load_palette(palette_path)
 
-    use_v2 = quality == "v2"
-
     params = TextureParams(
         texture_type=config.texture.texture_type,
         scale=config.texture.scale,
         octaves=config.texture.octaves,
         persistence=config.texture.persistence,
         lacunarity=config.texture.lacunarity,
-        thresholds=list(config.texture.thresholds),
         density=config.texture.density,
-        # V2 fields (active only when quality=v2)
-        use_smooth_ramp=use_v2 and config.texture.use_smooth_ramp,
         detail_scale=config.texture.detail_scale,
         detail_strength=config.texture.detail_strength,
-        use_dithering=use_v2 and config.texture.use_dithering,
+        use_dithering=config.texture.use_dithering,
         dither_matrix_size=config.texture.dither_matrix_size,
     )
 
-    if config.texture.texture_type == "noise" and params.use_smooth_ramp:
+    if config.texture.texture_type == "noise":
         texture = generate_noise_texture_v2(32, 32, palette, params, seed=seed)
-    elif config.texture.texture_type == "noise":
-        texture = generate_noise_texture(32, 32, palette, params, seed=seed)
     else:
         texture = generate_pattern_texture(
             32, 32, palette, config.texture.texture_type, params, seed=seed,
         )
 
-    # Apply detail overlay (V2)
-    if use_v2 and config.detail.detail_type != "none":
+    # Apply detail overlay
+    if config.detail.detail_type != "none":
         texture = apply_detail_overlay(
             texture, palette,
             detail_type=config.detail.detail_type,
@@ -216,7 +204,6 @@ def cmd_generate(args: argparse.Namespace) -> None:
             terrain_name, presets, seed,
             args.output_dir, args.tsx_dir,
             name_stem, args.preview,
-            quality=args.quality,
         )
         sys.stdout.write(f"✅ PNG: {png_path}\n✅ TSX: {tsx_path}\n")
 

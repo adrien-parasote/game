@@ -9,7 +9,6 @@
 - [ADR-001: Dear PyGui](../ADRs/adr-001-dearpygui-replaces-pygame.md#L1)
 - [GUI Framework Research](../research/python_gui_frameworks.md#L1)
 - [V2 Spec](./asset_creator_v2_texture_quality.md#L1)
-- [V1 Spec](./asset_creator_spec.md#L1)
 - [CLI module](../../../tools/asset_creator/cli.py#L1)
 - [Pygame preview](../../../tools/asset_creator/preview/pygame_preview.py#L1)
 - [Terrain module](../../../tools/asset_creator/core/terrain.py#L1)
@@ -58,12 +57,12 @@ Replace the Pygame-based read-only preview with an interactive Dear PyGui GUI ap
 |---|---|---|---|
 | `tools/asset_creator/core/texture.py` | Python Module | V2 spec § "Step 3" | V2 spec |
 | `tools/asset_creator/core/palette.py` | Python Module | V2 spec § "Step 2" | V2 spec |
-| `tools/asset_creator/core/terrain.py` | Python Module | V1 spec § "Terrain" | V1 spec |
-| `tools/asset_creator/core/subtile.py` | Python Module | V1 spec § "Subtile" | V1 spec |
-| `tools/asset_creator/core/tile_assembler.py` | Python Module | V1 spec § "Assembly" | V1 spec |
+| `tools/asset_creator/core/terrain.py` | Python Module | Codebase | Pipeline |
+| `tools/asset_creator/core/subtile.py` | Python Module | Codebase | Pipeline |
+| `tools/asset_creator/core/tile_assembler.py` | Python Module | Codebase | Pipeline |
 | `tools/asset_creator/core/detail_overlay.py` | Python Module | V2 spec § "Step 4" | V2 spec |
-| `tools/asset_creator/exporters/png_exporter.py` | Python Module | V1 spec § "Export" | V1 spec |
-| `tools/asset_creator/exporters/tsx_exporter.py` | Python Module | V1 spec § "Export" | V1 spec |
+| `tools/asset_creator/exporters/png_exporter.py` | Python Module | Codebase | Exporter |
+| `tools/asset_creator/exporters/tsx_exporter.py` | Python Module | Codebase | Exporter |
 | `tools/asset_creator/config/terrain_presets.yaml` | YAML | V2 spec § "Step 5" | Terrain designer |
 | `tools/asset_creator/config/palettes/*.yaml` | YAML | V2 spec § "Step 2" | Palette designer |
 
@@ -78,10 +77,10 @@ Replace the Pygame-based read-only preview with an interactive Dear PyGui GUI ap
 
 | Concept | Status in this spec | Mentioned in |
 |---|---|---|
-| Wang blob tiling (47 bitmasks) | Consumed (canvas autotile mode) | V1 spec, `core/tile_assembler.py` |
+| Wang blob tiling (47 bitmasks) | Consumed (canvas autotile mode) | `core/tile_assembler.py` |
 | TextureParams dataclass | Consumed (slider ↔ state binding) | V2 spec, `core/texture.py` |
 | TerrainConfig / DetailConfig | Consumed (preset loading) | V2 spec, `core/terrain.py` |
-| SubTileSet | Consumed (tileset generation) | V1 spec, `core/subtile.py` |
+| SubTileSet | Consumed (tileset generation) | `core/subtile.py` |
 
 ---
 
@@ -908,7 +907,6 @@ The `_on_export()` callback in `app.py` dispatches to `do_export_autotile()` or 
 | IT-002 | Canvas autotile bitmask → tile selection | Paint 3×3 block, check center cell | Center cell bitmask=255, tile index matches full fill |
 | IT-003 | Preset switch resets state correctly | Switch grass → sand → grass | State matches grass preset values exactly |
 | IT-004 | Export produces valid PNG + TSX | Generate + export to temp dir | PNG exists, TSX valid XML, tile count=47 |
-| IT-005 | V1 quality skips V2 features | `quality="v1"`, `use_smooth_ramp=True` | TextureConfig has `use_smooth_ramp=False` |
 | IT-006 | Full data flow: state → pipeline → canvas tiles | Build state, regenerate, verify canvas tiles update | All filled canvas cells show correct Wang tile for their bitmask |
 
 ---
@@ -939,7 +937,7 @@ The `_on_export()` callback in `app.py` dispatches to `do_export_autotile()` or 
 | D-04 | Texture API | `dpg.add_raw_texture` with `mvFormat_Float_rgba` | `dpg.add_dynamic_texture` | macOS Metal backend compatibility |
 | D-05 | Main loop | `dpg.start_dearpygui()` | Manual `while dpg.is_dearpygui_running(): _frame_tick(); dpg.render_dearpygui_frame()` | Required for frame-based debounce pattern |
 | D-06 | Window | Title `"Asset Creator V3"`, size 1100×750, 2-column layout | Title `"Createur de Tiles V3"`, size 1400×850, 3-column layout (left/center/right) | Added history panel (F_HIST), wider for 3 panels |
-| D-07 | Control Panel | Had "Quality" radio (`v1`/`v2`), English labels | No Quality radio (hardcoded `v2`), all labels in French | Quality toggle removed; French UI throughout |
+| D-07 | Control Panel | Had "Quality" radio (`v1`/`v2`), English labels | Quality radio removed entirely (V1 pipeline deleted), French UI throughout | Quality toggle removed; French UI throughout |
 | D-08 | Control Panel | No color controls | 4 color pickers: Ombre, Base, Lumière, Accent (F_COLOR) | Custom palette color overrides added |
 | D-09 | Debounce | `threading.Timer` based | Frame-based: `_frame_tick()` checks elapsed time each render frame | Simpler, avoids threading in single-threaded DPG loop |
 | D-10 | Standalone mode | Tile palette UI for selecting from 47 tiles | Single tile generated and painted directly, no tile picker | Simplified standalone UX |

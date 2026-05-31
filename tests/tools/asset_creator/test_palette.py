@@ -8,14 +8,7 @@ import pytest
 import yaml
 
 from tools.asset_creator.core.color_ramp import rgb_to_oklch
-from tools.asset_creator.core.palette import Palette, PaletteRole, load_palette
-
-try:
-    from tools.asset_creator.core.palette import RampConfig
-    HAS_V2_PALETTE = True
-except ImportError:
-    HAS_V2_PALETTE = False
-
+from tools.asset_creator.core.palette import Palette, PaletteRole, load_palette, RampConfig
 
 PALETTES_DIR = Path(__file__).resolve().parents[3] / "tools" / "asset_creator" / "config" / "palettes"
 
@@ -30,6 +23,13 @@ class TestLoadPalette:
             "name": "test_palette",
             "colors": ["#2d5a1e", "#3e7c27", "#5a9e3a", "#7bc04f"],
             "roles": {"shadow": 0, "base": 1, "highlight": 2, "accent": 3},
+            "ramp": {
+                "base_color": "#5a9e3a",
+                "steps": 9,
+                "shadow_hue_shift": -15,
+                "highlight_hue_shift": 10,
+                "lightness_range": 0.25,
+            },
         }
         yaml_file = tmp_path / "test.yaml"
         yaml_file.write_text(yaml.dump(yaml_content))
@@ -54,6 +54,13 @@ class TestLoadPalette:
             "name": "frozen_test",
             "colors": ["#112233", "#445566"],
             "roles": {"shadow": 0, "base": 1},
+            "ramp": {
+                "base_color": "#445566",
+                "steps": 9,
+                "shadow_hue_shift": -15,
+                "highlight_hue_shift": 10,
+                "lightness_range": 0.25,
+            },
         }
         yaml_file = tmp_path / "frozen.yaml"
         yaml_file.write_text(yaml.dump(yaml_content))
@@ -83,6 +90,13 @@ class TestPaletteValidation:
             "name": "one_color",
             "colors": ["#112233"],
             "roles": {"shadow": 0},
+            "ramp": {
+                "base_color": "#112233",
+                "steps": 9,
+                "shadow_hue_shift": -15,
+                "highlight_hue_shift": 10,
+                "lightness_range": 0.25,
+            },
         }
         yaml_file = tmp_path / "bad.yaml"
         yaml_file.write_text(yaml.dump(yaml_content))
@@ -97,6 +111,13 @@ class TestPaletteValidation:
             "name": "bad_hex",
             "colors": ["#ZZZZZZ", "#112233"],
             "roles": {"shadow": 0, "base": 1},
+            "ramp": {
+                "base_color": "#112233",
+                "steps": 9,
+                "shadow_hue_shift": -15,
+                "highlight_hue_shift": 10,
+                "lightness_range": 0.25,
+            },
         }
         yaml_file = tmp_path / "bad_hex.yaml"
         yaml_file.write_text(yaml.dump(yaml_content))
@@ -111,6 +132,13 @@ class TestPaletteValidation:
             "name": "bad_index",
             "colors": ["#112233", "#445566"],
             "roles": {"shadow": 0, "base": 99},
+            "ramp": {
+                "base_color": "#112233",
+                "steps": 9,
+                "shadow_hue_shift": -15,
+                "highlight_hue_shift": 10,
+                "lightness_range": 0.25,
+            },
         }
         yaml_file = tmp_path / "bad_index.yaml"
         yaml_file.write_text(yaml.dump(yaml_content))
@@ -125,6 +153,13 @@ class TestPaletteValidation:
             "name": "range_test",
             "colors": ["#000000", "#ffffff"],
             "roles": {"shadow": 0, "base": 1},
+            "ramp": {
+                "base_color": "#000000",
+                "steps": 9,
+                "shadow_hue_shift": -15,
+                "highlight_hue_shift": 10,
+                "lightness_range": 0.25,
+            },
         }
         yaml_file = tmp_path / "range.yaml"
         yaml_file.write_text(yaml.dump(yaml_content))
@@ -201,6 +236,10 @@ class TestPaletteErrors:
         yaml_content = {
             "colors": ["#112233", "#445566"],
             "roles": {"shadow": 0, "base": 1},
+            "ramp": {
+                "base_color": "#112233",
+                "steps": 9,
+            },
         }
         yaml_file = tmp_path / "no_name.yaml"
         yaml_file.write_text(yaml.dump(yaml_content))
@@ -213,6 +252,10 @@ class TestPaletteErrors:
         yaml_content = {
             "name": "no_colors",
             "roles": {"shadow": 0},
+            "ramp": {
+                "base_color": "#112233",
+                "steps": 9,
+            },
         }
         yaml_file = tmp_path / "no_colors.yaml"
         yaml_file.write_text(yaml.dump(yaml_content))
@@ -225,6 +268,10 @@ class TestPaletteErrors:
         yaml_content = {
             "name": "no_roles",
             "colors": ["#112233", "#445566"],
+            "ramp": {
+                "base_color": "#112233",
+                "steps": 9,
+            },
         }
         yaml_file = tmp_path / "no_roles.yaml"
         yaml_file.write_text(yaml.dump(yaml_content))
@@ -232,9 +279,21 @@ class TestPaletteErrors:
         with pytest.raises(ValueError, match="roles"):
             load_palette(yaml_file)
 
+    def test_missing_ramp_field(self, tmp_path: Path) -> None:
+        """YAML missing mandatory 'ramp' field must raise ValueError."""
+        yaml_content = {
+            "name": "no_ramp",
+            "colors": ["#112233", "#445566"],
+            "roles": {"shadow": 0, "base": 1},
+        }
+        yaml_file = tmp_path / "no_ramp.yaml"
+        yaml_file.write_text(yaml.dump(yaml_content))
+
+        with pytest.raises(ValueError, match="missing mandatory 'ramp'"):
+            load_palette(yaml_file)
+
 
 # ── V2 Extended Palette Tests ─────────────────────────────────────────────
-
 
 _RAMP_YAML_CONTENT = {
     "name": "test_ramp",
@@ -250,7 +309,6 @@ _RAMP_YAML_CONTENT = {
 }
 
 
-@pytest.mark.skipif(not HAS_V2_PALETTE, reason="V2 palette features not implemented yet")
 class TestExtendedPaletteRamp:
     """TC-031: Palette with ramp config generates extended_colors."""
 
@@ -296,7 +354,6 @@ class TestExtendedPaletteRamp:
         assert palette.ramp_config.lightness_range == 0.25
 
 
-@pytest.mark.skipif(not HAS_V2_PALETTE, reason="V2 palette features not implemented yet")
 class TestPaletteInterpolate:
     """TC-032: palette.interpolate(t) maps [0,1] to ramp colors."""
 
@@ -338,72 +395,6 @@ class TestPaletteInterpolate:
         assert L_dark <= L_mid <= L_bright
 
 
-@pytest.mark.skipif(not HAS_V2_PALETTE, reason="V2 palette features not implemented yet")
-class TestBackwardCompatibility:
-    """TC-033: V1 palette YAML without ramp section still works."""
-
-    @pytest.mark.tc("TC-033")
-    def test_v1_palette_no_ramp_section(self, tmp_path: Path) -> None:
-        """Palette without ramp section loads correctly (V1 compat)."""
-        yaml_content = {
-            "name": "v1_compat",
-            "colors": ["#112233", "#445566", "#778899", "#aabbcc"],
-            "roles": {"shadow": 0, "base": 1, "highlight": 2, "accent": 3},
-        }
-        yaml_file = tmp_path / "v1.yaml"
-        yaml_file.write_text(yaml.dump(yaml_content))
-
-        palette = load_palette(yaml_file)
-
-        assert palette.ramp_config is None
-        assert palette.name == "v1_compat"
-        assert len(palette.colors) == 4
-
-    @pytest.mark.tc("TC-033")
-    def test_v1_extended_colors_returns_original(self, tmp_path: Path) -> None:
-        """V1 palette.extended_colors must return the original colors."""
-        yaml_content = {
-            "name": "v1_ext",
-            "colors": ["#112233", "#445566"],
-            "roles": {"shadow": 0, "base": 1},
-        }
-        yaml_file = tmp_path / "v1_ext.yaml"
-        yaml_file.write_text(yaml.dump(yaml_content))
-
-        palette = load_palette(yaml_file)
-
-        assert palette.extended_colors == palette.colors
-
-    @pytest.mark.tc("TC-033")
-    def test_v1_interpolate_works(self, tmp_path: Path) -> None:
-        """V1 palette.interpolate(t) still works (falls back to V1 colors)."""
-        yaml_content = {
-            "name": "v1_interp",
-            "colors": ["#000000", "#ffffff"],
-            "roles": {"shadow": 0, "base": 1},
-        }
-        yaml_file = tmp_path / "v1_interp.yaml"
-        yaml_file.write_text(yaml.dump(yaml_content))
-
-        palette = load_palette(yaml_file)
-        result = palette.interpolate(0.0)
-
-        assert result == (0, 0, 0)
-
-    @pytest.mark.tc("TC-033")
-    def test_existing_palette_constructors_still_work(self) -> None:
-        """V1 Palette() constructor without ramp_config must still work."""
-        palette = Palette(
-            name="v1_constructor",
-            colors=((10, 20, 30), (40, 50, 60)),
-            roles={PaletteRole.SHADOW: 0, PaletteRole.BASE: 1},
-        )
-
-        assert palette.ramp_config is None
-        assert palette.name == "v1_constructor"
-
-
-@pytest.mark.skipif(not HAS_V2_PALETTE, reason="V2 palette features not implemented yet")
 class TestExtendedPaletteUniqueness:
     """TC-034: Extended palette colors are all unique."""
 

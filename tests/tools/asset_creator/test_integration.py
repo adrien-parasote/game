@@ -26,7 +26,7 @@ from tools.asset_creator.core.subtile import (
 from tools.asset_creator.core.terrain import TerrainConfig, get_builtin_presets
 from tools.asset_creator.core.texture import (
     TextureParams,
-    generate_noise_texture,
+    generate_noise_texture_v2,
     generate_pattern_texture,
 )
 from tools.asset_creator.core.tile_assembler import (
@@ -73,12 +73,12 @@ class TestFullPipeline:
     def test_grass_pipeline_produces_valid_png(
         self, grass_palette: Palette, tmp_output: dict[str, Path],
     ) -> None:
-        """IT-001a: grass preset produces a valid 47-tile PNG strip."""
+        """grass preset produces a valid 47-tile PNG strip."""
         params = TextureParams(
             texture_type="noise", scale=0.15, octaves=3,
-            persistence=0.5, thresholds=[-0.2, 0.4, 0.8],
+            persistence=0.5,
         )
-        texture = generate_noise_texture(
+        texture = generate_noise_texture_v2(
             TILE_SIZE, TILE_SIZE, grass_palette, params, seed=42,
         )
 
@@ -103,9 +103,9 @@ class TestFullPipeline:
     def test_grass_pipeline_produces_valid_tsx(
         self, grass_palette: Palette, tmp_output: dict[str, Path],
     ) -> None:
-        """IT-001b: grass preset produces a valid TSX with Wang set."""
+        """grass preset produces a valid TSX with Wang set."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
-        texture = generate_noise_texture(
+        texture = generate_noise_texture_v2(
             TILE_SIZE, TILE_SIZE, grass_palette, params, seed=42,
         )
 
@@ -134,9 +134,9 @@ class TestFullPipeline:
     def test_pipeline_no_fully_transparent_tile(
         self, grass_palette: Palette,
     ) -> None:
-        """IT-001c: no tile in the assembled tileset is fully transparent (L-MAP-003)."""
+        """no tile in the assembled tileset is fully transparent (L-MAP-003)."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
-        texture = generate_noise_texture(
+        texture = generate_noise_texture_v2(
             TILE_SIZE, TILE_SIZE, grass_palette, params, seed=42,
         )
         edge_config = {"style": "organic", "width": 3, "noise_scale": 0.3}
@@ -155,13 +155,13 @@ class TestSeedReproducibility:
     """Integration: same seed produces identical output."""
 
     def test_same_seed_identical_tileset(self, grass_palette: Palette) -> None:
-        """IT-002a: two runs with the same seed produce pixel-identical tilesets."""
+        """two runs with the same seed produce pixel-identical tilesets."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
         edge_config = {"style": "organic", "width": 3, "noise_scale": 0.3}
 
         results = []
         for _ in range(2):
-            texture = generate_noise_texture(
+            texture = generate_noise_texture_v2(
                 TILE_SIZE, TILE_SIZE, grass_palette, params, seed=99,
             )
             subtiles = generate_subtiles(texture, edge_config, seed=99)
@@ -171,13 +171,13 @@ class TestSeedReproducibility:
         assert results[0] == results[1], "Same seed must produce identical output"
 
     def test_different_seed_different_tileset(self, grass_palette: Palette) -> None:
-        """IT-002b: different seeds produce different tilesets."""
+        """different seeds produce different tilesets."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
         edge_config = {"style": "organic", "width": 3, "noise_scale": 0.3}
 
         results = []
         for seed in (1, 2):
-            texture = generate_noise_texture(
+            texture = generate_noise_texture_v2(
                 TILE_SIZE, TILE_SIZE, grass_palette, params, seed=seed,
             )
             subtiles = generate_subtiles(texture, edge_config, seed=seed)
@@ -199,7 +199,7 @@ class TestAllTerrains:
         return get_builtin_presets()
 
     def test_all_presets_are_loaded(self, all_presets: dict[str, TerrainConfig]) -> None:
-        """IT-003a: builtin presets file loads all 6 terrains."""
+        """builtin presets file loads all 6 terrains."""
         expected = {"grass", "dirt", "paving_stone", "sand", "snow", "water"}
         assert set(all_presets.keys()) == expected
 
@@ -210,7 +210,7 @@ class TestAllTerrains:
         self, terrain_name: str, all_presets: dict[str, TerrainConfig],
         tmp_output: dict[str, Path],
     ) -> None:
-        """IT-003b: each terrain produces a valid 47-tile PNG + TSX."""
+        """each terrain produces a valid 47-tile PNG + TSX."""
         config = all_presets[terrain_name]
         palette = load_palette(PALETTE_DIR / f"{config.palette_name}.yaml")
 
@@ -220,12 +220,11 @@ class TestAllTerrains:
             octaves=config.texture.octaves,
             persistence=config.texture.persistence,
             lacunarity=config.texture.lacunarity,
-            thresholds=list(config.texture.thresholds),
             density=config.texture.density,
         )
 
         if config.texture.texture_type == "noise":
-            texture = generate_noise_texture(
+            texture = generate_noise_texture_v2(
                 TILE_SIZE, TILE_SIZE, palette, params, seed=0,
             )
         else:
@@ -270,9 +269,9 @@ class TestTsxStructure:
     def test_tsx_has_correct_wang_tile_count(
         self, grass_palette: Palette, tmp_output: dict[str, Path],
     ) -> None:
-        """IT-004a: TSX contains exactly 47 wangtile entries."""
+        """TSX contains exactly 47 wangtile entries."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
-        texture = generate_noise_texture(
+        texture = generate_noise_texture_v2(
             TILE_SIZE, TILE_SIZE, grass_palette, params, seed=0,
         )
         edge_config = {"style": "organic", "width": 3, "noise_scale": 0.3}
@@ -293,9 +292,9 @@ class TestTsxStructure:
     def test_tsx_wang_ids_are_valid(
         self, grass_palette: Palette, tmp_output: dict[str, Path],
     ) -> None:
-        """IT-004b: every wangid uses only 0 or 1 values (single-terrain blob)."""
+        """every wangid uses only 0 or 1 values (single-terrain blob)."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
-        texture = generate_noise_texture(
+        texture = generate_noise_texture_v2(
             TILE_SIZE, TILE_SIZE, grass_palette, params, seed=0,
         )
         edge_config = {"style": "organic", "width": 3, "noise_scale": 0.3}
@@ -320,9 +319,9 @@ class TestTsxStructure:
     def test_tsx_tile_ids_are_sequential(
         self, grass_palette: Palette, tmp_output: dict[str, Path],
     ) -> None:
-        """IT-004c: tileid values are 0..46 (sequential)."""
+        """tileid values are 0..46 (sequential)."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
-        texture = generate_noise_texture(
+        texture = generate_noise_texture_v2(
             TILE_SIZE, TILE_SIZE, grass_palette, params, seed=0,
         )
         edge_config = {"style": "organic", "width": 3, "noise_scale": 0.3}
@@ -342,9 +341,9 @@ class TestTsxStructure:
     def test_tsx_image_source_relative(
         self, grass_palette: Palette, tmp_output: dict[str, Path],
     ) -> None:
-        """IT-004d: image source is a relative path from TSX to PNG."""
+        """image source is a relative path from TSX to PNG."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
-        texture = generate_noise_texture(
+        texture = generate_noise_texture_v2(
             TILE_SIZE, TILE_SIZE, grass_palette, params, seed=0,
         )
         edge_config = {"style": "organic", "width": 3, "noise_scale": 0.3}
@@ -369,9 +368,9 @@ class TestTsxStructure:
     def test_tsx_wangset_type_is_mixed(
         self, grass_palette: Palette, tmp_output: dict[str, Path],
     ) -> None:
-        """IT-004e: wangset type is 'mixed' for blob tileset."""
+        """wangset type is 'mixed' for blob tileset."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
-        texture = generate_noise_texture(
+        texture = generate_noise_texture_v2(
             TILE_SIZE, TILE_SIZE, grass_palette, params, seed=0,
         )
         edge_config = {"style": "organic", "width": 3, "noise_scale": 0.3}
@@ -397,7 +396,7 @@ class TestCliGenerate:
     """Integration: CLI generate command produces files on disk."""
 
     def test_cli_generate_single_terrain(self, tmp_output: dict[str, Path]) -> None:
-        """IT-005a: cmd_generate produces PNG + TSX for a single terrain."""
+        """cmd_generate produces PNG + TSX for a single terrain."""
         import argparse
 
         from tools.asset_creator.cli import cmd_generate
@@ -410,7 +409,6 @@ class TestCliGenerate:
             variants=1,
             preview=False,
             name=None,
-            quality="v2",
         )
 
         cmd_generate(args)
@@ -425,7 +423,7 @@ class TestCliGenerate:
         assert img.size == (EXPECTED_TILE_COUNT * TILE_SIZE, TILE_SIZE)
 
     def test_cli_generate_multiple_variants(self, tmp_output: dict[str, Path]) -> None:
-        """IT-005b: cmd_generate with --variants produces N files."""
+        """cmd_generate with --variants produces N files."""
         import argparse
 
         from tools.asset_creator.cli import cmd_generate
@@ -438,7 +436,6 @@ class TestCliGenerate:
             variants=3,
             preview=False,
             name=None,
-            quality="v2",
         )
 
         cmd_generate(args)
@@ -450,7 +447,7 @@ class TestCliGenerate:
             assert tsx.exists(), f"Variant {i} TSX missing"
 
     def test_cli_generate_custom_name(self, tmp_output: dict[str, Path]) -> None:
-        """IT-005c: cmd_generate with --name uses custom filename stem."""
+        """cmd_generate with --name uses custom filename stem."""
         import argparse
 
         from tools.asset_creator.cli import cmd_generate
@@ -463,7 +460,6 @@ class TestCliGenerate:
             variants=1,
             preview=False,
             name="my_dirt_tileset",
-            quality="v2",
         )
 
         cmd_generate(args)
@@ -480,13 +476,13 @@ class TestVariantUniqueness:
     """Integration: multiple variants from sequential seeds are unique."""
 
     def test_variants_are_unique(self, grass_palette: Palette) -> None:
-        """IT-006a: 3 sequential seeds produce 3 distinct tilesets."""
+        """3 sequential seeds produce 3 distinct tilesets."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
         edge_config = {"style": "organic", "width": 3, "noise_scale": 0.3}
 
         pixel_data = []
         for seed in range(3):
-            texture = generate_noise_texture(
+            texture = generate_noise_texture_v2(
                 TILE_SIZE, TILE_SIZE, grass_palette, params, seed=seed,
             )
             subtiles = generate_subtiles(texture, edge_config, seed=seed)
@@ -511,7 +507,7 @@ class TestPatternPipeline:
         self, pattern_type: str, grass_palette: Palette,
         tmp_output: dict[str, Path],
     ) -> None:
-        """IT-007a: each pattern type produces a valid exportable tileset."""
+        """each pattern type produces a valid exportable tileset."""
         params = TextureParams(texture_type=pattern_type, density=0.3)
         texture = generate_pattern_texture(
             TILE_SIZE, TILE_SIZE, grass_palette, pattern_type, params, seed=0,
@@ -544,9 +540,9 @@ class TestEdgeStylePipeline:
     def test_edge_style_produces_valid_tileset(
         self, edge_style: str, grass_palette: Palette,
     ) -> None:
-        """IT-008a: each edge style assembles into a valid tileset."""
+        """each edge style assembles into a valid tileset."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
-        texture = generate_noise_texture(
+        texture = generate_noise_texture_v2(
             TILE_SIZE, TILE_SIZE, grass_palette, params, seed=0,
         )
         edge_config = {"style": edge_style, "width": 3, "noise_scale": 0.3}
@@ -566,9 +562,9 @@ class TestBitmaskExtremes:
     """Integration: extreme bitmask values produce expected tile properties."""
 
     def test_bitmask_255_is_fully_opaque(self, grass_palette: Palette) -> None:
-        """IT-009a: bitmask 255 (all neighbors present) produces a fully opaque tile."""
+        """bitmask 255 (all neighbors present) produces a fully opaque tile."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
-        texture = generate_noise_texture(
+        texture = generate_noise_texture_v2(
             TILE_SIZE, TILE_SIZE, grass_palette, params, seed=0,
         )
         edge_config = {"style": "organic", "width": 3, "noise_scale": 0.3}
@@ -586,9 +582,9 @@ class TestBitmaskExtremes:
         )
 
     def test_bitmask_0_has_partial_transparency(self, grass_palette: Palette) -> None:
-        """IT-009b: bitmask 0 (no neighbors) has some transparent pixels."""
+        """bitmask 0 (no neighbors) has some transparent pixels."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
-        texture = generate_noise_texture(
+        texture = generate_noise_texture_v2(
             TILE_SIZE, TILE_SIZE, grass_palette, params, seed=0,
         )
         edge_config = {"style": "organic", "width": 3, "noise_scale": 0.3}
@@ -603,9 +599,9 @@ class TestBitmaskExtremes:
     def test_all_47_bitmasks_produce_non_empty_tiles(
         self, grass_palette: Palette,
     ) -> None:
-        """IT-009c: every one of the 47 blob bitmasks produces a tile with visible pixels."""
+        """every one of the 47 blob bitmasks produces a tile with visible pixels."""
         params = TextureParams(texture_type="noise", scale=0.15, octaves=3)
-        texture = generate_noise_texture(
+        texture = generate_noise_texture_v2(
             TILE_SIZE, TILE_SIZE, grass_palette, params, seed=0,
         )
         edge_config = {"style": "organic", "width": 3, "noise_scale": 0.3}

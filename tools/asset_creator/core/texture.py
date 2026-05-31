@@ -26,7 +26,6 @@ class TextureParams:
         octaves: Number of noise octaves for multi-frequency detail.
         persistence: Amplitude decay per octave (0-1).
         lacunarity: Frequency multiplier per octave.
-        thresholds: Noise value breakpoints mapping to palette roles.
         density: Probability of accent dots for stippled patterns (0-1).
     """
 
@@ -35,10 +34,7 @@ class TextureParams:
     octaves: int = 3
     persistence: float = 0.5
     lacunarity: float = 2.0
-    thresholds: list[float] = field(default_factory=lambda: [-0.2, 0.4, 0.8])
     density: float = 0.3
-    # V2 additions
-    use_smooth_ramp: bool = False
     detail_scale: float = 0.5
     detail_strength: float = 0.06
     use_dithering: bool = False
@@ -113,30 +109,6 @@ def _compute_multi_octave_noise(
     return value
 
 
-def _noise_to_color(
-    value: float,
-    palette: Palette,
-    thresholds: list[float],
-) -> tuple[int, int, int]:
-    """Map a noise value to a palette color using threshold breakpoints.
-
-    Args:
-        value: Noise value (approximately [-1, 1]).
-        palette: Color palette with role mappings.
-        thresholds: List of 3 threshold values [shadow, base, highlight].
-
-    Returns:
-        RGB color tuple from the palette.
-    """
-    if value < thresholds[0]:
-        return palette.get_color(PaletteRole.SHADOW)
-    if value < thresholds[1]:
-        return palette.get_color(PaletteRole.BASE)
-    if value < thresholds[2]:
-        return palette.get_color(PaletteRole.HIGHLIGHT)
-    return palette.get_color(PaletteRole.ACCENT)
-
-
 # ---------------------------------------------------------------------------
 # V2 smooth ramp constants and helpers
 # ---------------------------------------------------------------------------
@@ -199,40 +171,7 @@ def _ramp_color_dithered(
     return colors[color_idx]
 
 
-def generate_noise_texture(
-    width: int,
-    height: int,
-    palette: Palette,
-    params: TextureParams,
-    seed: int = 0,
-) -> Image.Image:
-    """Generate a seamless noise texture using toroidal noise mapping.
 
-    Args:
-        width: Image width in pixels.
-        height: Image height in pixels.
-        palette: Color palette to use.
-        params: Noise generation parameters.
-        seed: Random seed for reproducibility.
-
-    Returns:
-        RGBA PIL Image with pixels colored from the palette.
-    """
-    noise_gen = OpenSimplex(seed=seed)
-    img = Image.new("RGBA", (width, height))
-    pixels = img.load()
-    if pixels is None:
-        raise RuntimeError("Failed to load image pixels")
-
-    for y in range(height):
-        for x in range(width):
-            value = _compute_multi_octave_noise(
-                x, y, width, height, params, noise_gen,
-            )
-            rgb = _noise_to_color(value, palette, params.thresholds)
-            pixels[x, y] = (*rgb, 255)
-
-    return img
 
 
 def generate_noise_texture_v2(
@@ -400,11 +339,9 @@ def generate_pattern_texture(
     if pattern_type == "stippled":
         return _generate_stippled(width, height, palette, params.density, seed)
     if pattern_type == "noise":
-        if params.use_smooth_ramp:
-            return generate_noise_texture_v2(
-                width, height, palette, params, seed,
-            )
-        return generate_noise_texture(width, height, palette, params, seed)
+        return generate_noise_texture_v2(
+            width, height, palette, params, seed,
+        )
     if pattern_type == "striped":
         return _generate_striped(width, height, palette)
     raise ValueError(

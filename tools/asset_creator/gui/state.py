@@ -25,7 +25,6 @@ class AppState:
 
     # Preset
     terrain_name: str = "grass"
-    quality: str = "v2"
 
     # Texture params
     texture_type: str = "noise"
@@ -72,10 +71,10 @@ class AppState:
             octaves=self.octaves,
             persistence=self.persistence,
             lacunarity=self.lacunarity,
-            use_smooth_ramp=self.quality == "v2" and self.use_smooth_ramp,
+            use_smooth_ramp=self.use_smooth_ramp,
             detail_scale=self.detail_scale,
             detail_strength=self.detail_strength,
-            use_dithering=self.quality == "v2" and self.use_dithering,
+            use_dithering=self.use_dithering,
             dither_matrix_size=self.dither_matrix_size,
         )
 
@@ -100,14 +99,12 @@ class AppState:
 def state_from_preset(
     terrain_name: str,
     presets: dict[str, Any],
-    quality: str = "v2",
 ) -> AppState:
     """Create AppState from a terrain preset name.
 
     Args:
         terrain_name: Name of the terrain preset (e.g. "grass").
         presets: Dict mapping terrain names to TerrainConfig objects.
-        quality: Quality mode, "v1" or "v2".
 
     Returns:
         New AppState populated from the preset's config values.
@@ -117,7 +114,6 @@ def state_from_preset(
     pal = load_palette(palette_path)
     return AppState(
         terrain_name=terrain_name,
-        quality=quality,
         texture_type=config.texture.texture_type,
         scale=config.texture.scale,
         octaves=config.texture.octaves,

@@ -1,51 +1,81 @@
-# Implementation Plan — Spec Gate & Adversarial Review (Tooling)
+# Plan d'implémentation — Nettoyage de la V1 (Tooling)
 
-This implementation plan covers the Spec Gate check and Adversarial Review conducted on the tooling specifications folder (`docs/tooling/specs/`).
-
----
-
-## 1. Deterministic Precheck (`spec_precheck.py`)
-- **Status:** **100% PASS** (63 checks passing, 0 failures, 0 partials).
-- All minor partial warnings (such as pipeline test alignments, assumptions formats, and secondary constants tables) have been fully resolved directly within the specs:
-  - **`asset_creator_v2_texture_quality.md`**: Updated integration test `IT-004` description with the keywords `Proposed Changes` and `Produces` to achieve full pipeline seam coverage alignment.
-  - **`asset_creator_v3_gui.md`**: Upgraded the assumptions table to a standard 5-column layout with risk-rated `[SHOW]` indicators and backticked API/CLI validation text.
-  - **`blob_autotile_pipeline_spec.md`**: Moved the constants table from `## Assumptions` to its own `## Constants` heading to avoid confusing the precheck assumptions parser.
+Ce plan décrit la suppression complète de la logique V1 (basée sur un découpage de bruit à 4 couleurs) dans le code, la documentation et les tests de l'outil de création d'assets, afin de simplifier la base de code et ne conserver que le pipeline V2 haute qualité (rampes OKLCh et dithering).
 
 ---
 
-## 2. Cross-Spec Validator (`run_all.py`)
-- **Status:** **PASS** (0 failures, 0 warnings across all 10 universal checks). All file paths, dependencies, concepts, and interfaces are fully unified and aligned globally across the 6 specifications.
+## User Review Required
+
+> [!WARNING]
+> La suppression de la V1 supprime la compatibilité descendante pour toute palette YAML externe ou personnalisée qui n'inclurait pas la section `ramp`. Les palettes devront obligatoirement spécifier une configuration de rampe de couleurs (`ramp`). Les 6 palettes par défaut du projet possèdent déjà cette configuration.
+
+> [!NOTE]
+> Plusieurs tests unitaires historiques axés sur le comportement V1 seront complètement supprimés.
 
 ---
 
-## 3. Adversarial Review (Hostile Stress-Test)
-- **Path:** `docs/adversarial-review/0001-2026-05-31-tooling-review/`
-- **Overall Verdict:** **WARNING (CRITICAL ISSUES FOUND)**
-- Three **CRITICAL** issues, three **HIGH** issues, and two **MEDIUM** issues have been discovered that must be corrected in the specifications before entering the **BUILD** stage.
+## Proposed Changes
 
-### Critical Findings & Fix Strategy
+### Documentation de l'outil
 
-#### F1. `opensimplex` API method signature mismatch in `asset_creator_spec.md`
-- **Problem:** Spec references `opensimplex_generator.noise4(nx, ny, nz, nw)`, which does not exist in Python's `opensimplex` library. It will raise a fatal `AttributeError` at runtime.
-- **Fix:** Update spec code snippet to call `noise4d(nx, ny, nz, nw)`.
+#### [DELETE] [asset_creator_spec.md](file:///Users/adrien.parasote/Documents/perso/game/docs/tooling/specs/asset_creator_spec.md)
+* Suppression complète de la spécification originale V1.
 
-#### F2. Canvas cell textures registry initialization missing in `asset_creator_v3_gui.md`
-- **Problem:** `build_canvas` attempts to draw grid cell images referencing `canvas_cell_{col}_{row}` texture tags that are never pre-registered in the Dear PyGui raw texture registry. DPG will fail or crash on startup.
-- **Fix:** Pre-register raw texture tags in `build_canvas` for all 16×12 cells during startup drawlist creation.
+#### [MODIFY] [README.md](file:///Users/adrien.parasote/Documents/perso/game/docs/README.md)
+* Retirer les références et liens vers `asset_creator_spec.md`.
 
-#### F3. Output Canvas height dimension and Vertical Shear staggering mismatch in `diagonal_wall_spec.md`
-- **Problem:** The `Produces` table specifies output dimensions of $W \times (H + W)$ for continuous walls, but Section 5.2 Step 2 mandates allocating a canvas of size $W \times (H + 32)$ and pasting columns staggered by local `Y = dx` (0 to 31). This resets the staggered offset every 32px, producing a sawtooth pattern instead of a continuous diagonal wall.
-- **Fix:** Align canvas allocation to $W \times (H + W)$ and continuously shift columns along the global coordinate `Y = x` (NW-to-SE) or `Y = (W - 1) - x` (NE-to-SW).
+#### [MODIFY] [asset_creator_v2_texture_quality.md](file:///Users/adrien.parasote/Documents/perso/game/docs/tooling/specs/asset_creator_v2_texture_quality.md)
+* Nettoyer les références à la V1 et supprimer les notes de rétrocompatibilité.
+
+#### [MODIFY] [asset_creator_v3_gui.md](file:///Users/adrien.parasote/Documents/perso/game/docs/tooling/specs/asset_creator_v3_gui.md)
+* Nettoyer les mentions et cas de tests liés à la V1.
 
 ---
 
-## 4. Verification Plan
+### Moteur de création d'assets (`tools/asset_creator`)
 
-### Automated Pre-check
+#### [MODIFY] [palette.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/core/palette.py)
+* Rendre le champ `ramp` du fichier YAML obligatoire. Lever une `ValueError` explicite si le bloc `ramp` est absent.
+* Nettoyer la propriété `extended_colors` pour ne plus avoir de fallback sur `self.colors`.
+
+#### [MODIFY] [texture.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/core/texture.py)
+* Supprimer la fonction `generate_noise_texture` (moteur V1).
+* Renommer ou simplifier `generate_pattern_texture` pour qu'elle délègue directement à `generate_noise_texture_v2`.
+* Simplifier `TextureParams` en retirant les paramètres V1 obsolètes (`thresholds` et `use_smooth_ramp`, ce dernier devenant implicitement toujours vrai).
+
+#### [MODIFY] [cli.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/cli.py)
+* Retirer l'option de ligne de commande `--quality`.
+* Nettoyer la fonction `_generate_terrain` pour appeler directement le pipeline V2 (textures et détails).
+
+#### [MODIFY] [state.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/gui/state.py)
+* Supprimer l'attribut `quality` de l'état de l'application et de la fonction `state_from_preset`.
+
+#### [MODIFY] [app.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/gui/app.py) & [pipeline.py](file:///Users/adrien.parasote/Documents/perso/game/tools/asset_creator/gui/pipeline.py)
+* Supprimer les vérifications de `state.quality == "v2"` (puisque tout passe désormais en V2).
+
+---
+
+### Tests unitaires et d'intégration (`tests/tools`)
+
+#### [MODIFY] [test_texture.py](file:///Users/adrien.parasote/Documents/perso/game/tests/tools/asset_creator/test_texture.py)
+* Supprimer les tests `test_v1_texture_still_works` et `test_v1_pattern_noise_still_delegates_correctly`.
+* Adapter les autres tests aux modifications de signatures de `TextureParams`.
+
+#### [MODIFY] [test_palette.py](file:///Users/adrien.parasote/Documents/perso/game/tests/tools/asset_creator/test_palette.py)
+* Supprimer les tests de compatibilité V1 (`test_v1_palette_no_ramp_section`, `test_v1_extended_colors_returns_original`, `test_v1_interpolate_works`).
+
+#### [MODIFY] [test_cli.py](file:///Users/adrien.parasote/Documents/perso/game/tests/tools/asset_creator/test_cli.py)
+* Supprimer les cas de test de génération basés sur `--quality v1`.
+
+#### [MODIFY] [test_gui_state.py](file:///Users/adrien.parasote/Documents/perso/game/tests/tools/asset_creator/test_gui_state.py) & [test_gui_integration.py](file:///Users/adrien.parasote/Documents/perso/game/tests/tools/asset_creator/test_gui_integration.py)
+* Supprimer la classe `TestIT005V1Quality` et les tests de validation de la qualité V1.
+
+---
+
+## Verification Plan
+
+### Automated Tests
 ```bash
-# Verify the spec gate is 100% clean
-python3 /Users/adrien.parasote/.gemini/config/plugins/stream-coding/skills/spec-gate/scripts/spec_precheck.py --dir docs/tooling/specs/
-
-# Verify cross-spec validation remains green
-python3 /Users/adrien.parasote/.gemini/config/plugins/stream-coding/skills/cross-spec-validator/scripts/run_all.py
+# Lancer toute la suite de tests pour valider le refactoring et s'assurer que tout reste au vert en V2
+venv/bin/pytest tests/tools/asset_creator/
 ```

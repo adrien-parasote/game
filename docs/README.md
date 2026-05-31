@@ -47,7 +47,6 @@ docs/
 - **ADRs:** [`game/ADRs/`](game/ADRs/) — 8 accepted architectural decisions (ADR-001 through ADR-008).
 
 ### Tooling Documentation
-- **Asset Creator V1:** [`tooling/specs/asset_creator_spec.md`](tooling/specs/asset_creator_spec.md) — Procedural tileset generator (CLI, palette, texture, 47-tile blob).
 - **Asset Creator V2:** [`tooling/specs/asset_creator_v2_texture_quality.md`](tooling/specs/asset_creator_v2_texture_quality.md) — OKLCh color ramps, smooth interpolation, dithering, detail overlays.
 - **Asset Creator V3 GUI:** [`tooling/specs/asset_creator_v3_gui.md`](tooling/specs/asset_creator_v3_gui.md) — Dear PyGui interactive GUI with paint canvas.
 - **Autotile Edge Pipeline:** [`tooling/specs/autotile-pipeline-spec.md`](tooling/specs/autotile-pipeline-spec.md) — RPG Maker XP → Tiled Wang Edge (16 tiles).

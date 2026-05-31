@@ -308,7 +308,6 @@ def _read_state_from_widgets() -> AppState:
     return dataclasses.replace(
         _state,
         terrain_name=dpg.get_value("combo_terrain"),
-        quality="v2",
         scale=dpg.get_value("slider_scale"),
         octaves=dpg.get_value("slider_octaves"),
         persistence=dpg.get_value("slider_persistence"),
@@ -355,7 +354,7 @@ def _on_preset_change(sender: Any = None, app_data: Any = None, _user: Any = Non
     global _state
     terrain_name = dpg.get_value("combo_terrain")
     _log(f"Preset changed to: {terrain_name}")
-    _state = state_from_preset(terrain_name, _presets, "v2")
+    _state = state_from_preset(terrain_name, _presets)
     _sync_widgets_from_state()
     _do_regenerate()
 
@@ -837,7 +836,7 @@ def run_gui() -> None:
     dpg.create_viewport(title="Createur de Tiles V3", width=1400, height=850)
 
     _presets = get_builtin_presets()
-    _state = state_from_preset("grass", _presets, "v2")
+    _state = state_from_preset("grass", _presets)
     _canvas = CanvasState(cols=CANVAS_COLS, rows=CANVAS_ROWS)
 
     _apply_theme()
@@ -845,7 +844,7 @@ def run_gui() -> None:
 
     _log("Demarrage Createur de Tiles V3...")
     _log(f"Presets: {sorted(_presets.keys())}")
-    _log(f"Preset initial: {_state.terrain_name}, qualite: {_state.quality}")
+    _log(f"Preset initial: {_state.terrain_name}")
 
     # Generation initiale
     _tiles = regenerate_tileset(_state, _presets)

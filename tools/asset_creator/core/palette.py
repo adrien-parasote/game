@@ -91,18 +91,17 @@ class Palette:
     def extended_colors(self) -> tuple[tuple[int, int, int], ...]:
         """Extended color ramp (typically 7-11 colors).
 
-        If ramp_config is present, generates a hue-shifted ramp.
-        Otherwise, returns the original V1 colors.
+        Generates a hue-shifted ramp using ramp_config.
         """
-        if self.ramp_config is not None:
-            return tuple(generate_hue_shifted_ramp(
-                self.ramp_config.base_color,
-                num_steps=self.ramp_config.steps,
-                shadow_hue_shift=self.ramp_config.shadow_hue_shift,
-                highlight_hue_shift=self.ramp_config.highlight_hue_shift,
-                lightness_range=self.ramp_config.lightness_range,
-            ))
-        return self.colors
+        if self.ramp_config is None:
+            raise ValueError(f"Palette '{self.name}' must have a valid ramp configuration.")
+        return tuple(generate_hue_shifted_ramp(
+            self.ramp_config.base_color,
+            num_steps=self.ramp_config.steps,
+            shadow_hue_shift=self.ramp_config.shadow_hue_shift,
+            highlight_hue_shift=self.ramp_config.highlight_hue_shift,
+            lightness_range=self.ramp_config.lightness_range,
+        ))
 
     def interpolate(self, t: float) -> tuple[int, int, int]:
         """Map a value in [0,1] to a color on the extended ramp.
@@ -237,18 +236,19 @@ def load_palette(path: Path) -> Palette:
             )
         roles[role] = idx
 
-    # V2: parse optional ramp configuration
-    ramp_config = None
-    if "ramp" in raw:
-        ramp_data = raw["ramp"]
-        ramp_base_color = _parse_hex_color(ramp_data["base_color"])
-        ramp_config = RampConfig(
-            base_color=ramp_base_color,
-            steps=ramp_data.get("steps", 9),
-            shadow_hue_shift=float(ramp_data.get("shadow_hue_shift", -30.0)),
-            highlight_hue_shift=float(ramp_data.get("highlight_hue_shift", 20.0)),
-            lightness_range=float(ramp_data.get("lightness_range", 0.35)),
-        )
+    # Parse mandatory ramp configuration
+    if "ramp" not in raw:
+        raise ValueError(f"Palette '{raw['name']}' is missing mandatory 'ramp' configuration.")
+
+    ramp_data = raw["ramp"]
+    ramp_base_color = _parse_hex_color(ramp_data["base_color"])
+    ramp_config = RampConfig(
+        base_color=ramp_base_color,
+        steps=ramp_data.get("steps", 9),
+        shadow_hue_shift=float(ramp_data.get("shadow_hue_shift", -30.0)),
+        highlight_hue_shift=float(ramp_data.get("highlight_hue_shift", 20.0)),
+        lightness_range=float(ramp_data.get("lightness_range", 0.35)),
+    )
 
     return Palette(
         name=raw["name"], colors=colors, roles=roles, ramp_config=ramp_config,

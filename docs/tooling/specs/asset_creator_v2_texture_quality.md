@@ -3,20 +3,15 @@
 > Document Type: Implementation
 
 ## Deep Links
-- [V1 Spec](./asset_creator_spec.md#L1)
-- [V1 Palette module](../../../tools/asset_creator/core/palette.py#L1)
-- [V1 Texture module](../../../tools/asset_creator/core/texture.py#L1)
-- [V1 Terrain presets](../../../tools/asset_creator/config/terrain_presets.yaml#L1)
+- [Palette module](../../../tools/asset_creator/core/palette.py#L1)
+- [Texture module](../../../tools/asset_creator/core/texture.py#L1)
+- [Terrain presets](../../../tools/asset_creator/config/terrain_presets.yaml#L1)
 
 ## Goal
 
-Upgrade the procedural texture pipeline from 4-color hard-threshold noise to
-multi-color hue-shifted ramps with per-pixel variation, ordered dithering, and
-detail overlays. The output should approach hand-drawn pixel art quality.
+Upgrade the procedural texture pipeline to multi-color hue-shifted ramps with per-pixel variation, ordered dithering, and detail overlays. The output should approach hand-drawn pixel art quality.
 
-**V1 result:** 4 flat color bands from simplex noise → monotone, lifeless.
-**V2 target:** 8-12 color hue-shifted ramps with smooth interpolation, micro-variation,
-and terrain-specific detail stamps → rich, organic textures comparable to hand-drawn.
+**V2 target:** 8-12 color hue-shifted ramps with smooth interpolation, micro-variation, and terrain-specific detail stamps → rich, organic textures comparable to hand-drawn.
 
 ## Assumptions
 
@@ -25,7 +20,6 @@ and terrain-specific detail stamps → rich, organic textures comparable to hand
 | 1 | OKLCh color space gives uniform ramps without external deps | Low | [SHOW] verified via API call to `core/color_ramp.py` |
 | 2 | 4×4 Bayer matrix is optimal at 32×32 scale | Low | [SHOW] verified via API call to `core/texture.py` |
 | 3 | Grass blade height 2-4px reads well at 32×32 | Low | [SHOW] verified via API call to `core/detail_overlay.py` |
-| 4 | Existing tests remain green (backward compat) | Medium | [SHOW] verified via CLI call to `pytest` |
 
 ## Cross-Spec Contracts
 
@@ -46,7 +40,7 @@ and terrain-specific detail stamps → rich, organic textures comparable to hand
 ### Public Interface
 | Type | Identifier | Documented at |
 |---|---|---|
-| CLI parameter | `--quality v2` | This spec § "Step 6" |
+| CLI parameter | (No parameter needed — V2 is standard) | This spec § "Step 6" |
 
 ### External Invocations
 | Type | Invoked | Defined in |
@@ -56,7 +50,7 @@ and terrain-specific detail stamps → rich, organic textures comparable to hand
 ### Tracked Concepts
 | Concept | Status in this spec | Mentioned in |
 |---|---|---|
-| Extended Palette | Upgraded to 8-12 colors | `specs/asset_creator_spec.md` |
+| Extended Palette | Upgraded to 8-12 colors | `core/palette.py` |
 
 ---
 
@@ -68,7 +62,6 @@ and terrain-specific detail stamps → rich, organic textures comparable to hand
 | Bayer matrix > 4×4 at 32×32 scale | Creates visible grid patterns larger than tile features | Use 2×2 or 4×4 Bayer matrix |
 | Detail noise amplitude > 10% of ramp range | Creates visual noise instead of subtle texture | Keep detail variation at 5-8% |
 | Grass blades > 4px tall at 32×32 | Unreadable mush at game zoom level | 2-4px blade height max |
-| Breaking `PaletteRole` enum backward compat | All existing tests fail | Keep SHADOW/BASE/HIGHLIGHT/ACCENT, add new roles as optional |
 
 ## Error Handling
 
@@ -134,18 +127,17 @@ def interpolate_oklch(
 
 #### [MODIFY] `tools/asset_creator/core/palette.py`
 
-Expand from 4 to 8-12 colors while keeping backward compatibility.
+Expand from 4 to 8-12 colors.
 
 **Changes:**
-1. Keep `PaletteRole` enum as-is (SHADOW, BASE, HIGHLIGHT, ACCENT) for backward compat
-2. Add `Palette.extended_colors` property that returns the full ramp (8-12 colors)
+1. Keep `PaletteRole` enum as-is (SHADOW, BASE, HIGHLIGHT, ACCENT).
+2. Add `Palette.extended_colors` property that returns the full ramp (8-12 colors) generated via `ramp` config.
 3. Add `Palette.interpolate(t: float) -> tuple[int,int,int]` — map [0,1] to smooth ramp position
 4. Add `generate_extended_palette(base_color, params) -> Palette` factory
 
-**New YAML format (backward compatible):**
+**YAML format (mandatory `ramp` block):**
 ```yaml
 name: forest_grass
-# V1 colors still work
 colors:
   - "#2d5a1e"
   - "#3e7c27"
@@ -156,7 +148,6 @@ roles:
   base: 1
   highlight: 2
   accent: 3
-# V2 extension: auto-generate ramp from base color
 ramp:
   base_color: "#5a9e3a"    # anchor color
   steps: 9                  # number of colors in ramp
@@ -165,8 +156,7 @@ ramp:
   lightness_range: 0.25     # total lightness spread
 ```
 
-When `ramp` section exists, `palette.extended_colors` returns the auto-generated
-9-step ramp. When absent, it interpolates between the 4 manual colors.
+The `ramp` section is mandatory, and `palette.extended_colors` returns the auto-generated 9-step ramp.
 
 #### [MODIFY] `tools/asset_creator/config/palettes/*.yaml`
 
@@ -187,14 +177,13 @@ Update all 6 palette files with `ramp` parameters calibrated from hand-drawn ref
 
 #### [MODIFY] `tools/asset_creator/core/texture.py`
 
-Replace `_noise_to_color()` hard thresholds with smooth ramp interpolation + micro-variation.
+Map base texture generation to smooth ramp interpolation + micro-variation.
 
 **Key changes:**
 
-1. **Replace `_noise_to_color()` with `_noise_to_ramp_color()`:**
+1. **Map noise value to ramp color:**
    - Map noise value [-1,1] → [0,1] → position in extended color ramp
    - Interpolate between adjacent colors in OKLCh space
-   - No more hard bands
 
 2. **Add per-pixel micro-variation:**
    - Second high-frequency noise layer (scale ~0.5)
@@ -206,17 +195,16 @@ Replace `_noise_to_color()` hard thresholds with smooth ramp interpolation + mic
    - Threshold determines rounding direction
    - Creates pixel art-style smooth transitions
 
-4. **Add `TextureParams` fields (backward compat via defaults):**
+4. **Add `TextureParams` fields:**
    ```python
    # V2 additions
-   use_smooth_ramp: bool = False      # enable smooth interpolation
    detail_scale: float = 0.5          # micro-variation noise frequency
    detail_strength: float = 0.06      # micro-variation amplitude
    use_dithering: bool = False         # enable Bayer dithering
    dither_matrix_size: int = 4         # 2 or 4
    ```
 
-5. **New `generate_noise_texture_v2()` function** (V1 function kept for compat):
+5. **New `generate_noise_texture_v2()` function:**
    ```python
    def generate_noise_texture_v2(
        width, height, palette, params, seed=0
@@ -327,11 +315,9 @@ terrains:
     palette: forest_grass
     texture:
       type: noise
-      version: 2              # NEW: use V2 pipeline
       scale: 0.12
       octaves: 3
       persistence: 0.5
-      thresholds: [-0.2, 0.4, 0.8]  # RETAINED for V1 compatibility
       detail_scale: 0.5       # NEW: micro-variation frequency
       detail_strength: 0.06   # NEW: micro-variation amplitude
       use_dithering: true      # NEW: Bayer dithering
@@ -354,9 +340,7 @@ terrains:
 
 #### [MODIFY] `tools/asset_creator/cli.py`
 
-Add `--quality` flag to select V1 or V2 pipeline:
-- `--quality v1` — original 4-color threshold pipeline
-- `--quality v2` — extended ramp + dithering + detail overlays (new default)
+CLI runs in V2 mode by default, producing high-quality textures.
 
 ---
 
@@ -379,7 +363,6 @@ Add `--quality` flag to select V1 or V2 pipeline:
 |---|---|
 | TC-031 | Palette with `ramp` config generates `extended_colors` with correct count |
 | TC-032 | `palette.interpolate(0.0)` returns darkest color, `(1.0)` returns brightest |
-| TC-033 | Backward compat: palette without `ramp` still works with V1 API |
 | TC-034 | Extended palette colors are all unique (no duplicates) |
 
 ### Texture V2 Tests (additions to `asset_creator/test_texture.py`)
@@ -391,7 +374,6 @@ Add `--quality` flag to select V1 or V2 pipeline:
 | TC-037 | V2 texture still tiles seamlessly (toroidal noise preserved) |
 | TC-038 | Seed reproducibility: same seed → identical image |
 | TC-039 | Bayer dithering: no single color occupies > 40% of pixels (band-breaking) |
-| TC-040 | V1 texture still works unchanged when `version: 1` |
 
 ### Detail Overlay Tests (`asset_creator/test_detail_overlay.py`)
 
@@ -409,7 +391,7 @@ Add `--quality` flag to select V1 or V2 pipeline:
 |---|---|
 | IT-004 | Verify full V2 generator pipeline (Proposed Changes, Produces): color ramp engine (OKLCh) to texture generation using dithering and detail overlay stamps. |
 | IT-005 | Verify that YAML loader correctly parses extended palette config with hue-shift params and generates correct color ramps. |
-| IT-006 | Verify that CLI command `--quality v2` successfully runs the CLI integration, parses terrain presets, and exports V2 PNG/TSX assets. |
+| IT-006 | Verify that CLI successfully runs the CLI integration, parses terrain presets, and exports V2 PNG/TSX assets. |
 
 ---
 
@@ -420,20 +402,16 @@ Add `--quality` flag to select V1 or V2 pipeline:
 # Run all V2 tests
 pytest tests/tools/asset_creator/ -v --tb=short
 
-# Verify backward compat (V1 tests still pass)
-pytest tests/tools/asset_creator/test_palette.py tests/tools/asset_creator/test_texture.py -v
-
 # Coverage
 pytest tests/tools/asset_creator/ --cov=tools.asset_creator --cov-report=term-missing
 ```
 
 ### Visual Verification
 ```bash
-# Generate V1 vs V2 comparison
-python -m tools.asset_creator generate --terrain grass --quality v1 --name grass-v1
-python -m tools.asset_creator generate --terrain grass --quality v2 --name grass-v2
+# Generate grass autotile
+python -m tools.asset_creator generate --terrain grass --name grass-v2
 
-# Preview side by side
+# Preview
 python -m tools.asset_creator preview assets/images/autotiles/grass-v2.png
 ```
 
@@ -441,7 +419,6 @@ python -m tools.asset_creator preview assets/images/autotiles/grass-v2.png
 1. Import V2 `.tsx` into Tiled
 2. Paint a map using Wang terrain tool
 3. Verify seamless tiling (no visible seams)
-4. Compare visual quality with hand-drawn 00-grass-1.png
 
 ---
 
@@ -451,14 +428,14 @@ The following files are managed or modified by this specification:
 ```
 tools/
   asset_creator/
-    cli.py                            # [DEV-TOOL] Modified to add --quality flag
+    cli.py                            # [DEV-TOOL] Modified
     core/
-      palette.py                      # [DEV-TOOL] Modified to expand extended palette
-      texture.py                      # [DEV-TOOL] Modified to support V2 textures
+      palette.py                      # [DEV-TOOL] Modified
+      texture.py                      # [DEV-TOOL] Modified
       color_ramp.py                   # [DEV-TOOL] New OKLCh color ramp engine
       detail_overlay.py               # [DEV-TOOL] New terrain-specific stamps
     config/
-      terrain_presets.yaml            # [CONFIG] Presets updated with V2 parameters
+      terrain_presets.yaml            # [CONFIG] Presets updated
       palettes/
         forest_grass.yaml             # [CONFIG] Expanded with ramp details
         dry_dirt.yaml                 # [CONFIG] Expanded with ramp details
@@ -473,17 +450,12 @@ tests/
       test_texture.py                 # [DEV-TOOL] Expanded texture tests
       test_color_ramp.py              # [DEV-TOOL] New color ramp tests
       test_detail_overlay.py          # [DEV-TOOL] New detail overlay tests
-docs/
-  tooling/
-    specs/
-      asset_creator_spec.md           # [DOC] V1 specification for the tool
-      asset_creator_v2_texture_quality.md # [DOC] This upgraded specification
 ```
 
 ## Constraints
 
 | Tier | Examples |
 |------|----------|
-| **Always do** | Keep V1 API backward-compatible; all 216 existing tests stay green; use OKLCh not RGB for interpolation; preserve toroidal noise for seamless tiling |
-| **Ask first** | Adding `colour-science` as dependency; changing palette YAML schema |
-| **Never do** | Break V1 `PaletteRole` enum; use anti-aliasing (NEAREST only); generate more than 12 colors in a ramp (muddy at 32×32) |
+| **Always do** | Use OKLCh not RGB for interpolation; preserve toroidal noise for seamless tiling |
+| **Ask first** | Adding new dependencies; changing palette YAML schema |
+| **Never do** | Use anti-aliasing (NEAREST only); generate more than 12 colors in a ramp (muddy at 32×32) |

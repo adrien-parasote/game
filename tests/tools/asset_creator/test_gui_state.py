@@ -102,24 +102,14 @@ class TestToTextureConfig:
         assert result.lacunarity == pytest.approx(3.0)
 
     def test_v2_smooth_ramp_on(self) -> None:
-        state = AppState(quality="v2", use_smooth_ramp=True)
+        state = AppState(use_smooth_ramp=True)
         result = state.to_texture_config()
         assert result.use_smooth_ramp is True
 
-    def test_v1_smooth_ramp_off(self) -> None:
-        state = AppState(quality="v1", use_smooth_ramp=True)
-        result = state.to_texture_config()
-        assert result.use_smooth_ramp is False
-
     def test_v2_dithering_on(self) -> None:
-        state = AppState(quality="v2", use_dithering=True)
+        state = AppState(use_dithering=True)
         result = state.to_texture_config()
         assert result.use_dithering is True
-
-    def test_v1_dithering_off(self) -> None:
-        state = AppState(quality="v1", use_dithering=True)
-        result = state.to_texture_config()
-        assert result.use_dithering is False
 
     def test_detail_scale_matches(self) -> None:
         state = AppState(detail_scale=0.8)

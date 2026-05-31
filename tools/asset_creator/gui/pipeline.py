@@ -16,7 +16,6 @@ from tools.asset_creator.core.subtile import generate_subtiles
 from tools.asset_creator.core.terrain import TerrainConfig
 from tools.asset_creator.core.texture import (
     TextureParams,
-    generate_noise_texture,
     generate_noise_texture_v2,
     generate_pattern_texture,
 )
@@ -45,20 +44,32 @@ def _build_texture(
     base_palette = load_palette(palette_path)
 
     # Override palette colors with user-customised values from state
-    from tools.asset_creator.core.palette import Palette
+    from tools.asset_creator.core.palette import Palette, RampConfig
     custom_colors = (
         state.color_shadow,
         state.color_base,
         state.color_highlight,
         state.color_accent,
     )
-    # Use the 4 user colors directly for interpolation (no ramp override)
+    
+    # Re-create the ramp configuration using the user's custom base color
+    ramp_config = None
+    if base_palette.ramp_config is not None:
+        ramp_config = RampConfig(
+            base_color=state.color_base,
+            steps=base_palette.ramp_config.steps,
+            shadow_hue_shift=base_palette.ramp_config.shadow_hue_shift,
+            highlight_hue_shift=base_palette.ramp_config.highlight_hue_shift,
+            lightness_range=base_palette.ramp_config.lightness_range,
+        )
+
+    # Use the 4 user colors directly for interpolation and construct a valid ramp_config
     # This ensures all 4 color pickers affect the rendered output
     palette = Palette(
         name=base_palette.name,
         colors=custom_colors,
         roles=base_palette.roles,
-        ramp_config=None,
+        ramp_config=ramp_config,
     )
 
     params = TextureParams(
@@ -67,25 +78,21 @@ def _build_texture(
         octaves=state.octaves,
         persistence=state.persistence,
         lacunarity=state.lacunarity,
-        thresholds=list(config.texture.thresholds),
         density=config.texture.density,
-        use_smooth_ramp=state.quality == "v2" and state.use_smooth_ramp,
         detail_scale=state.detail_scale,
         detail_strength=state.detail_strength,
-        use_dithering=state.quality == "v2" and state.use_dithering,
+        use_dithering=state.use_dithering,
         dither_matrix_size=state.dither_matrix_size,
     )
 
-    if config.texture.texture_type == "noise" and params.use_smooth_ramp:
+    if config.texture.texture_type == "noise":
         texture = generate_noise_texture_v2(32, 32, palette, params, seed=state.seed)
-    elif config.texture.texture_type == "noise":
-        texture = generate_noise_texture(32, 32, palette, params, seed=state.seed)
     else:
         texture = generate_pattern_texture(
             32, 32, palette, config.texture.texture_type, params, seed=state.seed,
         )
 
-    if state.quality == "v2" and config.detail.detail_type != "none":
+    if config.detail.detail_type != "none":
         texture = apply_detail_overlay(
             texture,
             palette,
