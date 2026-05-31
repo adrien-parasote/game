@@ -1,4 +1,4 @@
-# Stream Coding v6.0: Documentation-First Development
+# Stream Coding v3.0.0: Documentation-First Development
 
 > "If your docs are good enough, AI writes the code. The hard work IS the documentation. Code is just the printout."
 
@@ -11,10 +11,11 @@ Clear Docs → Clear Specs → AI Executes → Minimal Rework → 10-20x Velocit
 
 ### Core Mantras
 
-1. "Documentation IS the work. Code is just the printout."
-2. "When code fails, fix the spec — then the code."
-3. "A 7/10 spec generates 7/10 code that needs 30% rework."
-4. "If AI has to decide where to find information, you've already lost velocity."
+1. "One deliverable per turn. Complete a stage, then STOP and wait."
+2. "Ask, don't fill. Missing information = question to the user, not a guess."
+3. "Success = wrong assumptions caught. Not code produced."
+4. "When code fails, fix the spec — then the code."
+5. "Documentation IS the work. Code is just the printout."
 
 ---
 
@@ -22,16 +23,16 @@ Clear Docs → Clear Specs → AI Executes → Minimal Rework → 10-20x Velocit
 
 ### Stages & Pipeline
 
-| Stage | Icon | Purpose | Workflows (in order) | Time |
-|-------|------|---------|---------------------|------|
-| **DISCOVER** | 🔬 | Research, reuse, and concept shaping | `/research`, `/experiment`, `/clarify` | 5% |
-| **STRATEGY** | 🎯 | Strategic thinking — WHAT and WHY | `/strategy` | 40% |
-| **SPEC** | 📋 | AI-ready documentation + gates | `/spec-gate` → `/adversarial-review` | 40% |
-| **BUILD** | ⚡ | Code generation from spec | `/plan` → `/orchestrate` → `/tdd` → implement | 5% |
-| **VERIFY** | 🔍 | Quality gates — verification, review, security | `/verification-loop` → `/code-review` → `/security-review` | 5% |
-| **HARDEN** | ✅ | Iteration, divergence prevention, learning | `/doc-update` → `/refactor-clean` → `/learn-eval` → **COMMIT** | 5% |
+| Stage | Icon | Purpose | Workflows | Halt |
+|-------|------|---------|-----------|------|
+| **DISCOVER** | 🔬 | Research, reuse, concept shaping | `/research`, `/experiment`, `/clarify` | ⛔ STOP. Ask: "Move to STRATEGY?" |
+| **STRATEGY** | 🎯 | WHAT and WHY — not HOW | `/strategy` | ⛔ STOP. Ask: "Move to SPEC?" |
+| **SPEC** | 📋 | AI-ready documentation + gates | `/spec-gate` → `/adversarial-review` | ⛔ STOP. Ask: "Spec Gate passed. Move to BUILD?" |
+| **BUILD** | ⚡ | Code from spec — nothing else | `/plan` → `/orchestrate` → `/tdd` | ⛔ STOP. Run verify. |
+| **VERIFY** | 🔍 | Quality gates | `/verification-loop` → `/code-review` → `/security-review` | ⛔ STOP. Ask: "Move to HARDEN?" |
+| **HARDEN** | ✅ | Divergence prevention, learning, commit | `/doc-update` → `/refactor-clean` → `/learn-eval` → **COMMIT** | Done. |
 
-> 5% Research (DISCOVER) · 80% Documentation (STRATEGY + SPEC) · 15% Code + Quality (BUILD + VERIFY + HARDEN) · ⛔ Commits happen in HARDEN only
+> ⛔ **Each stage ends with a STOP.** Run all Workflows for the current stage, present results to the user, then STOP. Do not produce Stage N+1 deliverables in the same turn. Commits happen in HARDEN only.
 
 ### Five-Gate Enforcement
 
@@ -46,6 +47,28 @@ Clear Docs → Clear Specs → AI Executes → Minimal Rework → 10-20x Velocit
 | **Commit Gate** | verify.py + /doc-update + /refactor-clean + /learn-eval | All four completed → ALL YES |
 
 > **Discover Gate** → Spec Gate → TDD Gate → Implementation → Verify Gate → Code Review → HARDEN → Commit
+
+### Stage-Gate State File
+
+> Enforced by `source-write-gate.sh` hook (PreToolUse). Writing outside your stage is blocked.
+
+The file `.agents/active_stage.json` tracks the current stage and allowed write paths.
+It is auto-created at session start. The hook reads it before every file write.
+
+**Stage definitions** — use these `write_allowed` values when transitioning:
+
+| Stage | `write_allowed` | Rationale |
+|-------|-----------------|-----------|
+| DISCOVER | `["docs/research/", "docs/concepts/", ".agents/", "*.md"]` | Research artifacts only |
+| STRATEGY | `["docs/", ".agents/", "*.md"]` | Strategy docs, blueprints |
+| SPEC | `["docs/", "tests/", ".agents/", "*.md"]` | Specs + TDD test stubs |
+| BUILD | `["*"]` | All files — implementation phase. **Source files still gated by spec-gate + TDD-gate.** |
+| VERIFY | `["tests/", "docs/", ".agents/", "*.md"]` | Test fixes, docs — no source edits |
+| HARDEN | `["*"]` | All files — refactor-clean may touch source. **Source files still gated by spec-gate + TDD-gate.** |
+
+**Stage transitions:** User approves → update `.agents/active_stage.json` with the next stage's `current_stage` and `write_allowed` from the table above. Do not transition without explicit user approval.
+
+**Bypass (per Skip Decision Table):** Trivial tasks (typo, rename, tiny bug) skip DISCOVER/STRATEGY/SPEC/BUILD stages but still pass through HARDEN's commit gate. To bypass gates for trivial fixes: `touch .sc-stage-gate-bypass` (+ `.sc-spec-gate-bypass`, `.sc-tdd-bypass` as needed). **The agent must NEVER create bypass files without explicit user approval.** Branch names (`fix/`, `bugfix/`, `hotfix/`) are naming conventions only — they have no effect on gates.
 
 ### The Golden Rule
 
@@ -102,16 +125,16 @@ This methodology activates when the user says:
 
 ### Response Protocol
 
-1. **DISCOVER first (MANDATORY):** Run `/research` — perform actual web search for existing implementations, official API docs, SDKs. Listing the project directory is NOT research. You must web-search before writing any documentation or asking strategy questions.
-2. **If idea is vague or half-formed:** Run `/clarify` — shape the concept through structured dialogue before entering STRATEGY. Skip if the idea is already sharp (Clarity Score ≥ 4/5).
-3. **Check for existing docs:** "Do you have existing documentation for this project?"
-4. **If existing docs:** "Let's start with a Documentation Audit."
-5. **If STRATEGY incomplete:** "Before building, let's clarify strategy. [Ask 7 Questions]"
-6. **If SPEC incomplete:** "Before coding, let's ensure documentation is AI-ready. [Run Spec Gate]"
-7. **If Spec Gate not passed:** "Documentation scores [X]/10. Let's fix [specific issues]."
-8. **If BUILD ready:** "Running /tdd first — writing tests from spec..."
-9. **If implementing without tests:** ⛔ "RED tests are step 1. Running /tdd now."
-10. **If maintaining (HARDEN):** "Is this change spec-conformant? Let's update docs first."
+1. **DISCOVER first (MANDATORY):** Run `/research` — web search for existing implementations, official docs. Listing the project directory is NOT research.
+2. **If idea is vague:** Run `/clarify` to shape concept. Skip if Clarity Score ≥ 4/5.
+3. ⛔ **STOP.** Present research findings. Ask: "Shall we move to STRATEGY?"
+4. **STRATEGY:** Ask the 7 Questions. Do NOT answer them yourself.
+5. ⛔ **STOP.** Present Blueprint. Ask: "Shall we move to SPEC?"
+6. **SPEC:** Write implementation spec. Run `/spec-gate` → `/adversarial-review`.
+7. ⛔ **STOP.** Present Spec Gate score. Ask: "Shall we move to BUILD?"
+8. **BUILD:** Run `/tdd` first (RED tests). Then implement.
+9. **VERIFY:** Run `/verification-loop` → `/code-review` → `/security-review`.
+10. **HARDEN:** Run `/doc-update` → `/refactor-clean` → `/learn-eval` → COMMIT.
 
 ### Stage Skip Decision Table
 
@@ -136,7 +159,7 @@ Each stage's detailed rules, checklists, and procedures live in dedicated rule f
 | ⚡ BUILD | `.agents/rules/build-execution.md` — Spec-Test-Implement loop, smallest diff |
 | 🔍 VERIFY | `.agents/rules/verify-stage.md` — Verify Gate, Evaluator Separation |
 | ✅ HARDEN | `.agents/rules/harden-stage.md` — Commit Gate, Divergence, Day 2, Learning |
-| Behaviors | `.agents/rules/sc-behaviors.md` — 7 Operating Behaviors, 10 Failure Modes |
+| Behaviors | `.agents/rules/sc-behaviors.md` — 8 Operating Behaviors, 11 Failure Modes |
 | Antigravity | `.agents/rules/antigravity-integration.md` — AG mapping, artifact paths |
 | Orchestration | `.agents/rules/workflow-orchestration.md` — Decision tree, skill reference |
 | Git | `.agents/rules/git-discipline.md` — Safety rules, -F protocol, commit format |
