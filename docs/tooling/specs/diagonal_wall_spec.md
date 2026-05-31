@@ -62,8 +62,8 @@
 | Type | Identifier | Purpose | Documented at |
 |---|---|---|---|
 | CLI Command | `python3 scripts/assets/flat_wall_to_diagonal.py` | Run the batch diagonal transformation | Section 5.1 (CLI Reference) |
-| CLI Argument | `--input-dir` | Path to directory containing flat wall assets | Section 5.1 (CLI Reference) |
-| CLI Argument | `--output-dir` | Path to export generated diagonal tilesets | Section 5.1 (CLI Reference) |
+| CLI Argument | `--input-dir` / `--input` | Path to directory containing flat wall assets | Section 5.1 (CLI Reference) |
+| CLI Argument | `--output-dir` / `--output` | Path to export generated diagonal tilesets | Section 5.1 (CLI Reference) |
 | CLI Argument | `--direction` | Angle direction: `nw-se`, `ne-sw`, or `both` | Section 5.1 (CLI Reference) |
 
 ### External Invocations
@@ -87,10 +87,11 @@
 The conversion utility must run with the following signature:
 ```bash
 python3 scripts/assets/flat_wall_to_diagonal.py \
-  [--input-dir PATH] [--output-dir PATH] [--direction {nw-se,ne-sw,both}]
+  [--input-dir PATH] [--input PATH] [--output-dir PATH] [--output PATH] \
+  [--direction {nw-se,ne-sw,both}]
 ```
-* Default `--input-dir`: `scripts/input` (resolved relative to workspace root).
-* Default `--output-dir`: `assets/images/tilesets` (resolved relative to workspace root).
+* Default `--input-dir` / `--input`: `scripts/input` (resolved relative to workspace root).
+* Default `--output-dir` / `--output`: `assets/images/tilesets` (resolved relative to workspace root).
 * Default `--direction`: `both`.
 
 ### 5.2 Transformation Engine (Vertical Shear)
@@ -103,13 +104,11 @@ For a flat image source of size $W \times H$:
    if src.width % 32 != 0 or src.height % 32 != 0:
        sys.exit(f"ERROR: Image dimensions must be multiples of 32, got {src.width}x{src.height}")
    ```
-2. Create a new transparent RGBA canvas of size $W \times (H + 32)$.
-3. Loop over each tile column $c$ from $0$ to $(W / 32) - 1$:
-   * For each local column $dx$ from $0$ to $31$:
-     * Calculate global coordinate $x = c \times 32 + dx$.
-     * Crop a $1$-pixel wide column at $x$ with height $H$: `col = src.crop((x, 0, x + 1, H))`
-     * **NW-to-SE (slope = 1.0):** Paste column `col` at $X = x$, $Y = dx$.
-     * **NE-to-SW (slope = -1.0):** Paste column `col` at $X = x$, $Y = 31 - dx$.
+2. Create a new transparent RGBA canvas of size $W \times (H + W)$.
+3. Loop over each column $x$ from $0$ to $W - 1$:
+   * Crop a $1$-pixel wide column at $x$ with height $H$: `col = src.crop((x, 0, x + 1, H))`
+   * **NW-to-SE (slope = 1.0):** Paste column `col` at $X = x$, $Y = x$.
+   * **NE-to-SW (slope = -1.0):** Paste column `col` at $X = x$, $Y = (W - 1) - x$.
 4. Save the resulting image as lossless PNG (RGBA).
 
 This lossless vertical shift preserves pixel boundaries perfectly, ensuring the pixel art style remains sharp (nearest-neighbor style, with zero blur or interpolation).
@@ -177,9 +176,9 @@ pyproject.toml                        # [CONFIG] Python project settings
 ### Unit Tests (Minimum 5)
 * **UT-001 (Path Resolution):** Test that the CLI tool correctly parses relative paths and converts them to absolute paths relative to workspace root using `pathlib`.
 * **UT-002 (Input Verification):** Test that the tool detects missing input files and fails gracefully with a standard console error message.
-* **UT-003 (Lossless Dimensions):** Test that a flat input of width $W$ and height $H$ correctly produces an output canvas of width $W$ and height $H + 32$.
-* **UT-004 (Column Shifting NW-SE):** Verify that the column $x$ of the source is pasted at Y-offset $x \pmod{32}$ in the output image (pixel-by-pixel color verification).
-* **UT-005 (Column Shifting NE-SW):** Verify that the column $x$ of the source is pasted at Y-offset $31 - (x \pmod{32})$ in the output image.
+* **UT-003 (Lossless Dimensions):** Test that a flat input of width $W$ and height $H$ correctly produces an output canvas of width $W$ and height $H + W$.
+* **UT-004 (Column Shifting NW-SE):** Verify that the column $x$ of the source is pasted at Y-offset $x$ in the output image (pixel-by-pixel color verification).
+* **UT-005 (Column Shifting NE-SW):** Verify that the column $x$ of the source is pasted at Y-offset $(W - 1) - x$ in the output image.
 
 ### Integration Tests (Minimum 3)
 * **IT-001 (Batch Directory Processing):** Verify that running the script with `--input-dir` containing multiple flat assets successfully batch converts all files in one execution.

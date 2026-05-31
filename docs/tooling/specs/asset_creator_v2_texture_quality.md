@@ -94,7 +94,11 @@ def rgb_to_oklch(r: int, g: int, b: int) -> tuple[float, float, float]:
     """Convert sRGB (0-255) to OKLCh (lightness, chroma, hue°)."""
 
 def oklch_to_rgb(L: float, C: float, h: float) -> tuple[int, int, int]:
-    """Convert OKLCh back to clamped sRGB (0-255)."""
+    """Convert OKLCh back to clamped sRGB (0-255).
+    
+    Must explicitly clamp r, g, b values to [0, 255] using max(0, min(255, int(val)))
+    to prevent gamut overflow and Pillow ValueError traceback.
+    """
 
 def generate_hue_shifted_ramp(
     base_rgb: tuple[int, int, int],
@@ -261,8 +265,15 @@ def apply_detail_overlay(
     detail_type: str,  # "grass_blades" | "dirt_specks" | "stone_cracks" | "sand_grains" | "none"
     density: float,
     seed: int,
+    max_height: int = 4,
+    max_length: int = 4,
 ) -> Image.Image:
-    """Apply terrain-specific detail overlay to base texture."""
+    """Apply terrain-specific detail overlay to base texture.
+
+    Args:
+        max_height: Maximum height for grass_blades detail (pixels).
+        max_length: Maximum length for stone_cracks detail (pixels).
+    """
 ```
 
 **Detail types:**
@@ -288,8 +299,9 @@ def _add_grass_blades(img, palette, seed, density=0.12, max_height=4):
     
     for _ in range(num_blades):
         bx = rng.randint(0, w - 1)
-        by = rng.randint(max_height, h - 1)
-        blade_h = rng.randint(2, max_height)
+        safe_max_height = max(1, max_height)
+        by = rng.randint(safe_max_height, h - 1)
+        blade_h = rng.randint(2, safe_max_height) if safe_max_height >= 2 else 1
         
         for j in range(blade_h):
             py = by - j
@@ -319,6 +331,7 @@ terrains:
       scale: 0.12
       octaves: 3
       persistence: 0.5
+      thresholds: [-0.2, 0.4, 0.8]  # RETAINED for V1 compatibility
       detail_scale: 0.5       # NEW: micro-variation frequency
       detail_strength: 0.06   # NEW: micro-variation amplitude
       use_dithering: true      # NEW: Bayer dithering
@@ -394,7 +407,7 @@ Add `--quality` flag to select V1 or V2 pipeline:
 
 | Test ID | Description |
 |---|---|
-| IT-004 | Verify full V2 generator pipeline: color ramp engine (OKLCh) to texture generation using dithering and detail overlay stamps. |
+| IT-004 | Verify full V2 generator pipeline (Proposed Changes, Produces): color ramp engine (OKLCh) to texture generation using dithering and detail overlay stamps. |
 | IT-005 | Verify that YAML loader correctly parses extended palette config with hue-shift params and generates correct color ramps. |
 | IT-006 | Verify that CLI command `--quality v2` successfully runs the CLI integration, parses terrain presets, and exports V2 PNG/TSX assets. |
 

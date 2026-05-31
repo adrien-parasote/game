@@ -25,6 +25,8 @@ The 16-tile edge-only script generates artifacts at **diagonal corners** because
 | A3 | Tiled `type="mixed"` (corner+edge) supports the 47-tile blob | Low | [SHOW] verified via manual import check |
 | A4 | The blob wangid encodes 8 directions: TL, T, TR, R, BR, B, BL, L | Low | [SHOW] verified via CLI call to `tiled` |
 
+## Constants
+
 | Constant | Value | Description |
 |-----------|--------|-------------|
 | SUBTILE | 16 | Half-tile in px |
@@ -77,10 +79,8 @@ The index is simply the position in `BLOB_BITMASKS`. There are exactly 49 slots 
 
 ### PNG Strip
 
-```
-Dimensions: (49 × 32) × 32 = 1568 × 32 px
-Tiles 0-48: BLOB_COMBINATIONS positions (slots 41 and 48 are transparent spacer tiles)
-```
+Dimensions: (47 × 32) × 32 = 1504 × 32 px
+Tiles 0-46: Ordered by BLOB_BITMASKS sequence.
 
 ### TSX XML
 
@@ -89,14 +89,14 @@ The script generates the TSX dynamically using the following XML template, sourc
 ```xml
 <tileset version="1.10" tiledversion="{tiled_version}"
          name="{stem}" tilewidth="32" tileheight="32"
-         tilecount="49" columns="49">
-  <image source="{rel_png}" width="1568" height="32"/>
+         tilecount="47" columns="47">
+  <image source="{rel_png}" width="1504" height="32"/>
 
   <!-- Animations (if N > 1): same logic as the animated script -->
   <tile id="{i}">
     <animation>
       <frame tileid="{i}"       duration="{ms}"/>
-      <frame tileid="{49 + i}"  duration="{ms}"/>
+      <frame tileid="{47 + i}"  duration="{ms}"/>
       ...
     </animation>
   </tile>
@@ -104,7 +104,7 @@ The script generates the TSX dynamically using the following XML template, sourc
   <wangsets>
     <wangset name="{stem}" type="mixed" tile="-1">
       <wangcolor name="{stem}" color="{wang_color}" tile="-1" probability="1"/>
-      <!-- 47 wangtiles (slots 41 and 48 omitted, no wangtile element) -->
+      <!-- 47 wangtiles -->
       <wangtile tileid="{i}" wangid="{_blob_wang_id(bitmask)}"/>
     </wangset>
   </wangsets>
