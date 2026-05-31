@@ -1,0 +1,13 @@
+# Core Dependencies
+dearpygui
+Pillow
+numpy
+PyYAML
+opensimplex
+pygame-ce==2.5.7
+
+# Development & Testing
+pytest==9.0.3
+pytest-cov==6.1.0
+ruff==0.9.9
+pyright==1.1.396

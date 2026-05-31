@@ -1,0 +1,61 @@
+import json
+import logging
+import os
+from pathlib import Path
+from typing import Any
+
+
+class I18nManager:
+    """
+    Manages game localization by loading JSON language files.
+    """
+
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.data = {}
+            cls._instance.current_locale = "en"
+        return cls._instance
+
+    def load(self, locale: str):
+        """Load a language file from assets/langs/{locale}.json."""
+        self.current_locale = locale
+        path = str((Path(__file__).parent / ".." / ".." / ".." / "assets" / "langs" / f"{locale}.json").resolve())
+
+        try:
+            if os.path.exists(path):
+                with open(path, encoding="utf-8") as f:
+                    self.data = json.load(f)
+                logging.info(f"I18nManager: Loaded locale '{locale}'")
+            else:
+                logging.warning(f"I18nManager: Locale file not found: {path}")
+                self.data = {}
+        except Exception as e:
+            logging.error(f"I18nManager: Failed to load locale '{locale}': {e}")
+            self.data = {}
+
+    def get(self, key: str, default: str = "") -> str:
+        """Get a translation string by dot-separated key (e.g., 'seasons.SPRING')."""
+        keys = key.split(".")
+        val = self.data
+        try:
+            for k in keys:
+                val = val[k]
+            return str(val)
+        except (KeyError, TypeError):
+            return default or key
+
+    def get_item(self, item_id: str) -> dict[str, str]:
+        """Specific helper for item metadata."""
+        items = self.data.get("items", {})
+        item_data = items.get(item_id, {})
+        return {
+            "name": item_data.get("name", item_id.replace("_", " ").capitalize()),
+            "description": item_data.get("description", "No description available."),
+        }
+
+    def get_translations(self) -> dict[str, Any]:
+        """Return the current translation dictionary."""
+        return self.data

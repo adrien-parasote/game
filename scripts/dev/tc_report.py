@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Spec↔Test Traceability Report.
 
-Cross-references TC IDs from docs/game/specs/ with @pytest.mark.tc decorators
+Cross-references TC IDs from game/docs/specs/ with @pytest.mark.tc decorators
 in the test suite to produce a coverage report.
 
 Usage:
@@ -16,7 +16,7 @@ import re
 import sys
 from collections import defaultdict
 
-SPECS_DIR = "docs/game/specs"
+SPECS_DIR = "game/docs/specs"
 TRACEABILITY_OUTPUT = "docs/traceability.md"
 
 
@@ -42,29 +42,30 @@ def extract_spec_tc_ids(specs_dir: str) -> tuple[dict[str, str], dict[str, list[
 def _scan_source_for_markers() -> dict[str, list[str]]:
     """Scan test source files for @pytest.mark.tc decorators."""
     tc_to_tests = defaultdict(list)
-    test_dir = "tests"
+    test_dirs = ["game/tests", "tools/tests"]
 
-    for test_file in sorted(glob.glob(f"{test_dir}/**/*.py", recursive=True)):
-        if "__pycache__" in test_file:
-            continue
-        with open(test_file) as f:
-            lines = f.readlines()
+    for test_dir in test_dirs:
+        for test_file in sorted(glob.glob(f"{test_dir}/**/*.py", recursive=True)):
+            if "__pycache__" in test_file:
+                continue
+            with open(test_file) as f:
+                lines = f.readlines()
 
-        pending_tcs = []
-        for line in lines:
-            tc_match = re.search(r'@pytest\.mark\.tc\("([\w-]+)"\)', line)
-            if tc_match:
-                pending_tcs.append(tc_match.group(1))
-            elif re.match(r"\s*def (test_\w+)\(", line) and pending_tcs:
-                func_match = re.match(r"\s*def (test_\w+)\(", line)
-                assert func_match is not None
-                func_name = func_match.group(1)
-                node_id = f"{test_file}::{func_name}"
-                for tc_id in pending_tcs:
-                    tc_to_tests[tc_id].append(node_id)
-                pending_tcs = []
-            elif not line.strip().startswith("@"):
-                pending_tcs = []
+            pending_tcs = []
+            for line in lines:
+                tc_match = re.search(r'@pytest\.mark\.tc\("([\w-]+)"\)', line)
+                if tc_match:
+                    pending_tcs.append(tc_match.group(1))
+                elif re.match(r"\s*def (test_\w+)\(", line) and pending_tcs:
+                    func_match = re.match(r"\s*def (test_\w+)\(", line)
+                    assert func_match is not None
+                    func_name = func_match.group(1)
+                    node_id = f"{test_file}::{func_name}"
+                    for tc_id in pending_tcs:
+                        tc_to_tests[tc_id].append(node_id)
+                    pending_tcs = []
+                elif not line.strip().startswith("@"):
+                    pending_tcs = []
 
     return tc_to_tests
 

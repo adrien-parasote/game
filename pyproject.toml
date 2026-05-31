@@ -1,6 +1,6 @@
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = "."
+testpaths = ["game/tests", "tools/tests"]
+pythonpath = [".", "game", "tools/src"]
 markers = [
     "tc(id): Spec test case traceability marker — links test to a TC-ID in docs/specs/",
     "unit: Unit tests (fast, no I/O)",
@@ -19,10 +19,14 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "F", "B", "I", "T20", "W", "UP"]
+select = ["E", "F", "B", "I", "T20", "W", "UP", "PLR0915", "SIM", "PT", "RUF", "C90"]
 ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/*.py" = ["T201"]
 "scripts/test_*.py" = ["F841", "F401", "E402"]
-"tests/*.py" = ["F841", "F401", "E402"] # Allow some unused vars/imports and non-top-level imports in tests
+"game/tests/**/*.py" = ["F841", "F401", "E402"]
+"tools/tests/**/*.py" = ["F841", "F401", "E402"]
+
+[tool.ruff.lint.pylint]
+max-statements = 50

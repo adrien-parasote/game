@@ -48,7 +48,7 @@ def run_git_commands(version, dry_run=False):
     # 1. Check if working directory is clean
     status = run_command(["git", "status", "--porcelain"])
     # If settings.json is the only change, we can proceed
-    if status and status.strip() != "M settings.json":
+    if status and status.strip() != "M game/settings.json":
         print(f"Error: Working directory is dirty:\n{status}", file=sys.stderr)  # noqa: P5
         if not dry_run:
             sys.exit(1)
@@ -68,7 +68,7 @@ def run_git_commands(version, dry_run=False):
             sys.exit(1)
 
     # 4. Git operations
-    run_command(["git", "add", "settings.json"], dry_run=dry_run)
+    run_command(["git", "add", "game/settings.json"], dry_run=dry_run)
     run_command(["git", "commit", "-m", f"chore: bump version to {version}"], dry_run=dry_run)
     run_command(["git", "tag", version], dry_run=dry_run)
     run_command(["git", "push", "origin", branch], dry_run=dry_run)
@@ -89,7 +89,7 @@ def main():
 
     # Go up 2 directories from scripts/build/release.py to reach workspace root
     root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    settings_path = os.path.join(root_dir, "settings.json")
+    settings_path = os.path.join(root_dir, "game", "settings.json")
 
     try:
         if not args.dry_run:

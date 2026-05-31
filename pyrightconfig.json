@@ -1,12 +1,12 @@
 {
   "pythonVersion": "3.12",
   "pythonPlatform": "Darwin",
-  "extraPaths": ["."],
+  "extraPaths": [".", "game", "tools/src"],
   "exclude": [
     "**/__pycache__",
     ".venv",
     "venv",
-    "tests",
+    "**/tests",
     ".agents",
     "scripts",
     "build",

@@ -4,59 +4,17 @@
 [![Pygame-CE](https://img.shields.io/badge/built%20with-pygame--ce-orange?style=flat-square&logo=pygame)](https://pyga.me/)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg?style=flat-square&logo=python&logoColor=white)](https://github.com/astral-sh/ruff)
 [![Type Checker: Pyright](https://img.shields.io/badge/types-pyright-yellow?style=flat-square&logo=python&logoColor=white)](https://github.com/microsoft/pyright)
-[![Methodology: Stream Coding v6.0](https://img.shields.io/badge/methodology-Stream%20Coding%20v6.0-brightgreen?style=flat-square)](./GEMINI.md)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-A professional-grade, modular RPG engine built with **Python 3.12** and **Pygame-CE**. This project prioritizes technical excellence, architectural health, and AI-ready documentation via the **Stream Coding v6.0** methodology.
+Welcome to the **RPG Tile Engine** monorepository. This repository houses a professional-grade 2D RPG engine and its associated procedural asset creation tooling.
 
-## 🌟 Highlights
+## 🏗️ Repository Architecture
 
-- **Technical Excellence**: 10/10 AI-readiness score across 30+ technical specifications.
-- **Robust Architecture**: Layered design with structural governance via **Sentrux**.
-- **High Performance**: Optimized with frame-level caching, dirty-flag render batching, and surface pooling for flawless 60 FPS performance.
-- **Data-Driven**: Full **Tiled (TMX/TSX)** integration with support for custom properties and animated autotiles.
-- **Traceability**: Every feature is backed by specs, and every test is linked to its specification via `tc(id)` markers.
+The project has been transitioned to a multi-domain monorepo architecture to cleanly separate the game engine from development tooling, ensuring isolation, simplified onboarding, and independent evolution.
 
-## 🛠️ Core Systems
-
-- **🎥 Camera & Rendering**: Smart camera with Y-sorted rendering, efficient tile batching, partial sprite occlusion, and transparent grass-wading effects.
-- **✨ Animated Autotiles**: Native support for frame-based animations parsed directly from Tiled assets.
-- **💡 Interactive Lighting**: Real-time lighting system with halo calibration, window beam overlays, and flicker mixins.
-- **🗺️ World & Navigation**: Seamless map loading, interactive chest UIs, and intra-map teleports with smooth walk transitions.
-- **🔊 Spatial Audio**: Adaptive sound manager with multi-channel fading and distance-based spatial panning.
-- **💬 Dialogue & NPCs**: Advanced NPC logic with speech bubbles, branching dialogue choices, and pathway patrol patterns.
-- **📦 Inventory & Save State**: Data-driven inventory systems, loot drops, and persistent slot saves with PNG screenshot thumbnails.
-
-## 🎨 Asset Creator Tool
-
-A **procedural tileset generator** located in `tools/asset_creator/`, with both a CLI and a full GUI for creating game-ready tilesets.
-
-### Features
-
-- **OKLCh color ramp** generation with 4-color palette customization.
-- **47-tile Wang blob autotile** for seamless terrain transitions.
-- **Noise-based textures** with detail overlays and configurable edge styles.
-- **Config-driven** via YAML presets and palettes.
-
-### GUI (Dear PyGui)
-
-- Real-time tile preview with parameter sliders.
-- Paint canvas (autotile Wang blob + standalone modes).
-- History panel with undo.
-- Export to **PNG + TSX** (Tiled-compatible).
-- macOS dark mode theme (Apple HIG).
-
-### Usage
-
-```bash
-# GUI mode
-python -m tools.asset_creator gui
-
-# CLI mode
-python -m tools.asset_creator generate grass --seed 42
-python -m tools.asset_creator list
-python -m tools.asset_creator preview grass
-```
+- **[`game/`](./game)**: The core RPG engine built with Pygame-CE. Contains the game source code, entity systems, rendering, tests, and its specific documentation (`game/docs/`).
+- **[`tools/`](./tools)**: Procedural generation and development tools, such as the `asset_creator` (Dear PyGui), along with its specific documentation (`tools/docs/`).
+- **[`assets/`](./assets)**: Shared global assets (images, audio, language files) used by both the game and the tools.
+- **[`scripts/`](./scripts)**: Build pipelines, release management, and development scripts.
 
 ## 🚀 Getting Started
 
@@ -65,43 +23,52 @@ python -m tools.asset_creator preview grass
 - **Make** (optional, but recommended)
 
 ### Quick Start
+To work on a specific domain, navigate to its directory:
 ```bash
+# For the game engine:
+cd game
 make setup  # Initialize venv and install dependencies
-make run    # Start the engine
+make run    # Start the game engine
+
+# For the asset tools:
+cd tools
+make setup  # Initialize venv and install dependencies
+make run    # Start the asset creator tool
 ```
 
 ### Manual Setup
-1. `python -m venv venv`
-2. Activate: `source venv/bin/activate` (Linux/macOS) or `venv\Scripts\activate` (Windows)
-3. `pip install -r requirements.txt`
-4. `python src/main.py`
+If you prefer not to use Make:
+1. `cd game` (or `cd tools`)
+2. `python -m venv venv`
+3. Activate: `source venv/bin/activate` (Linux/macOS) or `venv\Scripts\activate` (Windows)
+4. `pip install -r requirements.txt`
+
+## 🛠️ Domains
+
+### [The Game Engine](./game)
+A data-driven, tile-based 2D engine featuring:
+- Smart camera with Y-sorted rendering
+- Animated autotiles from TMX/TSX maps
+- Interactive lighting and spatial audio
+- Component-based entities (NPCs, Player, Inventory)
+
+See the [Game README](./game/README.md) for details.
+
+### [Asset Tools](./tools)
+Standalone development tools featuring:
+- A Dear PyGui procedural tileset generator
+- Wang blob autotile transformations
+- Color ramp generation
+
+See the [Tools README](./tools/README.md) for details.
 
 ## 🧪 Quality & Verification
 
-We maintain an **80%+ test coverage** and enforce strict quality gates.
-
-- **Run Tests**: `make test` or `pytest tests/`
-- **Traceability Report**: `python scripts/dev/tc_report.py` (Verify spec coverage)
-- **Linting**: `ruff check .`
-- **Static Analysis**: `pyright`
-
-## 📂 Architecture Overview
-
-- `src/engine/`: Core loop, event management, and system orchestration.
-- `src/map/`: Tiled parser, tile animations, and coordinate systems.
-- `src/entities/`: Component-based entity system (Player, NPCs, Interactives).
-- `src/systems/`: Specialized logic (Lighting, Audio, Dialogue, UI).
-- `docs/specs/`: **Source of Truth**. Technical and strategic documentation.
-- `tools/asset_creator/`: Procedural tileset generation tool (CLI + GUI).
-- `.agents/`: Stream Coding methodology, skills, and architectural rules.
-
-## 📜 Methodology: Stream Coding v6.0
-
-This project follows a strict documentation-first approach. No code is implemented without a validated specification.
-- **Discover Gate**: Mandatory research before strategy.
-- **Spec Gate**: 10/10 AI-readiness check.
-- **TDD Gate**: Implementation follows test case definitions.
-- **Verify Gate**: Deterministic verification of all quality metrics.
+We enforce strict quality gates across the monorepo:
+- **Testing**: Run tests with `make test` in the root, or directly in `game/` and `tools/`.
+- **Linting & Formatting**: `ruff check .`
+- **Type Checking**: `pyright`
+- **Traceability**: `python scripts/dev/tc_report.py` validates spec coverage.
 
 ## 📜 License
 MIT

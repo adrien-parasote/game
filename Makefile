@@ -1,29 +1,29 @@
-.PHONY: setup run test clean
-
-PYTHON = python3
-VENV = venv
-BIN = $(VENV)/bin
+.PHONY: setup run test clean version
 
 setup:
-	@echo "Setting up virtual environment..."
-	$(PYTHON) -m venv $(VENV)
-	@echo "Installing dependencies..."
-	$(BIN)/pip install -r requirements.txt
-	@echo "Setup complete. Use 'make run' to start the game."
+	@echo "Setting up game..."
+	$(MAKE) -C game setup
+	@echo "Setting up tools..."
+	$(MAKE) -C tools setup
 
 run:
-	@echo "Starting the game..."
-	$(BIN)/python src/main.py
+	@echo "To run the game, use: cd game && make run"
+	@echo "To run the tools, use: cd tools && make run"
 
 test:
-	@echo "Running tests..."
-	$(BIN)/python -m pytest tests/
+	@echo "Running game tests..."
+	$(MAKE) -C game test
+	@echo "Running tools tests..."
+	$(MAKE) -C tools test
 
 clean:
-	@echo "Cleaning up..."
-	rm -rf $(VENV)
+	@echo "Cleaning up game..."
+	$(MAKE) -C game clean
+	@echo "Cleaning up tools..."
+	$(MAKE) -C tools clean
+	@echo "Cleaning global pycache..."
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 
 version:
-	@$(PYTHON) scripts/build/get_version.py
+	@python3 scripts/build/get_version.py

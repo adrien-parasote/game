@@ -5,8 +5,8 @@ import sys
 
 import pygame
 
-# Add src to path (from scripts/dev/profile_game.py we go up 2 directories to reach workspace root)
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+# Add src to path (from scripts/dev/profile_game.py we go up 2 directories to reach workspace root then game)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "game")))
 
 from src.engine.game_state_manager import GameStateManager
 

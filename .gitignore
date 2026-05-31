@@ -22,6 +22,8 @@ ENV/
 .env
 .env.local
 .env.*.local
+game/venv/
+tools/venv/
 
 # ==============================================================================
 # 🖥️ OS System Files
@@ -57,6 +59,8 @@ ehthumbs.db
 # ==============================================================================
 saves/
 saves_migrated/
+game/saves/
+game/saves_migrated/
 
 # ==============================================================================
 # 🛠️ Tooling & Scripts (Stream Coding, Agent & Sentrux)
@@ -73,13 +77,11 @@ logs/
 .sc-*
 .tdd_lock
 
-# Agent runtime files (observations, state, custom specs)
-.agents/active_stage.json
-.agents/session-observations.jsonl
-.agents/cross-spec*
-.agents/cross_spec_report
+# Agent runtime files and rules (only commit learnings)
+.agents/*
+!.agents/learnings/
+!.agents/learnings.md
 
 # Temporary isolated asset scripts workspace
-scripts/input_*
-scripts/output_*
-.agents/cross_spec_report.md
+tools/input_*
+tools/output_*
