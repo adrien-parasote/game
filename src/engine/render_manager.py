@@ -560,10 +560,12 @@ class RenderManager:
         - walk_active guard skips the player sprite only (NPCs always processed).
         """
         if not self.game.map_manager:
-            return {}
+            empty_res: dict[object, pygame.Surface] = {}
+            return empty_res
 
         if cam_offset is None:
             cam_offset = self.game.visible_sprites.offset
+        assert cam_offset is not None
         pre_occ = pre_occlusion_originals or {}
         tile_size = self.game.tile_size
         wading_depth = Settings.GRASS_WADING_DEPTH

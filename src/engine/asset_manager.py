@@ -6,7 +6,6 @@ import pygame
 from src.engine.engine_constants import COLOR_PLACEHOLDER_MAGENTA
 
 
-
 class AssetManager:
     """
     Centralized cache for game assets (images, tilesets, sounds).
