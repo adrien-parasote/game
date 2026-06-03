@@ -401,7 +401,7 @@ def _on_mode_change(sender: Any = None, app_data: Any = None, _user: Any = None)
     # Update export button label
     if dpg.does_item_exist("btn_export"):
         if mode == "standalone":
-            dpg.configure_item("btn_export", label="Exporter Tile PNG")
+            dpg.configure_item("btn_export", label="Exporter Tuile PNG")
         else:
             dpg.configure_item("btn_export", label="Exporter PNG + TSX")
     _log(f"Mode: {mode}")
@@ -663,7 +663,7 @@ def _build_left_panel() -> None:
     preset_names = sorted(_presets.keys())
     with dpg.child_window(width=LEFT_PANEL_WIDTH, tag="left_panel"):
         # ── Terrain Preset (always visible) ──
-        dpg.add_text("Terrain Preset")
+        dpg.add_text("Préréglage")
         dpg.add_combo(
             preset_names,
             default_value=_state.terrain_name,
@@ -675,29 +675,29 @@ def _build_left_panel() -> None:
 
         # ── Texture ──
         with dpg.collapsing_header(label="Texture", default_open=True):
-            _add_slider_f("Scale", "slider_scale", _state.scale, 0.01, 1.0)
+            _add_slider_f("Échelle", "slider_scale", _state.scale, 0.01, 1.0)
             _add_slider_i("Octaves", "slider_octaves", _state.octaves, 1, 8)
-            _add_slider_f("Persistence", "slider_persistence", _state.persistence, 0.0, 1.0)
-            _add_slider_f("Lacunarity", "slider_lacunarity", _state.lacunarity, 1.0, 4.0)
+            _add_slider_f("Persistance", "slider_persistence", _state.persistence, 0.0, 1.0)
+            _add_slider_f("Lacunarité", "slider_lacunarity", _state.lacunarity, 1.0, 4.0)
             dpg.add_checkbox(
-                label="Smooth ramp",
+                label="Dégradé lissé",
                 default_value=_state.use_smooth_ramp,
                 tag="check_smooth_ramp",
                 callback=_on_param_change,
             )
             dpg.add_checkbox(
-                label="Dithering",
+                label="Tramage",
                 default_value=_state.use_dithering,
                 tag="check_dithering",
                 callback=_on_param_change,
             )
 
         # ── Palette Colors ──
-        with dpg.collapsing_header(label="Colors", default_open=True):
+        with dpg.collapsing_header(label="Couleurs", default_open=True):
             _color_labels = [
-                ("Shadow", "picker_shadow", _state.color_shadow),
+                ("Ombre", "picker_shadow", _state.color_shadow),
                 ("Base", "picker_base", _state.color_base),
-                ("Highlight", "picker_highlight", _state.color_highlight),
+                ("Reflet", "picker_highlight", _state.color_highlight),
                 ("Accent", "picker_accent", _state.color_accent),
             ]
             for label, tag, rgb in _color_labels:
@@ -711,16 +711,16 @@ def _build_left_panel() -> None:
                 )
 
         # ── Detail Overlay ──
-        with dpg.collapsing_header(label="Detail", default_open=False):
-            _add_slider_f("Detail scale", "slider_detail_scale", _state.detail_scale, 0.0, 2.0)
-            _add_slider_f("Strength", "slider_detail_strength", _state.detail_strength, 0.0, 0.3)
-            _add_slider_f("Density", "slider_detail_density", _state.detail_density, 0.0, 1.0)
-            _add_slider_i("Max height", "slider_detail_height", _state.detail_max_height, 1, 16)
-            _add_slider_i("Max length", "slider_detail_length", _state.detail_max_length, 1, 16)
+        with dpg.collapsing_header(label="Détail", default_open=False):
+            _add_slider_f("Échelle de détail", "slider_detail_scale", _state.detail_scale, 0.0, 2.0)
+            _add_slider_f("Force", "slider_detail_strength", _state.detail_strength, 0.0, 0.3)
+            _add_slider_f("Densité", "slider_detail_density", _state.detail_density, 0.0, 1.0)
+            _add_slider_i("Hauteur max", "slider_detail_height", _state.detail_max_height, 1, 16)
+            _add_slider_i("Longueur max", "slider_detail_length", _state.detail_max_length, 1, 16)
 
         # ── Edge (autotile only) ──
-        with dpg.collapsing_header(label="Border", default_open=False, tag="edge_header"):
-            dpg.add_text("Border Style")
+        with dpg.collapsing_header(label="Bordure", default_open=False, tag="edge_header"):
+            dpg.add_text("Style de bordure")
             dpg.add_combo(
                 list(_EDGE_LABELS.keys()),
                 default_value=_EDGE_REVERSE.get(_state.edge_style, _state.edge_style),
@@ -728,11 +728,11 @@ def _build_left_panel() -> None:
                 callback=_on_param_change,
                 width=-1,
             )
-            _add_slider_i("Width", "slider_edge_width", _state.edge_width, 1, 8)
-            _add_slider_f("Noise Scale", "slider_edge_noise", _state.edge_noise_scale, 0.0, 1.0)
+            _add_slider_i("Largeur", "slider_edge_width", _state.edge_width, 1, 8)
+            _add_slider_f("Bruit", "slider_edge_noise", _state.edge_noise_scale, 0.0, 1.0)
 
         # ── Seed ──
-        with dpg.collapsing_header(label="Seed", default_open=True):  # noqa: SIM117
+        with dpg.collapsing_header(label="Graine", default_open=True):  # noqa: SIM117
             with dpg.group(horizontal=True):
                 dpg.add_input_int(
                     default_value=_state.seed,
@@ -740,17 +740,17 @@ def _build_left_panel() -> None:
                     callback=_on_param_change,
                     width=-60,
                 )
-                dpg.add_button(label="Rand", callback=_on_random_seed, width=50)
+                dpg.add_button(label="Aléa", callback=_on_random_seed, width=50)
 
         # ── Output ──
-        with dpg.collapsing_header(label="Output", default_open=False):
-            dpg.add_text("PNG Directory")
+        with dpg.collapsing_header(label="Sortie", default_open=False):
+            dpg.add_text("Dossier PNG")
             dpg.add_input_text(
                 default_value=_state.output_dir,
                 tag="input_output_dir",
                 width=-1,
             )
-            dpg.add_text("TSX Directory")
+            dpg.add_text("Dossier TSX")
             dpg.add_input_text(
                 default_value=_state.tsx_dir,
                 tag="input_tsx_dir",
@@ -759,14 +759,14 @@ def _build_left_panel() -> None:
 
         dpg.add_spacer(height=8)
         dpg.add_button(
-            label="Regenerate",
+            label="Générer",
             callback=lambda: _do_regenerate(),
             width=-1,
             height=30,
         )
         dpg.add_spacer(height=4)
         dpg.add_button(
-            label="Export PNG + TSX",
+            label="Exporter PNG + TSX",
             callback=_on_export,
             width=-1,
             height=30,
@@ -786,7 +786,7 @@ def _build_center_panel() -> None:
     CENTER_PANEL_WIDTH = max(canvas_w + 40, 620)
 
     with dpg.child_window(width=CENTER_PANEL_WIDTH, tag="center_panel"):
-        dpg.add_text("Tile Preview (4x)")
+        dpg.add_text("Aperçu (4x)")
         with dpg.drawlist(width=preview_size, height=preview_size):
             dpg.draw_image("preview_texture", (0, 0), (preview_size, preview_size))
 
@@ -796,7 +796,7 @@ def _build_center_panel() -> None:
 
         # ── Mode Selector ──
         with dpg.group(horizontal=True):
-            dpg.add_text("Canvas")
+            dpg.add_text("Toile")
             dpg.add_spacer(width=8)
             dpg.add_radio_button(
                 ["autotile", "standalone"],
@@ -806,9 +806,9 @@ def _build_center_panel() -> None:
                 horizontal=True,
             )
             dpg.add_spacer(width=8)
-            dpg.add_text("LMB: Paint, RMB: Erase", color=(130, 135, 140, 255))
+            dpg.add_text("Clic G: Peindre, Clic D: Effacer", color=(130, 135, 140, 255))
             dpg.add_spacer(width=8)
-            dpg.add_button(label="Clear", callback=_on_clear_canvas)
+            dpg.add_button(label="Effacer", callback=_on_clear_canvas)
 
         dpg.add_spacer(height=4)
 
@@ -833,7 +833,7 @@ def _build_center_panel() -> None:
         dpg.add_spacer(height=4)
 
         # ── Log ──
-        with dpg.collapsing_header(label="Log", default_open=False):  # noqa: SIM117
+        with dpg.collapsing_header(label="Journal", default_open=False):  # noqa: SIM117
             with dpg.child_window(height=120, tag="log_window", border=True):
                 dpg.add_text("", tag="log_text", wrap=0, color=(160, 170, 160, 255))
 
@@ -841,7 +841,7 @@ def _build_center_panel() -> None:
 def _build_history_panel() -> None:
     """Build right panel: history list."""
     with dpg.child_window(width=-1, tag="history_panel"):
-        dpg.add_text("History")
+        dpg.add_text("Historique")
         dpg.add_spacer(height=4)
         with dpg.child_window(height=-1, tag="history_list", border=True):
             pass  # filled dynamically by _rebuild_history_panel
