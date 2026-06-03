@@ -10,8 +10,6 @@ __pycache__/
 .mypy_cache/
 .coverage
 htmlcov/
-.nosexy/
-
 # ==============================================================================
 # 📦 Virtual Environments
 # ==============================================================================
@@ -58,8 +56,6 @@ ehthumbs.db
 # ==============================================================================
 saves/
 saves_migrated/
-game/saves/
-game/saves_migrated/
 
 # ==============================================================================
 # 🛠️ Tooling & Scripts (Stream Coding, Agent & Sentrux)
@@ -80,10 +76,6 @@ logs/
 .agents/*
 !.agents/learnings/
 !.agents/learnings.md
-
-# Temporary isolated asset scripts workspace
-tools/input_*
-tools/output_*
 
 # ==============================================================================
 # 📚 Game Wiki (Nested but isolated repo)
