@@ -7,8 +7,8 @@ setup:
 	$(MAKE) -C tools setup
 
 run:
-	@echo "To run the game, use: cd game && make run"
-	@echo "To run the tools, use: cd tools && make run"
+	@echo "Running Asset Creator Tools..."
+	$(MAKE) -C tools run
 
 test:
 	@echo "Running game tests..."

@@ -13,7 +13,7 @@ setup:
 
 run:
 	@echo "Starting Asset Creator..."
-	cd .. && PYTHONPATH=tools/src tools/$(BIN)/python -m asset_creator.cli gui
+	cd .. && PYTHONPATH=tools/src tools/$(BIN)/python -m asset_creator
 
 test:
 	@echo "Running tests..."

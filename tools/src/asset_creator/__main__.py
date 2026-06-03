@@ -1,8 +1,9 @@
-"""CLI entry point for the Asset Creator Tool."""
+import sys
+from asset_creator.gui.app import App
 
-from __future__ import annotations
-
-from asset_creator.cli import main
+def main():
+    app = App()
+    app.mainloop()
 
 if __name__ == "__main__":
     main()
