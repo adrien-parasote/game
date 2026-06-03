@@ -1,29 +1,46 @@
-.PHONY: setup run test clean version
+.PHONY: setup run-game run-tools test lint typecheck clean version
+
+PYTHON = python3
+VENV = venv
+BIN = $(VENV)/bin
 
 setup:
-	@echo "Setting up game..."
-	$(MAKE) -C game setup
-	@echo "Setting up tools..."
-	$(MAKE) -C tools setup
+	@echo "Setting up global virtual environment..."
+	$(PYTHON) -m venv $(VENV)
+	@echo "Installing global dependencies..."
+	$(BIN)/pip install -r requirements.txt
+	@echo "Setup complete!"
+	@echo "  -> make run-game  : Start the game"
+	@echo "  -> make run-tools : Start the asset creator tool"
 
-run:
-	@echo "Running Asset Creator Tools..."
-	$(MAKE) -C tools run
+run-game:
+	@echo "Starting the game..."
+	PYTHONPATH=. $(BIN)/python -m game.src.main
+
+run-tools:
+	@echo "Starting Asset Creator Tools..."
+	PYTHONPATH=tools/src $(BIN)/python -m asset_creator
 
 test:
-	@echo "Running game tests..."
-	$(MAKE) -C game test
-	@echo "Running tools tests..."
-	$(MAKE) -C tools test
+	@echo "Running all tests..."
+	PYTHONPATH=. $(BIN)/python -m pytest
+
+lint:
+	@echo "Running linter (ruff)..."
+	$(BIN)/ruff check .
+
+typecheck:
+	@echo "Running type checker (pyright)..."
+	$(BIN)/pyright
 
 clean:
-	@echo "Cleaning up game..."
-	$(MAKE) -C game clean
-	@echo "Cleaning up tools..."
-	$(MAKE) -C tools clean
-	@echo "Cleaning global pycache..."
+	@echo "Cleaning up environments and caches..."
+	rm -rf $(VENV)
 	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type d -name ".pytest_cache" -exec rm -rf {} +
+	find . -type d -name ".ruff_cache" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
+	@echo "Clean complete."
 
 version:
-	@python3 scripts/build/get_version.py
+	@$(PYTHON) scripts/build/get_version.py

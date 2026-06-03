@@ -1,8 +1,13 @@
 # Core Dependencies
 pygame-ce==2.5.7
+numpy
+Pillow
+customtkinter==5.2.2
+PyYAML
 
 # Development & Testing
 pytest==9.0.3
 pytest-cov==6.1.0
 ruff==0.9.9
 pyright==1.1.396
+pyobjc-framework-Cocoa; sys_platform == 'darwin'
