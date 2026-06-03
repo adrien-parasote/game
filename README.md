@@ -1,74 +1,66 @@
-# ⚔️ RPG Tile Engine
+# ⚔️ RPG Tile Engine & The Heir's Awakening
 
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Pygame-CE](https://img.shields.io/badge/built%20with-pygame--ce-orange?style=flat-square&logo=pygame)](https://pyga.me/)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg?style=flat-square&logo=python&logoColor=white)](https://github.com/astral-sh/ruff)
-[![Type Checker: Pyright](https://img.shields.io/badge/types-pyright-yellow?style=flat-square&logo=python&logoColor=white)](https://github.com/microsoft/pyright)
 
-Welcome to the **RPG Tile Engine** monorepository. This repository houses a professional-grade 2D RPG engine and its associated procedural asset creation tooling.
+Bienvenue dans le "Meta-Workspace" de **The Heir's Awakening**. Ce répertoire racine est le point d'entrée pour les développeurs, centralisant le moteur de jeu, les outils de génération procédurale, et les configurations de nos agents IA (Stream Coding).
 
-## 🏗️ Repository Architecture
+> 📖 **Joueurs, Scénaristes et Game Designers :**  
+> Tout ce qui concerne l'histoire, les mécaniques (GDD), la vision globale et la feuille de route du jeu se trouve sur notre **[Wiki GitHub Officiel](https://github.com/adrien-parasote/game/wiki)**.
 
-The project has been transitioned to a multi-domain monorepo architecture to cleanly separate the game engine from development tooling, ensuring isolation, simplified onboarding, and independent evolution.
+---
 
-- **[`game/`](./game)**: The core RPG engine built with Pygame-CE. Contains the game source code, entity systems, rendering, tests, and its specific documentation (`game/docs/`).
-- **[`tools/`](./tools)**: Procedural generation and development tools, such as the `asset_creator` (Dear PyGui), along with its specific documentation (`tools/docs/`).
-- **[`assets/`](./assets)**: Shared global assets (images, audio, language files) used by both the game and the tools.
-- **[`scripts/`](./scripts)**: Build pipelines, release management, and development scripts.
+## 🏗️ Architecture du Projet
 
-## 🚀 Getting Started
+Le projet adopte une séparation stricte entre le moteur technique et la documentation métier (Lore/GDD) pour garder le code propre et éviter la surcharge cognitive.
 
-### Prerequisites
+- **[`game/`](./game)** : Le moteur RPG construit avec Pygame-CE. Contient le code source, les entités, le rendu, les tests et la documentation *strictement technique* (Spécifications IA, ADRs).
+- **[`tools/`](./tools)** : Outils de développement autonomes (Générateur de tilesets procédural avec Dear PyGui).
+- **[`assets/`](./assets)** : Ressources partagées (images, audio, données) utilisées par le jeu et les outils.
+- **[`scripts/`](./scripts)** : Pipelines de build, gestion de release, et vérifications de qualité.
+- **`game-wiki/`** *(Non versionné ici)* : Si vous l'avez cloné, ce dossier "fantôme" (ignoré par Git) contient le wiki local permettant l'édition de la documentation humaine côte à côte avec le code.
+
+---
+
+## 🚀 Getting Started (Développeurs)
+
+### Prérequis
 - **Python 3.12+**
-- **Make** (optional, but recommended)
+- **Make** (optionnel, mais recommandé)
 
-### Quick Start
-To work on a specific domain, navigate to its directory:
+### Lancement Rapide
+Pour travailler sur un domaine spécifique, naviguez dans son répertoire :
 ```bash
-# For the game engine:
+# Pour le moteur de jeu :
 cd game
-make setup  # Initialize venv and install dependencies
-make run    # Start the game engine
+make setup  # Initialise le venv et installe les dépendances
+make run    # Lance le jeu
 
-# For the asset tools:
+# Pour les outils procéduraux :
 cd tools
-make setup  # Initialize venv and install dependencies
-make run    # Start the asset creator tool
+make setup
+make run
 ```
 
-### Manual Setup
-If you prefer not to use Make:
-1. `cd game` (or `cd tools`)
+### Installation Manuelle (Sans Make)
+1. `cd game` (ou `cd tools`)
 2. `python -m venv venv`
-3. Activate: `source venv/bin/activate` (Linux/macOS) or `venv\Scripts\activate` (Windows)
+3. Activation : `source venv/bin/activate` (Linux/macOS) ou `venv\Scripts\activate` (Windows)
 4. `pip install -r requirements.txt`
 
-## 🛠️ Domains
+---
 
-### [The Game Engine](./game)
-A data-driven, tile-based 2D engine featuring:
-- Smart camera with Y-sorted rendering
-- Animated autotiles from TMX/TSX maps
-- Interactive lighting and spatial audio
-- Component-based entities (NPCs, Player, Inventory)
+## 🧪 Qualité & IA (Stream Coding)
 
-See the [Game README](./game/README.md) for details.
+Ce projet est activement développé avec des agents IA respectant une méthodologie stricte (Stream Coding).
 
-### [Asset Tools](./tools)
-Standalone development tools featuring:
-- A Dear PyGui procedural tileset generator
-- Wang blob autotile transformations
-- Color ramp generation
+- **Testing** : Lancez `make test` à la racine, ou dans `game/`.
+- **Linting & Formattage** : `ruff check .`
+- **Validation IA** : `verify.py` et `spec_conformance.py` assurent que le code généré respecte à 100% les spécifications (`game/docs/specs/`).
+- **Sentinelles Git** : Ne jamais bypasser les hooks sans raison valable. Les commits sont formatés sémantiquement.
 
-See the [Tools README](./tools/README.md) for details.
+---
 
-## 🧪 Quality & Verification
-
-We enforce strict quality gates across the monorepo:
-- **Testing**: Run tests with `make test` in the root, or directly in `game/` and `tools/`.
-- **Linting & Formatting**: `ruff check .`
-- **Type Checking**: `pyright`
-- **Traceability**: `python scripts/dev/tc_report.py` validates spec coverage.
-
-## 📜 License
+## 📜 Licence
 MIT
