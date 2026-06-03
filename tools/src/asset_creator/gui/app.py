@@ -885,6 +885,28 @@ def run_gui() -> None:
 
     dpg.create_context()
     dpg.create_viewport(title="Asset Creator V3", width=1400, height=850)
+    
+    import os
+    import sys
+    icon_path_ico = os.path.join(os.path.dirname(__file__), "assets", "icon.ico")
+    icon_path_png = os.path.join(os.path.dirname(__file__), "assets", "icon.png")
+    
+    if sys.platform == "darwin":
+        try:
+            from AppKit import NSImage, NSApplication
+            if os.path.exists(icon_path_png):
+                app = NSApplication.sharedApplication()
+                img = NSImage.alloc().initWithContentsOfFile_(icon_path_png)
+                app.setApplicationIconImage_(img)
+        except ImportError:
+            pass
+            
+    if os.path.exists(icon_path_ico):
+        try:
+            dpg.set_viewport_small_icon(icon_path_ico)
+            dpg.set_viewport_large_icon(icon_path_ico)
+        except Exception:
+            pass
 
     _presets = get_builtin_presets()
     _state = state_from_preset("grass", _presets)

@@ -13,11 +13,11 @@ setup:
 
 run:
 	@echo "Starting Asset Creator..."
-	cd .. && PYTHONPATH=. tools/$(BIN)/python -m tools.src.asset_creator.cli gui
+	cd .. && PYTHONPATH=tools/src tools/$(BIN)/python -m asset_creator.cli gui
 
 test:
 	@echo "Running tests..."
-	cd .. && PYTHONPATH=. tools/$(BIN)/python -m pytest tools/tests/
+	cd .. && PYTHONPATH=tools/src tools/$(BIN)/python -m pytest tools/tests/
 
 clean:
 	@echo "Cleaning up..."
