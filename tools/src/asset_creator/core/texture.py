@@ -49,6 +49,8 @@ class TextureParams:
     detail_strength: float = DEFAULT_DETAIL_STRENGTH
     use_dithering: bool = False
     dither_matrix_size: int = DEFAULT_DITHER_MATRIX_SIZE
+    warp_scale: float = 0.05
+    warp_strength: float = 0.0
 
 
 def sample_toroidal_noise(
@@ -85,12 +87,14 @@ def sample_toroidal_noise(
 
 
 def _compute_multi_octave_noise(
-    x: int,
-    y: int,
+    x: float,
+    y: float,
     width: int,
     height: int,
     params: TextureParams,
     noise_gen: OpenSimplex,
+    warp_dx_gen: OpenSimplex | None = None,
+    warp_dy_gen: OpenSimplex | None = None,
 ) -> float:
     """Compute multi-octave toroidal noise for a single pixel.
 
@@ -101,10 +105,18 @@ def _compute_multi_octave_noise(
         height: Texture height.
         params: Texture generation parameters.
         noise_gen: OpenSimplex noise generator.
+        warp_dx_gen: OpenSimplex noise generator for X-axis warp.
+        warp_dy_gen: OpenSimplex noise generator for Y-axis warp.
 
     Returns:
         Combined noise value (not normalized to [-1,1]).
     """
+    if params.warp_strength > 0 and warp_dx_gen is not None and warp_dy_gen is not None:
+        dx = sample_toroidal_noise(x, y, width, height, params.warp_scale, warp_dx_gen) * params.warp_strength
+        dy = sample_toroidal_noise(x, y, width, height, params.warp_scale, warp_dy_gen) * params.warp_strength
+        x = (x + dx) % width
+        y = (y + dy) % height
+
     value = 0.0
     amplitude = 1.0
     frequency = 1.0
@@ -197,6 +209,9 @@ def generate_noise_texture_v2(
     """
     base_noise = OpenSimplex(seed=seed)
     detail_noise = OpenSimplex(seed=seed + 1000)
+    warp_dx_gen = OpenSimplex(seed=seed + 2) if params.warp_strength > 0 else None
+    warp_dy_gen = OpenSimplex(seed=seed + 3) if params.warp_strength > 0 else None
+
     img = Image.new("RGBA", (width, height))
     pixels = img.load()
     if pixels is None:
@@ -204,7 +219,7 @@ def generate_noise_texture_v2(
 
     for y in range(height):
         for x in range(width):
-            # Base shape noise (toroidal for seamless tiling)
+            # Base shape noise (toroidal for seamless tiling, with optional warp)
             base_value = _compute_multi_octave_noise(
                 x,
                 y,
@@ -212,6 +227,8 @@ def generate_noise_texture_v2(
                 height,
                 params,
                 base_noise,
+                warp_dx_gen,
+                warp_dy_gen,
             )
 
             # Normalize to [0, 1]

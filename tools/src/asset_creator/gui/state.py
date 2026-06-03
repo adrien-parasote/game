@@ -45,6 +45,8 @@ class AppState:
     detail_strength: float = 0.06
     use_dithering: bool = True
     dither_matrix_size: int = 4
+    texture_warp_scale: float = 0.05
+    texture_warp_strength: float = 0.0
 
     # Detail overlay
     detail_type: str = "grass_blades"
@@ -84,6 +86,8 @@ class AppState:
             detail_strength=self.detail_strength,
             use_dithering=self.use_dithering,
             dither_matrix_size=self.dither_matrix_size,
+            warp_scale=self.texture_warp_scale,
+            warp_strength=self.texture_warp_strength,
         )
 
     def to_detail_config(self) -> DetailConfig:
@@ -134,6 +138,8 @@ def state_from_preset(
         detail_strength=config.texture.detail_strength,
         use_dithering=config.texture.use_dithering,
         dither_matrix_size=config.texture.dither_matrix_size,
+        texture_warp_scale=config.texture.warp_scale,
+        texture_warp_strength=config.texture.warp_strength,
         detail_type=config.detail.detail_type,
         detail_density=config.detail.density,
         detail_max_height=config.detail.max_height,

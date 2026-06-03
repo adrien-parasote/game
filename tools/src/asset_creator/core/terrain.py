@@ -46,6 +46,8 @@ class TextureConfig:
     detail_strength: float = 0.06
     use_dithering: bool = False
     dither_matrix_size: int = 4
+    warp_scale: float = 0.05
+    warp_strength: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -90,6 +92,8 @@ def _parse_texture_config(data: dict) -> TextureConfig:
         detail_strength=data.get("detail_strength", 0.06),
         use_dithering=data.get("use_dithering", False),
         dither_matrix_size=data.get("dither_matrix_size", 4),
+        warp_scale=data.get("warp_scale", 0.05),
+        warp_strength=data.get("warp_strength", 0.0),
     )
 
 

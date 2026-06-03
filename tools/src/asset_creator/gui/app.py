@@ -320,6 +320,8 @@ def _read_state_from_widgets() -> AppState:
         octaves=dpg.get_value("slider_octaves"),
         persistence=dpg.get_value("slider_persistence"),
         lacunarity=dpg.get_value("slider_lacunarity"),
+        texture_warp_strength=dpg.get_value("slider_warp_strength"),
+        texture_warp_scale=dpg.get_value("slider_warp_scale"),
         use_smooth_ramp=dpg.get_value("check_smooth_ramp"),
         detail_scale=dpg.get_value("slider_detail_scale"),
         detail_strength=dpg.get_value("slider_detail_strength"),
@@ -442,6 +444,8 @@ def _sync_widgets_from_state() -> None:
     dpg.set_value("slider_octaves", _state.octaves)
     dpg.set_value("slider_persistence", _state.persistence)
     dpg.set_value("slider_lacunarity", _state.lacunarity)
+    dpg.set_value("slider_warp_strength", _state.texture_warp_strength)
+    dpg.set_value("slider_warp_scale", _state.texture_warp_scale)
     dpg.set_value("check_smooth_ramp", _state.use_smooth_ramp)
     dpg.set_value("slider_detail_scale", _state.detail_scale)
     dpg.set_value("slider_detail_strength", _state.detail_strength)
@@ -679,6 +683,8 @@ def _build_left_panel() -> None:
             _add_slider_i("Octaves", "slider_octaves", _state.octaves, 1, 8)
             _add_slider_f("Persistance", "slider_persistence", _state.persistence, 0.0, 1.0)
             _add_slider_f("Lacunarité", "slider_lacunarity", _state.lacunarity, 1.0, 4.0)
+            _add_slider_f("Force Déformation", "slider_warp_strength", _state.texture_warp_strength, 0.0, 100.0)
+            _add_slider_f("Échelle Déformation", "slider_warp_scale", _state.texture_warp_scale, 0.01, 0.5)
             dpg.add_checkbox(
                 label="Dégradé lissé",
                 default_value=_state.use_smooth_ramp,
@@ -879,28 +885,28 @@ def _register_textures() -> None:
 # ── Main entry point ────────────────────────────────────────────────────────
 
 
-def run_gui() -> None:
+def run_gui() -> None:  # noqa: PLR0915
     """Launch the Asset Creator V3 GUI."""
     global _state, _canvas, _tiles, _presets
 
     dpg.create_context()
     dpg.create_viewport(title="Asset Creator V3", width=1400, height=850)
-    
+
     import os
     import sys
     icon_path_ico = os.path.join(os.path.dirname(__file__), "assets", "icon.ico")
     icon_path_png = os.path.join(os.path.dirname(__file__), "assets", "icon.png")
-    
+
     if sys.platform == "darwin":
         try:
-            from AppKit import NSImage, NSApplication
+            from AppKit import NSApplication, NSImage
             if os.path.exists(icon_path_png):
                 app = NSApplication.sharedApplication()
                 img = NSImage.alloc().initWithContentsOfFile_(icon_path_png)
                 app.setApplicationIconImage_(img)
         except ImportError:
             pass
-            
+
     if os.path.exists(icon_path_ico):
         try:
             dpg.set_viewport_small_icon(icon_path_ico)
