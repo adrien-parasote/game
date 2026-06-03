@@ -22,8 +22,7 @@ ENV/
 .env
 .env.local
 .env.*.local
-game/venv/
-tools/venv/
+
 
 # ==============================================================================
 # 🖥️ OS System Files
