@@ -11,9 +11,14 @@ from PIL import Image
 
 DEFAULT_TEXTURES = ["Stone", "Grass", "Water", "Dirt", "Wood"]
 DEFAULT_PALETTE = {
-    "PICO-8": [(0,0,0), (29,43,83), (126,37,83), (0,135,81), (171,82,54), (95,87,79),
+    "PICO-8 (Full)": [(0,0,0), (29,43,83), (126,37,83), (0,135,81), (171,82,54), (95,87,79),
                (194,195,199), (255,241,232), (255,0,77), (255,163,0), (255,236,39),
-               (0,228,54), (41,173,255), (131,118,156), (255,119,168), (255,204,170)]
+               (0,228,54), (41,173,255), (131,118,156), (255,119,168), (255,204,170)],
+    "Grass": [(26,58,15), (45,90,27), (67,123,40), (90,158,54)],
+    "Stone": [(0,0,0), (95,87,79), (194,195,199), (255,241,232)],
+    "Water": [(29,43,83), (41,173,255), (131,118,156), (194,195,199)],
+    "Dirt": [(0,0,0), (126,37,83), (171,82,54), (255,163,0)],
+    "Wood": [(0,0,0), (126,37,83), (171,82,54), (255,204,170)]
 }
 
 class App(ctk.CTk):
@@ -47,17 +52,36 @@ class App(ctk.CTk):
         self.seed_var = ctk.StringVar(value=str(initial_seed))
         self.scale_var = ctk.DoubleVar(value=4.0)
 
+        self.setup_icon()
         self.setup_ui()
+
+    def setup_icon(self):
+        try:
+            import AppKit
+            app = AppKit.NSApplication.sharedApplication()
+            icon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "assets", "icon.png"))
+            if os.path.exists(icon_path):
+                icon = AppKit.NSImage.alloc().initWithContentsOfFile_(icon_path)
+                app.setApplicationIconImage_(icon)
+        except ImportError:
+            pass
 
     def setup_ui(self):
         ctrl_frame = ctk.CTkFrame(self)
         ctrl_frame.pack(side="left", fill="y", padx=10, pady=10)
 
+        def on_texture_change(choice):
+            if choice in self.palettes:
+                self.palette_var.set(choice)
+
         ctk.CTkLabel(ctrl_frame, text="Texture Type").pack(pady=(10, 0))
-        ctk.CTkComboBox(ctrl_frame, variable=self.texture_var, values=self.textures).pack()
+        ctk.CTkComboBox(ctrl_frame, variable=self.texture_var, values=self.textures, command=on_texture_change).pack()
 
         ctk.CTkLabel(ctrl_frame, text="Palette").pack(pady=(10, 0))
         ctk.CTkComboBox(ctrl_frame, variable=self.palette_var, values=list(self.palettes.keys())).pack()
+
+        if self.texture_var.get() in self.palettes:
+            self.palette_var.set(self.texture_var.get())
 
         ctk.CTkLabel(ctrl_frame, text="Seed (0-9999)").pack(pady=(10, 0))
         self.seed_entry = ctk.CTkEntry(ctrl_frame, textvariable=self.seed_var)
