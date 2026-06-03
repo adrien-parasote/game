@@ -31,6 +31,7 @@ Focuses on **deterministic, reproducible** output with strict color quantization
 | F2 | Quantization Engine | Downscale output to 32×32 using nearest-neighbor and snap colors to a strict hex palette | `phase-1-simple-tiles.md` |
 | F3 | Tiled Export | Generate `.tsx` XML and save `.png` to `output/` folder | `phase-1-simple-tiles.md` |
 | F4 | Desktop GUI | Window to select texture type, palette, seed, and trigger generation | `phase-1-simple-tiles.md` |
+| F5 | UI 3x3 Grid Preview | Display the generated 32x32 tile in a 3x3 grid at 1x scale (96x96 pixels total) to instantly verify edge seamlessness | `phase-1-simple-tiles.md` |
 
 ## 7. What We Are NOT Building (Exclusions)
 - No complex autotiling (15-tile or 47-tile rulesets).

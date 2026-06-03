@@ -25,7 +25,7 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Asset Creator - Procedural")
-        self.geometry("600x500")
+        self.geometry("600x600")
 
         self.textures = DEFAULT_TEXTURES
         self.palettes = DEFAULT_PALETTE
@@ -104,10 +104,16 @@ class App(ctk.CTk):
         self.lbl_status = ctk.CTkLabel(ctrl_frame, text="Ready.")
         self.lbl_status.pack()
 
-        self.preview_frame = ctk.CTkFrame(self, width=300, height=300)
+        self.preview_frame = ctk.CTkFrame(self, width=300, height=450)
         self.preview_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+        
+        ctk.CTkLabel(self.preview_frame, text="Single Tile (256x256)").pack(pady=(10, 0))
         self.lbl_preview = ctk.CTkLabel(self.preview_frame, text="No Preview")
-        self.lbl_preview.pack(expand=True)
+        self.lbl_preview.pack(pady=5, expand=True)
+
+        ctk.CTkLabel(self.preview_frame, text="3x3 Grid (96x96)").pack(pady=(10, 0))
+        self.lbl_preview_3x3 = ctk.CTkLabel(self.preview_frame, text="No 3x3 Preview")
+        self.lbl_preview_3x3.pack(pady=5, expand=True)
 
     def on_generate(self):
         self.btn_generate.configure(state="disabled")
@@ -141,14 +147,21 @@ class App(ctk.CTk):
             img_256 = img_32.resize((256, 256), Image.Resampling.NEAREST)
             ctk_img = ctk.CTkImage(light_image=img_256, dark_image=img_256, size=(256, 256))
 
-            self.after(0, self.on_generate_success, ctk_img)
+            img_96 = Image.new("RGB", (96, 96))
+            for y in range(3):
+                for x in range(3):
+                    img_96.paste(img_32, (x * 32, y * 32))
+            ctk_img_3x3 = ctk.CTkImage(light_image=img_96, dark_image=img_96, size=(96, 96))
+
+            self.after(0, self.on_generate_success, ctk_img, ctk_img_3x3)
         except PermissionError:
             self.after(0, self.on_generate_error, "Cannot save files: permission denied in output/.")
         except Exception as e:
             self.after(0, self.on_generate_error, f"Generation failed: {e}")
 
-    def on_generate_success(self, ctk_img):
+    def on_generate_success(self, ctk_img, ctk_img_3x3):
         self.lbl_preview.configure(image=ctk_img, text="")
+        self.lbl_preview_3x3.configure(image=ctk_img_3x3, text="")
         self.lbl_status.configure(text="Done.")
         self.btn_generate.configure(state="normal")
 
