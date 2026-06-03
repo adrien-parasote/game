@@ -18,6 +18,13 @@ Instead of splitting into multiple repositories, we will restructure the current
 3. `/assets` (contains all binary and visual assets: tiled, images, sound)
 4. `/scripts` (global repository automation, CI/CD)
 
+### Build System & Environments
+*(Updated via **ADR-010**)*
+While source and domain logic are isolated, the build and dependency environment is centralized at the root to avoid overhead:
+- A single global `Makefile` orchestrates commands (`make run-game`, `make run-tools`, `make test`).
+- A single global `requirements.txt` and `pyproject.toml` manages all dependencies.
+- A single global `venv` powers all domains.
+
 ### Git LFS Requirement
 **Decision:** We are NOT implementing Git LFS at this stage. The current `assets/` directory is 8.5MB, which is well within Git's native handling capabilities. Implementing LFS now would add unnecessary overhead. We will monitor the repository size and only consider LFS if the asset footprint grows significantly (e.g., > 500MB).
 
