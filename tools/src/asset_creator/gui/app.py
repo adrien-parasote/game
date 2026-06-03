@@ -797,7 +797,7 @@ def _build_center_panel() -> None:
         # ── Mode Selector ──
         with dpg.group(horizontal=True):
             dpg.add_text("Canvas")
-            dpg.add_spacer(width=12)
+            dpg.add_spacer(width=8)
             dpg.add_radio_button(
                 ["autotile", "standalone"],
                 default_value="autotile",
@@ -805,9 +805,9 @@ def _build_center_panel() -> None:
                 callback=_on_mode_change,
                 horizontal=True,
             )
-            dpg.add_spacer(width=12)
-            dpg.add_text("Left-Click = Paint, Right-Click = Erase", color=(130, 135, 140, 255))
-            dpg.add_spacer(width=12)
+            dpg.add_spacer(width=8)
+            dpg.add_text("LMB: Paint, RMB: Erase", color=(130, 135, 140, 255))
+            dpg.add_spacer(width=8)
             dpg.add_button(label="Clear", callback=_on_clear_canvas)
 
         dpg.add_spacer(height=4)
