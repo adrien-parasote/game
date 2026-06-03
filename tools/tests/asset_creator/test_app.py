@@ -14,3 +14,11 @@ def test_it_004_3x3_grid_preview():
     app = App()
     assert hasattr(app, "lbl_preview_3x3")
     assert app.lbl_preview_3x3 is not None
+
+@pytest.mark.integration
+def test_it_005_export_button_and_method():
+    app = App()
+    assert hasattr(app, "btn_export"), "App should have an export button"
+    assert hasattr(app, "on_export"), "App should have an on_export method"
+    # The 'btn_generate' should be renamed or we use btn_export
+

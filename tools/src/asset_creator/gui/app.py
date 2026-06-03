@@ -52,8 +52,17 @@ class App(ctk.CTk):
         self.seed_var = ctk.StringVar(value=str(initial_seed))
         self.scale_var = ctk.DoubleVar(value=4.0)
 
+        self._debounce_timer = None
+        self.current_img_32 = None
+
+        self.texture_var.trace_add("write", lambda *args: self.schedule_preview())
+        self.palette_var.trace_add("write", lambda *args: self.schedule_preview())
+        self.seed_var.trace_add("write", lambda *args: self.schedule_preview())
+        self.scale_var.trace_add("write", lambda *args: self.schedule_preview())
+
         self.setup_icon()
         self.setup_ui()
+        self.schedule_preview()
 
     def setup_icon(self):
         try:
@@ -98,8 +107,8 @@ class App(ctk.CTk):
         ctk.CTkLabel(ctrl_frame, text="Scale (1-10)").pack(pady=(10, 0))
         ctk.CTkSlider(ctrl_frame, variable=self.scale_var, from_=1, to=10, number_of_steps=9).pack()
 
-        self.btn_generate = ctk.CTkButton(ctrl_frame, text="Generate", command=self.on_generate)
-        self.btn_generate.pack(pady=20)
+        self.btn_export = ctk.CTkButton(ctrl_frame, text="Export to Tiled", command=self.on_export, state="disabled")
+        self.btn_export.pack(pady=20)
 
         self.lbl_status = ctk.CTkLabel(ctrl_frame, text="Ready.")
         self.lbl_status.pack()
@@ -115,9 +124,14 @@ class App(ctk.CTk):
         self.lbl_preview_3x3 = ctk.CTkLabel(self.preview_frame, text="No 3x3 Preview")
         self.lbl_preview_3x3.pack(pady=5, expand=True)
 
+    def schedule_preview(self):
+        if self._debounce_timer is not None:
+            self.after_cancel(self._debounce_timer)
+        self._debounce_timer = self.after(200, self.on_generate)
+
     def on_generate(self):
-        self.btn_generate.configure(state="disabled")
-        self.lbl_status.configure(text="Generating...")
+        self.btn_export.configure(state="disabled")
+        self.lbl_status.configure(text="Generating preview...")
 
         try:
             seed_val = int(self.seed_var.get())
@@ -141,8 +155,6 @@ class App(ctk.CTk):
         try:
             noise = generate(texture_type, seed, scale)
             img_32 = quantize(noise, palette)
-            tile_name = derive_tile_name(texture_type, seed)
-            export(img_32, tile_name)
 
             img_256 = img_32.resize((256, 256), Image.Resampling.NEAREST)
             ctk_img = ctk.CTkImage(light_image=img_256, dark_image=img_256, size=(256, 256))
@@ -153,21 +165,39 @@ class App(ctk.CTk):
                     img_96.paste(img_32, (x * 32, y * 32))
             ctk_img_3x3 = ctk.CTkImage(light_image=img_96, dark_image=img_96, size=(96, 96))
 
-            self.after(0, self.on_generate_success, ctk_img, ctk_img_3x3)
-        except PermissionError:
-            self.after(0, self.on_generate_error, "Cannot save files: permission denied in output/.")
+            self.after(0, self.on_generate_success, img_32, ctk_img, ctk_img_3x3)
         except Exception as e:
             self.after(0, self.on_generate_error, f"Generation failed: {e}")
 
-    def on_generate_success(self, ctk_img, ctk_img_3x3):
+    def on_generate_success(self, img_32, ctk_img, ctk_img_3x3):
+        self.current_img_32 = img_32
         self.lbl_preview.configure(image=ctk_img, text="")
         self.lbl_preview_3x3.configure(image=ctk_img_3x3, text="")
-        self.lbl_status.configure(text="Done.")
-        self.btn_generate.configure(state="normal")
+        self.lbl_status.configure(text="Ready to export.")
+        self.btn_export.configure(state="normal")
 
     def on_generate_error(self, msg):
         self.lbl_status.configure(text=msg)
-        self.btn_generate.configure(state="normal")
+        self.btn_export.configure(state="disabled")
+
+    def on_export(self):
+        if not self.current_img_32:
+            return
+        
+        texture_type = self.texture_var.get()
+        try:
+            seed_val = int(self.seed_var.get())
+        except ValueError:
+            seed_val = 0
+            
+        try:
+            tile_name = derive_tile_name(texture_type, seed_val)
+            export(self.current_img_32, tile_name)
+            self.lbl_status.configure(text=f"Exported to output/{tile_name}.png")
+        except PermissionError:
+            self.lbl_status.configure(text="Cannot save files: permission denied in output/.")
+        except Exception as e:
+            self.lbl_status.configure(text=f"Export failed: {e}")
 
 if __name__ == "__main__":
     app = App()

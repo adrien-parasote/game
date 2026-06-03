@@ -61,11 +61,13 @@ A local Python desktop application that generates seamless pixel art tiles using
   - Dropdown: **Texture Type** (Stone, Grass, Water, Dirt, Wood — loaded from `textures.json`)
   - Dropdown: **Palette** (loaded from `palettes.json`). Automatically syncs to match the selected Texture Type if a corresponding palette name exists.
   - Setup: Injects the application icon using `AppKit` when running on macOS.
-  - Slider + number input: **Seed** (integer 0–9999). At app startup, set to `random.randint(0, 9999)`. The user can change it via slider or text input. Once set, the seed persists across Generate clicks until the user changes it.
-  - Slider: **Scale** (noise frequency, 1–10, default 4)
-  - Button: **"Generate"** — disabled during generation, re-enabled on completion or error
-  - Preview panel: displays the 32×32 tile scaled to 256×256 using `image.resize((256, 256), Image.NEAREST)` — preserving sharp pixel art edges
-  - Status label: shows "Generating…" / "Done." / error message
+  - Slider + number input: **Seed** (integer 0–9999). At app startup, set to `random.randint(0, 9999)`. The user can change it via slider or text input. Modifying this triggers a live preview update (debounced).
+  - Slider: **Scale** (noise frequency, 1–10, default 4). Modifying this triggers a live preview update (debounced).
+  - Button: **"Export to Tiled"** — saves the currently previewed tile to the `output/` folder. Disabled during generation.
+  - Live Preview mechanism: Any change to inputs (Texture, Palette, Seed, Scale) triggers a background generation thread. Slider changes are debounced by 200ms to prevent lag. An initial generation is fired automatically at startup.
+  - Main Preview panel ("gros plan"): displays the 32×32 tile scaled to 256×256 using `image.resize((256, 256), Image.NEAREST)` — preserving sharp pixel art edges
+  - 3x3 Grid Preview panel: displays a 96x96 image composed of the generated 32x32 tile repeated 3 times horizontally and 3 times vertically at 1x scale. Used to instantly verify edge seamlessness.
+  - Status label: shows "Generating preview…" / "Ready to export." / "Exported to output/." / error message
 
 - **Generation Layer** (`generator.py`):
   - Input: `texture_type: str` (case-insensitive, lowercased upon receipt), `seed: int`, `scale: float`
@@ -85,8 +87,9 @@ A local Python desktop application that generates seamless pixel art tiles using
   - Derives `tile_name` from texture type + seed: `f"{texture_type}_{seed}"` (e.g., `"stone_42"`). Lowercased, spaces → underscores.
   - Creates `output/`: `os.makedirs('output', exist_ok=True)`
   - Saves PNG: `image.save(f"output/{tile_name}.png")`
-  - Generates and writes TSX: `f"output/{tile_name}.tsx"` (see template in TC-003)
+  - Generates and writes TSX: `f"output/{tile_name}.tsx"` (see template in TC-004)
   - Returns `(png_path, tsx_path)` tuple
+  - *Triggered solely by the "Export to Tiled" GUI button, using the `img_32` stored in the GUI state during the last Live Preview update.*
 
 ### Texture Algorithms
 
@@ -123,9 +126,10 @@ A local Python desktop application that generates seamless pixel art tiles using
 | `TC-005` | Unit | `tile_name` derivation. | `texture_type="stone"`, `seed=42` → `"stone_42"`. `texture_type="Dark Wood"`, `seed=7` → `"dark_wood_7"`. |
 | `TC-006` | Unit | Palette loader. | `palettes.json` with `{"PICO-8": ["#000000", "#1D2B53"]}` is parsed into `{"PICO-8": [(0,0,0), (29,43,83)]}`. |
 | `TC-007` | Unit | Determinism — same seed = same output. | `generate("stone", seed=42, scale=4)` called twice returns identical ndarrays. |
-| `IT-001` | Integration | GUI → Generation flow. | Clicking "Generate" disables the button, shows "Generating…", calls the generation pipeline, then re-enables the button and shows the tile in the preview panel. |
-| `IT-002` | Integration | End-to-end pipeline. | `generate("stone", 42, 4)` → `quantize(arr, pico8_palette)` → `export(img, "stone_42")` writes `output/stone_42.tsx` and `output/stone_42.png`. Both files exist. PNG is 32×32. |
-| `IT-003` | Integration | Write failure handling. | Mock `os.makedirs` raising `PermissionError` → GUI displays "Cannot save files: permission denied in output/." App does not crash. |
+| `IT-001` | Integration | GUI → Live Preview flow. | Changing the scale slider triggers the debounced generation pipeline, updates `self.current_img_32`, and shows the tile in the preview panels. |
+| `IT-002` | Integration | End-to-end pipeline (Preview + Export). | Slider triggers `generate(...)` → `quantize(...)` generating `img_32`. Clicking "Export to Tiled" triggers `export(img_32, "stone_42")` which writes `output/stone_42.tsx` and `output/stone_42.png`. |
+| `IT-003` | Integration | Write failure handling. | Mock `os.makedirs` raising `PermissionError` on Export click → GUI displays "Cannot save files: permission denied in output/." App does not crash. |
+| `IT-004` | Integration | 3x3 Grid Preview Generation | Upon successful generation, the GUI creates a 96x96 `PIL.Image` by repeating the 32x32 output 3x3 times, and sets it to the `lbl_preview_3x3` widget without scaling. |
 
 ## 4. Error Handling Matrix
 
