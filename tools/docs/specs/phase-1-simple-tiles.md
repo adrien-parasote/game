@@ -59,7 +59,8 @@ A local Python desktop application that generates seamless pixel art tiles using
 
 - **GUI Layer** (`app.py` — `CustomTkinter` root window):
   - Dropdown: **Texture Type** (Stone, Grass, Water, Dirt, Wood — loaded from `textures.json`)
-  - Dropdown: **Palette** (loaded from `palettes.json`)
+  - Dropdown: **Palette** (loaded from `palettes.json`). Automatically syncs to match the selected Texture Type if a corresponding palette name exists.
+  - Setup: Injects the application icon using `AppKit` when running on macOS.
   - Slider + number input: **Seed** (integer 0–9999). At app startup, set to `random.randint(0, 9999)`. The user can change it via slider or text input. Once set, the seed persists across Generate clicks until the user changes it.
   - Slider: **Scale** (noise frequency, 1–10, default 4)
   - Button: **"Generate"** — disabled during generation, re-enabled on completion or error
