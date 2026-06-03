@@ -28,3 +28,8 @@ app = AppKit.NSApplication.sharedApplication()
 icon = AppKit.NSImage.alloc().initWithContentsOfFile_("assets/icon.png")
 app.setApplicationIconImage_(icon)
 ```
+
+## L-TOOL-005 · 2026-06-03 · Universal · Procedural Generation Seamlessness
+**Contexte :** Génération procédurale de textures de sol (pixel art) nécessitant une répétition parfaite aux bords (seamless/tileable).
+**Outcome :** Le bruit de Perlin 2D standard génère des coutures (seams) visibles aux bords. La projection de l'espace 2D en coordonnées 4D `(cos(x)*r, sin(x)*r, cos(y)*r, sin(y)*r)` sur un tore garantit mathématiquement une continuité parfaite sans logique complexe de blending aux bords.
+**Pattern :** Pour toute texture procédurale devant boucler (seamless), utiliser la projection toroïdale 4D plutôt qu'un Perlin 2D classique.

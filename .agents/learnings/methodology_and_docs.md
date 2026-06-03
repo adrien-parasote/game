@@ -720,3 +720,12 @@ Activating the strict Ruff configuration (`"SIM", "PT", "RUF", "C90"`) instantly
 3. Explicitly allow exceptions via `# noqa: PLR0915` only when thoroughly justified (e.g., UI theme definitions) instead of raising the global limit.
 
 **Evidence:** Applied to monorepo urbanization on 2026-05-31. Caught 50+ lines violation in `theme.py` immediately. Caught >300 docstring ambiguous unicode characters (`×` vs `x`).
+
+### L-DOC-013 · 2026-06-03 · U · Perfect
+**Urbanisation de monorepo multi-domaines : Centralisation de l'infrastructure de build**
+
+**Contexte :** Un monorepo contenant un domaine jeu (`game/`) et un domaine outillage (`tools/`), avec des `Makefile` et environnements virtuels séparés.
+**Outcome :** La fragmentation de l'infrastructure de build crée de la friction (context switching, doublons de dépendances, scripts redondants). Bien que le code source et les tests des domaines doivent rester strictement isolés, l'infrastructure d'exécution et de tooling doit être unifiée.
+**Pattern :** Déplacer le `Makefile` et le `requirements.txt` à la racine du monorepo. Utiliser un seul `venv` global. Exposer des commandes de build préfixées par domaine (e.g., `make run-game`, `make run-tools`, `make test-all`).
+
+**Evidence :** Consolidation de 3 Makefiles et 2 venvs en une seule infrastructure racine. 1163/1163 tests passent avec une seule commande `make test` couvrant les deux domaines.
