@@ -74,6 +74,7 @@ Replace the Pygame-based read-only preview with an interactive Dear PyGui GUI ap
 |---|---|---|
 | CLI command | `python -m tools.asset_creator gui` | This spec § "Step 2" |
 | Python function | `run_gui()` | This spec § "Step 2" |
+| Python method | `AppState.to_texture_config() -> TextureParams` | This spec § "Modules & Responsibilities" item 3. Maps all AppState slider fields — including `warp_scale` and `warp_strength` (per [terrain_generation_core_spec.md](./terrain_generation_core_spec.md)) — to a `TextureParams` instance. |
 
 ### External Invocations
 
@@ -157,8 +158,10 @@ AppState (frozen dataclass)
 1. **Bitmask Engine (`core/minimap.py`)**: Computes 8-bit Wang blob bitmasks for 47-tile autotiles, independent of any UI framework.
 2. **GUI Application Shell (`gui/app.py`)**: Main Dear PyGui window containing the left control panel, center canvas, and right history panel. Includes the **Eraser Mode** toggle switch under the drawing tool widgets.
 3. **Application State (`gui/state.py`)**: Centralized `AppState` dataclass managing UI inputs, sliders, tool selections (Paint/Eraser), and preset loading.
+
+   **State update pattern:** Use `dataclasses.replace(state, field=new_value)` exclusively for all slider callbacks. Do NOT use `dataclasses.asdict()` — it fails for nested dataclass fields (`DetailConfig`, `EdgeConfig`). Each slider callback produces a new frozen `AppState` instance via `replace()`.
 4. **Preview Utilities (`gui/preview.py`)**: Conversion pipeline from PIL RGBA images to DPG raw textures.
-5. **Canvas Data (`gui/canvas.py`)**: Grid state and cell interaction logic for the center paint area. Manages coordinates and state maps. Supports clearing/erasing painted cells: when **Eraser Mode** is active, click/drag operations set cell state to `False` (empty). Empty grid cells are rendered visually using a standard 32x32 transparent checkered texture to represent empty canvas slots. **Drag erase is continuous:** holding the left mouse button and moving over cells erases them sequentially (same `mouse_drag` callback as Paint mode, gated by active tool state). Test TC-ERASE-001: single click in Eraser Mode on cell (1,1) sets `grid[1][1] = False`. Test TC-ERASE-002: drag from (0,0) to (2,0) in Eraser Mode → `grid[0][0]`, `grid[0][1]`, `grid[0][2]` all `False`.
+5. **Canvas Data (`gui/canvas.py`)**: Grid state and cell interaction logic for the center paint area. Manages coordinates and state maps. Supports clearing/erasing painted cells: when **Eraser Mode** is active, click/drag operations set cell state to `False` (empty). Empty grid cells are rendered visually using a standard 32x32 transparent checkered texture to represent empty canvas slots. **Drag erase is continuous:** holding the left mouse button and moving over cells erases them sequentially (same `mouse_drag` callback as Paint mode, gated by active tool state). **Tool state is read at each drag event (not locked at drag-start):** a tool switch mid-drag takes effect immediately on the next drag event. Test TC-ERASE-001: single click in Eraser Mode on cell (1,1) sets `grid[1][1] = False`. Test TC-ERASE-002: drag from (0,0) to (2,0) in Eraser Mode → `grid[0][0]`, `grid[0][1]`, `grid[0][2]` all `False`.
 6. **Generation Pipeline (`gui/pipeline.py`)**: Combines settings and grid state to run the texture assembly and export flow.
 
 ## Error Handling Matrix
@@ -237,7 +240,7 @@ tests/
 
 | ID | Test | Input | Expected |
 |----|------|-------|----------|
-| TC-009 | `state_from_preset("grass")` loads correct values | Grass preset | `state.scale == 0.12`, `state.detail_type == "grass_blades"` |
+| TC-009 | `state_from_preset("grass")` loads correct values | Grass preset | `state.scale == 0.12`, `state.detail_type == "grass_blades"`. Expected values sourced from `tools/asset_creator/config/terrain_presets.yaml` grass preset — update this test if the YAML changes. |
 | TC-010 | `to_texture_config()` produces valid TextureConfig | Default AppState | TextureConfig with matching fields |
 | TC-011 | `to_detail_config()` produces valid DetailConfig | Default AppState | DetailConfig with matching fields |
 | TC-012 | `to_edge_config()` produces valid EdgeConfig | Default AppState | EdgeConfig with matching fields |
@@ -262,7 +265,16 @@ tests/
 | IT-002 | Canvas autotile bitmask → tile selection | Paint 3×3 block, check center cell | Center cell bitmask=255, tile index matches full fill |
 | IT-003 | Preset switch resets state correctly | Switch grass → sand → grass | State matches grass preset values exactly |
 | IT-004 | Export produces valid PNG + TSX | Generate + export to temp dir | PNG exists, TSX valid XML, `tilecount=49` (49 slots including transparent pads 41 and 48), exactly 47 wangtile entries |
+| IT-005 | `to_texture_config()` maps warp fields | Build AppState with `warp_scale=0.1`, `warp_strength=5.0`, call `to_texture_config()` | Returned `TextureParams` has `warp_scale=0.1`, `warp_strength=5.0` |
 | IT-006 | Full data flow: state → pipeline → canvas tiles | Build state, regenerate, verify canvas tiles update | All filled canvas cells show correct Wang tile for their bitmask |
 
 ---
 
+
+### macOS Native Icon Support
+When running on macOS, `gui/app.py` dynamically injects the application icon (`assets/icon.png`) into the macOS Dock using the `AppKit.NSApplication` API (via the `pyobjc-framework-Cocoa` package). This overrides the default Python rocket icon.
+
+**Platform guard:** Wrap the AppKit import and injection call with `if sys.platform == "darwin":`. On non-macOS platforms (Linux, Windows), skip the injection silently — no error, no log message. A missing `pyobjc-framework-Cocoa` on macOS should also be caught with a `try/except ImportError` and silently skipped.
+
+### UI Language Constraint
+**Exception to Global Translation Rules:** The GUI interface of `asset_creator` MUST strictly remain in French. While the internal code, variables, and comments follow English conventions, all user-facing labels in `gui/app.py` are strictly defined in French as per user request.

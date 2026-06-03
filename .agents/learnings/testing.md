@@ -1090,3 +1090,19 @@ game/src/engine/*.py
 
 *Last updated: 2026-05-31 — L-TEST-019, A-TDD-001 from calibration test-retrofit + .tddexempt glob session.*
 
+---
+
+### A-TEST-042 · 2026-06-03 · U · Minor Rework
+**Tests d'intégration assumant des dimensions arbitraires (grille vs bande)**
+
+Un test d'intégration qui simule la génération d'un tileset complet et vérifie la taille du résultat échouera si l'assertion hardcode une grille (ex: 8 colonnes × 6 lignes) au lieu du format final produit par l'assembleur réel de l'application (ex: une bande 1x47).
+
+**Conséquence :** Le test échoue systématiquement (`(1504, 32) != (256, 192)`) même si la génération est parfaite.
+
+**Règle :** Ne jamais coder en dur des hypothèses structurelles arbitraires dans les tests d'intégration. Si l'application génère une bande 1D (ex: 47 tiles), l'assertion doit refléter explicitement `(32 * 47, 32)`. Les tests doivent s'aligner strictement avec les spécifications de domaine, pas avec des hypothèses visuelles a priori.
+
+**Evidence :** L'intégration de Domain Warping a échoué sur `test_full_pipeline_with_warp` (assertion `assert tileset.size == (32 * 8, 32 * 6)`) alors que `assemble_tileset` retournait une bande 1x47 `(1504, 32)`.
+
+---
+
+*Last updated: 2026-06-03 — added A-TEST-042 from Domain Warping implementation session.*

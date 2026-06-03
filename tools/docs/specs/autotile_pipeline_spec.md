@@ -31,9 +31,8 @@ The 16-tile edge-only script generates artifacts at **diagonal corners** because
 |-----------|--------|-------------|
 | SUBTILE | 16 | Half-tile in px |
 | TILE_SIZE | 32 | Tile in px |
-| BLOB_COUNT | 47 | Number of blob tiles (49 slots, 2 empty) |
-| BLOB_BITMASKS | tuple | 47 valid terrain bitmask values |
-| BLOB_COMBINATIONS | list | 49 quadrant combinations mapping to source sub-tiles |
+| BLOB_COUNT | 47 | Number of active blob tiles (49 total slots, 2 transparent pads) |
+| BLOB_BITMASKS | tuple | 47 valid terrain bitmask values (see below) |
 
 ---
 
@@ -72,6 +71,27 @@ The 8-bit bitmask encodes neighbors: `NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, S
 
 **Blob Rule:** If a cardinal neighbor (N/E/S/W) is absent, its adjacent diagonals are ignored when constructing the sub-tile to prevent "tearing".
 The index is simply the position in `BLOB_BITMASKS`. There are exactly 49 slots per frame, including empty transparent padding at slots 41 and 48.
+
+### Bitmask Bit-Position Reference
+
+| Direction | Bit Value | Bit Position (shift) |
+|-----------|-----------|---------------------|
+| NW | 1 | `>> 0` |
+| N | 2 | `>> 1` |
+| NE | 4 | `>> 2` |
+| W | 8 | `>> 3` |
+| E | 16 | `>> 4` |
+| SW | 32 | `>> 5` |
+| S | 64 | `>> 6` |
+| SE | 128 | `>> 7` |
+
+> Cross-reference: the `_blob_wang_id()` function (below) uses these exact bit positions. The encoding table and the function must remain in sync.
+
+### `_quarter(bitmask: int, corner: str) -> tuple[int, int]`
+
+Returns the `(col, row)` coordinates (in 16×16 sub-tile units) within the 96×128 source image for the given corner (`"TL"`, `"TR"`, `"BL"`, `"BR"`) of a tile with the given bitmask.
+
+**Blob Rule enforcement:** If a cardinal neighbor is absent, its adjacent diagonal bits are treated as 0 when selecting the sub-tile quarter, preventing tearing artifacts at tile edges.
 
 ---
 

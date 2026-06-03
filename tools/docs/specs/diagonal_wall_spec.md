@@ -36,7 +36,7 @@
 | # | Assumption | Risk | Validation |
 |---|---|---|---|
 | 1 | $32\times32$ Grid Alignment | Low | [SHOW] verified via API call to `PIL` size check |
-| 2 | Height scaling formula is $H + 32$ | Low | [SHOW] verified via CLI call to `pytest` on prototype |
+| 2 | Height scaling formula is $H + W$ where $W$ is the source image width | Low | [SHOW] verified via CLI call to `pytest` on prototype. NOTE: assumption 2 in strategic blueprint used "H + 32" — this is only correct when W=32. The formula is H+W in general. |
 | 3 | Pillow is installed in the system | Low | [SHOW] verified via CLI call to `python3` import check |
 
 ---
@@ -111,7 +111,7 @@ The engine reads a flat wall source image of width $W$ and height $H$. It segmen
   The unshifted top base and shadow effects are handled as follows:
   - **Top Cap Extraction:** The top base (the flat top surface of the wall, the top $32\text{ px}$ of the source) is sheared using the **SAME column-by-column formula as the wall face** — column $x$ of the cap is placed at y-offset $x$ (for `nw-se`). The cap is NOT kept flat/unshifted. This causes the top edge to form a diagonal slope that visually matches the shear slope of the wall face below it, preventing a seam.
   - **Sides:** The vertical side columns are sheared strictly matching the translation formula above.
-  - **Shadow Layer:** A dark semi-transparent overlay (ambient occlusion shadow) is compiled at the base coordinates of the sheared columns to project depth along the floor tiles.
+  - **Shadow Layer:** A dark semi-transparent overlay (ambient occlusion shadow) with RGBA color `(0, 0, 0, 80)` is applied at the bottom base of the sheared wall. For each column $x$, the shadow occupies a 4-pixel tall strip immediately below the last sheared wall pixel (rows `[H + x, H + x + 4)` for `nw-se`, clamped to canvas bounds). The shadow is composed with `Image.alpha_composite` to blend with the floor.
 
 ### 5.3 Tiling Layout
 The generated PNG is a single vertical strip of width $W$. For a $32$-pixel wide grid:
@@ -179,6 +179,7 @@ pyproject.toml                        # [CONFIG] Python project settings
 * **UT-003 (Lossless Dimensions):** Test that a flat input of width $W$ and height $H$ correctly produces an output canvas of width $W$ and height $H + W$. **Note:** The canvas height is $H + W$ (not $H + W - 1$) — one extra empty row of padding is intentional to provide a clean rectangular bounding box for Tiled import. The last sheared pixel occupies row $H + W - 2$.
 * **UT-004 (Column Shifting NW-SE):** Verify that the column $x$ of the source is pasted at Y-offset $x$ in the output image (pixel-by-pixel color verification).
 * **UT-005 (Column Shifting NE-SW):** Verify that the column $x$ of the source is pasted at Y-offset $(W - 1) - x$ in the output image.
+* **UT-006 (Top Cap Shear — nw-se):** For a `nw-se` shear, verify that the pixel at `(x=16, y=0)` in the SOURCE image appears at `(x=16, y=16)` in the OUTPUT image (cap column 16 is shifted down by 16 pixels), and that the pixel at `(x=0, y=0)` remains at `(x=0, y=0)` (column 0 has zero shift). This confirms the top cap is sheared, not flat.
 
 ### Integration Tests (Minimum 3)
 * **IT-001 (Batch Directory Processing):** Verify that running the script with `--input-dir` containing multiple flat assets successfully batch converts all files in one execution.

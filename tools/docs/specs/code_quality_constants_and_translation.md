@@ -84,8 +84,10 @@ tests/
 | TC-002 | core/subtile | Subtile Constants usage | Zero hardcoded border coefficients exist |
 | TC-003 | core/texture | Texture Constants usage | Noise remains **bit-for-bit** identical to original output (verified with `numpy.array_equal`, not `allclose`) |
 | TC-004 | gui/state | State Defaults integration | Directories and color variables default to constants |
-| TC-005 | core/subtile | Translation complete | No accent French characters or words found |
-| IT-001 | full | Clean test suite pass | 361/361 passes |
+| TC-005 | core/subtile | Translation complete | No French comments in `tools/asset_creator/core/`. Note: user-facing labels in `gui/app.py` are excluded (French mandatory per GUI spec). |
+| TC-006 | core/constants | Float Precision | For each float constant, `ast.literal_eval(repr(constant)) == original_value` using Python `==` (no tolerance) |
+| TC-007 | core/constants | Leaf module (no package imports) | Parsing `tools/asset_creator/core/constants.py` with `ast` reveals zero `ImportFrom` nodes referencing `tools.asset_creator` package |
+| IT-001 | full | Clean test suite pass | All existing tests pass green. Count ≥ 361 (exact number grows as new feature specs add tests). |
 | IT-002 | preview | Pygame preview module compile | Works cleanly |
 | IT-003 | pipeline | Export integration verify | Export succeeds |
 
@@ -100,16 +102,22 @@ Constants include: grid constraints, noise defaults, border effects, dithering t
 
 **Float constant precision rule:** All floating-point constants must be extracted as their **exact source code string representation** — do not round or truncate. Verify by parsing the original file with `ast.parse`, extracting each `ast.Constant` node's `.value`, and asserting `original_value == new_constant` using Python `==` (bitwise identical, no tolerance). TC-003 must use `numpy.array_equal` (not `numpy.allclose`) to confirm generated textures are bit-for-bit identical before and after extraction.
 
-### F-TOOL-QUAL-02: French Comments & Strings Translation
+### F-TOOL-QUAL-02: French Comments Translation
 
-A search will be conducted to translate any French comments or strings across the `tools/asset_creator/` codebase (including the GUI code if any exist).
-- *Status*: All comments currently in python files will be audited and converted to English.
+Translate French **code comments** (`# ...`) to English across `tools/asset_creator/core/` and `tools/asset_creator/gui/` modules.
+
+**⛔ EXCEPTION — `gui/app.py` user-facing labels:** Per [asset_creator_spec.md](./asset_creator_spec.md#L1) § "UI Language Constraint", all user-visible widget labels in `gui/app.py` MUST remain in French. Do NOT translate them.
+
+Scope:
+- ✅ Code comments in any `.py` file under `tools/asset_creator/` (except gui/app.py UI strings)
+- ✅ Log strings not shown directly to the user
+- ❌ User-facing widget labels in `gui/app.py` — French is mandatory per the GUI spec
 
 ### F-TOOL-QUAL-03: Optimization & Verification Loop
 
 - Code structure will be checked for unnecessary allocations or loop overheads.
 - Clean up of imports and sorting where needed to conform to the coding standard.
-- The 361 tests in `tests/tools/asset_creator/` will act as our safety net.
+- The tests in `tests/tools/asset_creator/` will act as our safety net (≥ 361 tests — count grows as new specs add tests).
 
 ---
 
