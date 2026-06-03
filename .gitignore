@@ -85,3 +85,8 @@ logs/
 # Temporary isolated asset scripts workspace
 tools/input_*
 tools/output_*
+
+# ==============================================================================
+# 📚 Game Wiki (Nested but isolated repo)
+# ==============================================================================
+game-wiki/
