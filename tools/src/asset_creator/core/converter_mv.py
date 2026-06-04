@@ -84,19 +84,19 @@ def _get_quadrant(
 
 def _pick_tl(n: bool, w: bool, nw: bool, iso: bool) -> tuple[int, int, int, int]:
     """Select source quadrant for the top-left corner of an output tile."""
-    if n and w and nw:
-        return (1, 0, 0, 0)   # inner fill — tile B TL
+    if n and w:
+        return (1, 0, 0, 0)   # inner fill / concave corner — tile B TL
     if n:
         return (0, 2, 1, 0)   # N edge — tile E TR
     if w:
         return (0, 1, 0, 0)   # W edge — tile C TL
-    return (0, 0, 0, 0)       # outer corner — tile A TL (isolated or N+W no diag)
+    return (0, 0, 0, 0)       # outer corner — tile A TL
 
 
 def _pick_tr(n: bool, e: bool, ne: bool, iso: bool) -> tuple[int, int, int, int]:
     """Select source quadrant for the top-right corner of an output tile."""
-    if n and e and ne:
-        return (1, 0, 1, 0)   # inner fill — tile B TR
+    if n and e:
+        return (1, 0, 1, 0)   # inner fill / concave corner — tile B TR
     if n:
         return (1, 2, 0, 0)   # N edge — tile F TL
     if e:
@@ -106,8 +106,8 @@ def _pick_tr(n: bool, e: bool, ne: bool, iso: bool) -> tuple[int, int, int, int]
 
 def _pick_bl(s: bool, w: bool, sw: bool, iso: bool) -> tuple[int, int, int, int]:
     """Select source quadrant for the bottom-left corner of an output tile."""
-    if s and w and sw:
-        return (1, 0, 0, 1)   # inner fill — tile B BL
+    if s and w:
+        return (1, 0, 0, 1)   # inner fill / concave corner — tile B BL
     if s:
         return (0, 2, 1, 1)   # S edge — tile E BR
     if w:
@@ -117,8 +117,8 @@ def _pick_bl(s: bool, w: bool, sw: bool, iso: bool) -> tuple[int, int, int, int]
 
 def _pick_br(s: bool, e: bool, se: bool, iso: bool) -> tuple[int, int, int, int]:
     """Select source quadrant for the bottom-right corner of an output tile."""
-    if s and e and se:
-        return (1, 0, 1, 1)   # inner fill — tile B BR
+    if s and e:
+        return (1, 0, 1, 1)   # inner fill / concave corner — tile B BR
     if s:
         return (1, 2, 0, 1)   # S edge — tile F BL
     if e:
