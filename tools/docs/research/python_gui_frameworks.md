@@ -1,7 +1,7 @@
 # Research: Python GUI Frameworks for Tileset/Texture Generation Tool
 
 > **Date:** 2026-05-31
-> **Context:** Asset Creator Tool (`tools/asset_creator/`) currently uses Pygame-CE for preview-only display. Need a proper GUI toolkit with sliders, buttons, file browsers, and real-time PIL image preview for a 32×32 pixel art tileset generator.
+> **Context:** Asset Convertor Tool (`tools/asset_convertor/`) currently uses Pygame-CE for preview-only display. Need a proper GUI toolkit with sliders, buttons, file browsers, and real-time PIL image preview for a 32×32 pixel art tileset generator.
 > **Decision:** Adopt / Adapt / Build-New
 
 ---
@@ -334,7 +334,7 @@ Legend: ⭐ = basic, ⭐⭐ = good, ⭐⭐⭐ = excellent, ❌ = inadequate
 
 ## Migration Path from Pygame Preview
 
-The current `tools/asset_creator/preview/pygame_preview.py` provides:
+The current `tools/asset_convertor/preview/pygame_preview.py` provides:
 1. PIL Image → Pygame Surface conversion
 2. Tileset strip display
 3. Random minimap preview

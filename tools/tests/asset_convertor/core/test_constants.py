@@ -1,5 +1,5 @@
 import pytest
-from asset_creator.core.constants import (
+from asset_convertor.core.constants import (
     TUFT_ARCH,
     TUFT_CRESCENT_1,
     TUFT_CRESCENT_2,
@@ -27,7 +27,7 @@ def test_tc004_tuft_matrices_valid():
 
 def test_tc001_constants_pruned():
     """TC-001: Check that unused constants are pruned from constants.py."""
-    import asset_creator.core.constants as consts
+    import asset_convertor.core.constants as consts
 
     # These constants should be pruned
     pruned_vars = [
@@ -54,8 +54,8 @@ def test_tc004_no_french_developer_comments():
 
     tools_src = Path(__file__).parents[3] / "src"
     files_to_check = [
-        tools_src / "asset_creator" / "core" / "converter_xp.py",
-        tools_src / "asset_creator" / "gui" / "app.py"
+        tools_src / "asset_convertor" / "core" / "converter_xp.py",
+        tools_src / "asset_convertor" / "gui" / "app.py"
     ]
 
     # Look for common French comment words or accents

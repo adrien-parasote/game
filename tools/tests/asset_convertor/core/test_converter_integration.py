@@ -25,8 +25,8 @@ SAMPLE_MV_48 = SAMPLES_DIR / "sample_mv_48px.png"
 @pytest.mark.integration
 @pytest.mark.skipif(not SAMPLE_XP.exists(), reason="sample_xp.png not found")
 def test_it001_xp_full_pipeline():
-    from asset_creator.core.converter_xp import convert_xp
-    from asset_creator.exporters.tsx_generator import export
+    from asset_convertor.core.converter_xp import convert_xp
+    from asset_convertor.exporters.tsx_generator import export
 
     img = Image.open(SAMPLE_XP).convert("RGBA")
     tiles = convert_xp(img)
@@ -53,8 +53,8 @@ def test_it001_xp_full_pipeline():
 @pytest.mark.integration
 @pytest.mark.skipif(not SAMPLE_MV.exists(), reason="sample_mv_32px.png not found")
 def test_it002_mv_full_pipeline():
-    from asset_creator.core.converter_mv import convert_mv
-    from asset_creator.exporters.tsx_generator import export
+    from asset_convertor.core.converter_mv import convert_mv
+    from asset_convertor.exporters.tsx_generator import export
 
     img = Image.open(SAMPLE_MV).convert("RGBA")
     tiles = convert_mv(img)
@@ -79,7 +79,7 @@ def test_it002_mv_full_pipeline():
 @pytest.mark.integration
 @pytest.mark.skipif(not SAMPLE_XP.exists(), reason="sample_xp.png not found")
 def test_it003_xp_all_tiles_non_empty():
-    from asset_creator.core.converter_xp import convert_xp
+    from asset_convertor.core.converter_xp import convert_xp
 
     img = Image.open(SAMPLE_XP).convert("RGBA")
     tiles = convert_xp(img)
@@ -98,7 +98,7 @@ def test_it003_xp_all_tiles_non_empty():
 @pytest.mark.skipif(not SAMPLE_XP.exists(), reason="sample_xp.png not found")
 def test_it004_canvas_pattern_renders():
     """Verify that 25 cells can be assembled from the 47 output tiles without error."""
-    from asset_creator.core.converter_xp import BLOB_BITMASKS, convert_xp
+    from asset_convertor.core.converter_xp import BLOB_BITMASKS, convert_xp
 
     img = Image.open(SAMPLE_XP).convert("RGBA")
     tiles = convert_xp(img)
@@ -132,8 +132,8 @@ def test_it004_canvas_pattern_renders():
 @pytest.mark.integration
 @pytest.mark.skipif(not SAMPLE_XP.exists(), reason="sample_xp.png not found")
 def test_it005_tsx_schema_valid():
-    from asset_creator.core.converter_xp import convert_xp
-    from asset_creator.exporters.tsx_generator import export
+    from asset_convertor.core.converter_xp import convert_xp
+    from asset_convertor.exporters.tsx_generator import export
 
     img = Image.open(SAMPLE_XP).convert("RGBA")
     tiles = convert_xp(img)
@@ -156,8 +156,8 @@ def test_it005_tsx_schema_valid():
 @pytest.mark.integration
 @pytest.mark.skipif(not SAMPLE_XP.exists(), reason="sample_xp.png not found")
 def test_it006_tsx_wangtile_tileids_match_order():
-    from asset_creator.core.converter_xp import convert_xp
-    from asset_creator.exporters.tsx_generator import export
+    from asset_convertor.core.converter_xp import convert_xp
+    from asset_convertor.exporters.tsx_generator import export
 
     img = Image.open(SAMPLE_XP).convert("RGBA")
     tiles = convert_xp(img)
@@ -178,8 +178,8 @@ def test_it006_tsx_wangtile_tileids_match_order():
 @pytest.mark.integration
 @pytest.mark.skipif(not SAMPLE_MV_48.exists(), reason="sample_mv_48px.png not found")
 def test_it007_mv48_full_pipeline():
-    from asset_creator.core.converter_mv import convert_mv, detect_tile_size
-    from asset_creator.exporters.tsx_generator import export
+    from asset_convertor.core.converter_mv import convert_mv, detect_tile_size
+    from asset_convertor.exporters.tsx_generator import export
 
     img = Image.open(SAMPLE_MV_48).convert("RGBA")
     assert detect_tile_size(img) == 48, "sample_mv_48px.png should auto-detect as 48px"
@@ -204,7 +204,7 @@ def test_it007_mv48_full_pipeline():
 @pytest.mark.integration
 @pytest.mark.skipif(not SAMPLE_MV_48.exists(), reason="sample_mv_48px.png not found")
 def test_it008_mv48_tiles_normalized_to_32():
-    from asset_creator.core.converter_mv import convert_mv
+    from asset_convertor.core.converter_mv import convert_mv
 
     img = Image.open(SAMPLE_MV_48).convert("RGBA")
     tiles = convert_mv(img)
@@ -221,7 +221,7 @@ def test_it008_mv48_tiles_normalized_to_32():
 @pytest.mark.integration
 @pytest.mark.skipif(not SAMPLE_MV_48.exists(), reason="sample_mv_48px.png not found")
 def test_it009_mv48_all_tiles_non_empty():
-    from asset_creator.core.converter_mv import convert_mv
+    from asset_convertor.core.converter_mv import convert_mv
 
     img = Image.open(SAMPLE_MV_48).convert("RGBA")
     tiles = convert_mv(img)

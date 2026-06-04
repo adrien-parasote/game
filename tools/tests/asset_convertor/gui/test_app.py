@@ -1,5 +1,5 @@
 """
-Tests for the new autotile converter GUI (asset_creator.gui.app.App).
+Tests for the new autotile converter GUI (asset_convertor.gui.app.App).
 
 Replaces old procedural generator GUI tests which tested
 lbl_preview_3x3, palettes, etc. — no longer valid after the
@@ -7,7 +7,7 @@ app.py replacement documented in autotile_converter_spec.md.
 """
 
 import pytest
-from asset_creator.gui.app import App, AppState
+from asset_convertor.gui.app import App, AppState
 
 
 @pytest.mark.integration

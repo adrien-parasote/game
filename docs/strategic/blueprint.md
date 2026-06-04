@@ -25,7 +25,7 @@ This blueprint outlines the strategic alignment, boundaries, and validation requ
 
 | Decision | Options Considered | Chosen | Rationale |
 |----------|-------------------|--------|-----------|
-| **Constants Centralization Scope** | (A) Single global constants file for the whole `tools/` directory.<br>(B) Submodule-specific constants (e.g. `asset_creator/core/constants.py` and `calibration/constants.py`). | **Chosen: Option (B)** | Modular cohesion. `asset_creator` and `calibration` are independent utilities; sharing a single file would create unnecessary coupling. |
+| **Constants Centralization Scope** | (A) Single global constants file for the whole `tools/` directory.<br>(B) Submodule-specific constants (e.g. `asset_convertor/core/constants.py` and `calibration/constants.py`). | **Chosen: Option (B)** | Modular cohesion. `asset_convertor` and `calibration` are independent utilities; sharing a single file would create unnecessary coupling. |
 | **Developer Comments vs. UI strings** | (A) Translate comments and UI strings (buttons, labels).<br>(B) Translate only developer comments and docstrings. | **Chosen: Option (B)** | Preserves the localized runtime experience for users running the GUI, whilst aligning all developer-facing documentation to English. |
 
 ## Exclusions & Boundaries
@@ -39,7 +39,7 @@ This blueprint outlines the strategic alignment, boundaries, and validation requ
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|-----------|
-| **Breaking External Imports** | Low | Medium | Run a workspace-wide grep search for imports from `tools/src/asset_creator/core/constants.py` before pruning any constant. |
+| **Breaking External Imports** | Low | Medium | Run a workspace-wide grep search for imports from `tools/src/asset_convertor/core/constants.py` before pruning any constant. |
 | **Breaking Autotile Bitmask Calculations** | Medium | High | Rely on the 100% coverage of autotile conversion unit tests (`test_converter_xp.py` and `test_converter_mv.py`). |
 | **Tkinter GUI Import Regressions** | Low | High | Run GUI verification tests (`test_app.py`) and perform manual boot check of Tkinter interface if needed. |
 

@@ -1,5 +1,5 @@
 import numpy as np
-from asset_creator.core.generator import generate_texture
+from asset_convertor.core.generator import generate_texture
 
 
 def test_generate_grass_valid():
@@ -36,7 +36,7 @@ def test_tc006_crescent_values():
 
 def test_it002_toroidal_wrapping():
     """IT-002: Verify toroidal wrapping correctly handles a 6x6 (or 5x5) tuft placed at the edge."""
-    from asset_creator.core.generator import apply_composite_stamp
+    from asset_convertor.core.generator import apply_composite_stamp
     # create a small grid
     grid = np.zeros((32, 32), dtype=int)
     # mock a 5x5 crescent tuft

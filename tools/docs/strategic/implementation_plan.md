@@ -6,7 +6,7 @@ Le but de cette mise à jour est de séparer la génération visuelle (Live Prev
 
 La logique actuelle (`on_generate`) mélange la génération de l'image en RAM et l'exportation sur le disque. Nous allons séparer ces deux responsabilités.
 
-### `tools/src/asset_creator/gui/app.py`
+### `tools/src/asset_convertor/gui/app.py`
 
 - **[MODIFY]** `app.py`
   - Renommer le bouton "Generate" en **"Export to Tiled"**.

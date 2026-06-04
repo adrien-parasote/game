@@ -1,4 +1,4 @@
-from asset_creator.gui.app import App
+from asset_convertor.gui.app import App
 
 
 def main():

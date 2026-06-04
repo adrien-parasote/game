@@ -1,5 +1,5 @@
 """
-asset_creator.exporters.tsx_generator
+asset_convertor.exporters.tsx_generator
 
 Assemble the 47-tile blob sprite sheet PNG and generate the Tiled TSX file.
 
@@ -12,7 +12,7 @@ import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from asset_creator.core.converter_xp import BLOB_BITMASKS
+from asset_convertor.core.converter_xp import BLOB_BITMASKS
 from PIL import Image
 
 # ---------------------------------------------------------------------------

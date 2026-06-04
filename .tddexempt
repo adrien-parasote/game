@@ -5,16 +5,16 @@
 # Ce projet utilise une architecture multi-repo avec des tests organisés
 # par domaine plutôt qu'en miroir exact du chemin source.
 #
-# tdd_check.py attend un miroir exact (ex: tests/tools/src/asset_creator/core/)
-# mais les tests sont regroupés par domaine (ex: tools/tests/asset_creator/).
+# tdd_check.py attend un miroir exact (ex: tests/tools/src/asset_convertor/core/)
+# mais les tests sont regroupés par domaine (ex: tools/tests/asset_convertor/).
 # C'est une architecture Python standard — on documente l'écart ici.
 #
 # Vérification réelle de la couverture : pytest --cov (voir Makefile)
 # ==============================================================================
 
 # tools/src/ — couverts par tools/tests/**
-tools/src/asset_creator/*.py
-tools/src/asset_creator/**/*.py
+tools/src/asset_convertor/*.py
+tools/src/asset_convertor/**/*.py
 tools/src/autotiles/*.py
 tools/src/calibration/*.py
 

@@ -51,8 +51,8 @@ N/A — this spec only modifies internal procedural logic and invokes no externa
 ### Tracked Concepts
 | Concept | Status in this spec | Mentioned in |
 |---|---|---|
-| TextureParams | Not modified, but its values affect density | `asset_creator_spec.md` |
-| Tuft Kitbashing | Enhanced from 4-tone 3x3/4x5 to 5-tone 5x5 shapes | `asset_creator_spec.md` |
+| TextureParams | Not modified, but its values affect density | `asset_convertor_spec.md` |
+| Tuft Kitbashing | Enhanced from 4-tone 3x3/4x5 to 5-tone 5x5 shapes | `asset_convertor_spec.md` |
 
 ## Assumptions
 
@@ -67,7 +67,7 @@ N/A — this spec only modifies internal procedural logic and invokes no externa
 
 ## 1. Implementation Plan
 
-### 1.1 `tools/asset_creator/core/constants.py`
+### 1.1 `tools/asset_convertor/core/constants.py`
 
 Modify `DEFAULT_PALETTES` to include exactly **5 colors per entry** instead of 4. Update the following existing palettes and add 5 new ones:
 
@@ -136,7 +136,7 @@ TUFT_ARCH = [
 
 **Old tufts (`TUFT_CLASSIC_*`, `TUFT_SHORT_*`, `TUFT_CURLY_*`, `TUFT_WILD_*`) must NOT be deleted.** They are used by existing sub-types and must be preserved for backward compatibility. The new tufts are additions, not replacements.
 
-### 1.2 `tools/asset_creator/core/generator.py`
+### 1.2 `tools/asset_convertor/core/generator.py`
 
 Update the `generate_texture` function's sub-type → tuft list mapping. Add the new `"crescent"` sub-type. The complete routing table after the change:
 
@@ -161,7 +161,7 @@ The grid initialization `np.ones((32, 32))` (tone 1) is correct and unchanged.
 
 **`apply_stamp` and `apply_composite_stamp` require NO code changes** — they are already tone-agnostic. `apply_composite_stamp` writes `val` directly; `apply_stamp` uses a `tone` parameter. The only file that needs clamping changes is `quantizer.py`.
 
-### 1.3 `tools/asset_creator/core/quantizer.py`
+### 1.3 `tools/asset_convertor/core/quantizer.py`
 
 Replace the current `quantize_image` tone-mapping logic. The exact replacement:
 
@@ -212,7 +212,7 @@ if val > 4:
     val = 4
 ```
 
-### 1.4 `tools/asset_creator/gui/app.py`
+### 1.4 `tools/asset_convertor/gui/app.py`
 
 > **Scope note:** GUI changes are required to avoid the silent palette truncation bug (H-001). All changes are confined to palette handling and subtype list.
 
@@ -309,8 +309,8 @@ self.subtypes = ["Classic", "Short", "Curly", "Wild", "Crescent"]
 | `palettes.json` has 4-color entries | App uses 4-color palette, padded to 5 | No error — `L < 5` path pads automatically | `TC-002` |
 
 ## 5. Deep Links
-- [quantizer.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_creator/core/quantizer.py) — full file replacement (see §1.3 for exact diff)
-- [generator.py:L33-L91](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_creator/core/generator.py#L33-L91) — `generate_texture` function to update
-- [constants.py:L104-L152](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_creator/core/constants.py#L104-L152) — Palettes and tuft definitions to extend
-- [app.py:L51-L90](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_creator/gui/app.py#L51-L90) — Palette picker and subtype list
+- [quantizer.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_convertor/core/quantizer.py) — full file replacement (see §1.3 for exact diff)
+- [generator.py:L33-L91](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_convertor/core/generator.py#L33-L91) — `generate_texture` function to update
+- [constants.py:L104-L152](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_convertor/core/constants.py#L104-L152) — Palettes and tuft definitions to extend
+- [app.py:L51-L90](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_convertor/gui/app.py#L51-L90) — Palette picker and subtype list
 - [phase-1-simple-tiles.md:L92](file:///Users/adrien.parasote/Documents/perso/game/tools/docs/specs/phase-1-simple-tiles.md#L92) — TC-002 to update (values 0–4 for grass)

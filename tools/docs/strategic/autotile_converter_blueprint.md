@@ -52,9 +52,9 @@ We own the full pipeline: load input → extract sub-tiles → assemble 47 tiles
 
 ## 4. Core Architecture Decisions
 
-### ADR-001: Transform asset_creator, not a new tool
+### ADR-001: Transform asset_convertor, not a new tool
 
-**Decision:** The existing `tools/src/asset_creator/` GUI shell (customtkinter) is **replaced in-place**. The new autotile converter reuses the window/layout pattern but entirely replaces the generation logic.
+**Decision:** The existing `tools/src/asset_convertor/` GUI shell (customtkinter) is **replaced in-place**. The new autotile converter reuses the window/layout pattern but entirely replaces the generation logic.
 
 **Rationale:**
 - Avoids a second tool entry point
@@ -65,7 +65,7 @@ We own the full pipeline: load input → extract sub-tiles → assemble 47 tiles
 
 | Option | Pro | Con |
 |--------|-----|-----|
-| **Replace asset_creator in-place ✅** | Single tool, no new entry point | Old generator code deleted (user approved) |
+| **Replace asset_convertor in-place ✅** | Single tool, no new entry point | Old generator code deleted (user approved) |
 | New standalone tool | Zero overlap risk | Doubles tooling overhead |
 
 ---
@@ -101,10 +101,10 @@ We own the full pipeline: load input → extract sub-tiles → assemble 47 tiles
 
 ### ADR-004: GUI tech stack — stay on customtkinter
 
-**Decision:** Keep **customtkinter** (already installed, already used in asset_creator). Do NOT migrate to Dear PyGui.
+**Decision:** Keep **customtkinter** (already installed, already used in asset_convertor). Do NOT migrate to Dear PyGui.
 
 **Rationale:**
-- The asset_creator V3 blueprint chose Dear PyGui for real-time texture performance (47 tiles × slider callbacks)
+- The asset_convertor V3 blueprint chose Dear PyGui for real-time texture performance (47 tiles × slider callbacks)
 - The converter tool has NO sliders — it loads a file and shows a static preview
 - customtkinter is sufficient for: file picker, mode selector, image display, export button
 - The canvas for validation is a `tkinter.Canvas` widget (built-in, no new dep)
@@ -210,10 +210,10 @@ We own the full pipeline: load input → extract sub-tiles → assemble 47 tiles
 
 → **📋 SPEC** stage. Modules to spec:
 
-1. `src/asset_creator/core/converter_xp.py` — XP lookup table + assembly logic
-2. `src/asset_creator/core/converter_mv.py` — MV/MZ lookup table + assembly logic
-3. `src/asset_creator/exporters/tsx_generator.py` — TSX wangset XML output
-4. `src/asset_creator/gui/app.py` — replaced GUI (file picker, mode, previews, canvas, export)
+1. `src/asset_convertor/core/converter_xp.py` — XP lookup table + assembly logic
+2. `src/asset_convertor/core/converter_mv.py` — MV/MZ lookup table + assembly logic
+3. `src/asset_convertor/exporters/tsx_generator.py` — TSX wangset XML output
+4. `src/asset_convertor/gui/app.py` — replaced GUI (file picker, mode, previews, canvas, export)
 
 **Test samples:** `tools/src/input/sample_xp.png`, `tools/src/input/sample_mv_32px.png`  
 **Output dir:** `tools/src/output/`

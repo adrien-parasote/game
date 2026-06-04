@@ -33,13 +33,13 @@
 N/A — Refactor pass only. Exposes new constants module.
 
 ### Consumes
-N/A — Internal to `tools/asset_creator`.
+N/A — Internal to `tools/asset_convertor`.
 
 ### Public Interface
 
 | Type | Identifier | Documented at |
 |---|---|---|
-| Python Module | `tools.asset_creator.core.constants` | This spec § "F-TOOL-QUAL-01" |
+| Python Module | `tools.asset_convertor.core.constants` | This spec § "F-TOOL-QUAL-01" |
 
 ### External Invocations
 N/A — Pure python utility refactor.
@@ -54,12 +54,12 @@ N/A — Refactor pass only.
 The following files are managed by this specification:
 ```
 tools/
-  asset_creator/
+  asset_convertor/
     core/
       constants.py                    # [DEV-TOOL] Centralized magic constants
 tests/
   tools/
-    asset_creator/                    # [DEV-TOOL] Tooling tests directory
+    asset_convertor/                    # [DEV-TOOL] Tooling tests directory
 ```
 
 ---
@@ -68,9 +68,9 @@ tests/
 
 | ID | Anti-pattern | Why it's bad | What to do instead |
 |----|---------|--------------|--------------------|
-| AP-01 | **Circular imports** | Importing core modules inside `tools/asset_creator/core/constants.py` | Keep `tools/asset_creator/core/constants.py` strictly as a leaf module with zero imports from the package. |
+| AP-01 | **Circular imports** | Importing core modules inside `tools/asset_convertor/core/constants.py` | Keep `tools/asset_convertor/core/constants.py` strictly as a leaf module with zero imports from the package. |
 | AP-02 | **Changing constant values** | Altering color values or math parameters from original values | New constants must exactly match the original raw values to preserve algorithm outputs. |
-| AP-03 | **Unused constants** | Defining constants in `tools/asset_creator/core/constants.py` but leaving the raw values in active code | Search and replace all target occurrences to ensure 100% usage. |
+| AP-03 | **Unused constants** | Defining constants in `tools/asset_convertor/core/constants.py` but leaving the raw values in active code | Search and replace all target occurrences to ensure 100% usage. |
 | AP-04 | **Accidental logic shifts** | Modifying grid indexing logic or loop boundaries while refactoring | Maintain identical structure, only swapping numeric values for constant references. |
 | AP-05 | **Adding new logic** | Implementing unrelated optimizations or features during constant extraction | Keep the scope strictly focused on extraction, translation, and small file improvements. |
 
@@ -84,9 +84,9 @@ tests/
 | TC-002 | core/subtile | Subtile Constants usage | Zero hardcoded border coefficients exist |
 | TC-003 | core/texture | Texture Constants usage | Noise remains **bit-for-bit** identical to original output (verified with `numpy.array_equal`, not `allclose`) |
 | TC-004 | gui/state | State Defaults integration | Directories and color variables default to constants |
-| TC-005 | core/subtile | Translation complete | No French comments in `tools/asset_creator/core/`. Note: user-facing labels in `gui/app.py` are excluded (French mandatory per GUI spec). |
+| TC-005 | core/subtile | Translation complete | No French comments in `tools/asset_convertor/core/`. Note: user-facing labels in `gui/app.py` are excluded (French mandatory per GUI spec). |
 | TC-006 | core/constants | Float Precision | For each float constant, `ast.literal_eval(repr(constant)) == original_value` using Python `==` (no tolerance) |
-| TC-007 | core/constants | Leaf module (no package imports) | Parsing `tools/asset_creator/core/constants.py` with `ast` reveals zero `ImportFrom` nodes referencing `tools.asset_creator` package |
+| TC-007 | core/constants | Leaf module (no package imports) | Parsing `tools/asset_convertor/core/constants.py` with `ast` reveals zero `ImportFrom` nodes referencing `tools.asset_convertor` package |
 | IT-001 | full | Clean test suite pass | All existing tests pass green. Count ≥ 361 (exact number grows as new feature specs add tests). |
 | IT-002 | preview | Pygame preview module compile | Works cleanly |
 | IT-003 | pipeline | Export integration verify | Export succeeds |
@@ -95,21 +95,21 @@ tests/
 
 ## Detailed Change Specifications
 
-### F-TOOL-QUAL-01: Centralized `tools/asset_creator/core/constants.py`
+### F-TOOL-QUAL-01: Centralized `tools/asset_convertor/core/constants.py`
 
-Extraction of magic values into `tools/asset_creator/core/constants.py`.
+Extraction of magic values into `tools/asset_convertor/core/constants.py`.
 Constants include: grid constraints, noise defaults, border effects, dithering thresholds, default application settings, default UI colors, and preview settings.
 
 **Float constant precision rule:** All floating-point constants must be extracted as their **exact source code string representation** — do not round or truncate. Verify by parsing the original file with `ast.parse`, extracting each `ast.Constant` node's `.value`, and asserting `original_value == new_constant` using Python `==` (bitwise identical, no tolerance). TC-003 must use `numpy.array_equal` (not `numpy.allclose`) to confirm generated textures are bit-for-bit identical before and after extraction.
 
 ### F-TOOL-QUAL-02: French Comments Translation
 
-Translate French **code comments** (`# ...`) to English across `tools/asset_creator/core/` and `tools/asset_creator/gui/` modules.
+Translate French **code comments** (`# ...`) to English across `tools/asset_convertor/core/` and `tools/asset_convertor/gui/` modules.
 
-**⛔ EXCEPTION — `gui/app.py` user-facing labels:** Per [asset_creator_spec.md](./asset_creator_spec.md#L1) § "UI Language Constraint", all user-visible widget labels in `gui/app.py` MUST remain in French. Do NOT translate them.
+**⛔ EXCEPTION — `gui/app.py` user-facing labels:** Per [asset_convertor_spec.md](./asset_convertor_spec.md#L1) § "UI Language Constraint", all user-visible widget labels in `gui/app.py` MUST remain in French. Do NOT translate them.
 
 Scope:
-- ✅ Code comments in any `.py` file under `tools/asset_creator/` (except gui/app.py UI strings)
+- ✅ Code comments in any `.py` file under `tools/asset_convertor/` (except gui/app.py UI strings)
 - ✅ Log strings not shown directly to the user
 - ❌ User-facing widget labels in `gui/app.py` — French is mandatory per the GUI spec
 
@@ -117,7 +117,7 @@ Scope:
 
 - Code structure will be checked for unnecessary allocations or loop overheads.
 - Clean up of imports and sorting where needed to conform to the coding standard.
-- The tests in `tests/tools/asset_creator/` will act as our safety net (≥ 361 tests — count grows as new specs add tests).
+- The tests in `tests/tools/asset_convertor/` will act as our safety net (≥ 361 tests — count grows as new specs add tests).
 
 ---
 
@@ -125,14 +125,14 @@ Scope:
 
 | Error | Trigger | Response |
 |---|---|---|
-| `ImportError` on constants | Broken paths in relative or absolute import statements | Correct the import string to `from tools.asset_creator.core.constants import ...` |
+| `ImportError` on constants | Broken paths in relative or absolute import statements | Correct the import string to `from tools.asset_convertor.core.constants import ...` |
 | Math output change | Accidentally altered float constant values | Re-read original file definitions from Git history and restore exact match |
-| Compilation failure in GUI | Missing constant mapping in AppState or widget callbacks | Correct variable names to match `tools/asset_creator/core/constants.py` declarations |
+| Compilation failure in GUI | Missing constant mapping in AppState or widget callbacks | Correct variable names to match `tools/asset_convertor/core/constants.py` declarations |
 
 ---
 
 ## Deep Links
 
 - Strategic blueprint: [constants_extraction_blueprint.md](../strategic/constants_extraction_blueprint.md#7-questions-framework)
-- Core subtile: [subtile.py](../../../tools/asset_creator/core/subtile.py#L1)
-- Core texture: [texture.py](../../../tools/asset_creator/core/texture.py#L1)
+- Core subtile: [subtile.py](../../../tools/asset_convertor/core/subtile.py#L1)
+- Core texture: [texture.py](../../../tools/asset_convertor/core/texture.py#L1)

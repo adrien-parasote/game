@@ -1,12 +1,12 @@
 <!-- Generated: 2026-06-04 | Files scanned: 8 | Token estimate: ~450 -->
 
-# Asset Creator — Autotile Converter Architecture
+# Asset Convertor — Autotile Converter Architecture
 
 ## Tool Purpose
 Converts RPG Maker XP/MV/MZ autotile PNG files into Tiled-compatible 47-tile blob tilesets (PNG sheet + TSX wangset).
 
 ## Entry Point
-`tools/src/asset_creator/__main__.py` → `gui/app.py:App`
+`tools/src/asset_convertor/__main__.py` → `gui/app.py:App`
 
 ## Conversion Pipeline
 User loads PNG → GUI validates → `convert_xp` or `convert_mv` → `assemble_sheet` + `generate_tsx` → writes PNG + TSX
@@ -29,7 +29,7 @@ User loads PNG → GUI validates → `convert_xp` or `convert_mv` → `assemble_
 
 ## Key Files
 ```
-tools/src/asset_creator/
+tools/src/asset_convertor/
   __main__.py              entry point → App()
   core/
     converter_xp.py        XP → 47 tiles (BLOB_BITMASKS, _quarter_*, convert_xp)
@@ -65,7 +65,7 @@ tools/src/input/
 
 ## Test Coverage (77 tests)
 ```
-tools/tests/asset_creator/
+tools/tests/asset_convertor/
   core/test_converter_xp.py        TC-001..010 (unit)
   core/test_converter_mv.py        TC-011..020 (unit)
   exporters/test_tsx_generator.py  TC-021..035 (unit)

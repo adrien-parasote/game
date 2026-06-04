@@ -16,9 +16,9 @@ An audit of the `tools/src/` directory reveals three primary areas of focus:
 
 ### 1. Centralized Constants vs. Redundant Definitions
 - **Current State**:
-  - `tools/src/asset_creator/core/constants.py` contains several unused/dead parameters from previous procedural noise/rendering specs (e.g., `MASK_THRESHOLD`, `DEFAULT_NOISE_SCALE`, `DEFAULT_LACUNARITY`, `BORDER_SHADOW_FACTOR`, `BAYER_4X4`, `DEFAULT_PALETTES`, etc.) that are never imported.
-  - `tools/src/asset_creator/core/converter_xp.py` redefines constants locally (`SUBTILE = 16`, `TILE_SIZE = 32`, `BLOB_BITMASKS`) instead of importing them from `constants.py`.
-  - `tools/src/asset_creator/gui/app.py` has local GUI parameters (`_CELL_SIZE`, default window sizes, background colors) that can be centralized.
+  - `tools/src/asset_convertor/core/constants.py` contains several unused/dead parameters from previous procedural noise/rendering specs (e.g., `MASK_THRESHOLD`, `DEFAULT_NOISE_SCALE`, `DEFAULT_LACUNARITY`, `BORDER_SHADOW_FACTOR`, `BAYER_4X4`, `DEFAULT_PALETTES`, etc.) that are never imported.
+  - `tools/src/asset_convertor/core/converter_xp.py` redefines constants locally (`SUBTILE = 16`, `TILE_SIZE = 32`, `BLOB_BITMASKS`) instead of importing them from `constants.py`.
+  - `tools/src/asset_convertor/gui/app.py` has local GUI parameters (`_CELL_SIZE`, default window sizes, background colors) that can be centralized.
   - `tools/src/assets/flat_wall_to_diagonal.py` has local check parameters that can be linked to standard tile size constants.
   - `tools/src/calibration/calibrate_halos.py` defines color maps, radius arrays, and local paths.
 
@@ -55,7 +55,7 @@ An audit of the `tools/src/` directory reveals three primary areas of focus:
     - Line 586: `Redessine le canvas interactif depuis self._canvas_grid.`
 
 ### 3. Dead Code Analysis
-- **Unused Constants**: `tools/src/asset_creator/core/constants.py` contains many variables (e.g. noise configurations, shadow/highlight factors, dither matrices, preset palettes) which are entirely unused in the active source files. They must be safely removed.
+- **Unused Constants**: `tools/src/asset_convertor/core/constants.py` contains many variables (e.g. noise configurations, shadow/highlight factors, dither matrices, preset palettes) which are entirely unused in the active source files. They must be safely removed.
 - **Unused Imports / Code**: General import cleanup is required across the refactored files.
 
 ---
@@ -66,7 +66,7 @@ An audit of the `tools/src/` directory reveals three primary areas of focus:
 - **Decision**: **Adapt & Refactor**. We will optimize our local codebase directly.
 
 ### Transition Action Plan
-1. **Prune Dead Constants**: Remove all unused variables from `tools/src/asset_creator/core/constants.py`.
+1. **Prune Dead Constants**: Remove all unused variables from `tools/src/asset_convertor/core/constants.py`.
 2. **Centralize Constants**:
    - Clean up `converter_xp.py` to import `TILE_SIZE` and `SUBTILE_SIZE` from `constants.py`.
    - Update `app.py` and other modules to import shared sizes.

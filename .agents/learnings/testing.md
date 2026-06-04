@@ -1053,19 +1053,19 @@ Quand `tdd_check.py` signale des modules non-couverts en raison d'une structure 
 
 ```
 # ❌ 131 lignes individuelles — fragile, maintenance coûteuse
-tools/src/asset_creator/core/color_ramp.py
-tools/src/asset_creator/core/tile_assembler.py
+tools/src/asset_convertor/core/color_ramp.py
+tools/src/asset_convertor/core/tile_assembler.py
 # ... × 129
 
 # ✅ 10 globs — auto-couvrent les nouveaux fichiers du domaine
-tools/src/asset_creator/*.py
-tools/src/asset_creator/**/*.py
+tools/src/asset_convertor/*.py
+tools/src/asset_convertor/**/*.py
 game/src/ui/*.py
 game/src/engine/*.py
 # ...
 ```
 
-**Piège :** `**/*.py` ne couvre pas les fichiers à la racine du répertoire (`asset_creator/cli.py`). Ajouter `*.py` ET `**/*.py` pour le répertoire racine.
+**Piège :** `**/*.py` ne couvre pas les fichiers à la racine du répertoire (`asset_convertor/cli.py`). Ajouter `*.py` ET `**/*.py` pour le répertoire racine.
 
 **Règle :** Au premier usage de `.tddexempt`, évaluer si un glob par domaine suffit avant de lister des fichiers individuels. Appliquer le test : "si j'ajoute un nouveau fichier dans ce domaine, est-ce qu'il est couvert automatiquement ?"
 
@@ -1078,7 +1078,7 @@ game/src/engine/*.py
 ### A-TDD-001 · 2026-05-31 · U · Minor Rework
 **`tdd_check.py` miroir de chemin incompatible avec les projets multi-repo à venvs séparés**
 
-`tdd_check.py` reconstruit le chemin de test depuis la racine du projet : `source/a/b/c.py` → cherche `tests/source/a/b/test_c.py`. Dans un monorepo multi-domaine (`game/src/`, `tools/src/`), les tests vivent dans `game/tests/engine/` et `tools/tests/asset_creator/` — jamais dans un `tests/` racine.
+`tdd_check.py` reconstruit le chemin de test depuis la racine du projet : `source/a/b/c.py` → cherche `tests/source/a/b/test_c.py`. Dans un monorepo multi-domaine (`game/src/`, `tools/src/`), les tests vivent dans `game/tests/engine/` et `tools/tests/asset_convertor/` — jamais dans un `tests/` racine.
 
 **Conséquence :** Le TDD Gate signale 131 modules "non-couverts" alors qu'ils ont 446+ tests. La solution n'est PAS de restructurer les tests (cassant, sans valeur) mais d'utiliser `.tddexempt` avec des globs de domaine.
 

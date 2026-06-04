@@ -1,4 +1,4 @@
-# Strategic Blueprint — Asset Creator V3: Interactive UI
+# Strategic Blueprint — Asset Convertor V3: Interactive UI
 
 > **Date:** 2026-05-31
 > **Status:** IMPLEMENTED
@@ -12,7 +12,7 @@
 
 **Current pain:** The CLI-based workflow requires:
 1. Editing YAML files by hand to tweak texture parameters
-2. Running `python -m tools.asset_creator generate --terrain grass --quality v2 --preview` to see results
+2. Running `python -m tools.asset_convertor generate --terrain grass --quality v2 --preview` to see results
 3. Closing Pygame, editing YAML again, re-running the command
 4. No way to compare parameters side-by-side or iterate quickly
 
@@ -134,7 +134,7 @@ Ordered by implementation dependency:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  Asset Creator V3                                       [—][×] │
+│  Asset Convertor V3                                       [—][×] │
 ├───────────────────┬──────────────────────────────────────────────┤
 │ ▾ Terrain Preset  │                                              │
 │ ┌───────────────┐ │  ┌──────────┐                                │

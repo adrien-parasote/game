@@ -1,7 +1,7 @@
 # Research: Grass Rendering Improvements
 
 ## 1. Domain Context
-Pixel art grass generation typically relies on repeating textures or procedural scattering of "tufts". The current `asset_creator` implementation uses a basic form of Slynyrd's kitbashing technique, scattering very small (3x3) matrices of 4 tones, sorted by Y-axis for depth. While this produces passable noise-based grass, it lacks the deliberate "blade" structure, cohesive lighting, and stylized feel found in higher-quality pixel art tilesets.
+Pixel art grass generation typically relies on repeating textures or procedural scattering of "tufts". The current `asset_convertor` implementation uses a basic form of Slynyrd's kitbashing technique, scattering very small (3x3) matrices of 4 tones, sorted by Y-axis for depth. While this produces passable noise-based grass, it lacks the deliberate "blade" structure, cohesive lighting, and stylized feel found in higher-quality pixel art tilesets.
 
 ## 2. Competitive Landscape (Reference Analysis)
 The user provided multiple reference images showcasing high-quality pixel art grass. The latest reference is a comprehensive spritesheet (with 48x48 tiles) demonstrating dozens of color variations and structural outlines.

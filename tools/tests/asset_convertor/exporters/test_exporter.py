@@ -1,7 +1,7 @@
 import os
 import xml.etree.ElementTree as ET
 
-from asset_creator.exporters.exporter import export_tile
+from asset_convertor.exporters.exporter import export_tile
 from PIL import Image
 
 

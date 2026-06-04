@@ -1,5 +1,5 @@
 """
-asset_creator.core.converter_mv
+asset_convertor.core.converter_mv
 
 Convert a RPG Maker MV/MZ A2 autotile block to 47 Tiled blob tiles.
 
@@ -28,7 +28,7 @@ Implementation note:
 
 from __future__ import annotations
 
-from asset_creator.core.converter_xp import BLOB_BITMASKS
+from asset_convertor.core.converter_xp import BLOB_BITMASKS
 from PIL import Image
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 # Research: Tooling Code Optimization & Constants Extraction
 
-Analysis of the `tools/asset_creator/` module to discover opportunities for optimization, extraction of magic values into a central constants configuration, and translation of French comments.
+Analysis of the `tools/asset_convertor/` module to discover opportunities for optimization, extraction of magic values into a central constants configuration, and translation of French comments.
 
 ## 🔬 Web Search & Best Practices
 
@@ -19,8 +19,8 @@ Analysis of the `tools/asset_creator/` module to discover opportunities for opti
 
 ## 🎯 Adopt/Adapt/Build Decision
 
-- **Decision**: **Adopt** a clean, dedicated `tools/asset_creator/core/constants.py` module.
+- **Decision**: **Adopt** a clean, dedicated `tools/asset_convertor/core/constants.py` module.
 - **Refactor Scope**:
-  - Extract all layout, grid sizing, path, color, and noise constants across the entire `tools/asset_creator/` package.
+  - Extract all layout, grid sizing, path, color, and noise constants across the entire `tools/asset_convertor/` package.
   - Translate any French documentation/comments/logs.
   - Ensure all 361 tests pass cleanly under the new unified constants footprint.

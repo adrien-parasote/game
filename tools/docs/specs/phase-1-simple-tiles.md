@@ -37,7 +37,7 @@ A local Python desktop application that generates seamless pixel art tiles by in
 - **GUI Layer** (`app.py` — `CustomTkinter` root window):
   - Dropdown: **Type de Texture** (Stone, Grass, Dirt, Wood — hardcoded available generators)
   - Dropdown: **Sous-type** (Classic, Short, Curly, Wild) — only active when 'Grass' is selected.
-  - Dropdown: **Palette** (loaded from `tools/src/asset_creator/config/palettes.json`).
+  - Dropdown: **Palette** (loaded from `tools/src/asset_convertor/config/palettes.json`).
   - Setup: Injects the application icon using `AppKit` when running on macOS.
   - Slider + number input: **Graine** (integer 0–9999). Modifying triggers debounced preview.
   - Slider: **Densité** (number of stamps to scatter, 1–100, default 20). Replaces the old 'Scale' slider. Modifying triggers debounced preview.
@@ -46,7 +46,7 @@ A local Python desktop application that generates seamless pixel art tiles by in
   - Main Preview panel ("gros plan"): displays the 32×32 tile scaled to 256×256 using `image.resize((256, 256), Image.NEAREST)`.
   - 3x3 Grid Preview panel: displays a 96x96 image (32x32 tiled 3x3) to verify seamlessness.
 
-- **Generation Layer** (`tools/src/asset_creator/core/generator.py`):
+- **Generation Layer** (`tools/src/asset_convertor/core/generator.py`):
   - Input: `texture_type: str`, `seed: int`, `density: int`, `sub_type: str = "classic"`
   - Initialize a `32x32` numpy array filled with `1` (Index 1 = Background/Shadow tone).
   - Dynamically generate procedural pixel art in memory based on the texture type, using predefined 2D binary matrix clusters (Slynyrd's Key Clusters method).
@@ -56,7 +56,7 @@ A local Python desktop application that generates seamless pixel art tiles by in
   - Apply 2D modulo wrapping `((x + dx) % 32, (y + dy) % 32)` for every pixel stamped to guarantee seamless toroidal tiling.
   - Output: `numpy.ndarray` of shape `(32, 32)`, values strictly in `[0, 1, 2, 3]`.
 
-- **Quantization Layer** (`tools/src/asset_creator/core/quantizer.py`):
+- **Quantization Layer** (`tools/src/asset_convertor/core/quantizer.py`):
   - Input: `numpy.ndarray (32, 32)` of indices, `palette: list[tuple[int,int,int]]`
   - Sort palette by perceived luminance (`0.299*R + 0.587*G + 0.114*B`) from darkest to lightest.
   - Map the 4 logical tones (0, 1, 2, 3) to the available palette colors. If palette has `L` colors:
@@ -67,7 +67,7 @@ A local Python desktop application that generates seamless pixel art tiles by in
   - Create a `PIL.Image` of 32x32 RGB pixels.
   - Output: `PIL.Image` (32×32, RGB).
 
-- **Export Layer** (`tools/src/asset_creator/exporters/exporter.py`):
+- **Export Layer** (`tools/src/asset_convertor/exporters/exporter.py`):
   - Derives `tile_name` from texture type + seed: `f"{texture_type}_{seed}"`.
   - Creates "output/": `os.makedirs('output', exist_ok=True)`
   - Saves PNG: `image.save(f"output/{tile_name}.png")`
@@ -93,7 +93,7 @@ A local Python desktop application that generates seamless pixel art tiles by in
 | `TC-003` | Unit | Color quantization strictness. | The output image only contains colors present in the provided sorted palette. |
 | `TC-004` | Unit | `.tsx` XML generation structure. | Given `tile_name="stone_42"`, the generated XML parses successfully as valid XML with correct `tilewidth="32"`. |
 | `TC-005` | Unit | Generator output fallback. | If an unknown `texture_type` is provided, `generate` handles it gracefully (e.g. renders programmatic default squares or returns all zeros) instead of crashing. |
-| `TC-006` | Unit | Palette loader. | `tools/src/asset_creator/config/palettes.json` is successfully parsed from hex strings to RGB tuples. |
+| `TC-006` | Unit | Palette loader. | `tools/src/asset_convertor/config/palettes.json` is successfully parsed from hex strings to RGB tuples. |
 | `TC-007` | Unit | Determinism — same seed = same output. | `generate("grass", seed=42, density=10)` called twice returns identical ndarrays. |
 | `IT-001` | Integration | GUI → Live Preview flow. | Changing the density slider triggers the debounced thread and updates `lbl_preview`. |
 | `IT-002` | Integration | End-to-end pipeline (Preview + Export). | GUI Layer triggers Generation Layer, which passes output to Quantization Layer generating `img_32`. Clicking "Export" triggers Export Layer which writes valid PNG and TSX to `output/`. |
@@ -105,7 +105,7 @@ A local Python desktop application that generates seamless pixel art tiles by in
 |---|---|---|---|
 | Write permission denied | Export Layer | "Cannot save files: permission denied in output/." | Catch `PermissionError` |
 | Unknown texture type | Generation Layer | *(transparent)* | Generate programmatic placeholder blocks |
-| `tools/src/asset_creator/config/palettes.json` missing | GUI Layer | "Could not load palettes.json. Using built-in defaults." | Fall back to bundled palette dict |
+| `tools/src/asset_convertor/config/palettes.json` missing | GUI Layer | "Could not load palettes.json. Using built-in defaults." | Fall back to bundled palette dict |
 | Generation thread crash | Generation Layer | "Generation failed. See console for details." | Catch `Exception` in thread, log to stderr, update GUI status |
 
 ## 5. Cross-Spec Contracts
@@ -120,7 +120,7 @@ A local Python desktop application that generates seamless pixel art tiles by in
 | Path / Identifier | Format | Schema | Producer |
 |---|---|---|---|
 | `None` (procedural) | Memory | Predefined binary matrices (Key Clusters). | Generator |
-| `tools/src/asset_creator/config/palettes.json` | JSON | `{"Name": ["#RRGGBB", ...]}` | Bundled |
+| `tools/src/asset_convertor/config/palettes.json` | JSON | `{"Name": ["#RRGGBB", ...]}` | Bundled |
 
 ### Public Interface
 | Type | Identifier | Signature | Documented at |

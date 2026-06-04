@@ -2,11 +2,11 @@
 
 > **Date:** 2026-05-31
 > **Status:** ACCEPTED
-> **Context:** Asset Creator V3
+> **Context:** Asset Convertor V3
 
 ## Context
 
-The Asset Creator has two user-facing interfaces:
+The Asset Convertor has two user-facing interfaces:
 1. **CLI** (`cli.py`) — scripted generation with `--terrain`, `--quality`, `--seed` flags
 2. **Pygame preview** (`preview/pygame_preview.py`) — read-only display after generation, SPACE to regenerate minimap
 
@@ -34,7 +34,7 @@ The current workflow is edit YAML → run CLI → view preview → close → rep
 
 ### Neutral
 - numpy becomes a required dependency (already used by subtile.py)
-- New module: `tools/asset_creator/gui/` (~300-400 lines estimated)
+- New module: `tools/asset_convertor/gui/` (~300-400 lines estimated)
 
 ## Alternatives Considered
 

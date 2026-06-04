@@ -1,22 +1,22 @@
-# Asset Creator Spec — Interactive GUI
+# Asset Convertor Spec — Interactive GUI
 
 > Document Type: Implementation
 > **Covers:** F1, F2, F3, F4, F5, F6, F6a, F6b, F6c, F7, F8, F9, F10, F11, F12, F_HIST, F_COLOR, F_MACUI, F_LOG
 
 ## Deep Links
 
-- [V3 Blueprint](../strategic/asset_creator_blueprint.md#L1)
+- [V3 Blueprint](../strategic/asset_convertor_blueprint.md#L1)
 - [ADR-001: Dear PyGui](../ADRs/adr-001-dearpygui-replaces-pygame.md#L1)
 - [GUI Framework Research](../research/python_gui_frameworks.md#L1)
-- [V2 Spec](./asset_creator_spec.md#L1)
-- [CLI module](../../../tools/asset_creator/cli.py#L1)
-- [Pygame preview](../../../tools/asset_creator/preview/pygame_preview.py#L1)
-- [Terrain module](../../../tools/asset_creator/core/terrain.py#L1)
-- [Texture module](../../../tools/asset_creator/core/texture.py#L1)
-- [Palette module](../../../tools/asset_creator/core/palette.py#L1)
-- [Detail overlay](../../../tools/asset_creator/core/detail_overlay.py#L1)
-- [Tile assembler](../../../tools/asset_creator/core/tile_assembler.py#L1)
-- [Subtile module](../../../tools/asset_creator/core/subtile.py#L1)
+- [V2 Spec](./asset_convertor_spec.md#L1)
+- [CLI module](../../../tools/asset_convertor/cli.py#L1)
+- [Pygame preview](../../../tools/asset_convertor/preview/pygame_preview.py#L1)
+- [Terrain module](../../../tools/asset_convertor/core/terrain.py#L1)
+- [Texture module](../../../tools/asset_convertor/core/texture.py#L1)
+- [Palette module](../../../tools/asset_convertor/core/palette.py#L1)
+- [Detail overlay](../../../tools/asset_convertor/core/detail_overlay.py#L1)
+- [Tile assembler](../../../tools/asset_convertor/core/tile_assembler.py#L1)
+- [Subtile module](../../../tools/asset_convertor/core/subtile.py#L1)
 
 ## Goal
 
@@ -42,37 +42,37 @@ Replace the Pygame-based read-only preview with an interactive Dear PyGui GUI ap
 
 | Path / Identifier | Format | Schema location | Consumers |
 |---|---|---|---|
-| `tools/asset_creator/core/minimap.py` | Python Module | This spec § "Modules & Responsibilities" | `gui/app.py`, `gui/canvas.py`, `preview/pygame_preview.py` |
-| `tools/asset_creator/gui/app.py` | Python Module | This spec § "Modules & Responsibilities" | `tools/asset_creator/__main__.py` (GUI entry point) — contains main window, layout, callbacks, theme, all DPG rendering |
-| `tools/asset_creator/gui/state.py` | Python Module | This spec § "Modules & Responsibilities" | `gui/app.py`, `gui/pipeline.py` |
-| `tools/asset_creator/gui/preview.py` | Python Module | This spec § "Modules & Responsibilities" | `gui/app.py`, `gui/pipeline.py` — framework-agnostic PIL/numpy utilities (no DPG imports) |
-| `tools/asset_creator/gui/canvas.py` | Python Module | This spec § "Modules & Responsibilities" | `gui/app.py` — framework-agnostic `CanvasState` dataclass + coordinate helpers (no DPG imports) |
-| `tools/asset_creator/gui/pipeline.py` | Python Module | This spec § "Modules & Responsibilities" | `gui/app.py` — generation pipeline (texture → tiles) and export functions (no DPG imports) |
-| `tests/tools/asset_creator/test_minimap.py` | Python Test | This spec § "Test Cases" | Pytest Runner |
-| `tests/tools/asset_creator/test_gui_state.py` | Python Test | This spec § "Test Cases" | Pytest Runner |
-| `tests/tools/asset_creator/test_gui_preview.py` | Python Test | This spec § "Test Cases" | Pytest Runner |
-| `tests/tools/asset_creator/test_gui_integration.py` | Python Test | This spec § "Test Cases" | Pytest Runner |
+| `tools/asset_convertor/core/minimap.py` | Python Module | This spec § "Modules & Responsibilities" | `gui/app.py`, `gui/canvas.py`, `preview/pygame_preview.py` |
+| `tools/asset_convertor/gui/app.py` | Python Module | This spec § "Modules & Responsibilities" | `tools/asset_convertor/__main__.py` (GUI entry point) — contains main window, layout, callbacks, theme, all DPG rendering |
+| `tools/asset_convertor/gui/state.py` | Python Module | This spec § "Modules & Responsibilities" | `gui/app.py`, `gui/pipeline.py` |
+| `tools/asset_convertor/gui/preview.py` | Python Module | This spec § "Modules & Responsibilities" | `gui/app.py`, `gui/pipeline.py` — framework-agnostic PIL/numpy utilities (no DPG imports) |
+| `tools/asset_convertor/gui/canvas.py` | Python Module | This spec § "Modules & Responsibilities" | `gui/app.py` — framework-agnostic `CanvasState` dataclass + coordinate helpers (no DPG imports) |
+| `tools/asset_convertor/gui/pipeline.py` | Python Module | This spec § "Modules & Responsibilities" | `gui/app.py` — generation pipeline (texture → tiles) and export functions (no DPG imports) |
+| `tests/tools/asset_convertor/test_minimap.py` | Python Test | This spec § "Test Cases" | Pytest Runner |
+| `tests/tools/asset_convertor/test_gui_state.py` | Python Test | This spec § "Test Cases" | Pytest Runner |
+| `tests/tools/asset_convertor/test_gui_preview.py` | Python Test | This spec § "Test Cases" | Pytest Runner |
+| `tests/tools/asset_convertor/test_gui_integration.py` | Python Test | This spec § "Test Cases" | Pytest Runner |
 
 ### Consumes
 
 | Path / Identifier | Format | Schema location | Producer |
 |---|---|---|---|
-| `tools/asset_creator/core/texture.py` | Python Module | V2 spec § "Step 3" | V2 spec |
-| `tools/asset_creator/core/palette.py` | Python Module | V2 spec § "Step 2" | V2 spec |
-| `tools/asset_creator/core/terrain.py` | Python Module | Codebase | Pipeline |
-| `tools/asset_creator/core/subtile.py` | Python Module | Codebase | Pipeline |
-| `tools/asset_creator/core/tile_assembler.py` | Python Module | Codebase | Pipeline |
-| `tools/asset_creator/core/detail_overlay.py` | Python Module | V2 spec § "Step 4" | V2 spec |
-| `tools/asset_creator/exporters/png_exporter.py` | Python Module | Codebase | Exporter |
-| `tools/asset_creator/exporters/tsx_exporter.py` | Python Module | Codebase | Exporter |
-| `tools/asset_creator/config/terrain_presets.yaml` | YAML | V2 spec § "Step 5" | Terrain designer |
-| `tools/asset_creator/config/palettes/*.yaml` | YAML | V2 spec § "Step 2" | Palette designer |
+| `tools/asset_convertor/core/texture.py` | Python Module | V2 spec § "Step 3" | V2 spec |
+| `tools/asset_convertor/core/palette.py` | Python Module | V2 spec § "Step 2" | V2 spec |
+| `tools/asset_convertor/core/terrain.py` | Python Module | Codebase | Pipeline |
+| `tools/asset_convertor/core/subtile.py` | Python Module | Codebase | Pipeline |
+| `tools/asset_convertor/core/tile_assembler.py` | Python Module | Codebase | Pipeline |
+| `tools/asset_convertor/core/detail_overlay.py` | Python Module | V2 spec § "Step 4" | V2 spec |
+| `tools/asset_convertor/exporters/png_exporter.py` | Python Module | Codebase | Exporter |
+| `tools/asset_convertor/exporters/tsx_exporter.py` | Python Module | Codebase | Exporter |
+| `tools/asset_convertor/config/terrain_presets.yaml` | YAML | V2 spec § "Step 5" | Terrain designer |
+| `tools/asset_convertor/config/palettes/*.yaml` | YAML | V2 spec § "Step 2" | Palette designer |
 
 ### Public Interface
 
 | Type | Identifier | Documented at |
 |---|---|---|
-| CLI command | `python -m tools.asset_creator gui` | This spec § "Step 2" |
+| CLI command | `python -m tools.asset_convertor gui` | This spec § "Step 2" |
 | Python function | `run_gui()` | This spec § "Step 2" |
 | Python method | `AppState.to_texture_config() -> TextureParams` | This spec § "Modules & Responsibilities" item 3. Maps all AppState slider fields — including `warp_scale` and `warp_strength` (per [terrain_generation_core_spec.md](./terrain_generation_core_spec.md#L1)) — to a `TextureParams` instance. |
 
@@ -98,7 +98,7 @@ Replace the Pygame-based read-only preview with an interactive Dear PyGui GUI ap
 | Tier | Examples |
 |------|----------|
 | **Always do** | Run tests before committing. Use frozen dataclasses for state. Never mutate PIL images (always copy). Use `Image.NEAREST` for pixel art scaling. Debounce slider callbacks (300ms). |
-| **Ask first** | Adding new dependencies beyond `dearpygui` and `numpy`. Changing any existing `core/` module's public API. Modifying `tools/asset_creator/cli.py` behavior. |
+| **Ask first** | Adding new dependencies beyond `dearpygui` and `numpy`. Changing any existing `core/` module's public API. Modifying `tools/asset_convertor/cli.py` behavior. |
 | **Never do** | Put generation logic in `gui/` modules. Import `dearpygui` from `core/` modules. Break existing CLI or test suite (263 tests). Remove `preview/pygame_preview.py` (kept as optional legacy). |
 
 ---
@@ -106,7 +106,7 @@ Replace the Pygame-based read-only preview with an interactive Dear PyGui GUI ap
 ## Architecture Overview
 
 ```
-tools/asset_creator/
+tools/asset_convertor/
 ├── gui/                     # NEW — V3 GUI package
 │   ├── __init__.py
 │   ├── app.py               # Main window, layout, callbacks, theme, all DPG rendering (882 lines)
@@ -183,7 +183,7 @@ The following files are managed by this specification:
 ```
 tools/
   src/
-    asset_creator/
+    asset_convertor/
       __main__.py                       # [DEV-TOOL] GUI application entry point
       cli.py                            # [DEV-TOOL] CLI interface for assets creation
       config/
@@ -209,14 +209,14 @@ tools/
   docs/
     specs/
       STRATEGIC_BLUEPRINT.md            # Strategic blueprint
-      asset_creator_spec.md             # This GUI specification
+      asset_convertor_spec.md             # This GUI specification
       terrain_generation_core_spec.md   # Domain warping spec
       phase-1-simple-tiles.md           # Simple tiles spec
       code_quality_constants_and_translation.md # Code quality spec
       diagonal_wall_spec.md             # Diagonal walls spec
 tests/
   tools/
-    asset_creator/
+    asset_convertor/
       test_minimap.py                 # [DEV-TOOL] Unit tests for minimap engine
       test_gui_state.py               # [DEV-TOOL] Unit tests for application state
       test_gui_preview.py             # [DEV-TOOL] Unit tests for PIL texture rendering
@@ -244,7 +244,7 @@ output/
 
 ## Test Case Specifications
 
-### Unit Tests — `tests/tools/asset_creator/test_minimap.py` (F1)
+### Unit Tests — `tests/tools/asset_convertor/test_minimap.py` (F1)
 
 | ID | Test | Input | Expected |
 |----|------|-------|----------|
@@ -257,18 +257,18 @@ output/
 | TC-007 | `find_closest_bitmask_index` approximate | Bitmask not in BLOB_BITMASKS | Returns closest by Hamming similarity |
 | TC-008 | `generate_empty_grid` dimensions | cols=10, rows=8 | Grid is 8 rows × 10 cols, all False |
 
-### Unit Tests — `tests/tools/asset_creator/test_gui_state.py` (F3, F4)
+### Unit Tests — `tests/tools/asset_convertor/test_gui_state.py` (F3, F4)
 
 | ID | Test | Input | Expected |
 |----|------|-------|----------|
-| TC-009 | `state_from_preset("grass")` loads correct values | Grass preset | `state.scale == 0.12`, `state.detail_type == "grass_blades"`. Expected values sourced from `tools/asset_creator/config/terrain_presets.yaml` grass preset — update this test if the YAML changes. |
+| TC-009 | `state_from_preset("grass")` loads correct values | Grass preset | `state.scale == 0.12`, `state.detail_type == "grass_blades"`. Expected values sourced from `tools/asset_convertor/config/terrain_presets.yaml` grass preset — update this test if the YAML changes. |
 | TC-010 | `to_texture_config()` produces valid TextureConfig | Default AppState | TextureConfig with matching fields |
 | TC-011 | `to_detail_config()` produces valid DetailConfig | Default AppState | DetailConfig with matching fields |
 | TC-012 | `to_edge_config()` produces valid EdgeConfig | Default AppState | EdgeConfig with matching fields |
 | TC-013 | AppState is frozen (immutable) | `state.scale = 0.5` | Raises `FrozenInstanceError` |
 | TC-014 | `state_from_preset` works for all 6 presets | Each preset name | No exceptions, valid AppState |
 
-### Unit Tests — `tests/tools/asset_creator/test_gui_preview.py` (F5)
+### Unit Tests — `tests/tools/asset_convertor/test_gui_preview.py` (F5)
 
 | ID | Test | Input | Expected |
 |----|------|-------|----------|
@@ -278,7 +278,7 @@ output/
 | TC-018 | `extract_tiles_from_strip` count | 49×32 wide strip (1568px — full pipeline output incl. transparent slots 41 and 48) | Returns exactly 49 tile images |
 | TC-019 | `extract_tiles_from_strip` dimensions | 49-slot strip | Each tile is 32×32 |
 
-### Integration Tests — `tests/tools/asset_creator/test_gui_integration.py`
+### Integration Tests — `tests/tools/asset_convertor/test_gui_integration.py`
 
 | ID | Test | Scenario | Expected |
 |----|------|----------|----------|
@@ -298,4 +298,4 @@ When running on macOS, `gui/app.py` dynamically injects the application icon (`a
 **Platform guard:** Wrap the AppKit import and injection call with `if sys.platform == "darwin":`. On non-macOS platforms (Linux, Windows), skip the injection silently — no error, no log message. A missing `pyobjc-framework-Cocoa` on macOS should also be caught with a `try/except ImportError` and silently skipped.
 
 ### UI Language Constraint
-**Exception to Global Translation Rules:** The GUI interface of `asset_creator` MUST strictly remain in French. While the internal code, variables, and comments follow English conventions, all user-facing labels in `gui/app.py` are strictly defined in French as per user request.
+**Exception to Global Translation Rules:** The GUI interface of `asset_convertor` MUST strictly remain in French. While the internal code, variables, and comments follow English conventions, all user-facing labels in `gui/app.py` are strictly defined in French as per user request.

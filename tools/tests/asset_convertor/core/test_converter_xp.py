@@ -1,5 +1,5 @@
 """
-TDD RED tests for asset_creator.core.converter_xp
+TDD RED tests for asset_convertor.core.converter_xp
 
 Derived from: tools/docs/specs/autotile_converter_spec.md § Test Cases TC-001..TC-010
 Bitmask convention (from existing rpgmaker_blob_autotile_to_tiled.py):
@@ -36,7 +36,7 @@ def _make_xp_with_known_subtile(col: int, row: int, color: tuple) -> Image.Image
 
 @pytest.mark.unit
 def test_tc001_convert_xp_returns_47_images():
-    from asset_creator.core.converter_xp import convert_xp
+    from asset_convertor.core.converter_xp import convert_xp
 
     img = _make_xp()
     result = convert_xp(img)
@@ -50,7 +50,7 @@ def test_tc001_convert_xp_returns_47_images():
 
 @pytest.mark.unit
 def test_tc002_each_tile_is_32x32():
-    from asset_creator.core.converter_xp import convert_xp
+    from asset_convertor.core.converter_xp import convert_xp
 
     img = _make_xp()
     result = convert_xp(img)
@@ -65,7 +65,7 @@ def test_tc002_each_tile_is_32x32():
 
 @pytest.mark.unit
 def test_tc003_each_tile_is_rgba():
-    from asset_creator.core.converter_xp import convert_xp
+    from asset_convertor.core.converter_xp import convert_xp
 
     img = _make_xp()
     result = convert_xp(img)
@@ -80,7 +80,7 @@ def test_tc003_each_tile_is_rgba():
 
 @pytest.mark.unit
 def test_tc004_wrong_dimensions_raise_value_error():
-    from asset_creator.core.converter_xp import convert_xp
+    from asset_convertor.core.converter_xp import convert_xp
 
     wrong = Image.new("RGBA", (64, 64))
     with pytest.raises(ValueError, match=r"96.128"):
@@ -95,7 +95,7 @@ def test_tc004_wrong_dimensions_raise_value_error():
 @pytest.mark.unit
 @pytest.mark.skipif(not SAMPLE_XP.exists(), reason="sample_xp.png not found")
 def test_tc005_isolated_tile_is_assembled():
-    from asset_creator.core.converter_xp import convert_xp
+    from asset_convertor.core.converter_xp import convert_xp
 
     img = Image.open(SAMPLE_XP).convert("RGBA")
     result = convert_xp(img)
@@ -113,7 +113,7 @@ def test_tc005_isolated_tile_is_assembled():
 @pytest.mark.unit
 @pytest.mark.skipif(not SAMPLE_XP.exists(), reason="sample_xp.png not found")
 def test_tc006_fully_surrounded_tile_is_assembled():
-    from asset_creator.core.converter_xp import convert_xp
+    from asset_convertor.core.converter_xp import convert_xp
 
     img = Image.open(SAMPLE_XP).convert("RGBA")
     result = convert_xp(img)
@@ -130,7 +130,7 @@ def test_tc006_fully_surrounded_tile_is_assembled():
 
 @pytest.mark.unit
 def test_tc007_extract_subtile_crops_correctly():
-    from asset_creator.core.converter_xp import _extract_subtile
+    from asset_convertor.core.converter_xp import _extract_subtile
 
     target_color = (255, 0, 128, 255)
     img = _make_xp_with_known_subtile(col=2, row=2, color=target_color)
@@ -147,7 +147,7 @@ def test_tc007_extract_subtile_crops_correctly():
 
 @pytest.mark.unit
 def test_tc008_assemble_tile_places_quadrants():
-    from asset_creator.core.converter_xp import _assemble_tile
+    from asset_convertor.core.converter_xp import _assemble_tile
 
     colors = {
         "TL": (255, 0, 0, 255),
@@ -172,7 +172,7 @@ def test_tc008_assemble_tile_places_quadrants():
 @pytest.mark.unit
 @pytest.mark.skipif(not SAMPLE_XP.exists(), reason="sample_xp.png not found")
 def test_tc009_source_not_mutated():
-    from asset_creator.core.converter_xp import convert_xp
+    from asset_convertor.core.converter_xp import convert_xp
 
     img = Image.open(SAMPLE_XP).convert("RGBA")
     original_pixels = list(img.getdata())
@@ -188,7 +188,7 @@ def test_tc009_source_not_mutated():
 
 @pytest.mark.unit
 def test_tc010_output_index_matches_blob_bitmasks_order():
-    from asset_creator.core.converter_xp import BLOB_BITMASKS, convert_xp
+    from asset_convertor.core.converter_xp import BLOB_BITMASKS, convert_xp
 
     assert len(BLOB_BITMASKS) == 47
     img = _make_xp()

@@ -1,5 +1,5 @@
 """
-TDD RED tests for asset_creator.core.converter_mv
+TDD RED tests for asset_convertor.core.converter_mv
 
 Derived from: tools/docs/specs/autotile_converter_spec.md § Test Cases TC-011..TC-020
 """
@@ -25,7 +25,7 @@ def _make_mv(width: int = 64, height: int = 96, color: tuple = (0, 128, 128, 255
 
 @pytest.mark.unit
 def test_tc011_detect_tile_size_32px():
-    from asset_creator.core.converter_mv import detect_tile_size
+    from asset_convertor.core.converter_mv import detect_tile_size
 
     img = Image.new("RGBA", (64, 96))
     assert detect_tile_size(img) == 32
@@ -38,7 +38,7 @@ def test_tc011_detect_tile_size_32px():
 
 @pytest.mark.unit
 def test_tc012_detect_tile_size_48px():
-    from asset_creator.core.converter_mv import detect_tile_size
+    from asset_convertor.core.converter_mv import detect_tile_size
 
     img = Image.new("RGBA", (96, 144))
     assert detect_tile_size(img) == 48
@@ -51,7 +51,7 @@ def test_tc012_detect_tile_size_48px():
 
 @pytest.mark.unit
 def test_tc013_detect_tile_size_raises_for_unknown():
-    from asset_creator.core.converter_mv import detect_tile_size
+    from asset_convertor.core.converter_mv import detect_tile_size
 
     img = Image.new("RGBA", (128, 192))
     with pytest.raises(ValueError, match=r"Unrecognized"):
@@ -65,7 +65,7 @@ def test_tc013_detect_tile_size_raises_for_unknown():
 
 @pytest.mark.unit
 def test_tc014_convert_mv_returns_47_images():
-    from asset_creator.core.converter_mv import convert_mv
+    from asset_convertor.core.converter_mv import convert_mv
 
     img = _make_mv(64, 96)
     result = convert_mv(img)
@@ -79,7 +79,7 @@ def test_tc014_convert_mv_returns_47_images():
 
 @pytest.mark.unit
 def test_tc015_tiles_are_32x32_for_64x96():
-    from asset_creator.core.converter_mv import convert_mv
+    from asset_convertor.core.converter_mv import convert_mv
 
     img = _make_mv(64, 96)
     result = convert_mv(img)
@@ -94,7 +94,7 @@ def test_tc015_tiles_are_32x32_for_64x96():
 
 @pytest.mark.unit
 def test_tc016_tiles_are_rgba():
-    from asset_creator.core.converter_mv import convert_mv
+    from asset_convertor.core.converter_mv import convert_mv
 
     img = _make_mv(64, 96)
     result = convert_mv(img)
@@ -109,7 +109,7 @@ def test_tc016_tiles_are_rgba():
 
 @pytest.mark.unit
 def test_tc017_wrong_dimensions_raise_value_error():
-    from asset_creator.core.converter_mv import convert_mv
+    from asset_convertor.core.converter_mv import convert_mv
 
     wrong = Image.new("RGBA", (64, 64))
     with pytest.raises(ValueError, match=r"Unrecognized"):
@@ -124,7 +124,7 @@ def test_tc017_wrong_dimensions_raise_value_error():
 @pytest.mark.unit
 @pytest.mark.skipif(not SAMPLE_MV.exists(), reason="sample_mv_32px.png not found")
 def test_tc018_isolated_tile_non_transparent():
-    from asset_creator.core.converter_mv import convert_mv
+    from asset_convertor.core.converter_mv import convert_mv
 
     img = Image.open(SAMPLE_MV).convert("RGBA")
     result = convert_mv(img)
@@ -141,7 +141,7 @@ def test_tc018_isolated_tile_non_transparent():
 @pytest.mark.unit
 @pytest.mark.skipif(not SAMPLE_MV.exists(), reason="sample_mv_32px.png not found")
 def test_tc019_fully_surrounded_non_transparent():
-    from asset_creator.core.converter_mv import convert_mv
+    from asset_convertor.core.converter_mv import convert_mv
 
     img = Image.open(SAMPLE_MV).convert("RGBA")
     result = convert_mv(img)
@@ -158,7 +158,7 @@ def test_tc019_fully_surrounded_non_transparent():
 @pytest.mark.unit
 @pytest.mark.skipif(not SAMPLE_MV.exists(), reason="sample_mv_32px.png not found")
 def test_tc020_source_not_mutated():
-    from asset_creator.core.converter_mv import convert_mv
+    from asset_convertor.core.converter_mv import convert_mv
 
     img = Image.open(SAMPLE_MV).convert("RGBA")
     original_pixels = list(img.getdata())

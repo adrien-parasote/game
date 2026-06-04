@@ -4,12 +4,12 @@ Bienvenue dans la documentation du **Tooling** (Outillage). Ce répertoire conti
 
 ---
 
-## 1. Asset Creator
+## 1. Asset Convertor
 
-L'Asset Creator est l'outil central (basé sur Dear PyGui) permettant de composer, dessiner et exporter des tuiles complexes (blobs, variations de terrain).
+L'Asset Convertor est l'outil central (basé sur Dear PyGui) permettant de composer, dessiner et exporter des tuiles complexes (blobs, variations de terrain).
 
-* **Spec Active** : [Asset Creator Spec](./specs/asset_creator_spec.md)
-* **Stratégie / Blueprint** : [Asset Creator Blueprint](./strategic/asset_creator_blueprint.md)
+* **Spec Active** : [Asset Convertor Spec](./specs/asset_convertor_spec.md)
+* **Stratégie / Blueprint** : [Asset Convertor Blueprint](./strategic/asset_convertor_blueprint.md)
 * **ADR** : [ADR-001 Dear PyGui remplace Pygame](./ADRs/adr-001-dearpygui-replaces-pygame.md)
 
 <details>

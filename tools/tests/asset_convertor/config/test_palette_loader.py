@@ -1,6 +1,6 @@
 import json
 
-from asset_creator.config.palette_loader import load_palettes
+from asset_convertor.config.palette_loader import load_palettes
 
 
 def test_tc006_palette_loader(tmp_path):

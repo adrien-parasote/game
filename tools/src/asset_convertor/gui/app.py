@@ -21,10 +21,10 @@ from tkinter import filedialog
 from typing import Literal
 
 import customtkinter as ctk
-from asset_creator.core.constants import TILE_SIZE
-from asset_creator.core.converter_mv import convert_mv
-from asset_creator.core.converter_xp import BLOB_BITMASKS, convert_xp
-from asset_creator.exporters.tsx_generator import export
+from asset_convertor.core.constants import TILE_SIZE
+from asset_convertor.core.converter_mv import convert_mv
+from asset_convertor.core.converter_xp import BLOB_BITMASKS, convert_xp
+from asset_convertor.exporters.tsx_generator import export
 from PIL import Image, ImageTk
 
 # ── Configuration UI ─────────────────────────────────────────────────────────
@@ -480,7 +480,7 @@ class App(ctk.CTk):
     def _display_output_sheet(
         self, tiles: list[Image.Image], tile_size: int
     ) -> None:
-        from asset_creator.exporters.tsx_generator import assemble_sheet
+        from asset_convertor.exporters.tsx_generator import assemble_sheet
 
         sheet = assemble_sheet(tiles, tile_size)
         scaled = self._scale_to_fit(sheet, 320, 220)

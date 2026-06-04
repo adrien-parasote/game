@@ -1,5 +1,5 @@
 import numpy as np
-from asset_creator.core.quantizer import quantize_image
+from asset_convertor.core.quantizer import quantize_image
 
 
 def test_tc001_output_dimensions():

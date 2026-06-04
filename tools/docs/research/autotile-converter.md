@@ -171,7 +171,7 @@ The tool will render a small test map (~5×5 tiles) using the 47 output tiles wi
 | MV sub-tile lookup table | **Adapt** | Community-documented, needs Python implementation |
 | 47-tile blob bitmask system | **Adopt** | Well-proven, cr31 spec |
 | TSX wangset XML format | **Adopt** | Official Tiled spec |
-| GUI shell | **Adapt** | Reuse customtkinter from existing asset_creator |
+| GUI shell | **Adapt** | Reuse customtkinter from existing asset_convertor |
 | Canvas/preview | **Build** | tkinter Canvas with pattern drawing |
 
 ---

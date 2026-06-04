@@ -1,5 +1,5 @@
 """
-TDD RED tests for asset_creator.exporters.tsx_generator
+TDD RED tests for asset_convertor.exporters.tsx_generator
 
 Derived from: tools/docs/specs/autotile_converter_spec.md § Test Cases TC-021..TC-035
 """
@@ -35,7 +35,7 @@ def _make_distinct_tiles(count: int = 47, size: int = 32) -> list:
 
 @pytest.mark.unit
 def test_tc021_sheet_dimensions_32px():
-    from asset_creator.exporters.tsx_generator import assemble_sheet
+    from asset_convertor.exporters.tsx_generator import assemble_sheet
 
     tiles = _make_tiles(47, 32)
     sheet = assemble_sheet(tiles, 32)
@@ -49,7 +49,7 @@ def test_tc021_sheet_dimensions_32px():
 
 @pytest.mark.unit
 def test_tc022_sheet_dimensions_48px():
-    from asset_creator.exporters.tsx_generator import assemble_sheet
+    from asset_convertor.exporters.tsx_generator import assemble_sheet
 
     tiles = _make_tiles(47, 48)
     sheet = assemble_sheet(tiles, 48)
@@ -63,7 +63,7 @@ def test_tc022_sheet_dimensions_48px():
 
 @pytest.mark.unit
 def test_tc023_tile0_at_origin():
-    from asset_creator.exporters.tsx_generator import assemble_sheet
+    from asset_convertor.exporters.tsx_generator import assemble_sheet
 
     tiles = _make_distinct_tiles(47, 32)
     sheet = assemble_sheet(tiles, 32)
@@ -79,7 +79,7 @@ def test_tc023_tile0_at_origin():
 
 @pytest.mark.unit
 def test_tc024_tile8_at_row1():
-    from asset_creator.exporters.tsx_generator import assemble_sheet
+    from asset_convertor.exporters.tsx_generator import assemble_sheet
 
     tiles = _make_distinct_tiles(47, 32)
     sheet = assemble_sheet(tiles, 32)
@@ -95,7 +95,7 @@ def test_tc024_tile8_at_row1():
 
 @pytest.mark.unit
 def test_tc025_slot47_is_transparent():
-    from asset_creator.exporters.tsx_generator import assemble_sheet
+    from asset_convertor.exporters.tsx_generator import assemble_sheet
 
     tiles = _make_tiles(47, 32, color=(255, 0, 0, 255))
     sheet = assemble_sheet(tiles, 32)
@@ -112,7 +112,7 @@ def test_tc025_slot47_is_transparent():
 
 @pytest.mark.unit
 def test_tc026_bitmask_to_wangid_0():
-    from asset_creator.exporters.tsx_generator import bitmask_to_wangid
+    from asset_convertor.exporters.tsx_generator import bitmask_to_wangid
 
     assert bitmask_to_wangid(0) == "0,0,0,0,0,0,0,0"
 
@@ -124,7 +124,7 @@ def test_tc026_bitmask_to_wangid_0():
 
 @pytest.mark.unit
 def test_tc027_bitmask_to_wangid_255():
-    from asset_creator.exporters.tsx_generator import bitmask_to_wangid
+    from asset_convertor.exporters.tsx_generator import bitmask_to_wangid
 
     assert bitmask_to_wangid(255) == "1,1,1,1,1,1,1,1"
 
@@ -136,7 +136,7 @@ def test_tc027_bitmask_to_wangid_255():
 
 @pytest.mark.unit
 def test_tc028_bitmask_to_wangid_n_only():
-    from asset_creator.exporters.tsx_generator import bitmask_to_wangid
+    from asset_convertor.exporters.tsx_generator import bitmask_to_wangid
 
     # In the existing convention: N=2 (bit 1)
     # wangid order: [top, topRight, right, bottomRight, bottom, bottomLeft, left, topLeft]
@@ -154,7 +154,7 @@ def test_tc028_bitmask_to_wangid_n_only():
 
 @pytest.mark.unit
 def test_tc029_generate_tsx_is_valid_xml():
-    from asset_creator.exporters.tsx_generator import generate_tsx
+    from asset_convertor.exporters.tsx_generator import generate_tsx
 
     tiles = _make_tiles(47, 32)
     xml_str = generate_tsx("test_tileset", 32, "test_tileset.png")
@@ -170,7 +170,7 @@ def test_tc029_generate_tsx_is_valid_xml():
 
 @pytest.mark.unit
 def test_tc030_generate_tsx_has_47_wangtiles():
-    from asset_creator.exporters.tsx_generator import generate_tsx
+    from asset_convertor.exporters.tsx_generator import generate_tsx
 
     xml_str = generate_tsx("test_tileset", 32, "test_tileset.png")
     root = ET.fromstring(xml_str)
@@ -185,7 +185,7 @@ def test_tc030_generate_tsx_has_47_wangtiles():
 
 @pytest.mark.unit
 def test_tc031_wangset_type_is_mixed():
-    from asset_creator.exporters.tsx_generator import generate_tsx
+    from asset_convertor.exporters.tsx_generator import generate_tsx
 
     xml_str = generate_tsx("test_tileset", 32, "test_tileset.png")
     root = ET.fromstring(xml_str)
@@ -201,7 +201,7 @@ def test_tc031_wangset_type_is_mixed():
 
 @pytest.mark.unit
 def test_tc032_export_creates_png():
-    from asset_creator.exporters.tsx_generator import export
+    from asset_convertor.exporters.tsx_generator import export
 
     tiles = _make_tiles(47, 32)
     with tempfile.TemporaryDirectory() as tmp:
@@ -216,7 +216,7 @@ def test_tc032_export_creates_png():
 
 @pytest.mark.unit
 def test_tc033_export_creates_tsx():
-    from asset_creator.exporters.tsx_generator import export
+    from asset_convertor.exporters.tsx_generator import export
 
     tiles = _make_tiles(47, 32)
     with tempfile.TemporaryDirectory() as tmp:
@@ -231,7 +231,7 @@ def test_tc033_export_creates_tsx():
 
 @pytest.mark.unit
 def test_tc034_export_raises_oserror_for_bad_dir():
-    from asset_creator.exporters.tsx_generator import export
+    from asset_convertor.exporters.tsx_generator import export
 
     tiles = _make_tiles(47, 32)
     with pytest.raises((OSError, PermissionError)):
@@ -245,7 +245,7 @@ def test_tc034_export_raises_oserror_for_bad_dir():
 
 @pytest.mark.unit
 def test_tc035_export_raises_for_wrong_tile_count():
-    from asset_creator.exporters.tsx_generator import export
+    from asset_convertor.exporters.tsx_generator import export
 
     tiles = _make_tiles(46, 32)  # 46, not 47
     with tempfile.TemporaryDirectory() as tmp, pytest.raises(ValueError, match=r"47"):

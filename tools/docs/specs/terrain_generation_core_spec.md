@@ -1,4 +1,4 @@
-# Asset Creator Spec — Terrain Generation Core (Domain Warping)
+# Asset Convertor Spec — Terrain Generation Core (Domain Warping)
 
 > Document Type: Implementation
 > **Covers:** F1, F2, F3, F4
@@ -6,10 +6,10 @@
 ## Deep Links
 
 - [V4 Strategic Blueprint](../strategic/terrain_generation_core_blueprint.md#L1)
-- [GUI Spec](./asset_creator_spec.md#L1)
-- [Texture module](../../../tools/asset_creator/core/texture.py#L1)
-- [App module](../../../tools/asset_creator/gui/app.py#L1)
-- [State module](../../../tools/asset_creator/gui/state.py#L1)
+- [GUI Spec](./asset_convertor_spec.md#L1)
+- [Texture module](../../../tools/asset_convertor/core/texture.py#L1)
+- [App module](../../../tools/asset_convertor/gui/app.py#L1)
+- [State module](../../../tools/asset_convertor/gui/state.py#L1)
 
 ## Assumptions
 
@@ -34,21 +34,21 @@
 
 | Path / Identifier | Format | Schema location | Consumers |
 |---|---|---|---|
-| `tools/asset_creator/core/texture.py` | Python Module | This spec § "Domain Warping Algorithm" | `gui/pipeline.py`, `core/tile_assembler.py` |
+| `tools/asset_convertor/core/texture.py` | Python Module | This spec § "Domain Warping Algorithm" | `gui/pipeline.py`, `core/tile_assembler.py` |
 
 ### Consumes
 
 | Path / Identifier | Format | Schema location | Producer |
 |---|---|---|---|
-| `tools/asset_creator/gui/state.py` | Python Module | `specs/asset_creator_spec.md` | GUI Spec |
-| `tools/asset_creator/gui/app.py` | Python Module | `specs/asset_creator_spec.md` | GUI Spec |
-| `tools/asset_creator/config/terrain_presets.yaml` | YAML | `specs/asset_creator_spec.md` | Presets |
+| `tools/asset_convertor/gui/state.py` | Python Module | `specs/asset_convertor_spec.md` | GUI Spec |
+| `tools/asset_convertor/gui/app.py` | Python Module | `specs/asset_convertor_spec.md` | GUI Spec |
+| `tools/asset_convertor/config/terrain_presets.yaml` | YAML | `specs/asset_convertor_spec.md` | Presets |
 
 ### [MODIFICATION REQUIRED] Consuming specs that must be updated
 
 | Spec | Method / Field | Required Change |
 |---|---|---|
-| `specs/asset_creator_spec.md` | `AppState.to_texture_config()` | Must map `warp_scale` and `warp_strength` from `AppState` to the returned `TextureParams` instance. **This update is mandatory before this spec's tests can pass.** |
+| `specs/asset_convertor_spec.md` | `AppState.to_texture_config()` | Must map `warp_scale` and `warp_strength` from `AppState` to the returned `TextureParams` instance. **This update is mandatory before this spec's tests can pass.** |
 
 ### Public Interface
 
@@ -67,12 +67,12 @@
 
 | Concept | Status in this spec | Mentioned in |
 |---|---|---|
-| TextureParams | Modified to add warp parameters | `specs/asset_creator_spec.md` |
+| TextureParams | Modified to add warp parameters | `specs/asset_convertor_spec.md` |
 | Seamless Tiling | Enforced via Toroidal noise math + wrapping offsets | `./autotile_converter_spec.md` |
 
 ## TextureParams Schema
 
-The two new fields are added to the existing `TextureParams` frozen dataclass in `tools/asset_creator/core/texture.py`:
+The two new fields are added to the existing `TextureParams` frozen dataclass in `tools/asset_convertor/core/texture.py`:
 
 ```python
 @dataclass(frozen=True)
@@ -96,7 +96,7 @@ To prevent seed collisions across future procedural passes, seed offsets are all
 
 | Offset | Purpose | Spec |
 |--------|---------|------|
-| `seed + 0` | Base terrain noise | `specs/asset_creator_spec.md` |
+| `seed + 0` | Base terrain noise | `specs/asset_convertor_spec.md` |
 | `seed + 1` | Reserved (do not use) | — |
 | `seed + 2` | Warp noise X (`warp_noise_x`) | This spec |
 | `seed + 3` | Warp noise Y (`warp_noise_y`) | This spec |
@@ -162,7 +162,7 @@ To produce organic "S-curves" matching the RPG Maker grass autotile aesthetic wh
    `y_wrapped = y_warped % height`
 8. Project the wrapped coordinate arrays onto the torus and sample `base_noise` using the vectorized toroidal projection.
 
-Modify the type signature of `_compute_multi_octave_noise` in `tools/src/asset_creator/core/texture.py` to accept floats:
+Modify the type signature of `_compute_multi_octave_noise` in `tools/src/asset_convertor/core/texture.py` to accept floats:
 ```python
 def _compute_multi_octave_noise(
     x: float,
@@ -176,7 +176,7 @@ def _compute_multi_octave_noise(
 
 ## GUI Slider Configuration
 
-The new warp parameters must be exposed in the Dear PyGui layout inside `tools/src/asset_creator/gui/app.py` under the texture parameters section with the following constraints:
+The new warp parameters must be exposed in the Dear PyGui layout inside `tools/src/asset_convertor/gui/app.py` under the texture parameters section with the following constraints:
 - **Warp Strength Slider**:
   - Label: "Force Déformation" (French user-visible label)
   - Range: `0.0` to `50.0`

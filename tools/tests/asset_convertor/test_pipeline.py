@@ -1,10 +1,10 @@
 import os
 
 # We will import the modules once they are created
-# from asset_creator.core.generator import generate_texture
-# from asset_creator.core.quantizer import quantize_image
-# from asset_creator.exporters.exporter import export_tile
-# from asset_creator.config.palette_loader import load_palettes
+# from asset_convertor.core.generator import generate_texture
+# from asset_convertor.core.quantizer import quantize_image
+# from asset_convertor.exporters.exporter import export_tile
+# from asset_convertor.config.palette_loader import load_palettes
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -14,7 +14,7 @@ from PIL import Image
 
 def test_tc001_output_dimensions():
     """TC-001: Image output from the quantizer must be exactly 32x32."""
-    from asset_creator.core.quantizer import quantize_image
+    from asset_convertor.core.quantizer import quantize_image
 
     # Fake a valid generation output
     fake_gen = np.zeros((32, 32), dtype=int)
@@ -26,7 +26,7 @@ def test_tc001_output_dimensions():
 
 def test_tc002_generator_output_format():
     """TC-002: Generator returns a (32, 32) numpy array with values in [0, 1, 2, 3, 4]."""
-    from asset_creator.core.generator import generate_texture
+    from asset_convertor.core.generator import generate_texture
 
     output = generate_texture("grass", seed=42, density=10)
     assert isinstance(output, np.ndarray)
@@ -36,7 +36,7 @@ def test_tc002_generator_output_format():
 
 def test_tc003_color_quantization_strictness():
     """TC-003: Output image only contains colors present in the sorted palette."""
-    from asset_creator.core.quantizer import quantize_image
+    from asset_convertor.core.quantizer import quantize_image
 
     # Generate some random logical indices
     fake_gen = np.random.randint(0, 4, (32, 32))
@@ -53,8 +53,8 @@ def test_tc003_color_quantization_strictness():
 
 def test_tc004_tsx_generation_structure(tmp_path):
     """TC-004: Given tile_name, the generated XML parses successfully as valid XML with tilewidth=32."""
-    from asset_creator.core.quantizer import quantize_image
-    from asset_creator.exporters.exporter import export_tile
+    from asset_convertor.core.quantizer import quantize_image
+    from asset_convertor.exporters.exporter import export_tile
 
     # We will export to a tmp_path
     os.environ["EXPORT_DIR"] = str(tmp_path)
@@ -79,7 +79,7 @@ def test_tc004_tsx_generation_structure(tmp_path):
 
 def test_tc005_generator_fallback():
     """TC-005: Unknown texture_type is handled gracefully."""
-    from asset_creator.core.generator import generate_texture
+    from asset_convertor.core.generator import generate_texture
 
     output = generate_texture("some_unknown_type", seed=42, density=10)
     assert output.shape == (32, 32)
@@ -90,7 +90,7 @@ def test_tc006_palette_loader(tmp_path):
     """TC-006: palettes.json is parsed from hex strings to RGB tuples."""
     import json
 
-    from asset_creator.config.palette_loader import load_palettes
+    from asset_convertor.config.palette_loader import load_palettes
 
     fake_json = tmp_path / "palettes.json"
     fake_json.write_text(json.dumps({
@@ -104,7 +104,7 @@ def test_tc006_palette_loader(tmp_path):
 
 def test_tc007_determinism():
     """TC-007: Same seed = same ndarray output."""
-    from asset_creator.core.generator import generate_texture
+    from asset_convertor.core.generator import generate_texture
 
     out1 = generate_texture("grass", seed=42, density=10)
     out2 = generate_texture("grass", seed=42, density=10)
@@ -118,8 +118,8 @@ def test_it001_gui_to_preview_flow():
 
 def test_it001_generate_quantize_end_to_end():
     """IT-001: generate_texture -> quantize_image End-to-end. Verifies 5-tone to 5-color mapping."""
-    from asset_creator.core.generator import generate_texture
-    from asset_creator.core.quantizer import quantize_image
+    from asset_convertor.core.generator import generate_texture
+    from asset_convertor.core.quantizer import quantize_image
 
     # Generate grass with crescent, which guarantees value 4 is used (TC-005)
     gen_array = generate_texture("grass", seed=100, density=15, sub_type="crescent")
@@ -135,9 +135,9 @@ def test_it001_generate_quantize_end_to_end():
 
 def test_it002_end_to_end_pipeline(tmp_path):
     """IT-002: GUI triggers Generator -> Quantizer -> Exporter (writes valid PNG and TSX)."""
-    from asset_creator.core.generator import generate_texture
-    from asset_creator.core.quantizer import quantize_image
-    from asset_creator.exporters.exporter import export_tile
+    from asset_convertor.core.generator import generate_texture
+    from asset_convertor.core.quantizer import quantize_image
+    from asset_convertor.exporters.exporter import export_tile
 
     os.environ["EXPORT_DIR"] = str(tmp_path)
 
@@ -154,7 +154,7 @@ def test_it002_end_to_end_pipeline(tmp_path):
 
 def test_it003_xml_injection_safety(tmp_path):
     """IT-003: Seed/Name cannot break XML structure."""
-    from asset_creator.exporters.exporter import export_tile
+    from asset_convertor.exporters.exporter import export_tile
 
     os.environ["EXPORT_DIR"] = str(tmp_path)
     img = Image.new("RGB", (32, 32))

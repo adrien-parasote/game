@@ -30,7 +30,7 @@ The platform highly emphasizes color constraint as the defining characteristic o
 Guides explain how to use the generator to create tiling textures (like grass, dirt, factory floors) that seamlessly wrap. Examples include "topdown view grass tile with flowers" and "grass texture in factory style".
 
 ## Decision: Adopt, Adapt, or Build-New?
-The user wants to build an asset creator that achieves similar results. Since the user explicitly stated "le tool asset_creator ne me va pas" and found Sprite-AI as an inspiration for the *final render*, we need to **Adapt** our approach to incorporate:
+The user wants to build an asset convertor that achieves similar results. Since the user explicitly stated "le tool asset_convertor ne me va pas" and found Sprite-AI as an inspiration for the *final render*, we need to **Adapt** our approach to incorporate:
 1. **Strict Palette Constraints**: Pre-defined limited palettes during or immediately after generation.
 2. **Hybrid Workflow Integration**: Ensure the user can easily prompt for a base and then edit/tile it.
 3. **Seamless Tiling Support**: Prompting strategies or post-processing for tiling textures.

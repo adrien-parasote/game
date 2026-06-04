@@ -11,15 +11,15 @@ setup:
 	$(BIN)/pip install -r requirements.txt
 	@echo "Setup complete!"
 	@echo "  -> make run-game  : Start the game"
-	@echo "  -> make run-tools : Start the asset creator tool"
+	@echo "  -> make run-tools : Start the asset convertor tool"
 
 run-game:
 	@echo "Starting the game..."
 	PYTHONPATH=. $(BIN)/python -m game.src.main
 
 run-tools:
-	@echo "Starting Asset Creator Tools..."
-	PYTHONPATH=tools/src $(BIN)/python -m asset_creator
+	@echo "Starting Asset Convertor Tools..."
+	PYTHONPATH=tools/src $(BIN)/python -m asset_convertor
 
 test:
 	@echo "Running all tests..."

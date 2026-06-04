@@ -24,7 +24,7 @@
 
 ## Deep Links
 
-- [Blueprint § ADR-001](../strategic/autotile_converter_blueprint.md#adr-001-transform-asset_creator-not-a-new-tool)
+- [Blueprint § ADR-001](../strategic/autotile_converter_blueprint.md#adr-001-transform-asset_convertor-not-a-new-tool)
 - [Blueprint § ADR-002](../strategic/autotile_converter_blueprint.md#adr-002-47-tile-blob-output-not-16-tile-edge)
 - [Blueprint § ADR-003](../strategic/autotile_converter_blueprint.md#adr-003-mode-selection-drives-the-conversion-logic)
 - [Blueprint § ADR-004](../strategic/autotile_converter_blueprint.md#adr-004-gui-tech-stack--stay-on-customtkinter)
@@ -64,22 +64,22 @@
 
 | Path / Identifier | Format | Schema location | Consumers |
 |---|---|---|---|
-| `tools/src/asset_creator/core/converter_xp.py` | Python Module | This spec § `converter_xp.py` | `gui/app.py` |
-| `tools/src/asset_creator/core/converter_mv.py` | Python Module | This spec § `converter_mv.py` | `gui/app.py` |
-| `tools/src/asset_creator/exporters/tsx_generator.py` | Python Module | This spec § `tsx_generator.py` | `gui/app.py` |
-| `tools/src/asset_creator/gui/app.py` | Python Module | This spec § `gui/app.py` | `tools/src/asset_creator/__main__.py` |
+| `tools/src/asset_convertor/core/converter_xp.py` | Python Module | This spec § `converter_xp.py` | `gui/app.py` |
+| `tools/src/asset_convertor/core/converter_mv.py` | Python Module | This spec § `converter_mv.py` | `gui/app.py` |
+| `tools/src/asset_convertor/exporters/tsx_generator.py` | Python Module | This spec § `tsx_generator.py` | `gui/app.py` |
+| `tools/src/asset_convertor/gui/app.py` | Python Module | This spec § `gui/app.py` | `tools/src/asset_convertor/__main__.py` |
 | `tools/src/output/{name}.png` | PNG image | This spec § Output Format | Tiled editor |
 | `tools/src/output/{name}.tsx` | TSX XML | This spec § TSX Format | Tiled editor |
-| `tests/tools/asset_creator/test_converter_xp.py` | Python Test | This spec § Test Cases | Pytest |
-| `tests/tools/asset_creator/test_converter_mv.py` | Python Test | This spec § Test Cases | Pytest |
-| `tests/tools/asset_creator/test_tsx_generator.py` | Python Test | This spec § Test Cases | Pytest |
+| `tests/tools/asset_convertor/test_converter_xp.py` | Python Test | This spec § Test Cases | Pytest |
+| `tests/tools/asset_convertor/test_converter_mv.py` | Python Test | This spec § Test Cases | Pytest |
+| `tests/tools/asset_convertor/test_tsx_generator.py` | Python Test | This spec § Test Cases | Pytest |
 
 ### Consumes
 
 | Path / Identifier | Format | Schema location | Producer |
 |---|---|---|---|
 | `tools/src/input/*.png` | PNG image | This spec § Input Validation | User |
-| `tools/src/asset_creator/core/minimap.py` | Python Module | asset_creator_spec.md § Modules | asset_creator_spec |
+| `tools/src/asset_convertor/core/minimap.py` | Python Module | asset_convertor_spec.md § Modules | asset_convertor_spec |
 
 ### Public Interface
 
@@ -98,8 +98,8 @@ N/A — this spec invokes no external interfaces beyond the Python stdlib and Pi
 
 | Concept | Status in this spec | Mentioned in |
 |---|---|---|
-| 47-tile blob bitmask | Produced (output tileset) | asset_creator_spec.md (canvas autotile mode) |
-| minimap.py bitmask engine | Consumed (canvas validator) | asset_creator_spec.md |
+| 47-tile blob bitmask | Produced (output tileset) | asset_convertor_spec.md (canvas autotile mode) |
+| minimap.py bitmask engine | Consumed (canvas validator) | asset_convertor_spec.md |
 
 ---
 
@@ -125,7 +125,7 @@ N/A — this spec invokes no external interfaces beyond the Python stdlib and Pi
 ## Architecture Overview
 
 ```
-tools/src/asset_creator/
+tools/src/asset_convertor/
 ├── core/
 │   ├── converter_xp.py     [NEW] XP sub-tile assembly → 47 PIL Images
 │   ├── converter_mv.py     [NEW] MV/MZ sub-tile assembly → 47 PIL Images
@@ -143,7 +143,7 @@ tools/src/
 └── output/                 [NEW] Conversion output directory
     └── {name}.png + {name}.tsx
 
-tests/tools/asset_creator/
+tests/tools/asset_convertor/
 ├── test_converter_xp.py    [NEW]
 ├── test_converter_mv.py    [NEW]
 └── test_tsx_generator.py   [NEW]
@@ -599,7 +599,7 @@ def export(
 
 #### UI Language
 
-All user-facing labels are in **French** (consistent with existing asset_creator convention).
+All user-facing labels are in **French** (consistent with existing asset_convertor convention).
 
 #### Layout (three-column)
 
@@ -785,7 +785,7 @@ All error states:
 | TC-034 | `export` raises OSError for non-writable dir | output_dir="/root/nope" | `OSError` raised |
 | TC-035 | `export` raises ValueError for != 47 tiles | 46 tiles | `ValueError` raised |
 
-### Integration Tests — `tests/tools/asset_creator/test_converter_integration.py`
+### Integration Tests — `tests/tools/asset_convertor/test_converter_integration.py`
 
 | ID | Test | Scenario | Expected |
 |---|---|---|---|
@@ -809,7 +809,7 @@ Files managed by this specification:
 ```
 tools/
   src/
-    asset_creator/
+    asset_convertor/
       core/
         converter_xp.py         [NEW] XP autotile → 47 blob tiles
         converter_mv.py         [NEW] MV/MZ autotile → 47 blob tiles
@@ -832,7 +832,7 @@ tools/
       autotile-converter.md     [EXISTING]
 tests/
   tools/
-    asset_creator/
+    asset_convertor/
       test_converter_xp.py      [NEW]
       test_converter_mv.py      [NEW]
       test_tsx_generator.py     [NEW]

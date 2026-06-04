@@ -1,7 +1,7 @@
 import random
 
 import numpy as np
-from asset_creator.core.constants import (
+from asset_convertor.core.constants import (
     TUFT_ARCH,
     TUFT_CLASSIC_LEFT,
     TUFT_CLASSIC_RIGHT,

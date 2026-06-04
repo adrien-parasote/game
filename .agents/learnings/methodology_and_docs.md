@@ -606,7 +606,7 @@ If the script does not support single-file targeting, dynamically isolate the ta
 ### L-AGENT-006 · 2026-05-31 · U · Perfect
 **Parallel subagent orchestration with independent module boundaries produces zero-conflict builds**
 
-When building a multi-module system (Asset Creator V1→V2→V3), defining strict module boundaries in the spec enables parallel subagent execution with zero merge conflicts. Each subagent gets a self-contained scope: its own source file(s), its own test file(s), and explicit dependency declarations.
+When building a multi-module system (Asset Convertor V1→V2→V3), defining strict module boundaries in the spec enables parallel subagent execution with zero merge conflicts. Each subagent gets a self-contained scope: its own source file(s), its own test file(s), and explicit dependency declarations.
 
 **Pattern — in the spec, define for each build step:**
 1. **Input files** — what already exists that this step reads (read-only)
@@ -614,7 +614,7 @@ When building a multi-module system (Asset Creator V1→V2→V3), defining stric
 3. **Wait-for** — which other steps must complete first (dependency DAG)
 
 ```yaml
-# Example from Asset Creator V3 orchestration:
+# Example from Asset Convertor V3 orchestration:
 Step 1 (minimap):   outputs=[core/minimap.py, test_minimap.py]    wait=[]
 Step 2 (state):     outputs=[gui/state.py, test_gui_state.py]      wait=[]
 Step 3 (preview):   outputs=[gui/preview.py, test_gui_preview.py]  wait=[]
@@ -705,7 +705,7 @@ with dpg.group(horizontal=True):
 
 When refactoring a modular system with interdependent files, centralize all magic variables, sizes, presets, and matrices in a dedicated "leaf" constants module (e.g., `constants.py`) that contains **zero internal imports** from the package. This guarantees that any submodule can import parameters without any risk of circular dependency loops.
 
-**Evidence:** Created `tools/asset_creator/core/constants.py` and successfully migrated tile dimensions, preview layouts, noise levels, and Pygame/Dear PyGui color tokens from 7 different submodules. All 361 unit/integration tests passed cleanly on the first pass with zero circular imports.
+**Evidence:** Created `tools/asset_convertor/core/constants.py` and successfully migrated tile dimensions, preview layouts, noise levels, and Pygame/Dear PyGui color tokens from 7 different submodules. All 361 unit/integration tests passed cleanly on the first pass with zero circular imports.
 
 ---
 

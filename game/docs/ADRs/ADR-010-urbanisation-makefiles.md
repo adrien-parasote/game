@@ -7,7 +7,7 @@ Simplifier l'infrastructure du projet pour n'avoir **qu'un seul environnement vi
 
 ### 1. Centralisation des Dépendances
 Au lieu d'avoir `game/requirements.txt` et `tools/requirements.txt`, nous allons avoir un seul `requirements.txt` à la racine.
-Nous en profiterons pour nettoyer les dépendances obsolètes de l'ancien `asset_creator` (`dearpygui`, `opensimplex`) et ajouter `customtkinter`.
+Nous en profiterons pour nettoyer les dépendances obsolètes de l'ancien `asset_convertor` (`dearpygui`, `opensimplex`) et ajouter `customtkinter`.
 
 #### [NEW] requirements.txt
 ```txt

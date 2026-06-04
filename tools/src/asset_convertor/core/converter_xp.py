@@ -1,5 +1,5 @@
 """
-asset_creator.core.converter_xp
+asset_convertor.core.converter_xp
 
 Convert a RPG Maker XP autotile (96x128 RGBA) to 47 Tiled blob tiles.
 
@@ -10,7 +10,7 @@ Bitmask convention (same as rpgmaker_blob_autotile_to_tiled.py):
 
 from __future__ import annotations
 
-from asset_creator.core.constants import BLOB_BITMASKS, SUBTILE_SIZE, TILE_SIZE
+from asset_convertor.core.constants import BLOB_BITMASKS, SUBTILE_SIZE, TILE_SIZE
 from PIL import Image
 
 # ---------------------------------------------------------------------------

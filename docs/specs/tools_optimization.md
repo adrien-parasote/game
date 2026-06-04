@@ -15,7 +15,7 @@ The following files within the `tools/` directory are within the scope of this s
 ```
 tools/
 └── src/
-    ├── asset_creator/
+    ├── asset_convertor/
     │   ├── core/
     │   │   ├── constants.py
     │   │   └── converter_xp.py
@@ -49,7 +49,7 @@ tools/
 | 1 | Logging text translation is excluded; only developer comments and docstrings are translated to English. | Low | TELL (user instruction) | Spot check comments in translated files. |
 | 2 | Python's standard `logging` library is the preferred logging framework for `calibrate_halos.py`. | Low | TELL (design choice) | Run tests to verify script loads and runs successfully. |
 | 3 | Unused constants in `constants.py` can be safely removed without breaking untested components. | Medium | SHOW (verified via grep) | Run full pytest suite across `tools/tests/` to verify zero imports fail. |
-| 4 | The Tkinter GUI `app.py` boots successfully without import regressions on the active python version. | Low | SHOW (verified via pytest) | Execute `venv/bin/pytest tools/tests/asset_creator/gui/test_app.py`. |
+| 4 | The Tkinter GUI `app.py` boots successfully without import regressions on the active python version. | Low | SHOW (verified via pytest) | Execute `venv/bin/pytest tools/tests/asset_convertor/gui/test_app.py`. |
 
 ---
 
@@ -99,8 +99,8 @@ tools/
 
 ## Deep Links
 
-- Source file: [constants.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_creator/core/constants.py#L1)
-- Source file: [converter_xp.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_creator/core/converter_xp.py#L1)
-- Source file: [app.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_creator/gui/app.py#L1)
+- Source file: [constants.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_convertor/core/constants.py#L1)
+- Source file: [converter_xp.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_convertor/core/converter_xp.py#L1)
+- Source file: [app.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_convertor/gui/app.py#L1)
 - Source file: [calibrate_halos.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/calibration/calibrate_halos.py#L1)
 - Test suite: [tools/tests/](file:///Users/adrien.parasote/Documents/perso/game/tools/tests/#L1)
