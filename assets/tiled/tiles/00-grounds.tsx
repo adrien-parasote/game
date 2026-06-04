@@ -564,7 +564,7 @@
  </tile>
  <tile id="119" type="01-tileset_ground">
   <properties>
-   <property name="material" value="wood"/>
+   <property name="material" value="grass"/>
   </properties>
  </tile>
  <tile id="120" type="01-tileset_ground">
