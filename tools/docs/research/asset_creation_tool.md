@@ -26,7 +26,7 @@ The tool must be usable by both **human** (visual workflow) and **AI** (programm
 | Source | Type | Date | Credibility | Key Findings |
 |--------|------|------|-------------|-------------|
 | Tiled JSON Map Format docs | Official docs | Current | High | TSX/TSJ format, Wang set structure, wangid 8-element array |
-| Project `scripts/autotiles/` | Project code | Current | High | RPG Maker XP (96×128) → 16-tile edge or 47-tile blob Wang sets |
+| Project `tools/src/autotiles/` *(removed — superseded by `asset_creator`)* | Project code | Historical | High | RPG Maker XP (96x128) → 16-tile edge or 47-tile blob Wang sets |
 | Project `src/map/tmj_parser.py` | Project code | Current | High | Engine loads .tsx (XML), cuts PNG into tiles, no autotile awareness |
 | Pillow docs (v12.2.0) | Official docs | Apr 2026 | High | Full pixel-level editing, palette mode, NEAREST resampling |
 | opensimplex (PyPI) | Library | Maintained | High | Pure Python noise for procedural textures, NumPy support |
@@ -40,15 +40,17 @@ The tool must be usable by both **human** (visual workflow) and **AI** (programm
 ### 1. Current Pipeline (Pain Points)
 
 ```
-RPG Maker XP autotile (96×128 PNG)
-    ↓ rpgmaker_autotile_to_tiled.py (16 tiles, edge)
-    ↓ rpgmaker_blob_autotile_to_tiled.py (47 tiles, blob)
+RPG Maker XP autotile (96x128 PNG)
+    ↓ rpgmaker_autotile_to_tiled.py (16 tiles, edge) [REMOVED]
+    ↓ rpgmaker_blob_autotile_to_tiled.py (47 tiles, blob) [REMOVED]
 Tiled Wang tileset (PNG strip + .tsx XML)
     ↓ Manually imported into Tiled
 Map editing in Tiled (.tmj)
     ↓ src/map/tmj_parser.py
 Game (Pygame)
 ```
+
+> **Note (2026-06-04):** `tools/src/autotiles/` has been removed. The conversion is now handled by `tools/src/asset_creator/` (converters `converter_xp.py` + `converter_mv.py` + `tsx_generator.py`).
 
 **Problems:**
 - Source format is RPG Maker XP — an unnecessary intermediate format
@@ -93,7 +95,7 @@ Game (Pygame)
 ### 3. 47-Tile Blob Standard
 
 The **47-tile blob** (8-neighbor bitmask with diagonal gating) is THE standard for
-quality autotiling. Already implemented in `rpgmaker_blob_autotile_to_tiled.py`.
+quality autotiling. Now implemented in `tools/src/asset_creator/core/converter_xp.py` and `converter_mv.py`.
 
 Key algorithm (already in project):
 - 8-neighbor bitmask: NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, SE=128
@@ -158,7 +160,7 @@ No search API — must cache/bundle palettes locally.
 - **Chosen approach:** **Build** (with heavy **Adapt** from existing blob algorithm)
 - **Justification:**
   - No existing tool generates Tiled-native 47-tile blob tilesets from a programmatic/CLI workflow
-  - The core blob algorithm already exists in `rpgmaker_blob_autotile_to_tiled.py` — the sub-tile assembly and Wang ID logic is proven
+  - The core blob algorithm previously existed in `rpgmaker_blob_autotile_to_tiled.py` (now superseded by `asset_creator/core/converter_xp.py` + `converter_mv.py`) — the sub-tile assembly and Wang ID logic was proven
   - What's missing is the **input side**: instead of reading RPG Maker format, we need to **generate** the sub-tiles programmatically
   - Python stack (Pillow + NumPy + opensimplex) is sufficient, no new dependencies needed beyond opensimplex
 

@@ -68,7 +68,7 @@
 | Concept | Status in this spec | Mentioned in |
 |---|---|---|
 | TextureParams | Modified to add warp parameters | `specs/asset_creator_spec.md` |
-| Seamless Tiling | Enforced via Toroidal noise math + wrapping offsets | `./autotile_pipeline_spec.md` |
+| Seamless Tiling | Enforced via Toroidal noise math + wrapping offsets | `./autotile_converter_spec.md` |
 
 ## TextureParams Schema
 

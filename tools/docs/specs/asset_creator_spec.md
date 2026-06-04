@@ -206,13 +206,10 @@ tools/
         exporter.py                     # [DEV-TOOL] Exporter interface
         png_exporter.py                 # [DEV-TOOL] PNG image exporter
         tsx_exporter.py                 # [DEV-TOOL] TSX tileset exporter
-    autotiles/
-      rpgmaker_blob_autotile_to_tiled.py # [DEV-TOOL] Main blob autotile converter script
   docs/
     specs/
       STRATEGIC_BLUEPRINT.md            # Strategic blueprint
       asset_creator_spec.md             # This GUI specification
-      autotile_pipeline_spec.md         # Autotile pipeline specification
       terrain_generation_core_spec.md   # Domain warping spec
       phase-1-simple-tiles.md           # Simple tiles spec
       code_quality_constants_and_translation.md # Code quality spec

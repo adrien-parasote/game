@@ -15,9 +15,6 @@ It transforms base autotile templates (like 47-tile Wang blobs) into styled game
 ### Asset Processors (`src/assets/`)
 Scripts for handling legacy asset structures (e.g. `process_banners.py`, `flat_wall_to_diagonal.py`).
 
-### Autotile Converters (`src/autotiles/`)
-Converters from RPG Maker autotile formats to Wang tile standards (Tiled).
-
 ### Calibration (`src/calibration/`)
 Visual calibration scripts for halo effects and light rendering (`calibrate_halos.py`).
 

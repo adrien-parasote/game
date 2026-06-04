@@ -25,7 +25,7 @@ L'Asset Creator est l'outil central (basé sur Dear PyGui) permettant de compose
 
 Les outils d'autotiling transforment les assets de type "RPG Maker" vers le format "Wangset / Terrain" attendu par Tiled Map Editor (modèle "blob" 47 tuiles).
 
-* **Spec Active** : [Autotile Pipeline Spec](./specs/autotile_pipeline_spec.md)
+* **Spec Active** : [Autotile Converter Spec](./specs/autotile_converter_spec.md)
 * **Stratégie** : [Autotile Pipeline Strategy](./strategic/autotile-pipeline-strategy.md)
 
 <details>

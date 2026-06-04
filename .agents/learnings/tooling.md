@@ -11,7 +11,7 @@
 ## L-TOOL-002 · 2026-05-31 · Universal · Autotile Pipeline
 **Contexte :** Conversion de tuiles RPG Maker vers Tiled Map Editor (Wangsets).
 **Outcome :** Le format Tiled "Edge" (16 tuiles) provoque des artefacts visuels sur les angles internes et externes (les diagonales). La solution correcte est le modèle "Blob" (47 tuiles, `type="mixed"` dans Tiled) qui encode 8 directions (4 cardinales + 4 diagonales).
-**Pattern :** Toujours utiliser le pipeline Blob (`rpgmaker_blob_autotile_to_tiled.py`) pour la génération de terrains. Les tuiles statiques RPG Maker doivent être découpées en 4 sous-tuiles par combinaison.
+**Pattern :** Toujours utiliser le pipeline Blob pour la génération de terrains. L'implémentation de référence est `tools/src/asset_creator/core/converter_xp.py` + `converter_mv.py` + `tsx_generator.py` (l'ancien `scripts/autotiles/rpgmaker_blob_autotile_to_tiled.py` a été supprimé le 2026-06-04 et remplacé par ce pipeline).
 
 ## L-TOOL-003 · 2026-05-31 · Project-Specific · Extraction de constantes
 **Contexte :** Amélioration de la base de code du tooling.
