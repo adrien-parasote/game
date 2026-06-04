@@ -3,7 +3,7 @@ Halo Calibration Tool
 =====================
 Usage: python3 scripts/calibrate_halos.py
 
-Press M to switch between FIRE mode (lanternes) and MUSHROOM mode.
+Press M to switch between FIRE mode (lanterns) and MUSHROOM mode.
 
 FIRE mode:
   Left Click   → Large fire halo (r=45)
@@ -23,11 +23,16 @@ Both modes:
   Q / ESC      → Quit (auto-saves)
 """
 
+import logging
 import math
 import os
 import sys
 
 import pygame
+
+# Configure logging to console
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
 
 BG_PATH = os.path.join("assets", "images", "menu", "01-menu_background.png")
 OUTPUT_PATH = os.path.join("scripts", "calibration_result.py")
@@ -40,7 +45,7 @@ FIRE_COLORS = {
     R_FIRE_M: (255, 160, 30),
     R_FIRE_S: (255, 240, 60),
 }
-FIRE_LABELS = {R_FIRE_L: "lanterne", R_FIRE_M: "fenêtre", R_FIRE_S: "petite fenêtre"}
+FIRE_LABELS = {R_FIRE_L: "lantern", R_FIRE_M: "window", R_FIRE_S: "small window"}
 
 # ── Mushroom halos ────────────────────────────────────────────────────────────
 R_MUSH_L, R_MUSH_M, R_MUSH_S = 22, 16, 11
@@ -51,7 +56,7 @@ MUSH_COLORS = {
     R_MUSH_M: MUSH_RED,
     R_MUSH_S: MUSH_CYAN,
 }
-MUSH_LABELS = {R_MUSH_L: "cyan large", R_MUSH_M: "rouge", R_MUSH_S: "cyan petit"}
+MUSH_LABELS = {R_MUSH_L: "large cyan", R_MUSH_M: "red", R_MUSH_S: "small cyan"}
 
 MODE_FIRE, MODE_MUSH = "FIRE", "MUSHROOM"
 
@@ -75,13 +80,13 @@ def _save(fire: list, mush: list) -> None:
     for x, y, r, color in mush:
         lines.append(
             f"    ({x:4d}, {y:4d}, {r:2d}, ({color[0]:3d}, {color[1]:3d}, {color[2]:3d})),"
-            f"  # {MUSH_LABELS.get(r, 'champignon')}\n"
+            f"  # {MUSH_LABELS.get(r, 'mushroom')}\n"
         )
     lines.append("]\n")
 
     with open(OUTPUT_PATH, "w") as f:
         f.writelines(lines)
-    print(f"→ Saved {len(fire)} fire + {len(mush)} mushroom halos to {OUTPUT_PATH}")  # noqa
+    logger.info("→ Enregistré %d halos de feu + %d champignons dans %s", len(fire), len(mush), OUTPUT_PATH)
 
 
 def _draw_legend(
@@ -184,7 +189,7 @@ def main() -> None:
         bg = pygame.image.load(BG_PATH).convert()
         bg = pygame.transform.smoothscale(bg, (SCREEN_W, SCREEN_H))
     except pygame.error as e:
-        print(f"Cannot load background: {e}")  # noqa
+        logger.error("Impossible de charger l'arrière-plan : %s", e)
         sys.exit(1)
 
     font = pygame.font.SysFont("monospace", 14)

@@ -21,6 +21,7 @@ from tkinter import filedialog
 from typing import Literal
 
 import customtkinter as ctk
+from asset_creator.core.constants import TILE_SIZE
 from asset_creator.core.converter_mv import convert_mv
 from asset_creator.core.converter_xp import BLOB_BITMASKS, convert_xp
 from asset_creator.exporters.tsx_generator import export
@@ -33,9 +34,9 @@ ctk.set_default_color_theme("blue")
 
 OUTPUT_DIR_DEFAULT = str(Path(__file__).parents[3] / "src" / "output")
 
-_CELL_SIZE = 32  # taille d'affichage de chaque cellule dans le canvas interactif
+_CELL_SIZE = TILE_SIZE  # display size of each cell in the interactive canvas
 
-# Grille de test par defaut 5x5 - correspondance avec l'ancien _TEST_PATTERN
+# Default 5x5 test grid - matches the former _TEST_PATTERN
 _GRID_DEFAULT: list[list[bool]] = [
     [False, True,  True,  True,  False],
     [True,  True,  True,  True,  True ],
@@ -75,7 +76,7 @@ def _compute_cell_bitmask(grid: list[list[bool]], row: int, col: int) -> int:
     )
 
 
-# ── Dataclass état interne ────────────────────────────────────────────────────
+# ── Internal state dataclass ──────────────────────────────────────────────────
 
 
 @dataclass
@@ -88,7 +89,7 @@ class AppState:
     output_dir: str = field(default_factory=lambda: OUTPUT_DIR_DEFAULT)
 
 
-# ── Application principale ────────────────────────────────────────────────────
+# ── Main application ──────────────────────────────────────────────────────────
 
 
 class App(ctk.CTk):
@@ -109,7 +110,7 @@ class App(ctk.CTk):
         self._reset_panels()
 
     def _setup_icon(self) -> None:
-        """Icone macOS via AppKit (silencieux si non disponible)."""
+        """macOS icon via AppKit (silenced if unavailable)."""
         try:
             import AppKit  # type: ignore[import-untyped]  # pyobjc, macOS only
             ns_app = AppKit.NSApplication.sharedApplication()
@@ -118,9 +119,9 @@ class App(ctk.CTk):
                 ns_icon = AppKit.NSImage.alloc().initWithContentsOfFile_(icon_path)
                 ns_app.setApplicationIconImage_(ns_icon)
         except (ImportError, AttributeError):
-            pass  # non-macOS ou pyobjc non installe
+            pass  # non-macOS or pyobjc not installed
 
-    # ── Construction UI ───────────────────────────────────────────────────────
+    # ── UI Construction ───────────────────────────────────────────────────────
 
     def _build_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)
@@ -128,7 +129,7 @@ class App(ctk.CTk):
 
         self._build_toolbar()
         self._build_panels()
-        self._build_log()    # row 2 — terminal journal
+        self._build_log()    # row 2 — journal terminal
         self._build_footer() # row 3
 
     def _build_toolbar(self) -> None:
@@ -136,7 +137,7 @@ class App(ctk.CTk):
         bar.grid(row=0, column=0, sticky="ew", padx=0, pady=0)
         bar.grid_columnconfigure(3, weight=1)
 
-        # Bouton ouvrir
+        # Open button
         self.btn_open = ctk.CTkButton(
             bar,
             text="📂 Ouvrir un autotile",
@@ -145,7 +146,7 @@ class App(ctk.CTk):
         )
         self.btn_open.grid(row=0, column=0, padx=(12, 8), pady=10)
 
-        # Sélecteur de format
+        # Format selector
         ctk.CTkLabel(bar, text="Format :").grid(row=0, column=1, padx=(4, 4))
         self._mode_var = ctk.StringVar(value="MV")
         for i, mode in enumerate(("XP", "MV", "MZ")):
@@ -158,7 +159,7 @@ class App(ctk.CTk):
             )
             rb.grid(row=0, column=2 + i, padx=4)
 
-        # Bouton convertir
+        # Convert button
         self.btn_convert = ctk.CTkButton(
             bar,
             text="⚙ Convertir",
@@ -251,7 +252,7 @@ class App(ctk.CTk):
         self.canvas.grid(row=0, column=0, padx=4, pady=4)
         self.canvas.bind("<Button-1>", self._on_canvas_click)
 
-        # Boutons canvas
+        # Canvas buttons
         btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
         btn_frame.grid(row=2, column=0, pady=(0, 2))
         ctk.CTkButton(
@@ -320,7 +321,7 @@ class App(ctk.CTk):
             )
             return
 
-        # Valider les dimensions selon le mode
+        # Validate dimensions based on mode
         mode = self._mode_var.get()
         error = self._validate_dimensions(img, mode)
         if error:
@@ -340,7 +341,7 @@ class App(ctk.CTk):
         self._set_status(f"Fichier chargé : {Path(path).name}")
 
     def _validate_dimensions(self, img: Image.Image, mode: str) -> str | None:
-        """Retourne un message d'erreur ou None si valide."""
+        """Return an error message or None if valid."""
         w, h = img.width, img.height
         if mode == "XP":
             if w != 96 or h != 128:
@@ -494,7 +495,7 @@ class App(ctk.CTk):
     def _draw_canvas_pattern(
         self, tiles: list[Image.Image], tile_size: int
     ) -> None:
-        """Initialise la grille interactive avec le motif de test et redessine."""
+        """Initialize the interactive grid with the test pattern and redraw."""
         self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
         self._redraw_canvas_grid()
         self.lbl_canvas_info.configure(
@@ -531,7 +532,7 @@ class App(ctk.CTk):
         self._log(message, level="WARN" if error else "INFO")
 
     def _log(self, message: str, level: str = "INFO") -> None:
-        """Ajoute une entrée horodatée dans le terminal journal."""
+        """Add a timestamped entry to the journal terminal."""
         if not hasattr(self, "txt_log"):
             return
         now = datetime.datetime.now().strftime("%H:%M:%S")
@@ -542,7 +543,7 @@ class App(ctk.CTk):
         self.txt_log.configure(state="disabled")
 
     def _build_log(self) -> None:
-        """Terminal journal entre les panneaux et le footer (row 2)."""
+        """Journal terminal between panels and footer (row 2)."""
         log_frame = ctk.CTkFrame(self, corner_radius=0)
         log_frame.grid(row=2, column=0, sticky="ew", padx=0, pady=0)
         log_frame.grid_columnconfigure(1, weight=1)
@@ -563,7 +564,7 @@ class App(ctk.CTk):
         self.txt_log.configure(state="disabled")
 
     def _on_canvas_click(self, event: tk.Event) -> None:  # type: ignore[type-arg]
-        """Toggle la cellule cliquée et redessine le canvas."""
+        """Toggle the clicked cell and redraw the canvas."""
         col = event.x // _CELL_SIZE
         row = event.y // _CELL_SIZE
         grid = self._canvas_grid
@@ -572,19 +573,19 @@ class App(ctk.CTk):
             self._redraw_canvas_grid()
 
     def _load_test_pattern(self) -> None:
-        """Reinitialise la grille avec le motif de test 5x5."""
+        """Reset the grid with the 5x5 test pattern."""
         self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
         self._redraw_canvas_grid()
 
     def _clear_canvas_grid(self) -> None:
-        """Efface toutes les cellules du canvas."""
+        """Clear all canvas cells."""
         rows = len(self._canvas_grid)
         cols = len(self._canvas_grid[0]) if rows else len(_GRID_DEFAULT[0])
         self._canvas_grid = [[False] * cols for _ in range(rows)]
         self._redraw_canvas_grid()
 
     def _redraw_canvas_grid(self) -> None:
-        """Redessine le canvas interactif depuis self._canvas_grid."""
+        """Redraw the interactive canvas from self._canvas_grid."""
         grid = self._canvas_grid
         rows = len(grid)
         cols = len(grid[0]) if rows else 0
@@ -608,13 +609,13 @@ class App(ctk.CTk):
                     self._canvas_photos.append(photo)
                     self.canvas.create_image(x, y, anchor="nw", image=photo)
                 elif filled:
-                    # Conversion pas encore faite : placeholder coloré
+                    # Conversion not yet done: colored placeholder
                     self.canvas.create_rectangle(
                         x, y, x + _CELL_SIZE, y + _CELL_SIZE,
                         fill="#3a3a3a", outline="#555555",
                     )
                 else:
-                    # Cellule vide
+                    # Empty cell
                     self.canvas.create_rectangle(
                         x, y, x + _CELL_SIZE, y + _CELL_SIZE,
                         fill="#1a1a1a", outline="#2a2a2a",

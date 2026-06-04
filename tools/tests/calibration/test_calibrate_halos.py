@@ -96,8 +96,8 @@ class TestSave:
         assert "BACKGROUND_LIGHTS = [" in output
         assert "( 100,  200, 45)" in output
         assert "( 300,  400, 28)" in output
-        assert "lanterne" in output
-        assert "fenêtre" in output
+        assert "lantern" in output
+        assert "window" in output
 
     def test_writes_mushroom_halos_to_file(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
@@ -164,3 +164,41 @@ class TestConstants:
         assert MODE_FIRE != MODE_MUSH
         assert isinstance(MODE_FIRE, str)
         assert isinstance(MODE_MUSH, str)
+
+
+def test_tc003_no_prints_in_calibration():
+    """TC-003: Check that print() calls are removed/replaced by logging in calibrate_halos.py."""
+    from pathlib import Path
+
+    script_path = Path(__file__).parents[3] / "tools" / "src" / "calibration" / "calibrate_halos.py"
+    assert script_path.exists()
+
+    content = script_path.read_text(encoding="utf-8")
+
+    # Exclude normal comments and docstrings, look for active print statements
+    import ast
+    tree = ast.parse(content)
+
+    prints = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "print":
+            prints.append(node.lineno)
+
+    assert not prints, f"Found print() call at lines {prints} in calibrate_halos.py. Use logging instead."
+
+
+def test_tc004_no_french_comments_in_calibration():
+    """TC-004: Ensure no French developer comments remain in calibrate_halos.py."""
+    import re
+    from pathlib import Path
+
+    script_path = Path(__file__).parents[3] / "tools" / "src" / "calibration" / "calibrate_halos.py"
+    assert script_path.exists()
+
+    content = script_path.read_text(encoding="utf-8")
+
+    # Look for common French words or accents in comments
+    french_indicators = re.compile(r'#.*(?:lanterne|fenêtre|petite|champignon|rouge|petit)', re.IGNORECASE)
+    matches = french_indicators.findall(content)
+    assert not matches, f"Found French comments in calibrate_halos.py: {matches}"
+

@@ -1,7 +1,7 @@
 {
   "gate": "TDD",
-  "timestamp": "2026-06-04T22:33:48+0200",
-  "module": null,
+  "timestamp": "2026-06-04T22:44:44+0200",
+  "module": "tools",
   "test_file_count": 107,
   "test_files": {
     "game/tests/conftest.py": "8badcfc382d601899992cd2a126ff573ee888ab45ea3c44d3aa8e7251c4d8ca3",
@@ -97,7 +97,7 @@
     "game/tests/ui/test_title_screen_draw_coverage.py": "4ca5af803a69583be9aaf7de000c6b56921f3b296543de6705cab7bf6eabade6",
     "game/tests/ui/test_title_screen_lights.py": "fee1ddb2ea61548c1776744ffd8cdddc35eca5ee54600f4ae97e129eaca7f215",
     "tools/tests/asset_creator/config/test_palette_loader.py": "41ac0c690e55355f9de8b2d4f4c63f06da226d67cfe65edd672cb420f3823671",
-    "tools/tests/asset_creator/core/test_constants.py": "0451c5ce43dd08af6995ddf0c0a6b293134561bd9db7c83593ab6abf4970907a",
+    "tools/tests/asset_creator/core/test_constants.py": "0ef45ae20935e209515561659fbcdabe82f516a113ec307ee4e3b908d91c2f26",
     "tools/tests/asset_creator/core/test_generator.py": "7f2d1406f37799f845b32cb468ce680906f5dd658714dd50d2dd1fca9fe8570d",
     "tools/tests/asset_creator/core/test_quantizer.py": "48c781cab362e482a9e82aec72ddfe7840559a8d58ff8e7c6af028db89506225",
     "tools/tests/asset_creator/exporters/test_exporter.py": "218df2322b5c98e0322baeee8e58a9614220b3d94b49ad4d7092a4fa583759a0",
@@ -106,7 +106,7 @@
     "tools/tests/assets/test_flat_wall_to_diagonal.py": "24b030b9ca853963ee9751b91a8806245086ea5781f6aa7665d3c788545913de",
     "tools/tests/calibration/conftest.py": "9b70d2f5dbff5f757f0c9168a39fe348ec1a18a1bc3700e6233e5feae5a4d976",
     "tools/tests/calibration/test_apply_calibration.py": "716ddb19e59fe99994fdaa0a42fdaa9a7798baa5b1b70a4cddbe2549d52b09f7",
-    "tools/tests/calibration/test_calibrate_halos.py": "c4e10f300c45ef3da3ae3b9602f7d01c7ae84e76fa8be20cf57cfb4f34ebfc51",
+    "tools/tests/calibration/test_calibrate_halos.py": "2155be0cd1381786d94bf463e91a682a0254abb0c5e2390f53ec1d8b9f7a29e1",
     "tools/tests/asset_creator/core/test_converter_integration.py": "2e1aa6b1009f8065f27c82407abb2b2a427a9e8f4b373a68f6c481ba874ae790",
     "tools/tests/asset_creator/core/test_converter_mv.py": "ca4a9c884643ac127020a2f7143bb355b98a6a7cbb18e8a4c940efe339f09617",
     "tools/tests/asset_creator/core/test_converter_xp.py": "ee9eeab06a214c1733c3e903d1387e5088ddbc58f90c6244ff8a23c974ff3617",
