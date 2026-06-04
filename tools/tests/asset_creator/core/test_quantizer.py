@@ -1,5 +1,6 @@
 import numpy as np
-from src.asset_creator.core.quantizer import quantize_image
+from asset_creator.core.quantizer import quantize_image
+
 
 def test_tc001_output_dimensions():
     """TC-001: Image output from the quantizer must be exactly 32x32."""
@@ -24,7 +25,7 @@ def test_tc001_grass_five_colors():
     fake_gen = np.zeros((32, 32), dtype=int)
     for i in range(5):
         fake_gen[0, i] = i
-    
+
     palette = [(0,0,0), (64,64,64), (128,128,128), (192,192,192), (255,255,255)]
     img = quantize_image(fake_gen, palette)
     colors_used = [color for count, color in img.getcolors()]
@@ -37,7 +38,7 @@ def test_tc002_grass_less_than_five_colors():
     fake_gen = np.zeros((32, 32), dtype=int)
     for i in range(5):
         fake_gen[0, i] = i
-        
+
     palette = [(0,0,0), (128,128,128), (255,255,255)]
     img = quantize_image(fake_gen, palette)
     colors_used = [color for count, color in img.getcolors()]
@@ -49,7 +50,7 @@ def test_tc003_grass_more_than_five_colors():
     fake_gen = np.zeros((32, 32), dtype=int)
     for i in range(5):
         fake_gen[0, i] = i
-        
+
     palette = [(0,0,0), (1,1,1), (2,2,2), (3,3,3), (4,4,4), (5,5,5), (6,6,6)]
     img = quantize_image(fake_gen, palette)
     colors_used = [color for count, color in img.getcolors()]

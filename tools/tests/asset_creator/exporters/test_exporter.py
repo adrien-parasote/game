@@ -1,7 +1,9 @@
 import os
 import xml.etree.ElementTree as ET
+
+from asset_creator.exporters.exporter import export_tile
 from PIL import Image
-from src.asset_creator.exporters.exporter import export_tile
+
 
 def test_tc004_tsx_generation_structure(tmp_path):
     """TC-004: Generated XML parses successfully as valid XML with tilewidth=32."""

@@ -35,7 +35,7 @@ def apply_composite_stamp(grid: np.ndarray, stamp: list[list[int]], x: int, y: i
             if val != -1:
                 grid[(y + dy) % 32, (x + dx) % 32] = val
 
-def generate_texture(texture_type: str, seed: int, density: int, sub_type: str = "classic") -> np.ndarray:
+def generate_texture(texture_type: str, seed: int, density: int, sub_type: str = "classic") -> np.ndarray:  # noqa: C901
     """Generate procedural 32x32 texture using Slynyrd's Key Clusters Kitbashing."""
     rng = random.Random(seed)
     grid = np.ones((32, 32), dtype=int)

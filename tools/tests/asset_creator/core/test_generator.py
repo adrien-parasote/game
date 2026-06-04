@@ -1,5 +1,6 @@
 import numpy as np
-from src.asset_creator.core.generator import generate_texture
+from asset_creator.core.generator import generate_texture
+
 
 def test_generate_grass_valid():
     """ Grass should generate values within [0, 1, 2, 3, 4] """
@@ -11,7 +12,7 @@ def test_generate_sub_types():
     """ Different sub_types should produce slightly different arrays due to different tufts """
     arr_classic = generate_texture("grass", seed=42, density=10, sub_type="classic")
     arr_short = generate_texture("grass", seed=42, density=10, sub_type="short")
-    
+
     # Due to different tuft matrices being applied with the same seed, the output should differ
     assert not np.array_equal(arr_classic, arr_short)
     assert np.all(np.isin(arr_classic, [0, 1, 2, 3, 4]))
@@ -35,7 +36,7 @@ def test_tc006_crescent_values():
 
 def test_it002_toroidal_wrapping():
     """IT-002: Verify toroidal wrapping correctly handles a 6x6 (or 5x5) tuft placed at the edge."""
-    from src.asset_creator.core.generator import apply_composite_stamp
+    from asset_creator.core.generator import apply_composite_stamp
     # create a small grid
     grid = np.zeros((32, 32), dtype=int)
     # mock a 5x5 crescent tuft

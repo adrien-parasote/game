@@ -14,7 +14,6 @@ import math
 import os
 
 import pytest
-
 from calibration.calibrate_halos import (
     FIRE_LABELS,
     MODE_FIRE,
@@ -28,7 +27,6 @@ from calibration.calibrate_halos import (
     _nearest,
     _save,
 )
-
 
 # ---------------------------------------------------------------------------
 # _nearest — returns index of closest point within threshold

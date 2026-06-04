@@ -31,9 +31,16 @@ ignore = ["E501"]
 max-statements = 50
 
 [tool.pyright]
+include = ["game", "tools/src", "tools/tests"]
+venvPath = "."
+venv = "venv"
+extraPaths = ["tools/src", "game"]
 exclude = [
     "**/node_modules",
     "**/__pycache__",
+    "venv",
+    "venv/**",
+    "**/venv/**",
     "game/venv",
     "tools/venv",
     ".agents"

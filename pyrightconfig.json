@@ -2,16 +2,22 @@
   "exclude": [
     "**/node_modules",
     "**/__pycache__",
+    "venv",
     "game/venv",
     "tools/venv",
     ".agents",
     "tools/tests",
     "game/tests"
   ],
+  "ignore": [
+    "venv"
+  ],
   "extraPaths": [
     ".",
     "game",
     "tools/src"
   ],
-  "reportAttributeAccessIssue": "none"
+  "reportAttributeAccessIssue": "none",
+  "venvPath": ".",
+  "venv": "venv"
 }

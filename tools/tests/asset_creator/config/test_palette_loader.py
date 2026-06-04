@@ -1,5 +1,7 @@
 import json
-from src.asset_creator.config.palette_loader import load_palettes
+
+from asset_creator.config.palette_loader import load_palettes
+
 
 def test_tc006_palette_loader(tmp_path):
     """TC-006: palettes.json is parsed from hex strings to RGB tuples."""

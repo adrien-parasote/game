@@ -8,9 +8,7 @@ point and is explicitly excluded from unit coverage.
 from __future__ import annotations
 
 import pytest
-
 from calibration.apply_calibration import _extract, _inject
-
 
 # ---------------------------------------------------------------------------
 # _extract — extracts a variable assignment block (list) from content
@@ -48,8 +46,10 @@ class TestExtract:
         )
         bg = _extract(content, "BACKGROUND_LIGHTS")
         mush = _extract(content, "MUSHROOM_LIGHTS")
-        assert bg is not None and "BACKGROUND_LIGHTS" in bg
-        assert mush is not None and "MUSHROOM_LIGHTS" in mush
+        assert bg is not None
+        assert "BACKGROUND_LIGHTS" in bg
+        assert mush is not None
+        assert "MUSHROOM_LIGHTS" in mush
 
     def test_extracts_empty_list(self):
         content = "BACKGROUND_LIGHTS = []"

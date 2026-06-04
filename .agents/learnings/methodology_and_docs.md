@@ -729,3 +729,9 @@ Activating the strict Ruff configuration (`"SIM", "PT", "RUF", "C90"`) instantly
 **Pattern :** Déplacer le `Makefile` et le `requirements.txt` à la racine du monorepo. Utiliser un seul `venv` global. Exposer des commandes de build préfixées par domaine (e.g., `make run-game`, `make run-tools`, `make test-all`).
 
 **Evidence :** Consolidation de 3 Makefiles et 2 venvs en une seule infrastructure racine. 1163/1163 tests passent avec une seule commande `make test` couvrant les deux domaines.
+
+### A-AGENT-007 · 2026-06-04 · U · False Positives
+- **Source:** game — Stream Coding Verify
+- **Evidence:** `verify.py` run at root `.` caused `P8_SpecConformance` to skip (looked in `./docs` instead of `./tools/docs/specs`) and `P4_Tests` to fail trying to run `game/tests` when only `tools/` was modified.
+- **Anti-pattern:** Running `verify.py` on the monorepo root without targeting the specific sub-project (`tools` vs `game`). This causes false positive test failures and falsely skipped spec checks.
+- **Fix:** In a monorepo setup, run `verify.py` explicitly targeting the sub-project directory (e.g., `cd tools && verify.py .` or manual `pytest tools/` if root `pyproject.toml` forces a global context).

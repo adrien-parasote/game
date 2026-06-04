@@ -13,7 +13,7 @@ from PIL import Image
 
 
 class App(ctk.CTk):
-    def __init__(self):
+    def __init__(self):  # noqa: PLR0915
         super().__init__()
         self.title("Asset Creator - Procedural")
         self.geometry("600x600")
@@ -57,17 +57,13 @@ class App(ctk.CTk):
         self.current_img_32 = None
 
         def on_seed_write(*args):
-            try:
+            with contextlib.suppress(ValueError, AttributeError):
                 self.seed_slider.set(int(self.seed_var.get()))
-            except (ValueError, AttributeError):
-                pass
             self.schedule_preview()
 
         def on_density_write(*args):
-            try:
+            with contextlib.suppress(ValueError, AttributeError):
                 self.density_slider.set(int(self.density_var.get()))
-            except (ValueError, AttributeError):
-                pass
             self.schedule_preview()
 
         def on_palette_write(*args):
@@ -83,7 +79,7 @@ class App(ctk.CTk):
                 pal[L-1]
             ]
             for idx, color in enumerate(self.custom_palette):
-                hex_color = "#%02x%02x%02x" % color
+                hex_color = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
                 self.custom_color_btns[idx].configure(fg_color=hex_color, hover_color=hex_color)
             self.schedule_preview()
 
@@ -99,7 +95,7 @@ class App(ctk.CTk):
 
     def setup_icon(self):
         try:
-            import AppKit
+            import AppKit  # pyright: ignore[reportMissingImports]
             app = AppKit.NSApplication.sharedApplication()
             icon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "assets", "icon.png"))
             if os.path.exists(icon_path):
@@ -108,13 +104,13 @@ class App(ctk.CTk):
         except ImportError:
             pass
 
-    def setup_ui(self):
+    def setup_ui(self):  # noqa: C901, PLR0915
         ctrl_frame = ctk.CTkFrame(self)
         ctrl_frame.pack(side="left", fill="y", padx=10, pady=10)
 
         def on_texture_change(choice):
             # Try to auto-select a matching palette
-            match = next((p for p in self.palettes.keys() if choice in p), None)
+            match = next((p for p in self.palettes if choice in p), None)
             if match:
                 self.palette_var.set(match)
             if choice == "Grass":
@@ -151,10 +147,12 @@ class App(ctk.CTk):
 
             def choose_color(idx=i):
                 from tkinter.colorchooser import askcolor
-                color = askcolor(color="#%02x%02x%02x" % self.custom_palette[idx], title=labels[idx])[0]
+                cp = self.custom_palette[idx]
+                color = askcolor(color=f"#{cp[0]:02x}{cp[1]:02x}{cp[2]:02x}", title=labels[idx])[0]
                 if color:
                     self.custom_palette[idx] = (int(color[0]), int(color[1]), int(color[2]))
-                    hex_color = "#%02x%02x%02x" % self.custom_palette[idx]
+                    cp = self.custom_palette[idx]
+                    hex_color = f"#{cp[0]:02x}{cp[1]:02x}{cp[2]:02x}"
                     self.custom_color_btns[idx].configure(fg_color=hex_color, hover_color=hex_color)
                     self.schedule_preview()
 
