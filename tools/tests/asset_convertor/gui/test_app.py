@@ -80,3 +80,43 @@ def test_validate_dimensions_mv_valid_48px():
     result = app._validate_dimensions(img, "MV")
     assert result is None
     app.destroy()
+
+
+@pytest.mark.unit
+def test_animation_controls_state_toggle():
+    """Test that animation control states are updated when toggled."""
+    app = App()
+
+    # By default, controls should be disabled
+    assert app.menu_anim_type.cget("state") == "disabled"
+    assert app.menu_speed.cget("state") == "disabled"
+
+    # Enable animation
+    app._animated_var.set(True)
+    app._update_animation_controls_state()
+    assert app.menu_anim_type.cget("state") == "normal"
+    assert app.menu_speed.cget("state") == "normal"
+
+    # Under XP mode, animation mode should be forced to Horizontale and disabled
+    app._mode_var.set("XP")
+    app._update_animation_controls_state()
+    assert app._anim_type_var.get() == "Horizontale (Eau/Sol)"
+    assert app.menu_anim_type.cget("state") == "disabled"
+    assert app.menu_speed.cget("state") == "normal"
+
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_stop_animation():
+    """Test that stop_animation clears timers and sequences."""
+    app = App()
+    app._timer_id = "after#1"
+    app._current_frame_idx = 2
+    app._frame_sequence = [0, 1, 2, 1]
+
+    app._stop_animation()
+    assert app._timer_id is None
+    assert app._current_frame_idx == 0
+    assert app._frame_sequence == [0]
+    app.destroy()

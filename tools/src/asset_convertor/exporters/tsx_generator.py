@@ -8,6 +8,7 @@ Spec: tools/docs/specs/autotile_converter_spec.md § tsx_generator.py
 
 from __future__ import annotations
 
+import io
 import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -31,31 +32,34 @@ WANG_COLOR = "#4488ff"
 # ---------------------------------------------------------------------------
 
 
-def assemble_sheet(tiles: list[Image.Image], tile_size: int) -> Image.Image:
+def assemble_sheet(tiles_by_frame: list[list[Image.Image]], tile_size: int) -> Image.Image:
     """
-    Place 47 tiles into an 8-column x 6-row sprite sheet.  # noqa: RUF002
+    Stack N animation frames vertically. Each frame contains 47 tiles.
+    The sheet will have 8 columns and 6 * N rows.
 
-    Slot layout (left-to-right, top-to-bottom):
-      Slots 0..46 → tiles[0..46]
-      Slot 47     → transparent padding (empty)
+    Slot layout per frame f:
+      Slots 0..46 of frame f → tiles_by_frame[f][0..46]
+      Slot 47 (last)          → transparent padding
 
     Args:
-        tiles: List of exactly 47 RGBA PIL Images (each tile_size x tile_size).  # noqa: RUF002
+        tiles_by_frame: list of N frames, each containing 47 RGBA PIL Images.
         tile_size: Width/height of each tile in pixels (32 or 48).
 
     Returns:
-        RGBA PIL Image of size (SHEET_COLS*tile_size, SHEET_ROWS*tile_size).
+        RGBA PIL Image of size (8 * tile_size, 6 * N * tile_size).
     """
+    num_frames = len(tiles_by_frame)
     width = SHEET_COLS * tile_size
-    height = SHEET_ROWS * tile_size
+    height = SHEET_ROWS * num_frames * tile_size
     sheet = Image.new("RGBA", (width, height), (0, 0, 0, 0))
 
-    for slot, tile in enumerate(tiles):
-        col = slot % SHEET_COLS
-        row = slot // SHEET_COLS
-        sheet.paste(tile, (col * tile_size, row * tile_size))
+    for f_idx, frame_tiles in enumerate(tiles_by_frame):
+        y_offset = f_idx * SHEET_ROWS * tile_size
+        for slot, tile in enumerate(frame_tiles):
+            col = slot % SHEET_COLS
+            row = slot // SHEET_COLS
+            sheet.paste(tile, (col * tile_size, y_offset + row * tile_size))
 
-    # Slot 47 is left transparent (already done by Image.new alpha=0)
     return sheet
 
 
@@ -84,21 +88,34 @@ def bitmask_to_wangid(bitmask: int) -> str:
     return f"{n},{ne},{e},{se},{s},{sw},{w},{nw}"
 
 
-def generate_tsx(name: str, tile_size: int, png_filename: str) -> str:
+
+def generate_tsx(
+    name: str,
+    tile_size: int,
+    png_filename: str,
+    is_animated: bool = False,
+    animation_mode: str = "Horizontale",
+    duration: int = 150,
+    num_frames: int = 1,
+) -> str:
     """
-    Generate the TSX XML string for a 47-tile blob wangset.
+    Generate the TSX XML string for a 47-tile blob wangset, with animation support.
 
     Args:
         name: Tileset name (used for wangset name and <tileset name>).
         tile_size: Tile width/height in pixels.
         png_filename: Relative path to the PNG file (used in <image source>).
+        is_animated: True if the tileset is animated.
+        animation_mode: "Horizontale" or "Verticale".
+        duration: Animation frame duration in ms.
+        num_frames: Number of animation frames.
 
     Returns:
         XML string (UTF-8, with declaration).
     """
     sheet_width = SHEET_COLS * tile_size
-    sheet_height = SHEET_ROWS * tile_size
-    total_tiles = SHEET_COLS * SHEET_ROWS  # 48 (slot 47 = transparent padding)
+    sheet_height = SHEET_ROWS * num_frames * tile_size
+    total_tiles = SHEET_COLS * SHEET_ROWS * num_frames
 
     root = ET.Element(
         "tileset",
@@ -123,6 +140,33 @@ def generate_tsx(name: str, tile_size: int, png_filename: str) -> str:
             "height": str(sheet_height),
         },
     )
+
+    # If animated, add <tile> elements with <animation> loops for first frame's tiles
+    if is_animated and num_frames > 1:
+        for i in range(BLOB_COUNT):
+            tile_el = ET.SubElement(root, "tile", {"id": str(i)})
+            anim_el = ET.SubElement(tile_el, "animation")
+
+            # Sequence rules
+            if num_frames == 3 and animation_mode == "Horizontale":
+                frame_seq = [0, 1, 2, 1]
+            elif num_frames == 3 and animation_mode == "Verticale":
+                frame_seq = [0, 1, 2]
+            elif num_frames == 4:
+                frame_seq = [0, 1, 2, 3]
+            else:
+                frame_seq = list(range(num_frames))
+
+            for f_idx in frame_seq:
+                target_tileid = i + f_idx * (SHEET_COLS * SHEET_ROWS)
+                ET.SubElement(
+                    anim_el,
+                     "frame",
+                     {
+                         "tileid": str(target_tileid),
+                         "duration": str(duration),
+                     }
+                )
 
     wangsets = ET.SubElement(root, "wangsets")
     wangset = ET.SubElement(
@@ -159,38 +203,53 @@ def generate_tsx(name: str, tile_size: int, png_filename: str) -> str:
     ET.indent(tree, space="  ")
 
     # Build the XML manually to get xml_declaration
-    import io
     buf = io.BytesIO()
     tree.write(buf, encoding="utf-8", xml_declaration=True)
     return buf.getvalue().decode("utf-8")
 
 
 def export(
-    tiles: list[Image.Image],
+    tiles: list[list[Image.Image]] | list[Image.Image],
     name: str,
     output_dir: str | Path,
     tile_size: int,
+    is_animated: bool = False,
+    animation_mode: str = "Horizontale",
+    duration: int = 150,
 ) -> tuple[str, str]:
     """
-    Write the 47-tile blob sprite sheet PNG and TSX to disk.
+    Write the 47-tile blob sprite sheet PNG and TSX to disk, supporting animation frames.
 
     Args:
-        tiles: List of exactly 47 RGBA PIL Images.
+        tiles: List of frames (each a list of 47 RGBA PIL Images), or flat list of 47 images for static.
         name: Base name for output files (e.g. "grass" → grass.png + grass.tsx).
         output_dir: Directory to write files into (created if needed).
         tile_size: Tile size in pixels (32 or 48).
+        is_animated: True if animated autotile conversion is requested.
+        animation_mode: "Horizontale" or "Verticale".
+        duration: Animation frame duration in ms.
 
     Returns:
         Tuple of (png_path, tsx_path) as str.
 
     Raises:
-        ValueError: if len(tiles) != 47.
+        ValueError: if frame contains a number of tiles different from 47.
         OSError: if output_dir is not writable.
     """
-    if len(tiles) != BLOB_COUNT:
-        raise ValueError(
-            f"Expected exactly {BLOB_COUNT} tiles, got {len(tiles)}."
-        )
+    if not tiles:
+        raise ValueError("No tiles provided.")
+
+    from typing import cast
+    if isinstance(tiles[0], list):
+        tiles_by_frame = cast(list[list[Image.Image]], tiles)
+    else:
+        tiles_by_frame = cast(list[list[Image.Image]], [tiles])
+
+    for f_idx, frame in enumerate(tiles_by_frame):
+        if len(frame) != BLOB_COUNT:
+            raise ValueError(
+                f"Expected exactly {BLOB_COUNT} tiles in frame {f_idx}, got {len(frame)}."
+            )
 
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -199,14 +258,23 @@ def export(
     tsx_path = out / f"{name}.tsx"
 
     # Write PNG
-    sheet = assemble_sheet(tiles, tile_size)
+    sheet = assemble_sheet(tiles_by_frame, tile_size)
     sheet.save(png_path)
 
     # Compute relative path from TSX to PNG (same dir → just filename)
     rel_png = os.path.relpath(png_path, tsx_path.parent)
 
     # Write TSX
-    xml_str = generate_tsx(name, tile_size, rel_png)
+    num_frames = len(tiles_by_frame)
+    xml_str = generate_tsx(
+        name=name,
+        tile_size=tile_size,
+        png_filename=rel_png,
+        is_animated=is_animated,
+        animation_mode=animation_mode,
+        duration=duration,
+        num_frames=num_frames,
+    )
     tsx_path.write_text(xml_str, encoding="utf-8")
 
     return str(png_path), str(tsx_path)

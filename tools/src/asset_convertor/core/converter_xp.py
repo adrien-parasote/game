@@ -144,26 +144,47 @@ def _build_tile_from_bitmask(src: Image.Image, bitmask: int) -> Image.Image:
     return tile
 
 
-def convert_xp(img: Image.Image) -> list[Image.Image]:
+def convert_xp(
+    img: Image.Image,
+    is_animated: bool = False,
+    animation_mode: str = "Horizontale"
+) -> list[list[Image.Image]]:
     """
-    Convert a 96x128 RPG Maker XP autotile to 47 Tiled blob tiles.
+    Convert a RPG Maker XP autotile to Tiled blob tiles.
 
     Args:
-        img: RGBA PIL Image, must be 96x128 px.
+        img: RGBA PIL Image.
+        is_animated: True if animated autotile conversion is requested.
+        animation_mode: "Horizontale" or "Verticale".
 
     Returns:
-        list of 47 RGBA PIL Images, each 32x32 px.
-        Index i corresponds to BLOB_BITMASKS[i].
+        list of frames, where each frame is a list of 47 RGBA PIL Images (each 32x32 px).
 
     Raises:
-        ValueError: if img dimensions are not 96x128.
+        ValueError: if dimensions are invalid or vertical animation is requested.
     """
-    if img.width != FRAME_W or img.height != FRAME_H:
-        raise ValueError(
-            f"Expected XP autotile 96x128 px, got {img.width}x{img.height}."
-        )
+    if is_animated:
+        if animation_mode == "Verticale":
+            raise ValueError("L'animation verticale n'est pas supportée pour le format XP.")
+        if img.width % FRAME_W != 0 or img.height != FRAME_H:
+            raise ValueError(
+                f"Expected XP animated horizontal autotile width as multiple of 96 px and height 128 px, got {img.width}x{img.height}."
+            )
+        num_frames = img.width // FRAME_W
+        frames = []
+        for f in range(num_frames):
+            box = (f * FRAME_W, 0, (f + 1) * FRAME_W, FRAME_H)
+            frame_img = img.crop(box)
+            src = frame_img.copy().convert("RGBA")
+            frame_tiles = [_build_tile_from_bitmask(src, bitmask) for bitmask in BLOB_BITMASKS]
+            frames.append(frame_tiles)
+        return frames
+    else:
+        if img.width != FRAME_W or img.height != FRAME_H:
+            raise ValueError(
+                f"Expected XP autotile 96x128 px, got {img.width}x{img.height}."
+            )
+        src = img.copy().convert("RGBA")
+        frame_tiles = [_build_tile_from_bitmask(src, bitmask) for bitmask in BLOB_BITMASKS]
+        return [frame_tiles]
 
-    # Work on a copy to avoid mutating the source
-    src = img.copy().convert("RGBA")
-
-    return [_build_tile_from_bitmask(src, bitmask) for bitmask in BLOB_BITMASKS]

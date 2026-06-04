@@ -268,33 +268,136 @@ def detect_tile_size(img: Image.Image) -> int:
     return _VALID_BLOCK_SIZES[size]
 
 
-def convert_mv(img: Image.Image) -> list[Image.Image]:
-    """
-    Convert a MV/MZ A2 autotile block to 47 Tiled blob tiles.
+_WATERFALL_SHAPES: list[list[list[int]]] = [
+    [[2, 0], [1, 0], [2, 1], [1, 1]],  # Shape 0 (Center)
+    [[0, 0], [1, 0], [0, 1], [1, 1]],  # Shape 1 (Left Edge)
+    [[2, 0], [3, 0], [2, 1], [3, 1]],  # Shape 2 (Right Edge)
+    [[0, 0], [3, 0], [0, 1], [3, 1]],  # Shape 3 (Isolated)
+]
 
-    Auto-detects tile size from block dimensions:
-      - 64x96  -> 32px tiles (output at native 32px)
-      - 96x144 -> 48px tiles (output scaled down to 32px)
 
-    Args:
-        img: RGBA PIL Image (MV A2 autotile block).
+def _build_waterfall_tile(img: Image.Image, bitmask: int, tile_size: int) -> Image.Image:
+    """Assemble one output waterfall tile using the horizontal neighbor bitmask."""
+    has_w = bool(bitmask & 8)
+    has_e = bool(bitmask & 16)
+    if not has_w and not has_e:
+        shape_idx = 3
+    elif has_w and not has_e:
+        shape_idx = 2
+    elif not has_w and has_e:
+        shape_idx = 1
+    else:
+        shape_idx = 0
 
-    Returns:
-        list of 47 RGBA PIL Images, each 32x32 px.
-        Index i corresponds to BLOB_BITMASKS[i].
+    quads_qs = _WATERFALL_SHAPES[shape_idx]
+    half = tile_size // 2
+    tile = Image.new("RGBA", (tile_size, tile_size))
+    positions = [(0, 0), (half, 0), (0, half), (half, half)]
+    for (dx, dy), (qsx, qsy) in zip(positions, quads_qs, strict=True):
+        x = qsx * half
+        y = qsy * half
+        quad = img.crop((x, y, x + half, y + half))
+        tile.paste(quad, (dx, dy))
+    return tile
 
-    Raises:
-        ValueError: if img dimensions are not a recognized MV format.
-    """
-    tile_size = detect_tile_size(img)      # raises ValueError for unknown sizes
 
+def _convert_mv_static(img: Image.Image) -> list[list[Image.Image]]:
+    tile_size = detect_tile_size(img)
     src = img.copy().convert("RGBA")
-
-    tiles = []
+    frame_tiles = []
     for bitmask in BLOB_BITMASKS:
         tile = _build_mv_tile(src, bitmask, tile_size)
         if tile_size != 32:
             tile = tile.resize((32, 32), Image.NEAREST)
-        tiles.append(tile)
+        frame_tiles.append(tile)
+    return [frame_tiles]
 
-    return tiles
+
+def _convert_mv_animated_horizontal(img: Image.Image) -> list[list[Image.Image]]:
+    if img.height not in (96, 144):
+        raise ValueError(
+            f"Expected MV animated horizontal autotile height 96 or 144 px, got height={img.height}."
+        )
+    tile_size = img.height // 3
+    if img.width % (2 * tile_size) != 0:
+        raise ValueError(
+            f"Expected MV animated horizontal autotile width as multiple of {2 * tile_size} px, got width={img.width}."
+        )
+    num_frames = img.width // (2 * tile_size)
+    frames = []
+    for f in range(num_frames):
+        box = (f * 2 * tile_size, 0, (f + 1) * 2 * tile_size, img.height)
+        frame_img = img.crop(box)
+        src = frame_img.copy().convert("RGBA")
+        frame_tiles = []
+        for bitmask in BLOB_BITMASKS:
+            tile = _build_mv_tile(src, bitmask, tile_size)
+            if tile_size != 32:
+                tile = tile.resize((32, 32), Image.NEAREST)
+            frame_tiles.append(tile)
+        frames.append(frame_tiles)
+    return frames
+
+
+def _convert_mv_animated_vertical(img: Image.Image) -> list[list[Image.Image]]:
+    if img.width not in (64, 96):
+        raise ValueError(
+            f"Expected MV animated vertical autotile width 64 or 96 px, got width={img.width}."
+        )
+    tile_size = img.width // 2
+    if img.height % tile_size != 0:
+        raise ValueError(
+            f"Expected MV animated vertical autotile height as multiple of {tile_size} px, got height={img.height}."
+        )
+    num_frames = img.height // tile_size
+    frames = []
+    for f in range(num_frames):
+        box = (0, f * tile_size, 2 * tile_size, (f + 1) * tile_size)
+        frame_img = img.crop(box)
+        src = frame_img.copy().convert("RGBA")
+        frame_tiles = []
+        for bitmask in BLOB_BITMASKS:
+            tile = _build_waterfall_tile(src, bitmask, tile_size)
+            if tile_size != 32:
+                tile = tile.resize((32, 32), Image.NEAREST)
+            frame_tiles.append(tile)
+        frames.append(frame_tiles)
+    return frames
+
+
+def _convert_mv_animated(
+    img: Image.Image,
+    animation_mode: str = "Horizontale"
+) -> list[list[Image.Image]]:
+    if animation_mode == "Horizontale":
+        return _convert_mv_animated_horizontal(img)
+    elif animation_mode == "Verticale":
+        return _convert_mv_animated_vertical(img)
+    else:
+        raise ValueError(f"Unknown animation mode {animation_mode}.")
+
+
+def convert_mv(
+    img: Image.Image,
+    is_animated: bool = False,
+    animation_mode: str = "Horizontale"
+) -> list[list[Image.Image]]:
+    """
+    Convert a MV/MZ autotile block to 47 Tiled blob tiles.
+
+    Args:
+        img: RGBA PIL Image.
+        is_animated: True if animated autotile conversion is requested.
+        animation_mode: "Horizontale" or "Verticale".
+
+    Returns:
+        list of frames, where each frame is a list of 47 RGBA PIL Images (each 32x32 px).
+
+    Raises:
+        ValueError: if dimensions are invalid or not recognized.
+    """
+    if is_animated:
+        return _convert_mv_animated(img, animation_mode)
+    else:
+        return _convert_mv_static(img)
+

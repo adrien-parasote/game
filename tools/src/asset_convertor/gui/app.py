@@ -18,13 +18,13 @@ import tkinter as tk
 from dataclasses import dataclass, field
 from pathlib import Path
 from tkinter import filedialog
-from typing import Literal
+from typing import Literal, cast
 
 import customtkinter as ctk
 from asset_convertor.core.constants import TILE_SIZE
 from asset_convertor.core.converter_mv import convert_mv
 from asset_convertor.core.converter_xp import BLOB_BITMASKS, convert_xp
-from asset_convertor.exporters.tsx_generator import export
+from asset_convertor.exporters.tsx_generator import assemble_sheet, export
 from PIL import Image, ImageTk
 
 # ── Configuration UI ─────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ class AppState:
     source_path: str | None = None
     source_img: Image.Image | None = None
     mode: Literal["XP", "MV", "MZ"] = "MV"
-    tiles: list[Image.Image] | None = None
+    tiles: list[list[Image.Image]] | list[Image.Image] | None = None
     tile_size: int = 32
     output_dir: str = field(default_factory=lambda: OUTPUT_DIR_DEFAULT)
 
@@ -104,6 +104,10 @@ class App(ctk.CTk):
         self._photo_output: ctk.CTkImage | None = None
         self._canvas_photos: list[ImageTk.PhotoImage] = []
         self._canvas_grid: list[list[bool]] = [row[:] for row in _GRID_DEFAULT]
+
+        self._timer_id: str | None = None
+        self._current_frame_idx: int = 0
+        self._frame_sequence: list[int] = [0]
 
         self._setup_icon()
         self._build_ui()
@@ -135,7 +139,9 @@ class App(ctk.CTk):
     def _build_toolbar(self) -> None:
         bar = ctk.CTkFrame(self, height=56, corner_radius=0)
         bar.grid(row=0, column=0, sticky="ew", padx=0, pady=0)
-        bar.grid_columnconfigure(3, weight=1)
+
+        # Configure columns: left content cols 0-4, spacer col 5, right content cols 6-9
+        bar.grid_columnconfigure(5, weight=1)
 
         # Open button
         self.btn_open = ctk.CTkButton(
@@ -159,6 +165,44 @@ class App(ctk.CTk):
             )
             rb.grid(row=0, column=2 + i, padx=4)
 
+        # Spacer label to push animation controls and convert button to the right
+        spacer = ctk.CTkLabel(bar, text="")
+        spacer.grid(row=0, column=5, sticky="ew")
+
+        # Animation controls variables
+        self._animated_var = tk.BooleanVar(value=False)
+        self._anim_type_var = ctk.StringVar(value="Horizontale (Eau/Sol)")
+        self._speed_var = ctk.StringVar(value="150 ms")
+
+        # Checkbox "Autotile Animé"
+        self.cb_animated = ctk.CTkCheckBox(
+            bar,
+            text="Autotile Animé",
+            variable=self._animated_var,
+            command=self._on_animated_toggle,
+        )
+        self.cb_animated.grid(row=0, column=6, padx=(8, 4), pady=10)
+
+        # OptionMenu for Type d'animation
+        self.menu_anim_type = ctk.CTkOptionMenu(
+            bar,
+            variable=self._anim_type_var,
+            values=["Horizontale (Eau/Sol)", "Verticale (Cascade)"],
+            width=165,
+            command=self._on_anim_type_change,
+        )
+        self.menu_anim_type.grid(row=0, column=7, padx=4, pady=10)
+
+        # OptionMenu for Vitesse
+        self.menu_speed = ctk.CTkOptionMenu(
+            bar,
+            variable=self._speed_var,
+            values=["100 ms", "150 ms", "200 ms", "300 ms", "500 ms"],
+            width=90,
+            command=self._on_speed_change,
+        )
+        self.menu_speed.grid(row=0, column=8, padx=4, pady=10)
+
         # Convert button
         self.btn_convert = ctk.CTkButton(
             bar,
@@ -167,7 +211,10 @@ class App(ctk.CTk):
             state="disabled",
             command=self._convert,
         )
-        self.btn_convert.grid(row=0, column=5, padx=(16, 8), pady=10)
+        self.btn_convert.grid(row=0, column=9, padx=(16, 12), pady=10)
+
+        # Initial state of animation controls
+        self._update_animation_controls_state()
 
     def _build_panels(self) -> None:
         container = ctk.CTkFrame(self, fg_color="transparent")
@@ -321,7 +368,10 @@ class App(ctk.CTk):
             )
             return
 
-        # Validate dimensions based on mode
+        # Stop any running animation
+        self._stop_animation()
+
+        # Validate dimensions based on mode and current settings
         mode = self._mode_var.get()
         error = self._validate_dimensions(img, mode)
         if error:
@@ -343,17 +393,51 @@ class App(ctk.CTk):
     def _validate_dimensions(self, img: Image.Image, mode: str) -> str | None:
         """Return an error message or None if valid."""
         w, h = img.width, img.height
+        is_anim = self._animated_var.get()
+        anim_type_str = self._anim_type_var.get()
+        anim_mode = "Horizontale" if "Horizontale" in anim_type_str else "Verticale"
+
         if mode == "XP":
+            return self._validate_xp_dimensions(w, h, is_anim, anim_mode)
+        elif mode in ("MV", "MZ"):
+            return self._validate_mv_dimensions(w, h, is_anim, anim_mode, mode)
+        return None
+
+    def _validate_xp_dimensions(self, w: int, h: int, is_anim: bool, anim_mode: str) -> str | None:
+        if is_anim:
+            if anim_mode == "Verticale":
+                return "L'animation verticale n'est pas supportée pour le format XP."
+            if w % 96 != 0 or h != 128:
+                return f"Format XP (Horizontale) invalide. Attendu : largeur multiple de 96px et hauteur 128px, obtenu : {w}x{h}"
+        else:
             if w != 96 or h != 128:
-                return f"Format XP invalide. Attendu : 96x128 px, obtenu : {w}x{h}"
-        elif mode in ("MV", "MZ") and (w, h) not in ((64, 96), (96, 144)):
-            return (
-                f"Format {mode} invalide. Attendu : 64x96 ou 96x144 px, obtenu : {w}x{h}"
-            )
+                return f"Format XP statique invalide. Attendu : 96x128 px, obtenu : {w}x{h}"
+        return None
+
+    def _validate_mv_dimensions(self, w: int, h: int, is_anim: bool, anim_mode: str, mode: str) -> str | None:
+        if is_anim:
+            if anim_mode == "Horizontale":
+                if h not in (96, 144):
+                    return f"Format {mode} (Horizontale) invalide. Attendu : hauteur 96 ou 144 px, obtenu : {w}x{h}"
+                tile_size = h // 3
+                if w % (2 * tile_size) != 0:
+                    return f"Format {mode} (Horizontale) invalide. Attendu : largeur multiple de {2 * tile_size}px, obtenu : {w}x{h}"
+            else:  # Verticale
+                if w not in (64, 96):
+                    return f"Format {mode} (Verticale) invalide. Attendu : largeur 64 ou 96 px, obtenu : {w}x{h}"
+                tile_size = w // 2
+                if h % tile_size != 0:
+                    return f"Format {mode} (Verticale) invalide. Attendu : hauteur multiple de {tile_size}px, obtenu : {w}x{h}"
+        else:
+            if (w, h) not in ((64, 96), (96, 144)):
+                return f"Format {mode} statique invalide. Attendu : 64x96 ou 96x144 px, obtenu : {w}x{h}"
         return None
 
     def _on_mode_change(self) -> None:
         new_mode = self._mode_var.get()
+        self._update_animation_controls_state()
+        self._stop_animation()
+
         if self._state.source_img is not None:
             error = self._validate_dimensions(self._state.source_img, new_mode)
             if error:
@@ -375,6 +459,7 @@ class App(ctk.CTk):
         if self._state.source_img is None:
             return
 
+        self._stop_animation()
         self._set_status("Conversion en cours…")
         self.btn_convert.configure(state="disabled")
 
@@ -383,12 +468,17 @@ class App(ctk.CTk):
                 mode = self._state.mode
                 img = self._state.source_img
                 assert img is not None  # guarded by early-return above
+
+                is_animated = self._animated_var.get()
+                anim_type_str = self._anim_type_var.get()
+                anim_mode = "Horizontale" if "Horizontale" in anim_type_str else "Verticale"
+
                 if mode == "XP":
-                    tiles = convert_xp(img)
+                    tiles = convert_xp(img, is_animated=is_animated, animation_mode=anim_mode)
                     tile_size = 32
                 else:  # MV or MZ
-                    tiles = convert_mv(img)
-                    tile_size = tiles[0].width if tiles else 32
+                    tiles = convert_mv(img, is_animated=is_animated, animation_mode=anim_mode)
+                    tile_size = tiles[0][0].width if tiles and tiles[0] else 32
 
                 self._state = AppState(
                     source_path=self._state.source_path,
@@ -413,12 +503,40 @@ class App(ctk.CTk):
         if not tiles:
             return
 
-        self._display_output_sheet(tiles, self._state.tile_size)
-        self._draw_canvas_pattern(tiles, self._state.tile_size)
+        self._stop_animation()
         self.btn_convert.configure(state="normal")
         self.btn_export.configure(state="normal")
+
+        is_anim = self._animated_var.get()
+        num_frames = len(tiles)
+
+        self._display_output_sheet(tiles, self._state.tile_size)
+        self._draw_canvas_pattern(tiles, self._state.tile_size)
+
+        # Set up animated preview loop
+        if is_anim and num_frames > 1:
+            anim_type_str = self._anim_type_var.get()
+            if "Horizontale" in anim_type_str and num_frames == 3:
+                self._frame_sequence = [0, 1, 2, 1]
+            elif "Verticale" in anim_type_str and num_frames == 3:
+                self._frame_sequence = [0, 1, 2]
+            elif num_frames == 4:
+                self._frame_sequence = [0, 1, 2, 3]
+            else:
+                self._frame_sequence = list(range(num_frames))
+
+            self._current_frame_idx = 0
+
+            try:
+                duration_str = self._speed_var.get().replace(" ms", "").strip()
+                duration = int(duration_str)
+            except ValueError:
+                duration = 150
+
+            self._timer_id = self.after(duration, self._tick_animation)
+
         sheet_w = 8 * self._state.tile_size
-        sheet_h = 6 * self._state.tile_size
+        sheet_h = 6 * num_frames * self._state.tile_size
         self._set_status(
             f"Conversion reussie : 47 tuiles . {sheet_w}x{sheet_h} px"
         )
@@ -434,9 +552,25 @@ class App(ctk.CTk):
         out_dir = self._output_dir_var.get().strip() or OUTPUT_DIR_DEFAULT
         name = Path(self._state.source_path).stem
 
+        is_animated = self._animated_var.get()
+        anim_type_str = self._anim_type_var.get()
+        anim_mode = "Horizontale" if "Horizontale" in anim_type_str else "Verticale"
+
+        try:
+            duration_str = self._speed_var.get().replace(" ms", "").strip()
+            duration = int(duration_str)
+        except ValueError:
+            duration = 150
+
         try:
             png_path, tsx_path = export(
-                self._state.tiles, name, out_dir, self._state.tile_size
+                self._state.tiles,
+                name,
+                out_dir,
+                self._state.tile_size,
+                is_animated=is_animated,
+                animation_mode=anim_mode,
+                duration=duration,
             )
             self._set_status(
                 f"Exporté : {Path(png_path).name} + {Path(tsx_path).name} → {out_dir}"
@@ -448,6 +582,79 @@ class App(ctk.CTk):
             )
         except ValueError as exc:
             self._set_status(f"Erreur interne : {exc}", error=True)
+
+    def _update_animation_controls_state(self) -> None:
+        is_anim = self._animated_var.get()
+        mode = self._mode_var.get()
+
+        if is_anim:
+            self.menu_speed.configure(state="normal")
+            if mode == "XP":
+                self._anim_type_var.set("Horizontale (Eau/Sol)")
+                self.menu_anim_type.configure(state="disabled")
+            else:
+                self.menu_anim_type.configure(state="normal")
+        else:
+            self.menu_anim_type.configure(state="disabled")
+            self.menu_speed.configure(state="disabled")
+
+    def _stop_animation(self) -> None:
+        if self._timer_id is not None:
+            self.after_cancel(self._timer_id)
+            self._timer_id = None
+        self._current_frame_idx = 0
+        self._frame_sequence = [0]
+
+    def _tick_animation(self) -> None:
+        if not self._state.tiles or len(self._state.tiles) <= 1:
+            self._timer_id = None
+            return
+
+        self._current_frame_idx = (self._current_frame_idx + 1) % len(self._frame_sequence)
+        self._redraw_canvas_grid()
+
+        try:
+            duration_str = self._speed_var.get().replace(" ms", "").strip()
+            duration = int(duration_str)
+        except ValueError:
+            duration = 150
+
+        self._timer_id = self.after(duration, self._tick_animation)
+
+    def _on_animated_toggle(self) -> None:
+        self._update_animation_controls_state()
+        if self._state.source_img is not None:
+            mode = self._mode_var.get()
+            error = self._validate_dimensions(self._state.source_img, mode)
+            if error:
+                self._set_status(error, error=True)
+                self.btn_convert.configure(state="disabled")
+            else:
+                self._set_status(f"Fichier prêt pour conversion ({mode} animé)." if self._animated_var.get() else f"Fichier prêt pour conversion ({mode} statique).")
+                self.btn_convert.configure(state="normal")
+        else:
+            self.btn_convert.configure(state="disabled")
+
+    def _on_anim_type_change(self, value: str) -> None:
+        if self._state.source_img is not None:
+            mode = self._mode_var.get()
+            error = self._validate_dimensions(self._state.source_img, mode)
+            if error:
+                self._set_status(error, error=True)
+                self.btn_convert.configure(state="disabled")
+            else:
+                self._set_status(f"Fichier prêt pour conversion ({mode} animé - {value}).")
+                self.btn_convert.configure(state="normal")
+
+    def _on_speed_change(self, value: str) -> None:
+        if self._timer_id is not None and self._state.tiles:
+            self.after_cancel(self._timer_id)
+            try:
+                duration_str = value.replace(" ms", "").strip()
+                duration = int(duration_str)
+            except ValueError:
+                duration = 150
+            self._timer_id = self.after(duration, self._tick_animation)
 
     def _pick_output_dir(self) -> None:
         d = filedialog.askdirectory(title="Dossier de sortie")
@@ -478,22 +685,28 @@ class App(ctk.CTk):
         )
 
     def _display_output_sheet(
-        self, tiles: list[Image.Image], tile_size: int
+        self, tiles: list[list[Image.Image]] | list[Image.Image], tile_size: int
     ) -> None:
-        from asset_convertor.exporters.tsx_generator import assemble_sheet
+        # Normalize nested list vs flat list
+        if tiles and isinstance(tiles[0], list):
+            tiles_by_frame = cast(list[list[Image.Image]], tiles)
+        else:
+            tiles_by_frame = cast(list[list[Image.Image]], [tiles])
 
-        sheet = assemble_sheet(tiles, tile_size)
+        sheet = assemble_sheet(tiles_by_frame, tile_size)
         scaled = self._scale_to_fit(sheet, 320, 220)
         self._photo_output = ctk.CTkImage(
             light_image=scaled, dark_image=scaled, size=(scaled.width, scaled.height)
         )
         self.lbl_output.configure(image=self._photo_output, text="")
+
+        num_frames = len(tiles_by_frame)
         self.lbl_output_info.configure(
-            text=f"Tuile : {tile_size}px  |  Sortie : {8*tile_size}x{6*tile_size}"
+            text=f"Tuile : {tile_size}px  |  Sortie : {8*tile_size}x{6*num_frames*tile_size}"
         )
 
     def _draw_canvas_pattern(
-        self, tiles: list[Image.Image], tile_size: int
+        self, tiles: list[list[Image.Image]] | list[Image.Image], tile_size: int
     ) -> None:
         """Initialize the interactive grid with the test pattern and redraw."""
         self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
@@ -597,13 +810,26 @@ class App(ctk.CTk):
         self._canvas_photos = []
 
         tiles = self._state.tiles
+        active_tiles: list[Image.Image] | None = None
+        if tiles:
+            if isinstance(tiles[0], list):
+                tiles_list = cast(list[list[Image.Image]], tiles)
+                if self._animated_var.get() and self._frame_sequence:
+                    f_idx = self._frame_sequence[self._current_frame_idx % len(self._frame_sequence)]
+                    f_idx = min(f_idx, len(tiles_list) - 1)
+                    active_tiles = tiles_list[f_idx]
+                else:
+                    active_tiles = tiles_list[0]
+            else:
+                active_tiles = cast(list[Image.Image], tiles)
+
         for r, row_data in enumerate(grid):
             for c, filled in enumerate(row_data):
                 x, y = c * _CELL_SIZE, r * _CELL_SIZE
-                if filled and tiles:
+                if filled and active_tiles:
                     bm = _compute_cell_bitmask(grid, r, c)
                     idx = _BITMASK_TO_IDX.get(bm, 0)
-                    tile = tiles[idx]
+                    tile = active_tiles[idx]
                     scaled = tile.resize((_CELL_SIZE, _CELL_SIZE), Image.NEAREST)
                     photo = ImageTk.PhotoImage(scaled)
                     self._canvas_photos.append(photo)
