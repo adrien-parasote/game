@@ -513,13 +513,17 @@ class App(ctk.CTk):
 
     @staticmethod
     def _scale_to_fit(img: Image.Image, max_w: int, max_h: int) -> Image.Image:
-        """Scale image to fit within max_w x max_h using NEAREST, preserve aspect ratio."""
-        scale = min(max_w / img.width, max_h / img.height, 1.0)
-        if scale < 1.0:
-            new_w = max(1, int(img.width * scale))
-            new_h = max(1, int(img.height * scale))
-            return img.resize((new_w, new_h), Image.NEAREST)
-        return img
+        """Scale image to fit within max_w x max_h using NEAREST, preserve aspect ratio.
+
+        Upscales small images (e.g. 64x96 source in a 220x220 panel) and
+        downscales large images. Both directions preserve aspect ratio.
+        """
+        scale = min(max_w / img.width, max_h / img.height)  # no 1.0 cap — allow upscale
+        if abs(scale - 1.0) < 1e-6:
+            return img
+        new_w = max(1, int(img.width * scale))
+        new_h = max(1, int(img.height * scale))
+        return img.resize((new_w, new_h), Image.NEAREST)
 
     def _set_status(self, message: str, *, error: bool = False) -> None:
         color = "#ff6b6b" if error else "gray"
