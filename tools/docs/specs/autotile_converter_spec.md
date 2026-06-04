@@ -198,40 +198,71 @@ img: PIL.Image, mode RGBA
 
 Raises `ValueError` if dimensions don't match.
 
-#### XP Sub-Tile Layout (16×16 grid, 6 cols × 8 rows)
+#### XP Source Image Layout (verified against tutorial + pixel analysis 2026-06-04)
 
-The XP autotile is a **6×8 grid of 16×16 sub-tiles**. Positions are (col, row) with (0,0) at top-left.
+The XP autotile is a **6x8 grid of 16x16 sub-tiles** (96x128 px). Positions = (col, row), (0,0) at top-left.
 
 ```
-Sub-tile positions in the 96×128 source:
+Sub-tile positions in the 96x128 source:
   pixel_x = col * 16
   pixel_y = row * 16
+
+Row 0-1 (y=0-32): ICON ZONE
+  Col 0-1 (A tile): Isolated icon — shows how the autotile looks when alone in the editor.
+  Col 2-3 (X zone): "Absence de surface" — background visible when autotile is absent.
+                    This zone is often left transparent or filled with background color.
+                    DO NOT use for inner corners.
+  Col 4-5 (B tiles): Virages internes (inner corners) — 4 x 16x16 pieces:
+                    B-TL (4,0): virage NW (used when NW diagonal is missing)
+                    B-TR (5,0): virage NE (used when NE diagonal is missing)
+                    B-BL (4,1): virage SW (used when SW diagonal is missing)
+                    B-BR (5,1): virage SE (used when SE diagonal is missing)
+
+Row 2-3 (y=32-64): TOP ZONE
+  Col 0-1 (D): top-left outer corner
+  Col 2-3 (E): top edge
+  Col 4-5 (F): top-right outer corner
+
+Row 4-5 (y=64-96): MIDDLE ZONE
+  Col 0-1 (G): left edge
+  Col 2-3 (H): center / interior fill
+  Col 4-5 (I): right edge
+
+Row 6-7 (y=96-128): BOTTOM ZONE
+  Col 0-1 (J): bottom-left outer corner
+  Col 2-3 (K): bottom edge
+  Col 4-5 (L): bottom-right outer corner
 ```
 
-| Sub-tile name | (col, row) | Pixel region |
-|---|---|---|
-| A1 (outer NW) | (0, 2) | (0,32)–(15,47) |
-| A2 (outer NE) | (2, 2) | (32,32)–(47,47) |
-| A3 (outer SW) | (0, 4) | (0,64)–(15,79) |
-| A4 (outer SE) | (2, 4) | (32,64)–(47,79) |
-| B1 (N edge left) | (2, 0) | (32,0)–(47,15) |
-| B2 (N edge right) | (4, 0) | (64,0)–(79,15) |
-| B3 (S edge left) | (2, 6) | (32,96)–(47,111) |
-| B4 (S edge right) | (4, 6) | (64,96)–(79,111) |
-| C1 (W edge top) | (0, 2) | (0,32)–(15,47) |
-| C2 (E edge top) | (4, 2) | (64,32)–(79,47) |
-| C3 (W edge bot) | (0, 4) | (0,64)–(15,79) |
-| C4 (E edge bot) | (4, 4) | (64,64)–(79,79) |
-| D1 (inner fill TL) | (2, 2) | (32,32)–(47,47) |
-| D2 (inner fill TR) | (4, 2) | (64,32)–(79,47) |
-| D3 (inner fill BL) | (2, 4) | (32,64)–(47,79) |
-| D4 (inner fill BR) | (4, 4) | (64,64)–(79,79) |
-| E1 (inner corner NW) | (0, 6) | (0,96)–(15,111) |
-| E2 (inner corner NE) | (2, 6) | (32,96)–(47,111) |
-| E3 (inner corner SW) | (0, 8 — clamped to 7) | see note |
-| E4 (inner corner SE) | (2, 8 — clamped to 7) | see note |
+> **Reference:** Verified by color-coded demo autotile (4 distinct colors at B-tile positions)
+> and by the RPG Maker FR tutorial (Oniromancie - "Realiser un autotile"):
+> "les virages internes font 16x16 px... une case sera partagee entre un element virage interne
+> (16x16, un quart de case) et un element interieur (3 quarts)."
 
-> **Note on sub-tile coordinates:** The exact lookup table for all 47 blob configurations will be derived from the canonical RGSS source. The table above shows the named sub-tile regions; the lookup table maps each of the 47 blob bitmasks to 4 quadrant sub-tile positions (TL, TR, BL, BR of the 32×32 output tile). This table is hardcoded as `XP_LOOKUP: dict[int, tuple[str, str, str, str]]` in the module.
+> **Critical anti-pattern:** See AP-11. The zone at col 2-3 ("absence de surface") is NOT
+> the virage interne zone. Using (2,0)-(3,1) for inner corners reads the background/empty
+> area and produces solid background-color squares at concave corners.
+
+#### Quadrant Lookup Implementation (actual implementation)
+
+The implementation uses `_quarter_tl/tr/bl/br(c1, c2, diag, iso)` functions that return
+`(col, row)` of the 16x16 sub-tile to use for each quadrant. The B-tile inner corner
+coordinates are:
+
+```python
+# When both cardinals present but diagonal MISSING:
+_quarter_tl -> (4, 0)  # B-TL: virage NW
+_quarter_tr -> (5, 0)  # B-TR: virage NE
+_quarter_bl -> (4, 1)  # B-BL: virage SW
+_quarter_br -> (5, 1)  # B-BR: virage SE
+
+# When both cardinals present and diagonal PRESENT (interior):
+_quarter_tl -> (2, 4)  # H-TL: center interior
+_quarter_tr -> (3, 4)  # H-TR
+_quarter_bl -> (2, 5)  # H-BL
+_quarter_br -> (3, 5)  # H-BR
+```
+
 
 #### XP Lookup Table (47 blob configurations)
 
@@ -698,6 +729,7 @@ All error states:
 | AP-08 | Using the top-left tile of XP as data (it's the icon) | The 32×32 icon at (0,0) is editor-only, not terrain data. | Icon sub-tile is never used in the lookup table output. |
 | AP-09 | Including only 46 wangtile entries in TSX | One missing configuration → Tiled terrain paint has gaps. | Exactly 47 `<wangtile>` entries required (all of BLOB_BITMASK_ORDER). |
 | AP-10 | Wrong wangid bit order | Tiled uses `[N, NE, E, SE, S, SW, W, NW]` order, not the bitmask bit order. | Use `bitmask_to_wangid()` helper, never map manually. |
+| AP-11 | Reading inner corners from the "absence de surface" zone (col 2-3, rows 0-1) | Col 2-3 rows 0-1 is the background zone (what shows when no autotile is placed). Using these coordinates for virages internes produces solid background-color squares at concave corners. | Inner corners (virages internes) are at **col 4-5, rows 0-1** (B-TL=(4,0), B-TR=(5,0), B-BL=(4,1), B-BR=(5,1)). Verified by color-coded demo autotile and RPG Maker FR tutorial. |
 
 ---
 

@@ -11,6 +11,7 @@ Spec : tools/docs/specs/autotile_converter_spec.md section gui/app.py
 
 from __future__ import annotations
 
+import datetime
 import os
 import threading
 import tkinter as tk
@@ -32,17 +33,46 @@ ctk.set_default_color_theme("blue")
 
 OUTPUT_DIR_DEFAULT = str(Path(__file__).parents[3] / "src" / "output")
 
-# Motif test 5x5 (bitmasks 8-voisins)
-# Convention : NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, SE=128
-_TEST_PATTERN: list[list[int]] = [
-    [0,    2,    2,    2,    0],
-    [8,    90,   90,   90,   16],
-    [8,    90,   255,  90,   16],
-    [8,    90,   90,   90,   16],
-    [0,    64,   64,   64,   0],
+_CELL_SIZE = 32  # taille d'affichage de chaque cellule dans le canvas interactif
+
+# Grille de test par defaut 5x5 - correspondance avec l'ancien _TEST_PATTERN
+_GRID_DEFAULT: list[list[bool]] = [
+    [False, True,  True,  True,  False],
+    [True,  True,  True,  True,  True ],
+    [True,  True,  True,  True,  True ],
+    [True,  True,  True,  True,  True ],
+    [False, True,  True,  True,  False],
 ]
 
 _BITMASK_TO_IDX: dict[int, int] = {bm: idx for idx, bm in enumerate(BLOB_BITMASKS)}
+
+
+def _compute_cell_bitmask(grid: list[list[bool]], row: int, col: int) -> int:
+    """Compute 8-neighbor blob bitmask for a cell in the interactive grid.
+
+    Diagonal bits follow blob rules: set only when both adjacent cardinals are set.
+    Convention: NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, SE=128.
+    """
+    rows = len(grid)
+    cols = len(grid[0]) if rows else 0
+
+    def f(r: int, c: int) -> bool:
+        return 0 <= r < rows and 0 <= c < cols and grid[r][c]
+
+    n = f(row - 1, col)
+    s = f(row + 1, col)
+    w = f(row, col - 1)
+    e = f(row, col + 1)
+    nw = f(row - 1, col - 1) and n and w
+    ne = f(row - 1, col + 1) and n and e
+    sw = f(row + 1, col - 1) and s and w
+    se = f(row + 1, col + 1) and s and e
+
+    return (
+        (1 if nw else 0) | (2 if n else 0) | (4 if ne else 0)
+        | (8 if w else 0) | (16 if e else 0)
+        | (32 if sw else 0) | (64 if s else 0) | (128 if se else 0)
+    )
 
 
 # ── Dataclass état interne ────────────────────────────────────────────────────
@@ -69,9 +99,10 @@ class App(ctk.CTk):
         self.resizable(True, True)
 
         self._state = AppState()
-        self._photo_source: ImageTk.PhotoImage | None = None
-        self._photo_output: ImageTk.PhotoImage | None = None
+        self._photo_source: ctk.CTkImage | None = None
+        self._photo_output: ctk.CTkImage | None = None
         self._canvas_photos: list[ImageTk.PhotoImage] = []
+        self._canvas_grid: list[list[bool]] = [row[:] for row in _GRID_DEFAULT]
 
         self._setup_icon()
         self._build_ui()
@@ -97,7 +128,8 @@ class App(ctk.CTk):
 
         self._build_toolbar()
         self._build_panels()
-        self._build_footer()
+        self._build_log()    # row 2 — terminal journal
+        self._build_footer() # row 3
 
     def _build_toolbar(self) -> None:
         bar = ctk.CTkFrame(self, height=56, corner_radius=0)
@@ -211,19 +243,32 @@ class App(ctk.CTk):
 
         self.canvas = tk.Canvas(
             canvas_frame,
-            width=200,
-            height=200,
+            width=160,
+            height=160,
             bg="#222222",
             highlightthickness=0,
         )
         self.canvas.grid(row=0, column=0, padx=4, pady=4)
+        self.canvas.bind("<Button-1>", self._on_canvas_click)
+
+        # Boutons canvas
+        btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        btn_frame.grid(row=2, column=0, pady=(0, 2))
+        ctk.CTkButton(
+            btn_frame, text="↺ Pattern", width=90,
+            command=self._load_test_pattern,
+        ).pack(side="left", padx=2)
+        ctk.CTkButton(
+            btn_frame, text="✕ Effacer", width=90,
+            command=self._clear_canvas_grid,
+        ).pack(side="left", padx=2)
 
         self.lbl_canvas_info = ctk.CTkLabel(frame, text="", text_color="gray")
-        self.lbl_canvas_info.grid(row=2, column=0, pady=(2, 8))
+        self.lbl_canvas_info.grid(row=3, column=0, pady=(2, 8))
 
     def _build_footer(self) -> None:
         footer = ctk.CTkFrame(self, height=56, corner_radius=0)
-        footer.grid(row=2, column=0, sticky="ew", padx=0, pady=0)
+        footer.grid(row=3, column=0, sticky="ew", padx=0, pady=0)
         footer.grid_columnconfigure(2, weight=1)
 
         self.btn_export = ctk.CTkButton(
@@ -422,7 +467,9 @@ class App(ctk.CTk):
         self, img: Image.Image, filename: str, mode: str
     ) -> None:
         scaled = self._scale_to_fit(img, 200, 200)
-        self._photo_source = ImageTk.PhotoImage(scaled)
+        self._photo_source = ctk.CTkImage(
+            light_image=scaled, dark_image=scaled, size=(scaled.width, scaled.height)
+        )
         self.lbl_source.configure(image=self._photo_source, text="")
         w, h = img.size
         self.lbl_source_info.configure(
@@ -436,7 +483,9 @@ class App(ctk.CTk):
 
         sheet = assemble_sheet(tiles, tile_size)
         scaled = self._scale_to_fit(sheet, 320, 220)
-        self._photo_output = ImageTk.PhotoImage(scaled)
+        self._photo_output = ctk.CTkImage(
+            light_image=scaled, dark_image=scaled, size=(scaled.width, scaled.height)
+        )
         self.lbl_output.configure(image=self._photo_output, text="")
         self.lbl_output_info.configure(
             text=f"Tuile : {tile_size}px  |  Sortie : {8*tile_size}x{6*tile_size}"
@@ -445,27 +494,12 @@ class App(ctk.CTk):
     def _draw_canvas_pattern(
         self, tiles: list[Image.Image], tile_size: int
     ) -> None:
-        display_size = 32  # toujours 32px dans le canvas
-        total = 5 * display_size
-        self.canvas.configure(width=total, height=total)
-        self.canvas.delete("all")
-        self._canvas_photos = []
-
-        for row_idx, row in enumerate(_TEST_PATTERN):
-            for col_idx, bm in enumerate(row):
-                idx = _BITMASK_TO_IDX.get(bm, 0)
-                tile = tiles[idx]
-                scaled = tile.resize((display_size, display_size), Image.NEAREST)
-                photo = ImageTk.PhotoImage(scaled)
-                self._canvas_photos.append(photo)
-                self.canvas.create_image(
-                    col_idx * display_size,
-                    row_idx * display_size,
-                    anchor="nw",
-                    image=photo,
-                )
-
-        self.lbl_canvas_info.configure(text="Motif test 5x5 (bitmask 8-voisins)")
+        """Initialise la grille interactive avec le motif de test et redessine."""
+        self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
+        self._redraw_canvas_grid()
+        self.lbl_canvas_info.configure(
+            text="Cliquez pour dessiner - 5x5 - bitmask 8-voisins"
+        )
 
     def _reset_panels(self) -> None:
         self.lbl_source.configure(image=None, text="Aucun autotile chargé")
@@ -474,6 +508,7 @@ class App(ctk.CTk):
         self.lbl_output_info.configure(text="")
         self.canvas.delete("all")
         self._canvas_photos = []
+        self._canvas_grid = [[False] * len(_GRID_DEFAULT[0]) for _ in _GRID_DEFAULT]
         self.lbl_canvas_info.configure(text="")
 
     @staticmethod
@@ -489,6 +524,97 @@ class App(ctk.CTk):
     def _set_status(self, message: str, *, error: bool = False) -> None:
         color = "#ff6b6b" if error else "gray"
         self.lbl_status.configure(text=f"État : {message}", text_color=color)
+        self._log(message, level="WARN" if error else "INFO")
+
+    def _log(self, message: str, level: str = "INFO") -> None:
+        """Ajoute une entrée horodatée dans le terminal journal."""
+        if not hasattr(self, "txt_log"):
+            return
+        now = datetime.datetime.now().strftime("%H:%M:%S")
+        entry = f"[{now}] [{level:4}] {message}\n"
+        self.txt_log.configure(state="normal")
+        self.txt_log.insert("end", entry)
+        self.txt_log.see("end")
+        self.txt_log.configure(state="disabled")
+
+    def _build_log(self) -> None:
+        """Terminal journal entre les panneaux et le footer (row 2)."""
+        log_frame = ctk.CTkFrame(self, corner_radius=0)
+        log_frame.grid(row=2, column=0, sticky="ew", padx=0, pady=0)
+        log_frame.grid_columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(
+            log_frame, text="Journal :", font=ctk.CTkFont(size=11)
+        ).grid(row=0, column=0, padx=(12, 6), pady=4, sticky="w")
+
+        self.txt_log = ctk.CTkTextbox(
+            log_frame,
+            height=64,
+            font=ctk.CTkFont(family="Courier", size=11),
+            fg_color=("#111111", "#0a0a0a"),
+            text_color="#8fbcbb",
+            activate_scrollbars=True,
+        )
+        self.txt_log.grid(row=0, column=1, padx=(0, 8), pady=4, sticky="ew")
+        self.txt_log.configure(state="disabled")
+
+    def _on_canvas_click(self, event: tk.Event) -> None:  # type: ignore[type-arg]
+        """Toggle la cellule cliquée et redessine le canvas."""
+        col = event.x // _CELL_SIZE
+        row = event.y // _CELL_SIZE
+        grid = self._canvas_grid
+        if 0 <= row < len(grid) and 0 <= col < len(grid[0]):
+            grid[row][col] = not grid[row][col]
+            self._redraw_canvas_grid()
+
+    def _load_test_pattern(self) -> None:
+        """Reinitialise la grille avec le motif de test 5x5."""
+        self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
+        self._redraw_canvas_grid()
+
+    def _clear_canvas_grid(self) -> None:
+        """Efface toutes les cellules du canvas."""
+        rows = len(self._canvas_grid)
+        cols = len(self._canvas_grid[0]) if rows else len(_GRID_DEFAULT[0])
+        self._canvas_grid = [[False] * cols for _ in range(rows)]
+        self._redraw_canvas_grid()
+
+    def _redraw_canvas_grid(self) -> None:
+        """Redessine le canvas interactif depuis self._canvas_grid."""
+        grid = self._canvas_grid
+        rows = len(grid)
+        cols = len(grid[0]) if rows else 0
+        total_w = cols * _CELL_SIZE
+        total_h = rows * _CELL_SIZE
+
+        self.canvas.configure(width=total_w, height=total_h)
+        self.canvas.delete("all")
+        self._canvas_photos = []
+
+        tiles = self._state.tiles
+        for r, row_data in enumerate(grid):
+            for c, filled in enumerate(row_data):
+                x, y = c * _CELL_SIZE, r * _CELL_SIZE
+                if filled and tiles:
+                    bm = _compute_cell_bitmask(grid, r, c)
+                    idx = _BITMASK_TO_IDX.get(bm, 0)
+                    tile = tiles[idx]
+                    scaled = tile.resize((_CELL_SIZE, _CELL_SIZE), Image.NEAREST)
+                    photo = ImageTk.PhotoImage(scaled)
+                    self._canvas_photos.append(photo)
+                    self.canvas.create_image(x, y, anchor="nw", image=photo)
+                elif filled:
+                    # Conversion pas encore faite : placeholder coloré
+                    self.canvas.create_rectangle(
+                        x, y, x + _CELL_SIZE, y + _CELL_SIZE,
+                        fill="#3a3a3a", outline="#555555",
+                    )
+                else:
+                    # Cellule vide
+                    self.canvas.create_rectangle(
+                        x, y, x + _CELL_SIZE, y + _CELL_SIZE,
+                        fill="#1a1a1a", outline="#2a2a2a",
+                    )
 
     def mainloop(self, n: int = 0) -> None:  # type: ignore[override]
         super().mainloop(n)

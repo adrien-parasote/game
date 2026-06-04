@@ -54,6 +54,47 @@ app.setApplicationIconImage_(icon)
 **Anti-pattern :** Déclarer une constante module-level "par précaution" avant de valider qu'elle est réellement référencée dans le code du même module. AI-gen anti-pattern #1 (single-use helper jamais utilisé).
 **Fix :** Avant de déclarer une constante, vérifier qu'elle est référencée au moins une fois dans le même fichier (`grep -c "SUBTILE" converter_mv.py`). Si 0 ou 1 (la déclaration elle-même) → ne pas déclarer, utiliser l'expression directement.
 
+## A-TOOL-002 · 2026-06-04 · Universal · Confusion "absence de surface" vs "virages internes" dans le template XP
+
+**Contexte :** Correction de coordonnées B-tiles dans `converter_xp.py` (session 2026-06-04).
+**Evidence :** Un fix précédent avait changé les inner corners de (4,0)-(5,1) vers (2,0)-(3,1). Résultat : carrés jaunes/beiges sur la map à chaque virage concave. 1206 tests passaient quand même (cf. A-TOOL-003). L'utilisateur a dû fournir 2 screenshots + le tutoriel local pour identifier la régression.
+**Anti-pattern :** Dans le template XP 96x128, les zones col 2-3 (rows 0-1) et col 4-5 (rows 0-1) sont adjacentes et visuellement similaires sur une texture uniforme. La zone col 2-3 est l'"absence de surface" (fond visible quand aucun autotile n'est placé). Utiliser cette zone comme source des virages internes injecte la couleur du fond (souvent beige/sable) dans les quadrants concaves.
+**Fix :** Les virages internes (B-tiles) sont TOUJOURS en col 4-5, rows 0-1 du template XP 96x128 :
+  - B-TL = (4,0) — virage NW (N+W présents, NW absent)
+  - B-TR = (5,0) — virage NE
+  - B-BL = (4,1) — virage SW
+  - B-BR = (5,1) — virage SE
+Référence : tutoriel RPG Maker FR "Réaliser un autotile" (Oniromancie). Vérification : cf. L-TOOL-009.
+
+## L-TOOL-009 · 2026-06-04 · Universal · Autotile coloré synthétique pour vérification des coordonnées
+
+**Contexte :** Validation des coordonnées B-tiles après détection de régression dans `converter_xp.py`.
+**Evidence :** Test de ~30 lignes créant un autotile synthétique avec 4 couleurs distinctes aux positions B-tile, converti en 47 tiles, validé par échantillonnage du pixel central de chaque quadrant sur les bitmasks 254/251/223/127. Résultat en <1s avec preuve irréfutable : TL=JAUNE ✓, TR=CYAN ✓, BL=VIOLET ✓, BR=ROUGE ✓.
+**Pattern :** Pour vérifier que les inner corners lisent bien la bonne zone source :
+```python
+# 1. Créer autotile synthétique avec 4 couleurs distinctes aux B-tiles
+test = Image.new('RGBA', (96, 128), fond_color)
+colors = {(4,0): YELLOW, (5,0): CYAN, (4,1): VIOLET, (5,1): RED}
+for (col, row), color in colors.items():
+    test.paste(Image.new('RGBA',(16,16),color), (col*16, row*16))
+# 2. Convertir + sampler le pixel central de chaque quadrant
+tiles = convert_xp(test)
+arr = np.array(tiles[BLOB_BITMASKS.index(254)])  # NW missing
+assert arr[8, 8, :3].tolist() == list(YELLOW[:3])   # TL = JAUNE
+# Répéter pour bitmasks 251 (TR=CYAN), 223 (BL=VIOLET), 127 (BR=ROUGE)
+```
+Ce test doit figurer dans `test_converter_xp.py` comme TC-B01 à TC-B04. À lancer dès qu'une coordonnée B-tile est modifiée.
+
+## A-TOOL-003 · 2026-06-04 · Universal · Sample uniforme masquant des coordonnées incorrectes
+
+**Contexte :** `sample_xp.png` est quasi-uniforme (vert homogène) — la suite de 1206 tests passait même avec des coordonnées B-tiles incorrectes pointant vers la zone "absence de surface".
+**Evidence :** Avec B-tiles à (2,0)-(3,1) au lieu de (4,0)-(5,1) : 1206/1206 tests PASS (dont `test_converter_xp.py`). La régression n'était visible qu'en runtime avec un vrai autotile multi-zone (herbe/sable).
+**Anti-pattern :** Utiliser un sample de texture uniforme comme seule fixture pour les tests de coordonnées de conversion. Un sample uniforme rend tous les quadrants identiques : `assert result[i].size == (32,32)` passe toujours, `assert result[0] != result[46]` échoue silencieusement.
+**Fix :** Toute suite de tests pour un convertisseur d'autotile DOIT inclure :
+1. Un test avec sample uniforme (valide les propriétés de structure : taille, mode, count)
+2. Un test avec autotile synthétique multi-zone (valide les coordonnées de lecture)
+Cf. L-TOOL-009 pour le pattern d'autotile synthétique.
+
 ## L-TOOL-008 · 2026-06-04 · Universal · Caractères ambigus Unicode dans les docstrings Python
 **Contexte :** Docstrings des convertisseurs utilisaient `×` (U+00D7, multiplication sign) pour décrire des dimensions (ex: "96×128 px").
 **Evidence :** `ruff check --select RUF002,RUF003` a bloqué sur plusieurs fichiers nécessitant de remplacer `×` par `x` ASCII. Corrigé en plusieurs itérations sur `converter_xp.py`, `converter_mv.py`, `tsx_generator.py`.

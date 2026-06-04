@@ -41,8 +41,8 @@ assert len(BLOB_BITMASKS) == 47, "BLOB_BITMASKS must have exactly 47 entries"
 # Source autotile: 96x128 px = 6 cols x 8 rows of 16x16 sub-tiles.
 #
 #  Col  0   1   2   3   4   5
-# Row 0 A-TL A-TR B-TL B-TR C-TL C-TR    A=isolated, B=inner-corner, C=variant
-# Row 1 A-BL A-BR B-BL B-BR C-BL C-BR
+# Row 0 A-TL A-TR X-TL X-TR B-TL B-TR    A=isolated, X=absence-de-surface, B=inner-corner
+# Row 1 A-BL A-BR X-BL X-BR B-BL B-BR
 # Row 2 D-TL D-TR E-TL E-TR F-TL F-TR    D=top-left, E=top-edge, F=top-right
 # Row 3 D-BL D-BR E-BL E-BR F-BL F-BR
 # Row 4 G-TL G-TR H-TL H-TR I-TL I-TR    G=left, H=center, I=right
@@ -50,11 +50,12 @@ assert len(BLOB_BITMASKS) == 47, "BLOB_BITMASKS must have exactly 47 entries"
 # Row 6 J-TL J-TR K-TL K-TR L-TL L-TR    J=bot-left, K=bot-edge, L=bot-right
 # Row 7 J-BL J-BR K-BL K-BR L-BL L-BR
 #
-# B tile (col 2-3, row 0-1) = inner-corner shadow pieces:
-#   B-TL (2,0): NW missing (N+W present but NW=0)
-#   B-TR (3,0): NE missing
-#   B-BL (2,1): SW missing
-#   B-BR (3,1): SE missing
+# B tile (col 4-5, row 0-1) = virages internes (inner-corner pieces, 16x16 each):
+#   B-TL (4,0): used when NW missing  (N+W present but NW=0)
+#   B-TR (5,0): used when NE missing
+#   B-BL (4,1): used when SW missing
+#   B-BR (5,1): used when SE missing
+# X tile (col 2-3, row 0-1) = "absence de surface" (background when no autotile placed)
 
 
 def _extract_subtile(img: Image.Image, col: int, row: int) -> Image.Image:
@@ -86,7 +87,7 @@ def _assemble_tile(
 def _quarter_tl(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
     """Return (col, row) of 16x16 sub-tile for top-left quadrant."""
     if c1 and c2:
-        return (2, 4) if diag else (4, 0)
+        return (2, 4) if diag else (4, 0)  # B-TL: inner corner NW missing
     if c1:
         return (0, 4)
     if c2:
@@ -97,7 +98,7 @@ def _quarter_tl(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
 def _quarter_tr(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
     """Return (col, row) of 16x16 sub-tile for top-right quadrant."""
     if c1 and c2:
-        return (3, 4) if diag else (5, 0)
+        return (3, 4) if diag else (5, 0)  # B-TR: inner corner NE missing
     if c1:
         return (5, 4)
     if c2:
@@ -108,7 +109,7 @@ def _quarter_tr(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
 def _quarter_bl(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
     """Return (col, row) of 16x16 sub-tile for bottom-left quadrant."""
     if c1 and c2:
-        return (2, 5) if diag else (4, 1)
+        return (2, 5) if diag else (4, 1)  # B-BL: inner corner SW missing
     if c1:
         return (0, 5)
     if c2:
@@ -119,7 +120,7 @@ def _quarter_bl(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
 def _quarter_br(c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]:
     """Return (col, row) of 16x16 sub-tile for bottom-right quadrant."""
     if c1 and c2:
-        return (3, 5) if diag else (5, 1)
+        return (3, 5) if diag else (5, 1)  # B-BR: inner corner SE missing
     if c1:
         return (5, 5)
     if c2:
