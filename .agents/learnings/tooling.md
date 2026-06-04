@@ -33,3 +33,12 @@ app.setApplicationIconImage_(icon)
 **Contexte :** Génération procédurale de textures de sol (pixel art) nécessitant une répétition parfaite aux bords (seamless/tileable).
 **Outcome :** Le bruit de Perlin 2D standard génère des coutures (seams) visibles aux bords. La projection de l'espace 2D en coordonnées 4D `(cos(x)*r, sin(x)*r, cos(y)*r, sin(y)*r)` sur un tore garantit mathématiquement une continuité parfaite sans logique complexe de blending aux bords.
 **Pattern :** Pour toute texture procédurale devant boucler (seamless), utiliser la projection toroïdale 4D plutôt qu'un Perlin 2D classique.
+
+## L-TOOL-006 · 2026-06-04 · Project-Specific · Seamless Isometric Procedural Scatter
+**Contexte :** Génération de tuiles (herbes, rochers) nécessitant un bouclage parfait et un tri par profondeur (Z-Order) en vue top-down/isométrique.
+**Outcome :** Un placement aléatoire avec un simple modulo pour boucler les bords détruit le Z-order (les éléments du bas écrasent les éléments du haut s'ils bouclent). De plus, l'aléatoire pur crée des amas disgracieux (clumping).
+**Pattern :**
+1. Placer les éléments sur une grille régulière avec un décalage aléatoire ("Jittered Grid") pour une densité organique mais homogène.
+2. Générer virtuellement les éléments non seulement sur la tuile courante, mais aussi sur les 8 tuiles voisines (grille 3x3 : `[-W, 0, W]`).
+3. Trier **tous** les éléments de cette grille 3x3 globalement selon l'axe Y (Z-Order).
+4. Dessiner les éléments, le centre sera ainsi mathématiquement parfait avec ses voisins sans coupure visuelle de profondeur.

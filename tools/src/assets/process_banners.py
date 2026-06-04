@@ -1,6 +1,6 @@
 import math
-
 from typing import Any, cast
+
 from PIL import Image, ImageDraw
 
 

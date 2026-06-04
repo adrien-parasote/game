@@ -31,7 +31,7 @@ The 16-tile edge-only script generates artifacts at **diagonal corners** because
 |-----------|--------|-------------|
 | SUBTILE | 16 | Half-tile in px |
 | TILE_SIZE | 32 | Tile in px |
-| BLOB_COUNT | 47 | Number of active blob tiles (49 total slots, 2 transparent pads) |
+| BLOB_COUNT | 47 | Number of active blob tiles (no padding slots) |
 | BLOB_BITMASKS | tuple | 47 valid terrain bitmask values (see below) |
 
 ---
@@ -56,6 +56,8 @@ The inner-corners (`B`) are located at columns 4-5, rows 0-1, and NOT at columns
 
 The implementation does not use the devium 49 list but dynamically reconstructs the 47 terrain bitmasks (`BLOB_BITMASKS`) via modular `_quarter()` logic that maps each corner to its exact 16x16 sub-tile in the source.
 
+> ⚠️ **No transparent padding slots exist in the real implementation.** The spec previously referenced slots 41 and 48 as transparent pads — this was incorrect. The real strip contains exactly 47 active tiles per frame, with no empty/transparent padding.
+
 ```python
 BLOB_BITMASKS = (
     0, 2, 8, 10, 11, 16, 18, 22, 24, 26, 27, 30, 31, 64, 66, 72,
@@ -70,7 +72,7 @@ BLOB_BITMASKS = (
 The 8-bit bitmask encodes neighbors: `NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, SE=128`
 
 **Blob Rule:** If a cardinal neighbor (N/E/S/W) is absent, its adjacent diagonals are ignored when constructing the sub-tile to prevent "tearing".
-The index is simply the position in `BLOB_BITMASKS`. There are exactly 49 slots per frame, including empty transparent padding at slots 41 and 48.
+The index is simply the position in `BLOB_BITMASKS`. There are exactly 47 slots per frame, with no transparent padding slots.
 
 ### Bitmask Bit-Position Reference
 
@@ -87,11 +89,49 @@ The index is simply the position in `BLOB_BITMASKS`. There are exactly 49 slots 
 
 > Cross-reference: the `_blob_wang_id()` function (below) uses these exact bit positions. The encoding table and the function must remain in sync.
 
-### `_quarter(bitmask: int, corner: str) -> tuple[int, int]`
+### `_quarter(corner: str, c1: bool, c2: bool, diag: bool, iso: bool) -> tuple[int, int]`
 
-Returns the `(col, row)` coordinates (in 16×16 sub-tile units) within the 96×128 source image for the given corner (`"TL"`, `"TR"`, `"BL"`, `"BR"`) of a tile with the given bitmask.
+Returns the `(col, row)` coordinates (in 16×16 sub-tile units) within the 96×128 source image for the given corner.
 
-**Blob Rule enforcement:** If a cardinal neighbor is absent, its adjacent diagonal bits are treated as 0 when selecting the sub-tile quarter, preventing tearing artifacts at tile edges.
+**Parameters:**
+- `corner`: `"tl"` | `"tr"` | `"bl"` | `"br"`
+- `c1`: vertical cardinal (N for `tl`/`tr`, S for `bl`/`br`)
+- `c2`: horizontal cardinal (W for `tl`/`bl`, E for `tr`/`br`)
+- `diag`: diagonal neighbor (NW, NE, SW, SE respectively)
+- `iso`: `True` when ALL four cardinals are absent (full isolation)
+
+**Blob Rule enforcement:** Diagonal gating is applied upstream by `_build_blob_tile` before calling `_quarter` — if a cardinal neighbor is absent, its adjacent diagonals are already forced to `False`.
+
+**Full sub-tile mapping table (per corner, (col, row) in the 96×128 source grid):**
+
+| Corner | c1 | c2 | diag | iso | (col, row) | Source piece |
+|--------|----|----|------|-----|------------|--------------|
+| tl | T | T | T | — | (2, 4) | H-TL (center) |
+| tl | T | T | F | — | (4, 0) | B-TL (inner corner) |
+| tl | T | F | — | — | (0, 4) | G-TL (left edge) |
+| tl | F | T | — | — | (2, 2) | E-TL (top edge) |
+| tl | F | F | — | T | (0, 0) | A-TL (isolated) |
+| tl | F | F | — | F | (0, 2) | D-TL (corner) |
+| tr | T | T | T | — | (3, 4) | H-TR (center) |
+| tr | T | T | F | — | (5, 0) | B-TR (inner corner) |
+| tr | T | F | — | — | (5, 4) | I-TR (right edge) |
+| tr | F | T | — | — | (3, 2) | E-TR (top edge) |
+| tr | F | F | — | T | (1, 0) | A-TR (isolated) |
+| tr | F | F | — | F | (5, 2) | F-TR (corner) |
+| bl | T | T | T | — | (2, 5) | H-BL (center) |
+| bl | T | T | F | — | (4, 1) | B-BL (inner corner) |
+| bl | T | F | — | — | (0, 5) | G-BL (left edge) |
+| bl | F | T | — | — | (2, 7) | K-BL (bot edge) |
+| bl | F | F | — | T | (0, 1) | A-BL (isolated) |
+| bl | F | F | — | F | (0, 7) | J-BL (corner) |
+| br | T | T | T | — | (3, 5) | H-BR (center) |
+| br | T | T | F | — | (5, 1) | B-BR (inner corner) |
+| br | T | F | — | — | (5, 5) | I-BR (right edge) |
+| br | F | T | — | — | (3, 7) | K-BR (bot edge) |
+| br | F | F | — | T | (1, 1) | A-BR (isolated) |
+| br | F | F | — | F | (5, 7) | L-BR (corner) |
+
+> **Verified:** This table was extracted directly from the `_quarter_tl`, `_quarter_tr`, `_quarter_bl`, or `_quarter_br` implementations in `tools/src/autotiles/rpgmaker_blob_autotile_to_tiled.py` on 2026-06-04.
 
 ---
 
@@ -99,24 +139,32 @@ Returns the `(col, row)` coordinates (in 16×16 sub-tile units) within the 96×1
 
 ### PNG Strip
 
-Dimensions: (49 × 32) × 32 = 1568 × 32 px
-Tiles 0-48: Ordered by BLOB_BITMASKS sequence (slots 41 and 48 are transparent empty pads).
+Dimensions: `(n_frames × 47) × 32` px wide, `32` px tall.
+
+- **Static (n_frames=1):** `47 × 32 = 1504` px wide.
+- **Animated (n_frames=N):** `N × 47 × 32` px wide.
+
+Tiles ordered by `BLOB_BITMASKS` sequence (47 entries, no transparent padding slots).
+
+> ⚠️ **Correction from previous spec version:** Earlier versions stated `1568 × 32` (49 tiles) with two transparent padding slots at 41 and 48. The real implementation uses exactly 47 tiles with no padding. The `BLOB_COUNT = 47` constant in the source is the ground truth.
 
 ### TSX XML
 
-The script generates the TSX dynamically using the following XML template, sourcing the Tiled version and Wang color from module-level constants `TILED_VERSION = "1.10.0"` and `WANG_COLOR = "#4488ff"` respectively:
+The script generates the TSX dynamically using the following XML template, sourcing the Tiled version and Wang color from module-level constants `TILED_VERSION = "1.10.0"` and `WANG_COLOR = "#4488ff"` respectively.
+
+**Variables:** `total = n_frames * BLOB_COUNT` (= `n_frames * 47`).
 
 ```xml
 <tileset version="1.10" tiledversion="{tiled_version}"
          name="{stem}" tilewidth="32" tileheight="32"
-         tilecount="49" columns="49">
-  <image source="{rel_png}" width="1568" height="32"/>
+         tilecount="{total}" columns="{total}">
+  <image source="{rel_png}" width="{32 * total}" height="32"/>
 
-  <!-- Animations (if N > 1): same logic as the animated script -->
-  <tile id="{i}">
+  <!-- Animations: only present when n_frames > 1 -->
+  <!-- slot = 0..46, fi = 0..n_frames-1 -->
+  <tile id="{slot}">
     <animation>
-      <frame tileid="{i}"       duration="{ms}"/>
-      <frame tileid="{49 + i}"  duration="{ms}"/>
+      <frame tileid="{fi * 47 + slot}" duration="{ms}"/>
       ...
     </animation>
   </tile>
@@ -124,12 +172,14 @@ The script generates the TSX dynamically using the following XML template, sourc
   <wangsets>
     <wangset name="{stem}" type="mixed" tile="-1">
       <wangcolor name="{stem}" color="{wang_color}" tile="-1" probability="1"/>
-      <!-- 47 active wangtiles (slots 41 and 48 omitted) -->
-      <wangtile tileid="{i}" wangid="{_blob_wang_id(bitmask)}"/>
+      <!-- 47 wangtiles, tileid = 0..46 (frame 0 only — Tiled follows <animation> for rendering) -->
+      <wangtile tileid="{slot}" wangid="{_blob_wang_id(bitmask)}"/>
     </wangset>
   </wangsets>
 </tileset>
 ```
+
+> **Animated tileset layout:** For N frames, the PNG contains `N × 47` tiles laid out left-to-right. Frame 0 occupies slots 0–46, frame 1 occupies 47–93, etc. The `<animation>` element for slot `s` references `tileid = fi * 47 + s` for each frame `fi`. `tilecount` and `columns` are ALWAYS `n_frames * 47`.
 
 ### wangid blob (type="mixed")
 
@@ -177,7 +227,7 @@ The module exposes a main `convert` function that coordinates the image and XML 
 | height ≠ 128 | `sys.exit` | `ERROR: Expected height 128px, got {h}px` |
 | width % 96 ≠ 0 | `sys.exit` | `ERROR: Width not a multiple of 96px` |
 | frame_duration ≤ 0 | `sys.exit` | `ERROR: --frame-duration must be > 0` |
-| N == 1 | warning | `WARNING: Single frame — static output` |
+| N == 1 | warning → **stderr** | `WARNING: Single frame detected — output will be static (no animation).` |
 | mkdir fails | `sys.exit` | `ERROR: Could not create output directory: {e}` |
 | PNG write fails | `sys.exit` | `ERROR: Cannot write PNG: {e}` |
 | TSX write fails | `sys.exit` | `ERROR: Cannot write TSX: {e}` |
@@ -250,25 +300,26 @@ third_party/
 
 | # | Anti-pattern | Correct |
 |---|-------------|---------|
-| AP-1 | Reusing `_build_tile` (4-bit edge) | Use `_assemble_tile` with the 49 combinations |
+| AP-1 | Reusing `_build_tile` (4-bit edge) | Use `_build_blob_tile` with the 47-bitmask combinations |
 | AP-2 | wangset `type="edge"` | `type="mixed"` for corner+edge blob |
-| AP-3 | 16 wangtiles | 47 wangtiles (slots 41 and 48 omitted) |
-| AP-4 | wangid format `T,0,R,0,B,0,L,0` | Mixed format `TL,T,TR,R,BR,B,BL,L` |
-| AP-5 | fixed tilecount=49 | `tilecount = n_frames * 49` |
-| AP-6 | Including empty slots (41,48) in wangtiles | Omit them — transparent tiles, no terrain |
+| AP-3 | 16 wangtiles | 47 wangtiles |
+| AP-4 | wangid format `T,0,R,0,B,0,L,0` | Mixed format `T,TR,R,BR,B,BL,L,TL` |
+| AP-5 | Hardcoded `tilecount="49"` or `tilecount="47"` in TSX | `tilecount = n_frames * BLOB_COUNT` (= `n_frames * 47`) — ALWAYS dynamic |
+| AP-6 | Adding transparent padding slots (41, 48) | No padding — the real implementation has exactly 47 active tiles per frame |
 | AP-7 | Ignoring diagonals in bitmask | Apply blob rule: diagonal=0 if cardinal is absent |
+| AP-8 | Hardcoded `columns="47"` or `columns="49"` | `columns = tilecount = n_frames * 47` — columns ALWAYS equals tilecount for single-row strips |
 
 ---
 
 ## Test Case Specifications
 
-### UT-001 — _assemble_tile: correct dimensions
-**Input:** synthetic 96×128 frame, combo index 8 (center full)  
+### UT-001 — _build_blob_tile: correct dimensions
+**Input:** synthetic 96×128 frame, bitmask=255 (center full)  
 **Expected:** 32×32 RGBA tile
 
 ### UT-002 — _blob_mask: diagonal rule
 **Input:** n=True, nw=True, w=False  
-**Expected:** nw forced to 0 (w absent)
+**Expected:** nw forced to False (w absent)
 
 ### UT-003 — _blob_wang_id: bitmask 255 (surrounded)
 **Input:** bitmask=255  
@@ -280,35 +331,47 @@ third_party/
 
 ### UT-005 — Static strip: dimensions
 **Input:** 96×128 image  
-**Expected:** strip size == (1568, 32)
+**Expected:** strip size == (1504, 32)  ← `47 × 32 = 1504`
 
-### UT-006 — Transparent empty slots
-**Input:** slot 41 and 48  
-**Expected:** pixels = (0,0,0,0) RGBA
+### UT-006 — BLOB_COUNT and BLOB_BITMASKS alignment
+**Input:** `len(BLOB_BITMASKS)`  
+**Expected:** `== BLOB_COUNT == 47`
 
 ### UT-007 — Height validation
 **Input:** 96×64 image  
-**Expected:** SystemExit, "height"
+**Expected:** SystemExit, message contains "height"
 
 ### UT-008 — Width validation
 **Input:** 100×128 image  
-**Expected:** SystemExit, "multiple"
+**Expected:** SystemExit, message contains "multiple"
+
+### UT-009 — _quarter tl mapping: both cardinals present, diag present
+**Input:** `_quarter("tl", c1=True, c2=True, diag=True, iso=False)`  
+**Expected:** `(2, 4)` (H-TL center sub-tile)
+
+### UT-010 — _quarter tl mapping: both cardinals present, diag absent
+**Input:** `_quarter("tl", c1=True, c2=True, diag=False, iso=False)`  
+**Expected:** `(4, 0)` (B-TL inner corner sub-tile)
 
 ### IT-001 — Complete static pipeline
 **Input:** grass.png 96×128  
-**Expected:** 1568×32 PNG, TSX tilecount=49, 47 wangtiles, type="mixed"
+**Expected:** 1504×32 PNG, TSX `tilecount="47"`, 47 wangtiles, `type="mixed"`
 
 ### IT-002 — Animated pipeline N=4
 **Input:** water.png 384×128, frame_duration=200  
-**Expected:** 6272×32 PNG (4×49×32), 47 `<tile><animation>` of 4 frames
+**Expected:** 5632×32 PNG (`4 × 47 × 32 = 5632`), TSX `tilecount="188"` (`4 × 47`), 47 `<tile><animation>` elements each with 4 frames
 
 ### IT-003 — Bitmask 255 → slot 46 (center)
 **Input:** bitmask=255  
-**Expected:** BITMASK_TO_IDX[255] == 46
+**Expected:** `BITMASK_TO_IDX[255] == 46`
 
 ### IT-004 — Relative image in TSX
 **Input:** tsx in `autotiles/tilesets`, png in `autotiles/images`  
-**Expected:** `<image source>` is relative
+**Expected:** `<image source>` is a relative path
+
+### IT-005 — Animated tilecount correct
+**Input:** water.png 384×128 (N=4 frames)  
+**Expected:** TSX attribute `tilecount == columns == 4 * 47 == 188`
 
 ---
 

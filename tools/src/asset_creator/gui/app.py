@@ -4,13 +4,13 @@ import random
 import threading
 
 import customtkinter as ctk
+from asset_creator.config.palette_loader import load_palettes
+from asset_creator.core.constants import DEFAULT_PALETTES, DEFAULT_TEXTURES
 from asset_creator.core.generator import generate_texture
 from asset_creator.core.quantizer import quantize_image
-from asset_creator.config.palette_loader import load_palettes
 from asset_creator.exporters.exporter import export_tile
 from PIL import Image
 
-from asset_creator.core.constants import DEFAULT_TEXTURES, DEFAULT_PALETTES
 
 class App(ctk.CTk):
     def __init__(self):
@@ -47,12 +47,12 @@ class App(ctk.CTk):
         initial_seed = random.randint(0, 9999)
         self.seed_var = ctk.StringVar(value=str(initial_seed))
         self.density_var = ctk.StringVar(value="20")
-        
+
         self.subtypes = ["Classic", "Short", "Curly", "Wild"]
         self.subtype_var = ctk.StringVar(value=self.subtypes[0])
 
         self.custom_palette = [(0,0,0), (85,85,85), (170,170,170), (255,255,255)]
-        
+
         self._debounce_timer = None
         self.current_img_32 = None
 
@@ -128,7 +128,7 @@ class App(ctk.CTk):
         self.subtype_label.pack(pady=(10, 0))
         self.subtype_cb = ctk.CTkComboBox(ctrl_frame, variable=self.subtype_var, values=self.subtypes)
         self.subtype_cb.pack()
-        
+
         # Initial state setup
         if self.texture_var.get() != "Grass":
             self.subtype_cb.configure(state="disabled")
@@ -145,9 +145,9 @@ class App(ctk.CTk):
         for i in range(4):
             row_frame = ctk.CTkFrame(self.custom_palette_frame, fg_color="transparent")
             row_frame.pack(fill="x", pady=2)
-            
+
             ctk.CTkLabel(row_frame, text=labels[i], width=80, anchor="w").pack(side="left", padx=5)
-            
+
             def choose_color(idx=i):
                 from tkinter.colorchooser import askcolor
                 color = askcolor(color="#%02x%02x%02x" % self.custom_palette[idx], title=labels[idx])[0]
@@ -160,7 +160,7 @@ class App(ctk.CTk):
             btn = ctk.CTkButton(row_frame, text="", width=30, height=20, command=choose_color)
             btn.pack(side="right", padx=5)
             self.custom_color_btns.append(btn)
-            
+
         self.custom_palette_frame.pack(pady=10, fill="x")
 
         if self.texture_var.get() in self.palettes:
@@ -200,7 +200,7 @@ class App(ctk.CTk):
 
         self.preview_frame = ctk.CTkFrame(self, width=300, height=450)
         self.preview_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
-        
+
         ctk.CTkLabel(self.preview_frame, text="Single Tile (256x256)").pack(pady=(10, 0))
         self.lbl_preview = ctk.CTkLabel(self.preview_frame, text="No Preview")
         self.lbl_preview.pack(pady=5, expand=True)
@@ -272,13 +272,13 @@ class App(ctk.CTk):
     def on_export(self):
         if not self.current_img_32:
             return
-        
+
         texture_type = self.texture_var.get()
         try:
             seed_val = int(self.seed_var.get())
         except ValueError:
             seed_val = 0
-            
+
         try:
             export_tile(self.current_img_32, texture_type, seed_val)
             self.lbl_status.configure(text=f"Exported to output/{texture_type}_{seed_val}.png")

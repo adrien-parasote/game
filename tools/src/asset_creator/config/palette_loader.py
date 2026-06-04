@@ -1,5 +1,6 @@
 import json
 
+
 def load_palettes(filepath: str) -> dict[str, list[tuple[int, int, int]]]:
     """
     Load palettes from a JSON file.
@@ -22,5 +23,5 @@ def load_palettes(filepath: str) -> dict[str, list[tuple[int, int, int]]]:
                 b = int(hex_code[4:6], 16)
                 colors.append((r, g, b))
         palettes[name] = colors
-        
+
     return palettes

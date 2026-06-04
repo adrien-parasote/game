@@ -74,7 +74,7 @@ Replace the Pygame-based read-only preview with an interactive Dear PyGui GUI ap
 |---|---|---|
 | CLI command | `python -m tools.asset_creator gui` | This spec § "Step 2" |
 | Python function | `run_gui()` | This spec § "Step 2" |
-| Python method | `AppState.to_texture_config() -> TextureParams` | This spec § "Modules & Responsibilities" item 3. Maps all AppState slider fields — including `warp_scale` and `warp_strength` (per [terrain_generation_core_spec.md](./terrain_generation_core_spec.md)) — to a `TextureParams` instance. |
+| Python method | `AppState.to_texture_config() -> TextureParams` | This spec § "Modules & Responsibilities" item 3. Maps all AppState slider fields — including `warp_scale` and `warp_strength` (per [terrain_generation_core_spec.md](./terrain_generation_core_spec.md#L1)) — to a `TextureParams` instance. |
 
 ### External Invocations
 
@@ -182,20 +182,41 @@ AppState (frozen dataclass)
 The following files are managed by this specification:
 ```
 tools/
-  asset_creator/
-    __main__.py                       # [DEV-TOOL] GUI application entry point
-    cli.py                            # [DEV-TOOL] CLI interface for assets creation
-    preview/
-      pygame_preview.py               # [DEV-TOOL] Legacy pygame-based viewer
-    gui/
-      __init__.py                     # [DEV-TOOL] Package init
-      app.py                          # [DEV-TOOL] Dear PyGui main application layout and logic
-      canvas.py                       # [DEV-TOOL] Interactive painting canvas state and helpers
-      pipeline.py                     # [DEV-TOOL] Texture generation and export pipeline
-      preview.py                      # [DEV-TOOL] PIL texture rendering utilities
-      state.py                        # [DEV-TOOL] Immutable app state and preset loader
-    core/
-      minimap.py                      # [DEV-TOOL] Extracted 47-tile bitmask engine
+  src/
+    asset_creator/
+      __main__.py                       # [DEV-TOOL] GUI application entry point
+      cli.py                            # [DEV-TOOL] CLI interface for assets creation
+      config/
+        palettes.json                   # [DEV-TOOL] Color palettes data
+      preview/
+        pygame_preview.py               # [DEV-TOOL] Legacy pygame-based viewer
+      gui/
+        __init__.py                     # [DEV-TOOL] Package init
+        app.py                          # [DEV-TOOL] Dear PyGui main application layout and logic
+        canvas.py                       # [DEV-TOOL] Interactive painting canvas state and helpers
+        pipeline.py                     # [DEV-TOOL] Texture generation and export pipeline
+        preview.py                      # [DEV-TOOL] PIL texture rendering utilities
+        state.py                        # [DEV-TOOL] Immutable app state and preset loader
+      core/
+        __init__.py
+        generator.py                    # [DEV-TOOL] Texture generation layer
+        quantizer.py                    # [DEV-TOOL] Quantization layer
+        minimap.py                      # [DEV-TOOL] Extracted 47-tile bitmask engine
+      exporters/
+        exporter.py                     # [DEV-TOOL] Exporter interface
+        png_exporter.py                 # [DEV-TOOL] PNG image exporter
+        tsx_exporter.py                 # [DEV-TOOL] TSX tileset exporter
+    autotiles/
+      rpgmaker_blob_autotile_to_tiled.py # [DEV-TOOL] Main blob autotile converter script
+  docs/
+    specs/
+      STRATEGIC_BLUEPRINT.md            # Strategic blueprint
+      asset_creator_spec.md             # This GUI specification
+      autotile_pipeline_spec.md         # Autotile pipeline specification
+      terrain_generation_core_spec.md   # Domain warping spec
+      phase-1-simple-tiles.md           # Simple tiles spec
+      code_quality_constants_and_translation.md # Code quality spec
+      diagonal_wall_spec.md             # Diagonal walls spec
 tests/
   tools/
     asset_creator/
@@ -203,6 +224,9 @@ tests/
       test_gui_state.py               # [DEV-TOOL] Unit tests for application state
       test_gui_preview.py             # [DEV-TOOL] Unit tests for PIL texture rendering
       test_gui_integration.py         # [DEV-TOOL] Integration tests for full pipeline
+output/
+  {tile_name}.png                       # Generated PNG output
+  {tile_name}.tsx                       # Generated TSX XML output
 ```
 
 ---

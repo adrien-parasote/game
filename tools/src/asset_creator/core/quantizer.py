@@ -1,6 +1,7 @@
 import numpy as np
 from PIL import Image
 
+
 def luminance(color: tuple[int, int, int]) -> float:
     return 0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2]
 
@@ -10,7 +11,7 @@ def quantize_image(noise_map: np.ndarray, palette: list[tuple[int, int, int]]) -
     The palette is sorted by luminance (darkest to lightest).
     """
     sorted_palette = sorted(palette, key=luminance)
-    
+
     # Handle if palette has fewer or more than 4 colors
     L = len(sorted_palette)
     if L == 0:
@@ -31,8 +32,10 @@ def quantize_image(noise_map: np.ndarray, palette: list[tuple[int, int, int]]) -
         for x in range(w):
             val = noise_map[y, x]
             # Ensure val is strictly between 0 and 3
-            if val < 0: val = 0
-            if val > 3: val = 3
+            if val < 0:
+                val = 0
+            if val > 3:
+                val = 3
             out[y, x] = mapped_palette[val]
 
     return Image.fromarray(out, "RGB")
