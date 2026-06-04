@@ -2,7 +2,7 @@
 
 # Phase 1: Procedural Kitbashing Tiles Generator Spec
 
-**Covers:** F1, F2, F3, F4 (from [STRATEGIC_BLUEPRINT.md](./STRATEGIC_BLUEPRINT.md#6-feature-matrix--dependency-ordering))
+**Covers:** F1, F2, F3, F4 (from [simple_tiles_blueprint.md](../strategic/simple_tiles_blueprint.md#6-feature-matrix--dependency-ordering))
 
 > ℹ️ **Correction Log (2026-06-04 — Architecture Pivot to Kitbashing):**
 > - Replaced Perlin/Cellular noise with **Procedural Kitbashing (Stamp Scattering)**.

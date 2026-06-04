@@ -67,7 +67,7 @@ This vertical shear has key advantages:
 
 ## 6. Recommendation
 
-* **Chosen Approach:** **Build** (Create a dedicated Python script `scripts/assets/flat_wall_to_diagonal.py` to automate this vertical shear transformation for any flat tileset assets).
+* **Chosen Approach:** **Build** (Create a dedicated Python script `tools/src/assets/flat_wall_to_diagonal.py` to automate this vertical shear transformation for any flat tileset assets).
 * **Justification:** Automating this in Python ensures 100% mathematical precision, eliminates tedious manual slicing in Photoshop/GIMP, and generates both NW-SE and NE-SW variations instantly.
 * **Impact on Spec:** A new technical specification `docs/specs/diagonal_wall_transformation.md` will be created to define the exact input parameters, output tile layouts, and validation tests.
 

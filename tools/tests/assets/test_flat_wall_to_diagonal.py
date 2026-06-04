@@ -42,7 +42,7 @@ def test_ut_001_parse_arguments_custom():
 
 def test_ut_002_missing_input_raises_error():
     """Verify that attempting to convert a non-existent file fails gracefully."""
-    non_existent = Path("scripts/input/does_not_exist_xyz.png")
+    non_existent = Path("tools/src/input/does_not_exist_xyz.png")
     out_dir = Path("assets/images/tilesets")
 
     with pytest.raises((FileNotFoundError, SystemExit)):

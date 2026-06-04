@@ -43,5 +43,5 @@ Focuses on **deterministic, reproducible** output with strict color quantization
 - Visual quality of generated textures is subjective and not code-verified. Noise parameters require manual tuning per texture type. Automated tests verify structural properties (seamlessness, palette adherence, determinism) but not aesthetic quality.
 
 ## Deep Links
-- [Phase 1 Spec](./phase-1-simple-tiles.md#overview)
-- Anti-patterns pointer: [See phase-1-simple-tiles.md](./phase-1-simple-tiles.md#anti-patterns)
+- [Phase 1 Spec](../specs/phase-1-simple-tiles.md#overview)
+- Anti-patterns pointer: [See phase-1-simple-tiles.md](../specs/phase-1-simple-tiles.md#anti-patterns)

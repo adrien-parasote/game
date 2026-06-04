@@ -11,20 +11,20 @@ This blueprint outlines the strategy, architecture decisions, and scope boundari
 ## 1. 7 Questions Strategy
 
 ### 1.1 What exact problem are you solving?
-We are building a Python utility script `scripts/assets/flat_wall_to_diagonal.py` that automates the transformation of flat 2D walls (with patterns, borders, and window cutouts) into $45^\circ$ diagonal wall assets (NW-SE and NE-SW slopes). Map designers currently have no way to quickly generate these angled tiles, making it tedious to construct diagonal buildings in Tiled/RPG Maker.
+We are building a Python utility script `tools/src/assets/flat_wall_to_diagonal.py` that automates the transformation of flat 2D walls (with patterns, borders, and window cutouts) into $45^\circ$ diagonal wall assets (NW-SE and NE-SW slopes). Map designers currently have no way to quickly generate these angled tiles, making it tedious to construct diagonal buildings in Tiled/RPG Maker.
 
 ### 1.2 What are your success metrics?
-* The script successfully processes all three inputs in `scripts/input/` (`asset1.png` ($32\times96$), `asset2.png` ($96\times192$), `asset3.png` ($128\times224$)) and outputs generated tilesets directly to the project's `assets/images/tilesets/` directory.
+* The script successfully processes all three inputs in `tools/src/input/` (`asset1.png` ($32\times96$), `asset2.png` ($96\times192$), `asset3.png` ($128\times224$)) and outputs generated tilesets directly to the project's `assets/images/tilesets/` directory.
 * The output tiles are mathematically precise, pixel-sharp, and visually consistent with the original textures (no sub-pixel resampling blur).
 * The generated diagonal tiles tile seamlessly in a staggered $32\times32$ tile grid.
-* The `scripts/input/` directory itself is tracked in git, but its actual image contents are completely ignored.
+* The `tools/src/input/` directory itself is tracked in git, but its actual image contents are completely ignored.
 
 ### 1.3 Why will you win?
 Instead of manually slicing and shearing layers in GIMP/Photoshop (which is slow and error-prone), or using naive rotation filters (which blur pixels and break grid alignment), we implement a precise column-by-column vertical shear in Python. Shifting each column $x$ vertically by exactly $x$ pixels is a lossless pixel translation that maintains perfect alignment with the grid boundaries and preserves the crisp pixel-art styling.
 
 ### 1.4 What's the core architecture decision?
-* The conversion script will be located at `scripts/assets/flat_wall_to_diagonal.py`.
-* Inputs are read from the local `scripts/input/` folder, which is structured with a `.gitignore` to track only itself.
+* The conversion script will be located at `tools/src/assets/flat_wall_to_diagonal.py`.
+* Inputs are read from the local `tools/src/input/` folder, which is structured with a `.gitignore` to track only itself.
 * Outputs are written to `assets/images/tilesets/` under clean, standardized names (e.g. `01-walls-ext-diagonal.png`).
 * The script is pure CLI, adhering to standard POSIX argument parsing and logging.
 
@@ -52,7 +52,7 @@ Before moving to the technical specification, we audit all core assumptions:
 |---|---|---|---|
 | 1 | **32x32 Grid Alignment:** The input assets are structured on a $32\times32$ grid. | Low | **VERIFIED:** Inspected the sizes of `asset1.png` ($32\times96$), `asset2.png` ($96\times192$), and `asset3.png` ($128\times224$). All are exact multiples of 32. |
 | 2 | **Vertical Height Scaling:** Shearing a flat wall of width $W$ and height $H$ by a slope of $1.0$ increases the canvas height to $H + W$. | Low | **VERIFIED:** Run via our prototype Python script in `scratch/`. The $128\times224$ wall sheared perfectly into a $128\times352$ canvas ($224 + 128 = 352$). |
-| 3 | **Git Ignore Safety:** The git rules successfully prevent committing input assets. | Low | **VERIFIED:** Added a `.gitignore` to `scripts/input/` that ignores all contents except itself, and verified with `git status` that only `scripts/input/` (representing the `.gitignore` file) is listed. |
+| 3 | **Git Ignore Safety:** The git rules successfully prevent committing input assets. | Low | **VERIFIED:** Added a `.gitignore` to `tools/src/input/` that ignores all contents except itself, and verified with `git status` that only `tools/src/input/` (representing the `.gitignore` file) is listed. |
 | 4 | **Window Shearing Alignment:** Shearing transparent cutout windows along with the wall doesn't cause alignment issues. | Medium | **VERIFIED:** Sheared the entire $224\times224$ wall+window assembly in `scratch/sheared_assembly_nw_se.png` and confirmed visually that the window frames and stone borders sheared beautifully and aligned perfectly. |
 
 Proceeding with these verified assumptions.

@@ -27,7 +27,7 @@
 |---|---|
 | **Always do** | Run Python unit tests before completing execution; use standard logging for error reporting; use `pathlib.Path` for all path manipulations; preserve 100% of horizontal pixel-art alignment (no horizontal scaling). |
 | **Ask first** | Adding dependencies outside `Pillow` (PIL) to `requirements.txt` or `pyproject.toml`; changing the CLI argument contract names. |
-| **Never do** | Commit raw image assets inside `scripts/input/` to git; use lossy compression (JPEG) for tileset outputs; apply horizontal interpolation or antialiasing (no fuzzy pixels). |
+| **Never do** | Commit raw image assets inside `tools/src/input/` to git; use lossy compression (JPEG) for tileset outputs; apply horizontal interpolation or antialiasing (no fuzzy pixels). |
 
 ---
 
@@ -54,14 +54,14 @@
 * **Input Assets:**
   | Path | Format | Dimensions | Producer |
   |---|---|---|---|
-  | `scripts/input/asset1.png` | PNG (RGBA) | $32\times96$ (Window) | Map Designer |
-  | `scripts/input/asset2.png` | PNG (RGBA) | $96\times192$ (Window Frame) | Map Designer |
-  | `scripts/input/asset3.png` | PNG (RGBA) | $128\times224$ (Brick Wall) | Map Designer |
+  | `tools/src/input/asset1.png` | PNG (RGBA) | $32\times96$ (Window) | Map Designer |
+  | `tools/src/input/asset2.png` | PNG (RGBA) | $96\times192$ (Window Frame) | Map Designer |
+  | `tools/src/input/asset3.png` | PNG (RGBA) | $128\times224$ (Brick Wall) | Map Designer |
 
 ### Public Interface
 | Type | Identifier | Purpose | Documented at |
 |---|---|---|---|
-| CLI Command | `python3 scripts/assets/flat_wall_to_diagonal.py` | Run the batch diagonal transformation | Section 5.1 (CLI Reference) |
+| CLI Command | `python3 tools/src/assets/flat_wall_to_diagonal.py` | Run the batch diagonal transformation | Section 5.1 (CLI Reference) |
 | CLI Argument | `--input-dir` / `--input` | Path to directory containing flat wall assets | Section 5.1 (CLI Reference) |
 | CLI Argument | `--output-dir` / `--output` | Path to export generated diagonal tilesets | Section 5.1 (CLI Reference) |
 | CLI Argument | `--direction` | Angle direction: `nw-se`, `ne-sw`, or `both` | Section 5.1 (CLI Reference) |
@@ -86,11 +86,11 @@
 ### 5.1 CLI Reference
 The conversion utility must run with the following signature:
 ```bash
-python3 scripts/assets/flat_wall_to_diagonal.py \
+python3 tools/src/assets/flat_wall_to_diagonal.py \
   [--input-dir PATH] [--input PATH] [--output-dir PATH] [--output PATH] \
   [--direction {nw-se,ne-sw,both}]
 ```
-* Default `--input-dir` / `--input`: `scripts/input` (resolved relative to workspace root).
+* Default `--input-dir` / `--input`: `tools/src/input` (resolved relative to workspace root).
 * Default `--output-dir` / `--output`: `assets/images/tilesets` (resolved relative to workspace root).
 * Default `--direction`: `both`.
 
@@ -119,7 +119,7 @@ The generated PNG is a single vertical strip of width $W$. For a $32$-pixel wide
 * Map designers can select $32\times32$ tiles from this sheet. The staggering of tiles at $(c, r)$ (Top piece) and $(c, r+1)$ (Bottom piece) forms a continuous diagonal wall.
 
 ### 5.5 Git Safety
-To keep the workspace clean, `scripts/input/` contains a `.gitignore` file with the following rules:
+To keep the workspace clean, `tools/src/input/` contains a `.gitignore` file with the following rules:
 ```gitignore
 *
 !.gitignore
@@ -165,7 +165,7 @@ pyproject.toml                        # [CONFIG] Python project settings
 |---|---|---|---|
 | 1 | Rotational Resampling | Rotating the image by $45^\circ$ using standard rotation algorithms, which introduces sub-pixel sampling blur. | Use column-by-column cropping and pasting (vertical shear), translating pixels along whole-pixel boundaries with zero scaling. |
 | 2 | Horizontal Stretching | Stretching the horizontal width to match the diagonal hypotenuse length ($\approx 1.414 \times W$), which distorts patterns. | Keep horizontal columns exactly 1-pixel wide, relying on vertical shear slope to create the perspective incline naturally. |
-| 3 | Committing Untracked Assets | Forgetting to ignore input PNG files, resulting in committing heavy, untracked binary assets to the git repo. | Add `*` in `scripts/input/.gitignore` and ensure `git add` does not stage input PNGs. |
+| 3 | Committing Untracked Assets | Forgetting to ignore input PNG files, resulting in committing heavy, untracked binary assets to the git repo. | Add `*` in `tools/src/input/.gitignore` and ensure `git add` does not stage input PNGs. |
 | 4 | Hardcoded Paths | Hardcoding absolute paths like `/home/user/` in the script, which breaks portability. | Resolve all paths relative to the script location or workspace root using `pathlib.Path(__file__).resolve()`. |
 | 5 | Lossy Output Compilations | Saving output tilesets as JPEG or lossy PNG, creating compression artifacts around pixel edges. | Always save using `RGBA` format and lossless PNG compression (`Image.save(path, format='PNG')`). |
 

@@ -207,8 +207,9 @@ tools/
         png_exporter.py                 # [DEV-TOOL] PNG image exporter
         tsx_exporter.py                 # [DEV-TOOL] TSX tileset exporter
   docs/
+    strategic/
+      simple_tiles_blueprint.md         # Simple tiles strategic blueprint
     specs/
-      STRATEGIC_BLUEPRINT.md            # Strategic blueprint
       asset_convertor_spec.md             # This GUI specification
       terrain_generation_core_spec.md   # Domain warping spec
       phase-1-simple-tiles.md           # Simple tiles spec
