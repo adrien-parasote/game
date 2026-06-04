@@ -27,3 +27,7 @@ game/src/graphics/*.py
 
 # scripts/dev/ — outils de développement runtime, pas de logique testable
 scripts/dev/*.py
+
+# Input samples / assets
+tools/src/input/*.tsx
+

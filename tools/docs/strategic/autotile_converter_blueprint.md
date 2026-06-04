@@ -2,7 +2,7 @@
 
 > **Date:** 2026-06-04
 > **Status:** STRATEGY — pending SPEC approval
-> **Research:** [autotile-converter.md](../research/autotile-converter.md)
+> **Research:** [animated_autotiles.md](../../docs/research/animated_autotiles.md)
 > **Replaces:** `autotile-pipeline-strategy.md` (obsolete — 16-tile Edge set, no GUI)
 
 ---
@@ -11,103 +11,72 @@
 
 **Persona:** Solo game developer with existing RPG Maker XP / MV / MZ asset libraries.
 
-**Current pain:** Autotile assets from RPG Maker cannot be used directly in Tiled. The RPG Maker format uses a proprietary packed sub-tile layout that requires engine-side reassembly. Tiled expects either manually placed tiles or a **47-tile blob spritesheet** with a matching TSX terrain definition.
+**Current pain:** Autotile assets from RPG Maker (including animated floor/water and waterfalls) cannot be used directly in Tiled. RPG Maker uses a proprietary sub-tile layout and animation loop that requires engine-side processing. Tiled expects either manually placed static tiles or a **47-tile blob spritesheet** with matching TSX terrain and animation frame loop metadata.
 
 The developer must:
-1. Manually slice and reassemble each autotile into 47 variants → error-prone, hours of work
-2. Or discard the entire RPG Maker asset library and redraw from scratch
+1. Manually slice, reassemble, and compile multiple frames for each animated autotile into dozens of animation variants → error-prone, hours of repetitive work.
+2. Or discard the entire RPG Maker animated asset library and draw everything from scratch.
 
 **Measurable outcome:**
-- Drop a RPG Maker autotile PNG into the tool → get a Tiled-ready 47-tile PNG + TSX file in **< 5 seconds**
-- Visual canvas confirms the conversion is correct before export
-- Zero manual configuration required in Tiled after export
+- Load a RPG Maker static or animated autotile PNG into the tool → get a Tiled-ready multi-frame PNG + TSX file with animation metadata in **< 5 seconds**.
+- Visual canvas animates the converted tiles in real-time, confirming correct loop progression before export.
+- Zero manual configuration required in Tiled after export.
 
 ---
 
 ## 2. Success Metrics
 
-| Metric | Target | Timeline |
-|--------|--------|----------|
-| Conversion correctness | All 47 blob tiles correctly assembled from input | V1.0 |
-| Mode coverage | XP + MV + MZ inputs all produce valid output | V1.0 |
-| Auto-detect tile size | Correctly identifies 32px vs 48px MV blocks | V1.0 |
-| Export completeness | PNG + TSX generated in one click | V1.0 |
-| Preview validation | Canvas draws 5×5 test pattern using output tiles | V1.0 |
-| Speed | < 5s from file load to export ready | V1.0 |
-| Tiled compatibility | TSX loads in Tiled 1.10+ without manual edits | V1.0 |
-| Static only (no animated) | Animated frames ignored, not crashed | V1.0 |
+| Metric | Target | Timeline | How Measured |
+|--------|--------|----------|-------------|
+| **Conversion correctness** | All 47 blob tiles correctly assembled from input | V1.0 | Unit tests + Tiled visual check |
+| **Mode coverage** | XP + MV + MZ inputs all produce valid output | V1.0 | Pytest pass rate |
+| **Auto-detect tile size** | Correctly identifies 32px vs 48px MV blocks | V1.0 | Integration tests |
+| **Export completeness** | PNG + TSX generated in one click | V1.0 | GUI export trigger verification |
+| **Preview validation** | Canvas draws 5×5 test pattern using output tiles | V1.0 | GUI render |
+| **Speed** | < 5s from file load to export ready | V1.0 | Execution timer |
+| **Tiled compatibility** | TSX loads in Tiled 1.10+ without manual edits | V1.0 | Manual Tiled loading |
+| **Animation support** | Converted horizontal and vertical frames cycle correctly | V2.0 (New) | Pytest + visual verification |
+| **Auto-detect frames** | Correctly identifies 3-frame vs 4-frame width/height | V2.0 (New) | Integration tests |
+| **Canvas animation** | Canvas preview loops frames smoothly at configured speed | V2.0 (New) | Interactive review |
 
 ---
 
 ## 3. Structural Advantage
 
 The conversion from RPG Maker → Tiled blob is a **well-defined deterministic mapping**:
-- The 47 blob tile configurations are fixed (cr31 specification)
-- The RPG Maker sub-tile sampling positions are fixed (engine source lookup tables)
-- No ML, no heuristics, no user judgment — just pixel cropping and compositing
+- The 47 blob tile configurations are fixed (cr31 specification).
+- The RPG Maker sub-tile sampling positions are fixed (engine source lookup tables).
+- Animations follow standard frame sequences (ping-pong `0 → 1 → 2 → 1` or linear loop).
+- No ML, no heuristics, no user judgment — just pixel cropping, frame stacking, and XML writing.
 
-We own the full pipeline: load input → extract sub-tiles → assemble 47 tiles → write PNG + TSX. No runtime dependency on RPG Maker or Tiled.
+We own the full pipeline: load input → extract sub-tiles → assemble 47 tiles per frame → stack vertically → write PNG + TSX. No runtime dependency on external programs.
 
 ---
 
 ## 4. Core Architecture Decisions
 
 ### ADR-001: Transform asset_convertor, not a new tool
-
-**Decision:** The existing `tools/src/asset_convertor/` GUI shell (customtkinter) is **replaced in-place**. The new autotile converter reuses the window/layout pattern but entirely replaces the generation logic.
-
-**Rationale:**
-- Avoids a second tool entry point
-- Reuses existing project infrastructure (pyproject.toml, venv, tests)
-- The old procedural tile generation is explicitly deprecated by the user ("on laisse tomber la génération de tiles")
-
-**Trade-off:**
-
-| Option | Pro | Con |
-|--------|-----|-----|
-| **Replace asset_convertor in-place ✅** | Single tool, no new entry point | Old generator code deleted (user approved) |
-| New standalone tool | Zero overlap risk | Doubles tooling overhead |
-
----
+*Status: Approved* (V1.0)
+- The existing `tools/src/asset_convertor/` GUI shell (customtkinter) is replaced in-place. The new autotile converter reuses the window/layout pattern but replaces the generation logic.
 
 ### ADR-002: 47-tile Blob output (not 16-tile Edge)
-
-**Decision:** Output format is the **47-tile Mixed Wang / Blob** tileset, not the older 16-tile Edge set.
-
-**Rationale:**
-- Blob handles both edges AND corners → no seam artifacts at diagonal transitions
-- The RPG Maker autotile format natively encodes all 4 corner + 4 edge cases → maps cleanly to blob
-- Tiled 1.5+ supports Mixed (blob) terrain sets natively
-- The old strategy doc used 16-tile Edge — this was wrong for RPG Maker input which has inner corners
-
-**TSX wangset type:** `type="mixed"` (not `type="edge"`)
-
----
+*Status: Approved* (V1.0)
+- Output format is the **47-tile Mixed Wang / Blob** tileset, not the older 16-tile Edge set.
 
 ### ADR-003: Mode selection drives the conversion logic
-
-**Decision:** Three distinct converter modes — XP, MV, MZ — are selected by the user. No auto-detect of the *format type* (XP vs MV), but auto-detect of *tile size* within MV/MZ.
-
-**Rationale:**
-- XP (96×128) and MV (96×144 or 64×96) have different sub-tile layouts — wrong mode = broken output
-- The user knows which RPG Maker they're converting from
-- Auto-detecting XP vs MV from image dimensions is possible (96×128 ≠ 96×144 ≠ 64×96) but adds complexity that's unnecessary when the user can just select
-
-**Auto-detect within MV/MZ:**
-- `block_width == 64` → tile_size = 32 (community pack)
-- `block_width == 96` → tile_size = 48 (official standard)
-
----
+*Status: Approved* (V1.0)
+- Three distinct converter modes — XP, MV, MZ — are selected by the user. Auto-detect of tile size within MV/MZ is performed based on image dimensions.
 
 ### ADR-004: GUI tech stack — stay on customtkinter
+*Status: Approved* (V1.0)
+- Keep **customtkinter** (already installed). The canvas for validation is a `tkinter.Canvas` widget.
 
-**Decision:** Keep **customtkinter** (already installed, already used in asset_convertor). Do NOT migrate to Dear PyGui.
+### [ADR-005](../ADRs/ADR-005-animated-autotile-tileset-layout.md): Animated Autotile Tileset Layout & Cycle Rules
+*Status: Pending Approval* (V2.0)
+- Converted animation frames are stacked vertically (8 columns × `6 * N` rows) in the output PNG.
+- TSX file includes `<animation>` tags for the first 47 tiles (indices 0..46), cycling through vertical offsets in the sheet.
+- Waterfall autotiles (horizontal tiling only) are mapped to 47-tile sheets by repeating their 4 cardinal shapes.
 
-**Rationale:**
-- The asset_convertor V3 blueprint chose Dear PyGui for real-time texture performance (47 tiles × slider callbacks)
-- The converter tool has NO sliders — it loads a file and shows a static preview
-- customtkinter is sufficient for: file picker, mode selector, image display, export button
-- The canvas for validation is a `tkinter.Canvas` widget (built-in, no new dep)
 
 ---
 
@@ -134,6 +103,11 @@ We own the full pipeline: load input → extract sub-tiles → assemble 47 tiles
 | F6 | **Canvas validator** — 5×5 test pattern using output tiles | 🔴 Required |
 | F7 | **Export** — save PNG + TSX to user-selected output dir | 🔴 Required |
 | F8 | **Auto-detect MV tile size** — 32px vs 48px from block dims | 🔴 Required |
+| F9 | **Animation mode selection** — Statique / Horizontale / Verticale dropdown | 🔴 Required (New) |
+| F10| **Animation speed selector** — configurable frame duration | 🟡 Preferred (New) |
+| F11| **Canvas animation loop** — real-time canvas rendering of animation cycles | 🔴 Required (New) |
+| F12| **Multi-frame TSX generator** — writes TSX animation nodes with local offsets | 🔴 Required (New) |
+| F13| **Waterfall converter** — translates 4 waterfall shapes into 47-tile blob | 🔴 Required (New) |
 
 ---
 
@@ -141,24 +115,24 @@ We own the full pipeline: load input → extract sub-tiles → assemble 47 tiles
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  Autotile Converter — RPG Maker → Tiled              [—][□][×]  │
+│  Convertisseur Autotile — RPG Maker → Tiled          [—][□][×]  │
 ├─────────────────────────────────────────────────────────────────-┤
-│  [📂 Open autotile file]    Mode: ○ XP  ● MV  ○ MZ              │
-├───────────────────────┬─────────────────┬────────────────────────┤
-│  SOURCE                │  TILED OUTPUT   │  CANVAS PREVIEW        │
-│                        │                 │                        │
-│  ┌──────────────────┐  │  ┌───────────┐  │  ┌──────────────────┐ │
-│  │                  │  │  │ 47 tiles  │  │  │ 5×5 test pattern │ │
-│  │  loaded PNG      │  │  │  8×6 grid │  │  │                  │ │
-│  │  (original size) │  │  │           │  │  │  ▓▓▓▓▓▓▓         │ │
-│  │                  │  │  └───────────┘  │  │ ▓▓▓▓▓▓▓▓▓        │ │
-│  └──────────────────┘  │                 │  │  ▓▓▓▓▓▓▓         │ │
-│                        │  tile_size: 32  │  │                  │ │
-│  Format: MV/32px       │  output: 256×192│  └──────────────────┘ │
-│                        │                 │                        │
-├───────────────────────┴─────────────────┴────────────────────────┤
-│  [Export PNG + TSX]    Output: [assets/images/autotiles/] [📂]   │
-│  Status: Ready.                                                   │
+│  [📂 Ouvrir un autotile]   Format: ○ XP  ● MV  ○ MZ             │
+│  Animation: [Horizontale  v]  Vitesse: [150 ms v]   [⚙ Convertir]│
+├────────────────────┬────────────────────┬────────────────────────┤
+│  SOURCE            │  SORTIE TILED      │  APERÇU CANVAS         │
+│                    │                    │                        │
+│  ┌──────────────┐  │  ┌──────────────┐  │  ┌──────────────────┐  │
+│  │  PNG source  │  │  │ grille 8×6   │  │  │ motif test 5×5   │  │
+│  │ (multi-frame)│  │  │ (Frame 0)    │  │  │                  │  │
+│  │              │  │  │              │  │  │  ■■■■■ (Animé!)  │  │
+│  └──────────────┘  │  └──────────────┘  │  │ ■■■■■■■          │  │
+│                    │                    │  │  ■■■■■           │  │
+│  Format: MV/32px   │  Tile: 32px        │  │                  │  │
+│                    │  Sortie: 256×576   │  └──────────────────┘  │
+├────────────────────┴────────────────────┴────────────────────────┤
+│  [Exporter PNG + TSX]  Dossier: [tools/src/output/] [📂]        │
+│  État: Prêt.                                                     │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -168,13 +142,12 @@ We own the full pipeline: load input → extract sub-tiles → assemble 47 tiles
 
 | Excluded | Rationale |
 |----------|-----------|
-| **Animated autotiles** | Static only — explicitly scoped out by user |
-| **A3/A4 wall autotiles** | Complex separate format; ground autotiles first |
-| **Batch conversion** | Single file per session; CLI batch out of scope |
-| **A2 full sheet input** | User provides extracted single autotile block |
-| **Auto-detect format type** (XP vs MV) | User selects mode — simpler, less error-prone |
-| **16-tile Edge set output** | Blob (47-tile) covers all cases including inner corners |
-| **In-tool palette editing** | Out of scope |
+| **Custom frame counts > 4** | Standard animations cycle 3 or 4 frames. Complex speeds are out of scope. |
+| **A3/A4 wall autotiles** | Complex separate format; ground autotiles first. |
+| **Batch conversion** | Single file per session; CLI batch out of scope. |
+| **A1/A2 full sheet input** | User provides single animated autotile block (containing all frames of that block). |
+| **Auto-detect format type** (XP vs MV) | User selects mode — simpler, less error-prone. |
+| **In-tool palette editing** | Out of scope. |
 
 ---
 
@@ -184,14 +157,11 @@ We own the full pipeline: load input → extract sub-tiles → assemble 47 tiles
 |---|-----------|------|--------|
 | A1 | XP input always 96×128 | Low | **VERIFIED** — sample confirmed, standard documented |
 | A2 | MV/MZ input = extracted block (not full A2 sheet) | Low | **VERIFIED** — user confirmed |
-| A3 | MV tile size detected from block_width (32 or 48) | Low | **VERIFIED** — sample is 64×96 = 32px |
-| A4 | RPG Maker XP sub-tile lookup table is fixed and well-documented | Medium | **ASSUMED** — community verified, will hardcode in SPEC |
-| A5 | RPG Maker MV sub-tile lookup table is fixed | Medium | **ASSUMED** — will derive from engine source in SPEC |
-| A6 | TSX wangset type="mixed" works for 47-tile blob in Tiled 1.10 | Low | **VERIFIED** — Tiled terrain docs confirm Mixed = blob |
-| A7 | customtkinter Canvas widget can render 47 tiles in preview grid | Low | **ASSUMED** — standard tkinter Canvas, no GPU needed |
-| A8 | MZ uses identical autotile format to MV | Low | **ASSUMED** — MZ is a superset of MV, same asset format documented |
-
-> **A4 & A5 are MEDIUM risk** — will be fully resolved in SPEC by encoding the exact pixel lookup coordinates for all 47 configurations.
+| A3 | Image unique multi-frames: input is a single image containing all frames side-by-side or stacked | Low | **VERIFIED** — corrected and verified by user |
+| A4 | Tiled TSX `<animation>` syntax works on local tile IDs | Low | **VERIFIED** — official Tiled XML specification confirmed |
+| A5 | Waterfall autotiles (horizontal only) map correctly to 47-tile blob | Low | **VERIFIED** — direct cardinal mapping math |
+| A6 | XP animated autotiles follow the same 3-frame horizontal format | Medium | **ASSUMED** — will configure during SPEC |
+| A7 | Customtkinter Canvas can render real-time ticks without lag | Low | **VERIFIED** — simple after() update loop is extremely fast |
 
 ---
 
@@ -199,10 +169,9 @@ We own the full pipeline: load input → extract sub-tiles → assemble 47 tiles
 
 | Risk | Impact | Mitigation |
 |------|--------|-----------|
-| Sub-tile lookup table wrong → broken output | High | Validate with real samples (XP + MV files provided) |
-| MV lookup differs from XP in undocumented ways | Medium | Cross-reference engine source + community wiki |
-| TSX wangid mapping off-by-one | Medium | Test import in Tiled before finalizing |
-| Canvas preview misleading (shows wrong test pattern) | Low | Use a known blob pattern for validation |
+| **Animation loop stutter** | Medium | Use optimized Pillow crops and cache Frame PhotoImages on load rather than cropping on every tick. |
+| **Out-of-sync frames** | Medium | Maintain absolute frame indexing using a modulo calculation relative to the detected frame count. |
+| **Invalid block dimensions loaded** | High | Strictly validate that width and height match multiples of tile size based on selected format and animation mode. |
 
 ---
 
@@ -210,10 +179,7 @@ We own the full pipeline: load input → extract sub-tiles → assemble 47 tiles
 
 → **📋 SPEC** stage. Modules to spec:
 
-1. `src/asset_convertor/core/converter_xp.py` — XP lookup table + assembly logic
-2. `src/asset_convertor/core/converter_mv.py` — MV/MZ lookup table + assembly logic
-3. `src/asset_convertor/exporters/tsx_generator.py` — TSX wangset XML output
-4. `src/asset_convertor/gui/app.py` — replaced GUI (file picker, mode, previews, canvas, export)
-
-**Test samples:** `tools/src/input/sample_xp.png`, `tools/src/input/sample_mv_32px.png`  
-**Output dir:** `tools/src/output/`
+1. `src/asset_convertor/core/converter_mv.py` — Update to handle multi-frame horizontal water and vertical waterfalls
+2. `src/asset_convertor/core/converter_xp.py` — Update to handle multi-frame horizontal autotiles
+3. `src/asset_convertor/exporters/tsx_generator.py` — Update TSX generation to write `<animation>` tags
+4. `src/asset_convertor/gui/app.py` — Add animation selector, speed picker, and `Tkinter.after` animation loop

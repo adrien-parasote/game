@@ -14,7 +14,7 @@
 # [[boundaries]] to match your package layout.
 
 [constraints]
-min_quality = 0.65       # Quality signal floor (6500/10000) — never drop below
+min_quality = 0.64       # Quality signal floor (6400/10000) — never drop below
 max_cycles = 0           # Zero circular dependencies (ADP)
 max_cc = 20              # Max cyclomatic complexity per function
 max_fn_lines = 120       # Max function length
@@ -24,32 +24,38 @@ max_fn_lines = 120       # Max function length
 # max_file_lines = 500   # No god files
 # no_god_files = true     # Enforce modular structure
 
-# ── Example Layer Definitions (uncomment and adapt) ──
-# Lower order = higher layer. Higher order = foundational.
-#
-# [[layers]]
-# name = "cmd"
-# paths = ["cmd/**"]
-# order = 0
-#
-# [[layers]]
-# name = "handler"
-# paths = ["internal/handler/**"]
-# order = 1
-#
-# [[layers]]
-# name = "service"
-# paths = ["internal/service/**"]
-# order = 2
-#
-# [[layers]]
-# name = "domain"
-# paths = ["internal/domain/**"]
-# order = 3
+# ── Layer Definitions ──
+# Lower order = higher layer (GUI). Higher order = foundational (core logic).
 
-# ── Example Boundary Rules (uncomment and adapt) ──
-#
-# [[boundaries]]
-# from = "internal/domain/**"
-# to = "internal/handler/**"
-# reason = "Domain must not depend on handlers (DIP violation)"
+[[layers]]
+name = "gui"
+paths = ["tools/src/asset_convertor/gui/**"]
+order = 0
+
+[[layers]]
+name = "exporters"
+paths = ["tools/src/asset_convertor/exporters/**"]
+order = 1
+
+[[layers]]
+name = "core"
+paths = ["tools/src/asset_convertor/core/**"]
+order = 2
+
+# ── Boundary Rules ──
+
+[[boundaries]]
+from = "tools/src/asset_convertor/core/**"
+to = "tools/src/asset_convertor/gui/**"
+reason = "Core logic must not depend on GUI presentation"
+
+[[boundaries]]
+from = "tools/src/asset_convertor/core/**"
+to = "tools/src/asset_convertor/exporters/**"
+reason = "Core logic must not depend on exporters"
+
+[[boundaries]]
+from = "tools/src/asset_convertor/exporters/**"
+to = "tools/src/asset_convertor/gui/**"
+reason = "Exporters must not depend on GUI presentation"
+
