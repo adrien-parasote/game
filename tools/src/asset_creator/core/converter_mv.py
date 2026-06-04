@@ -21,7 +21,6 @@ from PIL import Image
 # Constants
 # ---------------------------------------------------------------------------
 
-SUBTILE = 16  # quadrant size in pixels (half of a 32px tile)
 
 # Valid MV block dimensions -> detected tile size
 _VALID_BLOCK_SIZES: dict[tuple[int, int], int] = {

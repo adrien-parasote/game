@@ -42,3 +42,19 @@ app.setApplicationIconImage_(icon)
 2. Générer virtuellement les éléments non seulement sur la tuile courante, mais aussi sur les 8 tuiles voisines (grille 3x3 : `[-W, 0, W]`).
 3. Trier **tous** les éléments de cette grille 3x3 globalement selon l'axe Y (Z-Order).
 4. Dessiner les éléments, le centre sera ainsi mathématiquement parfait avec ses voisins sans coupure visuelle de profondeur.
+
+## L-TOOL-007 · 2026-06-04 · Universal · Complexity Refactoring via Pure Helpers
+**Contexte :** `converter_mv._build_mv_tile` dépassait les seuils C901 et PLR0915 (complexité cyclomatique + trop de statements).
+**Evidence :** Refactoring `_build_mv_tile` → 4 fonctions `_pick_tl/tr/bl/br(n,s,e,w,diag) -> tuple[int,int]` a passé les gates sans réécrire la logique métier. Résultat : 77/77 tests PASS, lint clean.
+**Pattern :** Quand une fonction atteint C901/PLR0915, extraire les branches de sélection (qui renvoient uniquement une valeur scalaire ou un tuple de coordonnées) en fonctions `_pick_*` pures. Chaque helper doit : (1) prendre les booléens directionnels (N/S/E/W/diag) comme arguments, (2) renvoyer uniquement des coordonnées ou un indice, (3) avoir aucun side-effect. La fonction parente appelle `_pick_*` pour les coordonnées, puis fait le `crop/paste`. Cette décomposition laisse la logique de dispatch visible dans la fonction parente tout en réduisant la complexité mesurée.
+
+## A-TOOL-001 · 2026-06-04 · Universal · Déclaration prématurée de constantes non utilisées
+**Contexte :** `converter_mv.py` déclarait `SUBTILE = 16` en tête de module. La logique utilisait `tile_size // 2` calculé dynamiquement.
+**Evidence :** `git diff` révèle `SUBTILE = 16` supprimé en HARDEN sans impact sur 77 tests. Identifié par `ruff check --select F401` + revue manuelle.
+**Anti-pattern :** Déclarer une constante module-level "par précaution" avant de valider qu'elle est réellement référencée dans le code du même module. AI-gen anti-pattern #1 (single-use helper jamais utilisé).
+**Fix :** Avant de déclarer une constante, vérifier qu'elle est référencée au moins une fois dans le même fichier (`grep -c "SUBTILE" converter_mv.py`). Si 0 ou 1 (la déclaration elle-même) → ne pas déclarer, utiliser l'expression directement.
+
+## L-TOOL-008 · 2026-06-04 · Universal · Caractères ambigus Unicode dans les docstrings Python
+**Contexte :** Docstrings des convertisseurs utilisaient `×` (U+00D7, multiplication sign) pour décrire des dimensions (ex: "96×128 px").
+**Evidence :** `ruff check --select RUF002,RUF003` a bloqué sur plusieurs fichiers nécessitant de remplacer `×` par `x` ASCII. Corrigé en plusieurs itérations sur `converter_xp.py`, `converter_mv.py`, `tsx_generator.py`.
+**Pattern :** Dans les docstrings Python, utiliser exclusivement des caractères ASCII pour les dimensions et unités : `96x128 px` (pas `96×128 px`), `2x3 grid` (pas `2×3 grid`). Ruff règles RUF002 (docstring) et RUF003 (commentaire) rejettent tout caractère Unicode "ambigus" (qui ressemble à un ASCII mais en est différent). Appliquer cette règle dès l'écriture de spec — les exemples dans la spec deviennent du code copiable.
