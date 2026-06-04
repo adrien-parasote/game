@@ -48,10 +48,10 @@ class App(ctk.CTk):
         self.seed_var = ctk.StringVar(value=str(initial_seed))
         self.density_var = ctk.StringVar(value="20")
 
-        self.subtypes = ["Classic", "Short", "Curly", "Wild"]
+        self.subtypes = ["Classic", "Short", "Curly", "Wild", "Crescent"]
         self.subtype_var = ctk.StringVar(value=self.subtypes[0])
 
-        self.custom_palette = [(0,0,0), (85,85,85), (170,170,170), (255,255,255)]
+        self.custom_palette = [(0,0,0), (64,64,64), (128,128,128), (192,192,192), (255,255,255)]
 
         self._debounce_timer = None
         self.current_img_32 = None
@@ -72,13 +72,14 @@ class App(ctk.CTk):
 
         def on_palette_write(*args):
             choice = self.palette_var.get()
-            pal = self.palettes.get(choice, [(0,0,0),(85,85,85),(170,170,170),(255,255,255)])
+            pal = self.palettes.get(choice, [(0,0,0),(64,64,64),(128,128,128),(192,192,192),(255,255,255)])
             pal = sorted(pal, key=lambda c: 0.299*c[0] + 0.587*c[1] + 0.114*c[2])
             L = len(pal)
             self.custom_palette = [
                 pal[0],
-                pal[max(1, (L-1)//3)],
-                pal[max(1, 2*(L-1)//3)],
+                pal[max(1, (L-1)//4)],
+                pal[max(1, (L-1)//2)],
+                pal[max(1, 3*(L-1)//4)],
                 pal[L-1]
             ]
             for idx, color in enumerate(self.custom_palette):
@@ -141,8 +142,8 @@ class App(ctk.CTk):
         # Custom Palette Frame (Always visible)
         self.custom_palette_frame = ctk.CTkFrame(ctrl_frame)
         self.custom_color_btns = []
-        labels = ["Shadow", "Midtone 1", "Midtone 2", "Highlight"]
-        for i in range(4):
+        labels = ["Shadow", "Midtone 1", "Midtone 2", "Midtone 3", "Highlight"]
+        for i in range(5):
             row_frame = ctk.CTkFrame(self.custom_palette_frame, fg_color="transparent")
             row_frame.pack(fill="x", pady=2)
 

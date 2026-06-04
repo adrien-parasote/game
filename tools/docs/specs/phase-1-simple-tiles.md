@@ -89,7 +89,7 @@ A local Python desktop application that generates seamless pixel art tiles by in
 | TC ID | Type | Description | Expected Result |
 |---|---|---|---|
 | `TC-001` | Unit | Toroidal seamlessness — stamp wrapping. | Drawing a 4x4 stamp at `x=30, y=30` correctly sets values at `x=30,31,0,1` and `y=30,31,0,1` via modulo math. |
-| `TC-002` | Unit | Generator output format and sub_type. | `generator.generate_texture("grass", seed=42, density=10, sub_type="wild")` returns a `(32, 32)` numpy array containing only values `0, 1, 2, 3`. |
+| `TC-002` | Unit | Generator output format and sub_type. | `generator.generate_texture("grass", seed=42, density=10, sub_type="wild")` returns a `(32, 32)` numpy array containing only values `0, 1, 2, 3, 4`. *(Updated 2026-06-04: range extended to 0–4 after 5-tone grass upgrade — see `grass_rendering_spec.md`)* |
 | `TC-003` | Unit | Color quantization strictness. | The output image only contains colors present in the provided sorted palette. |
 | `TC-004` | Unit | `.tsx` XML generation structure. | Given `tile_name="stone_42"`, the generated XML parses successfully as valid XML with correct `tilewidth="32"`. |
 | `TC-005` | Unit | Generator output fallback. | If an unknown `texture_type` is provided, `generate` handles it gracefully (e.g. renders programmatic default squares or returns all zeros) instead of crashing. |

@@ -24,13 +24,14 @@ def test_tc001_output_dimensions():
     assert img.mode == "RGB"
 
 def test_tc002_generator_output_format():
-    """TC-002: Generator returns a (32, 32) numpy array with values in [0, 1, 2, 3]."""
+    """TC-002: Generator returns a (32, 32) numpy array with values in [0, 1, 2, 3, 4]."""
     from src.asset_creator.core.generator import generate_texture
     
     output = generate_texture("grass", seed=42, density=10)
     assert isinstance(output, np.ndarray)
     assert output.shape == (32, 32)
-    assert np.all(np.isin(output, [0, 1, 2, 3]))
+    assert np.all(np.isin(output, [0, 1, 2, 3, 4]))
+
 
 def test_tc003_color_quantization_strictness():
     """TC-003: Output image only contains colors present in the sorted palette."""
@@ -81,7 +82,8 @@ def test_tc005_generator_fallback():
     
     output = generate_texture("some_unknown_type", seed=42, density=10)
     assert output.shape == (32, 32)
-    assert np.all(np.isin(output, [0, 1, 2, 3]))
+    assert np.all(np.isin(output, [0, 1, 2, 3, 4]))
+
 
 def test_tc006_palette_loader(tmp_path):
     """TC-006: palettes.json is parsed from hex strings to RGB tuples."""
@@ -112,6 +114,23 @@ def test_it001_gui_to_preview_flow():
     # We will test the debouncer / generation queue in the GUI layer
     pass
 
+def test_it001_generate_quantize_end_to_end():
+    """IT-001: generate_texture -> quantize_image End-to-end. Verifies 5-tone to 5-color mapping."""
+    from src.asset_creator.core.generator import generate_texture
+    from src.asset_creator.core.quantizer import quantize_image
+
+    # Generate grass with crescent, which guarantees value 4 is used (TC-005)
+    gen_array = generate_texture("grass", seed=100, density=15, sub_type="crescent")
+    palette = [(0,0,0), (50,50,50), (100,100,100), (150,150,150), (250,250,250)]
+    
+    img = quantize_image(gen_array, palette)
+    colors_used = [color for count, color in img.getcolors()]
+    
+    # We should have all 5 colors used since generator uses all 5 indices for crescent
+    assert len(colors_used) == 5
+    for c in palette:
+        assert c in colors_used
+
 def test_it002_end_to_end_pipeline(tmp_path):
     """IT-002: GUI triggers Generator -> Quantizer -> Exporter (writes valid PNG and TSX)."""
     from src.asset_creator.core.generator import generate_texture
@@ -123,7 +142,7 @@ def test_it002_end_to_end_pipeline(tmp_path):
     # 1. Generate
     gen_array = generate_texture("grass", seed=100, density=15)
     # 2. Quantize
-    palette = [(0,0,0), (50,50,50), (150,150,150), (250,250,250)]
+    palette = [(0,0,0), (50,50,50), (100, 100, 100), (150,150,150), (250,250,250)]
     img = quantize_image(gen_array, palette)
     # 3. Export
     png, tsx = export_tile(img, "grass", 100)

@@ -2,15 +2,20 @@ import random
 
 import numpy as np
 from asset_creator.core.constants import (
+    TUFT_ARCH,
     TUFT_CLASSIC_LEFT,
     TUFT_CLASSIC_RIGHT,
     TUFT_CLASSIC_V,
+    TUFT_CRESCENT_1,
+    TUFT_CRESCENT_2,
     TUFT_CURLY_1,
     TUFT_CURLY_2,
     TUFT_CURLY_3,
     TUFT_SHORT_1,
     TUFT_SHORT_2,
     TUFT_SHORT_3,
+    TUFT_SWEEP_LEFT,
+    TUFT_SWEEP_RIGHT,
     TUFT_WILD_1,
     TUFT_WILD_2,
 )
@@ -45,7 +50,9 @@ def generate_texture(texture_type: str, seed: int, density: int, sub_type: str =
             tufts = [TUFT_CURLY_1, TUFT_CURLY_2, TUFT_CURLY_3]
         elif sub_type == "wild":
             tufts = [TUFT_WILD_1, TUFT_WILD_2]
-        else: # Classic
+        elif sub_type == "crescent":
+            tufts = [TUFT_CRESCENT_1, TUFT_CRESCENT_2, TUFT_SWEEP_LEFT, TUFT_SWEEP_RIGHT, TUFT_ARCH]
+        else: # Classic (default)
             tufts = [TUFT_CLASSIC_RIGHT, TUFT_CLASSIC_LEFT, TUFT_CLASSIC_V]
 
         # 1. Very light background noise to break up the flat Tone 1
