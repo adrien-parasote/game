@@ -14,6 +14,7 @@ from PIL import Image
 SAMPLES_DIR = Path(__file__).parents[3] / "src" / "input"
 SAMPLE_XP = SAMPLES_DIR / "sample_xp.png"
 SAMPLE_MV = SAMPLES_DIR / "sample_mv_32px.png"
+SAMPLE_MV_48 = SAMPLES_DIR / "sample_mv_48px.png"
 
 
 # ---------------------------------------------------------------------------
@@ -167,3 +168,64 @@ def test_it006_tsx_wangtile_tileids_match_order():
         wangtiles = root.findall(".//wangtile")
         tileids = [int(wt.get("tileid")) for wt in wangtiles]
         assert tileids == list(range(47)), f"Wangtile ids not sequential 0..46: {tileids[:5]}..."
+
+
+# ---------------------------------------------------------------------------
+# IT-007 — MV 48px full pipeline: load -> detect -> convert -> export
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(not SAMPLE_MV_48.exists(), reason="sample_mv_48px.png not found")
+def test_it007_mv48_full_pipeline():
+    from asset_creator.core.converter_mv import convert_mv, detect_tile_size
+    from asset_creator.exporters.tsx_generator import export
+
+    img = Image.open(SAMPLE_MV_48).convert("RGBA")
+    assert detect_tile_size(img) == 48, "sample_mv_48px.png should auto-detect as 48px"
+
+    tiles = convert_mv(img)
+    assert len(tiles) == 47
+
+    with tempfile.TemporaryDirectory() as tmp:
+        png_path, tsx_path = export(tiles, "grass_mv48", tmp, 32)
+        png = Image.open(png_path)
+        assert png.size == (256, 192), f"MV48 PNG size {png.size} != (256, 192)"
+        root = ET.parse(tsx_path).getroot()
+        wangtiles = root.findall(".//wangtile")
+        assert len(wangtiles) == 47
+
+
+# ---------------------------------------------------------------------------
+# IT-008 — MV 48px all output tiles are 32x32 RGBA (normalized from 48px)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(not SAMPLE_MV_48.exists(), reason="sample_mv_48px.png not found")
+def test_it008_mv48_tiles_normalized_to_32():
+    from asset_creator.core.converter_mv import convert_mv
+
+    img = Image.open(SAMPLE_MV_48).convert("RGBA")
+    tiles = convert_mv(img)
+    for i, tile in enumerate(tiles):
+        assert tile.size == (32, 32), f"Tile {i} from 48px source: expected 32x32, got {tile.size}"
+        assert tile.mode == "RGBA", f"Tile {i} mode {tile.mode!r} != 'RGBA'"
+
+
+# ---------------------------------------------------------------------------
+# IT-009 — MV 48px output tiles are non-empty (not all transparent)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(not SAMPLE_MV_48.exists(), reason="sample_mv_48px.png not found")
+def test_it009_mv48_all_tiles_non_empty():
+    from asset_creator.core.converter_mv import convert_mv
+
+    img = Image.open(SAMPLE_MV_48).convert("RGBA")
+    tiles = convert_mv(img)
+    for i, tile in enumerate(tiles):
+        pixels = list(tile.getdata())
+        opaque = [px for px in pixels if px[3] > 0]
+        assert len(opaque) > 0, f"Tile {i} from 48px sample is entirely transparent"
