@@ -11,6 +11,7 @@ Spec : tools/docs/specs/autotile_converter_spec.md section gui/app.py
 
 from __future__ import annotations
 
+import os
 import threading
 import tkinter as tk
 from dataclasses import dataclass, field
@@ -72,8 +73,21 @@ class App(ctk.CTk):
         self._photo_output: ImageTk.PhotoImage | None = None
         self._canvas_photos: list[ImageTk.PhotoImage] = []
 
+        self._setup_icon()
         self._build_ui()
         self._reset_panels()
+
+    def _setup_icon(self) -> None:
+        """Icone macOS via AppKit (silencieux si non disponible)."""
+        try:
+            import AppKit  # type: ignore[import-untyped]  # pyobjc, macOS only
+            ns_app = AppKit.NSApplication.sharedApplication()
+            icon_path = os.path.join(os.path.dirname(__file__), "assets", "icon.png")
+            if os.path.exists(icon_path):
+                ns_icon = AppKit.NSImage.alloc().initWithContentsOfFile_(icon_path)
+                ns_app.setApplicationIconImage_(ns_icon)
+        except (ImportError, AttributeError):
+            pass  # non-macOS ou pyobjc non installe
 
     # ── Construction UI ───────────────────────────────────────────────────────
 
