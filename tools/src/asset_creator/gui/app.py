@@ -4,22 +4,13 @@ import random
 import threading
 
 import customtkinter as ctk
-from asset_creator.core.generator import generate
-from asset_creator.core.quantizer import load_palettes, quantize
-from asset_creator.exporters.exporter import derive_tile_name, export
+from asset_creator.core.generator import generate_texture
+from asset_creator.core.quantizer import quantize_image
+from asset_creator.config.palette_loader import load_palettes
+from asset_creator.exporters.exporter import export_tile
 from PIL import Image
 
-DEFAULT_TEXTURES = ["Stone", "Grass", "Water", "Dirt", "Wood"]
-DEFAULT_PALETTE = {
-    "PICO-8 (Full)": [(0,0,0), (29,43,83), (126,37,83), (0,135,81), (171,82,54), (95,87,79),
-               (194,195,199), (255,241,232), (255,0,77), (255,163,0), (255,236,39),
-               (0,228,54), (41,173,255), (131,118,156), (255,119,168), (255,204,170)],
-    "Grass": [(26,58,15), (45,90,27), (67,123,40), (90,158,54)],
-    "Stone": [(0,0,0), (95,87,79), (194,195,199), (255,241,232)],
-    "Water": [(29,43,83), (41,173,255), (131,118,156), (194,195,199)],
-    "Dirt": [(0,0,0), (126,37,83), (171,82,54), (255,163,0)],
-    "Wood": [(0,0,0), (126,37,83), (171,82,54), (255,204,170)]
-}
+from asset_creator.core.constants import DEFAULT_TEXTURES, DEFAULT_PALETTES
 
 class App(ctk.CTk):
     def __init__(self):
@@ -28,7 +19,7 @@ class App(ctk.CTk):
         self.geometry("600x600")
 
         self.textures = DEFAULT_TEXTURES
-        self.palettes = DEFAULT_PALETTE
+        self.palettes = DEFAULT_PALETTES
 
         if os.path.exists("textures.json"):
             import json
@@ -38,27 +29,68 @@ class App(ctk.CTk):
             except Exception:
                 pass
 
-        if os.path.exists("palettes.json"):
+        # Try to load palettes from new location
+        palette_path = os.path.join(os.path.dirname(__file__), "..", "config", "palettes.json")
+        if os.path.exists(palette_path):
+            with contextlib.suppress(Exception):
+                self.palettes = load_palettes(palette_path)
+        elif os.path.exists("palettes.json"):
             with contextlib.suppress(Exception):
                 self.palettes = load_palettes("palettes.json")
 
         if not self.palettes:
-            self.palettes = DEFAULT_PALETTE
+            self.palettes = DEFAULT_PALETTES
 
         self.texture_var = ctk.StringVar(value=self.textures[0])
         self.palette_var = ctk.StringVar(value=next(iter(self.palettes.keys())))
 
         initial_seed = random.randint(0, 9999)
         self.seed_var = ctk.StringVar(value=str(initial_seed))
-        self.scale_var = ctk.DoubleVar(value=4.0)
+        self.density_var = ctk.StringVar(value="20")
+        
+        self.subtypes = ["Classic", "Short", "Curly", "Wild"]
+        self.subtype_var = ctk.StringVar(value=self.subtypes[0])
 
+        self.custom_palette = [(0,0,0), (85,85,85), (170,170,170), (255,255,255)]
+        
         self._debounce_timer = None
         self.current_img_32 = None
 
+        def on_seed_write(*args):
+            try:
+                self.seed_slider.set(int(self.seed_var.get()))
+            except (ValueError, AttributeError):
+                pass
+            self.schedule_preview()
+
+        def on_density_write(*args):
+            try:
+                self.density_slider.set(int(self.density_var.get()))
+            except (ValueError, AttributeError):
+                pass
+            self.schedule_preview()
+
+        def on_palette_write(*args):
+            choice = self.palette_var.get()
+            pal = self.palettes.get(choice, [(0,0,0),(85,85,85),(170,170,170),(255,255,255)])
+            pal = sorted(pal, key=lambda c: 0.299*c[0] + 0.587*c[1] + 0.114*c[2])
+            L = len(pal)
+            self.custom_palette = [
+                pal[0],
+                pal[max(1, (L-1)//3)],
+                pal[max(1, 2*(L-1)//3)],
+                pal[L-1]
+            ]
+            for idx, color in enumerate(self.custom_palette):
+                hex_color = "#%02x%02x%02x" % color
+                self.custom_color_btns[idx].configure(fg_color=hex_color, hover_color=hex_color)
+            self.schedule_preview()
+
         self.texture_var.trace_add("write", lambda *args: self.schedule_preview())
-        self.palette_var.trace_add("write", lambda *args: self.schedule_preview())
-        self.seed_var.trace_add("write", lambda *args: self.schedule_preview())
-        self.scale_var.trace_add("write", lambda *args: self.schedule_preview())
+        self.subtype_var.trace_add("write", lambda *args: self.schedule_preview())
+        self.palette_var.trace_add("write", on_palette_write)
+        self.seed_var.trace_add("write", on_seed_write)
+        self.density_var.trace_add("write", on_density_write)
 
         self.setup_icon()
         self.setup_ui()
@@ -80,17 +112,61 @@ class App(ctk.CTk):
         ctrl_frame.pack(side="left", fill="y", padx=10, pady=10)
 
         def on_texture_change(choice):
-            if choice in self.palettes:
-                self.palette_var.set(choice)
+            # Try to auto-select a matching palette
+            match = next((p for p in self.palettes.keys() if choice in p), None)
+            if match:
+                self.palette_var.set(match)
+            if choice == "Grass":
+                self.subtype_cb.configure(state="normal")
+            else:
+                self.subtype_cb.configure(state="disabled")
 
         ctk.CTkLabel(ctrl_frame, text="Texture Type").pack(pady=(10, 0))
         ctk.CTkComboBox(ctrl_frame, variable=self.texture_var, values=self.textures, command=on_texture_change).pack()
 
+        self.subtype_label = ctk.CTkLabel(ctrl_frame, text="Subtype")
+        self.subtype_label.pack(pady=(10, 0))
+        self.subtype_cb = ctk.CTkComboBox(ctrl_frame, variable=self.subtype_var, values=self.subtypes)
+        self.subtype_cb.pack()
+        
+        # Initial state setup
+        if self.texture_var.get() != "Grass":
+            self.subtype_cb.configure(state="disabled")
+
         ctk.CTkLabel(ctrl_frame, text="Palette").pack(pady=(10, 0))
-        ctk.CTkComboBox(ctrl_frame, variable=self.palette_var, values=list(self.palettes.keys())).pack()
+        palette_options = list(self.palettes.keys())
+        self.palette_cb = ctk.CTkComboBox(ctrl_frame, variable=self.palette_var, values=palette_options)
+        self.palette_cb.pack()
+
+        # Custom Palette Frame (Always visible)
+        self.custom_palette_frame = ctk.CTkFrame(ctrl_frame)
+        self.custom_color_btns = []
+        labels = ["Shadow", "Midtone 1", "Midtone 2", "Highlight"]
+        for i in range(4):
+            row_frame = ctk.CTkFrame(self.custom_palette_frame, fg_color="transparent")
+            row_frame.pack(fill="x", pady=2)
+            
+            ctk.CTkLabel(row_frame, text=labels[i], width=80, anchor="w").pack(side="left", padx=5)
+            
+            def choose_color(idx=i):
+                from tkinter.colorchooser import askcolor
+                color = askcolor(color="#%02x%02x%02x" % self.custom_palette[idx], title=labels[idx])[0]
+                if color:
+                    self.custom_palette[idx] = (int(color[0]), int(color[1]), int(color[2]))
+                    hex_color = "#%02x%02x%02x" % self.custom_palette[idx]
+                    self.custom_color_btns[idx].configure(fg_color=hex_color, hover_color=hex_color)
+                    self.schedule_preview()
+
+            btn = ctk.CTkButton(row_frame, text="", width=30, height=20, command=choose_color)
+            btn.pack(side="right", padx=5)
+            self.custom_color_btns.append(btn)
+            
+        self.custom_palette_frame.pack(pady=10, fill="x")
 
         if self.texture_var.get() in self.palettes:
             self.palette_var.set(self.texture_var.get())
+        else:
+            self.palette_var.set(self.palette_var.get()) # Force init colors
 
         ctk.CTkLabel(ctrl_frame, text="Seed (0-9999)").pack(pady=(10, 0))
         self.seed_entry = ctk.CTkEntry(ctrl_frame, textvariable=self.seed_var)
@@ -104,8 +180,17 @@ class App(ctk.CTk):
             self.seed_var.set(str(int(val)))
         self.seed_slider.configure(command=on_slider)
 
-        ctk.CTkLabel(ctrl_frame, text="Scale (1-10)").pack(pady=(10, 0))
-        ctk.CTkSlider(ctrl_frame, variable=self.scale_var, from_=1, to=10, number_of_steps=9).pack()
+        ctk.CTkLabel(ctrl_frame, text="Density (1-100)").pack(pady=(10, 0))
+        self.density_entry = ctk.CTkEntry(ctrl_frame, textvariable=self.density_var)
+        self.density_entry.pack()
+
+        self.density_slider = ctk.CTkSlider(ctrl_frame, from_=1, to=100, number_of_steps=99)
+        self.density_slider.set(int(self.density_var.get()))
+        self.density_slider.pack()
+
+        def on_density_slider(val):
+            self.density_var.set(str(int(val)))
+        self.density_slider.configure(command=on_density_slider)
 
         self.btn_export = ctk.CTkButton(ctrl_frame, text="Export to Tiled", command=self.on_export, state="disabled")
         self.btn_export.pack(pady=20)
@@ -127,7 +212,7 @@ class App(ctk.CTk):
     def schedule_preview(self):
         if self._debounce_timer is not None:
             self.after_cancel(self._debounce_timer)
-        self._debounce_timer = self.after(200, self.on_generate)
+        self._debounce_timer = self.after(300, self.on_generate)
 
     def on_generate(self):
         self.btn_export.configure(state="disabled")
@@ -138,23 +223,27 @@ class App(ctk.CTk):
         except ValueError:
             seed_val = 0
 
-        palette = self.palettes.get(self.palette_var.get())
-        if not palette:
-            palette = next(iter(self.palettes.values()))
+        palette = list(self.custom_palette)
+
+        try:
+            density_val = int(self.density_var.get())
+        except ValueError:
+            density_val = 20
 
         params = {
             "texture_type": self.texture_var.get(),
             "seed": seed_val,
-            "scale": self.scale_var.get(),
-            "palette": palette
+            "density": density_val,
+            "palette": palette,
+            "sub_type": self.subtype_var.get()
         }
 
         threading.Thread(target=self.generate_thread, kwargs=params, daemon=True).start()
 
-    def generate_thread(self, texture_type, seed, scale, palette):
+    def generate_thread(self, texture_type, seed, density, palette, sub_type):
         try:
-            noise = generate(texture_type, seed, scale)
-            img_32 = quantize(noise, palette)
+            noise = generate_texture(texture_type, seed, density, sub_type=sub_type)
+            img_32 = quantize_image(noise, palette)
 
             img_256 = img_32.resize((256, 256), Image.Resampling.NEAREST)
             ctk_img = ctk.CTkImage(light_image=img_256, dark_image=img_256, size=(256, 256))
@@ -191,9 +280,8 @@ class App(ctk.CTk):
             seed_val = 0
             
         try:
-            tile_name = derive_tile_name(texture_type, seed_val)
-            export(self.current_img_32, tile_name)
-            self.lbl_status.configure(text=f"Exported to output/{tile_name}.png")
+            export_tile(self.current_img_32, texture_type, seed_val)
+            self.lbl_status.configure(text=f"Exported to output/{texture_type}_{seed_val}.png")
         except PermissionError:
             self.lbl_status.configure(text="Cannot save files: permission denied in output/.")
         except Exception as e:

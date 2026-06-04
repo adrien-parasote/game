@@ -1,4 +1,3 @@
-import sys
 from asset_creator.gui.app import App
 
 def main():

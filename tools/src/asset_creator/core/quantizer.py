@@ -1,47 +1,38 @@
-import json
-
 import numpy as np
 from PIL import Image
 
+def luminance(color: tuple[int, int, int]) -> float:
+    return 0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2]
 
-def quantize(noise_map: np.ndarray, palette: list[tuple[int, int, int]]) -> Image.Image:
-    """Downscale to 32x32 using nearest neighbor and apply strict palette based on luminance."""
-    # Downscale to 32x32 (TC-002)
-    img_256 = Image.fromarray((noise_map * 255).astype(np.uint8))
-    img_32 = img_256.resize((32, 32), Image.Resampling.NEAREST)
-
-    # Sort palette by luminance
-    def luminance(c):
-        return 0.299*c[0] + 0.587*c[1] + 0.114*c[2]
-
+def quantize_image(noise_map: np.ndarray, palette: list[tuple[int, int, int]]) -> Image.Image:
+    """
+    Map logical tones (0, 1, 2, 3) to the provided palette.
+    The palette is sorted by luminance (darkest to lightest).
+    """
     sorted_palette = sorted(palette, key=luminance)
-    num_colors = len(sorted_palette)
+    
+    # Handle if palette has fewer or more than 4 colors
+    L = len(sorted_palette)
+    if L == 0:
+        # Fallback if empty palette
+        mapped_palette = [(0,0,0), (85,85,85), (170,170,170), (255,255,255)]
+    elif L < 4:
+        # Repeat the lightest color if not enough colors
+        mapped_palette = sorted_palette + [sorted_palette[-1]] * (4 - L)
+    else:
+        # Take 4 evenly distributed colors (first, last, and two in between)
+        indices = np.linspace(0, L - 1, 4, dtype=int)
+        mapped_palette = [sorted_palette[i] for i in indices]
 
-    arr = np.array(img_32)
-    h, w = arr.shape
+    h, w = noise_map.shape
     out = np.zeros((h, w, 3), dtype=np.uint8)
 
-    # Map pixels to the sorted palette (TC-003)
     for y in range(h):
         for x in range(w):
-            val = arr[y, x] / 255.0  # 0 to 1
-            idx = int(val * num_colors)
-            if idx >= num_colors:
-                idx = num_colors - 1
-            out[y, x] = sorted_palette[idx]
+            val = noise_map[y, x]
+            # Ensure val is strictly between 0 and 3
+            if val < 0: val = 0
+            if val > 3: val = 3
+            out[y, x] = mapped_palette[val]
 
     return Image.fromarray(out, "RGB")
-
-def load_palettes(filepath: str) -> dict:
-    """Load palettes from a JSON file (TC-006)."""
-    with open(filepath, encoding="utf-8") as f:
-        data = json.load(f)
-
-    palettes = {}
-    for name, hex_colors in data.items():
-        colors = []
-        for h in hex_colors:
-            h = h.lstrip('#')
-            colors.append(tuple(int(h[i:i+2], 16) for i in (0, 2, 4)))
-        palettes[name] = colors
-    return palettes

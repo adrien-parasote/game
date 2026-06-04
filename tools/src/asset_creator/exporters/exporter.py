@@ -1,29 +1,35 @@
 import os
 import xml.etree.ElementTree as ET
-
 from PIL import Image
 
-
-def derive_tile_name(texture_type: str, seed: int) -> str:
-    """Derive tile name (TC-005)."""
-    return f"{texture_type.lower().replace(' ', '_')}_{seed}"
-
-def export(image: Image.Image, tile_name: str):
-    """Export the PNG and TSX file to output/ (TC-004, IT-003)."""
-    out_dir = "output"
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-
-    png_path = os.path.join(out_dir, f"{tile_name}.png")
-    tsx_path = os.path.join(out_dir, f"{tile_name}.tsx")
-
+def export_tile(image: Image.Image, texture_type: str, seed: int) -> tuple[str, str]:
+    """
+    Save the tile as PNG and generate the corresponding .tsx file.
+    Output goes to EXPORT_DIR env var (for testing) or default 'output/'.
+    """
+    output_dir = os.environ.get("EXPORT_DIR", "output")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    tile_name = f"{texture_type}_{seed}"
+    
+    # We MUST escape or strip malicious names just in case, or let xml.etree handle it
+    # ET.Element will handle attribute escaping correctly when writing XML
+    
+    png_filename = f"{tile_name}.png"
+    tsx_filename = f"{tile_name}.tsx"
+    
+    png_path = os.path.join(output_dir, png_filename)
+    tsx_path = os.path.join(output_dir, tsx_filename)
+    
+    # Save PNG
     image.save(png_path)
-
-    # TSX XML
-    root = ET.Element("tileset", version="1.10", tiledversion="1.10.2",
-                      name=tile_name, tilewidth="32", tileheight="32",
-                      tilecount="1", columns="1")
-    ET.SubElement(root, "image", source=f"{tile_name}.png", width="32", height="32")
-
+    
+    # Generate TSX
+    root = ET.Element("tileset", version="1.10", tiledversion="1.10.2", name=tile_name, tilewidth="32", tileheight="32", tilecount="1", columns="1")
+    image_element = ET.SubElement(root, "image", source=png_filename, width="32", height="32")
+    
     tree = ET.ElementTree(root)
+    # xml declaration is standard
     tree.write(tsx_path, encoding="UTF-8", xml_declaration=True)
+    
+    return png_path, tsx_path
