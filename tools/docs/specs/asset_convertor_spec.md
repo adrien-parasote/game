@@ -298,5 +298,21 @@ When running on macOS, `gui/app.py` dynamically injects the application icon (`a
 
 **Platform guard:** Wrap the AppKit import and injection call with `if sys.platform == "darwin":`. On non-macOS platforms (Linux, Windows), skip the injection silently — no error, no log message. A missing `pyobjc-framework-Cocoa` on macOS should also be caught with a `try/except ImportError` and silently skipped.
 
+### Window Startup Behaviour
+
+On launch, `App.__init__` schedules two deferred callbacks via `self.after()`:
+
+| Delay | Callback | Effect |
+|-------|----------|--------|
+| `0 ms` | `lambda: self.state("zoomed")` | Maximizes the window to fill the screen (uses the OS window manager, keeps macOS menu bar) |
+| `50 ms` | `self._focus_window()` | Brings the window to the foreground |
+
+The 50 ms gap is intentional: the `zoomed` state must be processed by the OS before the focus activation, otherwise the window-manager may ignore the focus request on a window still being resized.
+
+**`_focus_window()` sequence:**
+1. `self.lift()` — raises the window above all other windows in the Z-stack.
+2. `self.focus_force()` — forces keyboard focus to this window.
+3. `AppKit.NSApplication.sharedApplication().activateIgnoringOtherApps_(True)` — macOS-level activation, required to steal focus from the terminal or Dock. Silenced via `try/except (ImportError, AttributeError)` on non-macOS platforms.
+
 ### UI Language Constraint
 **Exception to Global Translation Rules:** The GUI interface of `asset_convertor` MUST strictly remain in French. While the internal code, variables, and comments follow English conventions, all user-facing labels in `gui/app.py` are strictly defined in French as per user request.

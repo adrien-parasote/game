@@ -98,6 +98,8 @@ class App(ctk.CTk):
         self.title("Convertisseur Autotile — RPG Maker → Tiled")
         self.geometry("1100x720")
         self.resizable(True, True)
+        self.after(0, lambda: self.state("zoomed"))
+        self.after(50, self._focus_window)
 
         self._state = AppState()
         self._photo_source: ctk.CTkImage | None = None
@@ -122,6 +124,16 @@ class App(ctk.CTk):
             if os.path.exists(icon_path):
                 ns_icon = AppKit.NSImage.alloc().initWithContentsOfFile_(icon_path)
                 ns_app.setApplicationIconImage_(ns_icon)
+        except (ImportError, AttributeError):
+            pass  # non-macOS or pyobjc not installed
+
+    def _focus_window(self) -> None:
+        """Bring the window to the foreground on launch."""
+        self.lift()
+        self.focus_force()
+        try:
+            import AppKit  # type: ignore[import-untyped]  # pyobjc, macOS only
+            AppKit.NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
         except (ImportError, AttributeError):
             pass  # non-macOS or pyobjc not installed
 

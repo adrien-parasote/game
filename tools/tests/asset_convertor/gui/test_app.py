@@ -120,3 +120,40 @@ def test_stop_animation():
     assert app._current_frame_idx == 0
     assert app._frame_sequence == [0]
     app.destroy()
+
+
+@pytest.mark.unit
+def test_focus_window_method_exists_and_is_callable():
+    """_focus_window must exist and not crash when called.
+
+    lift(), focus_force(), and AppKit activation are all silenced
+    in headless/test mode — this test just ensures the method is present
+    and doesn't raise.
+    """
+    from unittest.mock import patch
+
+    app = App()
+    with (
+        patch.object(app, "lift"),
+        patch.object(app, "focus_force"),
+    ):
+        app._focus_window()  # must not raise
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_zoomed_and_focus_scheduled_on_init():
+    """after() calls for zoomed state and _focus_window are registered at init.
+
+    We cannot assert the exact Tk after-ID, but we can verify that both
+    callbacks are registered by checking that after() is called with the
+    expected delay arguments during App.__init__.
+    """
+    from unittest.mock import call, patch
+
+    with patch("customtkinter.CTk.after", return_value="after#mock") as mock_after:
+        app = App()
+        delays = [c.args[0] for c in mock_after.call_args_list]
+        assert 0 in delays, "zoomed state must be scheduled with after(0, ...)"
+        assert 50 in delays, "_focus_window must be scheduled with after(50, ...)"
+        app.destroy()
