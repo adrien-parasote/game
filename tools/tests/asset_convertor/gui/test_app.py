@@ -86,22 +86,16 @@ def test_validate_dimensions_mv_valid_48px():
 
 @pytest.mark.unit
 def test_animation_controls_state_toggle():
-    """Animation controls appear in A1 secondary toolbar context."""
+    """Animation controls are enabled by default in A1 secondary toolbar context."""
     app = App()
 
     # Switch to A1 mode to get animation controls
     app._type_var.set("🎮 Animé")
     app._on_type_change("🎮 Animé")
 
-    # By default in A1 mode, controls should be disabled (animated=False)
+    # By default in A1 mode, controls should be enabled (animated=True)
     assert hasattr(app, "menu_anim_type")
     assert hasattr(app, "menu_speed")
-    assert app.menu_anim_type.cget("state") == "disabled"
-    assert app.menu_speed.cget("state") == "disabled"
-
-    # Enable animation
-    app._animated_var.set(True)
-    app._update_animation_controls_state()
     assert app.menu_anim_type.cget("state") == "normal"
     assert app.menu_speed.cget("state") == "normal"
 
@@ -158,3 +152,31 @@ def test_zoomed_and_focus_scheduled_on_init():
         assert 0 in delays, "zoomed state must be scheduled with after(0, ...)"
         assert 50 in delays, "_focus_window must be scheduled with after(50, ...)"
         app.destroy()
+
+
+@pytest.mark.unit
+def test_a1_conversion_preserves_2d_tiles():
+    """Test that A1 mode conversion stores a 2D list of tiles by frame in AppState."""
+    import dataclasses
+
+    from PIL import Image
+
+    app = App()
+    app._type_var.set("🎮 Animé")
+    app._on_type_change("🎮 Animé")
+
+    img = Image.new("RGBA", (192, 144))
+    app._state = dataclasses.replace(
+        app._state,
+        source_img=img,
+    )
+
+    app._convert_a2()
+
+    assert app._state.tiles is not None
+    assert isinstance(app._state.tiles, list)
+    assert len(app._state.tiles) == 2
+    assert isinstance(app._state.tiles[0], list)
+    assert len(app._state.tiles[0]) == 47
+
+    app.destroy()

@@ -423,3 +423,11 @@ tests/
       test_tsx_generator.py     [MODIFY] Add unit tests for vertical stacking and TSX loops
       test_converter_integration.py  [MODIFY] Add integration tests for GUI timer and full export
 ```
+
+---
+
+## Correction Log
+
+| Date | Issue | Fix | Author |
+|------|-------|-----|--------|
+| 2026-06-05 | `gui/app.py § Animation Mode Selection` specified an `Autotile Animé` checkbox (F9) with default unchecked. In the GUI Refactor (see `asset_convertor_mv_gui.md`), A1 is a dedicated resource type — clicking \"Animé A1\" in the primary toolbar implies animation. The redundant checkbox caused user confusion (why toggle something that's already implied by the type selection?). | **Removed checkbox.** `_on_type_change(\"🎮 Animé\")` now sets `animated=True` automatically. `AppState.tiles` type updated to `list[list[Image.Image]] \| list[Image.Image] \| None` to preserve the 2D frame list for canvas animation. Type dropdown and speed dropdown remain but are always enabled in A1 mode. | HARDEN doc-update |

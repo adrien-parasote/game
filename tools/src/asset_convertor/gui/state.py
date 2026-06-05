@@ -99,8 +99,8 @@ class AppState:
     result_img: Image.Image | None = None
     """Image produced by the converter. Displayed in the SORTIE panel."""
 
-    tiles: list[Image.Image] | None = None
-    """Flat list of tiles for canvas/export. Used by TSX exporter."""
+    tiles: list[list[Image.Image]] | list[Image.Image] | None = None
+    """List of frames (each a list of tiles) or flat list of tiles for canvas/export."""
 
     # --- Recolor (populated only when resource_type == "Recolor") ---
     recolor: RecolorState | None = None

@@ -135,6 +135,8 @@ class AppState:
     format:        FormatType   = "MV"   # SECONDARY axis (irrelevant for Recolor)
 
     # --- A1 context ---
+    # Note: animated=True is set automatically when resource_type changes to "A1".
+    # The A1 toolbar has no "Animé" checkbox — A1 is always animated by design.
     animated:  bool = False
     anim_type: str  = "Horizontale (Eau/Sol)"
     anim_speed_ms: int = 150
@@ -146,7 +148,7 @@ class AppState:
 
     # --- Conversion result ---
     result_img: Image.Image | None = None   # produced by converter, displayed in SORTIE panel
-    tiles: list[Image.Image] | None = None  # flat list of tiles for canvas/export
+    tiles: list[list[Image.Image]] | list[Image.Image] | None = None  # 2D for animated (frames×tiles), flat for static
 
     # --- Recolor (populated only when resource_type == "Recolor") ---
     recolor: RecolorState | None = None
@@ -220,7 +222,7 @@ A `CTkFrame` (row 1) that contains a single `CTkFrame` child — the **contextua
 | **A2** | `Format:` radio (MV / MZ / XP) — MZ grayed out (not yet implemented) |
 | **A3** | `Format:` radio (MV only) + small hint label "📐 Source attendue : 768×384 px" |
 | **A4** | `Format:` radio (MV only) + small hint label "📐 Source attendue : 768×720 px — Produit 2 strips" |
-| **A1** | `Format:` radio (MV / MZ / XP) + `☑ Animé` checkbox + `Type:` dropdown + `Vitesse:` dropdown |
+| **A1** | `Format:` radio (MV / MZ / XP) + `Type:` dropdown + `Vitesse:` dropdown. **No "Animé" checkbox** — A1 is always animated. `_on_type_change("🎮 Animé")` sets `animated=True` automatically. |
 | **Recolor** | No format selector. `☑ PNG` checkbox (always checked, disabled) + `☑ TSX` checkbox (auto-unchecked, disabled, gray). Label: "Mode Recolor — export TSX non applicable." |
 
 **MZ note:** MZ format selector radio is visible but disabled (no tooltip, CustomTkinter does not support native tooltips). No `convert_mz()` exists yet. Clicking the Convert button with MZ selected shows log message: "Format MZ non encore supporté."

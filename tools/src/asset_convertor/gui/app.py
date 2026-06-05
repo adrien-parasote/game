@@ -308,14 +308,8 @@ class App(ctk.CTk):
             )
             rb.grid(row=0, column=1 + i, padx=4)
 
-        # Animated checkbox
-        self._animated_var = tk.BooleanVar(value=self._state.animated)
-        cb = ctk.CTkCheckBox(
-            parent, text="Autotile Animé",
-            variable=self._animated_var,
-            command=self._on_animated_toggle,
-        )
-        cb.grid(row=0, column=4, padx=(16, 4))
+        # Animated state is always True for A1 (no checkbox widget needed)
+        self._animated_var = tk.BooleanVar(value=True)
 
         # Anim type dropdown
         self._anim_type_var = ctk.StringVar(value=self._state.anim_type)
@@ -324,7 +318,7 @@ class App(ctk.CTk):
             values=["Horizontale (Eau/Sol)", "Verticale (Cascade)"],
             width=165, command=self._on_anim_type_change,
         )
-        self.menu_anim_type.grid(row=0, column=5, padx=4)
+        self.menu_anim_type.grid(row=0, column=4, padx=(16, 4))
 
         # Speed dropdown
         self._speed_var = ctk.StringVar(value=f"{self._state.anim_speed_ms} ms")
@@ -333,7 +327,7 @@ class App(ctk.CTk):
             values=["100 ms", "150 ms", "200 ms", "300 ms", "500 ms"],
             width=90, command=self._on_speed_change,
         )
-        self.menu_speed.grid(row=0, column=6, padx=4)
+        self.menu_speed.grid(row=0, column=5, padx=4)
         self._update_animation_controls_state()
 
     def _build_secondary_recolor(self, parent: ctk.CTkFrame) -> None:
@@ -620,12 +614,14 @@ class App(ctk.CTk):
         else:
             rs = self._state.recolor if resource_type == "Recolor" else None
 
+        is_animated = (resource_type == "A1")
         self._state = dataclasses.replace(
             self._state,
             resource_type=resource_type,  # type: ignore[arg-type]
             export_tsx=export_tsx,
             recolor=rs,
             result_img=None,
+            animated=is_animated,
         )
 
         # Disable convert if no source
@@ -649,13 +645,6 @@ class App(ctk.CTk):
         )
         self._stop_animation()
         self.btn_export.configure(state="disabled")
-
-    def _on_animated_toggle(self) -> None:
-        is_anim = getattr(self, "_animated_var", None)
-        if is_anim is None:
-            return
-        self._state = dataclasses.replace(self._state, animated=is_anim.get())
-        self._update_animation_controls_state()
 
     def _on_anim_type_change(self, value: str) -> None:
         self._state = dataclasses.replace(self._state, anim_type=value)
@@ -734,13 +723,12 @@ class App(ctk.CTk):
                 tiles = convert_mv(img, is_animated=is_anim, animation_mode=anim_mode)
                 tile_size = tiles[0][0].width if tiles and tiles[0] else 48
 
-            flat_tiles = tiles[0] if tiles else []
             result_img = self._build_sheet_image(tiles, tile_size)
 
             self._state = dataclasses.replace(
                 self._state,
                 result_img=result_img,
-                tiles=flat_tiles,
+                tiles=tiles,
                 tile_size=tile_size,
             )
             self.after(0, lambda: self._on_convert_success_a2(tiles, tile_size))
