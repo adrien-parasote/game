@@ -274,6 +274,48 @@ def test_wall_4n_bitmask_to_idx_bijection():
     assert set(_WALL_4N_BITMASK_TO_IDX.values()) == set(range(16))
 
 
+@pytest.mark.unit
+def test_wall_4n_bitmask_isolated_maps_to_shape_15():
+    """TC-008: bitmask 0 (isolated, no neighbors) must map to shape 15.
+
+    Shape 15 uses all-corner quadrants [[0,0],[3,0],[0,3],[3,3]] — all 4 open edges.
+    An isolated tile shows all open edges → shape_idx=15.
+    """
+    from asset_convertor.gui.app import _WALL_4N_BITMASK_TO_IDX
+
+    assert _WALL_4N_BITMASK_TO_IDX[0] == 15, (
+        f"Isolated (bitmask 0) must map to shape 15, got {_WALL_4N_BITMASK_TO_IDX[0]}"
+    )
+
+
+@pytest.mark.unit
+def test_wall_4n_bitmask_fully_surrounded_maps_to_shape_0():
+    """TC-009: bitmask 15 (N+W+E+S all present) must map to shape 0.
+
+    Shape 0 uses all-interior quadrants [[2,2],[1,2],[2,1],[1,1]] — no visible edges.
+    A fully-surrounded tile has no open edges → shape_idx=0.
+    """
+    from asset_convertor.gui.app import _WALL_4N_BITMASK_TO_IDX
+
+    assert _WALL_4N_BITMASK_TO_IDX[15] == 0, (
+        f"Fully surrounded (bitmask 15) must map to shape 0, got {_WALL_4N_BITMASK_TO_IDX[15]}"
+    )
+
+
+@pytest.mark.unit
+def test_wall_4n_bitmask_north_only_maps_to_shape_13():
+    """TC-010: bitmask 2 (N only) must map to shape 13.
+
+    Shape 13 [[0,2],[3,2],[0,3],[3,3]]: qsy=2/3 (bottom-half interior for N),
+    qsx=0 (left open) and qsx=3 (right open) → W and E absent → N only.
+    """
+    from asset_convertor.gui.app import _WALL_4N_BITMASK_TO_IDX
+
+    assert _WALL_4N_BITMASK_TO_IDX[2] == 13, (
+        f"N-only (bitmask 2) must map to shape 13, got {_WALL_4N_BITMASK_TO_IDX[2]}"
+    )
+
+
 @pytest.mark.integration
 def test_a4_conversion_canvas_tiles_count():
     """IT-001: Full A4 conversion → AppState.tiles has 16 Image objects."""

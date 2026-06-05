@@ -403,3 +403,182 @@ def export_simple_sheet(
     tsx_path.write_text(xml_str, encoding="utf-8")
 
     return str(png_path), str(tsx_path)
+
+
+# ---------------------------------------------------------------------------
+# A4 wall sides — 4-neighbor edge wangset (16 tiles)
+# ---------------------------------------------------------------------------
+
+# shape_index (0-15) → 4N bitmask (N=2, W=8, E=4, S=1).
+# Derived from WALL_AUTOTILE_TABLE: center coords (qsx/qsy=1,2) = neighbor PRESENT;
+# outer coords (qsx/qsy=0,3) = edge visible = neighbor ABSENT.
+_WALL_SHAPE_TO_4N_BITMASK: list[int] = [
+    15,  # shape  0: N+W+E+S (fully surrounded — all interior quadrants)
+     7,  # shape  1: N+E+S
+    13,  # shape  2: W+E+S
+     5,  # shape  3: E+S
+    11,  # shape  4: N+W+S
+     3,  # shape  5: N+S
+     9,  # shape  6: W+S
+     1,  # shape  7: S only
+    14,  # shape  8: N+W+E
+     6,  # shape  9: N+E
+    12,  # shape 10: W+E
+     4,  # shape 11: E only
+    10,  # shape 12: N+W
+     2,  # shape 13: N only
+     8,  # shape 14: W only
+     0,  # shape 15: isolated (all edges open)
+]
+
+
+def wall4n_bitmask_to_wangid(bitmask: int) -> str:
+    """Convert a 4-neighbor wall bitmask to a Tiled edge wangid string.
+
+    Convention: N=2 (bit 1), E=4 (bit 2), S=1 (bit 0), W=8 (bit 3).
+    Tiled wangid order: [top, topRight, right, bottomRight, bottom, bottomLeft, left, topLeft].
+    For edge wangsets, corner positions (topRight, bottomRight, bottomLeft, topLeft) = 0.
+
+    Args:
+        bitmask: 4N wall bitmask in [0, 15].
+
+    Returns:
+        Comma-separated 8-value string e.g. "1,0,1,0,0,0,0,0".
+    """
+    n = (bitmask >> 1) & 1  # bit 1
+    e = (bitmask >> 2) & 1  # bit 2
+    s = (bitmask >> 0) & 1  # bit 0
+    w = (bitmask >> 3) & 1  # bit 3
+    return f"{n},0,{e},0,{s},0,{w},0"
+
+
+def generate_tsx_wall_sides(
+    name: str,
+    tile_size: int,
+    png_filename: str,
+) -> str:
+    """Generate a Tiled TSX with an edge wangset for A4 wall-side tiles (16 shapes).
+
+    The sides strip is 16 tiles wide (left-to-right = shape 0..15).
+    Each shape maps to a 4-neighbor bitmask via _WALL_SHAPE_TO_4N_BITMASK.
+
+    Args:
+        name:         Tileset name.
+        tile_size:    Tile width/height in pixels (square tiles assumed).
+        png_filename: Relative path to the PNG image from the TSX file.
+
+    Returns:
+        XML string (UTF-8, with declaration).
+    """
+    sheet_width = 16 * tile_size
+    sheet_height = tile_size
+
+    root = ET.Element(
+        "tileset",
+        {
+            "version": "1.10",
+            "tiledversion": TILED_VERSION,
+            "name": name,
+            "tilewidth": str(tile_size),
+            "tileheight": str(tile_size),
+            "spacing": "0",
+            "margin": "0",
+            "tilecount": "16",
+            "columns": "16",
+        },
+    )
+    ET.SubElement(
+        root,
+        "image",
+        {
+            "source": png_filename,
+            "width": str(sheet_width),
+            "height": str(sheet_height),
+        },
+    )
+
+    wangsets = ET.SubElement(root, "wangsets")
+    wangset = ET.SubElement(
+        wangsets,
+        "wangset",
+        {
+            "name": name,
+            "type": "edge",
+            "tile": "-1",
+        },
+    )
+    ET.SubElement(
+        wangset,
+        "wangcolor",
+        {
+            "name": name,
+            "color": WANG_COLOR,
+            "tile": "-1",
+            "probability": "1",
+        },
+    )
+    for shape_idx, bitmask in enumerate(_WALL_SHAPE_TO_4N_BITMASK):
+        ET.SubElement(
+            wangset,
+            "wangtile",
+            {
+                "tileid": str(shape_idx),
+                "wangid": wall4n_bitmask_to_wangid(bitmask),
+            },
+        )
+
+    tree = ET.ElementTree(root)
+    ET.indent(tree, space="  ")
+    buf = io.BytesIO()
+    tree.write(buf, encoding="utf-8", xml_declaration=True)
+    return buf.getvalue().decode("utf-8")
+
+
+def export_wall_sides_sheet(
+    sheet: Image.Image,
+    name: str,
+    output_dir: str | Path,
+    tile_size: int,
+) -> tuple[str, str]:
+    """Write A4 wall-side strip PNG and its edge-wangset TSX to disk.
+
+    The sheet must be exactly 16 tiles wide (16 * tile_size px) and 1 tile tall.
+
+    Args:
+        sheet:      Pre-assembled RGBA PIL Image (768x48 for tile_size=48).
+        name:       Base name (e.g. "dungeon_sides" → dungeon_sides.png + dungeon_sides.tsx).
+        output_dir: Directory to write files into (created if needed).
+        tile_size:  Tile width/height in pixels.
+
+    Returns:
+        Tuple of (png_path, tsx_path) as str.
+
+    Raises:
+        ValueError: if sheet width ≠ 16 * tile_size or height ≠ tile_size.
+        OSError:    if output_dir is not writable.
+    """
+    expected_w = 16 * tile_size
+    w, h = sheet.size
+    if w != expected_w or h % tile_size != 0:
+        raise ValueError(
+            f"Wall-sides sheet must be {expected_w}px wide; got {w}x{h}."
+        )
+
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    png_path = out / f"{name}.png"
+    tsx_path = out / f"{name}.tsx"
+
+    sheet.save(png_path)
+
+    rel_png = os.path.relpath(png_path, tsx_path.parent)
+    xml_str = generate_tsx_wall_sides(
+        name=name,
+        tile_size=tile_size,
+        png_filename=rel_png,
+    )
+    tsx_path.write_text(xml_str, encoding="utf-8")
+
+    return str(png_path), str(tsx_path)
+

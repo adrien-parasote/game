@@ -57,26 +57,30 @@ _GRID_DEFAULT: list[list[bool]] = [
 _BITMASK_TO_IDX: dict[int, int] = {bm: idx for idx, bm in enumerate(BLOB_BITMASKS)}
 
 # 4-neighbor wall bitmask lookup (A4 canvas, WALL_AUTOTILE_TABLE, 16 shapes)
-# Derived from WALL_AUTOTILE_TABLE coordinate analysis:
-#   qsx=0 → W present, qsx=3 → E present, qsy=0 → N present, qsy=3 → S present
+# Derived from WALL_AUTOTILE_TABLE quadrant analysis:
+#   qsx=1,2 → interior pixels → neighbor PRESENT on that side
+#   qsx=0   → left edge visible  → NO W neighbor
+#   qsx=3   → right edge visible → NO E neighbor
+#   qsy=0   → top edge visible   → NO N neighbor
+#   qsy=3   → bottom edge visible→ NO S neighbor
 # Convention: N=2, W=8, E=4, S=1
 _WALL_4N_BITMASK_TO_IDX: dict[int, int] = {
-    0:  0,   # isolated
-    8:  1,   # W
-    2:  2,   # N
-    10: 3,   # N+W
-    4:  4,   # E
-    12: 5,   # W+E
-    6:  6,   # N+E
-    14: 7,   # N+W+E
-    1:  8,   # S
-    9:  9,   # W+S
-    3:  10,  # N+S
-    11: 11,  # N+W+S
-    5:  12,  # E+S
-    13: 13,  # W+E+S
-    7:  14,  # N+E+S
-    15: 15,  # N+W+E+S
+    0:  15,  # isolated         — shape 15 [[0,0],[3,0],[0,3],[3,3]] all edges open
+    1:  7,   # S                — shape  7 [[0,0],[3,0],[0,1],[3,1]]
+    2:  13,  # N                — shape 13 [[0,2],[3,2],[0,3],[3,3]]
+    3:  5,   # N+S              — shape  5 [[0,2],[3,2],[0,1],[3,1]]
+    4:  11,  # E                — shape 11 [[0,0],[1,0],[0,3],[1,3]]
+    5:  3,   # E+S              — shape  3 [[0,0],[1,0],[0,1],[1,1]]
+    6:  9,   # N+E              — shape  9 [[0,2],[1,2],[0,3],[1,3]]
+    7:  1,   # N+E+S            — shape  1 [[0,2],[1,2],[0,1],[1,1]]
+    8:  14,  # W                — shape 14 [[2,0],[3,0],[2,3],[3,3]]
+    9:  6,   # W+S              — shape  6 [[2,0],[3,0],[2,1],[3,1]]
+    10: 12,  # N+W              — shape 12 [[2,2],[3,2],[2,3],[3,3]]
+    11: 4,   # N+W+S            — shape  4 [[2,2],[3,2],[2,1],[3,1]]
+    12: 10,  # W+E              — shape 10 [[2,0],[1,0],[2,3],[1,3]]
+    13: 2,   # W+E+S            — shape  2 [[2,0],[1,0],[2,1],[1,1]]
+    14: 8,   # N+W+E            — shape  8 [[2,2],[1,2],[2,3],[1,3]]
+    15: 0,   # N+W+E+S (full)   — shape  0 [[2,2],[1,2],[2,1],[1,1]] all interior
 }
 
 _logger = logging.getLogger(__name__)
@@ -988,29 +992,45 @@ class App(ctk.CTk):
             self._set_status(f"Erreur interne : {exc}", error=True)
 
     def _export_a4(self, out_dir: str, name: str) -> None:
-        """Export A4 as two PNG files (+ TSX if checked)."""
+        """Export A4 as two PNG files (+ TSX if checked).
+
+        - tops strip:  plain grid TSX (no wangset) via export_simple_sheet
+        - sides strip: edge-wangset TSX (16 tiles, 4-neighbor) via export_wall_sides_sheet
+        """
         if not hasattr(self, "_a4_tops"):
             return
         try:
+            from asset_convertor.exporters.tsx_generator import export_wall_sides_sheet
+
             export_tsx = self._export_tsx_var.get()
             tile_size = self._state.tile_size
             os.makedirs(out_dir, exist_ok=True)
             status_parts: list[str] = []
 
-            for strip_name, strip_img in (
-                (f"{name}_tops", self._a4_tops),
-                (f"{name}_sides", self._a4_sides),
-            ):
-                cols = strip_img.width // tile_size
-                if export_tsx:
-                    png_path, tsx_path = export_simple_sheet(
-                        strip_img, strip_name, out_dir, tile_size, columns=cols,
-                    )
-                    status_parts.append(f"{Path(png_path).name} + {Path(tsx_path).name}")
-                else:
-                    png_path = os.path.join(out_dir, f"{strip_name}.png")
-                    strip_img.save(png_path)
-                    status_parts.append(Path(png_path).name)
+            # Tops strip — plain grid tileset (blob export handled by wangset in tops TSX)
+            tops_name = f"{name}_tops"
+            tops_cols = self._a4_tops.width // tile_size
+            if export_tsx:
+                png_path, tsx_path = export_simple_sheet(
+                    self._a4_tops, tops_name, out_dir, tile_size, columns=tops_cols,
+                )
+                status_parts.append(f"{Path(png_path).name} + {Path(tsx_path).name}")
+            else:
+                png_path = os.path.join(out_dir, f"{tops_name}.png")
+                self._a4_tops.save(png_path)
+                status_parts.append(Path(png_path).name)
+
+            # Sides strip — edge wangset TSX (16 tiles, 4-neighbor wall system)
+            sides_name = f"{name}_sides"
+            if export_tsx:
+                png_path, tsx_path = export_wall_sides_sheet(
+                    self._a4_sides, sides_name, out_dir, tile_size,
+                )
+                status_parts.append(f"{Path(png_path).name} + {Path(tsx_path).name}")
+            else:
+                png_path = os.path.join(out_dir, f"{sides_name}.png")
+                self._a4_sides.save(png_path)
+                status_parts.append(Path(png_path).name)
 
             self._set_status(f"A4 exporté : {' | '.join(status_parts)} → {out_dir}")
         except (OSError, PermissionError) as exc:

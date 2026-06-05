@@ -261,3 +261,74 @@ def test_tc020_export_simple_sheet_bad_dimensions():
         pytest.raises(ValueError, match="not divisible by tile_size"),
     ):
         export_simple_sheet(bad_sheet, "bad", tmp, tile_size=48, columns=2)
+
+
+# ---------------------------------------------------------------------------
+# A4 wall-sides wangset — TC-021..026
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_tc021_wall4n_bitmask_to_wangid_isolated():
+    """TC-021: bitmask 0 (isolated) → all-zero wangid."""
+    from asset_convertor.exporters.tsx_generator import wall4n_bitmask_to_wangid
+
+    assert wall4n_bitmask_to_wangid(0) == "0,0,0,0,0,0,0,0"
+
+
+@pytest.mark.unit
+def test_tc022_wall4n_bitmask_to_wangid_all_neighbors():
+    """TC-022: bitmask 15 (N+W+E+S) → top/right/bottom/left all 1, corners 0."""
+    from asset_convertor.exporters.tsx_generator import wall4n_bitmask_to_wangid
+
+    # N=2 W=8 E=4 S=1 → all set → wangid "1,0,1,0,1,0,1,0"
+    assert wall4n_bitmask_to_wangid(15) == "1,0,1,0,1,0,1,0"
+
+
+@pytest.mark.unit
+def test_tc023_wall4n_bitmask_to_wangid_north_only():
+    """TC-023: bitmask 2 (N only) → only top=1."""
+    from asset_convertor.exporters.tsx_generator import wall4n_bitmask_to_wangid
+
+    assert wall4n_bitmask_to_wangid(2) == "1,0,0,0,0,0,0,0"
+
+
+@pytest.mark.unit
+def test_tc024_generate_tsx_wall_sides_has_wangsets():
+    """TC-024: generate_tsx_wall_sides XML must include a <wangsets> element."""
+    from asset_convertor.exporters.tsx_generator import generate_tsx_wall_sides
+
+    xml = generate_tsx_wall_sides("walls", tile_size=48, png_filename="walls_sides.png")
+    root = ET.fromstring(xml.split("\n", 1)[1])  # strip XML declaration line
+    assert root.find("wangsets") is not None, "TSX must contain <wangsets>"
+
+
+@pytest.mark.unit
+def test_tc025_generate_tsx_wall_sides_has_16_wangtiles():
+    """TC-025: wangset must declare exactly 16 <wangtile> elements."""
+    from asset_convertor.exporters.tsx_generator import generate_tsx_wall_sides
+
+    xml = generate_tsx_wall_sides("walls", tile_size=48, png_filename="walls_sides.png")
+    root = ET.fromstring(xml.split("\n", 1)[1])
+    wangtiles = root.findall(".//wangtile")
+    assert len(wangtiles) == 16, f"Expected 16 wangtiles, got {len(wangtiles)}"
+
+
+@pytest.mark.integration
+def test_tc026_export_wall_sides_sheet_writes_tsx_with_wangset(tmp_path):
+    """TC-026: export_wall_sides_sheet must write a TSX containing <wangsets>."""
+    from asset_convertor.exporters.tsx_generator import export_wall_sides_sheet
+
+    # 16 tiles wide, 1 row, 48px each → 768x48
+    sheet = Image.new("RGBA", (768, 48), (128, 64, 32, 255))
+    png_path, tsx_path = export_wall_sides_sheet(sheet, "walls", str(tmp_path), tile_size=48)
+
+    assert Path(png_path).exists(), "PNG must be written"
+    assert Path(tsx_path).exists(), "TSX must be written"
+
+    xml = Path(tsx_path).read_text()
+    root = ET.fromstring(xml.split("\n", 1)[1])
+    assert root.find("wangsets") is not None, "exported TSX must contain <wangsets>"
+    wangtiles = root.findall(".//wangtile")
+    assert len(wangtiles) == 16, f"expected 16 wangtiles, got {len(wangtiles)}"
+
