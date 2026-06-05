@@ -53,7 +53,7 @@ _VALID_BLOCK_SIZES: dict[tuple[int, int], int] = {
 # where half = tile_size // 2.
 # ---------------------------------------------------------------------------
 
-_FLOOR_AUTOTILE_TABLE: list[list[list[int]]] = [
+FLOOR_AUTOTILE_TABLE: list[list[list[int]]] = [
     [[2, 4], [1, 4], [2, 3], [1, 3]],  # shape  0
     [[2, 0], [1, 4], [2, 3], [1, 3]],  # shape  1
     [[2, 4], [3, 0], [2, 3], [1, 3]],  # shape  2
@@ -228,7 +228,7 @@ def _build_mv_tile(img: Image.Image, bitmask: int, tile_size: int) -> Image.Imag
         (Caller is responsible for downscaling 48→32 if required.)
     """
     shape = _bitmask_to_shape(bitmask)
-    quads_qs = _FLOOR_AUTOTILE_TABLE[shape]  # [[qsx_TL,qsy_TL], …]
+    quads_qs = FLOOR_AUTOTILE_TABLE[shape]  # [[qsx_TL,qsy_TL], …]
 
     half = tile_size // 2
     tile = Image.new("RGBA", (tile_size, tile_size))
