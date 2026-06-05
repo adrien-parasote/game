@@ -297,34 +297,72 @@ def convert_mv_a4(img: Image.Image) -> tuple[Image.Image, Image.Image]:
 1. Convert input to RGBA.
 2. Separate block rows by parity:
    - Even ty rows → wall-top blocks (process with FLOOR_AUTOTILE_TABLE, same algorithm as A2/A3)
-   - Odd ty rows → wall-side blocks (process with WALL_AUTOTILE_TABLE, same algorithm as A3)
+   - Odd ty rows → wall-side blocks (process with WALL_AUTOTILE_TABLE)
 3. For **wall-top blocks** (FLOOR table, 47 shapes):
-   - Same algorithm as `converter_mv.py` (A2). Reuse `_assemble_floor_tile()` helper.
+   - Use `by` from `_BY_LOOKUP_A4[ty]` directly (correct for floor blocks).
+   - Reuse `_assemble_floor_tile()` helper.
    - Output strip: 47 tiles wide × N_top_kinds rows.
 4. For **wall-side blocks** (WALL table, 16 shapes):
-   - Same algorithm as A3. Reuse `_assemble_wall_tile()` helper.
+   - ⚠️ **Do NOT use `_BY_LOOKUP_A4[ty]` for wall rows.** The lookup gives the Y offset
+     of the *floor template block* directly above the wall data, not the wall data itself.
+     The actual wall source always occupies the **last `_WALL_MINI_ROWS` (=4) mini-tile rows**
+     of the source image, regardless of `ty`.
+   - Compute wall source origin: `wall_mini_y0 = (src.height // mini) - _WALL_MINI_ROWS`
+   - Call `_assemble_wall_tile(src, bx, wall_mini_y0, shape, tile_size, mini)`.
    - Output strip: 16 tiles wide × N_side_kinds rows.
 5. Return `(wall_tops_strip, wall_sides_strip)`.
 
-### Helper Functions (private, shared between A3 and A4)
+### WALL_AUTOTILE_TABLE Coordinate Convention
+
+`WALL_AUTOTILE_TABLE[shape][q]` returns `[qsx, qsy]` — the mini-tile column and row
+offset **within the 4×4 mini-tile wall source block**.
+
+- **No axis inversion needed.** `qsx` and `qsy` map directly to pixel offsets:
+  ```python
+  src_x = (bx + qsx) * mini
+  src_y = wall_mini_y0 * mini + qsy * mini
+  ```
+- Row layout in the wall source block:
+  - `qsy = 0`: top row — edge cap / decorative border (top of wall visual)
+  - `qsy = 1, 2`: interior rows — stone/material body
+  - `qsy = 3`: bottom row — edge cap / decorative border (bottom of wall visual)
+- Column layout: `qsx = 0` = left border column, `qsx = 3` = right border column.
+
+> **Anti-pattern:** Do NOT invert `qsx` or `qsy` before computing source coordinates.
+> The table was authored to work with direct offsets. Inverting produces mirrored/
+> upside-down tiles that appear correct on symmetric textures but break on asymmetric ones.
+
+### Helper Functions (private)
 
 ```python
+def _get_wall_source_mini_y0(src: Image.Image, mini: int) -> int:
+    """Return the mini-tile row index of the wall source block origin.
+
+    Wall data always occupies the last _WALL_MINI_ROWS (=4) mini-rows of the
+    A4 source image. Use this as `by` when calling _assemble_wall_tile().
+    Do NOT use _BY_LOOKUP_A4 values for wall-side blocks.
+    """
+
 def _assemble_wall_tile(
     src: Image.Image,
-    bx: int,  # block column in mini-tiles
-    by: int,  # block row in mini-tiles
+    bx: int,     # block column offset in mini-tile units
+    by: int,     # MUST be _get_wall_source_mini_y0() — NOT _BY_LOOKUP_A4
     shape: int,  # 0–15
+    tile_size: int,
+    mini: int,
 ) -> Image.Image:
-    """Assemble one 48×48 tile from WALL_AUTOTILE_TABLE[shape]."""
+    """Assemble one tile_size×tile_size tile from WALL_AUTOTILE_TABLE[shape].
+    Use qsx/qsy directly. No axis inversion."""
 
 def _assemble_floor_tile(
     src: Image.Image,
     bx: int,
-    by: int,
+    by: int,     # from _BY_LOOKUP_A4 — correct for floor blocks
     shape: int,  # 0–46
+    tile_size: int,
+    mini: int,
 ) -> Image.Image:
-    """Assemble one 48×48 tile from FLOOR_AUTOTILE_TABLE[shape].
-    Import logic from converter_mv.py rather than duplicating."""
+    """Assemble one tile_size×tile_size tile from FLOOR_AUTOTILE_TABLE[shape]."""
 ```
 
 ---

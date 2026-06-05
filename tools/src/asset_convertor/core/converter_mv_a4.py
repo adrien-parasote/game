@@ -43,6 +43,10 @@ _VALID_BLOCK_SIZES_A4: dict[int, int] = {
 # ty=0..5 → by = [0, 3, 5, 8, 10, 13]
 _BY_LOOKUP_A4: dict[int, int] = {0: 0, 1: 3, 2: 5, 3: 8, 4: 10, 5: 13}
 
+# Wall source occupies the last _WALL_MINI_ROWS mini-rows of the A4 source image.
+# 2 tile-rows = 4 mini-rows.
+_WALL_MINI_ROWS = 4
+
 # Output geometry constants (tile-size-independent)
 _TOP_SHEET_COLS = 8
 _TOP_SHEET_ROWS = 6    # 47 tiles + 1 padding = 48 slots = 6×8
@@ -108,12 +112,17 @@ def convert_mv_a4(img: Image.Image) -> tuple[Image.Image, Image.Image]:
                 sheet = _build_floor_sheet(src, bx, by, tile_size, mini, top_output_w)
                 top_strips.append(sheet)
         else:
-            # WALL row (wall sides) — 16 shapes, 16×1 strip per kind
+            # WALL row (wall sides) — 16 shapes, 16×1 strip per kind.
+            # The wall source occupies the last _WALL_MINI_ROWS mini-rows of each
+            # block column — compute its absolute Y origin from the source height.
+            wall_mini_y0 = _get_wall_source_mini_y0(src, mini)
             for tx in range(n_cols):
                 bx = tx * 2
-                if _is_block_empty(src, bx, by, mini, block_size):
+                if _is_block_empty(src, bx, wall_mini_y0, mini, block_size):
                     continue
-                strip = _assemble_wall_tile_strip(src, bx, by, tile_size, mini, side_output_w)
+                strip = _assemble_wall_tile_strip(
+                    src, bx, wall_mini_y0, tile_size, mini, side_output_w
+                )
                 side_strips.append(strip)
 
     # Build output images
@@ -195,6 +204,20 @@ def _is_block_empty(
     return a.getextrema()[1] == 0
 
 
+def _get_wall_source_mini_y0(src: Image.Image, mini: int) -> int:
+    """Return the mini-tile row index of the wall source block origin.
+
+    In the A4 single-type source layout:
+      - Top _FLOOR_MINI_ROWS mini-rows (= 3 tile-rows) → floor autotile
+      - Bottom _WALL_MINI_ROWS mini-rows (= 2 tile-rows) → wall side autotile
+
+    For multi-type sources the bottom _WALL_MINI_ROWS still hold the last
+    wall block — but since we iterate ty by parity, the caller passes only
+    one ty=odd block at a time, always targeting the last 4 mini-rows.
+    """
+    return (src.height - _WALL_MINI_ROWS * mini) // mini
+
+
 def _assemble_floor_tile(
     src: Image.Image, bx: int, by: int, shape: int, tile_size: int, mini: int
 ) -> Image.Image:
@@ -230,27 +253,38 @@ def _assemble_wall_tile(
     """
     Assemble one tile_size×tile_size tile from WALL_AUTOTILE_TABLE[shape].
 
+    Coordinate convention:
+        WALL_AUTOTILE_TABLE [qsx, qsy] coordinates map directly to the source
+        mini-tile grid without any axis inversion.  The wall source block
+        starts at pixel y = by * mini, where `by` MUST be the value returned
+        by _get_wall_source_mini_y0() (i.e. the last _WALL_MINI_ROWS mini-rows
+        of the source image), NOT the _BY_LOOKUP_A4 value which points to the
+        intermediate block used for the floor template.
+
     Args:
         src: Source RGBA image.
-        bx: Block column in mini-tile units.
-        by: Block row in mini-tile units.
+        bx: Block column offset in mini-tile units (horizontal only).
+        by: Wall source block row in mini-tile units — use _get_wall_source_mini_y0().
         shape: Shape index 0-15 from WALL_AUTOTILE_TABLE.
         tile_size: Output tile size in pixels (32 or 48).
         mini: Half of tile_size (mini-tile edge length).
     """
-    tile = Image.new("RGBA", (tile_size, tile_size))
+    out = Image.new("RGBA", (tile_size, tile_size))
     quads = WALL_AUTOTILE_TABLE[shape]
 
     dst_positions = [(0, 0), (mini, 0), (0, mini), (mini, mini)]
 
     for q, (dst_x, dst_y) in enumerate(dst_positions):
         qsx, qsy = quads[q]
+        # Use qsx/qsy directly: WALL_AUTOTILE_TABLE coords map straight to source
+        # mini-tile positions. No axis inversion needed.
+        # `by` must be _get_wall_source_mini_y0() so we land on the real wall data.
         src_x = (bx + qsx) * mini
-        src_y = (by + qsy) * mini
+        src_y = by * mini + qsy * mini
         crop = src.crop((src_x, src_y, src_x + mini, src_y + mini))
-        tile.paste(crop, (dst_x, dst_y))
+        out.paste(crop, (dst_x, dst_y))
 
-    return tile
+    return out
 
 
 def _build_floor_sheet(

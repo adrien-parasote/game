@@ -27,7 +27,7 @@ from typing import cast
 
 import customtkinter as ctk
 from asset_convertor.core.constants import TILE_SIZE
-from asset_convertor.core.converter_mv import convert_mv
+from asset_convertor.core.converter_mv import _bitmask_to_shape, convert_mv
 from asset_convertor.core.converter_mv_a3 import convert_mv_a3
 from asset_convertor.core.converter_mv_a4 import convert_mv_a4
 from asset_convertor.core.converter_xp import BLOB_BITMASKS, convert_xp
@@ -52,6 +52,16 @@ _GRID_DEFAULT: list[list[bool]] = [
     [True,  True,  True,  True,  True ],
     [True,  True,  True,  True,  True ],
     [False, True,  True,  True,  False],
+]
+
+# Default canvas pattern for A4 Mur (4-neighbor wall):
+# 2-row horizontal strip showing top-cap row + body row with left/right edges.
+_GRID_WALL_DEFAULT: list[list[bool]] = [
+    [False, False, False, False, False],
+    [False, False, False, False, False],
+    [True,  True,  True,  True,  True ],
+    [True,  True,  True,  True,  True ],
+    [False, False, False, False, False],
 ]
 
 _BITMASK_TO_IDX: dict[int, int] = {bm: idx for idx, bm in enumerate(BLOB_BITMASKS)}
@@ -472,11 +482,11 @@ class App(ctk.CTk):
             btn_frame, text="✕ Effacer", width=90, command=self._clear_canvas_grid,
         ).pack(side="left", padx=2)
 
-        # A4-only toggle: Mur (sides, 4N) vs Sol (tops, blob)
+        # A4-only toggle: Mur (sides, 4N) vs Top (tops, blob)
         self._a4_canvas_mode_var = tk.StringVar(value="Mur")
         self._a4_mode_toggle = ctk.CTkSegmentedButton(
             self._canvas_frame,
-            values=["Mur", "Sol"],
+            values=["Mur", "Top"],
             variable=self._a4_canvas_mode_var,
             command=self._on_a4_canvas_mode_change,
             width=180,
@@ -849,16 +859,19 @@ class App(ctk.CTk):
                 for i in range(16)
             ]
 
-            # 47 wall-top tiles from the first row of tops_img (FLOOR_AUTOTILE_TABLE, blob canvas)
-            # tops_img is 8 cols × 6 rows; tile slot i is at col=i%8, row=i//8
+            # 47 wall-top tiles in canvas-correct order (BLOB_BITMASKS order).
+            # The canvas maps bitmask -> idx via _BITMASK_TO_IDX = {bm: i for i, bm in BLOB_BITMASKS}.
+            # So active_tiles[i] must be the tile visually correct for BLOB_BITMASKS[i].
+            # tops_img has shape s at grid col=s%8, row=s//8 (from _build_floor_sheet).
+            # The correct shape for canvas index i is _bitmask_to_shape(BLOB_BITMASKS[i]).
             wall_top_tiles: list[Image.Image] = [
                 tops_img.crop((
-                    (i % 8) * tile_size,
-                    (i // 8) * tile_size,
-                    (i % 8 + 1) * tile_size,
-                    (i // 8 + 1) * tile_size,
+                    (_bitmask_to_shape(bm) % 8) * tile_size,
+                    (_bitmask_to_shape(bm) // 8) * tile_size,
+                    (_bitmask_to_shape(bm) % 8 + 1) * tile_size,
+                    (_bitmask_to_shape(bm) // 8 + 1) * tile_size,
                 ))
-                for i in range(47)
+                for bm in BLOB_BITMASKS
             ]
 
             self._state = dataclasses.replace(
@@ -930,18 +943,20 @@ class App(ctk.CTk):
         w, h = result_img.size
         self.lbl_output_info.configure(text=f"A4 : {w}x{h} px")
         self._set_status(f"A4 : conversion réussie — {w}x{h} px.")
-        # Default to Mur (sides) canvas
+        # Default to Mur (sides) canvas with the 2-row horizontal wall pattern
         self._a4_canvas_mode_var.set("Mur")
-        self._draw_canvas_pattern(wall_side_tiles, tile_size)
+        self._canvas_grid = [row[:] for row in _GRID_WALL_DEFAULT]
+        self._redraw_canvas_grid()
+        self.lbl_canvas_info.configure(
+            text="Cliquez pour dessiner — bitmask 4-voisins (Mur)"
+        )
 
     def _on_a4_canvas_mode_change(self, mode: str) -> None:
-        """Switch canvas between Mur (4-neighbor sides) and Sol (blob tops)."""
+        """Switch canvas between Mur (4-neighbor sides) and Top (blob tops)."""
         if not hasattr(self, "_a4_wall_side_tiles"):
             return
-        tile_size = self._state.tile_size
-        if mode == "Sol":
+        if mode == "Top":
             tiles: list[Image.Image] = self._a4_wall_top_tiles
-            # Temporarily override state tiles to blob for _redraw_canvas_grid
             self._state = dataclasses.replace(self._state, tiles=tiles)
             self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
             self._redraw_canvas_grid()
@@ -951,7 +966,7 @@ class App(ctk.CTk):
         else:
             tiles = self._a4_wall_side_tiles
             self._state = dataclasses.replace(self._state, tiles=tiles)
-            self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
+            self._canvas_grid = [row[:] for row in _GRID_WALL_DEFAULT]
             self._redraw_canvas_grid()
             self.lbl_canvas_info.configure(
                 text="Cliquez pour dessiner — bitmask 4-voisins (Mur)"
@@ -1299,7 +1314,7 @@ class App(ctk.CTk):
         self._redraw_canvas_grid()
         if self._state.resource_type == "A4":
             mode = self._a4_canvas_mode_var.get()
-            if mode == "Sol":
+            if mode == "Top":
                 self.lbl_canvas_info.configure(
                     text="Cliquez pour dessiner — bitmask 8-voisins (Sol/Toit)"
                 )
@@ -1321,7 +1336,13 @@ class App(ctk.CTk):
             self._redraw_canvas_grid()
 
     def _load_test_pattern(self) -> None:
-        self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
+        is_wall_mode = (
+            self._state.resource_type == "A4"
+            and getattr(self, "_a4_canvas_mode_var", None) is not None
+            and self._a4_canvas_mode_var.get() == "Mur"
+        )
+        grid = _GRID_WALL_DEFAULT if is_wall_mode else _GRID_DEFAULT
+        self._canvas_grid = [row[:] for row in grid]
         self._redraw_canvas_grid()
 
     def _clear_canvas_grid(self) -> None:
