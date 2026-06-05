@@ -1,30 +1,39 @@
 """
 Convertisseur Autotile - RPG Maker -> Tiled
 
-Interface customtkinter 3 panneaux :
-  - SOURCE : previsualisation de l'autotile d'entree
-  - SORTIE TILED : grille 8x6 des 47 tuiles converties  # noqa: RUF002
-  - APERCU CANVAS : motif de test 5x5  # noqa: RUF002
+Interface customtkinter — architecture dual-toolbar v2 :
 
-Spec : tools/docs/specs/autotile_converter_spec.md section gui/app.py
+  Toolbar 1 (Primaire)  : Type de ressource [Ground A2 | Bâtiment A3 | Mur A4 | Animé A1 | Recolor]
+  Toolbar 2 (Secondaire): Contexte dynamique selon le type sélectionné
+  Panels (3 colonnes)   : SOURCE | SORTIE | APERÇU (Canvas ou RecolorPanel selon le type)
+  Log                   : Journal terminal
+  Footer                : Export PNG / TSX + dossier de sortie + barre de statut
+
+Spec : tools/docs/specs/asset_convertor_mv_gui.md
 """
 
 from __future__ import annotations
 
+import dataclasses
 import datetime
 import os
+import sys
 import threading
 import tkinter as tk
-from dataclasses import dataclass, field
 from pathlib import Path
 from tkinter import filedialog
-from typing import Literal, cast
+from typing import cast
 
 import customtkinter as ctk
 from asset_convertor.core.constants import TILE_SIZE
 from asset_convertor.core.converter_mv import convert_mv
+from asset_convertor.core.converter_mv_a3 import convert_mv_a3
+from asset_convertor.core.converter_mv_a4 import convert_mv_a4
 from asset_convertor.core.converter_xp import BLOB_BITMASKS, convert_xp
+from asset_convertor.core.recolor import extract_palette
 from asset_convertor.exporters.tsx_generator import assemble_sheet, export
+from asset_convertor.gui.recolor_panel import RecolorPanel
+from asset_convertor.gui.state import AppState, RecolorState
 from PIL import Image, ImageTk
 
 # ── Configuration UI ─────────────────────────────────────────────────────────
@@ -34,9 +43,8 @@ ctk.set_default_color_theme("blue")
 
 OUTPUT_DIR_DEFAULT = str(Path(__file__).parents[3] / "src" / "output")
 
-_CELL_SIZE = TILE_SIZE  # display size of each cell in the interactive canvas
+_CELL_SIZE = TILE_SIZE  # interactive canvas cell size
 
-# Default 5x5 test grid - matches the former _TEST_PATTERN
 _GRID_DEFAULT: list[list[bool]] = [
     [False, True,  True,  True,  False],
     [True,  True,  True,  True,  True ],
@@ -47,13 +55,19 @@ _GRID_DEFAULT: list[list[bool]] = [
 
 _BITMASK_TO_IDX: dict[int, int] = {bm: idx for idx, bm in enumerate(BLOB_BITMASKS)}
 
+# Label shown in primary toolbar → internal ResourceType value
+_TYPE_LABEL_MAP: dict[str, str] = {
+    "Ground A2":   "A2",
+    "Bâtiment A3": "A3",
+    "Mur A4":      "A4",
+    "Animé A1":    "A1",
+    "Recolor":     "Recolor",
+}
+_LABEL_BY_TYPE: dict[str, str] = {v: k for k, v in _TYPE_LABEL_MAP.items()}
+
 
 def _compute_cell_bitmask(grid: list[list[bool]], row: int, col: int) -> int:
-    """Compute 8-neighbor blob bitmask for a cell in the interactive grid.
-
-    Diagonal bits follow blob rules: set only when both adjacent cardinals are set.
-    Convention: NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, SE=128.
-    """
+    """Compute 8-neighbor blob bitmask for a cell. NW=1,N=2,NE=4,W=8,E=16,SW=32,S=64,SE=128."""
     rows = len(grid)
     cols = len(grid[0]) if rows else 0
 
@@ -76,19 +90,6 @@ def _compute_cell_bitmask(grid: list[list[bool]], row: int, col: int) -> int:
     )
 
 
-# ── Internal state dataclass ──────────────────────────────────────────────────
-
-
-@dataclass
-class AppState:
-    source_path: str | None = None
-    source_img: Image.Image | None = None
-    mode: Literal["XP", "MV", "MZ"] = "MV"
-    tiles: list[list[Image.Image]] | list[Image.Image] | None = None
-    tile_size: int = 32
-    output_dir: str = field(default_factory=lambda: OUTPUT_DIR_DEFAULT)
-
-
 # ── Main application ──────────────────────────────────────────────────────────
 
 
@@ -96,147 +97,264 @@ class App(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
         self.title("Convertisseur Autotile — RPG Maker → Tiled")
-        self.geometry("1100x720")
+        self.geometry("1200x800")
         self.resizable(True, True)
         self.after(0, lambda: self.state("zoomed"))
         self.after(50, self._focus_window)
 
-        self._state = AppState()
+        # State
+        self._state = AppState(output_dir=OUTPUT_DIR_DEFAULT)
+
+        # Animation state
+        self._timer_id: str | None = None
+        self._current_frame_idx: int = 0
+        self._frame_sequence: list[int] = [0]
+
+        # Photo refs (prevent GC)
         self._photo_source: ctk.CTkImage | None = None
         self._photo_output: ctk.CTkImage | None = None
         self._canvas_photos: list[ImageTk.PhotoImage] = []
         self._canvas_grid: list[list[bool]] = [row[:] for row in _GRID_DEFAULT]
 
-        self._timer_id: str | None = None
-        self._current_frame_idx: int = 0
-        self._frame_sequence: list[int] = [0]
+        # RecolorPanel ref (created/destroyed on type change)
+        self._recolor_panel: RecolorPanel | None = None
+
+        # Log visibility
+        self._log_visible_var = tk.BooleanVar(value=True)
 
         self._setup_icon()
         self._build_ui()
         self._reset_panels()
 
+        if sys.platform == "darwin":
+            self._build_macos_menu()
+
+    # ── Startup ───────────────────────────────────────────────────────────────
+
     def _setup_icon(self) -> None:
-        """macOS icon via AppKit (silenced if unavailable)."""
         try:
-            import AppKit  # type: ignore[import-untyped]  # pyobjc, macOS only
+            import AppKit  # type: ignore[import-untyped]
             ns_app = AppKit.NSApplication.sharedApplication()
             icon_path = os.path.join(os.path.dirname(__file__), "assets", "icon.png")
             if os.path.exists(icon_path):
                 ns_icon = AppKit.NSImage.alloc().initWithContentsOfFile_(icon_path)
                 ns_app.setApplicationIconImage_(ns_icon)
         except (ImportError, AttributeError):
-            pass  # non-macOS or pyobjc not installed
+            pass
 
     def _focus_window(self) -> None:
-        """Bring the window to the foreground on launch."""
         self.lift()
         self.focus_force()
         try:
-            import AppKit  # type: ignore[import-untyped]  # pyobjc, macOS only
+            import AppKit  # type: ignore[import-untyped]
             AppKit.NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
         except (ImportError, AttributeError):
-            pass  # non-macOS or pyobjc not installed
+            pass
+
+    # ── macOS Menu ────────────────────────────────────────────────────────────
+
+    def _build_macos_menu(self) -> None:
+        menu = tk.Menu(self)
+        self.configure(menu=menu)
+
+        file_menu = tk.Menu(menu, tearoff=0)
+        menu.add_cascade(label="Fichier", menu=file_menu)
+        file_menu.add_command(label="Ouvrir…", command=self._open_file, accelerator="Cmd+O")
+        file_menu.add_separator()
+        file_menu.add_command(label="Quitter", command=self.quit, accelerator="Cmd+Q")
+
+        view_menu = tk.Menu(menu, tearoff=0)
+        menu.add_cascade(label="Affichage", menu=view_menu)
+        view_menu.add_checkbutton(
+            label="Journal", variable=self._log_visible_var,
+            command=self._toggle_log,
+        )
+
+    def _toggle_log(self) -> None:
+        if self._log_visible_var.get():
+            self._log_frame.grid()
+        else:
+            self._log_frame.grid_remove()
 
     # ── UI Construction ───────────────────────────────────────────────────────
 
     def _build_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)  # panels row expands
 
-        self._build_toolbar()
+        self._build_primary_toolbar()
+        self._build_secondary_toolbar()
         self._build_panels()
-        self._build_log()    # row 2 — journal terminal
-        self._build_footer() # row 3
+        self._build_log()
+        self._build_footer()
 
-    def _build_toolbar(self) -> None:
+    # ── Primary Toolbar (row 0) ───────────────────────────────────────────────
+
+    def _build_primary_toolbar(self) -> None:
         bar = ctk.CTkFrame(self, height=56, corner_radius=0)
         bar.grid(row=0, column=0, sticky="ew", padx=0, pady=0)
-
-        # Configure columns: left content cols 0-4, spacer col 5, right content cols 6-9
-        bar.grid_columnconfigure(5, weight=1)
+        bar.grid_columnconfigure(2, weight=1)  # spacer between seg button and convert
 
         # Open button
         self.btn_open = ctk.CTkButton(
-            bar,
-            text="📂 Ouvrir un autotile",
-            width=180,
-            command=self._open_file,
+            bar, text="📂 Ouvrir", width=130, command=self._open_file,
         )
         self.btn_open.grid(row=0, column=0, padx=(12, 8), pady=10)
 
-        # Format selector
-        ctk.CTkLabel(bar, text="Format :").grid(row=0, column=1, padx=(4, 4))
-        self._mode_var = ctk.StringVar(value="MV")
-        for i, mode in enumerate(("XP", "MV", "MZ")):
-            rb = ctk.CTkRadioButton(
-                bar,
-                text=mode,
-                variable=self._mode_var,
-                value=mode,
-                command=self._on_mode_change,
-            )
-            rb.grid(row=0, column=2 + i, padx=4)
-
-        # Spacer label to push animation controls and convert button to the right
-        spacer = ctk.CTkLabel(bar, text="")
-        spacer.grid(row=0, column=5, sticky="ew")
-
-        # Animation controls variables
-        self._animated_var = tk.BooleanVar(value=False)
-        self._anim_type_var = ctk.StringVar(value="Horizontale (Eau/Sol)")
-        self._speed_var = ctk.StringVar(value="150 ms")
-
-        # Checkbox "Autotile Animé"
-        self.cb_animated = ctk.CTkCheckBox(
+        # Resource type selector (segmented button)
+        self._type_var = ctk.StringVar(value="Ground A2")
+        self.seg_type = ctk.CTkSegmentedButton(
             bar,
-            text="Autotile Animé",
+            values=list(_TYPE_LABEL_MAP.keys()),
+            variable=self._type_var,
+            command=self._on_type_change,
+        )
+        self.seg_type.grid(row=0, column=1, padx=(4, 4), pady=10)
+
+        # Spacer
+        ctk.CTkLabel(bar, text="").grid(row=0, column=2, sticky="ew")
+
+        # Convert / Apply button
+        self.btn_convert = ctk.CTkButton(
+            bar, text="⚙ Convertir", width=140,
+            state="disabled", command=self._run_conversion,
+        )
+        self.btn_convert.grid(row=0, column=3, padx=(8, 12), pady=10)
+
+    # ── Secondary Toolbar (row 1) ─────────────────────────────────────────────
+
+    def _build_secondary_toolbar(self) -> None:
+        self._secondary_bar = ctk.CTkFrame(
+            self, height=52, corner_radius=0,
+            fg_color=("gray85", "gray17"),
+        )
+        self._secondary_bar.grid(row=1, column=0, sticky="ew", padx=0, pady=0)
+        self._secondary_bar.grid_columnconfigure(0, weight=1)
+
+        # Placeholder — will be replaced on first _swap_secondary call
+        self._secondary_content: ctk.CTkFrame = ctk.CTkFrame(
+            self._secondary_bar, fg_color="transparent",
+        )
+        self._secondary_content.grid(row=0, column=0, sticky="ew")
+
+        # Build initial context for A2
+        self._swap_secondary("A2")
+
+    def _swap_secondary(self, resource_type: str) -> None:
+        """Replace the secondary toolbar content for the given resource type."""
+        self._secondary_content.destroy()
+        self._secondary_content = ctk.CTkFrame(
+            self._secondary_bar, fg_color="transparent",
+        )
+        self._secondary_content.grid(row=0, column=0, sticky="ew")
+
+        builders = {
+            "A2":     self._build_secondary_a2,
+            "A3":     self._build_secondary_a3,
+            "A4":     self._build_secondary_a4,
+            "A1":     self._build_secondary_a1,
+            "Recolor": self._build_secondary_recolor,
+        }
+        builder = builders.get(resource_type, self._build_secondary_a2)
+        builder(self._secondary_content)
+
+    def _build_secondary_a2(self, parent: ctk.CTkFrame) -> None:
+        """A2: Format selector (MV / XP / MZ-disabled)."""
+        ctk.CTkLabel(parent, text="Format :").grid(row=0, column=0, padx=(16, 4), pady=10)
+        self._format_var = ctk.StringVar(value=self._state.format)
+        for i, fmt in enumerate(("XP", "MV", "MZ")):
+            state = "disabled" if fmt == "MZ" else "normal"
+            rb = ctk.CTkRadioButton(
+                parent, text=fmt, variable=self._format_var,
+                value=fmt, state=state,
+                command=self._on_format_change,
+            )
+            rb.grid(row=0, column=1 + i, padx=4)
+
+    def _build_secondary_a3(self, parent: ctk.CTkFrame) -> None:
+        """A3: MV only + hint label."""
+        ctk.CTkLabel(parent, text="Format :").grid(row=0, column=0, padx=(16, 4), pady=10)
+        self._format_var = ctk.StringVar(value="MV")
+        ctk.CTkRadioButton(
+            parent, text="MV", variable=self._format_var, value="MV",
+        ).grid(row=0, column=1, padx=4)
+        ctk.CTkLabel(
+            parent, text="📐 Source attendue : 768x384 px",
+            text_color="gray", font=ctk.CTkFont(size=11),
+        ).grid(row=0, column=2, padx=(16, 4))
+
+    def _build_secondary_a4(self, parent: ctk.CTkFrame) -> None:
+        """A4: MV only + hint label (produces 2 strips)."""
+        ctk.CTkLabel(parent, text="Format :").grid(row=0, column=0, padx=(16, 4), pady=10)
+        self._format_var = ctk.StringVar(value="MV")
+        ctk.CTkRadioButton(
+            parent, text="MV", variable=self._format_var, value="MV",
+        ).grid(row=0, column=1, padx=4)
+        ctk.CTkLabel(
+            parent, text="📐 Source attendue : 768x720 px — Produit 2 strips",
+            text_color="gray", font=ctk.CTkFont(size=11),
+        ).grid(row=0, column=2, padx=(16, 4))
+
+    def _build_secondary_a1(self, parent: ctk.CTkFrame) -> None:
+        """A1: Format selector + animation controls."""
+        ctk.CTkLabel(parent, text="Format :").grid(row=0, column=0, padx=(16, 4), pady=10)
+        self._format_var = ctk.StringVar(value=self._state.format)
+        for i, fmt in enumerate(("XP", "MV", "MZ")):
+            state = "disabled" if fmt == "MZ" else "normal"
+            rb = ctk.CTkRadioButton(
+                parent, text=fmt, variable=self._format_var,
+                value=fmt, state=state,
+                command=self._on_format_change,
+            )
+            rb.grid(row=0, column=1 + i, padx=4)
+
+        # Animated checkbox
+        self._animated_var = tk.BooleanVar(value=self._state.animated)
+        cb = ctk.CTkCheckBox(
+            parent, text="Autotile Animé",
             variable=self._animated_var,
             command=self._on_animated_toggle,
         )
-        self.cb_animated.grid(row=0, column=6, padx=(8, 4), pady=10)
+        cb.grid(row=0, column=4, padx=(16, 4))
 
-        # OptionMenu for Type d'animation
+        # Anim type dropdown
+        self._anim_type_var = ctk.StringVar(value=self._state.anim_type)
         self.menu_anim_type = ctk.CTkOptionMenu(
-            bar,
-            variable=self._anim_type_var,
+            parent, variable=self._anim_type_var,
             values=["Horizontale (Eau/Sol)", "Verticale (Cascade)"],
-            width=165,
-            command=self._on_anim_type_change,
+            width=165, command=self._on_anim_type_change,
         )
-        self.menu_anim_type.grid(row=0, column=7, padx=4, pady=10)
+        self.menu_anim_type.grid(row=0, column=5, padx=4)
 
-        # OptionMenu for Vitesse
+        # Speed dropdown
+        self._speed_var = ctk.StringVar(value=f"{self._state.anim_speed_ms} ms")
         self.menu_speed = ctk.CTkOptionMenu(
-            bar,
-            variable=self._speed_var,
+            parent, variable=self._speed_var,
             values=["100 ms", "150 ms", "200 ms", "300 ms", "500 ms"],
-            width=90,
-            command=self._on_speed_change,
+            width=90, command=self._on_speed_change,
         )
-        self.menu_speed.grid(row=0, column=8, padx=4, pady=10)
-
-        # Convert button
-        self.btn_convert = ctk.CTkButton(
-            bar,
-            text="⚙ Convertir",
-            width=130,
-            state="disabled",
-            command=self._convert,
-        )
-        self.btn_convert.grid(row=0, column=9, padx=(16, 12), pady=10)
-
-        # Initial state of animation controls
+        self.menu_speed.grid(row=0, column=6, padx=4)
         self._update_animation_controls_state()
 
-    def _build_panels(self) -> None:
-        container = ctk.CTkFrame(self, fg_color="transparent")
-        container.grid(row=1, column=0, sticky="nsew", padx=8, pady=4)
-        container.grid_columnconfigure((0, 1, 2), weight=1)
-        container.grid_rowconfigure(0, weight=1)
+    def _build_secondary_recolor(self, parent: ctk.CTkFrame) -> None:
+        """Recolor: export info only (no format selector)."""
+        ctk.CTkLabel(
+            parent,
+            text="Mode Recolor — export TSX non applicable.",
+            text_color="gray", font=ctk.CTkFont(size=11),
+        ).grid(row=0, column=0, padx=(16, 4), pady=10)
 
-        self._build_source_panel(container)
-        self._build_output_panel(container)
-        self._build_canvas_panel(container)
+    # ── Panels (row 2) ────────────────────────────────────────────────────────
+
+    def _build_panels(self) -> None:
+        self._panels_container = ctk.CTkFrame(self, fg_color="transparent")
+        self._panels_container.grid(row=2, column=0, sticky="nsew", padx=8, pady=4)
+        self._panels_container.grid_columnconfigure((0, 1, 2), weight=1)
+        self._panels_container.grid_rowconfigure(0, weight=1)
+
+        self._build_source_panel(self._panels_container)
+        self._build_output_panel(self._panels_container)
+        self._build_canvas_panel(self._panels_container)
 
     def _build_source_panel(self, parent: ctk.CTkFrame) -> None:
         frame = ctk.CTkFrame(parent)
@@ -247,17 +365,12 @@ class App(ctk.CTk):
         ctk.CTkLabel(frame, text="SOURCE", font=ctk.CTkFont(size=13, weight="bold")).grid(
             row=0, column=0, pady=(8, 4)
         )
-
         self.lbl_source = ctk.CTkLabel(
-            frame,
-            text="Aucun autotile chargé",
-            width=220,
-            height=220,
-            fg_color=("#d0d0d0", "#2a2a2a"),
-            corner_radius=6,
+            frame, text="Aucun autotile chargé",
+            width=220, height=220,
+            fg_color=("gray85", "#2a2a2a"), corner_radius=6,
         )
         self.lbl_source.grid(row=1, column=0, padx=8, pady=4, sticky="nsew")
-
         self.lbl_source_info = ctk.CTkLabel(frame, text="", text_color="gray")
         self.lbl_source_info.grid(row=2, column=0, pady=(2, 8))
 
@@ -267,101 +380,151 @@ class App(ctk.CTk):
         frame.grid_rowconfigure(1, weight=1)
         frame.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(frame, text="SORTIE TILED", font=ctk.CTkFont(size=13, weight="bold")).grid(
-            row=0, column=0, pady=(8, 4)
+        self._lbl_output_title = ctk.CTkLabel(
+            frame, text="SORTIE TILED", font=ctk.CTkFont(size=13, weight="bold"),
         )
+        self._lbl_output_title.grid(row=0, column=0, pady=(8, 4))
 
         self.lbl_output = ctk.CTkLabel(
-            frame,
-            text="Aucune conversion",
-            width=300,
-            height=220,
-            fg_color=("#d0d0d0", "#2a2a2a"),
-            corner_radius=6,
+            frame, text="Aucune conversion",
+            width=300, height=220,
+            fg_color=("gray85", "#2a2a2a"), corner_radius=6,
         )
         self.lbl_output.grid(row=1, column=0, padx=8, pady=4, sticky="nsew")
-
         self.lbl_output_info = ctk.CTkLabel(frame, text="", text_color="gray")
         self.lbl_output_info.grid(row=2, column=0, pady=(2, 8))
 
     def _build_canvas_panel(self, parent: ctk.CTkFrame) -> None:
-        frame = ctk.CTkFrame(parent)
-        frame.grid(row=0, column=2, sticky="nsew", padx=4)
-        frame.grid_rowconfigure(1, weight=1)
-        frame.grid_columnconfigure(0, weight=1)
+        self._canvas_frame = ctk.CTkFrame(parent)
+        self._canvas_frame.grid(row=0, column=2, sticky="nsew", padx=4)
+        self._canvas_frame.grid_rowconfigure(1, weight=1)
+        self._canvas_frame.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(frame, text="APERÇU CANVAS", font=ctk.CTkFont(size=13, weight="bold")).grid(
-            row=0, column=0, pady=(8, 4)
-        )
+        ctk.CTkLabel(
+            self._canvas_frame, text="APERÇU CANVAS",
+            font=ctk.CTkFont(size=13, weight="bold"),
+        ).grid(row=0, column=0, pady=(8, 4))
 
-        canvas_frame = ctk.CTkFrame(
-            frame, fg_color=("#d0d0d0", "#2a2a2a"), corner_radius=6
+        canvas_bg = ctk.CTkFrame(
+            self._canvas_frame, fg_color=("gray85", "#2a2a2a"), corner_radius=6,
         )
-        canvas_frame.grid(row=1, column=0, padx=8, pady=4, sticky="nsew")
-        canvas_frame.grid_rowconfigure(0, weight=1)
-        canvas_frame.grid_columnconfigure(0, weight=1)
+        canvas_bg.grid(row=1, column=0, padx=8, pady=4, sticky="nsew")
+        canvas_bg.grid_rowconfigure(0, weight=1)
+        canvas_bg.grid_columnconfigure(0, weight=1)
 
         self.canvas = tk.Canvas(
-            canvas_frame,
-            width=160,
-            height=160,
-            bg="#222222",
-            highlightthickness=0,
+            canvas_bg, width=160, height=160, bg="#222222", highlightthickness=0,
         )
         self.canvas.grid(row=0, column=0, padx=4, pady=4)
         self.canvas.bind("<Button-1>", self._on_canvas_click)
 
-        # Canvas buttons
-        btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        btn_frame = ctk.CTkFrame(self._canvas_frame, fg_color="transparent")
         btn_frame.grid(row=2, column=0, pady=(0, 2))
         ctk.CTkButton(
-            btn_frame, text="↺ Pattern", width=90,
-            command=self._load_test_pattern,
+            btn_frame, text="↺ Pattern", width=90, command=self._load_test_pattern,
         ).pack(side="left", padx=2)
         ctk.CTkButton(
-            btn_frame, text="✕ Effacer", width=90,
-            command=self._clear_canvas_grid,
+            btn_frame, text="✕ Effacer", width=90, command=self._clear_canvas_grid,
         ).pack(side="left", padx=2)
 
-        self.lbl_canvas_info = ctk.CTkLabel(frame, text="", text_color="gray")
+        self.lbl_canvas_info = ctk.CTkLabel(self._canvas_frame, text="", text_color="gray")
         self.lbl_canvas_info.grid(row=3, column=0, pady=(2, 8))
 
+    def _switch_right_panel_to_recolor(self) -> None:
+        """Replace canvas panel with RecolorPanel."""
+        if self._recolor_panel is not None:
+            return  # already installed
+
+        # Hide canvas widgets
+        self._canvas_frame.grid_remove()
+
+        # Create and show RecolorPanel in column 2
+        self._recolor_panel = RecolorPanel(
+            parent=self._panels_container,
+            state=self._state,
+            on_state_change=self._on_recolor_state_change,
+            on_preview_update=self._on_recolor_preview_ready,
+        )
+        self._recolor_panel.grid(row=0, column=2, sticky="nsew", padx=4)
+
+        # Update output panel title
+        self._lbl_output_title.configure(text="APERÇU RECOLOR")
+
+    def _switch_right_panel_to_canvas(self) -> None:
+        """Restore canvas panel, destroy RecolorPanel."""
+        if self._recolor_panel is not None:
+            self._recolor_panel.destroy()
+            self._recolor_panel = None
+        self._canvas_frame.grid()
+        self._lbl_output_title.configure(text="SORTIE TILED")
+
+    # ── Log (row 3) ───────────────────────────────────────────────────────────
+
+    def _build_log(self) -> None:
+        self._log_frame = ctk.CTkFrame(self, corner_radius=0)
+        self._log_frame.grid(row=3, column=0, sticky="ew", padx=0, pady=0)
+        self._log_frame.grid_columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(
+            self._log_frame, text="Journal :", font=ctk.CTkFont(size=11),
+        ).grid(row=0, column=0, padx=(12, 6), pady=4, sticky="w")
+
+        self.txt_log = ctk.CTkTextbox(
+            self._log_frame, height=64,
+            font=ctk.CTkFont(family="Courier", size=11),
+            fg_color=("gray10", "#0a0a0a"), text_color="#8fbcbb",
+            activate_scrollbars=True,
+        )
+        self.txt_log.grid(row=0, column=1, padx=(0, 8), pady=4, sticky="ew")
+        self.txt_log.configure(state="disabled")
+
+    # ── Footer (row 4) ────────────────────────────────────────────────────────
+
     def _build_footer(self) -> None:
-        footer = ctk.CTkFrame(self, height=56, corner_radius=0)
-        footer.grid(row=3, column=0, sticky="ew", padx=0, pady=0)
-        footer.grid_columnconfigure(2, weight=1)
+        footer = ctk.CTkFrame(self, height=44, corner_radius=0)
+        footer.grid(row=4, column=0, sticky="ew", padx=0, pady=0)
+        footer.grid_columnconfigure(4, weight=1)
+
+        # Export checkboxes
+        self._export_png_var = tk.BooleanVar(value=True)
+        self._export_tsx_var = tk.BooleanVar(value=True)
 
         self.btn_export = ctk.CTkButton(
-            footer,
-            text="💾 Exporter PNG + TSX",
-            width=180,
-            state="disabled",
-            command=self._export,
+            footer, text="💾 Exporter", width=130,
+            state="disabled", command=self._export,
         )
-        self.btn_export.grid(row=0, column=0, padx=(12, 8), pady=10)
+        self.btn_export.grid(row=0, column=0, padx=(12, 4), pady=8)
 
-        ctk.CTkLabel(footer, text="Dossier :").grid(row=0, column=1, padx=(4, 2))
+        self.cb_export_png = ctk.CTkCheckBox(
+            footer, text="PNG",
+            variable=self._export_png_var, state="disabled", width=60,
+        )
+        self.cb_export_png.grid(row=0, column=1, padx=4)
+
+        self.cb_export_tsx = ctk.CTkCheckBox(
+            footer, text="TSX",
+            variable=self._export_tsx_var, width=60,
+        )
+        self.cb_export_tsx.grid(row=0, column=2, padx=4)
+
+        ctk.CTkLabel(footer, text="Dossier :").grid(row=0, column=3, padx=(8, 2))
 
         self._output_dir_var = ctk.StringVar(value=self._state.output_dir)
         self.entry_output_dir = ctk.CTkEntry(
-            footer, textvariable=self._output_dir_var, width=280
+            footer, textvariable=self._output_dir_var, width=280,
         )
-        self.entry_output_dir.grid(row=0, column=2, padx=(0, 4), pady=10, sticky="ew")
+        self.entry_output_dir.grid(row=0, column=4, padx=(0, 4), pady=8, sticky="ew")
 
-        btn_dir = ctk.CTkButton(
-            footer,
-            text="📂",
-            width=36,
-            command=self._pick_output_dir,
-        )
-        btn_dir.grid(row=0, column=3, padx=(0, 12))
+        ctk.CTkButton(
+            footer, text="📂", width=36, command=self._pick_output_dir,
+        ).grid(row=0, column=5, padx=(0, 8))
 
         self.lbl_status = ctk.CTkLabel(
-            footer, text="État : Prêt.", text_color="gray", anchor="w"
+            footer, text="État : Prêt.", text_color="gray", anchor="w",
         )
-        self.lbl_status.grid(row=0, column=4, padx=(8, 12), sticky="ew")
+        self.lbl_status.grid(row=0, column=6, padx=(8, 12), sticky="ew")
 
-    # ── Handlers ─────────────────────────────────────────────────────────────
+    # ── Handlers — Primary Toolbar ────────────────────────────────────────────
 
     def _open_file(self) -> None:
         path = filedialog.askopenfilename(
@@ -380,39 +543,433 @@ class App(ctk.CTk):
             )
             return
 
-        # Stop any running animation
         self._stop_animation()
 
-        # Validate dimensions based on mode and current settings
-        mode = self._mode_var.get()
-        error = self._validate_dimensions(img, mode)
-        if error:
-            self._set_status(error, error=True)
-            self.btn_convert.configure(state="disabled")
-            return
+        resource_type = _TYPE_LABEL_MAP[self._type_var.get()]
 
-        self._state = AppState(
+        # Validate dimensions for non-Recolor types
+        if resource_type != "Recolor":
+            fmt = getattr(self, "_format_var", None)
+            fmt_val = fmt.get() if fmt else self._state.format
+            error = self._validate_dimensions(img, resource_type, fmt_val)
+            if error:
+                self._set_status(error, error=True)
+                self.btn_convert.configure(state="disabled")
+                return
+
+        # Build new state
+        new_state = dataclasses.replace(
+            self._state,
             source_path=path,
             source_img=img,
-            mode=mode,  # type: ignore[arg-type]  # validated above
+            resource_type=resource_type,  # type: ignore[arg-type]
             output_dir=self._output_dir_var.get(),
         )
 
-        self._display_source(img, Path(path).name, mode)
+        # For Recolor: extract palette immediately
+        if resource_type == "Recolor":
+            try:
+                palette = extract_palette(img)
+                rs = RecolorState(source_palette=palette)
+                new_state = dataclasses.replace(new_state, recolor=rs, export_tsx=False)
+            except ValueError as exc:
+                self._set_status(f"⚠️ Image vide — {exc}", error=True)
+                return
+
+        self._state = new_state
+        self._display_source(img, Path(path).name, resource_type)
         self.btn_convert.configure(state="normal")
         self._set_status(f"Fichier chargé : {Path(path).name}")
 
-    def _validate_dimensions(self, img: Image.Image, mode: str) -> str | None:
-        """Return an error message or None if valid."""
-        w, h = img.width, img.height
-        is_anim = self._animated_var.get()
-        anim_type_str = self._anim_type_var.get()
-        anim_mode = "Horizontale" if "Horizontale" in anim_type_str else "Verticale"
+        # Update RecolorPanel if active
+        if self._recolor_panel is not None and resource_type == "Recolor":
+            self._recolor_panel.update_state(self._state)
 
-        if mode == "XP":
-            return self._validate_xp_dimensions(w, h, is_anim, anim_mode)
-        elif mode in ("MV", "MZ"):
-            return self._validate_mv_dimensions(w, h, is_anim, anim_mode, mode)
+    def _on_type_change(self, label: str) -> None:
+        """User selected a new resource type in the primary toolbar."""
+        resource_type = _TYPE_LABEL_MAP.get(label, "A2")
+        self._stop_animation()
+
+        # Update secondary toolbar
+        self._swap_secondary(resource_type)
+
+        # Swap right panel
+        if resource_type == "Recolor":
+            self._switch_right_panel_to_recolor()
+            self._export_tsx_var.set(False)
+            self.cb_export_tsx.configure(state="disabled")
+            self.btn_convert.configure(text="✨ Appliquer Recolor")
+        else:
+            self._switch_right_panel_to_canvas()
+            self._export_tsx_var.set(True)
+            self.cb_export_tsx.configure(state="normal")
+            self.btn_convert.configure(text="⚙ Convertir")
+
+        export_tsx = resource_type != "Recolor"
+
+        # Update state — preserve source and recolor only when switching to Recolor
+        if resource_type == "Recolor" and self._state.recolor is None:
+            rs: RecolorState | None = RecolorState() if self._state.source_img is not None else None
+            # Try palette extraction if source exists
+            if self._state.source_img is not None:
+                try:
+                    palette = extract_palette(self._state.source_img)
+                    rs = RecolorState(source_palette=palette)
+                except ValueError:
+                    rs = RecolorState()
+        else:
+            rs = self._state.recolor if resource_type == "Recolor" else None
+
+        self._state = dataclasses.replace(
+            self._state,
+            resource_type=resource_type,  # type: ignore[arg-type]
+            export_tsx=export_tsx,
+            recolor=rs,
+            result_img=None,
+        )
+
+        # Disable convert if no source
+        if self._state.source_img is None:
+            self.btn_convert.configure(state="disabled")
+
+        self._reset_output_panel()
+
+        # Update recolor panel if newly created and we have data
+        if self._recolor_panel is not None and self._state.recolor:
+            self._recolor_panel.update_state(self._state)
+
+    def _on_format_change(self) -> None:
+        new_fmt = self._format_var.get()
+        if new_fmt == "MZ":
+            self._log("i Format MZ non encore supporté.")
+            self._format_var.set(self._state.format)
+            return
+        self._state = dataclasses.replace(
+            self._state, format=new_fmt,  # type: ignore[arg-type]
+        )
+        self._stop_animation()
+        self.btn_export.configure(state="disabled")
+
+    def _on_animated_toggle(self) -> None:
+        is_anim = getattr(self, "_animated_var", None)
+        if is_anim is None:
+            return
+        self._state = dataclasses.replace(self._state, animated=is_anim.get())
+        self._update_animation_controls_state()
+
+    def _on_anim_type_change(self, value: str) -> None:
+        self._state = dataclasses.replace(self._state, anim_type=value)
+
+    def _on_speed_change(self, value: str) -> None:
+        try:
+            ms = int(value.replace(" ms", "").strip())
+        except ValueError:
+            ms = 150
+        self._state = dataclasses.replace(self._state, anim_speed_ms=ms)
+        # Restart animation timer if running
+        if self._timer_id is not None and self._state.tiles:
+            self.after_cancel(self._timer_id)
+            self._timer_id = self.after(ms, self._tick_animation)
+
+    def _update_animation_controls_state(self) -> None:
+        is_anim = getattr(self, "_animated_var", None)
+        if is_anim is None:
+            return
+        anim_on = is_anim.get()
+        fmt = getattr(self, "_format_var", None)
+        mode = fmt.get() if fmt else "MV"
+        if hasattr(self, "menu_speed"):
+            self.menu_speed.configure(state="normal" if anim_on else "disabled")
+        if hasattr(self, "menu_anim_type"):
+            if anim_on and mode == "XP":
+                getattr(self, "_anim_type_var", ctk.StringVar()).set("Horizontale (Eau/Sol)")
+                self.menu_anim_type.configure(state="disabled")
+            elif anim_on:
+                self.menu_anim_type.configure(state="normal")
+            else:
+                self.menu_anim_type.configure(state="disabled")
+
+    # ── Conversion dispatch ───────────────────────────────────────────────────
+
+    def _run_conversion(self) -> None:
+        if self._state.source_img is None:
+            self._log("⚠️ Aucun fichier source chargé.")
+            return
+        if self._state.resource_type == "Recolor" and (
+            self._state.recolor is None or not self._state.recolor.remap_table
+        ):
+            self._log("⚠️ Définissez d'abord un remappage (choisissez une palette).")
+            return
+
+        self._stop_animation()
+        self._set_status("Conversion en cours…")
+        self.btn_convert.configure(state="disabled")
+
+        dispatch = {
+            "A2":     self._convert_a2,
+            "A3":     self._convert_a3,
+            "A4":     self._convert_a4,
+            "A1":     self._convert_a1,
+            "Recolor": self._apply_recolor,
+        }
+        handler = dispatch.get(self._state.resource_type)
+        if handler:
+            threading.Thread(target=handler, daemon=True).start()
+
+    def _convert_a2(self) -> None:
+        """A2 Ground (or A1 animated) — dispatches to convert_xp or convert_mv based on format."""
+        try:
+            img = self._state.source_img
+            assert img is not None
+            fmt = getattr(self, "_format_var", None)
+            fmt_val = fmt.get() if fmt else self._state.format
+            is_anim = getattr(self, "_animated_var", tk.BooleanVar()).get()
+            anim_str = getattr(self, "_anim_type_var", ctk.StringVar(value="Horizontale")).get()
+            anim_mode = "Horizontale" if "Horizontale" in anim_str else "Verticale"
+
+            if fmt_val == "XP":
+                tiles = convert_xp(img, is_animated=is_anim, animation_mode=anim_mode)
+                tile_size = 32
+            else:  # MV / MZ
+                tiles = convert_mv(img, is_animated=is_anim, animation_mode=anim_mode)
+                tile_size = tiles[0][0].width if tiles and tiles[0] else 48
+
+            flat_tiles = tiles[0] if tiles else []
+            result_img = self._build_sheet_image(tiles, tile_size)
+
+            self._state = dataclasses.replace(
+                self._state,
+                result_img=result_img,
+                tiles=flat_tiles,
+                tile_size=tile_size,
+            )
+            self.after(0, lambda: self._on_convert_success_a2(tiles, tile_size))
+        except Exception as err:
+            msg = str(err)
+            self.after(0, lambda m=msg: self._on_convert_error(m))
+
+    def _convert_a3(self) -> None:
+        """A3 Building — convert_mv_a3(img)."""
+        try:
+            img = self._state.source_img
+            assert img is not None
+            result_img = convert_mv_a3(img)
+            tile_size = 48
+
+            self._state = dataclasses.replace(
+                self._state,
+                result_img=result_img,
+                tiles=None,     # A3 uses result_img directly
+                tile_size=tile_size,
+            )
+            self.after(0, lambda: self._on_convert_success_single(result_img, "A3", tile_size))
+        except Exception as err:
+            msg = str(err)
+            self.after(0, lambda m=msg: self._on_convert_error(m))
+
+    def _convert_a4(self) -> None:
+        """A4 Wall — convert_mv_a4(img) → 2 strips, stitched for preview."""
+        try:
+            img = self._state.source_img
+            assert img is not None
+            tops_img, sides_img = convert_mv_a4(img)
+
+            # Stitch vertically for single-image preview
+            total_h = tops_img.height + sides_img.height
+            max_w = max(tops_img.width, sides_img.width)
+            stitched = Image.new("RGBA", (max_w, total_h))
+            stitched.paste(tops_img, (0, 0))
+            stitched.paste(sides_img, (0, tops_img.height))
+
+            self._state = dataclasses.replace(
+                self._state,
+                result_img=stitched,
+                tiles=None,
+                tile_size=48,
+            )
+            # Store both strips for export
+            self._a4_tops: Image.Image = tops_img
+            self._a4_sides: Image.Image = sides_img
+
+            self.after(0, lambda: self._on_convert_success_single(stitched, "A4", 48))
+        except Exception as err:
+            msg = str(err)
+            self.after(0, lambda m=msg: self._on_convert_error(m))
+
+    def _convert_a1(self) -> None:
+        """A1 Animated — reuse convert_mv (animated path)."""
+        self._convert_a2()  # A1 uses the same convert_mv with is_animated=True
+
+    def _apply_recolor(self) -> None:
+        """Recolor — apply current remap table to source image."""
+        try:
+            from asset_convertor.core.recolor import apply_remap
+            img = self._state.source_img
+            rs = self._state.recolor
+            assert img is not None
+            assert rs is not None
+            result = apply_remap(img, rs.remap_table)
+            rs_updated = dataclasses.replace(rs, result_img=result)
+            self._state = dataclasses.replace(
+                self._state, result_img=result, recolor=rs_updated,
+            )
+            self.after(0, lambda: self._on_convert_success_single(result, "Recolor", 48))
+        except Exception as err:
+            msg = str(err)
+            self.after(0, lambda m=msg: self._on_convert_error(m))
+
+    # ── Convert success callbacks (main thread) ───────────────────────────────
+
+    def _on_convert_success_a2(
+        self, tiles: list[list[Image.Image]] | list[Image.Image], tile_size: int
+    ) -> None:
+        self.btn_convert.configure(state="normal")
+        self.btn_export.configure(state="normal")
+        self._display_output_sheet(tiles, tile_size)
+        self._draw_canvas_pattern(tiles, tile_size)
+        self._set_status("Conversion réussie.")
+
+        is_anim = getattr(self, "_animated_var", tk.BooleanVar()).get()
+        if is_anim and isinstance(tiles, list) and tiles and isinstance(tiles[0], list):
+            tiles_list = cast(list[list[Image.Image]], tiles)
+            num_frames = len(tiles_list)
+            self._setup_animation(num_frames)
+
+    def _on_convert_success_single(
+        self, result_img: Image.Image, label: str, tile_size: int
+    ) -> None:
+        self.btn_convert.configure(state="normal")
+        self.btn_export.configure(state="normal")
+        self._display_result_image(result_img)
+        w, h = result_img.size
+        self.lbl_output_info.configure(text=f"{label} : {w}x{h} px")
+        self._set_status(f"{label} : conversion réussie — {w}x{h} px.")
+
+    def _on_convert_error(self, message: str) -> None:
+        self.btn_convert.configure(state="normal")
+        self._set_status(f"❌ Erreur de conversion : {message}", error=True)
+
+    # ── Recolor panel callbacks ───────────────────────────────────────────────
+
+    def _on_recolor_state_change(self, new_state: AppState) -> None:
+        """Called by RecolorPanel when remap table or preset changes."""
+        self._state = new_state
+
+    def _on_recolor_preview_ready(self, result: Image.Image) -> None:
+        """Called by RecolorPanel when live preview image is ready."""
+        self._display_result_image(result)
+
+    # ── Export ────────────────────────────────────────────────────────────────
+
+    def _export(self) -> None:
+        if self._state.source_path is None:
+            return
+
+        out_dir = self._output_dir_var.get().strip() or OUTPUT_DIR_DEFAULT
+        name = Path(self._state.source_path).stem
+
+        resource_type = self._state.resource_type
+
+        if resource_type == "A4":
+            self._export_a4(out_dir, name)
+        elif resource_type == "Recolor":
+            self._export_recolor(out_dir, name)
+        else:
+            self._export_standard(out_dir, name)
+
+    def _export_standard(self, out_dir: str, name: str) -> None:
+        """Export A1/A2/A3 as PNG (+ TSX if checked)."""
+        if not self._state.result_img:
+            return
+        try:
+            export_tsx = self._export_tsx_var.get()
+            is_animated = self._state.animated
+            anim_str = getattr(self, "_anim_type_var", ctk.StringVar(value="Horizontale")).get()
+            anim_mode = "Horizontale" if "Horizontale" in anim_str else "Verticale"
+
+            if self._state.tiles and self._state.resource_type in ("A1", "A2"):
+                # Use full export pipeline for A1/A2
+                tiles_2d: list[list[Image.Image]] = (
+                    [self._state.tiles]  # type: ignore[list-item]
+                    if self._state.tiles and not isinstance(self._state.tiles[0], list)
+                    else cast(list[list[Image.Image]], self._state.tiles)
+                )
+                png_path, tsx_path = export(
+                    tiles_2d,
+                    name, out_dir,
+                    self._state.tile_size,
+                    is_animated=is_animated,
+                    animation_mode=anim_mode,
+                    duration=self._state.anim_speed_ms,
+                )
+                status = f"Exporté : {Path(png_path).name}"
+                if tsx_path and export_tsx:
+                    status += f" + {Path(tsx_path).name}"
+            else:
+                # A3: save PNG directly
+                os.makedirs(out_dir, exist_ok=True)
+                png_path = os.path.join(out_dir, f"{name}.png")
+                self._state.result_img.save(png_path)
+                status = f"Exporté : {Path(png_path).name} → {out_dir}"
+
+            self._set_status(status)
+        except (OSError, PermissionError) as exc:
+            self._set_status(f"Impossible d'écrire dans {out_dir}. ({exc})", error=True)
+        except ValueError as exc:
+            self._set_status(f"Erreur interne : {exc}", error=True)
+
+    def _export_a4(self, out_dir: str, name: str) -> None:
+        """Export A4 as two PNG files (tops + sides)."""
+        if not hasattr(self, "_a4_tops"):
+            return
+        try:
+            os.makedirs(out_dir, exist_ok=True)
+            tops_path = os.path.join(out_dir, f"{name}_tops.png")
+            sides_path = os.path.join(out_dir, f"{name}_sides.png")
+            self._a4_tops.save(tops_path)
+            self._a4_sides.save(sides_path)
+            self._set_status(
+                f"A4 exporté : {Path(tops_path).name} + {Path(sides_path).name} → {out_dir}"
+            )
+        except (OSError, PermissionError) as exc:
+            self._set_status(f"Impossible d'écrire dans {out_dir}. ({exc})", error=True)
+
+    def _export_recolor(self, out_dir: str, name: str) -> None:
+        """Export recolored image as PNG."""
+        rs = self._state.recolor
+        if rs is None or rs.result_img is None:
+            self._set_status("Appliquez d'abord le recolor avant d'exporter.", error=True)
+            return
+        try:
+            os.makedirs(out_dir, exist_ok=True)
+            png_path = os.path.join(out_dir, f"{name}_recolor.png")
+            rs.result_img.save(png_path)
+            self._set_status(f"Recolor exporté : {Path(png_path).name} → {out_dir}")
+        except (OSError, PermissionError) as exc:
+            self._set_status(f"Impossible d'écrire dans {out_dir}. ({exc})", error=True)
+
+    def _pick_output_dir(self) -> None:
+        d = filedialog.askdirectory(title="Dossier de sortie")
+        if d:
+            self._output_dir_var.set(d)
+            self._state = dataclasses.replace(self._state, output_dir=d)
+
+    # ── Validation ────────────────────────────────────────────────────────────
+
+    def _validate_dimensions(
+        self, img: Image.Image, resource_type: str, fmt: str,
+    ) -> str | None:
+        """Return error message or None if valid."""
+        w, h = img.size
+        is_anim = getattr(self, "_animated_var", tk.BooleanVar(value=False)).get()
+        anim_str = getattr(self, "_anim_type_var", ctk.StringVar(value="Horizontale")).get()
+        anim_mode = "Horizontale" if "Horizontale" in anim_str else "Verticale"
+
+        if resource_type in ("A2", "A1"):
+            if fmt == "XP":
+                return self._validate_xp_dimensions(w, h, is_anim, anim_mode)
+            return self._validate_mv_dimensions(w, h, is_anim, anim_mode, fmt)
+        # A3 / A4 validation is done inside the converter itself
         return None
 
     def _validate_xp_dimensions(self, w: int, h: int, is_anim: bool, anim_mode: str) -> str | None:
@@ -434,7 +991,7 @@ class App(ctk.CTk):
                 tile_size = h // 3
                 if w % (2 * tile_size) != 0:
                     return f"Format {mode} (Horizontale) invalide. Attendu : largeur multiple de {2 * tile_size}px, obtenu : {w}x{h}"
-            else:  # Verticale
+            else:
                 if w not in (64, 96):
                     return f"Format {mode} (Verticale) invalide. Attendu : largeur 64 ou 96 px, obtenu : {w}x{h}"
                 tile_size = w // 2
@@ -445,170 +1002,92 @@ class App(ctk.CTk):
                 return f"Format {mode} statique invalide. Attendu : 64x96 ou 96x144 px, obtenu : {w}x{h}"
         return None
 
-    def _on_mode_change(self) -> None:
-        new_mode = self._mode_var.get()
-        self._update_animation_controls_state()
-        self._stop_animation()
+    # ── Display helpers ───────────────────────────────────────────────────────
 
-        if self._state.source_img is not None:
-            error = self._validate_dimensions(self._state.source_img, new_mode)
-            if error:
-                self._set_status(error, error=True)
-                self.btn_convert.configure(state="disabled")
-                return
-        self._state = AppState(
-            source_path=self._state.source_path,
-            source_img=self._state.source_img,
-            mode=new_mode,  # type: ignore[arg-type]  # validated above
-            output_dir=self._output_dir_var.get(),
+    def _display_source(self, img: Image.Image, filename: str, resource_type: str) -> None:
+        scaled = self._scale_to_fit(img, 200, 200)
+        self._photo_source = ctk.CTkImage(
+            light_image=scaled, dark_image=scaled, size=(scaled.width, scaled.height),
         )
-        self._reset_panels()
-        self.btn_export.configure(state="disabled")
-        if self._state.source_img:
-            self.btn_convert.configure(state="normal")
+        self.lbl_source.configure(image=self._photo_source, text="")
+        w, h = img.size
+        self.lbl_source_info.configure(text=f"{filename}  |  {resource_type} / {w}x{h}")
 
-    def _convert(self) -> None:
-        if self._state.source_img is None:
-            return
+    def _display_result_image(self, img: Image.Image) -> None:
+        """Display a single PIL Image in the output panel."""
+        scaled = self._scale_to_fit(img, 320, 280)
+        self._photo_output = ctk.CTkImage(
+            light_image=scaled, dark_image=scaled, size=(scaled.width, scaled.height),
+        )
+        self.lbl_output.configure(image=self._photo_output, text="")
 
-        self._stop_animation()
-        self._set_status("Conversion en cours…")
-        self.btn_convert.configure(state="disabled")
+    def _display_output_sheet(
+        self,
+        tiles: list[list[Image.Image]] | list[Image.Image],
+        tile_size: int,
+    ) -> None:
+        if tiles and isinstance(tiles[0], list):
+            tiles_by_frame = cast(list[list[Image.Image]], tiles)
+        else:
+            tiles_by_frame = [cast(list[Image.Image], tiles)]
 
-        def _run() -> None:
-            try:
-                mode = self._state.mode
-                img = self._state.source_img
-                assert img is not None  # guarded by early-return above
+        sheet = assemble_sheet(tiles_by_frame, tile_size)
+        self._display_result_image(sheet)
+        num_frames = len(tiles_by_frame)
+        self.lbl_output_info.configure(
+            text=f"Tuile : {tile_size}px  |  Sortie : {8*tile_size}x{6*num_frames*tile_size}"
+        )
 
-                is_animated = self._animated_var.get()
-                anim_type_str = self._anim_type_var.get()
-                anim_mode = "Horizontale" if "Horizontale" in anim_type_str else "Verticale"
+    def _reset_output_panel(self) -> None:
+        self.lbl_output.configure(image=None, text="Aucune conversion")
+        self.lbl_output_info.configure(text="")
 
-                if mode == "XP":
-                    tiles = convert_xp(img, is_animated=is_animated, animation_mode=anim_mode)
-                    tile_size = 32
-                else:  # MV or MZ
-                    tiles = convert_mv(img, is_animated=is_animated, animation_mode=anim_mode)
-                    tile_size = tiles[0][0].width if tiles and tiles[0] else 32
+    def _reset_panels(self) -> None:
+        self.lbl_source.configure(image=None, text="Aucun autotile chargé")
+        self.lbl_source_info.configure(text="")
+        self._reset_output_panel()
+        self.canvas.delete("all")
+        self._canvas_photos = []
+        self._canvas_grid = [[False] * len(_GRID_DEFAULT[0]) for _ in _GRID_DEFAULT]
+        self.lbl_canvas_info.configure(text="")
 
-                self._state = AppState(
-                    source_path=self._state.source_path,
-                    source_img=self._state.source_img,
-                    mode=mode,
-                    tiles=tiles,
-                    tile_size=tile_size,
-                    output_dir=self._output_dir_var.get(),
-                )
-                self.after(0, self._on_convert_success)
-            except Exception as err:
-                msg = str(err)
-                self.after(
-                    0,
-                    lambda m=msg: self._on_convert_error(m),
-                )
+    @staticmethod
+    def _scale_to_fit(img: Image.Image, max_w: int, max_h: int) -> Image.Image:
+        scale = min(max_w / img.width, max_h / img.height)
+        if abs(scale - 1.0) < 1e-6:
+            return img
+        new_w = max(1, int(img.width * scale))
+        new_h = max(1, int(img.height * scale))
+        return img.resize((new_w, new_h), Image.NEAREST)
 
-        threading.Thread(target=_run, daemon=True).start()
+    @staticmethod
+    def _build_sheet_image(
+        tiles: list[list[Image.Image]] | list[Image.Image], tile_size: int,
+    ) -> Image.Image:
+        """Assemble tiles into a sheet for display."""
+        if tiles and isinstance(tiles[0], list):
+            tiles_by_frame = cast(list[list[Image.Image]], tiles)
+        else:
+            tiles_by_frame = [cast(list[Image.Image], tiles)]
+        return assemble_sheet(tiles_by_frame, tile_size)
 
-    def _on_convert_success(self) -> None:
-        tiles = self._state.tiles
-        if not tiles:
-            return
+    # ── Animation ────────────────────────────────────────────────────────────
 
-        self._stop_animation()
-        self.btn_convert.configure(state="normal")
-        self.btn_export.configure(state="normal")
-
-        is_anim = self._animated_var.get()
-        num_frames = len(tiles)
-
-        self._display_output_sheet(tiles, self._state.tile_size)
-        self._draw_canvas_pattern(tiles, self._state.tile_size)
-
-        # Set up animated preview loop
+    def _setup_animation(self, num_frames: int) -> None:
+        is_anim = getattr(self, "_animated_var", tk.BooleanVar()).get()
+        anim_str = getattr(self, "_anim_type_var", ctk.StringVar(value="Horizontale")).get()
         if is_anim and num_frames > 1:
-            anim_type_str = self._anim_type_var.get()
-            if "Horizontale" in anim_type_str and num_frames == 3:
+            if "Horizontale" in anim_str and num_frames == 3:
                 self._frame_sequence = [0, 1, 2, 1]
-            elif "Verticale" in anim_type_str and num_frames == 3:
+            elif "Verticale" in anim_str and num_frames == 3:
                 self._frame_sequence = [0, 1, 2]
             elif num_frames == 4:
                 self._frame_sequence = [0, 1, 2, 3]
             else:
                 self._frame_sequence = list(range(num_frames))
-
             self._current_frame_idx = 0
-
-            try:
-                duration_str = self._speed_var.get().replace(" ms", "").strip()
-                duration = int(duration_str)
-            except ValueError:
-                duration = 150
-
-            self._timer_id = self.after(duration, self._tick_animation)
-
-        sheet_w = 8 * self._state.tile_size
-        sheet_h = 6 * num_frames * self._state.tile_size
-        self._set_status(
-            f"Conversion reussie : 47 tuiles . {sheet_w}x{sheet_h} px"
-        )
-
-    def _on_convert_error(self, message: str) -> None:
-        self.btn_convert.configure(state="normal")
-        self._set_status(f"Erreur de conversion : {message}", error=True)
-
-    def _export(self) -> None:
-        if not self._state.tiles or not self._state.source_path:
-            return
-
-        out_dir = self._output_dir_var.get().strip() or OUTPUT_DIR_DEFAULT
-        name = Path(self._state.source_path).stem
-
-        is_animated = self._animated_var.get()
-        anim_type_str = self._anim_type_var.get()
-        anim_mode = "Horizontale" if "Horizontale" in anim_type_str else "Verticale"
-
-        try:
-            duration_str = self._speed_var.get().replace(" ms", "").strip()
-            duration = int(duration_str)
-        except ValueError:
-            duration = 150
-
-        try:
-            png_path, tsx_path = export(
-                self._state.tiles,
-                name,
-                out_dir,
-                self._state.tile_size,
-                is_animated=is_animated,
-                animation_mode=anim_mode,
-                duration=duration,
-            )
-            self._set_status(
-                f"Exporté : {Path(png_path).name} + {Path(tsx_path).name} → {out_dir}"
-            )
-        except (OSError, PermissionError) as exc:
-            self._set_status(
-                f"Impossible d'écrire dans {out_dir}. Choisissez un autre dossier. ({exc})",
-                error=True,
-            )
-        except ValueError as exc:
-            self._set_status(f"Erreur interne : {exc}", error=True)
-
-    def _update_animation_controls_state(self) -> None:
-        is_anim = self._animated_var.get()
-        mode = self._mode_var.get()
-
-        if is_anim:
-            self.menu_speed.configure(state="normal")
-            if mode == "XP":
-                self._anim_type_var.set("Horizontale (Eau/Sol)")
-                self.menu_anim_type.configure(state="disabled")
-            else:
-                self.menu_anim_type.configure(state="normal")
-        else:
-            self.menu_anim_type.configure(state="disabled")
-            self.menu_speed.configure(state="disabled")
+            ms = self._state.anim_speed_ms
+            self._timer_id = self.after(ms, self._tick_animation)
 
     def _stop_animation(self) -> None:
         if self._timer_id is not None:
@@ -618,138 +1097,16 @@ class App(ctk.CTk):
         self._frame_sequence = [0]
 
     def _tick_animation(self) -> None:
-        if not self._state.tiles or len(self._state.tiles) <= 1:
+        tiles = self._state.tiles
+        if not tiles:
             self._timer_id = None
             return
-
         self._current_frame_idx = (self._current_frame_idx + 1) % len(self._frame_sequence)
         self._redraw_canvas_grid()
+        ms = self._state.anim_speed_ms
+        self._timer_id = self.after(ms, self._tick_animation)
 
-        try:
-            duration_str = self._speed_var.get().replace(" ms", "").strip()
-            duration = int(duration_str)
-        except ValueError:
-            duration = 150
-
-        self._timer_id = self.after(duration, self._tick_animation)
-
-    def _on_animated_toggle(self) -> None:
-        self._update_animation_controls_state()
-        if self._state.source_img is not None:
-            mode = self._mode_var.get()
-            error = self._validate_dimensions(self._state.source_img, mode)
-            if error:
-                self._set_status(error, error=True)
-                self.btn_convert.configure(state="disabled")
-            else:
-                self._set_status(f"Fichier prêt pour conversion ({mode} animé)." if self._animated_var.get() else f"Fichier prêt pour conversion ({mode} statique).")
-                self.btn_convert.configure(state="normal")
-        else:
-            self.btn_convert.configure(state="disabled")
-
-    def _on_anim_type_change(self, value: str) -> None:
-        if self._state.source_img is not None:
-            mode = self._mode_var.get()
-            error = self._validate_dimensions(self._state.source_img, mode)
-            if error:
-                self._set_status(error, error=True)
-                self.btn_convert.configure(state="disabled")
-            else:
-                self._set_status(f"Fichier prêt pour conversion ({mode} animé - {value}).")
-                self.btn_convert.configure(state="normal")
-
-    def _on_speed_change(self, value: str) -> None:
-        if self._timer_id is not None and self._state.tiles:
-            self.after_cancel(self._timer_id)
-            try:
-                duration_str = value.replace(" ms", "").strip()
-                duration = int(duration_str)
-            except ValueError:
-                duration = 150
-            self._timer_id = self.after(duration, self._tick_animation)
-
-    def _pick_output_dir(self) -> None:
-        d = filedialog.askdirectory(title="Dossier de sortie")
-        if d:
-            self._output_dir_var.set(d)
-            self._state = AppState(
-                source_path=self._state.source_path,
-                source_img=self._state.source_img,
-                mode=self._state.mode,
-                tiles=self._state.tiles,
-                tile_size=self._state.tile_size,
-                output_dir=d,
-            )
-
-    # ── Display helpers ───────────────────────────────────────────────────────
-
-    def _display_source(
-        self, img: Image.Image, filename: str, mode: str
-    ) -> None:
-        scaled = self._scale_to_fit(img, 200, 200)
-        self._photo_source = ctk.CTkImage(
-            light_image=scaled, dark_image=scaled, size=(scaled.width, scaled.height)
-        )
-        self.lbl_source.configure(image=self._photo_source, text="")
-        w, h = img.size
-        self.lbl_source_info.configure(
-            text=f"{filename}  |  Format: {mode}/{w}x{h}"
-        )
-
-    def _display_output_sheet(
-        self, tiles: list[list[Image.Image]] | list[Image.Image], tile_size: int
-    ) -> None:
-        # Normalize nested list vs flat list
-        if tiles and isinstance(tiles[0], list):
-            tiles_by_frame = cast(list[list[Image.Image]], tiles)
-        else:
-            tiles_by_frame = cast(list[list[Image.Image]], [tiles])
-
-        sheet = assemble_sheet(tiles_by_frame, tile_size)
-        scaled = self._scale_to_fit(sheet, 320, 220)
-        self._photo_output = ctk.CTkImage(
-            light_image=scaled, dark_image=scaled, size=(scaled.width, scaled.height)
-        )
-        self.lbl_output.configure(image=self._photo_output, text="")
-
-        num_frames = len(tiles_by_frame)
-        self.lbl_output_info.configure(
-            text=f"Tuile : {tile_size}px  |  Sortie : {8*tile_size}x{6*num_frames*tile_size}"
-        )
-
-    def _draw_canvas_pattern(
-        self, tiles: list[list[Image.Image]] | list[Image.Image], tile_size: int
-    ) -> None:
-        """Initialize the interactive grid with the test pattern and redraw."""
-        self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
-        self._redraw_canvas_grid()
-        self.lbl_canvas_info.configure(
-            text="Cliquez pour dessiner - 5x5 - bitmask 8-voisins"
-        )
-
-    def _reset_panels(self) -> None:
-        self.lbl_source.configure(image=None, text="Aucun autotile chargé")
-        self.lbl_source_info.configure(text="")
-        self.lbl_output.configure(image=None, text="Aucune conversion")
-        self.lbl_output_info.configure(text="")
-        self.canvas.delete("all")
-        self._canvas_photos = []
-        self._canvas_grid = [[False] * len(_GRID_DEFAULT[0]) for _ in _GRID_DEFAULT]
-        self.lbl_canvas_info.configure(text="")
-
-    @staticmethod
-    def _scale_to_fit(img: Image.Image, max_w: int, max_h: int) -> Image.Image:
-        """Scale image to fit within max_w x max_h using NEAREST, preserve aspect ratio.
-
-        Upscales small images (e.g. 64x96 source in a 220x220 panel) and
-        downscales large images. Both directions preserve aspect ratio.
-        """
-        scale = min(max_w / img.width, max_h / img.height)  # no 1.0 cap — allow upscale
-        if abs(scale - 1.0) < 1e-6:
-            return img
-        new_w = max(1, int(img.width * scale))
-        new_h = max(1, int(img.height * scale))
-        return img.resize((new_w, new_h), Image.NEAREST)
+    # ── Status / Log ─────────────────────────────────────────────────────────
 
     def _set_status(self, message: str, *, error: bool = False) -> None:
         color = "#ff6b6b" if error else "gray"
@@ -757,7 +1114,6 @@ class App(ctk.CTk):
         self._log(message, level="WARN" if error else "INFO")
 
     def _log(self, message: str, level: str = "INFO") -> None:
-        """Add a timestamped entry to the journal terminal."""
         if not hasattr(self, "txt_log"):
             return
         now = datetime.datetime.now().strftime("%H:%M:%S")
@@ -767,29 +1123,16 @@ class App(ctk.CTk):
         self.txt_log.see("end")
         self.txt_log.configure(state="disabled")
 
-    def _build_log(self) -> None:
-        """Journal terminal between panels and footer (row 2)."""
-        log_frame = ctk.CTkFrame(self, corner_radius=0)
-        log_frame.grid(row=2, column=0, sticky="ew", padx=0, pady=0)
-        log_frame.grid_columnconfigure(1, weight=1)
+    # ── Canvas ────────────────────────────────────────────────────────────────
 
-        ctk.CTkLabel(
-            log_frame, text="Journal :", font=ctk.CTkFont(size=11)
-        ).grid(row=0, column=0, padx=(12, 6), pady=4, sticky="w")
-
-        self.txt_log = ctk.CTkTextbox(
-            log_frame,
-            height=64,
-            font=ctk.CTkFont(family="Courier", size=11),
-            fg_color=("#111111", "#0a0a0a"),
-            text_color="#8fbcbb",
-            activate_scrollbars=True,
-        )
-        self.txt_log.grid(row=0, column=1, padx=(0, 8), pady=4, sticky="ew")
-        self.txt_log.configure(state="disabled")
+    def _draw_canvas_pattern(
+        self, tiles: list[list[Image.Image]] | list[Image.Image], tile_size: int
+    ) -> None:
+        self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
+        self._redraw_canvas_grid()
+        self.lbl_canvas_info.configure(text="Cliquez pour dessiner — bitmask 8-voisins")
 
     def _on_canvas_click(self, event: tk.Event) -> None:  # type: ignore[type-arg]
-        """Toggle the clicked cell and redraw the canvas."""
         col = event.x // _CELL_SIZE
         row = event.y // _CELL_SIZE
         grid = self._canvas_grid
@@ -798,40 +1141,31 @@ class App(ctk.CTk):
             self._redraw_canvas_grid()
 
     def _load_test_pattern(self) -> None:
-        """Reset the grid with the 5x5 test pattern."""
         self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
         self._redraw_canvas_grid()
 
     def _clear_canvas_grid(self) -> None:
-        """Clear all canvas cells."""
         rows = len(self._canvas_grid)
         cols = len(self._canvas_grid[0]) if rows else len(_GRID_DEFAULT[0])
         self._canvas_grid = [[False] * cols for _ in range(rows)]
         self._redraw_canvas_grid()
 
     def _redraw_canvas_grid(self) -> None:
-        """Redraw the interactive canvas from self._canvas_grid."""
         grid = self._canvas_grid
         rows = len(grid)
         cols = len(grid[0]) if rows else 0
-        total_w = cols * _CELL_SIZE
-        total_h = rows * _CELL_SIZE
-
-        self.canvas.configure(width=total_w, height=total_h)
+        self.canvas.configure(width=cols * _CELL_SIZE, height=rows * _CELL_SIZE)
         self.canvas.delete("all")
         self._canvas_photos = []
 
         tiles = self._state.tiles
         active_tiles: list[Image.Image] | None = None
-        if tiles:
+        if tiles and isinstance(tiles, list):
             if isinstance(tiles[0], list):
                 tiles_list = cast(list[list[Image.Image]], tiles)
-                if self._animated_var.get() and self._frame_sequence:
-                    f_idx = self._frame_sequence[self._current_frame_idx % len(self._frame_sequence)]
-                    f_idx = min(f_idx, len(tiles_list) - 1)
-                    active_tiles = tiles_list[f_idx]
-                else:
-                    active_tiles = tiles_list[0]
+                fi = self._frame_sequence[self._current_frame_idx % len(self._frame_sequence)]
+                fi = min(fi, len(tiles_list) - 1)
+                active_tiles = tiles_list[fi]
             else:
                 active_tiles = cast(list[Image.Image], tiles)
 
@@ -847,13 +1181,11 @@ class App(ctk.CTk):
                     self._canvas_photos.append(photo)
                     self.canvas.create_image(x, y, anchor="nw", image=photo)
                 elif filled:
-                    # Conversion not yet done: colored placeholder
                     self.canvas.create_rectangle(
                         x, y, x + _CELL_SIZE, y + _CELL_SIZE,
                         fill="#3a3a3a", outline="#555555",
                     )
                 else:
-                    # Empty cell
                     self.canvas.create_rectangle(
                         x, y, x + _CELL_SIZE, y + _CELL_SIZE,
                         fill="#1a1a1a", outline="#2a2a2a",

@@ -7,7 +7,8 @@ app.py replacement documented in autotile_converter_spec.md.
 """
 
 import pytest
-from asset_convertor.gui.app import App, AppState
+from asset_convertor.gui.app import App
+from asset_convertor.gui.state import AppState
 
 
 @pytest.mark.integration
@@ -26,13 +27,14 @@ def test_app_initialization():
 
 @pytest.mark.unit
 def test_app_state_defaults():
-    """AppState initializes with expected defaults."""
+    """AppState v2 initializes with expected defaults."""
     state = AppState()
     assert state.source_path is None
     assert state.source_img is None
-    assert state.mode == "MV"
+    assert state.format == "MV"        # renamed from .mode
+    assert state.resource_type == "A2"
     assert state.tiles is None
-    assert state.tile_size == 32
+    assert state.tile_size == 48       # v2 default is 48, not 32
     assert state.output_dir is not None
 
 
@@ -42,7 +44,7 @@ def test_validate_dimensions_xp_valid():
     from PIL import Image
     app = App()
     img = Image.new("RGBA", (96, 128))
-    result = app._validate_dimensions(img, "XP")
+    result = app._validate_dimensions(img, "A2", "XP")  # v2 signature: (img, resource_type, fmt)
     assert result is None
     app.destroy()
 
@@ -53,7 +55,7 @@ def test_validate_dimensions_xp_invalid():
     from PIL import Image
     app = App()
     img = Image.new("RGBA", (64, 64))
-    result = app._validate_dimensions(img, "XP")
+    result = app._validate_dimensions(img, "A2", "XP")
     assert result is not None
     assert "XP" in result
     assert "96" in result
@@ -66,7 +68,7 @@ def test_validate_dimensions_mv_valid_32px():
     from PIL import Image
     app = App()
     img = Image.new("RGBA", (64, 96))
-    result = app._validate_dimensions(img, "MV")
+    result = app._validate_dimensions(img, "A2", "MV")
     assert result is None
     app.destroy()
 
@@ -77,17 +79,23 @@ def test_validate_dimensions_mv_valid_48px():
     from PIL import Image
     app = App()
     img = Image.new("RGBA", (96, 144))
-    result = app._validate_dimensions(img, "MV")
+    result = app._validate_dimensions(img, "A2", "MV")
     assert result is None
     app.destroy()
 
 
 @pytest.mark.unit
 def test_animation_controls_state_toggle():
-    """Test that animation control states are updated when toggled."""
+    """Animation controls appear in A1 secondary toolbar context."""
     app = App()
 
-    # By default, controls should be disabled
+    # Switch to A1 mode to get animation controls
+    app._type_var.set("Animé A1")
+    app._on_type_change("Animé A1")
+
+    # By default in A1 mode, controls should be disabled (animated=False)
+    assert hasattr(app, "menu_anim_type")
+    assert hasattr(app, "menu_speed")
     assert app.menu_anim_type.cget("state") == "disabled"
     assert app.menu_speed.cget("state") == "disabled"
 
@@ -95,13 +103,6 @@ def test_animation_controls_state_toggle():
     app._animated_var.set(True)
     app._update_animation_controls_state()
     assert app.menu_anim_type.cget("state") == "normal"
-    assert app.menu_speed.cget("state") == "normal"
-
-    # Under XP mode, animation mode should be forced to Horizontale and disabled
-    app._mode_var.set("XP")
-    app._update_animation_controls_state()
-    assert app._anim_type_var.get() == "Horizontale (Eau/Sol)"
-    assert app.menu_anim_type.cget("state") == "disabled"
     assert app.menu_speed.cget("state") == "normal"
 
     app.destroy()
