@@ -180,3 +180,35 @@ def test_a1_conversion_preserves_2d_tiles():
     assert len(app._state.tiles[0]) == 47
 
     app.destroy()
+
+
+@pytest.mark.unit
+def test_a4_conversion_populates_tiles_for_canvas():
+    """A4 conversion must store wall-top tiles in AppState.tiles for canvas preview.
+
+    Root cause of the empty APERCU CANVAS bug: _convert_a4 stored tiles=None,
+    so _redraw_canvas_grid had nothing to draw.
+
+    Fix: extract 47 tiles from the first wall-top strip (8-col x 6-row, 48px)
+    and store them as a flat list[Image.Image] in AppState.tiles.
+    """
+    import dataclasses
+
+    from PIL import Image
+
+    app = App()
+    app._type_var.set("\U0001f9f1 Mur")
+    app._on_type_change("\U0001f9f1 Mur")
+
+    # Minimum valid A4 source: 96x120 px (one top row + one side row), non-transparent
+    img = Image.new("RGBA", (96, 120), color=(128, 64, 32, 255))
+    app._state = dataclasses.replace(app._state, source_img=img)
+
+    app._convert_a4()
+
+    assert app._state.tiles is not None, "tiles must not be None after A4 conversion"
+    assert isinstance(app._state.tiles, list), "tiles must be a list"
+    assert len(app._state.tiles) == 47, "must have 47 wall-top tiles (FLOOR_AUTOTILE_TABLE)"
+    assert hasattr(app._state.tiles[0], "size"), "each tile must be a PIL Image"
+
+    app.destroy()

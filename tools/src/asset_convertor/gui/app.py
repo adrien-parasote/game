@@ -762,24 +762,39 @@ class App(ctk.CTk):
             assert img is not None
             tops_img, sides_img = convert_mv_a4(img)
 
-            # Stitch vertically for single-image preview
+            # Stitch vertically for single-image preview (SORTIE TILED panel)
             total_h = tops_img.height + sides_img.height
             max_w = max(tops_img.width, sides_img.width)
             stitched = Image.new("RGBA", (max_w, total_h))
             stitched.paste(tops_img, (0, 0))
             stitched.paste(sides_img, (0, tops_img.height))
 
+            # Extract 47 wall-top tiles from the first strip for canvas preview.
+            # tops_img is an 8-col x 6-row sheet (tile_size=48). Only the first
+            # 288px-tall strip (one kind) is needed for the blob bitmask canvas.
+            tile_size = 48
+            sheet_cols = 8
+            wall_top_tiles: list[Image.Image] = []
+            for shape in range(47):
+                col = shape % sheet_cols
+                row = shape // sheet_cols
+                x0 = col * tile_size
+                y0 = row * tile_size
+                wall_top_tiles.append(
+                    tops_img.crop((x0, y0, x0 + tile_size, y0 + tile_size))
+                )
+
             self._state = dataclasses.replace(
                 self._state,
                 result_img=stitched,
-                tiles=None,
-                tile_size=48,
+                tiles=wall_top_tiles,
+                tile_size=tile_size,
             )
             # Store both strips for export
             self._a4_tops: Image.Image = tops_img
             self._a4_sides: Image.Image = sides_img
 
-            self.after(0, lambda: self._on_convert_success_single(stitched, "A4", 48))
+            self.after(0, lambda: self._on_convert_success_a4(stitched, wall_top_tiles, tile_size))
         except Exception as err:
             msg = str(err)
             self.after(0, lambda m=msg: self._on_convert_error(m))
@@ -822,6 +837,22 @@ class App(ctk.CTk):
             tiles_list = cast(list[list[Image.Image]], tiles)
             num_frames = len(tiles_list)
             self._setup_animation(num_frames)
+
+    def _on_convert_success_a4(
+        self,
+        result_img: Image.Image,
+        wall_top_tiles: list[Image.Image],
+        tile_size: int,
+    ) -> None:
+        """A4 success: show stitched preview in SORTIE panel and wall-top tiles in canvas."""
+        self.btn_convert.configure(state="normal")
+        self.btn_export.configure(state="normal")
+        self._display_result_image(result_img)
+        w, h = result_img.size
+        self.lbl_output_info.configure(text=f"A4 : {w}x{h} px")
+        self._set_status(f"A4 : conversion réussie — {w}x{h} px.")
+        # Draw wall-top tiles in canvas (flat list → blob bitmask pattern)
+        self._draw_canvas_pattern(wall_top_tiles, tile_size)
 
     def _on_convert_success_single(
         self, result_img: Image.Image, label: str, tile_size: int
