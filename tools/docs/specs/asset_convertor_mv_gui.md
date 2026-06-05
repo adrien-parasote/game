@@ -283,9 +283,16 @@ def _run_conversion(self) -> None:
         threading.Thread(target=handler, daemon=True).start()
 ```
 
-Each converter method (`_convert_a2`, `_convert_a3`, etc.) runs in a thread, updates `self._state` via `replace()`, then calls `self.after(0, self._refresh_panels)` to update UI from the main thread.
+Each converter method (`_convert_a2`, `_convert_a3`, etc.) runs in a thread, updates `self._state` via `replace()`, then calls `self.after(0, <success_callback>)` to update UI from the main thread. Each type has its own success callback:
+- `_on_convert_success_a2(tiles, tile_size)` — used by A1/A2/A3
+- `_on_convert_success_a4(result_img, wall_top_tiles, tile_size)` — used by A4 only
+- `_on_convert_success_single(result_img, label, tile_size)` — used by Recolor
 
-**Note for A4 Converter:** The core A4 converter returns a tuple of two images (wall tops and sides). The `_convert_a4` wrapper in `app.py` handles saving these as two separate export files. To satisfy the single `result_img` UI preview, the wrapper stitches the two strips vertically (using `Image.new()` and `paste()`) into a single composite image and stores that composite in `self._state.result_img`.
+**Note for A4 Converter:** The core A4 converter returns a tuple of two images (wall tops and sides). The `_convert_a4` wrapper:
+1. Stitches them vertically for the `result_img` SORTIE TILED preview.
+2. Extracts the 47 wall-top tiles from the first strip of `tops_img` (8-col x 6-row sheet, tile_size=48) into a flat `list[Image.Image]` and stores it in `AppState.tiles` for the canvas blob bitmask pattern.
+3. Calls `_on_convert_success_a4` which displays both the stitched preview and the canvas pattern.
+
 
 ### macOS Menu Bar
 
@@ -493,3 +500,5 @@ tests/asset_convertor/gui/
 | 2026-06-05 | `_convert_a2()` always called `convert_mv()`, ignoring XP format — XP images would convert incorrectly | Added format dispatch: `if fmt_val == "XP": convert_xp(…) else: convert_mv(…)` | VERIFY code review |
 | 2026-06-05 | Spec Constraint `Never Do: Import from core/recolor.py in app.py` was overly strict — `extract_palette()` must be called in `app.py` at file load time to init `RecolorState.source_palette` before `RecolorPanel` exists | Constraint relaxed: `extract_palette` import allowed in `app.py` for initial palette seed; all other recolor logic stays in `recolor_panel.py` | doc-update |
 | 2026-06-05 | Spec referenced `test_gui_state_v2.py` which was never created; AppState v2 tests live in `tests/asset_convertor/gui/test_app.py` | Updated Cross-Spec Contracts and File Tree to reflect actual location | doc-update |
+| 2026-06-05 | `_convert_a4()` stored `tiles=None` in `AppState` — APERÇU CANVAS remained empty after A4 conversion. Spec only documented the SORTIE TILED stitch, not the canvas tile extraction. | `_convert_a4` now extracts 47 wall-top tiles from the first strip of `tops_img` and stores them in `AppState.tiles`. New callback `_on_convert_success_a4` calls `_draw_canvas_pattern` with the wall-top tiles. | HARDEN doc-update |
+| 2026-06-05 | Spec incorrectly stated converters call `self.after(0, self._refresh_panels)`. In practice each type has a dedicated success callback. | Updated § `_run_conversion() dispatch` to list all three callbacks and document their roles. | doc-update |
