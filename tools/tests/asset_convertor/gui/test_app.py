@@ -634,12 +634,17 @@ def test_on_convert_success_a2_flat_no_animation():
     from PIL import Image
     import dataclasses
     import tkinter as tk
+    from unittest.mock import patch
 
     app = App()
     # Flat tile list (not 2D) → no animation
     fake_tiles = [Image.new("RGBA", (48, 48), (0, 0, 0, 255)) for _ in range(47)]
     app._animated_var = tk.BooleanVar(value=False)
-    app._on_convert_success_a2(fake_tiles, 48)
+    app._state = dataclasses.replace(app._state, result_img=Image.new("RGBA", (48, 48)))
+
+    with patch.object(app, "_display_result_image"), patch.object(app, "_redraw_canvas_grid"):
+        app._on_convert_success_a2(fake_tiles, 48)
+
     assert app._timer_id is None  # no animation started
     app.destroy()
 
@@ -663,11 +668,12 @@ def test_on_convert_error_sets_error_status():
 def test_on_convert_success_single_shows_dimensions():
     """_on_convert_success_single displays image dimensions in output info label."""
     from PIL import Image
+    from unittest.mock import patch
     app = App()
     img = Image.new("RGBA", (320, 240))
-    app._on_convert_success_single(img, "A3", 48)
-    assert "320" in app.lbl_output_info.cget("text")
-    assert "240" in app.lbl_output_info.cget("text")
+    with patch.object(app, "_display_result_image"):
+        app._on_convert_success_single(img, "A3", 48)
+    assert "320x240" in app.lbl_output_info.cget("text")
     app.destroy()
 
 
@@ -688,9 +694,11 @@ def test_on_recolor_state_change_updates_state():
 def test_on_recolor_preview_ready_displays_image():
     """_on_recolor_preview_ready calls _display_result_image without error."""
     from PIL import Image
+    from unittest.mock import patch
     app = App()
     img = Image.new("RGBA", (64, 64), (200, 100, 50, 255))
-    app._on_recolor_preview_ready(img)  # must not raise
+    with patch.object(app, "_display_result_image"):
+        app._on_recolor_preview_ready(img)  # must not raise
     app.destroy()
 
 

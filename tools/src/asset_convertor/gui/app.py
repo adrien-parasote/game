@@ -482,18 +482,18 @@ class App(ctk.CTk):
             btn_frame, text="✕ Effacer", width=90, command=self._clear_canvas_grid,
         ).pack(side="left", padx=2)
 
-        # A4-only toggle: Mur (sides, 4N) vs Top (tops, blob)
-        self._a4_canvas_mode_var = tk.StringVar(value="Mur")
-        self._a4_mode_toggle = ctk.CTkSegmentedButton(
+        # A4/A3 canvas mode toggle: Mur/Top (A4) or Kind 1/Kind 2... (A3)
+        self._canvas_mode_var = tk.StringVar(value="Mur")
+        self._canvas_mode_toggle = ctk.CTkSegmentedButton(
             self._canvas_frame,
             values=["Mur", "Top"],
-            variable=self._a4_canvas_mode_var,
-            command=self._on_a4_canvas_mode_change,
+            variable=self._canvas_mode_var,
+            command=self._on_canvas_mode_change,
             width=180,
         )
-        # Hidden by default — only shown for A4
-        self._a4_mode_toggle.grid(row=4, column=0, pady=(0, 4))
-        self._a4_mode_toggle.grid_remove()
+        # Hidden by default — only shown for A3/A4
+        self._canvas_mode_toggle.grid(row=4, column=0, pady=(0, 4))
+        self._canvas_mode_toggle.grid_remove()
 
         self.lbl_canvas_info = ctk.CTkLabel(self._canvas_frame, text="", text_color="gray")
         self.lbl_canvas_info.grid(row=3, column=0, pady=(2, 2))
@@ -704,12 +704,12 @@ class App(ctk.CTk):
 
         self._reset_output_panel()
 
-        # Show/hide the A4 canvas mode toggle
+        # Hide canvas mode toggle by default on type change
+        self._canvas_mode_toggle.grid_remove()
         if resource_type == "A4":
-            self._a4_canvas_mode_var.set("Mur")
-            self._a4_mode_toggle.grid()
-        else:
-            self._a4_mode_toggle.grid_remove()
+            self._canvas_mode_toggle.configure(values=["Mur", "Top"])
+            self._canvas_mode_var.set("Mur")
+            self._canvas_mode_toggle.grid()
 
         # Update recolor panel if newly created and we have data
         if self._recolor_panel is not None and self._state.recolor:
@@ -952,41 +952,56 @@ class App(ctk.CTk):
         self.lbl_output_info.configure(text=f"A4 : {w}x{h} px")
         self._set_status(f"A4 : conversion réussie — {w}x{h} px.")
         # Default to Mur (sides) canvas with the 2-row horizontal wall pattern
-        self._a4_canvas_mode_var.set("Mur")
+        self._canvas_mode_var.set("Mur")
         self._canvas_grid = [row[:] for row in _GRID_WALL_DEFAULT]
         self._redraw_canvas_grid()
         self.lbl_canvas_info.configure(
             text="Cliquez pour dessiner — bitmask 4-voisins (Mur)"
         )
 
-    def _on_a4_canvas_mode_change(self, mode: str) -> None:
-        """Switch canvas between Mur (4-neighbor sides) and Top (blob tops)."""
-        if not hasattr(self, "_a4_wall_side_tiles"):
-            return
-        if mode == "Top":
-            tiles: list[Image.Image] = self._a4_wall_top_tiles
-            self._state = dataclasses.replace(self._state, tiles=tiles)
-            self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
-            self._redraw_canvas_grid()
-            self.lbl_canvas_info.configure(
-                text="Cliquez pour dessiner — bitmask 8-voisins (Sol/Toit)"
-            )
-        else:
-            tiles = self._a4_wall_side_tiles
-            self._state = dataclasses.replace(self._state, tiles=tiles)
-            self._canvas_grid = [row[:] for row in _GRID_WALL_DEFAULT]
-            self._redraw_canvas_grid()
-            self.lbl_canvas_info.configure(
-                text="Cliquez pour dessiner — bitmask 4-voisins (Mur)"
-            )
+    def _on_canvas_mode_change(self, mode: str) -> None:
+        """Switch canvas between modes for A3 (Toit/Mur) and A4 (Mur/Top)."""
+        if self._state.resource_type == "A4":
+            if not hasattr(self, "_a4_wall_side_tiles"):
+                return
+            if mode == "Top":
+                tiles: list[Image.Image] = self._a4_wall_top_tiles
+                self._state = dataclasses.replace(self._state, tiles=tiles)
+                self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
+                self._redraw_canvas_grid()
+                self.lbl_canvas_info.configure(
+                    text="Cliquez pour dessiner — bitmask 8-voisins (Sol/Toit)"
+                )
+            else:
+                tiles = self._a4_wall_side_tiles
+                self._state = dataclasses.replace(self._state, tiles=tiles)
+                self._canvas_grid = [row[:] for row in _GRID_WALL_DEFAULT]
+                self._redraw_canvas_grid()
+                self.lbl_canvas_info.configure(
+                    text="Cliquez pour dessiner — bitmask 4-voisins (Mur)"
+                )
+        elif self._state.resource_type == "A3":
+            if not hasattr(self, "_a3_all_kinds"):
+                return
+            
+            # Find the requested kind tiles
+            for kind_name, kind_tiles in self._a3_all_kinds:
+                if kind_name == mode:
+                    self._state = dataclasses.replace(self._state, tiles=kind_tiles)
+                    self._canvas_grid = [row[:] for row in _GRID_WALL_DEFAULT]
+                    self._redraw_canvas_grid()
+                    self.lbl_canvas_info.configure(
+                        text=f"Cliquez pour dessiner — bitmask 4-voisins ({kind_name})"
+                    )
+                    break
 
     def _on_convert_success_a3(
         self,
         result_img: Image.Image,
-        wall_tiles: list[Image.Image],
+        all_kinds: list[tuple[str, list[Image.Image]]],
         tile_size: int,
     ) -> None:
-        """A3 success: show strip in SORTIE panel, draw wall canvas (4-neighbor)."""
+        """A3 success: setup kinds toggle and show wall canvas."""
         self.btn_convert.configure(state="normal")
         self.btn_export.configure(state="normal")
         self._display_result_image(result_img)
@@ -1369,8 +1384,8 @@ class App(ctk.CTk):
             and (
                 self._state.resource_type == "A3"
                 or (
-                    getattr(self, "_a4_canvas_mode_var", None) is not None
-                    and self._a4_canvas_mode_var.get() == "Mur"
+                    getattr(self, "_canvas_mode_var", None) is not None
+                    and self._canvas_mode_var.get() == "Mur"
                 )
             )
         )
@@ -1407,8 +1422,8 @@ class App(ctk.CTk):
             self._state.resource_type == "A3"
             or (
                 self._state.resource_type == "A4"
-                and getattr(self, "_a4_canvas_mode_var", None) is not None
-                and self._a4_canvas_mode_var.get() == "Mur"
+                and getattr(self, "_canvas_mode_var", None) is not None
+                and self._canvas_mode_var.get() == "Mur"
             )
         )
 
