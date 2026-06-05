@@ -202,3 +202,318 @@ def test_tc004_no_french_comments_in_calibration():
     matches = french_indicators.findall(content)
     assert not matches, f"Found French comments in calibrate_halos.py: {matches}"
 
+
+# ---------------------------------------------------------------------------
+# _handle_event — covers all keyboard/mouse branches (lines 134-180)
+# ---------------------------------------------------------------------------
+
+
+class _FakeEvent:
+    """Minimal pygame.Event surrogate for unit tests."""
+    def __init__(self, type_id: int, **attrs):
+        self.type = type_id
+        for k, v in attrs.items():
+            setattr(self, k, v)
+
+
+class _FakeMods:
+    """Bit-field surrogate for pygame.key.get_mods()."""
+    def __init__(self, shift=False, ctrl=False):
+        from unittest.mock import MagicMock
+        self._shift = shift
+        self._ctrl = ctrl
+
+    def __and__(self, flag):
+        # pygame.KMOD_SHIFT = 1, pygame.KMOD_CTRL = 64 (typical values)
+        # We return truthy/falsy based on what was requested
+        try:
+            import pygame
+            if flag == pygame.KMOD_SHIFT:
+                return 1 if self._shift else 0
+            if flag == pygame.KMOD_CTRL:
+                return 1 if self._ctrl else 0
+        except Exception:
+            pass
+        return 0
+
+
+class TestHandleEvent:
+    """Tests for _handle_event covering all branches (lines 134-180)."""
+
+    def _setup(self):
+        from unittest.mock import MagicMock
+        import pygame
+        self.pygame = pygame
+        self.fire_pts: list = []
+        self.mush_pts: list = []
+        self.mode = MODE_FIRE
+        self.screen = MagicMock()
+        return self
+
+    def _call(self, event):
+        from calibration.calibrate_halos import _handle_event
+        import pygame
+        return _handle_event(event, True, self.mode, self.fire_pts, self.mush_pts, self.screen)
+
+    def test_quit_event_stops_running(self):
+        import pygame
+        self._setup()
+        event = _FakeEvent(pygame.QUIT)
+        running, mode, screen = self._call(event)
+        assert running is False
+
+    def test_escape_stops_running(self):
+        import pygame
+        self._setup()
+        event = _FakeEvent(pygame.KEYDOWN, key=pygame.K_ESCAPE)
+        running, mode, _ = self._call(event)
+        assert running is False
+
+    def test_q_stops_running(self):
+        import pygame
+        self._setup()
+        event = _FakeEvent(pygame.KEYDOWN, key=pygame.K_q)
+        running, _, _ = self._call(event)
+        assert running is False
+
+    def test_m_switches_mode_fire_to_mush(self):
+        import pygame
+        self._setup()
+        self.mode = MODE_FIRE
+        event = _FakeEvent(pygame.KEYDOWN, key=pygame.K_m)
+        _, mode, _ = self._call(event)
+        assert mode == MODE_MUSH
+
+    def test_m_switches_mode_mush_to_fire(self):
+        import pygame
+        self._setup()
+        self.mode = MODE_MUSH
+        event = _FakeEvent(pygame.KEYDOWN, key=pygame.K_m)
+        _, mode, _ = self._call(event)
+        assert mode == MODE_FIRE
+
+    def test_z_undoes_last_fire_point(self):
+        import pygame
+        self._setup()
+        self.fire_pts = [(100, 100, 45), (200, 200, 28)]
+        self.mode = MODE_FIRE
+        event = _FakeEvent(pygame.KEYDOWN, key=pygame.K_z)
+        self._call(event)
+        assert len(self.fire_pts) == 1
+        assert self.fire_pts[0] == (100, 100, 45)
+
+    def test_z_undoes_last_mush_point(self):
+        import pygame
+        self._setup()
+        self.mush_pts = [(100, 100, 22, (70, 220, 200))]
+        self.mode = MODE_MUSH
+        event = _FakeEvent(pygame.KEYDOWN, key=pygame.K_z)
+        self._call(event)
+        assert len(self.mush_pts) == 0
+
+    def test_z_noop_when_fire_empty(self):
+        import pygame
+        self._setup()
+        self.fire_pts = []
+        self.mode = MODE_FIRE
+        event = _FakeEvent(pygame.KEYDOWN, key=pygame.K_z)
+        self._call(event)  # must not raise
+        assert len(self.fire_pts) == 0
+
+    def test_z_noop_when_mush_empty(self):
+        import pygame
+        self._setup()
+        self.mush_pts = []
+        self.mode = MODE_MUSH
+        event = _FakeEvent(pygame.KEYDOWN, key=pygame.K_z)
+        self._call(event)  # must not raise
+
+    def test_s_calls_save(self, tmp_path, monkeypatch):
+        import pygame
+        import os
+        monkeypatch.chdir(tmp_path)
+        os.makedirs("scripts", exist_ok=True)
+        self._setup()
+        self.fire_pts = [(10, 20, 45)]
+        event = _FakeEvent(pygame.KEYDOWN, key=pygame.K_s)
+        self._call(event)
+        assert (tmp_path / "scripts" / "calibration_result.py").exists()
+
+    def test_left_click_fire_mode_large(self):
+        import pygame
+        from unittest.mock import patch, MagicMock
+        self._setup()
+        event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=1, pos=(300, 400))
+        with patch("pygame.key.get_mods", return_value=0):
+            self._call(event)
+        assert len(self.fire_pts) == 1
+        assert self.fire_pts[0][2] == R_FIRE_L
+
+    def test_left_click_fire_mode_shift_medium(self):
+        import pygame
+        from unittest.mock import patch
+        self._setup()
+        event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=1, pos=(100, 200))
+        with patch("pygame.key.get_mods", return_value=pygame.KMOD_SHIFT):
+            self._call(event)
+        assert len(self.fire_pts) == 1
+        assert self.fire_pts[0][2] == R_FIRE_M
+
+    def test_left_click_fire_mode_ctrl_small(self):
+        import pygame
+        from unittest.mock import patch
+        self._setup()
+        event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=1, pos=(100, 200))
+        with patch("pygame.key.get_mods", return_value=pygame.KMOD_CTRL):
+            self._call(event)
+        assert len(self.fire_pts) == 1
+        assert self.fire_pts[0][2] == R_FIRE_S
+
+    def test_left_click_mush_mode_large(self):
+        import pygame
+        from unittest.mock import patch
+        self._setup()
+        self.mode = MODE_MUSH
+        event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=1, pos=(50, 60))
+        with patch("pygame.key.get_mods", return_value=0):
+            self._call(event)
+        assert len(self.mush_pts) == 1
+        assert self.mush_pts[0][2] == R_MUSH_L
+
+    def test_left_click_mush_mode_shift_medium(self):
+        import pygame
+        from unittest.mock import patch
+        self._setup()
+        self.mode = MODE_MUSH
+        event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=1, pos=(50, 60))
+        with patch("pygame.key.get_mods", return_value=pygame.KMOD_SHIFT):
+            self._call(event)
+        assert len(self.mush_pts) == 1
+        assert self.mush_pts[0][2] == R_MUSH_M
+
+    def test_left_click_mush_mode_ctrl_small(self):
+        import pygame
+        from unittest.mock import patch
+        self._setup()
+        self.mode = MODE_MUSH
+        event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=1, pos=(50, 60))
+        with patch("pygame.key.get_mods", return_value=pygame.KMOD_CTRL):
+            self._call(event)
+        assert len(self.mush_pts) == 1
+        assert self.mush_pts[0][2] == R_MUSH_S
+
+    def test_right_click_removes_fire_point(self):
+        import pygame
+        from unittest.mock import patch
+        self._setup()
+        self.fire_pts = [(100, 100, 45)]
+        event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=3, pos=(100, 100))
+        with patch("pygame.key.get_mods", return_value=0):
+            self._call(event)
+        assert len(self.fire_pts) == 0
+
+    def test_right_click_removes_mush_point(self):
+        import pygame
+        from unittest.mock import patch
+        self._setup()
+        self.mush_pts = [(200, 200, 22, (70, 220, 200))]
+        event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=3, pos=(200, 200))
+        with patch("pygame.key.get_mods", return_value=0):
+            self._call(event)
+        assert len(self.mush_pts) == 0
+
+    def test_right_click_noop_when_no_nearby_point(self):
+        import pygame
+        from unittest.mock import patch
+        self._setup()
+        self.fire_pts = [(100, 100, 45)]
+        event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=3, pos=(500, 500))
+        with patch("pygame.key.get_mods", return_value=0):
+            self._call(event)
+        assert len(self.fire_pts) == 1  # unchanged
+
+    def test_f_key_toggles_fullscreen(self):
+        import pygame
+        from unittest.mock import patch, MagicMock
+        self._setup()
+        fake_screen = MagicMock()
+        event = _FakeEvent(pygame.KEYDOWN, key=pygame.K_f)
+        with patch("pygame.display.set_mode", return_value=fake_screen) as mock_set:
+            _, _, new_screen = self._call(event)
+            mock_set.assert_called_once()
+            assert new_screen is fake_screen
+
+
+# ---------------------------------------------------------------------------
+# _draw_legend / _draw_points — require pygame Surface (headless display)
+# ---------------------------------------------------------------------------
+
+import os
+os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+
+
+class TestDrawLegend:
+    """Tests for _draw_legend — covers lines 92-110."""
+
+    def setup_method(self):
+        import pygame
+        pygame.init()
+        self.screen = pygame.Surface((400, 200))
+        self.font = pygame.font.SysFont("monospace", 14)
+
+    def teardown_method(self):
+        import pygame
+        pygame.quit()
+
+    def test_draw_legend_fire_mode_no_crash(self):
+        from calibration.calibrate_halos import _draw_legend
+        _draw_legend(self.screen, self.font, "FIRE", 3, 1)
+
+    def test_draw_legend_mushroom_mode_no_crash(self):
+        from calibration.calibrate_halos import _draw_legend
+        _draw_legend(self.screen, self.font, "MUSHROOM", 0, 5)
+
+    def test_draw_legend_zero_counts(self):
+        from calibration.calibrate_halos import _draw_legend
+        _draw_legend(self.screen, self.font, "FIRE", 0, 0)
+
+
+class TestDrawPoints:
+    """Tests for _draw_points — covers lines 113-131."""
+
+    def setup_method(self):
+        import pygame
+        pygame.init()
+        self.screen = pygame.Surface((800, 600))
+
+    def teardown_method(self):
+        import pygame
+        pygame.quit()
+
+    def test_draw_points_fire_only_no_crash(self):
+        from calibration.calibrate_halos import _draw_points
+        fire = [(100, 100, 45), (200, 200, 28), (300, 300, 18)]
+        _draw_points(self.screen, fire, [])
+
+    def test_draw_points_mush_only_no_crash(self):
+        from calibration.calibrate_halos import _draw_points
+        mush = [(150, 150, 22, (70, 220, 200)), (250, 250, 16, (220, 80, 60))]
+        _draw_points(self.screen, [], mush)
+
+    def test_draw_points_both_no_crash(self):
+        from calibration.calibrate_halos import _draw_points
+        fire = [(100, 100, 45)]
+        mush = [(200, 200, 22, (70, 220, 200))]
+        _draw_points(self.screen, fire, mush)
+
+    def test_draw_points_empty_lists_no_crash(self):
+        from calibration.calibrate_halos import _draw_points
+        _draw_points(self.screen, [], [])
+
+    def test_draw_points_unknown_radius_uses_fallback_color(self):
+        """Fire point with radius not in FIRE_COLORS still draws (uses default)."""
+        from calibration.calibrate_halos import _draw_points
+        # Radius 99 is not in FIRE_COLORS dict → get() returns (255, 255, 255)
+        fire = [(100, 100, 99)]
+        _draw_points(self.screen, fire, [])  # must not raise

@@ -1105,4 +1105,40 @@ Un test d'intégration qui simule la génération d'un tileset complet et vérif
 
 ---
 
-*Last updated: 2026-06-03 — added A-TEST-042 from Domain Warping implementation session.*
+---
+
+### L-TEST-020 · 2026-06-05 · U · Minor Rework
+**Mocker un sous-objet déjà construit dans un fixture via assignation directe, non via `patch` de la classe**
+
+Quand un fixture instancie une classe `A` dont `__init__` crée une vraie instance de `B` (ex : `PauseScreen` crée `SaveMenuOverlay`), patcher la classe `B` après coup n'affecte pas l'attribut `a._b` déjà construit. Les tests qui testent les branches de `a._b` voient donc une vraie instance, pas un mock — causant des `AttributeError`, `TypeError`, ou comportements de prod indésirables en headless.
+
+```python
+# ❌ Le patch de la classe B n'affecte pas l'instance déjà créée dans le fixture
+@pytest.fixture
+def pause_screen_save_menu(pause_screen):
+    pause_screen.state = "SAVE_MENU"  # _save_menu est déjà une vraie SaveMenuOverlay
+    return pause_screen
+
+def test_update_in_save_menu(pause_screen_save_menu):
+    with patch("src.ui.pause_screen.SaveMenuOverlay") as mock_cls:
+        pause_screen_save_menu.update()  # ← utilise l'instance réelle, pas mock_cls.return_value
+
+# ✅ Remplacer directement l'attribut de l'instance construite
+@pytest.fixture
+def pause_screen_save_menu(pause_screen):
+    pause_screen._save_menu = MagicMock()  # remplace l'attribut sur l'instance existante
+    pause_screen.state = "SAVE_MENU"
+    return pause_screen
+
+def test_update_in_save_menu(pause_screen_save_menu):
+    pause_screen_save_menu.update()  # utilise MagicMock → contrôlable
+    pause_screen_save_menu._save_menu.update.assert_called_once()
+```
+
+**Règle :** Pour tester des branches d'état d'un objet composite (state machine avec sous-objet UI), remplacer l'attribut directement sur l'instance (`instance._sub = MagicMock()`) dans le fixture ou en setup du test. `patch('module.SubClass')` ne patche que les futures instanciations, jamais les attributs existants.
+
+**Evidence :** 6 tests `test_pause_screen.py` (SAVE_MENU branch) passaient de FAIL à PASS après remplacement de `pause_screen.state = "SAVE_MENU"` par `pause_screen._save_menu = MagicMock(); pause_screen.state = "SAVE_MENU"`. commit de ce cycle.
+
+---
+
+*Last updated: 2026-06-05 — added L-TEST-020 (already-constructed sub-object mock) from coverage audit HARDEN session.*

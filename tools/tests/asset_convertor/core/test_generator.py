@@ -64,3 +64,31 @@ def test_tc007_determinism():
     out1 = generate_texture("grass", seed=42, density=10)
     out2 = generate_texture("grass", seed=42, density=10)
     assert np.array_equal(out1, out2)
+
+
+def test_apply_stamp_binary_val_one():
+    """apply_stamp: val==1 cells are written with the given tone (covers lines 26-29)."""
+    from asset_convertor.core.generator import apply_stamp
+
+    grid = np.zeros((32, 32), dtype=int)
+    # Binary cluster: only the first cell is 1, rest 0
+    cluster = [[1, 0], [0, 1]]
+    apply_stamp(grid, cluster, x=5, y=5, tone=3)
+    assert grid[5, 5] == 3   # (y+0, x+0) = (5,5)
+    assert grid[6, 6] == 3   # (y+1, x+1) = (6,6)
+    assert grid[5, 6] == 0   # val==0 → not written
+    assert grid[6, 5] == 0   # val==0 → not written
+
+
+def test_generate_texture_curly_sub_type():
+    """generate_texture with sub_type='curly' returns valid 32x32 array (covers line 50)."""
+    arr = generate_texture("grass", seed=7, density=8, sub_type="curly")
+    assert arr.shape == (32, 32)
+    assert np.all(np.isin(arr, [0, 1, 2, 3, 4]))
+
+
+def test_generate_texture_wild_sub_type():
+    """generate_texture with sub_type='wild' returns valid 32x32 array (covers line 52)."""
+    arr = generate_texture("grass", seed=13, density=6, sub_type="wild")
+    assert arr.shape == (32, 32)
+    assert np.all(np.isin(arr, [0, 1, 2, 3, 4]))

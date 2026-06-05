@@ -113,12 +113,13 @@ def test_pause_screen_handle_event_click_sauvegarder(pause_screen):
     event.button = 1
     event.pos = pause_screen.button_rects[2].center
 
-    with patch("src.ui.pause_screen.SaveMenuOverlay") as mock_overlay_cls:
-        mock_overlay = MagicMock()
-        mock_overlay_cls.return_value = mock_overlay
-        result = pause_screen.handle_event(event)
+    # Mock _save_menu on the existing instance (patch won't affect already-created attr)
+    pause_screen._save_menu = MagicMock()
+    result = pause_screen.handle_event(event)
     assert result is None
     assert pause_screen.state == "SAVE_MENU"
+    pause_screen._save_menu.refresh.assert_called_once()
+
 
 
 def test_pause_screen_handle_event_ignore_wrong_button(pause_screen):
@@ -183,3 +184,93 @@ def test_pause_screen_font_fallback(mock_screen, mock_save_manager):
 
         ps = PauseScreen(mock_screen, mock_save_manager)
         assert mock_sysfont.call_count >= 3  # title, item, small fonts fallbacks
+
+
+# ── SAVE_MENU state coverage (lines 189-200, 215-216, 230-232) ────────────────
+
+
+@pytest.fixture
+def pause_screen_save_menu(pause_screen):
+    """PauseScreen in SAVE_MENU state with a mocked _save_menu."""
+    pause_screen._save_menu = MagicMock()
+    pause_screen.state = "SAVE_MENU"
+    return pause_screen
+
+
+def test_handle_event_escape_in_save_menu_returns_to_main(pause_screen_save_menu):
+    """ESC key in SAVE_MENU state switches back to MAIN."""
+    event = MagicMock()
+    event.type = pygame.KEYDOWN
+    event.key = pygame.K_ESCAPE
+    result = pause_screen_save_menu.handle_event(event)
+    assert result is None
+    assert pause_screen_save_menu.state == "MAIN"
+
+
+def test_handle_event_save_menu_back_click_returns_to_main(pause_screen_save_menu):
+    """Back click in SAVE_MENU returns to MAIN state."""
+    event = MagicMock()
+    event.type = pygame.MOUSEBUTTONDOWN
+    event.button = 1
+    pause_screen_save_menu._save_menu.is_back_clicked.return_value = True
+    pause_screen_save_menu._save_menu.get_clicked_slot.return_value = None
+    result = pause_screen_save_menu.handle_event(event)
+    assert result is None
+    assert pause_screen_save_menu.state == "MAIN"
+
+
+def test_handle_event_save_menu_slot_click_returns_save_event(pause_screen_save_menu):
+    """Slot click in SAVE_MENU returns SAVE_REQUESTED GameEvent."""
+    from src.engine.game_events import GameEventType
+
+    event = MagicMock()
+    event.type = pygame.MOUSEBUTTONDOWN
+    event.button = 1
+    pause_screen_save_menu._save_menu.is_back_clicked.return_value = False
+    pause_screen_save_menu._save_menu.get_clicked_slot.return_value = 0  # slot index 0 → slot_id 1
+
+    result = pause_screen_save_menu.handle_event(event)
+    assert result is not None
+    assert result.type == GameEventType.SAVE_REQUESTED
+    assert result.slot_id == 1
+
+
+def test_handle_event_save_menu_no_action_returns_none(pause_screen_save_menu):
+    """SAVE_MENU event with no click recognized returns None."""
+    event = MagicMock()
+    event.type = pygame.MOUSEBUTTONDOWN
+    event.button = 1
+    pause_screen_save_menu._save_menu.is_back_clicked.return_value = False
+    pause_screen_save_menu._save_menu.get_clicked_slot.return_value = None
+    result = pause_screen_save_menu.handle_event(event)
+    assert result is None
+
+
+def test_update_in_save_menu_state(pause_screen_save_menu):
+    """update() in SAVE_MENU delegates to save_menu.update() and returns early."""
+    pause_screen_save_menu.update(0.1)
+    pause_screen_save_menu._save_menu.update.assert_called_once_with(0.1)
+
+
+def test_draw_in_save_menu_state(pause_screen_save_menu):
+    """draw() in SAVE_MENU calls save_menu.draw() instead of panel."""
+    with patch("pygame.mouse.get_pressed", return_value=(False, False, False)):
+        pause_screen_save_menu.draw()
+    pause_screen_save_menu._save_menu.draw.assert_called_once()
+
+
+def test_on_button_click_unknown_index_returns_none(pause_screen):
+    """_on_button_click with out-of-range index returns None."""
+    result = pause_screen._on_button_click(99)
+    assert result is None
+
+
+# ── _make_halo_surface fallback (lines 154-159) ───────────────────────────────
+
+
+def test_make_halo_surface_gaussian_blur_fallback(pause_screen):
+    """_make_halo_surface uses offset blits when gaussian_blur is unavailable."""
+    with patch("pygame.transform.gaussian_blur", side_effect=AttributeError("no blur")):
+        surf = pause_screen._make_halo_surface("Test")
+    assert isinstance(surf, pygame.Surface)
+

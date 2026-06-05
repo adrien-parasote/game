@@ -60,3 +60,38 @@ def test_tc003_grass_more_than_five_colors():
     for c in expected_colors:
         assert c in colors_used
 
+
+def test_empty_palette_falls_back_to_grayscale():
+    """L==0: empty palette triggers 5-step grayscale fallback (covers line 19)."""
+    # All cells value 0 → should get the darkest grayscale color (0,0,0)
+    fake_gen = np.zeros((32, 32), dtype=int)
+    img = quantize_image(fake_gen, [])
+    assert img.size == (32, 32)
+    assert img.mode == "RGB"
+    # With empty palette, fallback is 5-step grayscale [0,64,128,192,255]
+    # val=0 → (0,0,0)
+    assert img.getpixel((0, 0)) == (0, 0, 0)
+
+
+def test_val_below_zero_clamped_to_zero():
+    """Negative noise map values are clamped to 0 before palette lookup (covers line 39)."""
+    fake_gen = np.full((32, 32), -3, dtype=int)
+    palette = [(10, 10, 10), (50, 50, 50), (100, 100, 100), (150, 150, 150), (200, 200, 200)]
+    img = quantize_image(fake_gen, palette)
+    # val<0 → clamped to 0 → darkest sorted palette color
+    assert img.size == (32, 32)
+    colors_used = {c for _, c in img.getcolors()}
+    # Only one unique color should appear (all cells clamped to tone 0)
+    assert len(colors_used) == 1
+
+
+def test_val_above_four_clamped_to_four():
+    """Noise map values > 4 are clamped to 4 before palette lookup (covers line 41)."""
+    fake_gen = np.full((32, 32), 99, dtype=int)
+    palette = [(10, 10, 10), (50, 50, 50), (100, 100, 100), (150, 150, 150), (200, 200, 200)]
+    img = quantize_image(fake_gen, palette)
+    # val>4 → clamped to 4 → lightest sorted palette color
+    assert img.size == (32, 32)
+    colors_used = {c for _, c in img.getcolors()}
+    assert len(colors_used) == 1
+

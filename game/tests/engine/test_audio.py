@@ -319,6 +319,146 @@ def test_stop_all_ambients(audio_manager):
     assert audio_manager._ambient_proposals == {}
 
 
+# ── Coverage gap tests ────────────────────────────────────────────────────────
+
+
+def _make_enabled_audio():
+    """AudioManager with mixer initialized and is_enabled=True."""
+    from src.engine.audio import AudioManager
+    from unittest.mock import patch, MagicMock
+
+    with (
+        patch("pygame.mixer.get_init", return_value=True),
+        patch("src.engine.audio.AudioManager.preload_sfx"),
+    ):
+        am = AudioManager()
+    am.is_enabled = True
+    return am
+
+
+def test_audio_mixer_init_called_when_not_initialized(caplog):
+    """__init__ calls pygame.mixer.init() when mixer is not yet initialized (line 48)."""
+    import logging
+    from src.engine.audio import AudioManager
+    from unittest.mock import patch, MagicMock
+
+    with (
+        patch("pygame.mixer.get_init", return_value=False),
+        patch("pygame.mixer.init") as mock_init,
+        patch("pygame.mixer.set_num_channels") as mock_channels,
+        patch("src.engine.audio.AudioManager.preload_sfx"),
+        caplog.at_level(logging.INFO),
+    ):
+        am = AudioManager()
+
+    mock_init.assert_called_once()
+    mock_channels.assert_called_once_with(32)
+    assert am.is_enabled is True
+
+
+def test_toggle_mute_sets_ambient_volume_to_zero():
+    """toggle_mute(muted=True) calls set_volume(0) on ambient_sounds (line 66)."""
+    from unittest.mock import MagicMock
+    am = _make_enabled_audio()
+    mock_sound = MagicMock()
+    am.ambient_sounds["water"] = mock_sound
+    am.is_muted = False
+    am.toggle_mute()  # → muted=True
+    mock_sound.set_volume.assert_called_with(0)
+
+
+def test_play_sfx_with_volume_multiplier():
+    """play_sfx with volume_multiplier != 1.0 calls set_volume on the sound (line 156)."""
+    from unittest.mock import MagicMock
+    am = _make_enabled_audio()
+    mock_sound = MagicMock()
+    am.sounds["hit"] = mock_sound
+    am.play_sfx("hit", volume_multiplier=0.5)
+    mock_sound.set_volume.assert_called()
+
+
+def test_propose_ambient_empty_name_is_noop():
+    """propose_ambient('', dist) returns immediately without modifying proposals (line 180)."""
+    am = _make_enabled_audio()
+    am.propose_ambient("", 100.0)
+    assert am._ambient_proposals == {}
+
+
+def test_flush_ambient_when_disabled_clears_proposals():
+    """flush_ambient() when is_enabled=False clears proposals and returns early (193-194)."""
+    am = _make_enabled_audio()
+    am.is_enabled = False
+    am._ambient_proposals = {"rain": 50.0}
+    am.flush_ambient()
+    assert am._ambient_proposals == {}
+
+
+def test_flush_ambient_no_free_channel(caplog, tmp_path):
+    """flush_ambient() logs warning when sound.play() returns None (lines 219-220)."""
+    import logging
+    from unittest.mock import MagicMock, patch
+
+    am = _make_enabled_audio()
+    am.sfx_dir = str(tmp_path)
+    # Create a fake sfx file
+    fake_sfx = tmp_path / "rain.ogg"
+    fake_sfx.write_bytes(b"")
+
+    mock_sound = MagicMock()
+    mock_sound.play.return_value = None  # No free channel
+
+    with (
+        patch("pygame.mixer.Sound", return_value=mock_sound),
+        patch("os.path.exists", return_value=True),
+        caplog.at_level(logging.WARNING),
+    ):
+        am.propose_ambient("rain", 50.0)
+        am.flush_ambient()
+
+    assert any("channel" in r.message.lower() or "free" in r.message.lower() for r in caplog.records)
+
+
+def test_flush_ambient_pygame_error_logs(caplog, tmp_path):
+    """flush_ambient() logs ERROR when pygame.mixer.Sound raises pygame.error (224-226)."""
+    import logging
+    import pygame
+    from unittest.mock import patch
+
+    am = _make_enabled_audio()
+    am.sfx_dir = str(tmp_path)
+
+    with (
+        patch("pygame.mixer.Sound", side_effect=pygame.error("load error")),
+        patch("os.path.exists", return_value=True),
+        caplog.at_level(logging.ERROR),
+    ):
+        am.propose_ambient("crash", 10.0)
+        am.flush_ambient()
+
+    assert any("error" in r.levelname.lower() for r in caplog.records)
+
+
+def test_flush_ambient_stops_stale_channels():
+    """flush_ambient() stops channels whose names are no longer proposed (lines 239-243)."""
+    from unittest.mock import MagicMock
+    am = _make_enabled_audio()
+
+    mock_channel = MagicMock()
+    mock_sound = MagicMock()
+    am.ambient_sounds["wind"] = mock_sound
+    am.ambient_channels["wind"] = mock_channel
+
+    # No proposals for "wind" this frame
+    am._ambient_proposals = {}
+    # Trigger stop path via propose + flush with nothing for wind
+    am.flush_ambient()
+
+    # After flush with no proposals, all channels should be stopped
+    mock_channel.stop.assert_called_once()
+    assert "wind" not in am.ambient_sounds
+
+
+
 # assert True (legacy bypass)
 
 # assert True (legacy bypass)

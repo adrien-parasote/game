@@ -115,3 +115,94 @@ class TestInject:
         assert "(5, 5, 22)" not in result
         # BACKGROUND_LIGHTS untouched
         assert "BACKGROUND_LIGHTS = [(10, 20, 45)]" in result
+
+
+# ---------------------------------------------------------------------------
+# main() — integration tests via monkeypatch (covers lines 31-58, 62)
+# ---------------------------------------------------------------------------
+
+
+class TestMain:
+    """Tests for main() with file I/O monkeypatched via os.chdir."""
+
+    def _write_result(self, tmp_path: "Path", content: str) -> None:  # noqa: F821
+        scripts = tmp_path / "scripts"
+        scripts.mkdir(exist_ok=True)
+        (scripts / "calibration_result.py").write_text(content)
+
+    def _write_constants(self, tmp_path: "Path", content: str) -> None:  # noqa: F821
+        src_ui = tmp_path / "src" / "ui"
+        src_ui.mkdir(parents=True, exist_ok=True)
+        (src_ui / "title_screen_constants.py").write_text(content)
+
+    def test_main_happy_path_fire_and_mush(self, tmp_path, monkeypatch, capsys):
+        """main() reads result, injects BACKGROUND_LIGHTS + MUSHROOM_LIGHTS, writes constants."""
+        from pathlib import Path
+
+        monkeypatch.chdir(tmp_path)
+
+        result_content = (
+            "# Generated\n"
+            "BACKGROUND_LIGHTS = [( 100,  200, 45)]\n"
+            "MUSHROOM_LIGHTS = [(50, 60, 22, (70, 220, 200))]\n"
+        )
+        constants_content = (
+            "BACKGROUND_LIGHTS = [(0, 0, 0)]\n"
+            "MUSHROOM_LIGHTS = [(0, 0, 0)]\n"
+        )
+        self._write_result(tmp_path, result_content)
+        self._write_constants(tmp_path, constants_content)
+
+        from calibration.apply_calibration import main
+        main()
+
+        updated = (tmp_path / "src" / "ui" / "title_screen_constants.py").read_text()
+        assert "( 100,  200, 45)" in updated
+        assert "(50, 60, 22" in updated
+
+        out = capsys.readouterr().out
+        assert "Appliqué" in out or "Applied" in out or "✅" in out
+
+    def test_main_fire_only_no_mush_block(self, tmp_path, monkeypatch, capsys):
+        """main() with no MUSHROOM_LIGHTS in result — only injects BACKGROUND_LIGHTS."""
+        monkeypatch.chdir(tmp_path)
+
+        result_content = "BACKGROUND_LIGHTS = [( 50,  60, 28)]\n"
+        constants_content = "BACKGROUND_LIGHTS = [(0, 0, 0)]\n"
+        self._write_result(tmp_path, result_content)
+        self._write_constants(tmp_path, constants_content)
+
+        from calibration.apply_calibration import main
+        main()
+
+        updated = (tmp_path / "src" / "ui" / "title_screen_constants.py").read_text()
+        assert "( 50,  60, 28)" in updated
+
+    def test_main_missing_result_file_exits_1(self, tmp_path, monkeypatch):
+        """main() exits 1 when calibration_result.py does not exist."""
+        import sys
+
+        monkeypatch.chdir(tmp_path)
+        # No scripts/ dir → RESULT_PATH missing
+
+        from calibration.apply_calibration import main
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 1
+
+    def test_main_missing_background_lights_exits_1(self, tmp_path, monkeypatch):
+        """main() exits 1 when BACKGROUND_LIGHTS is absent from result file."""
+        import sys
+
+        monkeypatch.chdir(tmp_path)
+        result_content = "# No lights here\nSOME_VAR = 42\n"
+        self._write_result(tmp_path, result_content)
+
+        constants_content = "BACKGROUND_LIGHTS = [(0, 0, 0)]\n"
+        self._write_constants(tmp_path, constants_content)
+
+        from calibration.apply_calibration import main
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+        assert exc_info.value.code == 1
+

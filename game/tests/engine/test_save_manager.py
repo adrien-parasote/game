@@ -287,3 +287,100 @@ def test_save_io_error_does_not_crash(manager, tmp_saves_dir, caplog):
             # Ne doit pas lever d'exception
             manager.save(1, game)
     assert any("error" in r.levelname.lower() for r in caplog.records)
+
+
+# ── Coverage gaps ─────────────────────────────────────────────────────────────
+
+
+def test_get_saves_dir_fallback(caplog):
+    """_get_saves_dir() falls back to 'saves' when get_pref_path raises."""
+    import logging
+    from src.engine.save_manager import _get_saves_dir
+
+    with (
+        patch("pygame.system.get_pref_path", side_effect=RuntimeError("no display")),
+        caplog.at_level(logging.WARNING),
+    ):
+        result = _get_saves_dir()
+
+    assert result == "saves"
+    assert any("get_pref_path" in r.message or "saves" in r.message for r in caplog.records)
+
+
+def test_load_version_mismatch_returns_none(manager, tmp_saves_dir, caplog):
+    """load() returns None and logs WARNING when version field doesn't match SCHEMA_VERSION."""
+    import logging
+    import json
+
+    os.makedirs(tmp_saves_dir, exist_ok=True)
+    path = os.path.join(tmp_saves_dir, "slot_1.json")
+    data = {
+        "version": "0.0.0-old",
+        "saved_at": "2024-01-01T00:00:00",
+        "playtime_seconds": 0,
+        "player": {"map_name": "00-spawn.tmj"},
+        "time_system": {"total_minutes": 0},
+        "inventory": {},
+        "world_state": {},
+    }
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+
+    with caplog.at_level(logging.WARNING):
+        result = manager.load(1)
+
+    assert result is None
+    assert any("version" in r.message.lower() or "mismatch" in r.message.lower() for r in caplog.records)
+
+
+def test_load_thumbnail_pygame_error_returns_none(manager, tmp_saves_dir, caplog):
+    """load_thumbnail() returns None when pygame.image.load raises pygame.error."""
+    import logging
+    import pygame
+
+    # Create a fake thumbnail file so the path check passes
+    os.makedirs(tmp_saves_dir, exist_ok=True)
+    path = os.path.join(tmp_saves_dir, "slot_1_thumb.png")
+    with open(path, "w") as f:
+        f.write("not a real png")
+
+    with (
+        patch("pygame.image.load", side_effect=pygame.error("bad image")),
+        caplog.at_level(logging.WARNING),
+    ):
+        result = manager.load_thumbnail(1)
+
+    assert result is None
+    assert any("thumbnail" in r.message.lower() or "1" in r.message for r in caplog.records)
+
+
+def test_read_slot_info_exception_returns_none(manager, tmp_saves_dir, caplog):
+    """_read_slot_info() returns None when JSON is unreadable."""
+    import logging
+
+    os.makedirs(tmp_saves_dir, exist_ok=True)
+    path = os.path.join(tmp_saves_dir, "slot_2.json")
+    with open(path, "w") as f:
+        f.write("{broken json")
+
+    with caplog.at_level(logging.WARNING):
+        result = manager.list_slots()
+
+    # Slot 2 should be None due to parse failure
+    assert result[1] is None
+    assert any("slot" in r.message.lower() for r in caplog.records)
+
+
+def test_save_replace_error_logged(manager, tmp_saves_dir, caplog):
+    """save() logs ERROR when os.replace raises OSError after writing the .tmp file."""
+    import logging
+
+    game = _make_mock_game(tmp_saves_dir)
+    with (
+        patch("os.replace", side_effect=OSError("replace failed")),
+        caplog.at_level(logging.ERROR),
+    ):
+        manager.save(1, game)
+
+    assert any("error" in r.levelname.lower() for r in caplog.records)
+
