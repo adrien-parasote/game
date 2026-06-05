@@ -150,3 +150,14 @@ else:
     if "asset_convertor.gui.recolor_panel" in sys.modules:
         del sys.modules["asset_convertor.gui.recolor_panel"]
 ```
+
+## L-TOOL-013 · 2026-06-05 · Project-Specific · Prioritizing Resolutions in Dynamic Geometry Detection
+**Contexte :** Détection dynamique de la taille de tuiles (base-tile) dans les convertisseurs A3/A4 via le modulo de la largeur source (`width % block_size == 0`).
+**Outcome :** Les largeurs de planches A3/A4 (ex: 768px pour 48px, ou 512px pour 32px) peuvent être des multiples communs de plusieurs tailles de blocs (ex: 768 est un multiple de 64 et de 96). Si l'on boucle de manière naïve sur les tailles de blocs possibles, le premier match peut intercepter la mauvaise résolution (ex: 64px détecté pour une planche de 768px, forçant une conversion 32px erronée au lieu de 48px).
+**Pattern :** Toujours trier et évaluer les tailles de blocs de la plus grande à la plus petite (ex: 96px puis 64px) dans les dictionnaires de détection de géométrie. Cela garantit que les planches à haute résolution (48px) sont matchées en priorité, tandis que les planches à basse résolution (32px) retombent correctement sur la taille de bloc inférieure.
+
+## L-TOOL-014 · 2026-06-05 · Universal · Coordinate Grid Mismatch in Autotile Assembly
+**Contexte :** Conversion de blocs autotiles composites (ex: A3/A4) composés de mini-tuiles.
+**Outcome :** Utiliser des variables d'offset de bloc (`bx`, `by`) exprimées en unités de base-tiles (ex: `tx * 2`) tout en les combinant avec des coordonnées de quadrants en mini-tiles (ex: `(bx + qsx) * mini`) produit des décalages erronés de 50%. L'erreur est masquée dans les tests unitaires si les fixtures de test utilisent des images de couleur unie (le crop sur le mauvais bloc renvoyant la même couleur).
+**Pattern :** Exprimer systématiquement les offsets de bloc (`bx`, `by`) directement en mini-tuiles (ex: `tx * 4` pour des blocs de 2x2 base-tiles) dès l'initialisation de la boucle. De plus, les tests unitaires de géométrie doivent TOUJOURS utiliser des textures à motifs distincts (ex: couleurs unies différentes par bloc) pour lever immédiatement des assertions en cas d'overlap de coordonnées de crop.
+

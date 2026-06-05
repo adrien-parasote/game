@@ -53,8 +53,8 @@ WALL_AUTOTILE_TABLE: list[list[list[int]]] = [
 # ---------------------------------------------------------------------------
 
 _VALID_BLOCK_SIZES_A3: dict[int, int] = {
-    64: 32,   # 4 mini-tiles × 16px = 64px  (32px tileset)
     96: 48,   # 4 mini-tiles × 24px = 96px  (48px tileset)
+    64: 32,   # 4 mini-tiles × 16px = 64px  (32px tileset)
 }
 
 _NUM_SHAPES = 16   # WALL_AUTOTILE_TABLE entries
@@ -102,8 +102,8 @@ def convert_mv_a3(img: Image.Image) -> Image.Image:
 
     for ty in range(n_rows):
         for tx in range(n_cols):
-            bx = tx * 2   # block column in mini-tile units
-            by = ty * 2   # block row in mini-tile units
+            bx = tx * 4   # block column in mini-tile units
+            by = ty * 4   # block row in mini-tile units
 
             if _is_block_empty(src, bx, by, mini, block_size):
                 continue

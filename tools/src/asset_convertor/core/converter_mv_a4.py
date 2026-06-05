@@ -35,8 +35,8 @@ from PIL import Image
 # ---------------------------------------------------------------------------
 
 _VALID_BLOCK_SIZES_A4: dict[int, int] = {
-    64: 32,   # 4 mini-tiles × 16px = 64px  (32px tileset)
     96: 48,   # 4 mini-tiles × 24px = 96px  (48px tileset)
+    64: 32,   # 4 mini-tiles × 16px = 64px  (32px tileset)
 }
 
 # A4 source block-row Y offset in mini-tiles (from corescript)
@@ -94,10 +94,12 @@ def convert_mv_a4(img: Image.Image) -> tuple[Image.Image, Image.Image]:
     side_strips: list[Image.Image] = []
 
     for ty in range(max_ty + 1):
-        by = _BY_LOOKUP_A4[ty]
+        by_base = _BY_LOOKUP_A4[ty]
+        by = by_base * 2  # block row in mini-tile units
 
         # Check if this row fits within source image
-        if (by + 4) * mini > src.height:
+        required_mini_rows = 6 if ty % 2 == 0 else 4
+        if (by + required_mini_rows) * mini > src.height:
             break
 
         # Determine horizontal range
@@ -106,7 +108,7 @@ def convert_mv_a4(img: Image.Image) -> tuple[Image.Image, Image.Image]:
         if ty % 2 == 0:
             # FLOOR row (wall tops) — 47 shapes, 8×6 tile sheet per kind
             for tx in range(n_cols):
-                bx = tx * 2  # block column in mini-tile units
+                bx = tx * 4  # block column in mini-tile units
                 if _is_block_empty(src, bx, by, mini, block_size):
                     continue
                 sheet = _build_floor_sheet(src, bx, by, tile_size, mini, top_output_w)
@@ -117,7 +119,7 @@ def convert_mv_a4(img: Image.Image) -> tuple[Image.Image, Image.Image]:
             # block column — compute its absolute Y origin from the source height.
             wall_mini_y0 = _get_wall_source_mini_y0(src, mini)
             for tx in range(n_cols):
-                bx = tx * 2
+                bx = tx * 4  # block column in mini-tile units
                 if _is_block_empty(src, bx, wall_mini_y0, mini, block_size):
                     continue
                 strip = _assemble_wall_tile_strip(

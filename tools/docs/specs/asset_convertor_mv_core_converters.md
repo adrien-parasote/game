@@ -146,18 +146,18 @@ from .converter_mv import FLOOR_AUTOTILE_TABLE
 
 For kind `k` where `tx = k % 8`, `ty = k // 8`:
 ```
-bx = tx * 2   # block column in mini-tiles
-by = ty * 2   # block row in mini-tiles (A3 starts at ty=0 in the source file)
+bx = tx * 4   # block column offset in mini-tiles
+by = ty * 4   # block row offset in mini-tiles (A3 starts at ty=0 in the source file)
 ```
 
 For shape `s` (0–15), quadrant `q` (0=TL, 1=TR, 2=BL, 3=BR):
 ```
 [qsx, qsy] = WALL_AUTOTILE_TABLE[s][q]
-src_x = (bx * 2 + qsx) * 24
-src_y = (by * 2 + qsy) * 24
+src_x = (bx + qsx) * mini
+src_y = (by + qsy) * mini
 ```
 
-Each quadrant is a 24×24 px crop from `(src_x, src_y)` to `(src_x+24, src_y+24)`.
+Each quadrant is a mini×mini px crop from `(src_x, src_y)` to `(src_x+mini, src_y+mini)`.
 
 ### Output Format (Tiled)
 
@@ -194,13 +194,13 @@ def convert_mv_a3(img: Image.Image) -> Image.Image:
 1. Convert input to RGBA if not already.
 2. Detect non-empty autotile blocks (skip blocks where the 96×96 region is fully transparent or fully white).
 3. For each non-empty block (kind `k`):
-   a. Compute `bx = (k % 8) * 2`, `by = (k // 8) * 2`
+   a. Compute `bx = (k % 8) * 4`, `by = (k // 8) * 4` in mini-tile units
    b. For each shape `s` in range(16):
       - For each quadrant `q` in range(4):
         - Read `[qsx, qsy] = WALL_AUTOTILE_TABLE[s][q]`
-        - Crop 24×24 region from source at `((bx*2 + qsx)*24, (by*2 + qsy)*24)`
+        - Crop mini×mini region from source at `((bx + qsx)*mini, (by + qsy)*mini)`
         - Paste into output tile at quadrant position
-      - Place assembled 48×48 tile at `(s * 48, kind_index * 48)` in output
+      - Place assembled tile_size×tile_size tile at `(s * tile_size, kind_index * tile_size)` in output
 4. Return output image.
 
 ---

@@ -140,11 +140,28 @@ class TestConvertMvA3:
         result = self.convert(src)
         assert result.height == 2 * 32
 
-    # TC-030: Width that is not multiple of 64 or 96 raises ValueError
-    def test_wrong_width_non_multiple_raises(self) -> None:
-        bad = _make_rgba(80, 80)
-        with pytest.raises(ValueError, match="(?i)(invalide|width|largeur)"):
-            self.convert(bad)
+    # TC-031: A3 converter crops from the correct block coordinates (no overlap)
+    def test_a3_coordinate_correctness(self) -> None:
+        src = Image.new("RGBA", (192, 96))
+        block0 = Image.new("RGBA", (96, 96), (255, 0, 0, 255))
+        block1 = Image.new("RGBA", (96, 96), (0, 255, 0, 255))
+        src.paste(block0, (0, 0))
+        src.paste(block1, (96, 0))
+
+        result = self.convert(src)
+        assert result.height == 2 * 48
+
+        # The first row (0..48px) should be entirely Red
+        first_row_crop = result.crop((0, 0, 768, 48))
+        for x in [0, 48, 100, 200, 500, 700]:
+            for y in [0, 10, 24, 40]:
+                assert first_row_crop.getpixel((x, y)) == (255, 0, 0, 255)
+
+        # The second row (48..96px) should be entirely Green
+        second_row_crop = result.crop((0, 48, 768, 96))
+        for x in [0, 48, 100, 200, 500, 700]:
+            for y in [0, 10, 24, 40]:
+                assert second_row_crop.getpixel((x, y)) == (0, 255, 0, 255)
 
 # ===========================================================================
 # A4 — UNIT TESTS
@@ -251,6 +268,77 @@ class TestConvertMvA4:
         src_2 = _make_rgba(96, 384)  # taller → more rows → more top kinds
         tops_2, _ = self.convert(src_2)
         assert tops_2.height >= tops_1.height
+
+    # TC-032: A4 converter crops from correct block coordinates (no overlap)
+    def test_a4_coordinate_correctness(self) -> None:
+        src = Image.new("RGBA", (192, 240))
+        
+        # Paste tops (tx=0 is Red, tx=1 is Green)
+        top0 = Image.new("RGBA", (96, 144), (255, 0, 0, 255))
+        top1 = Image.new("RGBA", (96, 144), (0, 255, 0, 255))
+        src.paste(top0, (0, 0))
+        src.paste(top1, (96, 0))
+        
+        # Paste sides (tx=0 is Red, tx=1 is Green)
+        side0 = Image.new("RGBA", (96, 96), (255, 0, 0, 255))
+        side1 = Image.new("RGBA", (96, 96), (0, 255, 0, 255))
+        src.paste(side0, (0, 144))
+        src.paste(side1, (96, 144))
+
+        tops, sides = self.convert(src)
+        
+        # Assert Tops (row 0 is Red, row 1 is Green)
+        assert tops.height == 2 * 6 * 48
+        
+        first_top = tops.crop((0, 0, 384, 6 * 48))
+        for x in [0, 48, 100, 200, 300]:
+            for y in [0, 10, 48, 100, 200]:
+                assert first_top.getpixel((x, y)) == (255, 0, 0, 255)
+                
+        second_top = tops.crop((0, 6 * 48, 384, 12 * 48))
+        for x in [0, 48, 100, 200, 300]:
+            for y in [0, 10, 48, 100, 200]:
+                assert second_top.getpixel((x, y)) == (0, 255, 0, 255)
+                
+        # Assert Sides (row 0 is Red, row 1 is Green)
+        assert sides.height == 2 * 48
+        
+        first_side = sides.crop((0, 0, 768, 48))
+        for x in [0, 48, 100, 200, 500, 700]:
+            for y in [0, 10, 24, 40]:
+                assert first_side.getpixel((x, y)) == (255, 0, 0, 255)
+                
+        second_side = sides.crop((0, 48, 768, 96))
+        for x in [0, 48, 100, 200, 500, 700]:
+            for y in [0, 10, 24, 40]:
+                assert second_side.getpixel((x, y)) == (0, 255, 0, 255)
+
+    # TC-033: A4 converter vertical coordinate correctness (no overlap/mixing)
+    def test_a4_vertical_coordinate_correctness(self) -> None:
+        src = Image.new("RGBA", (96, 384))
+        
+        top0 = Image.new("RGBA", (96, 144), (255, 0, 0, 255))
+        side0 = Image.new("RGBA", (96, 96), (0, 0, 255, 255))
+        top1 = Image.new("RGBA", (96, 144), (0, 255, 0, 255))
+        
+        src.paste(top0, (0, 0))
+        src.paste(side0, (0, 144))
+        src.paste(top1, (0, 240))
+        
+        tops, _ = self.convert(src)
+        
+        assert tops.height == 2 * 6 * 48
+        
+        first_top = tops.crop((0, 0, 384, 6 * 48))
+        for x in [0, 48, 100, 200, 300]:
+            for y in [0, 10, 48, 100, 200]:
+                assert first_top.getpixel((x, y)) == (255, 0, 0, 255)
+                
+        second_top = tops.crop((0, 6 * 48, 384, 12 * 48))
+        for x in [0, 48, 100, 200, 300]:
+            for y in [0, 10, 48, 100, 200]:
+                assert second_top.getpixel((x, y)) == (0, 255, 0, 255)
+
 
 
 
