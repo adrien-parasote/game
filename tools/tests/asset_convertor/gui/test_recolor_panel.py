@@ -24,33 +24,69 @@ from PIL import Image
 # Headless stub — install BEFORE importing any gui module
 # ---------------------------------------------------------------------------
 
-def _make_ctk_stub() -> types.ModuleType:
+def _make_ctk_stub() -> types.ModuleType:  # noqa: C901
     """Return a minimal stub for customtkinter that works without a display."""
     stub = types.ModuleType("customtkinter")
 
     class _Widget:
-        def __init__(self, *a, **kw): pass
-        def grid(self, **kw): pass
-        def pack(self, **kw): pass
-        def configure(self, **kw): pass
-        def grid_columnconfigure(self, *a, **kw): pass
-        def grid_rowconfigure(self, *a, **kw): pass
-        def winfo_children(self): return []
-        def destroy(self): pass
-        def after(self, ms, fn=None, *a): return "timer_id"
-        def after_cancel(self, _id): pass
-        def bind(self, *a, **kw): pass
-        def set(self, *a, **kw): pass   # needed by scrollbar xscrollcommand
+        def __init__(self, *a, **kw):
+            pass
 
-    class CTkFrame(_Widget): pass
-    class CTkLabel(_Widget): pass
-    class CTkButton(_Widget): pass
-    class CTkEntry(_Widget): pass
-    class CTkScrollbar(_Widget): pass
+        def grid(self, **kw):
+            pass
+
+        def pack(self, **kw):
+            pass
+
+        def configure(self, **kw):
+            pass
+
+        def grid_columnconfigure(self, *a, **kw):
+            pass
+
+        def grid_rowconfigure(self, *a, **kw):
+            pass
+
+        def winfo_children(self):
+            return []
+
+        def destroy(self):
+            pass
+
+        def after(self, ms, fn=None, *a):
+            return "timer_id"
+
+        def after_cancel(self, _id):
+            pass
+
+        def bind(self, *a, **kw):
+            pass
+
+        def set(self, *a, **kw):
+            pass
+
+    class CTkFrame(_Widget):
+        pass
+
+    class CTkLabel(_Widget):
+        pass
+
+    class CTkButton(_Widget):
+        pass
+
+    class CTkEntry(_Widget):
+        pass
+
+    class CTkScrollbar(_Widget):
+        pass
+
     class CTkScrollableFrame(_Widget):
-        def winfo_children(self): return []
+        def winfo_children(self):
+            return []
+
     class CTkFont:
-        def __init__(self, *a, **kw): pass
+        def __init__(self, *a, **kw):
+            pass
 
     stub.CTkFrame = CTkFrame
     stub.CTkLabel = CTkLabel
@@ -62,40 +98,82 @@ def _make_ctk_stub() -> types.ModuleType:
     return stub
 
 
-def _make_tk_stub() -> types.ModuleType:
+def _make_tk_stub() -> types.ModuleType:  # noqa: C901
     """Minimal tkinter stub for headless tests."""
     stub = types.ModuleType("tkinter")
 
     class StringVar:
-        def __init__(self, value=""): self._val = value
-        def get(self): return self._val
-        def set(self, v): self._val = v
+        def __init__(self, value=""):
+            self._val = value
+
+        def get(self):
+            return self._val
+
+        def set(self, v):
+            self._val = v
 
     class Canvas:
-        def __init__(self, *a, **kw): self._cfg = {}
-        def grid(self, **kw): pass
-        def pack(self, **kw): pass
-        def configure(self, **kw): self._cfg.update(kw)
-        def cget(self, key): return self._cfg.get(key, "")
-        def create_window(self, *a, **kw): pass
-        def create_rectangle(self, *a, **kw): pass
-        def bbox(self, *a): return (0, 0, 100, 100)
-        def bind(self, *a, **kw): pass
-        def xview(self, *a, **kw): pass       # needed by CTkScrollbar command=
-        def xview_scroll(self, *a): pass
-        def xview_moveto(self, *a): pass
+        def __init__(self, *a, **kw):
+            self._cfg = {}
+
+        def grid(self, **kw):
+            pass
+
+        def pack(self, **kw):
+            pass
+
+        def configure(self, **kw):
+            self._cfg.update(kw)
+
+        def cget(self, key):
+            return self._cfg.get(key, "")
+
+        def create_window(self, *a, **kw):
+            pass
+
+        def create_rectangle(self, *a, **kw):
+            pass
+
+        def bbox(self, *a):
+            return (0, 0, 100, 100)
+
+        def bind(self, *a, **kw):
+            pass
+
+        def xview(self, *a, **kw):
+            pass
+
+        def xview_scroll(self, *a):
+            pass
+
+        def xview_moveto(self, *a):
+            pass
 
     class Frame:
-        def __init__(self, *a, **kw): pass
-        def grid(self, **kw): pass
-        def pack(self, **kw): pass
-        def bind(self, *a, **kw): pass
-        def winfo_children(self): return []
+        def __init__(self, *a, **kw):
+            pass
+
+        def grid(self, **kw):
+            pass
+
+        def pack(self, **kw):
+            pass
+
+        def bind(self, *a, **kw):
+            pass
+
+        def winfo_children(self):
+            return []
 
     class Button:
-        def __init__(self, *a, **kw): pass
-        def grid(self, **kw): pass
-        def pack(self, **kw): pass
+        def __init__(self, *a, **kw):
+            pass
+
+        def grid(self, **kw):
+            pass
+
+        def pack(self, **kw):
+            pass
 
     stub.StringVar = StringVar
     stub.Canvas = Canvas
@@ -110,21 +188,40 @@ def _make_tk_stub() -> types.ModuleType:
     return stub
 
 
-# Install stubs before any gui imports
-if "customtkinter" not in sys.modules:
-    sys.modules["customtkinter"] = _make_ctk_stub()
-if "tkinter" not in sys.modules:
-    sys.modules["tkinter"] = _make_tk_stub()
-else:
-    # Patch colorchooser on existing tkinter
-    import tkinter
-    tkinter.colorchooser = sys.modules.get("tkinter.colorchooser", MagicMock())  # type: ignore[attr-defined]
+# Unconditionally install stubs so that gui modules import them instead of real tk/ctk
+orig_ctk = sys.modules.get("customtkinter")
+orig_tk = sys.modules.get("tkinter")
+orig_panel = sys.modules.get("asset_convertor.gui.recolor_panel")
+
+sys.modules["customtkinter"] = _make_ctk_stub()
+sys.modules["tkinter"] = _make_tk_stub()
+if "asset_convertor.gui.recolor_panel" in sys.modules:
+    del sys.modules["asset_convertor.gui.recolor_panel"]
 
 # Now safe to import gui modules
-from asset_convertor.core.palettes import get_palette, get_palette_names  # noqa: E402
-from asset_convertor.core.recolor import Color, RemapTable  # noqa: E402
-from asset_convertor.gui.recolor_panel import RecolorPanel, _rgb_hex  # noqa: E402
-from asset_convertor.gui.state import AppState, RecolorState  # noqa: E402
+import tkinter as tk
+
+from asset_convertor.core.palettes import get_palette, get_palette_names
+from asset_convertor.core.recolor import Color, RemapTable
+from asset_convertor.gui.recolor_panel import RecolorPanel, _rgb_hex
+from asset_convertor.gui.state import AppState, RecolorState
+
+# Restore original modules in sys.modules so subsequent tests are not affected
+if orig_ctk is not None:
+    sys.modules["customtkinter"] = orig_ctk
+else:
+    del sys.modules["customtkinter"]
+
+if orig_tk is not None:
+    sys.modules["tkinter"] = orig_tk
+else:
+    del sys.modules["tkinter"]
+
+if orig_panel is not None:
+    sys.modules["asset_convertor.gui.recolor_panel"] = orig_panel
+else:
+    if "asset_convertor.gui.recolor_panel" in sys.modules:
+        del sys.modules["asset_convertor.gui.recolor_panel"]
 
 
 # ---------------------------------------------------------------------------
@@ -171,17 +268,17 @@ class TestRgbHex(unittest.TestCase):
     """RP-001 — _rgb_hex() produces correct #rrggbb string."""
 
     def test_black(self):
-        self.assertEqual(_rgb_hex((0, 0, 0, 255)), "#000000")
+        assert _rgb_hex((0, 0, 0, 255)) == "#000000"
 
     def test_white(self):
-        self.assertEqual(_rgb_hex((255, 255, 255, 255)), "#ffffff")
+        assert _rgb_hex((255, 255, 255, 255)) == "#ffffff"
 
     def test_red(self):
-        self.assertEqual(_rgb_hex((255, 0, 0, 255)), "#ff0000")
+        assert _rgb_hex((255, 0, 0, 255)) == "#ff0000"
 
     def test_alpha_ignored(self):
         # Alpha channel is not part of CSS hex — must be stripped
-        self.assertEqual(_rgb_hex((16, 32, 48, 0)), "#102030")
+        assert _rgb_hex((16, 32, 48, 0)) == "#102030"
 
 
 # ---------------------------------------------------------------------------
@@ -195,7 +292,7 @@ class TestPanelConstruction(unittest.TestCase):
         """Panel with no source image must not raise."""
         state = AppState(recolor=RecolorState())
         panel = _make_panel(state)
-        self.assertIsInstance(panel, RecolorPanel)
+        assert isinstance(panel, RecolorPanel)
 
     def test_creates_with_source_image(self):
         """Panel with source image must call extract+show palette without error."""
@@ -205,7 +302,7 @@ class TestPanelConstruction(unittest.TestCase):
         captured: list[AppState] = []
         panel = _make_panel(state, on_state=captured)
         # State change must have been called (palette extracted)
-        self.assertTrue(len(captured) >= 1)
+        assert len(captured) >= 1
 
     def test_palette_populated_in_state(self):
         """RP-003 — source_palette is set in RecolorState after construction with img."""
@@ -216,7 +313,7 @@ class TestPanelConstruction(unittest.TestCase):
         # Last captured state must have source_palette set
         last = captured[-1]
         assert last.recolor is not None
-        self.assertEqual(len(last.recolor.source_palette), 3)
+        assert len(last.recolor.source_palette) == 3
 
     def test_transparent_image_gives_empty_palette(self):
         """RP-004 — Fully transparent image yields empty palette (no crash)."""
@@ -227,7 +324,7 @@ class TestPanelConstruction(unittest.TestCase):
         if captured:
             last = captured[-1]
             assert last.recolor is not None
-            self.assertEqual(last.recolor.source_palette, [])
+            assert last.recolor.source_palette == []
 
 
 # ---------------------------------------------------------------------------
@@ -249,10 +346,10 @@ class TestPresetSelection(unittest.TestCase):
         """_on_preset_click must set active_preset."""
         name = get_palette_names()[0]
         self.panel._on_preset_click(name)
-        self.assertTrue(len(self.captured) >= 1)
+        assert len(self.captured) >= 1
         last = self.captured[-1]
         assert last.recolor is not None
-        self.assertEqual(last.recolor.active_preset, name)
+        assert last.recolor.active_preset == name
 
     def test_preset_click_populates_remap_table(self):
         """_on_preset_click must populate remap_table keys matching source_palette."""
@@ -262,7 +359,7 @@ class TestPresetSelection(unittest.TestCase):
         assert last.recolor is not None
         # Each source color must have a mapping
         for src in last.recolor.source_palette:
-            self.assertIn(src, last.recolor.remap_table)
+            assert src in last.recolor.remap_table
 
     def test_preset_click_no_crash_when_no_source_palette(self):
         """_on_preset_click must be a no-op when source_palette is empty."""
@@ -292,7 +389,7 @@ class TestRemapEntryUpdate(unittest.TestCase):
         self.panel._update_remap_entry(self.src, new_dst)
         last = self.captured[-1]
         assert last.recolor is not None
-        self.assertEqual(last.recolor.remap_table[self.src], new_dst)
+        assert last.recolor.remap_table[self.src] == new_dst
 
     def test_update_remap_entry_schedules_preview(self):
         """After update, panel schedules a preview refresh (debounce timer)."""
@@ -324,30 +421,27 @@ class TestHexValidation(unittest.TestCase):
         return panel, captured
 
     def test_valid_hex_updates_remap(self):
-        import tkinter as tk  # the stub
         panel, captured = self._make_panel_with_remap()
         src: Color = (10, 20, 30, 255)
         hex_var = tk.StringVar(value="ff0000")
         dst_canvas = MagicMock()
         entry = MagicMock()
         panel._on_hex_commit(src, hex_var, dst_canvas, entry)
-        self.assertTrue(len(captured) >= 1)
+        assert len(captured) >= 1
         last = captured[-1]
         assert last.recolor is not None
-        self.assertEqual(last.recolor.remap_table[src], (255, 0, 0, 255))
+        assert last.recolor.remap_table[src] == (255, 0, 0, 255)
 
     def test_invalid_hex_does_not_update_remap(self):
-        import tkinter as tk
         panel, captured = self._make_panel_with_remap()
         src: Color = (10, 20, 30, 255)
         hex_var = tk.StringVar(value="ZZZZZZ")
         dst_canvas = MagicMock()
         entry = MagicMock()
         panel._on_hex_commit(src, hex_var, dst_canvas, entry)
-        self.assertEqual(len(captured), 0)
+        assert len(captured) == 0
 
     def test_short_hex_rejected(self):
-        import tkinter as tk
         panel, _ = self._make_panel_with_remap()
         hex_var = tk.StringVar(value="ff00")  # only 4 chars
         panel._on_hex_commit((10, 20, 30, 255), hex_var, MagicMock(), MagicMock())
@@ -370,7 +464,7 @@ class TestUpdateState(unittest.TestCase):
         new_state = dataclasses.replace(state, recolor=new_rs)
 
         panel.update_state(new_state)  # must not raise
-        self.assertEqual(panel._state, new_state)
+        assert panel._state == new_state
 
     def test_update_state_with_none_recolor(self):
         state = AppState()
@@ -391,7 +485,7 @@ class TestSourceSwatchClick(unittest.TestCase):
         panel = _make_panel(state)
         color: Color = (10, 20, 30, 255)
         panel._on_source_swatch_click(color)
-        self.assertEqual(panel._selected_source_color, color)
+        assert panel._selected_source_color == color
 
 
 # ---------------------------------------------------------------------------
@@ -408,24 +502,28 @@ class TestDebounce(unittest.TestCase):
         cancel_calls: list = []
         schedule_calls: list = []
 
-        with patch.object(panel, "after_cancel", side_effect=lambda _id: cancel_calls.append(_id)):
-            with patch.object(panel, "after", side_effect=lambda ms, fn=None: schedule_calls.append(ms) or "new_id"):
-                panel._debounce_id = "existing_id"
-                panel._schedule_preview_refresh()
-                # Must have cancelled the existing timer
-                self.assertIn("existing_id", cancel_calls)
-                # And set a new one at 300ms
-                self.assertIn(300, schedule_calls)
+        with (
+            patch.object(panel, "after_cancel", side_effect=lambda _id: cancel_calls.append(_id)),
+            patch.object(panel, "after", side_effect=lambda ms, fn=None: schedule_calls.append(ms) or "new_id"),
+        ):
+            panel._debounce_id = "existing_id"
+            panel._schedule_preview_refresh()
+            # Must have cancelled the existing timer
+            assert "existing_id" in cancel_calls
+            # And set a new one at 300ms
+            assert 300 in schedule_calls
 
     def test_no_cancel_when_no_existing_timer(self):
         state = AppState(recolor=RecolorState())
         panel = _make_panel(state)
         panel._debounce_id = None
 
-        with patch.object(panel, "after_cancel") as mock_cancel:
-            with patch.object(panel, "after", return_value="new_id"):
-                panel._schedule_preview_refresh()
-                mock_cancel.assert_not_called()
+        with (
+            patch.object(panel, "after_cancel") as mock_cancel,
+            patch.object(panel, "after", return_value="new_id"),
+        ):
+            panel._schedule_preview_refresh()
+            mock_cancel.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -451,7 +549,7 @@ class TestColorPickerCancel(unittest.TestCase):
         with patch("asset_convertor.gui.recolor_panel.colorchooser.askcolor", return_value=None):
             panel._open_color_picker((10, 20, 30, 255), dst_canvas)
 
-        self.assertEqual(len(captured), 0)
+        assert len(captured) == 0
 
 
 if __name__ == "__main__":

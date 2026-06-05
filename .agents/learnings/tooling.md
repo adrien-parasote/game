@@ -104,3 +104,49 @@ Cf. L-TOOL-009 pour le pattern d'autotile synthétique.
 **Contexte :** `converter_mv._bitmask_to_shape` had multiple conditional `if`/`elif` branches to map cardinal and diagonal flags to shape indices, raising cyclomatic complexity to 16.
 **Evidence :** Replacing branch logic with `ck = int(n) | (int(s) << 1) | (int(w) << 2) | (int(e) << 3)` and indexing into a list of lambdas (`_SHAPE_RESOLVERS`) reduced cyclomatic complexity of `_bitmask_to_shape` to 1, passing Ruff check C901 and Sentrux P7 Architecture quality gate.
 **Pattern :** When mapping complex combinations of boolean flags (e.g. 4 directions + diagonals) to discrete target indices, pack the boolean flags into a bitmask integer `ck` and use a lookup table (list of lambda functions or values) indexed by `ck` to dispatch the resolved index. This replaces branching with $O(1)$ lookup math, keeping cyclomatic complexity at 1.
+
+## L-TOOL-011 · 2026-06-05 · Universal · CustomTkinter CTkImage Lifecycle Race Condition
+**Contexte :** Mise à jour d'images affichées dans un widget CustomTkinter (`CTkLabel`) à la suite d'un traitement en arrière-plan.
+**Outcome :** Assigner directement une nouvelle instance de `CTkImage` à une variable d'instance (`self._photo_output = ctk.CTkImage(...)`) décrémente immédiatement le compteur de références de l'ancienne image. Python la garbage-collecte et supprime l'image correspondante de Tcl/Tk (ex: `pyimage88`). Si le widget `CTkLabel` était configuré avec cette image et qu'on appelle ensuite `.configure(image=new_image, text="")`, CustomTkinter traite l'option `text` en premier sur le `tkinter.Label` sous-jacent. Tcl/Tk tente alors de valider les options existantes du widget, voit l'image `pyimage88` supprimée, et lève l'exception `_tkinter.TclError: image "pyimage..." doesn't exist`, figeant la boucle de callbacks.
+**Pattern :** Toujours instancier la nouvelle image dans une variable locale, configurer le widget avec cette variable locale, et assigner l'instance à la variable d'instance de classe **après** l'appel à `.configure(...)`. Cela garde l'ancienne image en vie dans Tcl/Tk jusqu'à ce que le widget bascule sa référence vers la nouvelle image.
+Exemple :
+```python
+photo_output = ctk.CTkImage(light_image=scaled, dark_image=scaled, size=(w, h))
+self.lbl_output.configure(image=photo_output, text="")
+self._photo_output = photo_output  # assignation finale après configure
+```
+
+## L-TOOL-012 · 2026-06-05 · Universal · Pytest Import Caching and Stubbing Isolation
+**Contexte :** Exécution de tests unitaires headless utilisant des stubs de `tkinter` et `customtkinter` via modification de `sys.modules`.
+**Outcome :** Dans une suite de tests exécutée dans un processus unique (ex: pytest), si un test précédent importe le module de production (ex: `RecolorPanel`) alors que les vraies dépendances de GUI sont chargées, Python met en cache le module dans `sys.modules`. Si un test ultérieur stub `sys.modules["tkinter"]` et ré-importe le module, Python renvoie le module déjà en cache qui référence les vraies classes de GUI, menant à des fuites de ressources graphiques et des hangs en exécution headless.
+**Pattern :** Pendant la configuration des stubs dans les fichiers de tests unitaires, supprimer temporairement le module sous test de `sys.modules` pour forcer sa ré-exécution sous l'environnement stubbé, puis restaurer l'état original après l'import pour préserver l'isolation.
+Exemple :
+```python
+orig_ctk = sys.modules.get("customtkinter")
+orig_tk = sys.modules.get("tkinter")
+orig_panel = sys.modules.get("asset_convertor.gui.recolor_panel")
+
+sys.modules["customtkinter"] = _make_ctk_stub()
+sys.modules["tkinter"] = _make_tk_stub()
+if "asset_convertor.gui.recolor_panel" in sys.modules:
+    del sys.modules["asset_convertor.gui.recolor_panel"]
+
+from asset_convertor.gui.recolor_panel import RecolorPanel
+
+# Restauration immédiate des modules réels
+if orig_ctk is not None:
+    sys.modules["customtkinter"] = orig_ctk
+else:
+    del sys.modules["customtkinter"]
+
+if orig_tk is not None:
+    sys.modules["tkinter"] = orig_tk
+else:
+    del sys.modules["tkinter"]
+
+if orig_panel is not None:
+    sys.modules["asset_convertor.gui.recolor_panel"] = orig_panel
+else:
+    if "asset_convertor.gui.recolor_panel" in sys.modules:
+        del sys.modules["asset_convertor.gui.recolor_panel"]
+```

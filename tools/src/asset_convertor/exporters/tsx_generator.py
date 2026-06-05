@@ -372,7 +372,7 @@ def export_simple_sheet(
     w, h = sheet.size
     if w % tile_size != 0 or h % tile_size != 0:
         raise ValueError(
-            f"Sheet size {w}×{h} is not divisible by tile_size={tile_size}."
+            f"Sheet size {w}x{h} is not divisible by tile_size={tile_size}."
         )
 
     cols = w // tile_size

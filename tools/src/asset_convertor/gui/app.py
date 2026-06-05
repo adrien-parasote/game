@@ -1030,20 +1030,22 @@ class App(ctk.CTk):
 
     def _display_source(self, img: Image.Image, filename: str, resource_type: str) -> None:
         scaled = self._scale_to_fit(img, 200, 200)
-        self._photo_source = ctk.CTkImage(
+        photo_source = ctk.CTkImage(
             light_image=scaled, dark_image=scaled, size=(scaled.width, scaled.height),
         )
-        self.lbl_source.configure(image=self._photo_source, text="")
+        self.lbl_source.configure(image=photo_source, text="")
+        self._photo_source = photo_source
         w, h = img.size
         self.lbl_source_info.configure(text=f"{filename}  |  {resource_type} / {w}x{h}")
 
     def _display_result_image(self, img: Image.Image) -> None:
         """Display a single PIL Image in the output panel."""
         scaled = self._scale_to_fit(img, 320, 280)
-        self._photo_output = ctk.CTkImage(
+        photo_output = ctk.CTkImage(
             light_image=scaled, dark_image=scaled, size=(scaled.width, scaled.height),
         )
-        self.lbl_output.configure(image=self._photo_output, text="")
+        self.lbl_output.configure(image=photo_output, text="")
+        self._photo_output = photo_output
 
     def _display_output_sheet(
         self,

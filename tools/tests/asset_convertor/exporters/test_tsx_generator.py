@@ -219,7 +219,7 @@ def test_tc018_generate_tsx_simple_image_dimensions():
     root = ET.fromstring(xml_str)
     img_el = root.find("image")
     assert img_el is not None
-    # 4 cols × 32 = 128; ceil(16/4)=4 rows × 32 = 128
+    # 4 cols x 32 = 128; ceil(16/4)=4 rows x 32 = 128
     assert img_el.get("width") == "128"
     assert img_el.get("height") == "128"
 
@@ -232,7 +232,7 @@ def test_tc018_generate_tsx_simple_image_dimensions():
 def test_tc019_export_simple_sheet_writes_files():
     from asset_convertor.exporters.tsx_generator import export_simple_sheet
 
-    # 8 columns × 6 rows = 48 tiles at 48px
+    # 8 columns x 6 rows = 48 tiles at 48px
     sheet = Image.new("RGBA", (8 * 48, 6 * 48), (200, 100, 50, 255))
     with tempfile.TemporaryDirectory() as tmp:
         png_path, tsx_path = export_simple_sheet(sheet, "building_a3", tmp, 48, columns=8)
@@ -242,7 +242,7 @@ def test_tc019_export_simple_sheet_writes_files():
         xml_str = Path(tsx_path).read_text(encoding="utf-8")
         root = ET.fromstring(xml_str)
         assert root.get("name") == "building_a3"
-        assert root.get("tilecount") == "48"  # 8×6
+        assert root.get("tilecount") == "48"  # 8x6
         assert root.get("columns") == "8"
 
 
@@ -253,10 +253,11 @@ def test_tc019_export_simple_sheet_writes_files():
 @pytest.mark.unit
 def test_tc020_export_simple_sheet_bad_dimensions():
     from asset_convertor.exporters.tsx_generator import export_simple_sheet
-    import pytest
 
     # Sheet width not divisible by tile_size
     bad_sheet = Image.new("RGBA", (100, 48), (0, 0, 0, 255))  # 100 not divisible by 48
-    with tempfile.TemporaryDirectory() as tmp:
-        with pytest.raises(ValueError, match="not divisible by tile_size"):
-            export_simple_sheet(bad_sheet, "bad", tmp, tile_size=48, columns=2)
+    with (
+        tempfile.TemporaryDirectory() as tmp,
+        pytest.raises(ValueError, match="not divisible by tile_size"),
+    ):
+        export_simple_sheet(bad_sheet, "bad", tmp, tile_size=48, columns=2)
