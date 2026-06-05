@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
+import logging
 import os
 import sys
 import threading
@@ -55,6 +56,31 @@ _GRID_DEFAULT: list[list[bool]] = [
 
 _BITMASK_TO_IDX: dict[int, int] = {bm: idx for idx, bm in enumerate(BLOB_BITMASKS)}
 
+# 4-neighbor wall bitmask lookup (A4 canvas, WALL_AUTOTILE_TABLE, 16 shapes)
+# Derived from WALL_AUTOTILE_TABLE coordinate analysis:
+#   qsx=0 → W present, qsx=3 → E present, qsy=0 → N present, qsy=3 → S present
+# Convention: N=2, W=8, E=4, S=1
+_WALL_4N_BITMASK_TO_IDX: dict[int, int] = {
+    0:  0,   # isolated
+    8:  1,   # W
+    2:  2,   # N
+    10: 3,   # N+W
+    4:  4,   # E
+    12: 5,   # W+E
+    6:  6,   # N+E
+    14: 7,   # N+W+E
+    1:  8,   # S
+    9:  9,   # W+S
+    3:  10,  # N+S
+    11: 11,  # N+W+S
+    5:  12,  # E+S
+    13: 13,  # W+E+S
+    7:  14,  # N+E+S
+    15: 15,  # N+W+E+S
+}
+
+_logger = logging.getLogger(__name__)
+
 # Label shown in primary toolbar → internal ResourceType value
 _TYPE_LABEL_MAP: dict[str, str] = {
     "🎮 Animé":     "A1",
@@ -87,6 +113,27 @@ def _compute_cell_bitmask(grid: list[list[bool]], row: int, col: int) -> int:
         (1 if nw else 0) | (2 if n else 0) | (4 if ne else 0)
         | (8 if w else 0) | (16 if e else 0)
         | (32 if sw else 0) | (64 if s else 0) | (128 if se else 0)
+    )
+
+
+def _compute_wall_bitmask_4n(grid: list[list[bool]], row: int, col: int) -> int:
+    """Compute 4-neighbor wall bitmask for A4 canvas. N=2, W=8, E=4, S=1.
+
+    Only reads cardinal neighbors (N/S/E/W). Diagonal neighbors are ignored.
+    Returns a value in [0, 15] mapping to WALL_AUTOTILE_TABLE shape index
+    via _WALL_4N_BITMASK_TO_IDX.
+    """
+    rows = len(grid)
+    cols = len(grid[0]) if rows else 0
+
+    def f(r: int, c: int) -> bool:
+        return 0 <= r < rows and 0 <= c < cols and grid[r][c]
+
+    return (
+        (2 if f(row - 1, col) else 0)   # N
+        | (8 if f(row, col - 1) else 0)  # W
+        | (4 if f(row, col + 1) else 0)  # E
+        | (1 if f(row + 1, col) else 0)  # S
     )
 
 
@@ -769,32 +816,26 @@ class App(ctk.CTk):
             stitched.paste(tops_img, (0, 0))
             stitched.paste(sides_img, (0, tops_img.height))
 
-            # Extract 47 wall-top tiles from the first strip for canvas preview.
-            # tops_img is an 8-col x 6-row sheet (tile_size=48). Only the first
-            # 288px-tall strip (one kind) is needed for the blob bitmask canvas.
+            # Extract 16 wall-side tiles from the first row of sides_img.
+            # sides_img is 768px wide (16 tiles * 48px); tile i is at x=i*48.
+            # These are the wall face shapes (WALL_AUTOTILE_TABLE, 4-neighbor canvas).
             tile_size = 48
-            sheet_cols = 8
-            wall_top_tiles: list[Image.Image] = []
-            for shape in range(47):
-                col = shape % sheet_cols
-                row = shape // sheet_cols
-                x0 = col * tile_size
-                y0 = row * tile_size
-                wall_top_tiles.append(
-                    tops_img.crop((x0, y0, x0 + tile_size, y0 + tile_size))
-                )
+            wall_side_tiles: list[Image.Image] = [
+                sides_img.crop((i * tile_size, 0, (i + 1) * tile_size, tile_size))
+                for i in range(16)
+            ]
 
             self._state = dataclasses.replace(
                 self._state,
                 result_img=stitched,
-                tiles=wall_top_tiles,
+                tiles=wall_side_tiles,
                 tile_size=tile_size,
             )
             # Store both strips for export
             self._a4_tops: Image.Image = tops_img
             self._a4_sides: Image.Image = sides_img
 
-            self.after(0, lambda: self._on_convert_success_a4(stitched, wall_top_tiles, tile_size))
+            self.after(0, lambda: self._on_convert_success_a4(stitched, wall_side_tiles, tile_size))
         except Exception as err:
             msg = str(err)
             self.after(0, lambda m=msg: self._on_convert_error(m))
@@ -841,18 +882,18 @@ class App(ctk.CTk):
     def _on_convert_success_a4(
         self,
         result_img: Image.Image,
-        wall_top_tiles: list[Image.Image],
+        wall_side_tiles: list[Image.Image],
         tile_size: int,
     ) -> None:
-        """A4 success: show stitched preview in SORTIE panel and wall-top tiles in canvas."""
+        """A4 success: show stitched preview in SORTIE panel and wall-side tiles in canvas."""
         self.btn_convert.configure(state="normal")
         self.btn_export.configure(state="normal")
         self._display_result_image(result_img)
         w, h = result_img.size
         self.lbl_output_info.configure(text=f"A4 : {w}x{h} px")
         self._set_status(f"A4 : conversion réussie — {w}x{h} px.")
-        # Draw wall-top tiles in canvas (flat list → blob bitmask pattern)
-        self._draw_canvas_pattern(wall_top_tiles, tile_size)
+        # Draw wall-side tiles in canvas (flat list → 4-neighbor bitmask pattern)
+        self._draw_canvas_pattern(wall_side_tiles, tile_size)
 
     def _on_convert_success_single(
         self, result_img: Image.Image, label: str, tile_size: int
@@ -1175,7 +1216,14 @@ class App(ctk.CTk):
     ) -> None:
         self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
         self._redraw_canvas_grid()
-        self.lbl_canvas_info.configure(text="Cliquez pour dessiner — bitmask 8-voisins")
+        if self._state.resource_type == "A4":
+            self.lbl_canvas_info.configure(
+                text="Cliquez pour dessiner — bitmask 4-voisins (Mur)"
+            )
+        else:
+            self.lbl_canvas_info.configure(
+                text="Cliquez pour dessiner — bitmask 8-voisins"
+            )
 
     def _on_canvas_click(self, event: tk.Event) -> None:  # type: ignore[type-arg]
         col = event.x // _CELL_SIZE
@@ -1214,12 +1262,23 @@ class App(ctk.CTk):
             else:
                 active_tiles = cast(list[Image.Image], tiles)
 
+        is_wall = self._state.resource_type == "A4"
+
         for r, row_data in enumerate(grid):
             for c, filled in enumerate(row_data):
                 x, y = c * _CELL_SIZE, r * _CELL_SIZE
                 if filled and active_tiles:
-                    bm = _compute_cell_bitmask(grid, r, c)
-                    idx = _BITMASK_TO_IDX.get(bm, 0)
+                    if is_wall:
+                        bm = _compute_wall_bitmask_4n(grid, r, c)
+                        idx = _WALL_4N_BITMASK_TO_IDX.get(bm, 0)
+                        if bm not in _WALL_4N_BITMASK_TO_IDX:
+                            _logger.warning(
+                                "A4 bitmask %d not in _WALL_4N_BITMASK_TO_IDX — fallback to idx 0",
+                                bm,
+                            )
+                    else:
+                        bm = _compute_cell_bitmask(grid, r, c)
+                        idx = _BITMASK_TO_IDX.get(bm, 0)
                     tile = active_tiles[idx]
                     scaled = tile.resize((_CELL_SIZE, _CELL_SIZE), Image.NEAREST)
                     photo = ImageTk.PhotoImage(scaled)

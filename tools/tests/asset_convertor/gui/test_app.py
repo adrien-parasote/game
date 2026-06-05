@@ -182,25 +182,26 @@ def test_a1_conversion_preserves_2d_tiles():
     app.destroy()
 
 
+
+# ── A4 canvas 4-neighbor tests ──────────────────────────────────────────────
+
+
 @pytest.mark.unit
 def test_a4_conversion_populates_tiles_for_canvas():
-    """A4 conversion must store wall-top tiles in AppState.tiles for canvas preview.
+    """TC-007: A4 conversion must store 16 wall-side tiles in AppState.tiles.
 
-    Root cause of the empty APERCU CANVAS bug: _convert_a4 stored tiles=None,
-    so _redraw_canvas_grid had nothing to draw.
-
-    Fix: extract 47 tiles from the first wall-top strip (8-col x 6-row, 48px)
-    and store them as a flat list[Image.Image] in AppState.tiles.
+    After the canvas-4N refactor, _convert_a4 extracts tiles from sides_img
+    (16 shapes, WALL_AUTOTILE_TABLE) instead of 47 wall-top tiles.
     """
     import dataclasses
 
     from PIL import Image
 
     app = App()
-    app._type_var.set("\U0001f9f1 Mur")
-    app._on_type_change("\U0001f9f1 Mur")
+    app._type_var.set("🧱 Mur")
+    app._on_type_change("🧱 Mur")
 
-    # Minimum valid A4 source: 96x120 px (one top row + one side row), non-transparent
+    # Minimum valid A4 source: 96x120 px, non-transparent
     img = Image.new("RGBA", (96, 120), color=(128, 64, 32, 255))
     app._state = dataclasses.replace(app._state, source_img=img)
 
@@ -208,7 +209,147 @@ def test_a4_conversion_populates_tiles_for_canvas():
 
     assert app._state.tiles is not None, "tiles must not be None after A4 conversion"
     assert isinstance(app._state.tiles, list), "tiles must be a list"
-    assert len(app._state.tiles) == 47, "must have 47 wall-top tiles (FLOOR_AUTOTILE_TABLE)"
+    assert len(app._state.tiles) == 16, (
+        "must have 16 wall-side tiles (WALL_AUTOTILE_TABLE), got "
+        f"{len(app._state.tiles)}"
+    )
     assert hasattr(app._state.tiles[0], "size"), "each tile must be a PIL Image"
+
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_compute_wall_bitmask_4n_isolated():
+    """TC-001: isolated cell (no neighbors) → bitmask 0."""
+    from asset_convertor.gui.app import _compute_wall_bitmask_4n
+
+    grid = [[False, False, False], [False, True, False], [False, False, False]]
+    assert _compute_wall_bitmask_4n(grid, 1, 1) == 0
+
+
+@pytest.mark.unit
+def test_compute_wall_bitmask_4n_north_only():
+    """TC-002: N neighbor present, others absent → bitmask 2."""
+    from asset_convertor.gui.app import _compute_wall_bitmask_4n
+
+    grid = [[False, True, False], [False, True, False], [False, False, False]]
+    # cell (1,1): N=(0,1) is True → bitmask = 2
+    assert _compute_wall_bitmask_4n(grid, 1, 1) == 2
+
+
+@pytest.mark.unit
+def test_compute_wall_bitmask_4n_all_cardinal():
+    """TC-003: all four cardinal neighbors → bitmask 15."""
+    from asset_convertor.gui.app import _compute_wall_bitmask_4n
+
+    grid = [[False, True, False], [True, True, True], [False, True, False]]
+    # cell (1,1): N=(0,1) S=(2,1) W=(1,0) E=(1,2) all True
+    # N=2, W=8, E=4, S=1 → 2+8+4+1 = 15
+    assert _compute_wall_bitmask_4n(grid, 1, 1) == 15
+
+
+@pytest.mark.unit
+def test_compute_wall_bitmask_4n_ignores_diagonals():
+    """TC-004: diagonal neighbor present but N and W absent → bitmask 0."""
+    from asset_convertor.gui.app import _compute_wall_bitmask_4n
+
+    # Only (0,0) is True — diagonal of (1,1); N=(0,1) and W=(1,0) are False
+    grid = [[True, False, False], [False, True, False], [False, False, False]]
+    assert _compute_wall_bitmask_4n(grid, 1, 1) == 0
+
+
+@pytest.mark.unit
+def test_wall_4n_bitmask_to_idx_completeness():
+    """TC-005: _WALL_4N_BITMASK_TO_IDX keys cover exactly bitmask values 0–15."""
+    from asset_convertor.gui.app import _WALL_4N_BITMASK_TO_IDX
+
+    assert set(_WALL_4N_BITMASK_TO_IDX.keys()) == set(range(16))
+
+
+@pytest.mark.unit
+def test_wall_4n_bitmask_to_idx_bijection():
+    """TC-006: _WALL_4N_BITMASK_TO_IDX is a bijection — values also cover 0–15."""
+    from asset_convertor.gui.app import _WALL_4N_BITMASK_TO_IDX
+
+    assert set(_WALL_4N_BITMASK_TO_IDX.values()) == set(range(16))
+
+
+@pytest.mark.integration
+def test_a4_conversion_canvas_tiles_count():
+    """IT-001: Full A4 conversion → AppState.tiles has 16 Image objects."""
+    import dataclasses
+
+    from PIL import Image
+
+    app = App()
+    app._type_var.set("🧱 Mur")
+    app._on_type_change("🧱 Mur")
+
+    img = Image.new("RGBA", (96, 120), color=(100, 100, 100, 255))
+    app._state = dataclasses.replace(app._state, source_img=img)
+    app._convert_a4()
+
+    tiles = app._state.tiles
+    assert tiles is not None
+    assert len(tiles) == 16
+    for t in tiles:
+        assert hasattr(t, "size"), "each tile must be a PIL Image"
+
+    app.destroy()
+
+
+@pytest.mark.integration
+def test_redraw_canvas_grid_a4_uses_4n_path():
+    """IT-002: _redraw_canvas_grid for A4 with 16 tiles draws without IndexError."""
+    import dataclasses
+
+    from PIL import Image
+
+    app = App()
+    app._type_var.set("🧱 Mur")
+    app._on_type_change("🧱 Mur")
+
+    # Inject 16 fake tiles into state
+    fake_tiles: list[Image.Image] = [
+        Image.new("RGBA", (48, 48), color=(i * 10, 0, 0, 255)) for i in range(16)
+    ]
+    app._state = dataclasses.replace(
+        app._state,
+        resource_type="A4",
+        tiles=fake_tiles,
+        tile_size=48,
+    )
+    # All cells filled — tests all 16 possible bitmask values
+    app._canvas_grid = [[True] * 5 for _ in range(5)]
+
+    # Must not raise
+    app._redraw_canvas_grid()
+
+    app.destroy()
+
+
+@pytest.mark.integration
+def test_redraw_canvas_grid_a2_uses_blob_path():
+    """IT-003: _redraw_canvas_grid for A2 with 47 tiles draws without IndexError."""
+    import dataclasses
+
+    from PIL import Image
+
+    app = App()
+
+    # Inject 47 fake tiles into state (blob path)
+    fake_tiles: list[Image.Image] = [
+        Image.new("RGBA", (48, 48), color=(0, i * 5, 0, 255)) for i in range(47)
+    ]
+    app._state = dataclasses.replace(
+        app._state,
+        resource_type="A2",
+        tiles=fake_tiles,
+        tile_size=48,
+    )
+    app._canvas_grid = [[True] * 5 for _ in range(5)]
+
+    # Must not raise
+    app._redraw_canvas_grid()
 
     app.destroy()
