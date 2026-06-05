@@ -340,7 +340,7 @@ class App(ctk.CTk):
             parent, text="MV", variable=self._format_var, value="MV",
         ).grid(row=0, column=1, padx=4)
         ctk.CTkLabel(
-            parent, text="📐 Source attendue : 768x384 px",
+            parent, text="📐 Source attendue : 768×384 px (48px) ou 512×256 px (32px)",
             text_color="gray", font=ctk.CTkFont(size=11),
         ).grid(row=0, column=2, padx=(16, 4))
 
@@ -823,7 +823,8 @@ class App(ctk.CTk):
             img = self._state.source_img
             assert img is not None
             result_img = convert_mv_a3(img)
-            tile_size = 48
+            # Derive tile_size from output width: always 16 * tile_size
+            tile_size = result_img.width // 16
 
             self._state = dataclasses.replace(
                 self._state,
