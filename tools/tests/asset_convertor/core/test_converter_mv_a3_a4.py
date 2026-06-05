@@ -83,10 +83,10 @@ class TestConvertMvA3:
         self.convert(src)
         assert src.tobytes() == original_data
 
-    # TC-007: Wrong width raises ValueError
+    # TC-007: Width not a multiple of 64 or 96 raises ValueError
     def test_wrong_width_raises(self) -> None:
-        bad = _make_rgba(512, 192)
-        with pytest.raises(ValueError, match="(?i)(width|largeur|768)"):
+        bad = _make_rgba(80, 192)
+        with pytest.raises(ValueError, match="(?i)(invalide|width|largeur)"):
             self.convert(bad)
 
     # TC-008: Wrong height (not multiple of block height) raises ValueError
@@ -116,6 +116,35 @@ class TestConvertMvA3:
         with pytest.raises((ValueError, Exception)):
             self.convert(_make_rgba(768, 0))
 
+    # TC-026: A3 32px source (block_size=64) is accepted
+    def test_32px_source_accepted(self) -> None:
+        src = _make_rgba(64, 64)
+        result = self.convert(src)
+        assert isinstance(result, Image.Image)
+
+    # TC-027: A3 32px output width = 16 * 32 = 512px
+    def test_32px_output_width(self) -> None:
+        src = _make_rgba(64, 64)
+        result = self.convert(src)
+        assert result.width == 16 * 32
+
+    # TC-028: A3 32px output height = 32px per block
+    def test_32px_output_height(self) -> None:
+        src = _make_rgba(64, 64)
+        result = self.convert(src)
+        assert result.height == 32
+
+    # TC-029: A3 32px two blocks -> output height = 2 * 32 = 64px
+    def test_32px_two_blocks_height(self) -> None:
+        src = _make_rgba(64, 128)
+        result = self.convert(src)
+        assert result.height == 2 * 32
+
+    # TC-030: Width that is not multiple of 64 or 96 raises ValueError
+    def test_wrong_width_non_multiple_raises(self) -> None:
+        bad = _make_rgba(80, 80)
+        with pytest.raises(ValueError, match="(?i)(invalide|width|largeur)"):
+            self.convert(bad)
 
 # ===========================================================================
 # A4 — UNIT TESTS
@@ -222,6 +251,7 @@ class TestConvertMvA4:
         src_2 = _make_rgba(96, 384)  # taller → more rows → more top kinds
         tops_2, _ = self.convert(src_2)
         assert tops_2.height >= tops_1.height
+
 
 
 # ===========================================================================
