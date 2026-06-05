@@ -1204,7 +1204,7 @@ def test_stop_animation_no_timer_is_noop():
 
 @pytest.mark.unit
 def test_convert_a3_calls_success_callback():
-    """_convert_a3 calls _on_convert_success_single via after() on success."""
+    """_convert_a3 calls _on_convert_success_a3 via after() on success."""
     import dataclasses
     from PIL import Image
     from unittest.mock import patch, MagicMock
@@ -1222,9 +1222,10 @@ def test_convert_a3_calls_success_callback():
         app._convert_a3()
 
     assert len(captured_callbacks) == 1
-    # Run the captured callback to cover _on_convert_success_single path
+    # Run the captured callback to cover _on_convert_success_a3 path
     with (
         patch.object(app, "_display_result_image"),
+        patch.object(app, "_redraw_canvas_grid"),
     ):
         captured_callbacks[0]()
     app.destroy()

@@ -826,13 +826,20 @@ class App(ctk.CTk):
             # Derive tile_size from output width: always 16 * tile_size
             tile_size = result_img.width // 16
 
+            # Extract 16 wall tiles from the first strip row for canvas preview.
+            # A3 uses WALL_AUTOTILE_TABLE (16 shapes) — same canvas logic as A4 Mur.
+            wall_tiles: list[Image.Image] = [
+                result_img.crop((i * tile_size, 0, (i + 1) * tile_size, tile_size))
+                for i in range(16)
+            ]
+
             self._state = dataclasses.replace(
                 self._state,
                 result_img=result_img,
-                tiles=None,     # A3 uses result_img directly
+                tiles=wall_tiles,
                 tile_size=tile_size,
             )
-            self.after(0, lambda: self._on_convert_success_single(result_img, "A3", tile_size))
+            self.after(0, lambda: self._on_convert_success_a3(result_img, wall_tiles, tile_size))
         except Exception as err:
             msg = str(err)
             self.after(0, lambda m=msg: self._on_convert_error(m))
@@ -972,6 +979,26 @@ class App(ctk.CTk):
             self.lbl_canvas_info.configure(
                 text="Cliquez pour dessiner — bitmask 4-voisins (Mur)"
             )
+
+    def _on_convert_success_a3(
+        self,
+        result_img: Image.Image,
+        wall_tiles: list[Image.Image],
+        tile_size: int,
+    ) -> None:
+        """A3 success: show strip in SORTIE panel, draw wall canvas (4-neighbor)."""
+        self.btn_convert.configure(state="normal")
+        self.btn_export.configure(state="normal")
+        self._display_result_image(result_img)
+        w, h = result_img.size
+        self.lbl_output_info.configure(text=f"A3 : {w}x{h} px")
+        self._set_status(f"A3 : conversion réussie — {w}x{h} px.")
+        # A3 uses same 4-neighbor wall canvas as A4 Mur (no Top/Mur toggle)
+        self._canvas_grid = [row[:] for row in _GRID_WALL_DEFAULT]
+        self._redraw_canvas_grid()
+        self.lbl_canvas_info.configure(
+            text="Cliquez pour dessiner — bitmask 4-voisins (Bâtiment)"
+        )
 
     def _on_convert_success_single(
         self, result_img: Image.Image, label: str, tile_size: int
@@ -1338,9 +1365,14 @@ class App(ctk.CTk):
 
     def _load_test_pattern(self) -> None:
         is_wall_mode = (
-            self._state.resource_type == "A4"
-            and getattr(self, "_a4_canvas_mode_var", None) is not None
-            and self._a4_canvas_mode_var.get() == "Mur"
+            self._state.resource_type in ("A3", "A4")
+            and (
+                self._state.resource_type == "A3"
+                or (
+                    getattr(self, "_a4_canvas_mode_var", None) is not None
+                    and self._a4_canvas_mode_var.get() == "Mur"
+                )
+            )
         )
         grid = _GRID_WALL_DEFAULT if is_wall_mode else _GRID_DEFAULT
         self._canvas_grid = [row[:] for row in grid]
@@ -1372,9 +1404,12 @@ class App(ctk.CTk):
                 active_tiles = cast(list[Image.Image], tiles)
 
         is_wall = (
-            self._state.resource_type == "A4"
-            and getattr(self, "_a4_canvas_mode_var", None) is not None
-            and self._a4_canvas_mode_var.get() == "Mur"
+            self._state.resource_type == "A3"
+            or (
+                self._state.resource_type == "A4"
+                and getattr(self, "_a4_canvas_mode_var", None) is not None
+                and self._a4_canvas_mode_var.get() == "Mur"
+            )
         )
 
         for r, row_data in enumerate(grid):
