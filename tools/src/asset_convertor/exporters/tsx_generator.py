@@ -278,3 +278,128 @@ def export(
     tsx_path.write_text(xml_str, encoding="utf-8")
 
     return str(png_path), str(tsx_path)
+
+
+# ---------------------------------------------------------------------------
+# A3 / A4 — Simple grid tileset (no wangset, no blob format)
+# ---------------------------------------------------------------------------
+
+def generate_tsx_simple(
+    name: str,
+    tile_size: int,
+    png_filename: str,
+    tile_count: int,
+    columns: int,
+) -> str:
+    """
+    Generate a plain Tiled TSX for a simple grid tileset (no wangset).
+
+    Used for A3 (Building) and A4 (Wall) sprite sheets where tiles are
+    laid out in a regular N-column grid without autotile blob semantics.
+
+    Args:
+        name:         Tileset name.
+        tile_size:    Tile width/height in pixels (square tiles assumed).
+        png_filename: Relative path to the PNG image from the TSX file.
+        tile_count:   Total number of tiles in the sheet.
+        columns:      Number of tile columns in the sheet.
+
+    Returns:
+        XML string (UTF-8, with declaration).
+    """
+    rows = (tile_count + columns - 1) // columns  # ceiling division
+    sheet_width = columns * tile_size
+    sheet_height = rows * tile_size
+
+    root = ET.Element(
+        "tileset",
+        {
+            "version": "1.10",
+            "tiledversion": TILED_VERSION,
+            "name": name,
+            "tilewidth": str(tile_size),
+            "tileheight": str(tile_size),
+            "spacing": "0",
+            "margin": "0",
+            "tilecount": str(tile_count),
+            "columns": str(columns),
+        },
+    )
+    ET.SubElement(
+        root,
+        "image",
+        {
+            "source": png_filename,
+            "width": str(sheet_width),
+            "height": str(sheet_height),
+        },
+    )
+
+    tree = ET.ElementTree(root)
+    ET.indent(tree, space="  ")
+    buf = io.BytesIO()
+    tree.write(buf, encoding="utf-8", xml_declaration=True)
+    return buf.getvalue().decode("utf-8")
+
+
+def export_simple_sheet(
+    sheet: Image.Image,
+    name: str,
+    output_dir: str | Path,
+    tile_size: int,
+    columns: int,
+) -> tuple[str, str]:
+    """
+    Write a pre-assembled sprite sheet PNG and its simple TSX to disk.
+
+    Used for A3 and A4 exports where the converter already returns the
+    assembled sheet image (no per-tile list needed).
+
+    Args:
+        sheet:      Pre-assembled RGBA PIL Image (the converter output).
+        name:       Base name for output files (e.g. "building" → building.png + building.tsx).
+        output_dir: Directory to write files into (created if needed).
+        tile_size:  Tile width/height in pixels.
+        columns:    Number of columns in the sheet grid.
+
+    Returns:
+        Tuple of (png_path, tsx_path) as str.
+
+    Raises:
+        ValueError: if sheet dimensions are not divisible by tile_size.
+        OSError:    if output_dir is not writable.
+    """
+    w, h = sheet.size
+    if w % tile_size != 0 or h % tile_size != 0:
+        raise ValueError(
+            f"Sheet size {w}×{h} is not divisible by tile_size={tile_size}."
+        )
+
+    cols = w // tile_size
+    rows = h // tile_size
+    tile_count = cols * rows
+
+    if columns != cols:
+        raise ValueError(
+            f"columns={columns} does not match sheet width ({w} / {tile_size} = {cols})."
+        )
+
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    png_path = out / f"{name}.png"
+    tsx_path = out / f"{name}.tsx"
+
+    sheet.save(png_path)
+
+    rel_png = os.path.relpath(png_path, tsx_path.parent)
+    xml_str = generate_tsx_simple(
+        name=name,
+        tile_size=tile_size,
+        png_filename=rel_png,
+        tile_count=tile_count,
+        columns=cols,
+    )
+    tsx_path.write_text(xml_str, encoding="utf-8")
+
+    return str(png_path), str(tsx_path)

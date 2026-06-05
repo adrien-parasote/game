@@ -169,6 +169,58 @@ Each stage's detailed rules, checklists, and procedures live in dedicated rule f
 
 ---
 
+## 🗂️ PROJECT-SPECIFIC: Workspace Layout
+
+> **⛔ MANDATORY — Read this before any file operation referencing `.agents/` or `scripts/`.**
+
+### Directory Structure
+
+```
+/Users/adrien.parasote/Documents/perso/game/   ← workspace root (git root)
+├── .agents/                   ← Stream Coding config (active_stage.json, session-observations.jsonl, etc.)
+│   ├── active_stage.json      ← current stage + write_allowed
+│   └── session-observations.jsonl
+├── scripts/                   ← sc-commit.sh and other project scripts
+│   ├── sc-commit.sh           ← commit sentinel script
+│   ├── build
+│   └── dev
+├── tools/                     ← Python tools sub-project (asset_convertor, etc.)
+│   ├── src/asset_convertor/   ← source code
+│   ├── tests/                 ← pytest test suite
+│   └── docs/                  ← specs, ADRs, research
+├── game/                      ← Game source sub-project (same layout as tools/)
+│   ├── src/                   ← game engine source code (engine, entities, graphics, map, ui, config.py, main.py)
+│   ├── tests/                 ← pytest test suite
+│   ├── docs/                  ← specs, ADRs, research
+│   ├── gameplay.json          ← game configuration
+│   └── settings.json          ← runtime settings
+├── game-wiki/                 ← Wiki / design docs (own .git repo — separate from the workspace root)
+│   ├── Home.md
+│   ├── Game_Vision.md
+│   ├── GDD_Mechanics.md
+│   ├── Lore_Universe.md
+│   └── Release_Plan.md
+└── GEMINI.md                  ← this file
+```
+
+### Critical Rules
+
+| Path | Correct | ❌ Wrong |
+|------|---------|---------|
+| `.agents/` root | `/game/.agents/active_stage.json` | `/game/tools/.agents/` or `/game/game/.agents/` |
+| `sc-commit.sh` | `cd /game && ./scripts/sc-commit.sh` | `cd /game/tools && ./scripts/sc-commit.sh` |
+| `verify.py` | invoked with `--json` from the **sub-project** working dir (`/game/tools/`, `/game/game/`) | invoked from `/game/` root |
+| Git commands (workspace) | run from `/game/` (git root) | run from any sub-project dir |
+| Git commands (wiki) | run from `/game/game-wiki/` (its own git root) | run from `/game/` |
+| Source code edits — game engine | edit files under `/game/game/src/` | edit files under `/game/src/` |
+| Source code edits — tools | edit files under `/game/tools/src/` | edit files under `/game/src/` |
+| Docs / specs — game | `/game/game/docs/` | `/game/docs/` |
+| Docs / specs — tools | `/game/tools/docs/` | `/game/docs/` |
+
+> **Why this matters:** `game/`, `game-wiki/`, and `tools/` are peer sub-projects. `.agents/` and `scripts/` live at the workspace root (`/game/`), not inside any sub-project. `game-wiki/` has its **own independent `.git`** — never run `git add/commit/push` for wiki changes from the workspace root.
+
+---
+
 ## 🔧 PROJECT-SPECIFIC: Commit Protocol (Antigravity Sandbox Override)
 
 > **⛔ MANDATORY — This overrides the standard git-discipline.md commit protocol for this project.**

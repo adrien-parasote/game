@@ -3,7 +3,7 @@ Convertisseur Autotile - RPG Maker -> Tiled
 
 Interface customtkinter — architecture dual-toolbar v2 :
 
-  Toolbar 1 (Primaire)  : Type de ressource [Ground A2 | Bâtiment A3 | Mur A4 | Animé A1 | Recolor]
+  Toolbar 1 (Primaire)  : Type de ressource [🎮 Animé | 🏠 Bâtiment | 🧱 Mur | 🎨 Recolor | 🌱 Sol]
   Toolbar 2 (Secondaire): Contexte dynamique selon le type sélectionné
   Panels (3 colonnes)   : SOURCE | SORTIE | APERÇU (Canvas ou RecolorPanel selon le type)
   Log                   : Journal terminal
@@ -31,7 +31,7 @@ from asset_convertor.core.converter_mv_a3 import convert_mv_a3
 from asset_convertor.core.converter_mv_a4 import convert_mv_a4
 from asset_convertor.core.converter_xp import BLOB_BITMASKS, convert_xp
 from asset_convertor.core.recolor import extract_palette
-from asset_convertor.exporters.tsx_generator import assemble_sheet, export
+from asset_convertor.exporters.tsx_generator import assemble_sheet, export, export_simple_sheet
 from asset_convertor.gui.recolor_panel import RecolorPanel
 from asset_convertor.gui.state import AppState, RecolorState
 from PIL import Image, ImageTk
@@ -57,11 +57,11 @@ _BITMASK_TO_IDX: dict[int, int] = {bm: idx for idx, bm in enumerate(BLOB_BITMASK
 
 # Label shown in primary toolbar → internal ResourceType value
 _TYPE_LABEL_MAP: dict[str, str] = {
-    "Ground A2":   "A2",
-    "Bâtiment A3": "A3",
-    "Mur A4":      "A4",
-    "Animé A1":    "A1",
-    "Recolor":     "Recolor",
+    "🎮 Animé":     "A1",
+    "🏠 Bâtiment":  "A3",
+    "🧱 Mur":       "A4",
+    "🎨 Recolor":   "Recolor",
+    "🌱 Sol":       "A2",
 }
 _LABEL_BY_TYPE: dict[str, str] = {v: k for k, v in _TYPE_LABEL_MAP.items()}
 
@@ -202,7 +202,7 @@ class App(ctk.CTk):
         self.btn_open.grid(row=0, column=0, padx=(12, 8), pady=10)
 
         # Resource type selector (segmented button)
-        self._type_var = ctk.StringVar(value="Ground A2")
+        self._type_var = ctk.StringVar(value="🌱 Sol")
         self.seg_type = ctk.CTkSegmentedButton(
             bar,
             values=list(_TYPE_LABEL_MAP.keys()),
@@ -906,11 +906,20 @@ class App(ctk.CTk):
                 if tsx_path and export_tsx:
                     status += f" + {Path(tsx_path).name}"
             else:
-                # A3: save PNG directly
+                # A3: simple grid tileset export (no wangset)
                 os.makedirs(out_dir, exist_ok=True)
-                png_path = os.path.join(out_dir, f"{name}.png")
-                self._state.result_img.save(png_path)
-                status = f"Exporté : {Path(png_path).name} → {out_dir}"
+                img = self._state.result_img
+                tile_size = self._state.tile_size
+                cols = img.width // tile_size
+                if export_tsx:
+                    png_path, tsx_path = export_simple_sheet(
+                        img, name, out_dir, tile_size, columns=cols,
+                    )
+                    status = f"Exporté : {Path(png_path).name} + {Path(tsx_path).name} → {out_dir}"
+                else:
+                    png_path = os.path.join(out_dir, f"{name}.png")
+                    img.save(png_path)
+                    status = f"Exporté : {Path(png_path).name} → {out_dir}"
 
             self._set_status(status)
         except (OSError, PermissionError) as exc:
@@ -919,20 +928,35 @@ class App(ctk.CTk):
             self._set_status(f"Erreur interne : {exc}", error=True)
 
     def _export_a4(self, out_dir: str, name: str) -> None:
-        """Export A4 as two PNG files (tops + sides)."""
+        """Export A4 as two PNG files (+ TSX if checked)."""
         if not hasattr(self, "_a4_tops"):
             return
         try:
+            export_tsx = self._export_tsx_var.get()
+            tile_size = self._state.tile_size
             os.makedirs(out_dir, exist_ok=True)
-            tops_path = os.path.join(out_dir, f"{name}_tops.png")
-            sides_path = os.path.join(out_dir, f"{name}_sides.png")
-            self._a4_tops.save(tops_path)
-            self._a4_sides.save(sides_path)
-            self._set_status(
-                f"A4 exporté : {Path(tops_path).name} + {Path(sides_path).name} → {out_dir}"
-            )
+            status_parts: list[str] = []
+
+            for strip_name, strip_img in (
+                (f"{name}_tops", self._a4_tops),
+                (f"{name}_sides", self._a4_sides),
+            ):
+                cols = strip_img.width // tile_size
+                if export_tsx:
+                    png_path, tsx_path = export_simple_sheet(
+                        strip_img, strip_name, out_dir, tile_size, columns=cols,
+                    )
+                    status_parts.append(f"{Path(png_path).name} + {Path(tsx_path).name}")
+                else:
+                    png_path = os.path.join(out_dir, f"{strip_name}.png")
+                    strip_img.save(png_path)
+                    status_parts.append(Path(png_path).name)
+
+            self._set_status(f"A4 exporté : {' | '.join(status_parts)} → {out_dir}")
         except (OSError, PermissionError) as exc:
             self._set_status(f"Impossible d'écrire dans {out_dir}. ({exc})", error=True)
+        except ValueError as exc:
+            self._set_status(f"Erreur A4 : {exc}", error=True)
 
     def _export_recolor(self, out_dir: str, name: str) -> None:
         """Export recolored image as PNG."""

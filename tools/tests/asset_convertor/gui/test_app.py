@@ -90,8 +90,8 @@ def test_animation_controls_state_toggle():
     app = App()
 
     # Switch to A1 mode to get animation controls
-    app._type_var.set("Animé A1")
-    app._on_type_change("Animé A1")
+    app._type_var.set("🎮 Animé")
+    app._on_type_change("🎮 Animé")
 
     # By default in A1 mode, controls should be disabled (animated=False)
     assert hasattr(app, "menu_anim_type")
