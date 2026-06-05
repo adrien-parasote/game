@@ -289,10 +289,14 @@ Each converter method (`_convert_a2`, `_convert_a3`, etc.) runs in a thread, upd
 
 **Note for A4 Converter:** The core A4 converter returns a tuple of two images (wall tops and sides). The `_convert_a4` wrapper:
 1. Stitches them vertically for the `result_img` SORTIE TILED preview.
-2. Extracts **16 wall-side tiles** from the first row of `sides_img` (768px wide, 16 tiles × 48px) into a flat `list[Image.Image]` and stores it in `AppState.tiles` for the **4-neighbor wall canvas** (see `asset_convertor_a4_canvas_4n.md`).
-3. Calls `_on_convert_success_a4` which displays both the stitched preview and the canvas pattern.
+2. Extracts **16 wall-side tiles** from `sides_img` row 0 (`tile_size = sides_img.width // 16`) → stored in `_a4_wall_side_tiles`. Tile size derived dynamically to support both 32px and 48px assets.
+3. Extracts **47 wall-top tiles** from `tops_img` grid (`8 cols × 6 rows`) → stored in `_a4_wall_top_tiles`.
+4. Calls `_on_convert_success_a4` which loads `_a4_wall_side_tiles` into `AppState.tiles` and draws the **Mur** (4-voisins) canvas by default.
 
-> ⚠️ **Canvas mode for A4:** `_redraw_canvas_grid` branches on `resource_type == "A4"` to use `_compute_wall_bitmask_4n` (4-voisins, N=2/W=8/E=4/S=1) and `_WALL_4N_BITMASK_TO_IDX` instead of the 8-neighbor blob system used for A1/A2. The canvas label reads "bitmask 4-voisins (Mur)" when A4 is active.
+> ⚠️ **A4 Canvas Mode Toggle:** After conversion, a `CTkSegmentedButton` with values `["Mur", "Sol"]` appears below the canvas. Switching modes calls `_on_a4_canvas_mode_change(mode)`:
+> - **Mur** (default): loads `_a4_wall_side_tiles` into `AppState.tiles`, uses `_compute_wall_bitmask_4n` (4-neighbor). Label: "bitmask 4-voisins (Mur)".
+> - **Sol**: loads `_a4_wall_top_tiles` into `AppState.tiles`, uses `_compute_cell_bitmask` (8-neighbor blob). Label: "bitmask 8-voisins (Sol/Toit)".
+> The toggle widget is hidden for all non-A4 resource types and resets to "Mur" on each new conversion.
 
 
 ### macOS Menu Bar
@@ -462,6 +466,7 @@ tests/asset_convertor/gui/
 | AP-GUI-05 | Calling `extract_palette()` on every remap row update | Palette extraction re-scans the entire image on each color change. Wasteful. | Extract palette once on file load (`_on_file_loaded`), store in `RecolorState.source_palette`. |
 | AP-GUI-06 | Opening `colorchooser.askcolor()` synchronously in the main thread loop | Blocks the main thread until the dialog closes. No issue in practice (modal), but causes log delay. | Open with `self.after(0, lambda: self._open_color_picker(...))` to avoid any blocked frame. |
 | AP-GUI-07 | Using `state.mode` after renaming to `state.format` | `AttributeError` at runtime. Breaks existing A1/A2 paths. | Run `grep -rn "state\.mode\|_state\.mode" tools/` before and after refactor to find all usages. |
+| AP-GUI-08 | Using a single `is_wall = resource_type == "A4"` flag for canvas bitmask selection | In Mur mode, this correctly selects 4-neighbor. But when the user switches to Sol mode, `resource_type` is still `"A4"` — the flag stays `True` and the blob canvas uses the wrong bitmask path. | Check both `resource_type == "A4"` AND `_a4_canvas_mode_var.get() == "Mur"` before switching to 4-neighbor logic. |
 
 ---
 
@@ -504,3 +509,4 @@ tests/asset_convertor/gui/
 | 2026-06-05 | `_convert_a4()` stored `tiles=None` in `AppState` — APERÇU CANVAS remained empty after A4 conversion. Spec only documented the SORTIE TILED stitch, not the canvas tile extraction. | `_convert_a4` now extracts 47 wall-top tiles from the first strip of `tops_img` and stores them in `AppState.tiles`. New callback `_on_convert_success_a4` calls `_draw_canvas_pattern` with the wall-top tiles. | HARDEN doc-update |
 | 2026-06-05 | APERÇU CANVAS A4 affichait des wall-top tiles (47 formes, blob 8-voisins) au lieu des wall-side tiles visibles en jeu. Le canvas blob ne correspond pas au comportement des murs dans Tiled (4-voisins, 16 shapes). | `_convert_a4` extrait désormais 16 wall-side tiles depuis `sides_img` row 0. `_redraw_canvas_grid` branche sur `resource_type == "A4"` pour utiliser `_compute_wall_bitmask_4n` + `_WALL_4N_BITMASK_TO_IDX`. Spec dédiée: `asset_convertor_a4_canvas_4n.md`. | HARDEN doc-update |
 | 2026-06-05 | Spec incorrectly stated converters call `self.after(0, self._refresh_panels)`. In practice each type has a dedicated success callback. | Updated § `_run_conversion() dispatch` to list all three callbacks and document their roles. | doc-update |
+| 2026-06-05 | A4 canvas uniquement en mode Mur (4-voisins) — impossible de visualiser les tops (blob). Spec ne documentait qu'un seul mode canvas pour A4. | Ajout du toggle `[Mur] [Sol]` dans le canvas panel. `_convert_a4` extrait maintenant 47 wall-top tiles (`_a4_wall_top_tiles`) en plus des 16 sides. `_on_a4_canvas_mode_change(mode)` swipe `AppState.tiles` et rebranché `_redraw_canvas_grid` sur le bon bitmask. AP-GUI-08 ajouté. | HARDEN doc-update |

@@ -503,7 +503,7 @@ def generate_tsx_wall_sides(
         "wangset",
         {
             "name": name,
-            "type": "edge",
+            "type": "corner-or-edge",
             "tile": "-1",
         },
     )
@@ -559,9 +559,9 @@ def export_wall_sides_sheet(
     """
     expected_w = 16 * tile_size
     w, h = sheet.size
-    if w != expected_w or h % tile_size != 0:
+    if w != expected_w or h != tile_size:
         raise ValueError(
-            f"Wall-sides sheet must be {expected_w}px wide; got {w}x{h}."
+            f"Wall-sides sheet must be {expected_w}px wide and {tile_size}px tall; got {w}x{h}."
         )
 
     out = Path(output_dir)
@@ -582,3 +582,73 @@ def export_wall_sides_sheet(
 
     return str(png_path), str(tsx_path)
 
+
+# ---------------------------------------------------------------------------
+# A4 wall tops — blob wangset (mixed, 47 shapes from FLOOR_AUTOTILE_TABLE)
+# ---------------------------------------------------------------------------
+
+def export_blob_tops_sheet(
+    sheet: Image.Image,
+    name: str,
+    output_dir: str | Path,
+    tile_size: int,
+) -> tuple[str, str]:
+    """Write A4 wall-top sheet PNG and its blob-wangset TSX to disk.
+
+    The sheet is a pre-assembled 8-col × 6-row-per-kind grid produced by
+    convert_mv_a4(). Each 6-row block encodes 47 FLOOR_AUTOTILE_TABLE shapes
+    (slots 0-46) plus one transparent padding slot (slot 47).
+
+    The generated TSX uses type="mixed" wangset (blob 8-neighbor), identical to
+    the A2 tileset export, so Tiled shows it in the Terrain collection.
+
+    Args:
+        sheet:      Pre-assembled RGBA PIL Image from convert_mv_a4() tops output.
+                    Width = 8 * tile_size. Height = N_kinds * 6 * tile_size.
+        name:       Base name (e.g. "dungeon_tops" → dungeon_tops.png + dungeon_tops.tsx).
+        output_dir: Directory to write files into (created if needed).
+        tile_size:  Tile width/height in pixels (32 or 48).
+
+    Returns:
+        Tuple of (png_path, tsx_path) as str.
+
+    Raises:
+        ValueError: if sheet width ≠ 8 * tile_size or height not divisible by 6 * tile_size.
+        OSError:    if output_dir is not writable.
+    """
+    expected_w = SHEET_COLS * tile_size
+    w, h = sheet.size
+    if w != expected_w:
+        raise ValueError(
+            f"Wall-tops sheet must be {expected_w}px wide (8 cols × {tile_size}px); got {w}x{h}."
+        )
+    if h % (SHEET_ROWS * tile_size) != 0:
+        raise ValueError(
+            f"Wall-tops sheet height {h} must be divisible by "
+            f"6 * tile_size = {SHEET_ROWS * tile_size}px."
+        )
+
+    # Number of kinds stacked vertically (each = SHEET_ROWS tiles tall = one 47-blob set)
+    num_kinds = h // (SHEET_ROWS * tile_size)
+
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    png_path = out / f"{name}.png"
+    tsx_path = out / f"{name}.tsx"
+
+    sheet.save(png_path)
+
+    rel_png = os.path.relpath(png_path, tsx_path.parent)
+    # generate_tsx treats num_kinds as num_frames (each = 6 rows of 47 blobs).
+    # blob wangid mapping: BLOB_BITMASKS[slot] → tileid=slot per kind.
+    xml_str = generate_tsx(
+        name=name,
+        tile_size=tile_size,
+        png_filename=rel_png,
+        is_animated=False,
+        num_frames=num_kinds,
+    )
+    tsx_path.write_text(xml_str, encoding="utf-8")
+
+    return str(png_path), str(tsx_path)

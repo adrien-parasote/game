@@ -472,8 +472,21 @@ class App(ctk.CTk):
             btn_frame, text="✕ Effacer", width=90, command=self._clear_canvas_grid,
         ).pack(side="left", padx=2)
 
+        # A4-only toggle: Mur (sides, 4N) vs Sol (tops, blob)
+        self._a4_canvas_mode_var = tk.StringVar(value="Mur")
+        self._a4_mode_toggle = ctk.CTkSegmentedButton(
+            self._canvas_frame,
+            values=["Mur", "Sol"],
+            variable=self._a4_canvas_mode_var,
+            command=self._on_a4_canvas_mode_change,
+            width=180,
+        )
+        # Hidden by default — only shown for A4
+        self._a4_mode_toggle.grid(row=4, column=0, pady=(0, 4))
+        self._a4_mode_toggle.grid_remove()
+
         self.lbl_canvas_info = ctk.CTkLabel(self._canvas_frame, text="", text_color="gray")
-        self.lbl_canvas_info.grid(row=3, column=0, pady=(2, 8))
+        self.lbl_canvas_info.grid(row=3, column=0, pady=(2, 2))
 
     def _switch_right_panel_to_recolor(self) -> None:
         """Replace canvas panel with RecolorPanel."""
@@ -681,6 +694,13 @@ class App(ctk.CTk):
 
         self._reset_output_panel()
 
+        # Show/hide the A4 canvas mode toggle
+        if resource_type == "A4":
+            self._a4_canvas_mode_var.set("Mur")
+            self._a4_mode_toggle.grid()
+        else:
+            self._a4_mode_toggle.grid_remove()
+
         # Update recolor panel if newly created and we have data
         if self._recolor_panel is not None and self._state.recolor:
             self._recolor_panel.update_state(self._state)
@@ -820,13 +840,25 @@ class App(ctk.CTk):
             stitched.paste(tops_img, (0, 0))
             stitched.paste(sides_img, (0, tops_img.height))
 
-            # Extract 16 wall-side tiles from the first row of sides_img.
-            # sides_img is 768px wide (16 tiles * 48px); tile i is at x=i*48.
-            # These are the wall face shapes (WALL_AUTOTILE_TABLE, 4-neighbor canvas).
-            tile_size = 48
+            # Extract tile_size dynamically (32px or 48px) from sides strip.
+            tile_size = sides_img.width // 16
+
+            # 16 wall-side tiles (WALL_AUTOTILE_TABLE, 4-neighbor canvas)
             wall_side_tiles: list[Image.Image] = [
                 sides_img.crop((i * tile_size, 0, (i + 1) * tile_size, tile_size))
                 for i in range(16)
+            ]
+
+            # 47 wall-top tiles from the first row of tops_img (FLOOR_AUTOTILE_TABLE, blob canvas)
+            # tops_img is 8 cols × 6 rows; tile slot i is at col=i%8, row=i//8
+            wall_top_tiles: list[Image.Image] = [
+                tops_img.crop((
+                    (i % 8) * tile_size,
+                    (i // 8) * tile_size,
+                    (i % 8 + 1) * tile_size,
+                    (i // 8 + 1) * tile_size,
+                ))
+                for i in range(47)
             ]
 
             self._state = dataclasses.replace(
@@ -835,9 +867,11 @@ class App(ctk.CTk):
                 tiles=wall_side_tiles,
                 tile_size=tile_size,
             )
-            # Store both strips for export
+            # Store strips for export and both tile lists for canvas switching
             self._a4_tops: Image.Image = tops_img
             self._a4_sides: Image.Image = sides_img
+            self._a4_wall_side_tiles: list[Image.Image] = wall_side_tiles
+            self._a4_wall_top_tiles: list[Image.Image] = wall_top_tiles
 
             self.after(0, lambda: self._on_convert_success_a4(stitched, wall_side_tiles, tile_size))
         except Exception as err:
@@ -889,15 +923,39 @@ class App(ctk.CTk):
         wall_side_tiles: list[Image.Image],
         tile_size: int,
     ) -> None:
-        """A4 success: show stitched preview in SORTIE panel and wall-side tiles in canvas."""
+        """A4 success: show stitched preview in SORTIE panel, draw default Mur canvas."""
         self.btn_convert.configure(state="normal")
         self.btn_export.configure(state="normal")
         self._display_result_image(result_img)
         w, h = result_img.size
         self.lbl_output_info.configure(text=f"A4 : {w}x{h} px")
         self._set_status(f"A4 : conversion réussie — {w}x{h} px.")
-        # Draw wall-side tiles in canvas (flat list → 4-neighbor bitmask pattern)
+        # Default to Mur (sides) canvas
+        self._a4_canvas_mode_var.set("Mur")
         self._draw_canvas_pattern(wall_side_tiles, tile_size)
+
+    def _on_a4_canvas_mode_change(self, mode: str) -> None:
+        """Switch canvas between Mur (4-neighbor sides) and Sol (blob tops)."""
+        if not hasattr(self, "_a4_wall_side_tiles"):
+            return
+        tile_size = self._state.tile_size
+        if mode == "Sol":
+            tiles: list[Image.Image] = self._a4_wall_top_tiles
+            # Temporarily override state tiles to blob for _redraw_canvas_grid
+            self._state = dataclasses.replace(self._state, tiles=tiles)
+            self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
+            self._redraw_canvas_grid()
+            self.lbl_canvas_info.configure(
+                text="Cliquez pour dessiner — bitmask 8-voisins (Sol/Toit)"
+            )
+        else:
+            tiles = self._a4_wall_side_tiles
+            self._state = dataclasses.replace(self._state, tiles=tiles)
+            self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
+            self._redraw_canvas_grid()
+            self.lbl_canvas_info.configure(
+                text="Cliquez pour dessiner — bitmask 4-voisins (Mur)"
+            )
 
     def _on_convert_success_single(
         self, result_img: Image.Image, label: str, tile_size: int
@@ -1000,25 +1058,28 @@ class App(ctk.CTk):
         if not hasattr(self, "_a4_tops"):
             return
         try:
-            from asset_convertor.exporters.tsx_generator import export_wall_sides_sheet
+            from asset_convertor.exporters.tsx_generator import (
+                export_wall_sides_sheet, export_blob_tops_sheet,
+            )
 
             export_tsx = self._export_tsx_var.get()
             tile_size = self._state.tile_size
             os.makedirs(out_dir, exist_ok=True)
             status_parts: list[str] = []
 
-            # Tops strip — plain grid tileset (blob export handled by wangset in tops TSX)
+            # Tops strip — blob wangset (mixed, 47 shapes, FLOOR_AUTOTILE_TABLE)
+            # Same format as A2 — appears in Tiled's Terrain collection.
             tops_name = f"{name}_tops"
-            tops_cols = self._a4_tops.width // tile_size
             if export_tsx:
-                png_path, tsx_path = export_simple_sheet(
-                    self._a4_tops, tops_name, out_dir, tile_size, columns=tops_cols,
+                png_path, tsx_path = export_blob_tops_sheet(
+                    self._a4_tops, tops_name, out_dir, tile_size,
                 )
                 status_parts.append(f"{Path(png_path).name} + {Path(tsx_path).name}")
             else:
                 png_path = os.path.join(out_dir, f"{tops_name}.png")
                 self._a4_tops.save(png_path)
                 status_parts.append(Path(png_path).name)
+
 
             # Sides strip — edge wangset TSX (16 tiles, 4-neighbor wall system)
             sides_name = f"{name}_sides"
@@ -1237,9 +1298,15 @@ class App(ctk.CTk):
         self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
         self._redraw_canvas_grid()
         if self._state.resource_type == "A4":
-            self.lbl_canvas_info.configure(
-                text="Cliquez pour dessiner — bitmask 4-voisins (Mur)"
-            )
+            mode = self._a4_canvas_mode_var.get()
+            if mode == "Sol":
+                self.lbl_canvas_info.configure(
+                    text="Cliquez pour dessiner — bitmask 8-voisins (Sol/Toit)"
+                )
+            else:
+                self.lbl_canvas_info.configure(
+                    text="Cliquez pour dessiner — bitmask 4-voisins (Mur)"
+                )
         else:
             self.lbl_canvas_info.configure(
                 text="Cliquez pour dessiner — bitmask 8-voisins"
@@ -1282,7 +1349,11 @@ class App(ctk.CTk):
             else:
                 active_tiles = cast(list[Image.Image], tiles)
 
-        is_wall = self._state.resource_type == "A4"
+        is_wall = (
+            self._state.resource_type == "A4"
+            and getattr(self, "_a4_canvas_mode_var", None) is not None
+            and self._a4_canvas_mode_var.get() == "Mur"
+        )
 
         for r, row_data in enumerate(grid):
             for c, filled in enumerate(row_data):

@@ -332,3 +332,56 @@ def test_tc026_export_wall_sides_sheet_writes_tsx_with_wangset(tmp_path):
     wangtiles = root.findall(".//wangtile")
     assert len(wangtiles) == 16, f"expected 16 wangtiles, got {len(wangtiles)}"
 
+
+# ---------------------------------------------------------------------------
+# TC-027..029 — export_blob_tops_sheet (A4 wall tops, mixed wangset)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.unit
+def test_tc027_export_blob_tops_sheet_writes_png_and_tsx(tmp_path):
+    """TC-027: export_blob_tops_sheet must write PNG + TSX to disk."""
+    from asset_convertor.exporters.tsx_generator import export_blob_tops_sheet
+
+    # 8 cols × 6 rows × 48px = 384×288 (1 kind of tops)
+    sheet = Image.new("RGBA", (8 * 48, 6 * 48), (100, 150, 200, 255))
+    png_path, tsx_path = export_blob_tops_sheet(sheet, "dungeon_tops", str(tmp_path), tile_size=48)
+
+    assert Path(png_path).exists(), "PNG must be written"
+    assert Path(tsx_path).exists(), "TSX must be written"
+
+
+@pytest.mark.unit
+def test_tc028_export_blob_tops_sheet_has_mixed_wangset_with_47_tiles(tmp_path):
+    """TC-028: tops TSX must have type='mixed' wangset with exactly 47 wangtiles."""
+    from asset_convertor.exporters.tsx_generator import export_blob_tops_sheet
+
+    sheet = Image.new("RGBA", (8 * 48, 6 * 48), (100, 150, 200, 255))
+    _, tsx_path = export_blob_tops_sheet(sheet, "dungeon_tops", str(tmp_path), tile_size=48)
+
+    xml = Path(tsx_path).read_text()
+    root = ET.fromstring(xml.split("\n", 1)[1])
+
+    wangsets_el = root.find("wangsets")
+    assert wangsets_el is not None, "TSX must contain <wangsets>"
+    wangset_el = wangsets_el.find("wangset")
+    assert wangset_el is not None
+    assert wangset_el.get("type") == "mixed", (
+        f"Wall tops wangset must be type='mixed', got '{wangset_el.get('type')}'"
+    )
+    wangtiles = root.findall(".//wangtile")
+    assert len(wangtiles) == 47, f"Expected 47 wangtiles (blob), got {len(wangtiles)}"
+
+
+@pytest.mark.unit
+def test_tc029_generate_tsx_wall_sides_uses_corner_or_edge():
+    """TC-029: wall-sides TSX wangset must use type='corner-or-edge' (visible in Tiled Terrain)."""
+    from asset_convertor.exporters.tsx_generator import generate_tsx_wall_sides
+
+    xml = generate_tsx_wall_sides("walls", tile_size=48, png_filename="walls_sides.png")
+    root = ET.fromstring(xml.split("\n", 1)[1])
+    wangset_el = root.find(".//wangset")
+    assert wangset_el is not None
+    wtype = wangset_el.get("type")
+    assert wtype == "corner-or-edge", (
+        f"Sides wangset must be 'corner-or-edge' for Tiled terrain visibility, got '{wtype}'"
+    )

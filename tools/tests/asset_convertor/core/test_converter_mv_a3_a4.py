@@ -171,11 +171,23 @@ class TestConvertMvA4:
         self.convert(src)
         assert src.tobytes() == original
 
-    # TC-020: Wrong width raises ValueError
+    # TC-020: Width that is not a multiple of any valid block_size (64 or 96) raises ValueError
     def test_wrong_width_raises(self) -> None:
-        bad = _make_rgba(512, 192)
-        with pytest.raises(ValueError, match="(?i)(width|largeur|768)"):
+        # 80px is not a multiple of 64 (32px tiles) nor 96 (48px tiles)
+        bad = _make_rgba(80, 192)
+        with pytest.raises(ValueError, match="(?i)(invalide|width|largeur)"):
             self.convert(bad)
+
+    # TC-025: A4 source with 32px tiles (block_size=64) is accepted
+    def test_32px_source_accepted(self) -> None:
+        # 64x160 = valid A4 32px source (1 block col, 2 ty pairs)
+        src = _make_rgba(64, 160)
+        tops, sides = self.convert(src)
+        assert isinstance(tops, Image.Image)
+        assert isinstance(sides, Image.Image)
+        # tile_size derived from sides width: sides.width / 16
+        assert sides.width == 16 * 32
+        assert tops.width == 8 * 32
 
     # TC-021: Wrong height raises ValueError
     def test_wrong_height_raises(self) -> None:

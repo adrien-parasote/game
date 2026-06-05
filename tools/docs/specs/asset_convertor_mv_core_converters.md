@@ -88,8 +88,8 @@ N/A — these modules are pure functions with no external calls.
 | A1 | A3 source blocks are 96×96 px each (2×2 mini-tiles of 24px) | Low | **VERIFIED** — visual inspection of real A3 file shared by user; matches corescript formula `bx = tx * 2`, 2 mini-tiles wide |
 | A2 | A4 wall-top rows use `FLOOR_AUTOTILE_TABLE` (47 shapes); wall-side rows use `WALL_AUTOTILE_TABLE` (16 shapes), alternating by `ty % 2` | Low | **VERIFIED** — confirmed from corescript `Tilemap.js` blob `9ff2991` and validated against real A4 file (even rows = tops, odd rows = sides) |
 | A3 | `FLOOR_AUTOTILE_TABLE` can be imported from `converter_mv.py` without circular imports | Low | **ASSUMED** — `converter_mv.py` does not import from `converter_mv_a3.py` or `converter_mv_a4.py`; dependency is one-directional |
-| A4 | All RPG Maker MV A3/A4 source files use 48×48 px base tiles (24×24 px mini-tiles) | Low | **VERIFIED** — MV tile size is a fixed constant (`TILE_SIZE = 48`) in `core/constants.py` |
-| A5 | A4 convert returns a tuple of 2 images; the TSX exporter and GUI can handle this by treating the two strips as separate exports | Medium | **ASSUMED** — TSX exporter currently takes a single Image; will need a thin wrapper in `gui/app.py` to handle the tuple and produce two named output files |
+| A4 | All RPG Maker MV A3/A4 source files use 48×48 px base tiles (24×24 px mini-tiles) | Low | **SUPERSEDED** — 32px community assets also exist. Both 32px (block_size=64) and 48px (block_size=96) are supported. See `_VALID_BLOCK_SIZES_A4 = {64: 32, 96: 48}` in `converter_mv_a4.py`. |
+| A5 | A4 convert returns a tuple of 2 images; the TSX exporter and GUI can handle this by treating the two strips as separate exports | Medium | **VERIFIED** — GUI exports two strips as `{name}_tops.tsx` (blob wangset) and `{name}_sides.tsx` (corner-or-edge wangset). |
 
 ---
 
@@ -209,10 +209,26 @@ def convert_mv_a3(img: Image.Image) -> Image.Image:
 
 ### Source Format (MV)
 
-- **File dimensions:** 768×720 px (full sheet) or smaller (partial)
-- **Mini-tile size:** 24×24 px
-- **Tile size:** 48×48 px
-- **Row interleaving:** Even block-rows (`by % 2 == 0`) = wall-tops (FLOOR table); odd block-rows (`by % 2 == 1`) = wall-sides (WALL table)
+- **File dimensions:** 768×720 px (48px, full sheet), 512×480 px (32px), or smaller (partial)
+- **Mini-tile size:** `tile_size // 2` px (24px for 48px tiles, 16px for 32px tiles)
+- **Tile size:** Detected dynamically from `img.width`:
+  - `width % 96 == 0` → 48px tiles (standard MV)
+  - `width % 64 == 0` → 32px tiles (community/custom assets)
+  - Otherwise → `ValueError`
+- **Row interleaving:** Even block-rows (`ty % 2 == 0`) = wall-tops (FLOOR table); odd block-rows (`ty % 2 == 1`) = wall-sides (WALL table)
+
+### Geometry Detection (`_detect_a4_geometry`)
+
+```python
+_VALID_BLOCK_SIZES_A4: dict[int, int] = {64: 32, 96: 48}  # block_size → tile_size
+
+def _detect_a4_geometry(img: Image.Image) -> tuple[int, int, int]:
+    """Returns (tile_size, mini, block_size) from image width."""
+    for block_size, tile_size in _VALID_BLOCK_SIZES_A4.items():
+        if img.width % block_size == 0:
+            return tile_size, tile_size // 2, block_size
+    raise ValueError(f"Largeur invalide : {img.width}px. Doit être multiple de 64 (32px) ou 96 (48px).")
+```
 
 ### Row Parity Logic (from corescript)
 
@@ -246,6 +262,7 @@ Explicit lookup table for source block Y offset (in mini-tiles):
 | 4 | 10 |
 | 5 | 13 |
 
+
 ### Public API
 
 ```python
@@ -254,19 +271,24 @@ def convert_mv_a4(img: Image.Image) -> tuple[Image.Image, Image.Image]:
     Convert an RPG Maker MV A4 (Wall) source tileset to two
     Tiled-compatible tileset strips — one for wall tops, one for wall sides.
 
+    Supports both standard 48px (block_size=96) and community 32px (block_size=64) assets.
+    Tile size is detected automatically from img.width.
+
     Args:
-        img: PIL Image, source A4 PNG (768×720 or smaller, RGBA or RGB).
-             Must be at least 96×120 px.
+        img: PIL Image, source A4 PNG (RGBA or RGB).
+             48px: 768×720 or smaller. Min: 96×120 px.
+             32px: 512×480 or smaller. Min: 64×120 px.
 
     Returns:
         tuple: (wall_tops_img, wall_sides_img)
-            wall_tops_img:  RGBA, width=47*48=2256, height=N_top_kinds*48
-                            (47 shapes per kind, from FLOOR_AUTOTILE_TABLE)
-            wall_sides_img: RGBA, width=16*48=768,  height=N_side_kinds*48
-                            (16 shapes per kind, from WALL_AUTOTILE_TABLE)
+            wall_tops_img:  RGBA, width=8*tile_size, height=N_top_kinds*6*tile_size
+                            (47 shapes per kind in FLOOR_AUTOTILE_TABLE blob layout)
+            wall_sides_img: RGBA, width=16*tile_size, height=N_side_kinds*tile_size
+                            (16 shapes per kind from WALL_AUTOTILE_TABLE)
 
     Raises:
-        ValueError: If img dimensions are smaller than 96×120 px.
+        ValueError: If img width is not a multiple of 64 or 96.
+        ValueError: If img height is too small to contain any valid block.
     """
 ```
 
@@ -329,8 +351,9 @@ tests/tools/asset_convertor/
 | Source too small (< 96×96) | User opens wrong file | `raise ValueError(f"Image trop petite: {img.size}. Minimum 96×96 px pour A3.")` |
 | Width not multiple of 96 | Corrupted or XP-format file | `raise ValueError(f"Largeur {img.width} invalide. Doit être multiple de 96 px pour A3 MV.")` |
 | All blocks empty/transparent | Wrong file loaded (e.g. A2 given to A3 converter) | `raise ValueError("Aucun bloc valide détecté. Le fichier est-il bien un A3 MV ?")` |
+| Source too small | height too small | `raise ValueError(f"Image trop petite: {img.size}. Minimum {block_size}×120 px pour A4.")` |
+| Width not multiple of 64 or 96 | Corrupted / wrong format | `raise ValueError(f"Largeur invalide : {img.width}px. Doit être multiple de 64 (32px tiles) ou 96 (48px tiles).")` |
 | WALL_AUTOTILE_TABLE index out of bounds | Bug in shape iteration (shape > 15) | Should never happen with `range(16)` — caught by `assert shape < 16` in debug builds |
-| A4 source height < 120 px | Wrong file loaded | `raise ValueError(f"Image trop petite: {img.size}. Minimum 96×120 px pour A4.")` |
 
 All errors propagate to the GUI's error handler in `app.py` which displays them in the log bar.
 
@@ -347,6 +370,7 @@ All errors propagate to the GUI's error handler in `app.py` which displays them 
 | AP-A3-05 | Hard-coding `ty` offset as absolute pixel Y | The source Y depends on the `by` lookup table (non-linear for A4). Hard-coding breaks when rows are partial. | Use the `BY_LOOKUP_A4 = {0:0, 1:3, 2:5, 3:8, 4:10, 5:13}` dict. |
 | AP-A3-06 | Not validating source dimensions | Wrong file (e.g., A2 given to A3 converter) produces garbled output silently. | Validate dimensions at function entry and raise `ValueError`. |
 | AP-A3-07 | Returning `None` instead of raising on invalid input | Caller has no way to distinguish empty output from error. GUI shows blank preview with no error message. | Always raise `ValueError` with a French user-friendly message. |
+| AP-A4-01 | Hard-coding `tile_size = 48` in A4 converter or GUI | Breaks 32px community assets (block_size=64). Both converter and GUI must derive tile_size dynamically from image dimensions. | Use `_detect_a4_geometry(img)` in converter; `tile_size = sides_img.width // 16` in GUI. |
 
 ---
 
