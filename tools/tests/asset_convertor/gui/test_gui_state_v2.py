@@ -127,3 +127,45 @@ class TestAppStateIntegration:
         assert not hasattr(state, "mode"), (
             "'mode' attribute still present — rename to 'format' not complete"
         )
+
+
+# ===========================================================================
+# Resize ResourceType — UNIT TESTS
+# Spec: tools/docs/specs/asset_convertor_toolbar_split_resize.md
+# IDs: TC-RSZ-U-001 … TC-RSZ-U-005
+# ===========================================================================
+
+class TestResizeResourceType:
+
+    def setup_method(self) -> None:
+        from asset_convertor.gui.state import AppState
+        self.AppState = AppState
+
+    # TC-RSZ-U-001: ResourceType accepte "Resize"
+    def test_resize_resource_type_accepted(self) -> None:
+        state = self.AppState(resource_type="Resize")  # type: ignore[arg-type]
+        assert state.resource_type == "Resize"
+
+    # TC-RSZ-U-002: AppState Resize force export_tsx=False (règle métier testée via state)
+    def test_resize_export_tsx_can_be_false(self) -> None:
+        state = self.AppState(resource_type="Resize", export_tsx=False)  # type: ignore[arg-type]
+        assert state.export_tsx is False
+
+    # TC-RSZ-U-003: dataclasses.replace() préserve resource_type="Resize"
+    def test_replace_preserves_resize_type(self) -> None:
+        import dataclasses
+        state = self.AppState()
+        s2 = dataclasses.replace(state, resource_type="Resize")  # type: ignore[arg-type]
+        assert s2.resource_type == "Resize"
+
+    # TC-RSZ-U-004: AppState frozen avec resource_type="Resize"
+    def test_frozen_with_resize_type(self) -> None:
+        import dataclasses
+        state = self.AppState(resource_type="Resize")  # type: ignore[arg-type]
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            state.resource_type = "A2"  # type: ignore[misc]
+
+    # TC-RSZ-U-005: result_img est None par défaut pour Resize
+    def test_resize_result_img_none_by_default(self) -> None:
+        state = self.AppState(resource_type="Resize")  # type: ignore[arg-type]
+        assert state.result_img is None

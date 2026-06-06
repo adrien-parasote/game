@@ -22,7 +22,7 @@ from PIL import Image
 # Type aliases
 # ---------------------------------------------------------------------------
 
-ResourceType = Literal["A1", "A2", "A3", "A4", "Recolor"]
+ResourceType = Literal["A1", "A2", "A3", "A4", "Recolor", "Resize"]
 FormatType = Literal["MV", "XP", "MZ"]
 
 

@@ -90,8 +90,8 @@ def test_animation_controls_state_toggle():
     app = App()
 
     # Switch to A1 mode to get animation controls
-    app._type_var.set("🎮 Animé")
-    app._on_type_change("🎮 Animé")
+    app._tiled_type_var.set("🎮 Animé")
+    app._on_type_change_internal("A1")
 
     # By default in A1 mode, controls should be enabled (animated=True)
     assert hasattr(app, "menu_anim_type")
@@ -162,8 +162,8 @@ def test_a1_conversion_preserves_2d_tiles():
     from PIL import Image
 
     app = App()
-    app._type_var.set("🎮 Animé")
-    app._on_type_change("🎮 Animé")
+    app._tiled_type_var.set("🎮 Animé")
+    app._on_type_change_internal("A1")
 
     img = Image.new("RGBA", (192, 144))
     app._state = dataclasses.replace(
@@ -198,8 +198,8 @@ def test_a4_conversion_populates_tiles_for_canvas():
     from PIL import Image
 
     app = App()
-    app._type_var.set("🧱 Mur")
-    app._on_type_change("🧱 Mur")
+    app._tiled_type_var.set("🧱 Mur")
+    app._on_type_change_internal("A4")
 
     # Minimum valid A4 source: 96x120 px, non-transparent
     img = Image.new("RGBA", (96, 120), color=(128, 64, 32, 255))
@@ -324,8 +324,8 @@ def test_a4_conversion_canvas_tiles_count():
     from PIL import Image
 
     app = App()
-    app._type_var.set("🧱 Mur")
-    app._on_type_change("🧱 Mur")
+    app._tiled_type_var.set("🧱 Mur")
+    app._on_type_change_internal("A4")
 
     img = Image.new("RGBA", (96, 120), color=(100, 100, 100, 255))
     app._state = dataclasses.replace(app._state, source_img=img)
@@ -348,8 +348,8 @@ def test_redraw_canvas_grid_a4_uses_4n_path():
     from PIL import Image
 
     app = App()
-    app._type_var.set("🧱 Mur")
-    app._on_type_change("🧱 Mur")
+    app._tiled_type_var.set("🧱 Mur")
+    app._on_type_change_internal("A4")
 
     # Inject 16 fake tiles into state
     fake_tiles: list[Image.Image] = [
@@ -449,7 +449,7 @@ def test_log_writes_entry():
 def test_on_type_change_to_recolor():
     """Switching to Recolor mode disables TSX export and swaps panel to RecolorPanel."""
     app = App()
-    app._on_type_change("🎨 Recolor")
+    app._on_type_change_internal("Recolor")
     # TSX checkbox should be disabled
     assert app.cb_export_tsx.cget("state") == "disabled"
     app.destroy()
@@ -459,8 +459,8 @@ def test_on_type_change_to_recolor():
 def test_on_type_change_back_to_a2():
     """Switching from Recolor back to A2 re-enables TSX export."""
     app = App()
-    app._on_type_change("🎨 Recolor")
-    app._on_type_change("🌱 Sol")
+    app._on_type_change_internal("Recolor")
+    app._on_type_change_internal("A2")
     assert app.cb_export_tsx.cget("state") == "normal"
     app.destroy()
 
@@ -472,8 +472,8 @@ def test_on_format_change_to_xp():
     """_on_format_change updates state.format to XP."""
     app = App()
     # Switch to A2 to get format radio buttons
-    app._type_var.set("🌱 Sol")
-    app._on_type_change("🌱 Sol")
+    app._tiled_type_var.set("🌱 Sol")
+    app._on_type_change_internal("A2")
     app._format_var.set("XP")
     app._on_format_change()
     assert app._state.format == "XP"
@@ -484,8 +484,8 @@ def test_on_format_change_to_xp():
 def test_on_format_change_mz_rejected():
     """_on_format_change reverts MZ selection back to current format."""
     app = App()
-    app._type_var.set("🌱 Sol")
-    app._on_type_change("🌱 Sol")
+    app._tiled_type_var.set("🌱 Sol")
+    app._on_type_change_internal("A2")
     original_fmt = app._state.format
     app._format_var.set("MZ")
     app._on_format_change()
@@ -709,7 +709,7 @@ def test_on_type_change_non_recolor_switches_to_canvas():
     """_on_type_change to non-Recolor switches right panel to canvas."""
     app = App()
     # 🌱 Sol maps to A2
-    app._on_type_change("🌱 Sol")
+    app._on_type_change_internal("A2")
     assert app._state.resource_type == "A2"
     app.destroy()
 
@@ -722,7 +722,7 @@ def test_on_type_change_recolor_with_source_img():
     app = App()
     src_img = Image.new("RGBA", (4, 4), (100, 150, 200, 255))
     app._state = dataclasses.replace(app._state, source_img=src_img)
-    app._on_type_change("🎨 Recolor")
+    app._on_type_change_internal("Recolor")
     assert app._state.resource_type == "Recolor"
     app.destroy()
 
@@ -735,7 +735,7 @@ def test_on_type_change_recolor_already_has_state():
     app = App()
     rs = RecolorState(source_palette=[(10, 20, 30, 255)])
     app._state = dataclasses.replace(app._state, recolor=rs)
-    app._on_type_change("🎨 Recolor")
+    app._on_type_change_internal("Recolor")
     assert app._state.resource_type == "Recolor"
     assert app._state.recolor is not None
     app.destroy()
@@ -1285,7 +1285,7 @@ def test_apply_recolor_calls_success_callback():
 def test_on_type_change_a3_builds_secondary():
     """_on_type_change to A3 triggers _build_secondary_a3."""
     app = App()
-    app._on_type_change("🏠 Bâtiment")  # A3
+    app._on_type_change_internal("A3")  # A3
     assert app._state.resource_type == "A3"
     app.destroy()
 
@@ -1304,7 +1304,7 @@ def test_on_type_change_recolor_palette_extraction_fails():
     app._state = dataclasses.replace(app._state, source_img=src)
 
     with patch("asset_convertor.gui.app.extract_palette", side_effect=ValueError("too many")):
-        app._on_type_change("🎨 Recolor")
+        app._on_type_change_internal("Recolor")
 
     assert app._state.resource_type == "Recolor"
     assert app._state.recolor is not None

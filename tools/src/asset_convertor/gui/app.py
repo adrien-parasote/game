@@ -95,15 +95,21 @@ _WALL_4N_BITMASK_TO_IDX: dict[int, int] = {
 
 _logger = logging.getLogger(__name__)
 
-# Label shown in primary toolbar → internal ResourceType value
-_TYPE_LABEL_MAP: dict[str, str] = {
-    "🎮 Animé":     "A1",
-    "🏠 Bâtiment":  "A3",
-    "🧱 Mur":       "A4",
-    "🎨 Recolor":   "Recolor",
-    "🌱 Sol":       "A2",
+# Groupe Import Tiled : label → ResourceType (autotiles exportés vers Tiled)
+_TILED_TYPE_MAP: dict[str, str] = {
+    "🎮 Animé":    "A1",
+    "🏠 Bâtiment": "A3",
+    "🧱 Mur":      "A4",
+    "🌱 Sol":      "A2",
 }
-_LABEL_BY_TYPE: dict[str, str] = {v: k for k, v in _TYPE_LABEL_MAP.items()}
+
+# Groupe Modifications : label → ResourceType (outils de transformation)
+_MOD_TYPE_MAP: dict[str, str] = {
+    "🎨 Recolor": "Recolor",
+    "🔄 Resize":  "Resize",
+}
+
+# Lookup inverse on-demand : {v: k for k, v in {**_TILED_TYPE_MAP, **_MOD_TYPE_MAP}.items()}
 
 
 def _compute_cell_bitmask(grid: list[list[bool]], row: int, col: int) -> int:
@@ -254,33 +260,48 @@ class App(ctk.CTk):
     def _build_primary_toolbar(self) -> None:
         bar = ctk.CTkFrame(self, height=56, corner_radius=0)
         bar.grid(row=0, column=0, sticky="ew", padx=0, pady=0)
-        bar.grid_columnconfigure(2, weight=1)  # spacer between seg button and convert
+        bar.grid_columnconfigure(5, weight=1)  # spacer entre mod group et Convertir
 
-        # Open button
+        # col 0 — Ouvrir
         self.btn_open = ctk.CTkButton(
             bar, text="📂 Ouvrir", width=130, command=self._open_file,
         )
         self.btn_open.grid(row=0, column=0, padx=(12, 8), pady=10)
 
-        # Resource type selector (segmented button)
-        self._type_var = ctk.StringVar(value="🌱 Sol")
-        self.seg_type = ctk.CTkSegmentedButton(
+        # col 1 — Groupe Import Tiled
+        self._tiled_type_var = ctk.StringVar(value="🌱 Sol")
+        self.seg_tiled = ctk.CTkSegmentedButton(
             bar,
-            values=list(_TYPE_LABEL_MAP.keys()),
-            variable=self._type_var,
-            command=self._on_type_change,
+            values=list(_TILED_TYPE_MAP.keys()),
+            variable=self._tiled_type_var,
+            command=self._on_tiled_type_change,
         )
-        self.seg_type.grid(row=0, column=1, padx=(4, 4), pady=10)
+        self.seg_tiled.grid(row=0, column=1, padx=(4, 4), pady=10)
 
-        # Spacer
-        ctk.CTkLabel(bar, text="").grid(row=0, column=2, sticky="ew")
+        # col 2 — Séparateur visuel 2px entre les deux groupes
+        ctk.CTkFrame(bar, width=2, height=28, fg_color="gray40").grid(
+            row=0, column=2, padx=6, pady=14,
+        )
 
-        # Convert / Apply button
+        # col 3 — Groupe Modifications
+        self._mod_type_var = ctk.StringVar(value="")
+        self.seg_mod = ctk.CTkSegmentedButton(
+            bar,
+            values=list(_MOD_TYPE_MAP.keys()),
+            variable=self._mod_type_var,
+            command=self._on_mod_type_change,
+        )
+        self.seg_mod.grid(row=0, column=3, padx=(4, 4), pady=10)
+
+        # col 5 — Spacer extensible (weight=1 configuré ci-dessus)
+        ctk.CTkLabel(bar, text="").grid(row=0, column=5, sticky="ew")
+
+        # col 6 — Convertir / Appliquer
         self.btn_convert = ctk.CTkButton(
             bar, text="⚙ Convertir", width=140,
             state="disabled", command=self._run_conversion,
         )
-        self.btn_convert.grid(row=0, column=3, padx=(8, 12), pady=10)
+        self.btn_convert.grid(row=0, column=6, padx=(8, 12), pady=10)
 
     # ── Secondary Toolbar (row 1) ─────────────────────────────────────────────
 
@@ -310,11 +331,12 @@ class App(ctk.CTk):
         self._secondary_content.grid(row=0, column=0, sticky="ew")
 
         builders = {
-            "A2":     self._build_secondary_a2,
-            "A3":     self._build_secondary_a3,
-            "A4":     self._build_secondary_a4,
-            "A1":     self._build_secondary_a1,
+            "A2":      self._build_secondary_a2,
+            "A3":      self._build_secondary_a3,
+            "A4":      self._build_secondary_a4,
+            "A1":      self._build_secondary_a1,
             "Recolor": self._build_secondary_recolor,
+            "Resize":  self._build_secondary_resize,
         }
         builder = builders.get(resource_type, self._build_secondary_a2)
         builder(self._secondary_content)
@@ -397,6 +419,14 @@ class App(ctk.CTk):
         ctk.CTkLabel(
             parent,
             text="Mode Recolor — export TSX non applicable.",
+            text_color="gray", font=ctk.CTkFont(size=11),
+        ).grid(row=0, column=0, padx=(16, 4), pady=10)
+
+    def _build_secondary_resize(self, parent: ctk.CTkFrame) -> None:
+        """Resize: hint label — source attendue 48px."""
+        ctk.CTkLabel(
+            parent,
+            text="📐 Source attendue : PNG 48px (multiples de 48) — Produit une image 32px (ratio 1.5×, pixel-perfect)",
             text_color="gray", font=ctk.CTkFont(size=11),
         ).grid(row=0, column=0, padx=(16, 4), pady=10)
 
@@ -614,15 +644,31 @@ class App(ctk.CTk):
 
         self._stop_animation()
 
-        resource_type = _TYPE_LABEL_MAP[self._type_var.get()]
+        # Résoudre le resource_type depuis les deux groupes
+        tiled_label = self._tiled_type_var.get()
+        mod_label = self._mod_type_var.get()
+        if mod_label and mod_label in _MOD_TYPE_MAP:
+            resource_type = _MOD_TYPE_MAP[mod_label]
+        elif tiled_label and tiled_label in _TILED_TYPE_MAP:
+            resource_type = _TILED_TYPE_MAP[tiled_label]
+        else:
+            resource_type = "A2"  # fallback sécuritaire
 
-        # Validate dimensions for non-Recolor types
-        if resource_type != "Recolor":
+        # Validate dimensions for non-Recolor and non-Resize types
+        if resource_type not in ("Recolor", "Resize"):
             fmt = getattr(self, "_format_var", None)
             fmt_val = fmt.get() if fmt else self._state.format
             error = self._validate_dimensions(img, resource_type, fmt_val)
             if error:
                 self._set_status(error, error=True)
+                self.btn_convert.configure(state="disabled")
+                return
+
+        # Validate Resize dimensions (multiples de 48)
+        if resource_type == "Resize":
+            err = self._validate_resize_dimensions(img)
+            if err:
+                self._set_status(err, error=True)
                 self.btn_convert.configure(state="disabled")
                 return
 
@@ -645,6 +691,10 @@ class App(ctk.CTk):
                 self._set_status(f"⚠️ Image vide — {exc}", error=True)
                 return
 
+        # For Resize: force export_tsx=False
+        if resource_type == "Resize":
+            new_state = dataclasses.replace(new_state, export_tsx=False)
+
         self._state = new_state
         self._display_source(img, Path(path).name, resource_type)
         self.btn_convert.configure(state="normal")
@@ -654,32 +704,56 @@ class App(ctk.CTk):
         if self._recolor_panel is not None and resource_type == "Recolor":
             self._recolor_panel.update_state(self._state)
 
-    def _on_type_change(self, label: str) -> None:
-        """User selected a new resource type in the primary toolbar."""
-        resource_type = _TYPE_LABEL_MAP.get(label, "A2")
+    # ── Callbacks de groupe — sélection exclusive croisée ────────────────────
+
+    def _on_tiled_type_change(self, label: str) -> None:
+        """Sélection dans le groupe Import Tiled → désélectionne le groupe Modifications."""
+        if label == "":  # guard défensif — set("") peut déclencher le callback selon la version CTk
+            return
+        self._mod_type_var.set("")
+        resource_type = _TILED_TYPE_MAP.get(label, "A2")
+        self._on_type_change_internal(resource_type)
+
+    def _on_mod_type_change(self, label: str) -> None:
+        """Sélection dans le groupe Modifications → désélectionne le groupe Import Tiled."""
+        if label == "":  # guard défensif — set("") peut déclencher le callback selon la version CTk
+            return
+        self._tiled_type_var.set("")
+        resource_type = _MOD_TYPE_MAP.get(label, "Recolor")
+        self._on_type_change_internal(resource_type)
+
+    def _on_type_change_internal(self, resource_type: str) -> None:
+        """Logique commune de changement de type — appelée par les deux callbacks de groupe.
+
+        Paramètre: resource_type (ex: 'A1', 'Recolor', 'Resize') — PAS un label de bouton.
+        """
         self._stop_animation()
 
         # Update secondary toolbar
         self._swap_secondary(resource_type)
 
-        # Swap right panel
-        if resource_type == "Recolor":
-            self._switch_right_panel_to_recolor()
+        # Swap right panel + contrôles export
+        if resource_type in ("Recolor", "Resize"):
+            if resource_type == "Recolor":
+                self._switch_right_panel_to_recolor()
+                self.btn_convert.configure(text="✨ Appliquer Recolor")
+            else:  # Resize — masquer le canvas (pas d'autotile à prévisualiser)
+                self._switch_right_panel_to_canvas()  # détruit d'abord RecolorPanel si présent
+                self._canvas_frame.grid_remove()  # puis masque le canvas Resize n'a pas besoin du canvas
+                self.btn_convert.configure(text="🔄 Resize")
             self._export_tsx_var.set(False)
             self.cb_export_tsx.configure(state="disabled")
-            self.btn_convert.configure(text="✨ Appliquer Recolor")
         else:
             self._switch_right_panel_to_canvas()
             self._export_tsx_var.set(True)
             self.cb_export_tsx.configure(state="normal")
             self.btn_convert.configure(text="⚙ Convertir")
 
-        export_tsx = resource_type != "Recolor"
+        export_tsx = resource_type not in ("Recolor", "Resize")
 
         # Update state — preserve source and recolor only when switching to Recolor
         if resource_type == "Recolor" and self._state.recolor is None:
             rs: RecolorState | None = RecolorState() if self._state.source_img is not None else None
-            # Try palette extraction if source exists
             if self._state.source_img is not None:
                 try:
                     palette = extract_palette(self._state.source_img)
@@ -699,8 +773,17 @@ class App(ctk.CTk):
             animated=is_animated,
         )
 
+        # Re-validation si source chargée et type passé à Resize
+        if resource_type == "Resize" and self._state.source_img is not None:
+            err_msg = self._validate_resize_dimensions(self._state.source_img)
+            if err_msg:
+                self._set_status(err_msg)
+                self.btn_convert.configure(state="disabled")
+            elif self._state.source_img is not None:
+                self.btn_convert.configure(state="normal")
+
         # Disable convert if no source
-        if self._state.source_img is None:
+        elif self._state.source_img is None:
             self.btn_convert.configure(state="disabled")
 
         self._reset_output_panel()
@@ -781,11 +864,12 @@ class App(ctk.CTk):
         self.btn_convert.configure(state="disabled")
 
         dispatch = {
-            "A2":     self._convert_a2,
-            "A3":     self._convert_a3,
-            "A4":     self._convert_a4,
-            "A1":     self._convert_a1,
+            "A2":      self._convert_a2,
+            "A3":      self._convert_a3,
+            "A4":      self._convert_a4,
+            "A1":      self._convert_a1,
             "Recolor": self._apply_recolor,
+            "Resize":  self._convert_resize,  # Appel effectif : threading.Thread(target=..., daemon=True)
         }
         handler = dispatch.get(self._state.resource_type)
         if handler:
@@ -821,6 +905,40 @@ class App(ctk.CTk):
         except Exception as err:
             msg = str(err)
             self.after(0, lambda m=msg: self._on_convert_error(m))
+
+    def _convert_resize(self) -> None:
+        """Resize PNG 48px → 32px via NEAREST (pixel art, ratio 1.5× exact).
+
+        Appelée dans un thread daemon par _run_conversion() — ne pas appeler depuis le thread UI.
+        """
+        try:
+            img = self._state.source_img
+            if img is None:
+                msg = "⚠️ Aucun fichier source chargé."
+                self.after(0, lambda m=msg: self._on_convert_error(m))
+                return
+
+            src_w, src_h = img.size
+            # Calcul proportionnel : 48→32 = ratio 2/3 exact
+            target_w = round(src_w * 32 / 48)
+            target_h = round(src_h * 32 / 48)
+
+            result = img.resize((target_w, target_h), resample=Image.NEAREST)
+
+            self._state = dataclasses.replace(self._state, result_img=result)
+            self.after(0, lambda: self._on_convert_success_resize(result))
+        except Exception as err:
+            msg = str(err)
+            self.after(0, lambda m=msg: self._on_convert_error(m))
+
+    def _on_convert_success_resize(self, result: Image.Image) -> None:
+        """Affiche le résultat resize dans le panneau SORTIE."""
+        self.btn_convert.configure(state="normal")
+        self.btn_export.configure(state="normal")
+        self._display_result_image(result)
+        w, h = result.size
+        self.lbl_output_info.configure(text=f"Resize : {w}×{h} px (32px)")
+        self._set_status(f"Resize terminé — {w}×{h} px.")
 
     def _convert_a3(self) -> None:
         """A3 Building — convert_mv_a3(img) → (roof_img, wall_img)."""
@@ -1079,6 +1197,8 @@ class App(ctk.CTk):
             self._export_a3(out_dir, name)
         elif resource_type == "Recolor":
             self._export_recolor(out_dir, name)
+        elif resource_type == "Resize":
+            self._export_resize(out_dir, name)
         else:
             self._export_standard(out_dir, name)
 
@@ -1242,6 +1362,20 @@ class App(ctk.CTk):
             png_path = os.path.join(out_dir, f"{name}_recolor.png")
             rs.result_img.save(png_path)
             self._set_status(f"Recolor exporté : {Path(png_path).name} → {out_dir}")
+        except (OSError, PermissionError) as exc:
+            self._set_status(f"Impossible d'écrire dans {out_dir}. ({exc})", error=True)
+
+    def _export_resize(self, out_dir: str, name: str) -> None:
+        """Export resized image as PNG. Nom : {stem}_32px.png"""
+        result = self._state.result_img
+        if result is None:
+            self._set_status("⚠️ Aucun résultat à exporter.", error=True)
+            return
+        try:
+            os.makedirs(out_dir, exist_ok=True)
+            png_path = os.path.join(out_dir, f"{name}_32px.png")
+            result.save(png_path)
+            self._set_status(f"Resize exporté : {Path(png_path).name} → {out_dir}")
         except (OSError, PermissionError) as exc:
             self._set_status(f"Impossible d'écrire dans {out_dir}. ({exc})", error=True)
 
