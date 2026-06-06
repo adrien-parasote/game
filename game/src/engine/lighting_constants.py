@@ -1,6 +1,6 @@
 """
 LightingManager constants — beam shape defaults and overlay tuning values.
-Spec: game/docs/specs/lighting-spec.md
+Spec: game/docs/specs/lighting-system.md
 """
 
 # Window beam shape defaults (pixels).
@@ -10,7 +10,7 @@ BEAM_BOTTOM_WIDTH: int = 52  # Default bottom width of window light trapezoid (p
 BEAM_HEIGHT: int = 70  # Default height of window light beam (px)
 
 # Sun/moon slant — horizontal drift of the beam over its full height.
-# Sun swings between -BEAM_MAX_SLANT (evening/west) and +BEAM_MAX_SLANT (morning/east).
+# Sun swings between -BEAM_MAX_SLANT (evening/west) and +BEAM_MAX_SLANT (morning/east)
 BEAM_MAX_SLANT: int = 28  # Max horizontal drift over the full beam height (px)
 
 # Night overlay alpha composition
@@ -24,3 +24,8 @@ TORCH_ALPHA_QUANTIZE: int = 20  # Intensity quantization step for torch mask cac
 # Day/night beam colorimetry — used in _get_beam_surface_for_time()
 BEAM_COLOR_MOON: tuple[int, int, int] = (160, 180, 255)  # Cool moonlight tint
 BEAM_COLOR_SUN: tuple[int, int, int] = (255, 248, 220)  # Warm sunlight tint
+
+# Indoor lighting mode — fraction of night_alpha that filters through walls.
+# Spec: lighting-system.md § 8.3 — Option B (locked).
+# Adjust post-playtest if indoor maps feel too dark or too bright at night.
+INDOOR_ATTENUATION: float = 0.35  # Night filtered through walls (35% passes through)

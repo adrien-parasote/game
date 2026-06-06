@@ -1,6 +1,7 @@
 import pygame
 from src.config import Settings
 from src.engine.asset_manager import AssetManager
+from src.engine.lighting_constants import INDOOR_ATTENUATION
 
 # Python 3.12 type aliases — replace inline annotations used across multiple methods
 type BlitSequence = list[tuple[pygame.Surface, tuple[int, int]]]
@@ -347,14 +348,35 @@ class RenderManager:
                                 self._frame_anim_by_layer[lid].append((px, py, tile_id, depth))
                                 break
 
+    def _compute_effective_night_alpha(self) -> int:
+        """Compute the darkness overlay alpha for the current map's lighting mode.
+
+        Spec: lighting-system.md § 8.3
+          outdoor    : time_system.night_alpha (unchanged behaviour)
+          indoor     : min(255, ambient + int(night_alpha * INDOOR_ATTENUATION))
+          underground: ambient_dark_alpha (fixed, no time dependency)
+        Unknown mode falls back to outdoor via getattr default.
+        """
+        mode = getattr(self.game, "_map_lighting_mode", "outdoor")
+        ambient = getattr(self.game, "_map_ambient_dark_alpha", 0)
+        night_alpha = self.game.time_system.night_alpha
+
+        if mode == "underground":
+            return ambient
+        if mode == "indoor":
+            return min(255, ambient + int(night_alpha * INDOOR_ATTENUATION))
+        # outdoor (default)
+        return night_alpha
+
     def _render_lighting_and_effects(
         self, night_alpha: float, window_positions: list, cam_offset: pygame.Vector2
     ) -> None:
         """Render additive window beams, dynamic lighting, and active interactive effects."""
-        # Render additive window beams (always visible during day and night)
-        self.game.lighting_manager.draw_additive_window_beams(
-            self.game.screen, window_positions, cam_offset
-        )
+        # Window beams require a sky source — skip for underground maps (spec § 8.4).
+        if getattr(self.game, "_map_lighting_mode", "outdoor") != "underground":
+            self.game.lighting_manager.draw_additive_window_beams(
+                self.game.screen, window_positions, cam_offset
+            )
 
         # Render dynamic lighting on darkness overlay
         if night_alpha > 0:
@@ -443,7 +465,7 @@ class RenderManager:
         for sprite, original_image in wading_saved.items():
             sprite.image = original_image
 
-        night_alpha = self.game.time_system.night_alpha
+        night_alpha = self._compute_effective_night_alpha()
         window_positions = self.game.map_manager.get_window_positions()
 
         self._render_lighting_and_effects(night_alpha, window_positions, cam_offset)

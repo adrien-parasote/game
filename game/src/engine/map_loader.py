@@ -6,6 +6,7 @@ Extracted from Game._load_map (game.py L186-L285) and _start_initial_ambients
 Deep links:
   - Origin: src/engine/game.py#L186-L299
   - Spec: game/docs/specs/phase-1.5-game-refactoring.md
+  - Lighting modes: game/docs/specs/lighting-system.md § 8
 """
 
 import logging
@@ -66,6 +67,8 @@ class MapLoader:
         bgm = map_result.get("properties", {}).get("bgm")
         if bgm:
             self.game.audio_manager.play_bgm(bgm)
+
+        self._apply_map_lighting(map_result.get("properties", {}))
 
         self.game.map_size = max(self.game.map_manager.width, self.game.map_manager.height)
 
@@ -192,6 +195,30 @@ class MapLoader:
             dist = entity.pos.distance_to(player_pos)
             self.game.audio_manager.propose_ambient(sfx, dist)
         self.game.audio_manager.flush_ambient()
+
+    def _apply_map_lighting(self, props: dict) -> None:
+        """Read lighting_mode and ambient_dark_alpha from map properties; store on game.
+
+        Spec: lighting-system.md § 8.5-8.6
+          - lighting_mode: "outdoor" | "indoor" | "underground" (default: "outdoor")
+          - ambient_dark_alpha: int clamped to [0, 255] (default: 0)
+        Unknown modes log a warning and fall back to "outdoor".
+        """
+        _valid_modes = {"outdoor", "indoor", "underground"}
+        mode = props.get("lighting_mode", "outdoor")
+        if mode not in _valid_modes:
+            logging.warning(
+                "Unknown lighting_mode '%s' on map '%s', defaulting to outdoor.",
+                mode,
+                getattr(self.game, "_current_map_name", "?"),
+            )
+            mode = "outdoor"
+
+        raw_alpha = props.get("ambient_dark_alpha", 0)
+        ambient_dark_alpha = max(0, min(255, int(raw_alpha or 0)))
+
+        self.game._map_lighting_mode = mode
+        self.game._map_ambient_dark_alpha = ambient_dark_alpha
 
     def resolve_spawn_by_id(self, target_spawn_id: str) -> tuple[int, int] | None:
         """Find pixel centre of a spawn point on the currently loaded map.
