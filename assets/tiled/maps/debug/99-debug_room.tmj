@@ -1142,35 +1142,7 @@
         {
          "firstgid":1,
          "source":"..\/..\/tiles\/00-grounds.tsx"
-        }, 
-        {
-         "firstgid":261,
-         "source":"..\/..\/tiles\/02-decorations.tsx"
-        }, 
-        {
-         "firstgid":501,
-         "source":"..\/..\/tiles\/01-walls-int.tsx"
-        }, 
-        {
-         "firstgid":751,
-         "source":"..\/..\/tiles\/01-walls-ext.tsx"
-        }, 
-        {
-         "firstgid":1261,
-         "source":"..\/..\/autotiles\/01-water.tsx"
-        }, 
-        {
-         "firstgid":1449,
-         "source":"..\/..\/autotiles\/00-grass-1.tsx"
-        }, 
-        {
-         "firstgid":1465,
-         "source":"..\/..\/autotiles\/01-dirt.tsx"
-        }, 
-        {
-         "firstgid":1481,
-         "source":"..\/..\/autotiles\/00-grass-3.tsx"
-        }],
+        }     ],
  "tilewidth":32,
  "type":"map",
  "version":"1.10",
