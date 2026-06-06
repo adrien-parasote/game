@@ -78,6 +78,15 @@ class Game:
         pygame.init()
         logging.info(f"Initializing Game Engine v{Settings.VERSION}...")
 
+        # macOS dock name — rename process so the dock shows the game title instead of "Python"
+        try:
+            import sys
+            if sys.platform == "darwin":
+                from Foundation import NSBundle  # type: ignore[import]
+                NSBundle.mainBundle().infoDictionary()["CFBundleName"] = Settings.GAME_TITLE
+        except Exception:
+            pass  # Non-macOS or PyObjC absent — no-op
+
         # Display initialization with Fullscreen support
         display_flags = pygame.FULLSCREEN if Settings.FULLSCREEN else 0
         self.screen = pygame.display.set_mode(
