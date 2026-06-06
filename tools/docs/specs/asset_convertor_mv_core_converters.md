@@ -24,9 +24,9 @@ Implement two new converter modules for RPG Maker MV autotile formats:
 - `converter_mv_a3.py` — A3 Building/Roof tiles (roof autotiles using WALL_AUTOTILE_TABLE, 16 shapes)
 - `converter_mv_a4.py` — A4 Wall tiles (hybrid: wall-tops via FLOOR_AUTOTILE_TABLE 47 shapes, wall-sides via WALL_AUTOTILE_TABLE 16 shapes, interleaved by row parity)
 
-Both converters follow the same contract as the existing `converter_mv.py` (A2):
+- Both converters follow the same contract as the existing `converter_mv.py` (A2):
 - Input: PIL Image (source tileset PNG)
-- Output: PIL Image (Tiled-ready tileset PNG)
+- Output: `convert_mv_a3` → `tuple[Image.Image, Image.Image]` (roof strip, wall strip); `convert_mv_a4` → `tuple[Image.Image, Image.Image]` (tops strip, sides strip)
 - No side effects, no file I/O, no GUI imports
 
 ---
@@ -36,7 +36,7 @@ Both converters follow the same contract as the existing `converter_mv.py` (A2):
 | Tier | Examples |
 |------|----------|
 | **Always do** | Return a new PIL Image (never mutate input). Use `Image.NEAREST` for all resizing. Validate source dimensions before processing. Match mini-tile coordinate system from `converter_mv.py` (24px half-tiles). |
-| **Ask first** | Changing the public function signature `convert_mv_a3(img: Image) -> Image`. Adding new parameters not in this spec. Supporting non-MV formats (XP/MZ) for A3/A4 — out of scope. |
+| **Ask first** | Changing the public function signature `convert_mv_a3(img: Image) -> tuple[Image.Image, Image.Image]`. Adding new parameters not in this spec. Supporting non-MV formats (XP/MZ) for A3/A4 — out of scope. |
 | **Never do** | Import from `gui/` packages. Mutate the input PIL Image. Use pixel-by-pixel loops where PIL paste operations suffice. Raise unhandled exceptions (always wrap in `ValueError` with message). |
 
 ---
@@ -64,7 +64,7 @@ Both converters follow the same contract as the existing `converter_mv.py` (A2):
 
 | Type | Identifier | Documented at |
 |---|---|---|
-| Function | `convert_mv_a3(img: Image.Image) -> Image.Image` | This spec § "A3 Converter — Public API" |
+| Function | `convert_mv_a3(img: Image.Image) -> tuple[Image.Image, Image.Image]` | This spec § "A3 Converter — Public API" |
 | Function | `convert_mv_a4(img: Image.Image) -> tuple[Image.Image, Image.Image]` | This spec § "A4 Converter — Public API" |
 
 ### External Invocations
@@ -90,6 +90,7 @@ N/A — these modules are pure functions with no external calls.
 | A3 | `FLOOR_AUTOTILE_TABLE` can be imported from `converter_mv.py` without circular imports | Low | **ASSUMED** — `converter_mv.py` does not import from `converter_mv_a3.py` or `converter_mv_a4.py`; dependency is one-directional |
 | A4 | All RPG Maker MV A3/A4 source files use 48×48 px base tiles (24×24 px mini-tiles) | Low | **SUPERSEDED** — 32px community assets also exist. Both 32px (block_size=64) and 48px (block_size=96) are supported. See `_VALID_BLOCK_SIZES_A4 = {64: 32, 96: 48}` in `converter_mv_a4.py`. |
 | A5 | A4 convert returns a tuple of 2 images; the TSX exporter and GUI can handle this by treating the two strips as separate exports | Medium | **VERIFIED** — GUI exports two strips as `{name}_tops.tsx` (blob wangset) and `{name}_sides.tsx` (corner-or-edge wangset). |
+| A6 | A3 split rule: first `n_rows // 2` block rows → roof strip; remaining block rows → wall strip. Works for all even row counts (2×4, 3×6, 4×4, etc.) | Medium | **VERIFIED** — confirmed by user: "les deux première lignes sont le toit et les deux seconde le mur". Generalised to `n_rows // 2`. |
 
 ---
 
@@ -161,47 +162,56 @@ Each quadrant is a mini×mini px crop from `(src_x, src_y)` to `(src_x+mini, src
 
 ### Output Format (Tiled)
 
-- One PNG per autotile kind, OR a single strip of all 16 shapes per kind
+`convert_mv_a3` returns **two separate strips** — one for roof kinds, one for wall kinds:
+
+- **Roof strip** — first `n_rows // 2` block rows of the source
+- **Wall strip** — remaining block rows (last `n_rows // 2`)
 - **Output tile size:** 48×48 px (assembled from 4 × 24×24 quadrants)
-- **Output layout:** 16 tiles wide × N kinds tall (one row per autotile kind)
-- Output width = `16 * 48 = 768 px`
-- Output height = `number_of_kinds * 48`
+- **Output layout per strip:** 16 tiles wide × N kinds tall (one row per autotile kind)
+- Strip width = `16 * tile_size` (768 px for 48px, 512 px for 32px)
+- Strip height = `number_of_kinds_in_that_half * tile_size`
 
 ### Public API
 
 ```python
-def convert_mv_a3(img: Image.Image) -> Image.Image:
+def convert_mv_a3(img: Image.Image) -> tuple[Image.Image, Image.Image]:
     """
     Convert an RPG Maker MV A3 (Building/Roof) source tileset
-    to a Tiled-compatible tileset strip.
+    to two Tiled-compatible tileset strips: one for roof, one for wall.
+
+    Split rule: first n_rows // 2 block rows → roof strip;
+    remaining block rows → wall strip.
+    Works for any even-row grid: 2×4, 3×6, 4×4, etc.
 
     Args:
         img: PIL Image, source A3 PNG (768×384 or smaller, RGBA or RGB).
-             Must be at least 96×96 px.
+             Must be at least 96×96 px (or 64×64 for 32px tiles).
 
     Returns:
-        PIL Image: Output tileset, RGBA, width=768, height=N*48
-        where N = number of detected non-empty autotile blocks.
+        tuple[Image.Image, Image.Image]: (roof_img, wall_img)
+            roof_img: RGBA, width=16*tile_size, height=N_roof*tile_size
+            wall_img: RGBA, width=16*tile_size, height=N_wall*tile_size
 
     Raises:
-        ValueError: If img dimensions are smaller than 96×96 px.
-        ValueError: If img width is not a multiple of 96.
+        ValueError: If img dimensions are smaller than minimum block size.
+        ValueError: If img width is not a multiple of 64 or 96.
     """
 ```
 
 ### Processing Steps
 
 1. Convert input to RGBA if not already.
-2. Detect non-empty autotile blocks (skip blocks where the 96×96 region is fully transparent or fully white).
-3. For each non-empty block (kind `k`):
-   a. Compute `bx = (k % 8) * 4`, `by = (k // 8) * 4` in mini-tile units
-   b. For each shape `s` in range(16):
-      - For each quadrant `q` in range(4):
-        - Read `[qsx, qsy] = WALL_AUTOTILE_TABLE[s][q]`
-        - Crop mini×mini region from source at `((bx + qsx)*mini, (by + qsy)*mini)`
-        - Paste into output tile at quadrant position
-      - Place assembled tile_size×tile_size tile at `(s * tile_size, kind_index * tile_size)` in output
-4. Return output image.
+2. Detect block grid dimensions: `n_cols = img.width // block_size`, `n_rows = img.height // block_size`.
+3. Compute `split_row = n_rows // 2` — first half = roof, second half = wall.
+4. For each block row `ty` from 0 to `n_rows - 1`:
+   a. Determine target strip: `roof_strips` if `ty < split_row`, else `wall_strips`.
+   b. Compute `by = ty * 4` in mini-tile units.
+   c. For each block column `tx` from 0 to `n_cols - 1`:
+      - Compute `bx = tx * 4` in mini-tile units.
+      - For each shape `s` in range(16): assemble tile from WALL_AUTOTILE_TABLE.
+      - Place assembled tile at `(s * tile_size, kind_index * tile_size)` in the target strip.
+5. Stack each list of strips vertically using `_stack_strips(strips, tile_size)` → one Image per half.
+6. Return `(roof_img, wall_img)`.
 
 ---
 
@@ -403,7 +413,7 @@ All errors propagate to the GUI's error handler in `app.py` which displays them 
 |---|---|---|---|
 | AP-A3-01 | Duplicating `FLOOR_AUTOTILE_TABLE` in `converter_mv_a3.py` | Single source of truth violation. Table drift = wrong output tiles. | `from .converter_mv import FLOOR_AUTOTILE_TABLE` |
 | AP-A3-02 | Pixel-by-pixel copy loop instead of `Image.paste()` | 10-100× slower. A 768×720 file with 30 kinds would take seconds. | Use `Image.paste(crop, (x, y))` for each 24×24 mini-tile. |
-| AP-A3-03 | Outputting one file per kind | Forces caller to manage N files. Breaks TSX export (needs a single sheet). | Output a single strip image with all kinds × shapes. |
+| AP-A3-03 | Returning a single merged strip for A3 (not splitting roof/wall) | GUI needs separate strips to show Toit/Mur toggle and export two files. A single strip breaks the export pipeline. | Return `(roof_img, wall_img)` — first `n_rows // 2` block rows → roof, rest → wall. |
 | AP-A3-04 | Treating A4 as a single-table converter | A4 alternates between FLOOR (47 shapes) and WALL (16 shapes) by row parity. A single-table approach produces wrong output for half the tiles. | Check `ty % 2` per row and apply the correct table. |
 | AP-A3-05 | Hard-coding `ty` offset as absolute pixel Y | The source Y depends on the `by` lookup table (non-linear for A4). Hard-coding breaks when rows are partial. | Use the `BY_LOOKUP_A4 = {0:0, 1:3, 2:5, 3:8, 4:10, 5:13}` dict. |
 | AP-A3-06 | Not validating source dimensions | Wrong file (e.g., A2 given to A3 converter) produces garbled output silently. | Validate dimensions at function entry and raise `ValueError`. |
@@ -418,16 +428,17 @@ All errors propagate to the GUI's error handler in `app.py` which displays them 
 
 | ID | Test | Input | Expected |
 |----|------|-------|----------|
-| TC-001 | Minimum valid source (96×96) produces output | 96×96 RGBA image with test pattern | Returns Image, size = (768, 48) — 1 kind × 16 shapes |
-| TC-002 | Full sheet (768×384) shape count | 768×384 RGBA with all blocks filled | Output height = 32 × 48 = 1536 px (32 kinds) |
-| TC-003 | Output width is always 768 (16 shapes × 48px) | Any valid input | `output.width == 768` |
-| TC-004 | Empty block skipped | 192×96 source, only block 0 filled | Output height = 1 × 48 (only 1 kind) |
-| TC-005 | WALL_AUTOTILE_TABLE shape 0 correct quadrant assembly | Known test pattern with colored quadrants | TL = color from `(bx*2+2)*24, (by*2+2)*24` |
-| TC-006 | Source too small raises ValueError | 48×48 image | `ValueError` with message containing "96×96" |
-| TC-007 | Width not multiple of 96 raises ValueError | 100×96 image | `ValueError` with message containing "multiple de 96" |
-| TC-008 | All-transparent source raises ValueError | 768×384 fully transparent | `ValueError` "Aucun bloc valide" |
-| TC-009 | Output is RGBA | RGB input | `output.mode == "RGBA"` |
-| TC-010 | Input not mutated | Input image before/after | `original_size == img.size`, `original_mode == img.mode` |
+| TC-001 | Valid 2-block source returns tuple of two Images | 96×192 RGBA (2 block rows) | `isinstance(result, tuple)` and `len(result) == 2` |
+| TC-002 | 2-block source: 1 roof kind + 1 wall kind | 96×192 RGBA | `roof.height == tile_size`, `wall.height == tile_size` |
+| TC-003 | Output width is always `16 * tile_size` | Any valid input | `roof.width == wall.width == 16 * tile_size` |
+| TC-004 | 4-block source: 2 roof kinds + 2 wall kinds | 96×384 RGBA | `roof.height == 2*tile_size`, `wall.height == 2*tile_size` |
+| TC-005 | A3 roof/wall pixel separation | 2-row source, row 0 red, row 1 green | Roof pixels = red, Wall pixels = green |
+| TC-006 | Source too small raises ValueError | 48×48 image | `ValueError` with message containing "96" |
+| TC-007 | Width not valid raises ValueError | 100×96 image | `ValueError` with message containing "invalide" |
+| TC-008 | Both outputs are RGBA | RGB input | `roof.mode == "RGBA"`, `wall.mode == "RGBA"` |
+| TC-009 | Input not mutated | Image before/after | `before.tobytes() == after.tobytes()` |
+| TC-010 | Output tile count = 16 per strip | Any valid input | `roof.width // tile_size == 16` |
+| TC-011 | 32px source (block_size=64) accepted | 64×128 RGBA | `isinstance(roof, Image.Image)` — no error |
 
 ### Unit Tests — `test_converter_mv_a4.py`
 

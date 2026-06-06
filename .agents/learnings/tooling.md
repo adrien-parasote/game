@@ -161,3 +161,17 @@ else:
 **Outcome :** Utiliser des variables d'offset de bloc (`bx`, `by`) exprimées en unités de base-tiles (ex: `tx * 2`) tout en les combinant avec des coordonnées de quadrants en mini-tiles (ex: `(bx + qsx) * mini`) produit des décalages erronés de 50%. L'erreur est masquée dans les tests unitaires si les fixtures de test utilisent des images de couleur unie (le crop sur le mauvais bloc renvoyant la même couleur).
 **Pattern :** Exprimer systématiquement les offsets de bloc (`bx`, `by`) directement en mini-tuiles (ex: `tx * 4` pour des blocs de 2x2 base-tiles) dès l'initialisation de la boucle. De plus, les tests unitaires de géométrie doivent TOUJOURS utiliser des textures à motifs distincts (ex: couleurs unies différentes par bloc) pour lever immédiatement des assertions en cas d'overlap de coordonnées de crop.
 
+## L-TOOL-015 · 2026-06-06 · Project-Specific · Extend Converter Return via Sibling Symmetry
+
+**Contexte :** Refactoring du return type de `convert_mv_a3` de `Image.Image` vers `tuple[Image.Image, Image.Image]` pour exporter Toit et Mur séparément (comme A4).
+**Outcome :** En utilisant `convert_mv_a4` comme référence exacte (même return pattern, même dispatch GUI, même export pipeline), l'implémentation A3 ne nécessitait que 4 changements locaux sans aucune ambiguité de conception : (1) core return tuple, (2) GUI `_convert_a3` unpack, (3) `_on_canvas_mode_change` branche A3, (4) `_export_a3` méthode.
+**Evidence :** 361/361 tests passent. Un seul bug de rework : orphan `def _export_a4` (ligne supprimée par mauvaise découpe de TargetContent) — corrigé en 1 appel `replace_file_content`. Zéro ambiguité de décision.
+**Pattern :** Quand on adapte un second convertisseur pour qu'il suive le même contrat de retour qu'un premier (ex: A3 → même split que A4), tracer **explicitement** les 4 points de couplage (core → GUI callback → canvas mode switch → export dispatch) avant de coder. Les 4 changements sont symétriques et se font dans le même ordre que le convertisseur de référence. Cela évite de chercher les callers un par un.
+
+## A-TOOL-004 · 2026-06-06 · Universal · multi_replace_file_content TargetContent spanning method boundary silently removes def line
+
+**Contexte :** Insertion de `_export_a3` avant `_export_a4` via `multi_replace_file_content` — le `TargetContent` d'un chunk commençait sur `def _export_a4(...)`, ce qui a mis cette ligne dans la zone de remplacement mais pas dans le `ReplacementContent`.
+**Evidence :** Après le multi-replace, le fichier compilait mais `app._export_a4` levait `AttributeError`. La def était absente — la docstring flottait au niveau module. Corrigé avec un appel `replace_file_content` ciblé.
+**Anti-pattern :** Dans un `multi_replace_file_content`, si le `TargetContent` d'un chunk se **termine** par une `def`/`class` line qui appartient à un autre chunk (ou au bloc suivant), cette ligne est consommée par le remplacement et disparaît du fichier. L'erreur est silencieuse : Python parse la docstring orpheline comme un string statement, pas comme une erreur.
+**Fix :** Ne jamais terminer un `TargetContent` sur une `def`, `class`, ou `async def` line qui appartient à un bloc différent de celui qu'on remplace. Couper le `TargetContent` **avant** la dernière `def` si elle appartient au bloc suivant. Vérifier avec `grep -c 'def _export_a4'` avant et après le replace.
+

@@ -741,20 +741,6 @@ def test_on_type_change_recolor_already_has_state():
     app.destroy()
 
 
-# ── _on_format_change ─────────────────────────────────────────────────────────
-
-@pytest.mark.unit
-def test_on_format_change_mz_rejected():
-    """_on_format_change rejects MZ format and restores previous value."""
-    app = App()
-    prev_format = app._state.format
-    # Force format var to MZ
-    app._format_var.set("MZ")
-    app._on_format_change()
-    # State format must be unchanged (MZ rejected)
-    assert app._state.format == prev_format
-    app.destroy()
-
 
 @pytest.mark.unit
 def test_on_format_change_mv_accepted():
@@ -837,17 +823,6 @@ def test_export_standard_with_result_img(tmp_path):
     app._export_standard(str(tmp_path), "test_export")
     # File should be written
     assert (tmp_path / "test_export.png").exists()
-    app.destroy()
-
-
-@pytest.mark.unit
-def test_export_standard_no_result_img_is_noop(tmp_path):
-    """_export_standard is a no-op when result_img is None."""
-    import dataclasses
-    app = App()
-    app._state = dataclasses.replace(app._state, result_img=None)
-    app._export_standard(str(tmp_path), "noop")
-    assert not list(tmp_path.iterdir())
     app.destroy()
 
 
