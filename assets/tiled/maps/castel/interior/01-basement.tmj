@@ -175,9 +175,20 @@
  "orientation":"orthogonal",
  "properties":[
         {
+         "name":"ambient_dark_alpha",
+         "type":"int",
+         "value":100
+        }, 
+        {
          "name":"bgm",
          "type":"string",
          "value":"00-castel"
+        }, 
+        {
+         "name":"lighting_mode",
+         "propertytype":"24-lighting_mode",
+         "type":"string",
+         "value":"underground"
         }, 
         {
          "name":"name",

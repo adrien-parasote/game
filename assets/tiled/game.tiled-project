@@ -81,9 +81,20 @@
             "id": 17,
             "members": [
                 {
+                    "name": "ambient_dark_alpha",
+                    "type": "int",
+                    "value": 0
+                },
+                {
                     "name": "bgm",
                     "type": "string",
                     "value": ""
+                },
+                {
+                    "name": "lighting_mode",
+                    "propertyType": "24-lighting_mode",
+                    "type": "string",
+                    "value": "outdoor"
                 },
                 {
                     "name": "name",
@@ -564,6 +575,18 @@
                 "right",
                 "left",
                 "any"
+            ],
+            "valuesAsFlags": true
+        },
+        {
+            "id": 23,
+            "name": "24-lighting_mode",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "outdoor",
+                "indoor",
+                "underground"
             ],
             "valuesAsFlags": true
         }
