@@ -1,18 +1,19 @@
 """
 asset_convertor.core.converter_mv_a3
 
-Convert an RPG Maker MV A3 (Building/Roof) source tileset to a
-Tiled-compatible tileset strip.
+Convert an RPG Maker MV A3 (Building/Roof) source tileset to two
+Tiled-compatible tileset strips — one for roof tiles, one for wall tiles.
 
 Source format:
   - 48px tiles: 768×384 px (full sheet), block=96×96 px, mini=24 px
   - 32px tiles: 512×256 px (full sheet), block=64×64 px, mini=16 px
-  - 8 columns × 4 rows of autotile blocks.
+  - 8 columns × N rows of autotile blocks (N is even).
   - Each block encodes one autotile kind using WALL_AUTOTILE_TABLE (16 shapes).
+  - First n_rows // 2 block rows = roof; remaining rows = wall.
 
 Output format:
-  - 48px: 768 px wide (16 × 48), height = N_kinds × 48 px
-  - 32px: 512 px wide (16 × 32), height = N_kinds × 32 px
+  - roof_img: 16 × tile_size wide, N_roof_kinds × tile_size tall
+  - wall_img: 16 × tile_size wide, N_wall_kinds × tile_size tall
   - One row of 16 tiles per detected non-empty autotile kind.
 
 Spec: tools/docs/specs/asset_convertor_mv_core_converters.md § "A3 Converter"
@@ -66,10 +67,14 @@ _BLOCK_ROWS = 4    # A3 sheet: 4 rows of blocks
 # Public API
 # ---------------------------------------------------------------------------
 
-def convert_mv_a3(img: Image.Image) -> Image.Image:
+def convert_mv_a3(img: Image.Image) -> tuple[Image.Image, Image.Image]:
     """
-    Convert an RPG Maker MV A3 (Building/Roof) source tileset
-    to a Tiled-compatible tileset strip.
+    Convert an RPG Maker MV A3 (Building/Roof) source tileset to two
+    Tiled-compatible tileset strips.
+
+    The source block grid is split by row parity:
+      - First n_rows // 2 block rows → roof strip
+      - Remaining block rows          → wall strip
 
     Supports both 32px and 48px tile sizes:
       - 32px: source block = 64×64 px
@@ -78,17 +83,17 @@ def convert_mv_a3(img: Image.Image) -> Image.Image:
     Args:
         img: PIL Image, source A3 PNG (RGBA or RGB).
              Width must be a multiple of 64 (32px) or 96 (48px).
-             Minimum: one full block square.
+             Height must be a multiple of block_size and at least 2 block rows.
 
     Returns:
-        PIL Image: Output tileset strip, RGBA.
-            width  = 16 × tile_size
-            height = N_kinds × tile_size
+        tuple: (roof_img, wall_img)
+            roof_img: RGBA, width=16*tile_size, height=N_roof_kinds*tile_size
+            wall_img: RGBA, width=16*tile_size, height=N_wall_kinds*tile_size
 
     Raises:
         ValueError: If img width is not a multiple of 64 or 96.
         ValueError: If img dimensions are too small for the detected tile size.
-        ValueError: If no valid autotile blocks are found.
+        ValueError: If no valid autotile blocks are found in either half.
     """
     src = img.convert("RGBA")
     tile_size, mini, block_size = _detect_a3_geometry(src)
@@ -97,8 +102,10 @@ def convert_mv_a3(img: Image.Image) -> Image.Image:
 
     n_cols = min(src.width // block_size, _BLOCK_COLS)
     n_rows = src.height // block_size
+    split_row = n_rows // 2  # First half = roof, second half = wall
 
-    kind_rows: list[Image.Image] = []
+    roof_rows: list[Image.Image] = []
+    wall_rows: list[Image.Image] = []
 
     for ty in range(n_rows):
         for tx in range(n_cols):
@@ -109,23 +116,41 @@ def convert_mv_a3(img: Image.Image) -> Image.Image:
                 continue
 
             row_img = _build_wall_strip(src, bx, by, tile_size, mini, output_width)
-            kind_rows.append(row_img)
+            if ty < split_row:
+                roof_rows.append(row_img)
+            else:
+                wall_rows.append(row_img)
 
-    if not kind_rows:
+    if not roof_rows and not wall_rows:
         raise ValueError(
             "Aucun bloc valide détecté. Le fichier est-il bien un A3 MV ?"
         )
 
-    output = Image.new("RGBA", (output_width, tile_size * len(kind_rows)))
-    for idx, row_img in enumerate(kind_rows):
-        output.paste(row_img, (0, idx * tile_size))
+    roof_img = _stack_strips(roof_rows, output_width, tile_size)
+    wall_img = _stack_strips(wall_rows, output_width, tile_size)
 
-    return output
+    return roof_img, wall_img
 
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+def _stack_strips(
+    strips: list[Image.Image], width: int, tile_size: int
+) -> Image.Image:
+    """Stack a list of strip images vertically.
+
+    Returns an empty (width × 0) image if the list is empty,
+    so callers can safely check .height == 0.
+    """
+    if not strips:
+        return Image.new("RGBA", (width, tile_size))
+    total_h = len(strips) * tile_size
+    out = Image.new("RGBA", (width, total_h))
+    for i, strip in enumerate(strips):
+        out.paste(strip, (0, i * tile_size))
+    return out
 
 def _detect_a3_geometry(src: Image.Image) -> tuple[int, int, int]:
     """

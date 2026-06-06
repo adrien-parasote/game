@@ -21,7 +21,10 @@ def _make_rgba(width: int, height: int, color: tuple = (100, 150, 200, 255)) -> 
 
 
 def _make_a3_source(num_blocks: int = 1) -> Image.Image:
-    """Minimal valid A3 source: 96px wide (1 col), 96px tall per block."""
+    """Minimal valid A3 source: 96px wide (1 col), 96px tall per block.
+
+    num_blocks must be even so the split_row rule gives non-empty roof and wall.
+    """
     width = 96   # 1 column of blocks (96 px)
     height = 96 * num_blocks
     return _make_rgba(width, height)
@@ -47,38 +50,41 @@ class TestConvertMvA3:
         from asset_convertor.core.converter_mv_a3 import convert_mv_a3
         self.convert = convert_mv_a3
 
-    # TC-001: Valid 1-block A3 returns PIL Image
-    def test_returns_pil_image(self) -> None:
-        src = _make_a3_source(1)
+    # TC-001: Valid 2-block A3 returns tuple of two PIL Images
+    def test_returns_tuple_of_two_images(self) -> None:
+        src = _make_a3_source(2)  # 2 block rows: 1 roof + 1 wall
         result = self.convert(src)
-        assert isinstance(result, Image.Image)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        assert all(isinstance(img, Image.Image) for img in result)
 
-    # TC-002: Output mode is RGBA
+    # TC-002: Both outputs are RGBA
     def test_output_mode_rgba(self) -> None:
-        result = self.convert(_make_a3_source(1))
-        assert result.mode == "RGBA"
+        roof, wall = self.convert(_make_a3_source(2))
+        assert roof.mode == "RGBA"
+        assert wall.mode == "RGBA"
 
-    # TC-003: Output width is 16 x tile_size (16 shapes x 1 tile wide)
+    # TC-003: Output width is 16 x tile_size for both strips
     def test_output_width_16_tiles(self) -> None:
-        result = self.convert(_make_a3_source(1))
-        # WALL_AUTOTILE_TABLE has 16 shapes; each tile is 48px
-        assert result.width == 16 * 48
+        roof, wall = self.convert(_make_a3_source(2))
+        assert roof.width == 16 * 48
+        assert wall.width == 16 * 48
 
-    # TC-004: Output height is tile_size (1 row of tiles per block)
-    def test_output_height_one_tile_per_block(self) -> None:
-        # 1-column, 1-block source → exactly 1 kind → height = 1 * 48
-        result = self.convert(_make_a3_source(1))
-        assert result.height == 1 * 48
+    # TC-004: 2-block source: 1 roof kind + 1 wall kind → each strip has 1 row
+    def test_two_blocks_one_kind_each(self) -> None:
+        roof, wall = self.convert(_make_a3_source(2))
+        assert roof.height == 48   # 1 roof kind
+        assert wall.height == 48   # 1 wall kind
 
-    # TC-005: Two A3 blocks → output height doubles
-    def test_two_blocks_double_height(self) -> None:
-        # 1-column, 2-block source → 2 kinds → height = 2 * 48
-        result = self.convert(_make_a3_source(2))
-        assert result.height == 2 * 48
+    # TC-005: 4-block source: 2 roof kinds + 2 wall kinds
+    def test_four_blocks_two_kinds_each(self) -> None:
+        roof, wall = self.convert(_make_a3_source(4))
+        assert roof.height == 2 * 48
+        assert wall.height == 2 * 48
 
     # TC-006: Input not mutated
     def test_input_not_mutated(self) -> None:
-        src = _make_a3_source(1)
+        src = _make_a3_source(2)
         original_data = src.tobytes()
         self.convert(src)
         assert src.tobytes() == original_data
@@ -89,7 +95,7 @@ class TestConvertMvA3:
         with pytest.raises(ValueError, match="(?i)(invalide|width|largeur)"):
             self.convert(bad)
 
-    # TC-008: Wrong height (not multiple of block height) raises ValueError
+    # TC-008: Wrong height (too small) raises ValueError
     def test_wrong_height_raises(self) -> None:
         bad = _make_rgba(96, 50)  # 50 < 96 minimum height
         with pytest.raises(ValueError, match="(?i)(petite|96)"):
@@ -98,18 +104,21 @@ class TestConvertMvA3:
     # TC-009: Non-RGBA input is converted internally (no error)
     def test_rgb_input_accepted(self) -> None:
         src = Image.new("RGB", (768, 192), (100, 150, 200))
-        result = self.convert(src)
-        assert isinstance(result, Image.Image)
+        roof, wall = self.convert(src)
+        assert isinstance(roof, Image.Image)
+        assert isinstance(wall, Image.Image)
 
-    # TC-010: Output contains exactly 16 columns of tiles (width / tile_size)
+    # TC-010: Both outputs contain exactly 16 columns of tiles (width / tile_size)
     def test_output_tile_count(self) -> None:
-        result = self.convert(_make_a3_source(1))
-        assert result.width // 48 == 16
+        roof, wall = self.convert(_make_a3_source(2))
+        assert roof.width // 48 == 16
+        assert wall.width // 48 == 16
 
     # TC-011: Multiple blocks: output width unchanged (still 16 tiles wide)
     def test_multi_block_width_unchanged(self) -> None:
-        result = self.convert(_make_a3_source(3))
-        assert result.width == 16 * 48
+        roof, wall = self.convert(_make_a3_source(4))
+        assert roof.width == 16 * 48
+        assert wall.width == 16 * 48
 
     # TC-012: Zero-height source raises ValueError
     def test_zero_height_raises(self) -> None:
@@ -118,50 +127,55 @@ class TestConvertMvA3:
 
     # TC-026: A3 32px source (block_size=64) is accepted
     def test_32px_source_accepted(self) -> None:
-        src = _make_rgba(64, 64)
-        result = self.convert(src)
-        assert isinstance(result, Image.Image)
+        src = _make_rgba(64, 128)  # 2 block rows for valid split
+        roof, wall = self.convert(src)
+        assert isinstance(roof, Image.Image)
+        assert isinstance(wall, Image.Image)
 
     # TC-027: A3 32px output width = 16 * 32 = 512px
     def test_32px_output_width(self) -> None:
-        src = _make_rgba(64, 64)
-        result = self.convert(src)
-        assert result.width == 16 * 32
-
-    # TC-028: A3 32px output height = 32px per block
-    def test_32px_output_height(self) -> None:
-        src = _make_rgba(64, 64)
-        result = self.convert(src)
-        assert result.height == 32
-
-    # TC-029: A3 32px two blocks -> output height = 2 * 32 = 64px
-    def test_32px_two_blocks_height(self) -> None:
         src = _make_rgba(64, 128)
-        result = self.convert(src)
-        assert result.height == 2 * 32
+        roof, wall = self.convert(src)
+        assert roof.width == 16 * 32
+        assert wall.width == 16 * 32
 
-    # TC-031: A3 converter crops from the correct block coordinates (no overlap)
-    def test_a3_coordinate_correctness(self) -> None:
-        src = Image.new("RGBA", (192, 96))
-        block0 = Image.new("RGBA", (96, 96), (255, 0, 0, 255))
-        block1 = Image.new("RGBA", (96, 96), (0, 255, 0, 255))
-        src.paste(block0, (0, 0))
-        src.paste(block1, (96, 0))
+    # TC-028: A3 32px 2-block source → each strip has 1 row of 32px
+    def test_32px_output_height(self) -> None:
+        src = _make_rgba(64, 128)  # 2 block rows
+        roof, wall = self.convert(src)
+        assert roof.height == 32
+        assert wall.height == 32
 
-        result = self.convert(src)
-        assert result.height == 2 * 48
+    # TC-029: A3 32px four blocks → each strip has 2 rows
+    def test_32px_four_blocks_height(self) -> None:
+        src = _make_rgba(64, 256)  # 4 block rows
+        roof, wall = self.convert(src)
+        assert roof.height == 2 * 32
+        assert wall.height == 2 * 32
 
-        # The first row (0..48px) should be entirely Red
-        first_row_crop = result.crop((0, 0, 768, 48))
+    # TC-031: A3 converter separates roof (first half) from wall (second half)
+    def test_a3_roof_wall_separation(self) -> None:
+        src = Image.new("RGBA", (192, 192))
+        # 2 rows of 2 blocks: top row (ty=0) = red, bottom row (ty=1) = green
+        block_red   = Image.new("RGBA", (96, 96), (255, 0, 0, 255))
+        block_green = Image.new("RGBA", (96, 96), (0, 255, 0, 255))
+        for tx in range(2):
+            src.paste(block_red,   (tx * 96, 0))
+            src.paste(block_green, (tx * 96, 96))
+
+        roof, wall = self.convert(src)
+
+        # roof strip: 2 blocks in row 0 → 2 kinds
+        assert roof.height == 2 * 48
         for x in [0, 48, 100, 200, 500, 700]:
             for y in [0, 10, 24, 40]:
-                assert first_row_crop.getpixel((x, y)) == (255, 0, 0, 255)
+                assert roof.getpixel((x, y)) == (255, 0, 0, 255)
 
-        # The second row (48..96px) should be entirely Green
-        second_row_crop = result.crop((0, 48, 768, 96))
+        # wall strip: 2 blocks in row 1 → 2 kinds
+        assert wall.height == 2 * 48
         for x in [0, 48, 100, 200, 500, 700]:
             for y in [0, 10, 24, 40]:
-                assert second_row_crop.getpixel((x, y)) == (0, 255, 0, 255)
+                assert wall.getpixel((x, y)) == (0, 255, 0, 255)
 
 # ===========================================================================
 # A4 — UNIT TESTS
@@ -348,14 +362,15 @@ class TestConvertMvA4:
 
 class TestConverterIntegration:
 
-    # IT-001: A3 converter produces a tileset readable by PIL (valid PNG bytes)
+    # IT-001: A3 converter produces valid roof and wall PNG files
     def test_a3_output_valid_png(self, tmp_path) -> None:
         from asset_convertor.core.converter_mv_a3 import convert_mv_a3
-        result = convert_mv_a3(_make_a3_source(1))
-        out = tmp_path / "a3_out.png"
-        result.save(out)
-        loaded = Image.open(out)
-        assert loaded.size == result.size
+        roof, wall = convert_mv_a3(_make_a3_source(2))  # 2 block rows
+        for name, img in [("roof", roof), ("wall", wall)]:
+            out = tmp_path / f"a3_{name}.png"
+            img.save(out)
+            loaded = Image.open(out)
+            assert loaded.size == img.size
 
     # IT-002: A4 both outputs are valid PNG
     def test_a4_outputs_valid_png(self, tmp_path) -> None:
@@ -376,11 +391,12 @@ class TestConverterIntegration:
     def test_a3_a4_independent(self) -> None:
         from asset_convertor.core.converter_mv_a3 import convert_mv_a3
         from asset_convertor.core.converter_mv_a4 import convert_mv_a4
-        src_a3 = _make_a3_source(1)       # 96x96 valid for A3
-        src_a4 = _make_rgba(96, 192)      # 96x192 valid for A4 (> 120px min)
-        r_a3 = convert_mv_a3(src_a3)
+        src_a3 = _make_a3_source(2)        # 96x192 valid for A3 (2 block rows)
+        src_a4 = _make_rgba(96, 192)       # 96x192 valid for A4 (> 120px min)
+        r_a3_roof, r_a3_wall = convert_mv_a3(src_a3)
         r_a4_tops, r_a4_sides = convert_mv_a4(src_a4)
         # Both produced images without error
-        assert isinstance(r_a3, Image.Image)
+        assert isinstance(r_a3_roof, Image.Image)
+        assert isinstance(r_a3_wall, Image.Image)
         assert isinstance(r_a4_tops, Image.Image)
         assert isinstance(r_a4_sides, Image.Image)

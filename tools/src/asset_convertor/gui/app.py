@@ -333,14 +333,15 @@ class App(ctk.CTk):
             rb.grid(row=0, column=1 + i, padx=4)
 
     def _build_secondary_a3(self, parent: ctk.CTkFrame) -> None:
-        """A3: MV only + hint label."""
+        """A3: MV only + hint label (produces 2 strips: toit + mur)."""
         ctk.CTkLabel(parent, text="Format :").grid(row=0, column=0, padx=(16, 4), pady=10)
         self._format_var = ctk.StringVar(value="MV")
         ctk.CTkRadioButton(
             parent, text="MV", variable=self._format_var, value="MV",
         ).grid(row=0, column=1, padx=4)
         ctk.CTkLabel(
-            parent, text="📐 Source attendue : 768×384 px (48px) ou 512×256 px (32px)",
+            parent,
+            text="📐 Source attendue : 768×384 px (48px) ou 512×256 px (32px) — Produit 2 strips (Toit + Mur)",
             text_color="gray", font=ctk.CTkFont(size=11),
         ).grid(row=0, column=2, padx=(16, 4))
 
@@ -710,6 +711,10 @@ class App(ctk.CTk):
             self._canvas_mode_toggle.configure(values=["Mur", "Top"])
             self._canvas_mode_var.set("Mur")
             self._canvas_mode_toggle.grid()
+        elif resource_type == "A3":
+            self._canvas_mode_toggle.configure(values=["Toit", "Mur"])
+            self._canvas_mode_var.set("Toit")
+            self._canvas_mode_toggle.grid()
 
         # Update recolor panel if newly created and we have data
         if self._recolor_panel is not None and self._state.recolor:
@@ -818,28 +823,45 @@ class App(ctk.CTk):
             self.after(0, lambda m=msg: self._on_convert_error(m))
 
     def _convert_a3(self) -> None:
-        """A3 Building — convert_mv_a3(img)."""
+        """A3 Building — convert_mv_a3(img) → (roof_img, wall_img)."""
         try:
             img = self._state.source_img
             assert img is not None
-            result_img = convert_mv_a3(img)
+            roof_img, wall_img = convert_mv_a3(img)
             # Derive tile_size from output width: always 16 * tile_size
-            tile_size = result_img.width // 16
+            tile_size = roof_img.width // 16
 
-            # Extract 16 wall tiles from the first strip row for canvas preview.
-            # A3 uses WALL_AUTOTILE_TABLE (16 shapes) — same canvas logic as A4 Mur.
+            # Stitch vertically for single-image preview
+            total_h = roof_img.height + wall_img.height
+            max_w = max(roof_img.width, wall_img.width)
+            stitched = Image.new("RGBA", (max_w, total_h))
+            stitched.paste(roof_img, (0, 0))
+            stitched.paste(wall_img, (0, roof_img.height))
+
+            # Extract 16 roof tiles (first row) for canvas preview
+            roof_tiles: list[Image.Image] = [
+                roof_img.crop((i * tile_size, 0, (i + 1) * tile_size, tile_size))
+                for i in range(16)
+            ]
+            # Extract 16 wall tiles (first row) for canvas preview
             wall_tiles: list[Image.Image] = [
-                result_img.crop((i * tile_size, 0, (i + 1) * tile_size, tile_size))
+                wall_img.crop((i * tile_size, 0, (i + 1) * tile_size, tile_size))
                 for i in range(16)
             ]
 
             self._state = dataclasses.replace(
                 self._state,
-                result_img=result_img,
-                tiles=wall_tiles,
+                result_img=stitched,
+                tiles=roof_tiles,
                 tile_size=tile_size,
             )
-            self.after(0, lambda: self._on_convert_success_a3(result_img, wall_tiles, tile_size))
+            # Store strips and tile lists for export and canvas switching
+            self._a3_roof: Image.Image = roof_img
+            self._a3_wall: Image.Image = wall_img
+            self._a3_roof_tiles: list[Image.Image] = roof_tiles
+            self._a3_wall_tiles: list[Image.Image] = wall_tiles
+
+            self.after(0, lambda: self._on_convert_success_a3(stitched, roof_tiles, tile_size))
         except Exception as err:
             msg = str(err)
             self.after(0, lambda m=msg: self._on_convert_error(m))
@@ -981,38 +1003,39 @@ class App(ctk.CTk):
                     text="Cliquez pour dessiner — bitmask 4-voisins (Mur)"
                 )
         elif self._state.resource_type == "A3":
-            if not hasattr(self, "_a3_all_kinds"):
+            if not hasattr(self, "_a3_roof_tiles"):
                 return
-            
-            # Find the requested kind tiles
-            for kind_name, kind_tiles in self._a3_all_kinds:
-                if kind_name == mode:
-                    self._state = dataclasses.replace(self._state, tiles=kind_tiles)
-                    self._canvas_grid = [row[:] for row in _GRID_WALL_DEFAULT]
-                    self._redraw_canvas_grid()
-                    self.lbl_canvas_info.configure(
-                        text=f"Cliquez pour dessiner — bitmask 4-voisins ({kind_name})"
-                    )
-                    break
+            if mode == "Toit":
+                tiles = self._a3_roof_tiles
+                label = "Cliquez pour dessiner — bitmask 4-voisins (Toit)"
+            else:
+                tiles = self._a3_wall_tiles
+                label = "Cliquez pour dessiner — bitmask 4-voisins (Mur)"
+            self._state = dataclasses.replace(self._state, tiles=tiles)
+            self._canvas_grid = [row[:] for row in _GRID_WALL_DEFAULT]
+            self._redraw_canvas_grid()
+            self.lbl_canvas_info.configure(text=label)
 
     def _on_convert_success_a3(
         self,
         result_img: Image.Image,
-        all_kinds: list[tuple[str, list[Image.Image]]],
+        roof_tiles: list[Image.Image],
         tile_size: int,
     ) -> None:
-        """A3 success: setup kinds toggle and show wall canvas."""
+        """A3 success: show stitched preview, enable Toit/Mur toggle, default to Toit canvas."""
         self.btn_convert.configure(state="normal")
         self.btn_export.configure(state="normal")
         self._display_result_image(result_img)
         w, h = result_img.size
         self.lbl_output_info.configure(text=f"A3 : {w}x{h} px")
         self._set_status(f"A3 : conversion réussie — {w}x{h} px.")
-        # A3 uses same 4-neighbor wall canvas as A4 Mur (no Top/Mur toggle)
+        # Default to Toit canvas with the 4-neighbor wall pattern
+        self._canvas_mode_var.set("Toit")
         self._canvas_grid = [row[:] for row in _GRID_WALL_DEFAULT]
+        self._state = dataclasses.replace(self._state, tiles=roof_tiles)
         self._redraw_canvas_grid()
         self.lbl_canvas_info.configure(
-            text="Cliquez pour dessiner — bitmask 4-voisins (Bâtiment)"
+            text="Cliquez pour dessiner — bitmask 4-voisins (Toit)"
         )
 
     def _on_convert_success_single(
@@ -1052,6 +1075,8 @@ class App(ctk.CTk):
 
         if resource_type == "A4":
             self._export_a4(out_dir, name)
+        elif resource_type == "A3":
+            self._export_a3(out_dir, name)
         elif resource_type == "Recolor":
             self._export_recolor(out_dir, name)
         else:
@@ -1106,6 +1131,55 @@ class App(ctk.CTk):
             self._set_status(f"Impossible d'écrire dans {out_dir}. ({exc})", error=True)
         except ValueError as exc:
             self._set_status(f"Erreur interne : {exc}", error=True)
+
+    def _export_a3(self, out_dir: str, name: str) -> None:
+        """Export A3 as two PNG files (+ TSX if checked).
+
+        - toit strip: plain grid TSX (no wangset) via export_simple_sheet
+        - mur strip:  plain grid TSX (no wangset) via export_simple_sheet
+        """
+        if not hasattr(self, "_a3_roof"):
+            return
+        try:
+            from asset_convertor.exporters.tsx_generator import export_simple_sheet
+
+            export_tsx = self._export_tsx_var.get()
+            tile_size = self._state.tile_size
+            os.makedirs(out_dir, exist_ok=True)
+            status_parts: list[str] = []
+
+            # Toit strip — plain grid TSX (16 tiles, WALL_AUTOTILE_TABLE)
+            toit_name = f"{name}_toit"
+            cols = self._a3_roof.width // tile_size
+            if export_tsx:
+                png_path, tsx_path = export_simple_sheet(
+                    self._a3_roof, toit_name, out_dir, tile_size, columns=cols,
+                )
+                status_parts.append(f"{Path(png_path).name} + {Path(tsx_path).name}")
+            else:
+                png_path = os.path.join(out_dir, f"{toit_name}.png")
+                self._a3_roof.save(png_path)
+                status_parts.append(Path(png_path).name)
+
+            # Mur strip — plain grid TSX (16 tiles, WALL_AUTOTILE_TABLE)
+            mur_name = f"{name}_mur"
+            cols = self._a3_wall.width // tile_size
+            if export_tsx:
+                png_path, tsx_path = export_simple_sheet(
+                    self._a3_wall, mur_name, out_dir, tile_size, columns=cols,
+                )
+                status_parts.append(f"{Path(png_path).name} + {Path(tsx_path).name}")
+            else:
+                png_path = os.path.join(out_dir, f"{mur_name}.png")
+                self._a3_wall.save(png_path)
+                status_parts.append(Path(png_path).name)
+
+            self._set_status(f"A3 exporté : {' | '.join(status_parts)} → {out_dir}")
+        except (OSError, PermissionError) as exc:
+            self._set_status(f"Impossible d'écrire dans {out_dir}. ({exc})", error=True)
+        except ValueError as exc:
+            self._set_status(f"Erreur A3 : {exc}", error=True)
+
 
     def _export_a4(self, out_dir: str, name: str) -> None:
         """Export A4 as two PNG files (+ TSX if checked).

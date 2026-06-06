@@ -1005,8 +1005,8 @@ def test_export_no_source_path_is_noop(tmp_path):
 
 
 @pytest.mark.unit
-def test_export_dispatches_to_export_standard(tmp_path):
-    """_export calls _export_standard for A3 resource type."""
+def test_export_dispatches_to_export_a3(tmp_path):
+    """_export calls _export_a3 for A3 resource type."""
     import dataclasses
     from PIL import Image
     from unittest.mock import patch
@@ -1021,8 +1021,11 @@ def test_export_dispatches_to_export_standard(tmp_path):
     )
     app._output_dir_var.set(str(tmp_path))
     app._export_tsx_var.set(False)
-    app._export()
-    assert (tmp_path / "test.png").exists()
+
+    with patch.object(app, "_export_a3") as mock_export:
+        app._export()
+
+    mock_export.assert_called_once()
     app.destroy()
 
 
