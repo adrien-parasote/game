@@ -227,7 +227,8 @@ is absent from the map — guarantees `RenderManager` never encounters `Attribut
 |------|------|
 | **Always do** | Clamp `ambient_dark_alpha` to [0, 255] on read; default `lighting_mode` to `"outdoor"` if absent |
 | **Ask first** | Changing `INDOOR_ATTENUATION` constant value (affects all indoor maps globally) |
-| **Never do** | Modify `TimeSystem` for lighting — it is a pure clock; modify `LightingManager.create_overlay()` signature |
+| **Always do** | Pass `alpha_override=effective_alpha` to `create_overlay()` — never let it read `time_system.night_alpha` directly |
+| **Never do** | Modify `TimeSystem` for lighting — it is a pure clock |
 
 ### 8.8 Anti-Patterns
 
@@ -271,6 +272,7 @@ All error states: VERIFIED (CITED — defensive patterns enforced by `getattr` +
 | TC-LM-I-01 | `test_underground_alpha_constant_over_full_day` | `../../tests/engine/test_lighting_modes.py` | Step through 24h via `time_system.update()`; `effective_alpha` never changes |
 | TC-LM-I-02 | `test_window_beams_skipped_underground` | `../../tests/engine/test_lighting_modes.py` | `draw_additive_window_beams` NOT called when mode = `underground` |
 | TC-LM-I-03 | `test_window_beams_called_indoor` | `../../tests/engine/test_lighting_modes.py` | `draw_additive_window_beams` IS called when mode = `indoor` |
+| TC-LM-I-04 | `test_create_overlay_called_with_effective_alpha` | `../../tests/engine/test_lighting_modes.py` | **Regression** — `create_overlay` called with `alpha_override=ambient` (not time_system) when underground at midday |
 
 #### Linked Test Functions
 
@@ -286,6 +288,7 @@ All error states: VERIFIED (CITED — defensive patterns enforced by `getattr` +
 | TC-LM-I-01 | `test_underground_alpha_constant_over_full_day` | `../../tests/engine/test_lighting_modes.py` |
 | TC-LM-I-02 | `test_window_beams_skipped_underground` | `../../tests/engine/test_lighting_modes.py` |
 | TC-LM-I-03 | `test_window_beams_called_indoor` | `../../tests/engine/test_lighting_modes.py` |
+| TC-LM-I-04 | `test_create_overlay_called_with_effective_alpha` | `../../tests/engine/test_lighting_modes.py` |
 
 ### 8.11 Cross-Spec Contracts
 
