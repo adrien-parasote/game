@@ -1592,3 +1592,121 @@ def test_update_animation_controls_state_no_var_returns():
     app._update_animation_controls_state()
     app.destroy()
 
+
+# ── Resize integration tests (post-mortem: méthodes manquantes sur App) ───────
+# Ces tests instancient App et appellent les méthodes Resize directement.
+# Objectif : détecter tout AttributeError au niveau classe avant runtime.
+
+@pytest.mark.unit
+def test_validate_resize_dimensions_is_method_on_app():
+    """_validate_resize_dimensions existe sur l'instance App et fonctionne."""
+    from PIL import Image
+    app = App()
+    img_valid = Image.new("RGBA", (96, 48))
+    img_invalid = Image.new("RGBA", (46, 48))
+    assert app._validate_resize_dimensions(img_valid) is None
+    err = app._validate_resize_dimensions(img_invalid)
+    assert err is not None and "48" in err
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_convert_resize_is_method_on_app_and_dispatches():
+    """_convert_resize est dans le dispatch de _run_conversion pour Resize."""
+    import dataclasses
+    import threading
+    from PIL import Image
+    from unittest.mock import patch
+
+    app = App()
+    src = Image.new("RGBA", (96, 48))
+    app._state = dataclasses.replace(
+        app._state, source_img=src, resource_type="Resize"
+    )
+
+    started = []
+    def mock_start(self):
+        started.append(self._target)
+
+    with patch.object(threading.Thread, "start", mock_start):
+        app._run_conversion()
+
+    assert len(started) == 1
+    assert started[0].__name__ == "_convert_resize"
+    app.destroy()
+
+
+
+@pytest.mark.unit
+def test_convert_resize_calls_success_callback():
+    """_convert_resize appelle _on_convert_success_resize via after() sur succès."""
+    import dataclasses
+    from PIL import Image
+    from unittest.mock import patch
+
+    app = App()
+    src = Image.new("RGBA", (96, 48))
+    app._state = dataclasses.replace(app._state, source_img=src)
+
+    captured = []
+
+    def capture_after(delay, callback):
+        captured.append(callback)
+        return "timer"
+
+    with patch.object(app, "after", side_effect=capture_after):
+        app._convert_resize()
+
+    assert len(captured) == 1
+    with patch.object(app, "_display_result_image"):
+        captured[0]()
+    assert app._state.result_img is not None
+    assert app._state.result_img.size == (64, 32)  # 96*32/48=64, 48*32/48=32
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_export_resize_writes_file(tmp_path):
+    """_export_resize écrit {stem}_32px.png sur le disque."""
+    import dataclasses
+    from PIL import Image
+
+    app = App()
+    result = Image.new("RGBA", (64, 32))
+    app._state = dataclasses.replace(app._state, result_img=result)
+    app._export_resize(str(tmp_path), "my_tile")
+    assert (tmp_path / "my_tile_32px.png").exists()
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_export_dispatch_calls_export_resize(tmp_path):
+    """_export appelle _export_resize quand resource_type == 'Resize'."""
+    import dataclasses
+    from PIL import Image
+    from unittest.mock import patch
+
+    app = App()
+    app._state = dataclasses.replace(
+        app._state,
+        source_path=str(tmp_path / "source.png"),
+        resource_type="Resize",
+        result_img=Image.new("RGBA", (64, 32)),
+    )
+    app._output_dir_var.set(str(tmp_path))
+
+    with patch.object(app, "_export_resize") as mock_export:
+        app._export()
+
+    mock_export.assert_called_once()
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_on_type_change_internal_resize_sets_export_tsx_false():
+    """_on_type_change_internal('Resize') force export_tsx=False sur l'état."""
+    app = App()
+    app._on_type_change_internal("Resize")
+    assert app._state.export_tsx is False
+    assert app._state.resource_type == "Resize"
+    app.destroy()
