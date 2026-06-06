@@ -1403,6 +1403,17 @@ class App(ctk.CTk):
         # A3 / A4 validation is done inside the converter itself
         return None
 
+    def _validate_resize_dimensions(self, img: Image.Image) -> str | None:
+        """Retourne un message d'erreur si l'image n'est pas en multiples de 48px."""
+        w, h = img.size
+        if w % 48 != 0 or h % 48 != 0:
+            return (
+                f"⚠️ Resize : dimensions {w}×{h} px non multiples de 48. "
+                "Attendu : multiples de 48 px (ex: 48×48, 96×96, 192×192)."
+            )
+        return None
+
+
     def _validate_xp_dimensions(self, w: int, h: int, is_anim: bool, anim_mode: str) -> str | None:
         if is_anim:
             if anim_mode == "Verticale":
