@@ -84,6 +84,15 @@ class Game:
             (Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT), display_flags
         )
         pygame.display.set_caption(f"{Settings.GAME_TITLE} (v{Settings.VERSION})")
+
+        # Window icon — loaded before first display.flip() so the OS taskbar picks it up
+        _icon_path = Path("assets") / "ui" / "icon.png"
+        if _icon_path.exists():
+            _icon_surf = pygame.image.load(str(_icon_path)).convert_alpha()
+            pygame.display.set_icon(_icon_surf)
+        else:
+            logging.warning(f"Window icon not found: {_icon_path}")
+
         pygame.mouse.set_visible(False)  # Hidden globally; glove drawn by UI when open
         self.clock = pygame.time.Clock()
 
