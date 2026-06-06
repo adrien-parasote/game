@@ -312,8 +312,9 @@ class GameStateManager:
         from src.config import Settings
 
         # Debug room takes priority
-        debug_room = "99-debug_room.tmj"
+        debug_room = "debug/99-debug_room.tmj"
         debug_path = str(Path("assets") / "tiled" / "maps" / debug_room)
+
         if Settings.DEBUG and os.path.exists(debug_path):
             return debug_room
 

@@ -231,6 +231,18 @@ def test_game_trigger_dialogue(mock_load):
         )
 
 
+@patch("src.engine.game.Game._load_map")
+def test_game_trigger_dialogue_subdirectory(mock_load):
+    game = Game()
+    game._current_map_name = "debug/test_map.tmj"
+    game.dialogue_manager = MagicMock()
+
+    with patch("src.engine.game.I18nManager.get") as mock_get:
+        game._trigger_dialogue("sign_1", "Test Title")
+        mock_get.assert_called_with("dialogues.test_map-sign_1")
+
+
+
 class DummySprite(pygame.sprite.Sprite):
     def __init__(self, element_id=""):
         super().__init__()
@@ -709,3 +721,23 @@ class TestGameCoverage:
         game._update(0.016)
         game._trigger_npc_bubble.assert_called_once_with(npc, "elem")
         assert game._pending_npc_dialogue is None
+
+    @patch("src.engine.game.Game._load_map")
+    def test_get_initial_map_with_debug_room(self, _):  # noqa: PT019
+        from src.config import Settings
+        original_debug = Settings.DEBUG
+        Settings.DEBUG = True
+        import os
+        real_exists = os.path.exists
+        def mock_exists(path):
+            if "99-debug_room.tmj" in str(path):
+                return True
+            return real_exists(path)
+        try:
+            with patch("os.path.exists", side_effect=mock_exists):
+                game = Game(skip_map_load=True)
+                assert game._get_initial_map() == "debug/99-debug_room.tmj"
+        finally:
+            Settings.DEBUG = original_debug
+
+

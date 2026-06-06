@@ -110,7 +110,7 @@ Version updates are automated via the `scripts/build/release.py` workflow:
 The engine contains comprehensive features for testing and coordinate layout verification:
 
 ### 5.1 Debug Room & Spawns
-- **Activation**: When `Settings.DEBUG == True` is set via `settings.json`, the engine overrides the default map loading, opening `99-debug_room.tmj` instead of normal spawn zones.
+- **Activation**: When `Settings.DEBUG == True` is set via `settings.json`, the engine overrides the default map loading, opening `debug/99-debug_room.tmj` instead of normal spawn zones.
 - **Spawn Rules**: Searches for objects with `is_initial_spawn: True` (or fallback `is_initial_pawn: True`) to position the player character instantly.
 
 ### 5.2 Hitbox Draw Overlays

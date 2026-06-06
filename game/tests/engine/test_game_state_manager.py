@@ -347,6 +347,16 @@ def test_resolve_default_map_with_custom_default(gsm):
         assert gsm._resolve_default_map() == "custom_map.tmj"
 
 
+def test_resolve_default_map_with_debug_room(gsm):
+    # Test debug room resolution when in DEBUG and file exists
+    with (
+        patch("src.config.Settings.DEBUG", True),
+        patch("os.path.exists", lambda path: "99-debug_room.tmj" in path),
+    ):
+        assert gsm._resolve_default_map() == "debug/99-debug_room.tmj"
+
+
+
 # (imports already at top of file)
 
 

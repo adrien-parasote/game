@@ -189,8 +189,9 @@ class Game:
         default_map = "00-spawn.tmj"
 
         # Debug Room Priority
-        debug_room = "99-debug_room.tmj"
+        debug_room = "debug/99-debug_room.tmj"
         debug_path = str(Path("assets") / "tiled" / "maps" / debug_room)
+
         if Settings.DEBUG and os.path.exists(debug_path):
             logging.info(f"Debug Mode active: Loading {debug_room} as initial map.")
             default_map = debug_room
@@ -223,7 +224,7 @@ class Game:
 
     def _trigger_dialogue(self, element_id: str, title: str = ""):
         """Fetch localized message and start dialogue (signs / objects → bottom box)."""
-        map_base = self._current_map_name.split(".")[0]
+        map_base = os.path.basename(self._current_map_name).split(".")[0]
         full_key = f"{map_base}-{element_id}"
         msg = self.i18n.get(f"dialogues.{full_key}")
         if msg:
@@ -233,8 +234,9 @@ class Game:
 
     def _trigger_npc_bubble(self, npc, element_id: str) -> None:
         """Fetch localized message and attach a speech bubble to *npc*."""
-        map_base = self._current_map_name.split(".")[0]
+        map_base = os.path.basename(self._current_map_name).split(".")[0]
         full_key = f"{map_base}-{element_id}"
+
         msg = self.i18n.get(f"dialogues.{full_key}")
         if not msg:
             logging.warning(f"NPC bubble key not found: {full_key}")
