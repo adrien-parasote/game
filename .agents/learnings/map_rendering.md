@@ -623,3 +623,19 @@ composite.blit(self._alpha_surf, ...)          # blit onto cleared zone
 ---
 
 *Last updated: 2026-05-29 — L-REND-007 (BLEND_RGBA_MULT direct on destination), A-REND-003 (BLEND_RGBA_MULT on reused SRCALPHA intermediate).*
+
+---
+
+### L-MAP-010 · 2026-06-06 · U · Bug Fix
+**Directory-agnostic localization key resolution for subdirectory maps**
+
+When maps are relocated to subdirectories (e.g. `assets/tiled/maps/debug/99-debug_room.tmj`), splitting the map filename without discarding directory prefixes (e.g. `_current_map_name.split(".")[0]`) preserves the directory path (e.g. `"debug/99-debug_room"`). This breaks localization key matching in flat dictionaries (like `fr.json`) that expect keys matching only the map's base filename (e.g. `"99-debug_room-book"`).
+
+**Rule:** Always extract only the base filename using `os.path.basename` before splitting it to generate localization keys.
+
+**Evidence:** Relocation of `99-debug_room.tmj` into `maps/debug/` broke book and NPC dialogue lookups until `os.path.basename` was added to `game.py`. Verified by `test_game_trigger_dialogue_subdirectory`.
+
+---
+
+*Last updated: 2026-06-06 — L-MAP-010 (directory-agnostic localization keys).*
+
