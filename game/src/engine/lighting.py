@@ -76,9 +76,15 @@ class LightingManager:
         window_positions: list[tuple],
         active_torches: list[Any],
         cam_offset: Any,
+        alpha_override: int | None = None,
     ) -> pygame.Surface:
-        """Return the full-screen darkness overlay with light holes punched in it."""
-        night_alpha = self.time_system.night_alpha
+        """Return the full-screen darkness overlay with light holes punched in it.
+
+        alpha_override: when set, bypasses time_system.night_alpha and uses this
+        value directly. Used by RenderManager for indoor/underground lighting modes.
+        Spec: lighting-system.md § 8.3
+        """
+        night_alpha = alpha_override if alpha_override is not None else self.time_system.night_alpha
         self._overlay_cache.fill((0, 0, 0, night_alpha))
 
         if night_alpha <= 0:

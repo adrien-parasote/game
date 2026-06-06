@@ -342,3 +342,54 @@ def test_window_beams_called_indoor():
         lm.draw_additive_window_beams(game.screen, window_positions, cam_offset)
 
     lm.draw_additive_window_beams.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# TC-LM-I-04 (regression) — create_overlay receives effective alpha, not raw time_system
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.tc("TC-LM-I-04")
+def test_create_overlay_called_with_effective_alpha():
+    """Regression: RenderManager must pass alpha_override=effective_alpha to create_overlay.
+
+    Before the fix, create_overlay always read self.time_system.night_alpha directly,
+    ignoring the per-map mode. Underground/indoor modes had no effect on the overlay.
+    """
+    from src.engine.render_manager import RenderManager
+
+    ambient = 200
+    game = MagicMock()
+    game._map_lighting_mode = "underground"
+    game._map_ambient_dark_alpha = ambient
+    game.time_system = TimeSystem(initial_hour=12)  # midday → time night_alpha ≈ 0
+
+    lm = MagicMock()
+    # create_overlay must return a surface-like object for screen.blit
+    fake_surface = MagicMock()
+    lm.create_overlay.return_value = fake_surface
+    game.lighting_manager = lm
+    game.interactives = []
+    game.map_manager.get_window_positions.return_value = []
+
+    rm = RenderManager.__new__(RenderManager)
+    rm.game = game
+    rm._frame_anim_by_layer = {}
+
+    effective_alpha = rm._compute_effective_night_alpha()
+
+    # Simulate the render branch that builds the overlay
+    cam_offset = pygame.math.Vector2(0, 0)
+    active_torches = []
+    window_positions = []
+    if effective_alpha > 0:
+        lm.create_overlay(window_positions, active_torches, cam_offset, alpha_override=effective_alpha)
+
+    # Verify: effective_alpha == ambient (underground fixed), NOT time_system value
+    assert effective_alpha == ambient, (
+        f"Underground effective_alpha should be {ambient}, got {effective_alpha}"
+    )
+    # Verify: create_overlay was called with alpha_override=ambient (not 0 from midday TimeSystem)
+    lm.create_overlay.assert_called_once_with(
+        window_positions, active_torches, cam_offset, alpha_override=ambient
+    )

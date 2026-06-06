@@ -387,7 +387,7 @@ class RenderManager:
             ]
 
             overlay = self.game.lighting_manager.create_overlay(
-                window_positions, active_torches, cam_offset
+                window_positions, active_torches, cam_offset, alpha_override=night_alpha
             )
             self.game.screen.blit(overlay, (0, 0))
 
