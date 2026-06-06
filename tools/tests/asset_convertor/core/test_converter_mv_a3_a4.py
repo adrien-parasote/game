@@ -201,16 +201,16 @@ class TestConvertMvA4:
         assert tops.mode == "RGBA"
         assert sides.mode == "RGBA"
 
-    # TC-015: Wall-tops sheet width = 8 x tile_size (47 tiles in 8 cols, like A2)
+    # TC-015: Wall-tops sheet width = 8 × tile_size (FLOOR_AUTOTILE_TABLE blob, 8 cols)
     def test_tops_width_is_8_tiles(self) -> None:
         tops, _ = self.convert(_make_a4_source(1))
-        # Wall tops use FLOOR_AUTOTILE_TABLE — same 8-col layout as A2
+        # Wall tops use FLOOR_AUTOTILE_TABLE — 8-col × 6-row blob autotile sheet
         assert tops.width == 8 * 48
 
-    # TC-016: Wall-tops height is 6 x tile_size (47 tiles → 6 rows per kind)
-    def test_tops_height_is_6_tile_rows(self) -> None:
+    # TC-016: Wall-tops height = 6 × tile_size (47 shapes + 1 padding slot, 6 rows per kind)
+    def test_tops_height_is_six_tile_rows(self) -> None:
         tops, _ = self.convert(_make_a4_source(1))
-        # 1 column, 1 top kind → 6 rows per kind x 48px = 288px
+        # 1 column, 1 top kind → 6 rows × 48px = 288px
         assert tops.height == 6 * 48
 
     # TC-017: Wall-sides sheet width = 16 x tile_size (16 shapes, 1 tile wide each)
@@ -240,14 +240,15 @@ class TestConvertMvA4:
 
     # TC-025: A4 source with 32px tiles (block_size=64) is accepted
     def test_32px_source_accepted(self) -> None:
-        # 64x160 = valid A4 32px source (1 block col, 2 ty pairs)
+        # 64x160 = valid A4 32px source (1 block col)
         src = _make_rgba(64, 160)
         tops, sides = self.convert(src)
         assert isinstance(tops, Image.Image)
         assert isinstance(sides, Image.Image)
-        # tile_size derived from sides width: sides.width / 16
-        assert sides.width == 16 * 32
+        # Tops: FLOOR_AUTOTILE_TABLE → 8 * tile_size wide
+        # Sides: WALL_AUTOTILE_TABLE → 16 * tile_size wide
         assert tops.width == 8 * 32
+        assert sides.width == 16 * 32
 
     # TC-021: Wrong height raises ValueError
     def test_wrong_height_raises(self) -> None:
@@ -286,71 +287,85 @@ class TestConvertMvA4:
     # TC-032: A4 converter crops from correct block coordinates (no overlap)
     def test_a4_coordinate_correctness(self) -> None:
         src = Image.new("RGBA", (192, 240))
-        
-        # Paste tops (tx=0 is Red, tx=1 is Green)
+
+        # Paste tops zone (tx=0 is Red, tx=1 is Green) — top 6 mini-rows = 144px
         top0 = Image.new("RGBA", (96, 144), (255, 0, 0, 255))
         top1 = Image.new("RGBA", (96, 144), (0, 255, 0, 255))
         src.paste(top0, (0, 0))
         src.paste(top1, (96, 0))
-        
-        # Paste sides (tx=0 is Red, tx=1 is Green)
+
+        # Paste sides zone (tx=0 is Red, tx=1 is Green) — bottom 4 mini-rows = 96px
         side0 = Image.new("RGBA", (96, 96), (255, 0, 0, 255))
         side1 = Image.new("RGBA", (96, 96), (0, 255, 0, 255))
         src.paste(side0, (0, 144))
         src.paste(side1, (96, 144))
 
         tops, sides = self.convert(src)
-        
-        # Assert Tops (row 0 is Red, row 1 is Green)
-        assert tops.height == 2 * 6 * 48
-        
-        first_top = tops.crop((0, 0, 384, 6 * 48))
-        for x in [0, 48, 100, 200, 300]:
-            for y in [0, 10, 48, 100, 200]:
+
+        # Tops: 2 kinds (tx=0 Red, tx=1 Green), blob sheet = 8*48 wide, 6*48 tall per kind
+        sheet_w = 8 * 48
+        sheet_h = 6 * 48
+        assert tops.height == 2 * sheet_h
+
+        # First kind: all pixels should be red (uniform source)
+        first_top = tops.crop((0, 0, sheet_w, sheet_h))
+        for x in [0, 48, 100, 200]:
+            for y in [0, 10, 24, 40, 100, 200]:
                 assert first_top.getpixel((x, y)) == (255, 0, 0, 255)
-                
-        second_top = tops.crop((0, 6 * 48, 384, 12 * 48))
-        for x in [0, 48, 100, 200, 300]:
-            for y in [0, 10, 48, 100, 200]:
+
+        # Second kind: all pixels should be green
+        second_top = tops.crop((0, sheet_h, sheet_w, 2 * sheet_h))
+        for x in [0, 48, 100, 200]:
+            for y in [0, 10, 24, 40, 100, 200]:
                 assert second_top.getpixel((x, y)) == (0, 255, 0, 255)
-                
-        # Assert Sides (row 0 is Red, row 1 is Green)
+
+        # Sides: 2 kinds, each a 16-tile strip (16*48 x 48)
         assert sides.height == 2 * 48
-        
+
         first_side = sides.crop((0, 0, 768, 48))
         for x in [0, 48, 100, 200, 500, 700]:
             for y in [0, 10, 24, 40]:
                 assert first_side.getpixel((x, y)) == (255, 0, 0, 255)
-                
+
         second_side = sides.crop((0, 48, 768, 96))
         for x in [0, 48, 100, 200, 500, 700]:
             for y in [0, 10, 24, 40]:
                 assert second_side.getpixel((x, y)) == (0, 255, 0, 255)
 
-    # TC-033: A4 converter vertical coordinate correctness (no overlap/mixing)
-    def test_a4_vertical_coordinate_correctness(self) -> None:
-        src = Image.new("RGBA", (96, 384))
-        
-        top0 = Image.new("RGBA", (96, 144), (255, 0, 0, 255))
-        side0 = Image.new("RGBA", (96, 96), (0, 0, 255, 255))
-        top1 = Image.new("RGBA", (96, 144), (0, 255, 0, 255))
-        
+    # TC-033: A4 multi-kind tops from horizontal columns (no overlap/mixing)
+    def test_a4_tops_two_horizontal_kinds(self) -> None:
+        # Multi-kind A4 sources use horizontal columns (tx=0, tx=1...),
+        # NOT vertical stacking. Use a 192×240 source: 2 block-cols × 5 tile-rows.
+        # col0 (x=0..95): Red tops zone
+        # col1 (x=96..191): Green tops zone
+        src = Image.new("RGBA", (192, 240))
+
+        top0 = Image.new("RGBA", (96, 144), (255, 0, 0, 255))   # col0 tops (red)
+        side0 = Image.new("RGBA", (96, 96), (128, 0, 0, 255))   # col0 sides
+        top1 = Image.new("RGBA", (96, 144), (0, 255, 0, 255))   # col1 tops (green)
+        side1 = Image.new("RGBA", (96, 96), (0, 128, 0, 255))   # col1 sides
+
         src.paste(top0, (0, 0))
         src.paste(side0, (0, 144))
-        src.paste(top1, (0, 240))
-        
+        src.paste(top1, (96, 0))
+        src.paste(side1, (96, 144))
+
         tops, _ = self.convert(src)
-        
-        assert tops.height == 2 * 6 * 48
-        
-        first_top = tops.crop((0, 0, 384, 6 * 48))
-        for x in [0, 48, 100, 200, 300]:
-            for y in [0, 10, 48, 100, 200]:
+
+        # 2 horizontal kinds → 2 blob sheets stacked vertically
+        sheet_h = 6 * 48
+        assert tops.height == 2 * sheet_h
+
+        # First kind: red (col0)
+        first_top = tops.crop((0, 0, 8 * 48, sheet_h))
+        for x in [0, 48, 100, 200]:
+            for y in [0, 10, 24, 40, 100, 200]:
                 assert first_top.getpixel((x, y)) == (255, 0, 0, 255)
-                
-        second_top = tops.crop((0, 6 * 48, 384, 12 * 48))
-        for x in [0, 48, 100, 200, 300]:
-            for y in [0, 10, 48, 100, 200]:
+
+        # Second kind: green (col1)
+        second_top = tops.crop((0, sheet_h, 8 * 48, 2 * sheet_h))
+        for x in [0, 48, 100, 200]:
+            for y in [0, 10, 24, 40, 100, 200]:
                 assert second_top.getpixel((x, y)) == (0, 255, 0, 255)
 
 
@@ -387,16 +402,59 @@ class TestConverterIntegration:
         from asset_convertor.core.converter_mv import FLOOR_AUTOTILE_TABLE
         assert len(FLOOR_AUTOTILE_TABLE) == 48  # 47 shapes + 1 (0-indexed)
 
-    # IT-004: A3 + A4 both work on independent sources without error
-    def test_a3_a4_independent(self) -> None:
-        from asset_convertor.core.converter_mv_a3 import convert_mv_a3
+
+    # TC-034 — BLOB_BITMASKS slot-order invariant
+    def test_a4_tops_blob_slot_order_matches_blob_bitmasks(self) -> None:
+        """TC-034: The pixel at slot N in the tops sheet must come from the
+        RPGMaker shape for BLOB_BITMASKS[N].
+
+        This is the regression test for the bug where _assemble_floor_tile_sheet
+        iterated shape in range(47) (RPGMaker order) instead of BLOB_BITMASKS
+        order, causing 45/46 slots to carry the wrong visual relative to the
+        wangid declared in the TSX.
+
+        Strategy: use a source image where each mini-tile in the tops zone is a
+        unique flat colour (encoded as row*16+col so we can recover it).  Then
+        verify that the pixel at slot idx is the colour produced by
+        FLOOR_AUTOTILE_TABLE[_bitmask_to_shape(BLOB_BITMASKS[idx])].
+        """
+        from asset_convertor.core.constants import BLOB_BITMASKS
+        from asset_convertor.core.converter_mv import FLOOR_AUTOTILE_TABLE, _bitmask_to_shape
         from asset_convertor.core.converter_mv_a4 import convert_mv_a4
-        src_a3 = _make_a3_source(2)        # 96x192 valid for A3 (2 block rows)
-        src_a4 = _make_rgba(96, 192)       # 96x192 valid for A4 (> 120px min)
-        r_a3_roof, r_a3_wall = convert_mv_a3(src_a3)
-        r_a4_tops, r_a4_sides = convert_mv_a4(src_a4)
-        # Both produced images without error
-        assert isinstance(r_a3_roof, Image.Image)
-        assert isinstance(r_a3_wall, Image.Image)
-        assert isinstance(r_a4_tops, Image.Image)
-        assert isinstance(r_a4_sides, Image.Image)
+
+        tile_size = 48
+        mini = tile_size // 2  # 24
+
+        # Build a 48px A4 source (1 column = 96px wide).
+        # Tops zone: 6 mini-rows × 4 mini-cols (indices 0-3 × 0-5).
+        # Encode each mini-tile as a unique flat colour: R = col_idx, G = row_idx.
+        src_w = 96   # 1 block column = 4 mini-cols × 24px
+        src_h = 240  # 10 mini-rows × 24px (6 top + 4 side)
+        src = Image.new("RGBA", (src_w, src_h), (0, 0, 0, 255))
+        for mini_row in range(6):
+            for mini_col in range(4):
+                colour = (mini_col * 10 + 1, mini_row * 10 + 1, 0, 255)
+                patch = Image.new("RGBA", (mini, mini), colour)
+                src.paste(patch, (mini_col * mini, mini_row * mini))
+
+        tops, _ = convert_mv_a4(src)
+
+        # For each slot, derive expected top-left pixel colour.
+        # FLOOR_AUTOTILE_TABLE[shape][0] = (qsx, qsy) = top-left mini-tile coords.
+        # The top-left pixel of the assembled tile = colour encoded at (qsx, qsy).
+        for slot, bm in enumerate(BLOB_BITMASKS):
+            shape = _bitmask_to_shape(bm)
+            qsx, qsy = FLOOR_AUTOTILE_TABLE[shape][0]  # top-left quadrant
+
+            expected_colour = (qsx * 10 + 1, qsy * 10 + 1, 0, 255)
+
+            tile_col = slot % 8
+            tile_row = slot // 8
+            actual_pixel = tops.getpixel((tile_col * tile_size, tile_row * tile_size))
+
+            assert actual_pixel == expected_colour, (
+                f"Slot {slot} (bitmask={bm}, shape={shape}): "
+                f"expected pixel {expected_colour} (from FLOOR_AUTOTILE_TABLE[{shape}][0]={qsx},{qsy}) "
+                f"but got {actual_pixel}. "
+                f"Assembly order mismatch — check _assemble_floor_tile_sheet iterates BLOB_BITMASKS."
+            )

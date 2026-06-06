@@ -311,7 +311,9 @@ def convert_mv_a4(img: Image.Image) -> tuple[Image.Image, Image.Image]:
 3. For **wall-top blocks** (FLOOR table, 47 shapes):
    - Use `by` from `_BY_LOOKUP_A4[ty]` directly (correct for floor blocks).
    - Reuse `_assemble_floor_tile()` helper.
-   - Output strip: 47 tiles wide × N_top_kinds rows.
+   - **⚠️ BLOB_BITMASKS slot-order invariant (critical):** Iterate over `BLOB_BITMASKS` by index (slot 0..46). For each `slot, bm in enumerate(BLOB_BITMASKS)`, compute `shape = _bitmask_to_shape(bm)`, then assemble `FLOOR_AUTOTILE_TABLE[shape]` and place it at pixel offset `(slot % 8 * tile_size, slot // 8 * tile_size)` within the output sheet.
+   - **Why:** The TSX wangset maps `tileid=slot` → `wangid = bitmask_to_wangid(BLOB_BITMASKS[slot])`. For Tiled to render correctly, the pixel at slot N must be the visual representation of bitmask `BLOB_BITMASKS[N]`. Iterating `shape in range(47)` (RPGMaker order) instead produces 45/46 mismatches.
+   - Output sheet: 8 cols × 6 rows of `tile_size`-sized tiles (48 slots total, slot 47 = transparent padding).
 4. For **wall-side blocks** (WALL table, 16 shapes):
    - ⚠️ **Do NOT use `_BY_LOOKUP_A4[ty]` for wall rows.** The lookup gives the Y offset
      of the *floor template block* directly above the wall data, not the wall data itself.
@@ -419,6 +421,7 @@ All errors propagate to the GUI's error handler in `app.py` which displays them 
 | AP-A3-06 | Not validating source dimensions | Wrong file (e.g., A2 given to A3 converter) produces garbled output silently. | Validate dimensions at function entry and raise `ValueError`. |
 | AP-A3-07 | Returning `None` instead of raising on invalid input | Caller has no way to distinguish empty output from error. GUI shows blank preview with no error message. | Always raise `ValueError` with a French user-friendly message. |
 | AP-A4-01 | Hard-coding `tile_size = 48` in A4 converter or GUI | Breaks 32px community assets (block_size=64). Both converter and GUI must derive tile_size dynamically from image dimensions. | Use `_detect_a4_geometry(img)` in converter; `tile_size = sides_img.width // 16` in GUI. |
+| AP-A4-02 | Iterating `for shape in range(47)` to assemble the tops sheet | RPGMaker shape order ≠ BLOB_BITMASKS slot order. 45/46 slots carry the wrong visual relative to the `wangid` in the TSX. Tiled renders the correct shape count but the wrong texture per bitmask. | Iterate `for slot, bm in enumerate(BLOB_BITMASKS)`, compute `shape = _bitmask_to_shape(bm)`, place tile at `slot` position. See § Processing Steps item 3. |
 
 ---
 
@@ -445,15 +448,16 @@ All errors propagate to the GUI's error handler in `app.py` which displays them 
 | ID | Test | Input | Expected |
 |----|------|-------|----------|
 | TC-001 | Returns tuple of 2 images | Minimal 96×120 RGBA | `isinstance(result, tuple)` and `len(result) == 2` |
-| TC-002 | Wall-tops strip width = 47×48 = 2256 | Any valid A4 input with ≥1 even row | `wall_tops.width == 2256` |
-| TC-003 | Wall-sides strip width = 16×48 = 768 | Any valid A4 input with ≥1 odd row | `wall_sides.width == 768` |
-| TC-004 | Even ty rows go to FLOOR table (47 shapes) | Source with ty=0 block only filled | `wall_tops.height == 48`, `wall_sides.height == 0 or None` |
-| TC-005 | Odd ty rows go to WALL table (16 shapes) | Source with ty=1 block only filled | `wall_sides.height == 48`, `wall_tops.height == 0 or None` |
+| TC-002 | Wall-tops sheet width = 8×tile_size | Any valid A4 input with ≥1 even row | `wall_tops.width == 8 * tile_size` |
+| TC-003 | Wall-sides strip width = 16×tile_size | Any valid A4 input with ≥1 odd row | `wall_sides.width == 16 * tile_size` |
+| TC-004 | Even ty rows go to FLOOR table (47 shapes) | Source with ty=0 block only filled | `wall_tops.height == 6*tile_size`, `wall_sides.height == 0 or None` |
+| TC-005 | Odd ty rows go to WALL table (16 shapes) | Source with ty=1 block only filled | `wall_sides.height == tile_size`, `wall_tops.height == 0 or None` |
 | TC-006 | BY_LOOKUP_A4 used for by offset | Mock source — check crop coordinates | Crops taken from `by=3` (not `by=1`) for `ty=1` |
 | TC-007 | Source too small raises ValueError | 48×48 image | `ValueError` |
 | TC-008 | Both output images are RGBA | RGB input | `wall_tops.mode == "RGBA"`, `wall_sides.mode == "RGBA"` |
 | TC-009 | Input not mutated | Image before/after | Identical size and mode |
-| TC-010 | Full A4 sheet produces 3 top kinds + 3 side kinds | 768×720 with all 6 rows filled | `wall_tops.height == 3*48`, `wall_sides.height == 3*48` |
+| TC-010 | Full A4 sheet produces 3 top kinds + 3 side kinds | 768×720 with all 6 rows filled | `wall_tops.height == 3*6*tile_size`, `wall_sides.height == 3*tile_size` |
+| TC-034 | **BLOB_BITMASKS slot-order invariant** | 96×240 source with unique colour per mini-tile | Pixel at slot N = `FLOOR_AUTOTILE_TABLE[_bitmask_to_shape(BLOB_BITMASKS[N])][0]` colour. Regression guard for AP-A4-02. |
 
 ### Integration Tests
 

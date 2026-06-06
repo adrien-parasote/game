@@ -27,7 +27,7 @@ from typing import cast
 
 import customtkinter as ctk
 from asset_convertor.core.constants import TILE_SIZE
-from asset_convertor.core.converter_mv import _bitmask_to_shape, convert_mv
+from asset_convertor.core.converter_mv import convert_mv
 from asset_convertor.core.converter_mv_a3 import convert_mv_a3
 from asset_convertor.core.converter_mv_a4 import convert_mv_a4
 from asset_convertor.core.converter_xp import BLOB_BITMASKS, convert_xp
@@ -1007,19 +1007,18 @@ class App(ctk.CTk):
                 for i in range(16)
             ]
 
-            # 47 wall-top tiles in canvas-correct order (BLOB_BITMASKS order).
-            # The canvas maps bitmask -> idx via _BITMASK_TO_IDX = {bm: i for i, bm in BLOB_BITMASKS}.
-            # So active_tiles[i] must be the tile visually correct for BLOB_BITMASKS[i].
-            # tops_img has shape s at grid col=s%8, row=s//8 (from _build_floor_sheet).
-            # The correct shape for canvas index i is _bitmask_to_shape(BLOB_BITMASKS[i]).
+            # 47 wall-top tiles in BLOB_BITMASKS slot order.
+            # converter_mv_a4 now assembles tops_img with slot N = tile for BLOB_BITMASKS[N],
+            # matching _BITMASK_TO_IDX used by _redraw_canvas_grid.
+            # Direct slot index — _bitmask_to_shape() remapping no longer needed.
             wall_top_tiles: list[Image.Image] = [
                 tops_img.crop((
-                    (_bitmask_to_shape(bm) % 8) * tile_size,
-                    (_bitmask_to_shape(bm) // 8) * tile_size,
-                    (_bitmask_to_shape(bm) % 8 + 1) * tile_size,
-                    (_bitmask_to_shape(bm) // 8 + 1) * tile_size,
+                    (idx % 8) * tile_size,
+                    (idx // 8) * tile_size,
+                    (idx % 8 + 1) * tile_size,
+                    (idx // 8 + 1) * tile_size,
                 ))
-                for bm in BLOB_BITMASKS
+                for idx in range(47)
             ]
 
             self._state = dataclasses.replace(
@@ -1311,7 +1310,7 @@ class App(ctk.CTk):
             return
         try:
             from asset_convertor.exporters.tsx_generator import (
-                export_wall_sides_sheet, export_blob_tops_sheet,
+                export_blob_tops_sheet, export_wall_sides_sheet,
             )
 
             export_tsx = self._export_tsx_var.get()
@@ -1319,8 +1318,8 @@ class App(ctk.CTk):
             os.makedirs(out_dir, exist_ok=True)
             status_parts: list[str] = []
 
-            # Tops strip — blob wangset (mixed, 47 shapes, FLOOR_AUTOTILE_TABLE)
-            # Same format as A2 — appears in Tiled's Terrain collection.
+            # Tops sheet — blob wangset (FLOOR_AUTOTILE_TABLE, 47 shapes, 8×6 grid)
+            # Tops zone is a floor autotile source → blob (8-neighbor) export for Tiled.
             tops_name = f"{name}_tops"
             if export_tsx:
                 png_path, tsx_path = export_blob_tops_sheet(

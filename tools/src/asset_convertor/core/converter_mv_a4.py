@@ -2,31 +2,38 @@
 asset_convertor.core.converter_mv_a4
 
 Convert an RPG Maker MV A4 (Wall) source tileset to two Tiled-compatible
-tileset strips — one for wall tops (FLOOR table), one for wall sides (WALL table).
+tileset images:
+  - wall_tops:  blob autotile sheet (FLOOR_AUTOTILE_TABLE, 47 shapes, 8×6 grid)
+  - wall_sides: wall autotile strip (WALL_AUTOTILE_TABLE,  16 shapes, 16×1 strip)
 
-Source format (tile_size=48): 768x720 px, mini-tile=24x24 px.
-Source format (tile_size=32): 512x480 px, mini-tile=16x16 px.
-  - 6 block-rows, alternating between FLOOR and WALL by row parity:
-    ty=0 (even) → wall tops  (FLOOR_AUTOTILE_TABLE, 47 shapes, 8x6 output per kind)
-    ty=1 (odd)  → wall sides (WALL_AUTOTILE_TABLE,  16 shapes, 16x1 output per kind)
+Source format (tile_size=48): one block = 96×240 px (2 tile-cols × 5 tile-rows).
+Source format (tile_size=32): one block = 64×160 px (2 tile-cols × 5 tile-rows).
+  - Rows 0-2 (top 6 mini-rows)    → wall TOPS  (floor autotile layout → FLOOR_AUTOTILE_TABLE)
+  - Rows 3-4 (bottom 4 mini-rows) → wall SIDES (wall autotile layout  → WALL_AUTOTILE_TABLE)
 
-Output (tile_size=48):
-  - wall_tops_img:  RGBA, 8*48=384 wide, 6*48*N_top_kinds tall
-  - wall_sides_img: RGBA, 16*48=768 wide, N_side_kinds*48 tall
+The tops zone has a FLOOR source layout (same as A2): 4 mini-cols × 6 mini-rows.
+FLOOR_AUTOTILE_TABLE reads (qsx, qsy) from this zone with qsy ∈ {0..5}, which maps
+perfectly to the 6 mini-rows of the tops zone.
+
+The sides zone has a WALL source layout: 4 mini-cols × 4 mini-rows.
+WALL_AUTOTILE_TABLE reads (qsx, qsy) with qsy ∈ {0..3}, matching the 4 mini-rows.
 
 Output (tile_size=32):
-  - wall_tops_img:  RGBA, 8*32=256 wide, 6*32*N_top_kinds tall
-  - wall_sides_img: RGBA, 16*32=512 wide, N_side_kinds*32 tall
+  - wall_tops_img:  RGBA, 8*32=256 wide,  N_top_kinds * 6*32 tall (47-blob sheet per kind)
+  - wall_sides_img: RGBA, 16*32=512 wide, N_side_kinds * 32 tall  (16-wall strip per kind)
+
+Output (tile_size=48):
+  - wall_tops_img:  RGBA, 8*48=384 wide,  N_top_kinds * 6*48 tall
+  - wall_sides_img: RGBA, 16*48=768 wide, N_side_kinds * 48 tall
 
 Spec: tools/docs/specs/asset_convertor_mv_core_converters.md § "A4 Converter"
 """
 
 from __future__ import annotations
 
-from asset_convertor.core.converter_mv import FLOOR_AUTOTILE_TABLE
-from asset_convertor.core.converter_mv_a3 import (
-    WALL_AUTOTILE_TABLE,
-)
+from asset_convertor.core.constants import BLOB_BITMASKS
+from asset_convertor.core.converter_mv import FLOOR_AUTOTILE_TABLE, _bitmask_to_shape
+from asset_convertor.core.converter_mv_a3 import WALL_AUTOTILE_TABLE
 from PIL import Image
 
 # ---------------------------------------------------------------------------
@@ -39,19 +46,20 @@ _VALID_BLOCK_SIZES_A4: dict[int, int] = {
     64: 32,   # 4 mini-tiles × 16px = 64px  (32px tileset)
 }
 
-# A4 source block-row Y offset in mini-tiles (from corescript)
-# ty=0..5 → by = [0, 3, 5, 8, 10, 13]
-_BY_LOOKUP_A4: dict[int, int] = {0: 0, 1: 3, 2: 5, 3: 8, 4: 10, 5: 13}
-
 # Wall source occupies the last _WALL_MINI_ROWS mini-rows of the A4 source image.
 # 2 tile-rows = 4 mini-rows.
 _WALL_MINI_ROWS = 4
 
+# Tops zone: always the top 6 mini-rows of the source (3 tile-rows = floor autotile layout)
+_TOP_MINI_ROWS = 6
+
 # Output geometry constants (tile-size-independent)
-_TOP_SHEET_COLS = 8
-_TOP_SHEET_ROWS = 6    # 47 tiles + 1 padding = 48 slots = 6×8
-_SIDE_NUM_SHAPES = 16
-_BLOCK_COLS = 8
+# Tops: 47 shapes in an 8-col × 6-row grid   (FLOOR_AUTOTILE_TABLE)
+# Sides: 16 shapes in a 16-col × 1-row strip (WALL_AUTOTILE_TABLE)
+_TOP_SHEET_COLS = 8    # blob autotile sheet width in tiles
+_TOP_SHEET_ROWS = 6    # blob autotile sheet height in tiles (47 shapes + 1 padding)
+_SIDE_NUM_SHAPES = 16  # 4-neighbor wall shapes
+_BLOCK_COLS = 8        # max horizontal blocks in an A4 source
 
 
 # ---------------------------------------------------------------------------
@@ -60,24 +68,33 @@ _BLOCK_COLS = 8
 
 def convert_mv_a4(img: Image.Image) -> tuple[Image.Image, Image.Image]:
     """
-    Convert an RPG Maker MV A4 (Wall) source tileset to two
-    Tiled-compatible tileset strips.
+    Convert an RPG Maker MV A4 (Wall) source tileset to two Tiled-compatible images.
+
+    - wall_tops:  blob autotile sheet (FLOOR_AUTOTILE_TABLE, 47 shapes, 8×6 tiles per kind)
+    - wall_sides: wall strip (WALL_AUTOTILE_TABLE, 16 shapes, 16×1 tiles per kind)
 
     Supports both 32px and 48px tile sizes:
       - 32px: source block width = 64px
       - 48px: source block width = 96px
 
+    The tops zone (first 3 tile-rows of each block pair) is a FLOOR autotile source.
+    It is assembled using FLOOR_AUTOTILE_TABLE into the standard 8×6 blob sheet format
+    (slots 0-46 = 47 shapes, slot 47 = transparent padding).
+
+    The sides zone (last 2 tile-rows = bottom 4 mini-rows of the source) is a WALL
+    autotile source assembled with WALL_AUTOTILE_TABLE into a 16-tile strip.
+
     Args:
         img: PIL Image, source A4 PNG (RGBA or RGB).
              Width must be a multiple of 64 (32px) or 96 (48px).
-             Minimum height: 5 mini-tile rows = 5 × (tile_size/2).
+             Minimum height: 5 mini-tile rows × (tile_size/2).
 
     Returns:
         tuple: (wall_tops_img, wall_sides_img)
-            wall_tops_img:  RGBA, width=8*tile_size, height=N_top_kinds * 6*tile_size
-                            (47 shapes per kind, 8-col × 6-row per kind)
+            wall_tops_img:  RGBA, width=8*tile_size, height=N_kinds * 6*tile_size
+                            (47-shape blob sheet per kind)
             wall_sides_img: RGBA, width=16*tile_size, height=N_side_kinds * tile_size
-                            (16 shapes per kind, from WALL_AUTOTILE_TABLE)
+                            (16-shape wall strip per kind)
 
     Raises:
         ValueError: If img width is not recognized as a valid A4 block size.
@@ -86,60 +103,47 @@ def convert_mv_a4(img: Image.Image) -> tuple[Image.Image, Image.Image]:
     src = img.convert("RGBA")
     tile_size, mini, block_size, mini_a4_row = _detect_a4_geometry(src)
 
-    top_output_w = _TOP_SHEET_COLS * tile_size
-    side_output_w = _SIDE_NUM_SHAPES * tile_size
+    top_output_w = _TOP_SHEET_COLS * tile_size        # 8 * tile_size
+    top_output_h_per_kind = _TOP_SHEET_ROWS * tile_size  # 6 * tile_size
+    side_output_w = _SIDE_NUM_SHAPES * tile_size      # 16 * tile_size
 
-    max_ty = 5
-    top_strips: list[Image.Image] = []
+    top_sheets: list[Image.Image] = []
     side_strips: list[Image.Image] = []
 
-    for ty in range(max_ty + 1):
-        by_base = _BY_LOOKUP_A4[ty]
-        by = by_base * 2  # block row in mini-tile units
+    # Process only one pair of block rows: tops (rows 0-2) + sides (rows 3-4)
+    # For a standard single-kind A4 source (2 cols × 5 rows), there is one pair.
+    # Multi-kind sources are not common for A4 but supported by iterating columns.
+    n_cols = min(src.width // block_size, _BLOCK_COLS)
 
-        # Check if this row fits within source image
-        required_mini_rows = 6 if ty % 2 == 0 else 4
-        if (by + required_mini_rows) * mini > src.height:
-            break
+    # Tops: read from the top 6 mini-rows (by=0)
+    top_by = 0
+    for tx in range(n_cols):
+        bx = tx * 4  # block column in mini-tile units
+        if _is_block_empty(src, bx, top_by, mini, block_size):
+            continue
+        sheet = _assemble_floor_tile_sheet(
+            src, bx, top_by, tile_size, mini, top_output_w, top_output_h_per_kind
+        )
+        top_sheets.append(sheet)
 
-        # Determine horizontal range
-        n_cols = min(src.width // block_size, _BLOCK_COLS)
-
-        if ty % 2 == 0:
-            # FLOOR row (wall tops) — 47 shapes, 8×6 tile sheet per kind
-            for tx in range(n_cols):
-                bx = tx * 4  # block column in mini-tile units
-                if _is_block_empty(src, bx, by, mini, block_size):
-                    continue
-                sheet = _build_floor_sheet(src, bx, by, tile_size, mini, top_output_w)
-                top_strips.append(sheet)
-        else:
-            # WALL row (wall sides) — 16 shapes, 16×1 strip per kind.
-            # The wall source occupies the last _WALL_MINI_ROWS mini-rows of each
-            # block column — compute its absolute Y origin from the source height.
-            wall_mini_y0 = _get_wall_source_mini_y0(src, mini)
-            for tx in range(n_cols):
-                bx = tx * 4  # block column in mini-tile units
-                if _is_block_empty(src, bx, wall_mini_y0, mini, block_size):
-                    continue
-                strip = _assemble_wall_tile_strip(
-                    src, bx, wall_mini_y0, tile_size, mini, side_output_w
-                )
-                side_strips.append(strip)
+    # Sides: read from the last 4 mini-rows
+    wall_mini_y0 = _get_wall_source_mini_y0(src, mini)
+    for tx in range(n_cols):
+        bx = tx * 4
+        if _is_block_empty(src, bx, wall_mini_y0, mini, block_size):
+            continue
+        strip = _assemble_wall_tile_strip(
+            src, bx, wall_mini_y0, tile_size, mini, side_output_w
+        )
+        side_strips.append(strip)
 
     # Build output images
-    tops_img = _stack_vertically(top_strips, top_output_w) if top_strips else (
-        Image.new("RGBA", (top_output_w, 0))
+    tops_img = _stack_vertically(top_sheets, top_output_w) if top_sheets else (
+        Image.new("RGBA", (top_output_w, top_output_h_per_kind))
     )
     sides_img = _stack_vertically(side_strips, side_output_w) if side_strips else (
-        Image.new("RGBA", (side_output_w, 0))
+        Image.new("RGBA", (side_output_w, tile_size))
     )
-
-    # Ensure non-zero height for empty results
-    if tops_img.height == 0:
-        tops_img = Image.new("RGBA", (top_output_w, _TOP_SHEET_ROWS * tile_size))
-    if sides_img.height == 0:
-        sides_img = Image.new("RGBA", (side_output_w, tile_size))
 
     return tops_img, sides_img
 
@@ -159,7 +163,6 @@ def _detect_a4_geometry(src: Image.Image) -> tuple[int, int, int, int]:
         ValueError: If source width is not a recognized A4 block size multiple,
                     or if dimensions are too small.
     """
-    # Try to find matching block_size
     detected_tile_size: int | None = None
     detected_block_size: int | None = None
 
@@ -180,7 +183,7 @@ def _detect_a4_geometry(src: Image.Image) -> tuple[int, int, int, int]:
 
     mini = detected_tile_size // 2
     block_size = detected_block_size
-    mini_a4_row = mini * 5  # minimum height: 1 top pair + 1 side row = 5 mini-tile rows
+    mini_a4_row = mini * 5  # minimum height: 1 top zone (6 rows) + 1 side zone (4 rows) - 5 overlap
 
     if src.width < block_size or src.height < mini_a4_row:
         raise ValueError(
@@ -207,15 +210,9 @@ def _is_block_empty(
 
 
 def _get_wall_source_mini_y0(src: Image.Image, mini: int) -> int:
-    """Return the mini-tile row index of the wall source block origin.
+    """Return the mini-tile row index of the wall (sides) source block origin.
 
-    In the A4 single-type source layout:
-      - Top _FLOOR_MINI_ROWS mini-rows (= 3 tile-rows) → floor autotile
-      - Bottom _WALL_MINI_ROWS mini-rows (= 2 tile-rows) → wall side autotile
-
-    For multi-type sources the bottom _WALL_MINI_ROWS still hold the last
-    wall block — but since we iterate ty by parity, the caller passes only
-    one ty=odd block at a time, always targeting the last 4 mini-rows.
+    The A4 sides zone occupies the last _WALL_MINI_ROWS (4) mini-rows of the source.
     """
     return (src.height - _WALL_MINI_ROWS * mini) // mini
 
@@ -223,20 +220,22 @@ def _get_wall_source_mini_y0(src: Image.Image, mini: int) -> int:
 def _assemble_floor_tile(
     src: Image.Image, bx: int, by: int, shape: int, tile_size: int, mini: int
 ) -> Image.Image:
-    """
-    Assemble one tile_size×tile_size tile from FLOOR_AUTOTILE_TABLE[shape].
+    """Assemble one tile_size×tile_size tile from FLOOR_AUTOTILE_TABLE[shape].
+
+    The FLOOR_AUTOTILE_TABLE uses (qsx, qsy) coordinates where:
+      - qsx ∈ {0,1,2,3} = mini-tile column within the block
+      - qsy ∈ {0,1,2,3,4,5} = mini-tile row within the tops zone
 
     Args:
-        src: Source RGBA image.
-        bx: Block column offset in mini-tile units.
-        by: Block row offset in mini-tile units.
-        shape: Shape index 0-46 from FLOOR_AUTOTILE_TABLE.
+        src:       Source RGBA image.
+        bx:        Block column offset in mini-tile units.
+        by:        Block row offset in mini-tile units (0 for tops zone).
+        shape:     Shape index 0-46 from FLOOR_AUTOTILE_TABLE.
         tile_size: Output tile size in pixels (32 or 48).
-        mini: Half of tile_size (mini-tile edge length).
+        mini:      Half of tile_size (mini-tile edge length).
     """
-    tile = Image.new("RGBA", (tile_size, tile_size))
+    out = Image.new("RGBA", (tile_size, tile_size))
     quads = FLOOR_AUTOTILE_TABLE[shape]
-
     dst_positions = [(0, 0), (mini, 0), (0, mini), (mini, mini)]
 
     for q, (dst_x, dst_y) in enumerate(dst_positions):
@@ -244,43 +243,65 @@ def _assemble_floor_tile(
         src_x = (bx + qsx) * mini
         src_y = (by + qsy) * mini
         crop = src.crop((src_x, src_y, src_x + mini, src_y + mini))
-        tile.paste(crop, (dst_x, dst_y))
+        out.paste(crop, (dst_x, dst_y))
 
-    return tile
+    return out
+
+
+def _assemble_floor_tile_sheet(
+    src: Image.Image, bx: int, by: int,
+    tile_size: int, mini: int,
+    output_w: int, output_h: int,
+) -> Image.Image:
+    """Build the 8×6 blob autotile sheet for the block at (bx, by).
+
+    Slots 0-46: the 47 FLOOR_AUTOTILE_TABLE shapes.
+    Slot 47:    transparent padding (to fill the 8×6 = 48 slot grid).
+
+    Returns:
+        RGBA Image, width=output_w (8*tile_size), height=output_h (6*tile_size).
+    """
+    sheet = Image.new("RGBA", (output_w, output_h))
+    for slot, bm in enumerate(BLOB_BITMASKS):
+        # Convert blob bitmask to RPGMaker shape index, then assemble that shape.
+        # BLOB_BITMASKS order matches the TSX wangid order (tileid=slot ↔ bitmask=bm).
+        # Using _bitmask_to_shape ensures the right FLOOR_AUTOTILE_TABLE row is read
+        # for this bitmask, so the pixel content matches the declared wangid.
+        shape = _bitmask_to_shape(bm)
+        tile = _assemble_floor_tile(src, bx, by, shape, tile_size, mini)
+        col = slot % _TOP_SHEET_COLS
+        row = slot // _TOP_SHEET_COLS
+        sheet.paste(tile, (col * tile_size, row * tile_size))
+    # slot 47 = transparent padding → already transparent by default
+    return sheet
 
 
 def _assemble_wall_tile(
     src: Image.Image, bx: int, by: int, shape: int, tile_size: int, mini: int
 ) -> Image.Image:
-    """
-    Assemble one tile_size×tile_size tile from WALL_AUTOTILE_TABLE[shape].
+    """Assemble one tile_size×tile_size tile from WALL_AUTOTILE_TABLE[shape].
 
     Coordinate convention:
         WALL_AUTOTILE_TABLE [qsx, qsy] coordinates map directly to the source
         mini-tile grid without any axis inversion.  The wall source block
         starts at pixel y = by * mini, where `by` MUST be the value returned
         by _get_wall_source_mini_y0() (i.e. the last _WALL_MINI_ROWS mini-rows
-        of the source image), NOT the _BY_LOOKUP_A4 value which points to the
-        intermediate block used for the floor template.
+        of the source image).
 
     Args:
-        src: Source RGBA image.
-        bx: Block column offset in mini-tile units (horizontal only).
-        by: Wall source block row in mini-tile units — use _get_wall_source_mini_y0().
-        shape: Shape index 0-15 from WALL_AUTOTILE_TABLE.
+        src:       Source RGBA image.
+        bx:        Block column offset in mini-tile units (horizontal only).
+        by:        Wall source block row in mini-tile units — use _get_wall_source_mini_y0().
+        shape:     Shape index 0-15 from WALL_AUTOTILE_TABLE.
         tile_size: Output tile size in pixels (32 or 48).
-        mini: Half of tile_size (mini-tile edge length).
+        mini:      Half of tile_size (mini-tile edge length).
     """
     out = Image.new("RGBA", (tile_size, tile_size))
     quads = WALL_AUTOTILE_TABLE[shape]
-
     dst_positions = [(0, 0), (mini, 0), (0, mini), (mini, mini)]
 
     for q, (dst_x, dst_y) in enumerate(dst_positions):
         qsx, qsy = quads[q]
-        # Use qsx/qsy directly: WALL_AUTOTILE_TABLE coords map straight to source
-        # mini-tile positions. No axis inversion needed.
-        # `by` must be _get_wall_source_mini_y0() so we land on the real wall data.
         src_x = (bx + qsx) * mini
         src_y = by * mini + qsy * mini
         crop = src.crop((src_x, src_y, src_x + mini, src_y + mini))
@@ -289,35 +310,14 @@ def _assemble_wall_tile(
     return out
 
 
-def _build_floor_sheet(
-    src: Image.Image, bx: int, by: int,
-    tile_size: int, mini: int, output_w: int,
-) -> Image.Image:
-    """
-    Build a 8-col × 6-row sheet of 47 FLOOR tiles + 1 transparent padding.
-
-    Returns:
-        RGBA Image, width=output_w, height=_TOP_SHEET_ROWS * tile_size.
-    """
-    sheet = Image.new("RGBA", (output_w, _TOP_SHEET_ROWS * tile_size))
-    for shape in range(47):
-        tile = _assemble_floor_tile(src, bx, by, shape, tile_size, mini)
-        col = shape % _TOP_SHEET_COLS
-        row = shape // _TOP_SHEET_COLS
-        sheet.paste(tile, (col * tile_size, row * tile_size))
-    # Slot 47 left transparent (padding)
-    return sheet
-
-
 def _assemble_wall_tile_strip(
     src: Image.Image, bx: int, by: int,
     tile_size: int, mini: int, output_w: int,
 ) -> Image.Image:
-    """
-    Build a strip of 16 WALL tiles for the block at (bx, by).
+    """Build a strip of 16 WALL tiles for the block at (bx, by).
 
     Returns:
-        RGBA Image, width=output_w, height=tile_size.
+        RGBA Image, width=output_w (16*tile_size), height=tile_size.
     """
     strip = Image.new("RGBA", (output_w, tile_size))
     for shape in range(_SIDE_NUM_SHAPES):

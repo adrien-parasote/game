@@ -274,6 +274,9 @@ def test_tc021_wall4n_bitmask_to_wangid_isolated():
     from asset_convertor.exporters.tsx_generator import wall4n_bitmask_to_wangid
 
     assert wall4n_bitmask_to_wangid(0) == "0,0,0,0,0,0,0,0"
+    # Note: even though bitmask 0 maps to all-zero wangid, it is intentionally
+    # excluded from the wangset XML (see generate_tsx_wall_sides) because Tiled
+    # treats wangid="0,0,..." as "no terrain" which breaks terrain-brush resolution.
 
 
 @pytest.mark.unit
@@ -305,13 +308,18 @@ def test_tc024_generate_tsx_wall_sides_has_wangsets():
 
 @pytest.mark.unit
 def test_tc025_generate_tsx_wall_sides_has_16_wangtiles():
-    """TC-025: wangset must declare exactly 16 <wangtile> elements."""
+    """TC-025: wangset must declare exactly 15 <wangtile> elements.
+
+    tileid=0 (isolated shape, bitmask=0) is intentionally omitted because
+    wangid='0,0,0,0,0,0,0,0' tells Tiled 'no terrain', which breaks
+    terrain-brush resolution for all surrounding tiles.
+    """
     from asset_convertor.exporters.tsx_generator import generate_tsx_wall_sides
 
     xml = generate_tsx_wall_sides("walls", tile_size=48, png_filename="walls_sides.png")
     root = ET.fromstring(xml.split("\n", 1)[1])
     wangtiles = root.findall(".//wangtile")
-    assert len(wangtiles) == 16, f"Expected 16 wangtiles, got {len(wangtiles)}"
+    assert len(wangtiles) == 15, f"Expected 15 wangtiles (isolated excluded), got {len(wangtiles)}"
 
 
 @pytest.mark.integration
@@ -330,7 +338,7 @@ def test_tc026_export_wall_sides_sheet_writes_tsx_with_wangset(tmp_path):
     root = ET.fromstring(xml.split("\n", 1)[1])
     assert root.find("wangsets") is not None, "exported TSX must contain <wangsets>"
     wangtiles = root.findall(".//wangtile")
-    assert len(wangtiles) == 16, f"expected 16 wangtiles, got {len(wangtiles)}"
+    assert len(wangtiles) == 15, f"expected 15 wangtiles (isolated excluded), got {len(wangtiles)}"
 
 
 # ---------------------------------------------------------------------------
@@ -352,7 +360,13 @@ def test_tc027_export_blob_tops_sheet_writes_png_and_tsx(tmp_path):
 
 @pytest.mark.unit
 def test_tc028_export_blob_tops_sheet_has_mixed_wangset_with_47_tiles(tmp_path):
-    """TC-028: tops TSX must have type='mixed' wangset with exactly 47 wangtiles."""
+    """TC-028: tops TSX must have type='mixed' wangset with exactly 46 wangtiles.
+
+    tileid=0 (bitmask=0, isolated tile) is intentionally omitted from the wangset
+    because wangid='0,0,...,0' tells Tiled 'no terrain', which breaks the terrain
+    solver for all adjacent tiles. Production TSX files (e.g. 01-basement-top.tsx)
+    also exclude this entry.
+    """
     from asset_convertor.exporters.tsx_generator import export_blob_tops_sheet
 
     sheet = Image.new("RGBA", (8 * 48, 6 * 48), (100, 150, 200, 255))
@@ -369,7 +383,7 @@ def test_tc028_export_blob_tops_sheet_has_mixed_wangset_with_47_tiles(tmp_path):
         f"Wall tops wangset must be type='mixed', got '{wangset_el.get('type')}'"
     )
     wangtiles = root.findall(".//wangtile")
-    assert len(wangtiles) == 47, f"Expected 47 wangtiles (blob), got {len(wangtiles)}"
+    assert len(wangtiles) == 46, f"Expected 46 wangtiles (blob, isolated excluded), got {len(wangtiles)}"
 
 
 @pytest.mark.unit

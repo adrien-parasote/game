@@ -189,6 +189,13 @@ def generate_tsx(
         },
     )
     for slot, bm in enumerate(BLOB_BITMASKS):
+        if bm == 0:
+            # Omit tileid=0 (isolated tile, wangid all-zeros).
+            # Tiled treats wangid="0,0,0,0,0,0,0,0" as "no terrain" which
+            # confuses the terrain solver for all neighbouring tiles.
+            # Production TSX files (e.g. 00-grass.tsx, 01-basement-top.tsx)
+            # exclude this entry entirely.
+            continue
         ET.SubElement(
             wangset,
             "wangtile",
@@ -456,22 +463,26 @@ def generate_tsx_wall_sides(
     name: str,
     tile_size: int,
     png_filename: str,
+    num_kinds: int = 1,
 ) -> str:
-    """Generate a Tiled TSX with an edge wangset for A4 wall-side tiles (16 shapes).
+    """Generate a Tiled TSX with an edge wangset for A4 wall-side/top tiles (16 shapes).
 
-    The sides strip is 16 tiles wide (left-to-right = shape 0..15).
-    Each shape maps to a 4-neighbor bitmask via _WALL_SHAPE_TO_4N_BITMASK.
+    The strip is 16 tiles wide. When num_kinds > 1 the rows are stacked vertically
+    (e.g. 2 material kinds = 32 tiles in 16 cols × 2 rows). The wangset only maps
+    shape 0-15 of the first kind; additional rows are usable as palette overrides.
 
     Args:
         name:         Tileset name.
         tile_size:    Tile width/height in pixels (square tiles assumed).
         png_filename: Relative path to the PNG image from the TSX file.
+        num_kinds:    Number of material kinds stacked vertically (default 1).
 
     Returns:
         XML string (UTF-8, with declaration).
     """
     sheet_width = 16 * tile_size
-    sheet_height = tile_size
+    sheet_height = num_kinds * tile_size
+    total_tiles = 16 * num_kinds
 
     root = ET.Element(
         "tileset",
@@ -483,7 +494,7 @@ def generate_tsx_wall_sides(
             "tileheight": str(tile_size),
             "spacing": "0",
             "margin": "0",
-            "tilecount": "16",
+            "tilecount": str(total_tiles),
             "columns": "16",
         },
     )
@@ -518,6 +529,11 @@ def generate_tsx_wall_sides(
         },
     )
     for shape_idx, bitmask in enumerate(_WALL_SHAPE_TO_4N_BITMASK):
+        if bitmask == 0:
+            # Omit isolated shape (bitmask=0, wangid all-zeros).
+            # Tiled treats wangid="0,0,0,0,0,0,0,0" as "no terrain";
+            # registering it explicitly breaks terrain-brush resolution.
+            continue
         ET.SubElement(
             wangset,
             "wangtile",
@@ -540,12 +556,14 @@ def export_wall_sides_sheet(
     output_dir: str | Path,
     tile_size: int,
 ) -> tuple[str, str]:
-    """Write A4 wall-side strip PNG and its edge-wangset TSX to disk.
+    """Write a 4-neighbor wall strip PNG and its edge-wangset TSX to disk.
 
-    The sheet must be exactly 16 tiles wide (16 * tile_size px) and 1 tile tall.
+    Accepts 1 or more kinds stacked vertically (height must be a multiple of tile_size).
+    Used for both A4 wall-sides and A4 wall-tops (both use WALL_AUTOTILE_TABLE).
 
     Args:
-        sheet:      Pre-assembled RGBA PIL Image (768x48 for tile_size=48).
+        sheet:      Pre-assembled RGBA PIL Image. Width = 16 * tile_size.
+                    Height = N_kinds * tile_size (N ≥ 1).
         name:       Base name (e.g. "dungeon_sides" → dungeon_sides.png + dungeon_sides.tsx).
         output_dir: Directory to write files into (created if needed).
         tile_size:  Tile width/height in pixels.
@@ -554,16 +572,21 @@ def export_wall_sides_sheet(
         Tuple of (png_path, tsx_path) as str.
 
     Raises:
-        ValueError: if sheet width ≠ 16 * tile_size or height ≠ tile_size.
+        ValueError: if sheet width ≠ 16 * tile_size or height not divisible by tile_size.
         OSError:    if output_dir is not writable.
     """
     expected_w = 16 * tile_size
     w, h = sheet.size
-    if w != expected_w or h != tile_size:
+    if w != expected_w:
         raise ValueError(
-            f"Wall-sides sheet must be {expected_w}px wide and {tile_size}px tall; got {w}x{h}."
+            f"Wall sheet must be {expected_w}px wide (16 tiles × {tile_size}px); got {w}x{h}."
+        )
+    if h % tile_size != 0 or h == 0:
+        raise ValueError(
+            f"Wall sheet height {h} must be a non-zero multiple of tile_size={tile_size}px."
         )
 
+    num_kinds = h // tile_size
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
@@ -577,6 +600,7 @@ def export_wall_sides_sheet(
         name=name,
         tile_size=tile_size,
         png_filename=rel_png,
+        num_kinds=num_kinds,
     )
     tsx_path.write_text(xml_str, encoding="utf-8")
 
