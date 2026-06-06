@@ -76,22 +76,6 @@ class Game:
         self.i18n = I18nManager()
         self.i18n.load(Settings.LOCALE)
 
-        # Process/dock name — must be set BEFORE pygame.init() so the OS picks it up at launch
-        try:
-            import setproctitle  # type: ignore[import]
-            setproctitle.setproctitle(Settings.GAME_TITLE)
-        except Exception:
-            pass  # package absent — no-op, works on all platforms
-        try:
-            import sys
-            if sys.platform == "darwin":
-                from Foundation import NSBundle  # type: ignore[import]
-                info = NSBundle.mainBundle().infoDictionary()
-                info["CFBundleName"] = Settings.GAME_TITLE
-                info["CFBundleDisplayName"] = Settings.GAME_TITLE
-        except Exception:
-            pass  # Non-macOS or PyObjC absent — no-op
-
         pygame.init()
         logging.info(f"Initializing Game Engine v{Settings.VERSION}...")
 
