@@ -21,6 +21,7 @@ import threading
 import tkinter as tk
 from collections.abc import Callable
 from tkinter import colorchooser
+from tkinter.filedialog import askopenfilename
 
 import customtkinter as ctk
 from asset_convertor.core.palettes import get_palette, get_palette_names
@@ -66,11 +67,13 @@ class RecolorPanel(ctk.CTkFrame):
         state: AppState,
         on_state_change: Callable[[AppState], None],
         on_preview_update: Callable[[Image.Image], None],
+        on_error: Callable[[str], None] | None = None,
     ) -> None:
         super().__init__(parent)
         self._state = state
         self._on_state_change = on_state_change
         self._on_preview_update = on_preview_update
+        self._on_error = on_error
         self._debounce_id: str | None = None
         self._selected_source_color: Color | None = None
 
@@ -122,6 +125,15 @@ class RecolorPanel(ctk.CTkFrame):
         self._lbl_palette_info = ctk.CTkLabel(frame, text="", text_color="gray", font=ctk.CTkFont(size=11))
         self._lbl_palette_info.grid(row=3, column=0, pady=(0, 4))
 
+        # Import palette button — Feature F-PALETTE-IMG
+        ctk.CTkButton(
+            frame,
+            text="\U0001f5bc\ufe0f Importer depuis image\u2026",
+            height=26,
+            font=ctk.CTkFont(size=11),
+            command=self._import_palette_from_image,
+        ).grid(row=4, column=0, sticky="ew", padx=6, pady=(0, 6))
+
     def _extract_and_show_palette(self, img: Image.Image) -> None:
         """Extract palette from img and rebuild swatch row."""
         try:
@@ -137,20 +149,25 @@ class RecolorPanel(ctk.CTkFrame):
         self._rebuild_swatches(palette)
 
     def _rebuild_swatches(self, palette: list[Color]) -> None:
-        """Rebuild the swatch canvas from the given palette."""
+        """Rebuild the swatch canvas from the given palette.
+
+        Fix AP-RE-SWATCH-01: uses tk.Canvas instead of tk.Button so that
+        macOS Aqua rendering does not override the background color.
+        """
         for w in self._swatch_inner.winfo_children():
             w.destroy()
 
         for i, color in enumerate(palette):
             hex_color = _rgb_hex(color)
-            btn = tk.Button(
+            canvas = tk.Canvas(
                 self._swatch_inner,
-                bg=hex_color, activebackground=hex_color,
-                width=_SWATCH_SIZE // 8, height=1,
-                relief="flat", bd=2,
-                command=lambda c=color: self._on_source_swatch_click(c),
+                width=_SWATCH_SIZE, height=_SWATCH_SIZE,
+                bg=hex_color,
+                highlightthickness=1, highlightbackground="#555",
+                cursor="hand2",
             )
-            btn.grid(row=0, column=i, padx=1, pady=2)
+            canvas.grid(row=0, column=i, padx=1, pady=2)
+            canvas.bind("<Button-1>", lambda e, c=color: self._on_source_swatch_click(c))
 
         count = len(palette)
         self._lbl_palette_info.configure(
@@ -160,6 +177,65 @@ class RecolorPanel(ctk.CTkFrame):
     def _on_source_swatch_click(self, color: Color) -> None:
         """Mark color as selected source for manual remap."""
         self._selected_source_color = color
+
+    def _import_palette_from_image(self) -> None:
+        """Import a palette from an external image and apply it as remap targets.
+
+        Feature F-PALETTE-IMG — spec: asset_convertor_recolor_swatch_fix.md § Feature 2
+
+        Flow:
+          1. Guard: source_palette must be loaded first.
+          2. filedialog.askopenfilename → cancel → early return (silent).
+          3. Image.open → OSError → on_error callback (❌ message).
+          4. extract_palette → ValueError (all-transparent) → on_error (❌ message).
+          5. propose_remap(source_palette, imported_palette) → update RecolorState.
+          6. Rebuild remap rows + schedule preview refresh.
+        """
+        rs = self._state.recolor
+        if rs is None or not rs.source_palette:
+            if self._on_error is not None:
+                self._on_error(
+                    "\u26a0\ufe0f Import palette : chargez d\u2019abord un asset source."
+                )
+            return
+
+        path: str = askopenfilename(
+            title="Importer une palette depuis une image",
+            filetypes=[
+                ("Images", "*.png *.jpg *.jpeg *.bmp *.gif *.webp"),
+                ("Tous les fichiers", "*.*"),
+            ],
+        )
+        if not path:
+            return  # User cancelled — silent, no error
+
+        try:
+            img = Image.open(path).convert("RGBA")
+        except OSError as exc:
+            if self._on_error is not None:
+                self._on_error(f"\u274c Import palette : fichier illisible \u2014 {exc}")
+            return
+
+        try:
+            imported_palette = extract_palette(img, max_colors=_MAX_SWATCHES)
+        except ValueError as exc:
+            if self._on_error is not None:
+                self._on_error(
+                    f"\u274c Import palette : image vide ou enti\u00e8rement transparente \u2014 {exc}"
+                )
+            return
+
+        remap = propose_remap(rs.source_palette, imported_palette)
+        rs_updated = dataclasses.replace(
+            rs,
+            remap_table=remap,
+            active_preset=None,  # imported palette clears any active preset
+        )
+        self._state = dataclasses.replace(self._state, recolor=rs_updated)
+        self._on_state_change(self._state)
+
+        self._rebuild_remap_rows(rs_updated.source_palette, remap)
+        self._schedule_preview_refresh()
 
     # -----------------------------------------------------------------------
     # Section B — Palettes prédéfinies

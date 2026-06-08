@@ -543,6 +543,7 @@ class App(ctk.CTk):
             state=self._state,
             on_state_change=self._on_recolor_state_change,
             on_preview_update=self._on_recolor_preview_ready,
+            on_error=self._log,
         )
         self._recolor_panel.grid(row=0, column=2, sticky="nsew", padx=4)
 
