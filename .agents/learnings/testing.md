@@ -1142,3 +1142,66 @@ def test_update_in_save_menu(pause_screen_save_menu):
 ---
 
 *Last updated: 2026-06-05 — added L-TEST-020 (already-constructed sub-object mock) from coverage audit HARDEN session.*
+
+---
+
+### L-TEST-021 · 2026-06-09 · U · Minor Rework
+**`from X import Y` dans le module rend `mock.patch("…Y")` fiable dans pytest multi-module**
+
+Quand un module produit utilise `from tkinter import filedialog` puis appelle `filedialog.askopenfilename(...)`, le chemin de patch `patch("module.filedialog.askopenfilename")` cible un sous-attribut d'un sous-module — et cela échoue silencieusement dans une session pytest partagée : le patch remplace l'attribut sur l'objet `filedialog` qui peut être la version stub ou la version réelle selon l'ordre de chargement, et le mock n'est pas garanti de cibler le bon objet.
+
+En remplaçant l'import par `from tkinter.filedialog import askopenfilename`, la fonction `askopenfilename` est un attribut direct du module produit. Le patch `patch("module.askopenfilename")` cible alors cet attribut — toujours le bon objet, quelle que soit l'isolation.
+
+```python
+# ❌ Patch fragile — filedialog peut être la version stub ou réelle
+# dans recolor_panel.py :
+from tkinter import filedialog
+filedialog.askopenfilename(...)
+# dans le test :
+with patch("asset_convertor.gui.recolor_panel.filedialog.askopenfilename", ...):
+    ...  # silently fails if filedialog object is not the expected one
+
+# ✅ Patch fiable — askopenfilename est un attribut direct du module
+# dans recolor_panel.py :
+from tkinter.filedialog import askopenfilename
+askopenfilename(...)
+# dans le test :
+with patch("asset_convertor.gui.recolor_panel.askopenfilename", ...):
+    ...  # toujours efficace, indépendant de l'état de sys.modules["tkinter"]
+```
+
+**Règle :** Pour toute fonction stdlib ou tierce partie qui doit être mockable en test, toujours l'importer **directement dans le namespace du module** (`from X import Y`). Ne jamais dépendre d'un chemin de patch traversant un sous-module (`module.submod.func`).
+
+**Evidence :** 6 tests (`TC-006, TC-007, TC-009, TC-010, IT-002, IT-004`) de `test_recolor_panel.py` échouaient en suite complète (398 tests) mais passaient en isolation. Passage en import direct → 398/398 PASS. Voir commit `4eb6fba`.
+
+---
+
+### A-TEST-043 · 2026-06-09 · U · Minor Rework
+**Restaurer `orig_module` dans le setup de test provoque une contamination silencieuse si le module source a été modifié**
+
+Un pattern courant dans les tests tkinter headless consiste à (1) sauvegarder `orig_module = sys.modules.get("gui.module")`, (2) supprimer le cache, (3) importer le module avec un stub, (4) restaurer `sys.modules["gui.module"] = orig_module`. Si le fichier source du module a été **modifié** depuis sa dernière mise en cache (ce qui arrive systématiquement au fil d'une session de développement), `orig_module` est une version **périmée** du module — sans les nouveaux attributs. Le patch `patch("gui.module.new_attr", ...)` cible alors le mauvais objet module et **n'a aucun effet**.
+
+```python
+# ❌ Restaure une version périmée du module — le patch échoue silencieusement
+orig_panel = sys.modules.get("asset_convertor.gui.recolor_panel")
+del sys.modules["asset_convertor.gui.recolor_panel"]
+from asset_convertor.gui.recolor_panel import RecolorPanel  # import frais avec stub
+# ... restauration problématique :
+if orig_panel is not None:
+    sys.modules["asset_convertor.gui.recolor_panel"] = orig_panel  # vieux module !
+# → patch("...askopenfilename") cible orig_panel (sans askopenfilename) → no-op
+
+# ✅ Ne pas restaurer le module gui — garder le module frais en cache
+orig_panel = sys.modules.get("asset_convertor.gui.recolor_panel")  # noqa: sauvegarde non utilisée
+del sys.modules["asset_convertor.gui.recolor_panel"]
+from asset_convertor.gui.recolor_panel import RecolorPanel
+# NOTE: ne pas restaurer orig_panel — le module frais avec les bons imports doit rester en cache
+```
+
+**Règle :** Dans un setup de test qui réinstalle un module avec des stubs, ne jamais restaurer `orig_module` dans `sys.modules` si le module source a pu être modifié. Le module frais (importé avec les stubs actifs) doit rester en cache pour que `mock.patch` cible le bon objet.
+
+**Evidence :** 6 tests échouant en suite complète (398 tests) mais passant en isolation dans `test_recolor_panel.py`. Root cause : `orig_panel` était la version pré-commit du module (sans `askopenfilename`). Suppression de la restauration → 398/398 PASS. Voir commit `4eb6fba`.
+
+---
+
+*Last updated: 2026-06-09 — added L-TEST-021, A-TEST-043 from recolor swatch fix + palette import HARDEN session.*
