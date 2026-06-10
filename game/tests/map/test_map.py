@@ -1006,3 +1006,150 @@ def test_order_property_used_for_layer_sorting():
     # After sorting by order value: id=1 (0), id=2 (1), id=3 (2)
     assert manager.layer_order == [1, 2, 3]
     assert manager.layer_depths == {1: 0, 2: 1, 3: 2}
+
+
+# ===========================================================================
+# P-001 — MapManager._build_fg_occlusion_world  (TC-001..TC-006)
+# Spec: game/docs/specs/p001-foreground-rendering.md § 8.1
+# These tests are RED until _build_fg_occlusion_world is implemented.
+# ===========================================================================
+
+def _make_fg_tile(depth: int = 2, has_occ: bool = True, animated: bool = False):
+    """Helper: create a foreground tile mock for P-001 tests."""
+    tile = MagicMock()
+    tile.image = pygame.Surface((32, 32))
+    tile.occluded_image = pygame.Surface((32, 32)) if has_occ else None
+    tile.depth = depth
+    tile.frames = [(1, 100), (2, 100)] if animated else None
+    tile.walkable = False
+    return tile
+
+
+def _make_map_data_with_fg(
+    tile_depth: int = 2,
+    has_occ: bool = True,
+    animated: bool = False,
+    layer_max_depth: int = 2,
+):
+    """Helper: map_data with one foreground tile at (0,0) in layer 1."""
+    tile = _make_fg_tile(depth=tile_depth, has_occ=has_occ, animated=animated)
+    return {
+        "layers": {1: [[1, 0], [0, 0]]},
+        "tiles": {1: tile},
+        "layer_names": {1: "01-layer"},
+        "layer_order": [1],
+        "layer_order_values": {1: layer_max_depth},
+    }
+
+
+@pytest.mark.tc("TC-001")
+def test_fg_occlusion_world_populated_on_init():
+    """TC-001: MapManager with fg tile (depth>0) populates _fg_occlusion_world on __init__."""
+    layout = MagicMock()
+    layout.tile_size = 32
+    mm = MapManager(_make_map_data_with_fg(tile_depth=2), layout)
+
+    assert hasattr(mm, "_fg_occlusion_world"), (
+        "MapManager must expose _fg_occlusion_world after __init__"
+    )
+    assert len(mm._fg_occlusion_world) > 0, (
+        "Expected at least 1 fg tile in _fg_occlusion_world for a map with depth=2 tile"
+    )
+
+
+@pytest.mark.tc("TC-002")
+def test_fg_occlusion_world_excludes_background_depth():
+    """TC-002: Tiles with depth=0 must NOT appear in _fg_occlusion_world."""
+    tile = MagicMock()
+    tile.image = pygame.Surface((32, 32))
+    tile.occluded_image = None
+    tile.depth = 0
+    tile.frames = None
+
+    map_data = {
+        "layers": {1: [[1, 0], [0, 0]]},
+        "tiles": {1: tile},
+        "layer_names": {1: "00-layer"},
+        "layer_order": [1],
+        "layer_order_values": {1: 0},
+    }
+    layout = MagicMock()
+    layout.tile_size = 32
+    mm = MapManager(map_data, layout)
+
+    assert hasattr(mm, "_fg_occlusion_world")
+    for _wx, _wy, depth, _img, _occ in mm._fg_occlusion_world:
+        assert depth > 0, f"Found tile with depth={depth} <= 0 in _fg_occlusion_world (must exclude bg tiles)"
+
+
+@pytest.mark.tc("TC-003")
+def test_fg_occlusion_world_excludes_animated_tiles():
+    """TC-003: Animated tiles (frames is not None/empty) must NOT appear in _fg_occlusion_world."""
+    layout = MagicMock()
+    layout.tile_size = 32
+    mm = MapManager(_make_map_data_with_fg(tile_depth=2, animated=True), layout)
+
+    assert hasattr(mm, "_fg_occlusion_world")
+    # The map only has 1 tile, and it's animated — cache must be empty
+    assert mm._fg_occlusion_world == [], (
+        "Animated tile must be excluded from _fg_occlusion_world"
+    )
+
+
+@pytest.mark.tc("TC-004")
+def test_fg_occlusion_world_world_coords():
+    """TC-004: Coordinates in _fg_occlusion_world are in pixel world-space (multiples of tile_size)."""
+    layout = MagicMock()
+    layout.tile_size = 32
+    mm = MapManager(_make_map_data_with_fg(tile_depth=2), layout)
+
+    assert hasattr(mm, "_fg_occlusion_world")
+    assert len(mm._fg_occlusion_world) > 0
+
+    for wx, wy, _depth, _img, _occ in mm._fg_occlusion_world:
+        assert wx % 32 == 0, f"world_x={wx} is not a multiple of tile_size=32"
+        assert wy % 32 == 0, f"world_y={wy} is not a multiple of tile_size=32"
+        assert isinstance(wx, int), f"world_x must be int, got {type(wx)}"
+        assert isinstance(wy, int), f"world_y must be int, got {type(wy)}"
+
+
+@pytest.mark.tc("TC-005")
+def test_fg_occlusion_world_occluded_image_none_allowed():
+    """TC-005: Tile with occluded_image=None must be included with None as 5th element."""
+    layout = MagicMock()
+    layout.tile_size = 32
+    mm = MapManager(_make_map_data_with_fg(tile_depth=2, has_occ=False), layout)
+
+    assert hasattr(mm, "_fg_occlusion_world")
+    assert len(mm._fg_occlusion_world) > 0
+
+    _wx, _wy, _depth, _img, occ_img = mm._fg_occlusion_world[0]
+    assert occ_img is None, (
+        "Tile with occluded_image=None must be included with occ_img=None (not excluded)"
+    )
+
+
+@pytest.mark.tc("TC-006")
+def test_fg_occlusion_world_empty_for_bg_only_map():
+    """TC-006: Map with only depth=0 tiles -> _fg_occlusion_world is empty list."""
+    tile = MagicMock()
+    tile.image = pygame.Surface((32, 32))
+    tile.occluded_image = None
+    tile.depth = 0
+    tile.frames = None
+
+    map_data = {
+        "layers": {1: [[1, 1], [1, 1]]},
+        "tiles": {1: tile},
+        "layer_names": {1: "00-ground"},
+        "layer_order": [1],
+        "layer_order_values": {1: 0},
+    }
+    layout = MagicMock()
+    layout.tile_size = 32
+    mm = MapManager(map_data, layout)
+
+    assert hasattr(mm, "_fg_occlusion_world")
+    assert mm._fg_occlusion_world == [], (
+        "Map with only depth=0 tiles must yield empty _fg_occlusion_world"
+    )

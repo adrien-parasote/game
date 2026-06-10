@@ -52,6 +52,49 @@ class MapManager:
         self._fg_surfaces: dict[tuple[int, int], pygame.Surface | None] = {}
         self._window_cache = None
 
+        # P-001 — World-space foreground occlusion cache.
+        # Populated once at init; never mutated after.
+        # Format: list[tuple[world_x_px, world_y_px, depth, img, occ_img | None]]
+        self._fg_occlusion_world: list[tuple[int, int, int, pygame.Surface, pygame.Surface | None]] = []
+        self._build_fg_occlusion_world()
+
+    def _build_fg_occlusion_world(self) -> None:
+        """Build the world-space foreground occlusion cache (P-001).
+
+        Scans all layers and tiles once at init. For each static foreground tile
+        (depth > 0, not animated), stores a tuple:
+            (world_x_px, world_y_px, depth, img, occ_img | None)
+
+        Used by RenderManager._blit_foreground_surface and
+        _build_screen_occluding_rects to replace per-frame visible-chunk iteration.
+
+        Anti-pattern: never call this per-frame — it is O(layers * W * H).
+        Error: silently skips layers absent from self.layers (no crash on partial data).
+        """
+        tile_size = getattr(self.layout, "tile_size", 32)
+        result: list[tuple[int, int, int, pygame.Surface, pygame.Surface | None]] = []
+
+        for layer_id in self.layer_order:
+            layer_data = self.layers.get(layer_id)
+            if layer_data is None:
+                continue
+            for y, row in enumerate(layer_data):
+                for x, tile_id in enumerate(row):
+                    if tile_id == 0 or tile_id not in self.tiles:
+                        continue
+                    tile = self.tiles[tile_id]
+                    depth = tile.depth
+                    if not isinstance(depth, int) or depth <= 0:
+                        continue
+                    if tile.frames:  # skip animated tiles — handled by anim_map_manager
+                        continue
+                    wx = x * tile_size
+                    wy = y * tile_size
+                    occ_img = getattr(tile, "occluded_image", None)
+                    result.append((wx, wy, depth, tile.image, occ_img))
+
+        self._fg_occlusion_world = result
+
     def get_layer_surface(
         self, layer_id: int, pygame_module, max_bg_depth: int = 1
     ) -> pygame.Surface | None:

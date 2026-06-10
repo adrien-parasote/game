@@ -165,29 +165,39 @@ class TestOcclusionSkippedDuringWalk:
         rm.game.player.rect = pygame.Rect(0, 0, 32, 32)
         rm.game.visible_sprites.offset = MagicMock(x=0, y=0)
 
-        # One foreground tile (depth=2 > player.depth=1) at (0,0) — overlaps player
+        # P-001: tile data with distinct images
+        occ_img = MagicMock(name="occluded_tile")
+        normal_img = MagicMock(name="normal_tile")
+
+        # P-001: world cache — fg tile at (0,0), depth=2 > player.depth=1, overlaps player
         map_mgr = MagicMock()
-        fg_tile_data = MagicMock()
-        fg_tile_data.occluded_image = MagicMock(name="occluded_tile")
-        fg_tile_data.image = MagicMock(name="normal_tile")
-        map_mgr.tiles = {42: fg_tile_data}
-        map_mgr.get_visible_chunks.return_value = [(0, 0, 42, 2)]  # depth=2 > player.depth=1
-        map_mgr.get_visible_animated_chunks.return_value = []
+        map_mgr._fg_occlusion_world = [(0, 0, 2, normal_img, occ_img)]
+        map_mgr.layer_order = []
+        map_mgr.layer_depths = {}
+        map_mgr.get_foreground_layer_surface.return_value = None  # no WorldSurface needed
         rm.game.map_manager = map_mgr
         rm.game.anim_map_manager = None
+
+        # Initialise viewport so AABB test passes for tile at (0,0)
+        rm._viewport_world = pygame.Rect(0, 0, 640, 480)
+
+        # Wrap tile data so tracking works with the P-001 cache
+        fg_tile_data = MagicMock()
+        fg_tile_data.occluded_image = occ_img
+        fg_tile_data.image = normal_img
 
         normal_blits = []
         occluded_blits = []
 
         def track_blit(img, pos):
-            if img is fg_tile_data.occluded_image:
+            if img is occ_img:
                 occluded_blits.append(img)
             else:
                 normal_blits.append(img)
 
         def track_fblits(lst):
             for img, _pos in lst:
-                if img is fg_tile_data.occluded_image:
+                if img is occ_img:
                     occluded_blits.append(img)
                 else:
                     normal_blits.append(img)
@@ -220,7 +230,9 @@ class TestOcclusionSkippedDuringWalk:
     @pytest.mark.tc("TC-RENDER-002b")
     def test_occlusion_skipped_during_walk(self):
         """TC-RENDER-002b (non-regression): During scripted walk, occluded_image must NOT be used.
-        draw_foreground() still returns the collected rects (the caller guards with walk_active).
+        P-001: tiles are rendered via WorldSurface blit (_blit_foreground_surface), not individual
+        tile blit. _blit_occluded_tiles_near_player is not called when walk_active=True.
+        draw_foreground() still returns the collected rects for NPC sprite occlusion.
         """
         rm, fg_tile_data, normal_blits, occluded_blits = self._make_rm_with_occluding_tile()
         rm.game._intra_walk_target = pygame.math.Vector2(100, 100)  # walk active
@@ -234,7 +246,12 @@ class TestOcclusionSkippedDuringWalk:
         assert len(occluded_blits) == 0, (
             "occluded_image must NOT be blit during walk — tiles should not go alpha"
         )
-        assert len(normal_blits) == 1, "normal tile image must be used instead"
+        # P-001: normal tile is rendered via WorldSurface, not individual blit
+        # Individual normal_blits is empty — the pre-rendered surface handles it
+        assert len(result) == 1, (
+            "draw_foreground() must return 1 occluding rect even during walk "
+            "(NPC occlusion requires rects regardless of walk state)"
+        )
 
 
 # ---------------------------------------------------------------------------

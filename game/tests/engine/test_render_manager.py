@@ -3,7 +3,9 @@
 from unittest.mock import MagicMock, patch
 
 import pygame
+import pytest
 from src.engine.render_manager import RenderManager
+from src.map.manager import MapManager
 
 
 def test_render_manager_init():
@@ -35,16 +37,13 @@ def test_render_manager_draw_background():
 
 
 def test_render_manager_draw_foreground():
+    """draw_foreground() runs without crash and returns a list (P-001 contract)."""
     game = MagicMock()
-
-    # Mock chunks
-    game.map_manager.get_visible_chunks.return_value = [(0, 0, 1, 2)]  # px, py, tile_id, depth
-
-    mock_tile = MagicMock()
-    mock_tile.image = pygame.Surface((32, 32))
-    mock_tile.occluded_image = None
-    game.map_manager.tiles = {1: mock_tile}
-
+    game.map_manager._fg_occlusion_world = []  # P-001: world cache (empty = no fg tiles)
+    game.map_manager.layer_order = []
+    game.map_manager.layer_depths = {}
+    game.anim_map_manager = None
+    game._intra_walk_target = None
     game.visible_sprites.offset = pygame.math.Vector2(0, 0)
     game.screen = pygame.Surface((800, 600))
     game.player.rect = pygame.Rect(0, 0, 32, 32)
@@ -53,9 +52,8 @@ def test_render_manager_draw_foreground():
     game.tile_size = 32
 
     rm = RenderManager(game)
-    rm.draw_foreground()
-
-    assert game.map_manager.get_visible_chunks.called
+    result = rm.draw_foreground()
+    assert isinstance(result, list)  # P-001: must return list (occluding_rects)
 
 
 def test_render_manager_draw_scene():
@@ -110,21 +108,22 @@ def test_draw_foreground_no_occluding_tile_returns_empty_list():
 
 
 # ---------------------------------------------------------------------------
-# UT-002 — draw_foreground(): occluding tile → returns list with (Rect, depth) tuple
+# UT-002 — draw_foreground(): fg tile in world cache → returns occluding rect
 # ---------------------------------------------------------------------------
 def test_draw_foreground_occluding_tile_returns_tuple_list():
-    """UT-002: draw_foreground() returns list with 1 (Rect, int) tuple for depth=2 tile."""
+    """UT-002 (P-001): draw_foreground() returns list with 1 (Rect, int) tuple for depth=2 fg tile.
+    Uses _fg_occlusion_world cache (P-001 contract) instead of get_visible_chunks.
+    """
+    img_surf = pygame.Surface((32, 32))
     game = MagicMock()
-    game.map_manager.get_visible_chunks.return_value = [(0, 0, 1, 2)]  # depth=2, occluding
-    mock_tile = MagicMock()
-    mock_tile.image = pygame.Surface((32, 32))
-    mock_tile.occluded_image = None
-    game.map_manager.tiles = {1: mock_tile}
+    game.map_manager._fg_occlusion_world = [(0, 0, 2, img_surf, None)]  # fg tile at (0,0) depth=2
+    game.map_manager.layer_order = []
+    game.map_manager.layer_depths = {}
     game.anim_map_manager = None
     game._intra_walk_target = None
     game.visible_sprites.offset = pygame.math.Vector2(0, 0)
     game.screen = MagicMock()
-    game.player.rect = pygame.Rect(0, 0, 32, 32)
+    game.player.rect = pygame.Rect(200, 200, 32, 32)  # far from tile — no occluded blit
     game.player.depth = 1
     game.tile_size = 32
 
@@ -137,7 +136,7 @@ def test_draw_foreground_occluding_tile_returns_tuple_list():
     assert isinstance(occ_rect, pygame.Rect)
     assert depth == 2
     assert occ_rect == pygame.Rect(0, 0, 32, 32)  # screen_pos=(0,0), tile_size=32
-    assert isinstance(tile_img, pygame.Surface)  # tile image now included
+    assert tile_img is img_surf  # tile image now included
 
 
 # ---------------------------------------------------------------------------
@@ -171,20 +170,20 @@ def test_draw_foreground_animated_tile_depth2_included():
 # UT-004 — draw_foreground() with walk_active: still collects rects (caller guards)
 # ---------------------------------------------------------------------------
 def test_draw_foreground_walk_active_still_returns_rects():
-    """UT-004: draw_foreground() collects rects even during walk_active.
+    """UT-004: draw_foreground() collects occluding rects even during walk_active.
+    P-001: rects come from _fg_occlusion_world (not get_visible_chunks).
     The caller (draw_scene) is responsible for not calling _apply_partial_occlusion.
     """
+    img_surf = pygame.Surface((32, 32))
     game = MagicMock()
-    game.map_manager.get_visible_chunks.return_value = [(0, 0, 1, 2)]
-    mock_tile = MagicMock()
-    mock_tile.image = pygame.Surface((32, 32))
-    mock_tile.occluded_image = None
-    game.map_manager.tiles = {1: mock_tile}
+    game.map_manager._fg_occlusion_world = [(0, 0, 2, img_surf, None)]  # fg tile depth=2
+    game.map_manager.layer_order = []
+    game.map_manager.layer_depths = {}
     game.anim_map_manager = None
     game._intra_walk_target = MagicMock()  # walk active
     game.visible_sprites.offset = pygame.math.Vector2(0, 0)
     game.screen = MagicMock()
-    game.player.rect = pygame.Rect(0, 0, 32, 32)
+    game.player.rect = pygame.Rect(200, 200, 32, 32)  # far from tile
     game.player.depth = 1
     game.tile_size = 32
 
@@ -993,3 +992,338 @@ def test_occ_ut005_asset_manager_cache_no_recompute():
         f"_build_occlusion_mask must be called exactly once, was called {mock_build.call_count} times"
     )
     assert result1 is result2, "Both calls must return the same cached Surface"
+
+
+# ===========================================================================
+# P-001 — RenderManager new methods  (TC-007..TC-013, IT-001..IT-003, TC-014)
+# Spec: game/docs/specs/p001-foreground-rendering.md § 8.2, 8.3, 8.4
+# These tests are RED until _blit_foreground_surface, _build_screen_occluding_rects,
+# and _blit_occluded_tiles_near_player are implemented.
+# ===========================================================================
+
+
+def _make_fg_world_entry(wx=0, wy=0, depth=2, has_occ=True):
+    """Helper: build one _fg_occlusion_world tuple."""
+    img = pygame.Surface((32, 32))
+    occ_img = pygame.Surface((32, 32)) if has_occ else None
+    return (wx, wy, depth, img, occ_img)
+
+
+def _make_game_p001(
+    *,
+    fg_world=None,
+    cam_x=0,
+    cam_y=0,
+    player_depth=1,
+    player_x=0,
+    player_y=0,
+    walk_active=False,
+    layer_order=None,
+    viewport_left=0,
+    viewport_top=0,
+    viewport_w=640,
+    viewport_h=480,
+):
+    """Helper: minimal game mock for P-001 RenderManager tests."""
+    game = MagicMock()
+    game.tile_size = 32
+    game.visible_sprites.offset = pygame.math.Vector2(cam_x, cam_y)
+    game.player.rect = pygame.Rect(player_x, player_y, 32, 32)
+    game.player.depth = player_depth
+    game._intra_walk_target = MagicMock() if walk_active else None
+    game.map_manager._fg_occlusion_world = fg_world or []
+    _layer_order = layer_order or []
+    game.map_manager.layer_order = _layer_order
+    # layer_depths: each layer explicitly mapped to int depth > player_depth (2)
+    # so _blit_foreground_surface doesn't treat it as background
+    game.map_manager.layer_depths = {lid: 2 for lid in _layer_order}
+    game.anim_map_manager = None
+    game.map_manager.get_visible_chunks.return_value = []
+    game.map_manager.tiles = {}
+    game.screen = MagicMock()
+    game.screen.get_width.return_value = viewport_w
+    game.screen.get_height.return_value = viewport_h
+    return game
+
+
+# ---------------------------------------------------------------------------
+# TC-007 — _blit_foreground_surface calls screen.blit once per fg layer
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-007")
+def test_blit_foreground_surface_calls_blit_once_per_layer():
+    """TC-007: _blit_foreground_surface calls screen.blit N times (N = layers with fg surface)."""
+    fg_surf = pygame.Surface((64, 64), pygame.SRCALPHA)
+
+    game = _make_game_p001(layer_order=[1, 2])
+    game.map_manager.get_foreground_layer_surface.side_effect = lambda lid, pg, **kw: (
+        fg_surf if lid == 1 else None  # layer 1 has fg, layer 2 doesn't
+    )
+
+    rm = RenderManager(game)
+    rm._screen_rect = pygame.Rect(0, 0, 640, 480)  # force screen rect (MagicMock returns 0)
+    cam = pygame.math.Vector2(0, 0)
+    rm._blit_foreground_surface(cam, player_depth=1)
+
+    assert game.screen.blit.call_count == 1, (
+        f"Expected 1 screen.blit call (1 fg layer), got {game.screen.blit.call_count}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# TC-008 — _build_screen_occluding_rects filters by depth
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-008")
+def test_build_screen_occluding_rects_filters_by_depth():
+    """TC-008: Tiles with depth <= player_depth are excluded from occluding_rects."""
+    # Tile at depth=1 (== player_depth=1) must be excluded
+    fg_world = [
+        _make_fg_world_entry(wx=0, wy=0, depth=1),   # excluded (depth == player_depth)
+        _make_fg_world_entry(wx=32, wy=0, depth=2),  # included (depth > player_depth)
+    ]
+    game = _make_game_p001(fg_world=fg_world)
+
+    rm = RenderManager(game)
+    rm._viewport_world = pygame.Rect(0, 0, 640, 480)
+
+    occluding_rects = []
+    rm._build_screen_occluding_rects(pygame.math.Vector2(0, 0), player_depth=1, occluding_rects=occluding_rects)
+
+    depths = [d for _, d, _ in occluding_rects]
+    assert 1 not in depths, f"depth=1 tile must be excluded, but depths found: {depths}"
+    assert 2 in depths, "depth=2 tile must be included"
+    assert len(occluding_rects) == 1
+
+
+# ---------------------------------------------------------------------------
+# TC-009 — _build_screen_occluding_rects filters by viewport
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-009")
+def test_build_screen_occluding_rects_filters_by_viewport():
+    """TC-009: Tiles outside the viewport are excluded from occluding_rects."""
+    fg_world = [
+        _make_fg_world_entry(wx=0, wy=0, depth=2),      # inside viewport (0,0,640,480)
+        _make_fg_world_entry(wx=1000, wy=1000, depth=2), # outside viewport
+    ]
+    game = _make_game_p001(fg_world=fg_world)
+
+    rm = RenderManager(game)
+    rm._viewport_world = pygame.Rect(0, 0, 640, 480)
+
+    occluding_rects = []
+    rm._build_screen_occluding_rects(pygame.math.Vector2(0, 0), player_depth=1, occluding_rects=occluding_rects)
+
+    assert len(occluding_rects) == 1, (
+        f"Expected 1 rect (in-viewport tile), got {len(occluding_rects)}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# TC-010 — _build_screen_occluding_rects screen coords = world + cam_offset
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-010")
+def test_build_screen_occluding_rects_screen_coords():
+    """TC-010: Rect in occluding_rects is at world_pos + cam_offset (screen-space)."""
+    fg_world = [_make_fg_world_entry(wx=64, wy=96, depth=2)]
+    game = _make_game_p001(fg_world=fg_world, cam_x=-32, cam_y=-16)
+
+    rm = RenderManager(game)
+    rm._viewport_world = pygame.Rect(0, 0, 640, 480)
+
+    occluding_rects = []
+    cam = pygame.math.Vector2(-32, -16)
+    rm._build_screen_occluding_rects(cam, player_depth=1, occluding_rects=occluding_rects)
+
+    assert len(occluding_rects) == 1
+    rect, depth, _ = occluding_rects[0]
+    assert rect.x == 64 + (-32), f"Expected screen_x={64-32}, got {rect.x}"
+    assert rect.y == 96 + (-16), f"Expected screen_y={96-16}, got {rect.y}"
+
+
+# ---------------------------------------------------------------------------
+# TC-011 — _blit_occluded_tiles_near_player: non-colliding tile → no blit
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-011")
+def test_blit_occluded_tiles_skips_non_colliding():
+    """TC-011: Tile far from player (no collision) → screen.blit NOT called."""
+    fg_world = [_make_fg_world_entry(wx=500, wy=500, depth=2)]  # far from player at (0,0)
+    game = _make_game_p001(fg_world=fg_world, player_x=0, player_y=0)
+
+    rm = RenderManager(game)
+    player_screen_rect = pygame.Rect(0, 0, 32, 32)  # player at screen (0,0)
+    cam = pygame.math.Vector2(0, 0)
+
+    rm._blit_occluded_tiles_near_player(cam, player_screen_rect, player_depth=1)
+
+    game.screen.blit.assert_not_called(), (
+        "screen.blit must not be called for tile far from player"
+    )
+
+
+# ---------------------------------------------------------------------------
+# TC-012 — _blit_occluded_tiles_near_player: colliding tile with occ_img → occ_img blitted
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-012")
+def test_blit_occluded_tiles_uses_occluded_image():
+    """TC-012: Tile adjacent to player with occ_img → screen.blit called with occ_img."""
+    occ_surf = pygame.Surface((32, 32))
+    occ_surf.fill((255, 0, 0))  # distinctive color
+    img_surf = pygame.Surface((32, 32))
+    img_surf.fill((0, 255, 0))
+
+    fg_world = [(0, 0, 2, img_surf, occ_surf)]  # tile at (0,0), player also at (0,0)
+    game = _make_game_p001(fg_world=fg_world, player_x=0, player_y=0)
+
+    rm = RenderManager(game)
+    rm._viewport_world = pygame.Rect(0, 0, 640, 480)  # ensure tile (0,0) is in viewport
+    player_screen_rect = pygame.Rect(0, 0, 32, 32)
+    cam = pygame.math.Vector2(0, 0)
+
+    rm._blit_occluded_tiles_near_player(cam, player_screen_rect, player_depth=1)
+
+    assert game.screen.blit.called, "screen.blit must be called when player collides with tile"
+    blitted_surf = game.screen.blit.call_args[0][0]
+    assert blitted_surf is occ_surf, (
+        f"Expected occ_img to be blitted, got {blitted_surf}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# TC-013 — _blit_occluded_tiles_near_player: colliding tile without occ_img → image blitted
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-013")
+def test_blit_occluded_tiles_fallback_to_image_if_no_occ():
+    """TC-013: Tile adjacent to player with occ_img=None → screen.blit called with img (fallback)."""
+    img_surf = pygame.Surface((32, 32))
+    img_surf.fill((0, 0, 255))
+
+    fg_world = [(0, 0, 2, img_surf, None)]  # occ_img is None
+    game = _make_game_p001(fg_world=fg_world, player_x=0, player_y=0)
+
+    rm = RenderManager(game)
+    rm._viewport_world = pygame.Rect(0, 0, 640, 480)  # ensure tile (0,0) is in viewport
+    player_screen_rect = pygame.Rect(0, 0, 32, 32)
+    cam = pygame.math.Vector2(0, 0)
+
+    rm._blit_occluded_tiles_near_player(cam, player_screen_rect, player_depth=1)
+
+    assert game.screen.blit.called, "screen.blit must be called (fallback to img)"
+    blitted_surf = game.screen.blit.call_args[0][0]
+    assert blitted_surf is img_surf, (
+        "When occ_img is None, img must be blitted as fallback"
+    )
+
+
+# ---------------------------------------------------------------------------
+# IT-001 — _draw_static_foreground_tiles returns [] (P-001 contract)
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("IT-001")
+def test_p001_draw_static_foreground_tiles_returns_empty_list():
+    """IT-001: After P-001 refactor, _draw_static_foreground_tiles must return []."""
+    fg_world = [_make_fg_world_entry(wx=0, wy=0, depth=2)]
+    game = _make_game_p001(fg_world=fg_world, layer_order=[1])
+    game.map_manager.get_foreground_layer_surface.return_value = pygame.Surface((64, 64), pygame.SRCALPHA)
+
+    rm = RenderManager(game)
+    rm._viewport_world = pygame.Rect(0, 0, 640, 480)
+
+    occluding_rects = []
+    result = rm._draw_static_foreground_tiles(
+        cam_offset=pygame.math.Vector2(0, 0),
+        walk_active=False,
+        player_screen_rect=pygame.Rect(200, 200, 32, 32),  # far from tile
+        player_depth=1,
+        occluding_rects=occluding_rects,
+    )
+
+    assert result == [], (
+        f"_draw_static_foreground_tiles must return [] after P-001 refactor, got {result}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# IT-002 — draw_foreground() returns non-empty occluding_rects for fg tiles in viewport
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("IT-002")
+def test_p001_draw_foreground_occluding_rects_populated():
+    """IT-002: draw_foreground() returns non-empty occluding_rects when fg tiles in viewport."""
+    fg_world = [_make_fg_world_entry(wx=0, wy=0, depth=2)]
+    game = _make_game_p001(fg_world=fg_world, layer_order=[1])
+    game.map_manager.get_foreground_layer_surface.return_value = pygame.Surface((64, 64), pygame.SRCALPHA)
+    game.visible_sprites.offset = pygame.math.Vector2(0, 0)
+    game.player.rect = pygame.Rect(200, 200, 32, 32)  # far from tile — no occluded blit
+    game.player.depth = 1
+    game._intra_walk_target = None
+
+    rm = RenderManager(game)
+    result = rm.draw_foreground()
+
+    assert isinstance(result, list), f"draw_foreground must return list, got {type(result)}"
+    assert len(result) > 0, (
+        "draw_foreground must return non-empty list when fg tile at (0,0) is in viewport"
+    )
+    occ_rect, depth, tile_img = result[0]
+    assert isinstance(occ_rect, pygame.Rect)
+    assert depth == 2
+
+
+# ---------------------------------------------------------------------------
+# IT-003 — walk_active=True → _blit_occluded_tiles_near_player not called
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("IT-003")
+def test_p001_walk_active_skips_occluded_blit():
+    """IT-003: walk_active=True → _blit_occluded_tiles_near_player is NOT called."""
+    fg_world = [_make_fg_world_entry(wx=0, wy=0, depth=2)]
+    game = _make_game_p001(fg_world=fg_world, layer_order=[1], walk_active=True)
+    game.map_manager.get_foreground_layer_surface.return_value = pygame.Surface((64, 64), pygame.SRCALPHA)
+
+    rm = RenderManager(game)
+    rm._viewport_world = pygame.Rect(0, 0, 640, 480)
+
+    with patch.object(rm, "_blit_occluded_tiles_near_player") as mock_occ:
+        rm._draw_static_foreground_tiles(
+            cam_offset=pygame.math.Vector2(0, 0),
+            walk_active=True,
+            player_screen_rect=pygame.Rect(0, 0, 32, 32),
+            player_depth=1,
+            occluding_rects=[],
+        )
+        mock_occ.assert_not_called(), (
+            "_blit_occluded_tiles_near_player must NOT be called when walk_active=True"
+        )
+
+
+# ---------------------------------------------------------------------------
+# TC-014 — Performance: _build_fg_occlusion_world on 40x40 map < 50ms
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-014")
+def test_fg_occlusion_world_build_time():
+    """TC-014: _build_fg_occlusion_world on a 40x40 map completes in < 50ms."""
+    import time
+    from src.map.layout import OrthogonalLayout
+
+    # Build a 40x40 map with alternating fg tiles
+    tile = MagicMock()
+    tile.image = pygame.Surface((32, 32))
+    tile.occluded_image = pygame.Surface((32, 32))
+    tile.depth = 2
+    tile.frames = None
+
+    n = 40
+    layer_data = [[1 if (x + y) % 2 == 0 else 0 for x in range(n)] for y in range(n)]
+    map_data = {
+        "layers": {1: layer_data},
+        "tiles": {1: tile},
+        "layer_names": {1: "01-layer"},
+        "layer_order": [1],
+        "layer_order_values": {1: 2},
+    }
+
+    layout = OrthogonalLayout(32)
+    t0 = time.perf_counter()
+    mm = MapManager(map_data, layout)  # _build_fg_occlusion_world called in __init__
+    elapsed = time.perf_counter() - t0
+
+    assert elapsed < 0.05, (
+        f"_build_fg_occlusion_world on 40x40 map took {elapsed*1000:.1f}ms (limit: 50ms)"
+    )
+    assert len(mm._fg_occlusion_world) > 0
