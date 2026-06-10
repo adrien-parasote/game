@@ -1490,7 +1490,294 @@ def test_p004_reset_occ_cache_clears_state():
     rm._apply_partial_occlusion(occluding_rects)
     assert rm._occ_key is not None
 
+    rm._apply_partial_occlusion(occluding_rects)
+    assert rm._occ_key is not None
+
     rm.reset_occ_cache()
 
     assert rm._occ_key is None, "reset_occ_cache() must set _occ_key to None"
     assert rm._occ_composite_cache == {}, "reset_occ_cache() must clear _occ_composite_cache"
+
+
+# ===========================================================================
+# PERFORMANCE OPTIMIZATIONS — UT-001..005, IT-001..003
+# ===========================================================================
+
+@pytest.mark.tc("UT-001")
+def test_fg_occlusion_grid_matches_world_list():
+    """UT-001: MapManager._fg_occlusion_grid contains exactly the same tiles as the flat list."""
+    game = MagicMock()
+    game.tile_size = 32
+    layout = MagicMock()
+    layout.tile_size = 32
+    map_data = {
+        "layers": {
+            1: [[0, 2], [0, 0]]
+        },
+        "tiles": {
+            2: MagicMock()
+        },
+        "layer_order": [1],
+        "layer_order_values": {1: 2}
+    }
+    map_data["tiles"][2].depth = 2
+    map_data["tiles"][2].frames = []
+    map_data["tiles"][2].image = pygame.Surface((32, 32))
+    map_data["tiles"][2].occluded_image = None
+
+    mm = MapManager(map_data, layout)
+    assert mm._fg_occlusion_grid is not None
+    assert len(mm._fg_occlusion_grid) == len(mm._fg_occlusion_world)
+    assert (1, 0) in mm._fg_occlusion_grid
+    depth, img, occ_img = mm._fg_occlusion_grid[(1, 0)]
+    assert depth == 2
+    assert img is map_data["tiles"][2].image
+
+
+@pytest.mark.tc("UT-002")
+def test_grass_grid_contains_correct_material_surfaces():
+    """UT-002: MapManager._grass_grid contains only surfaces of tiles configured as grass."""
+    game = MagicMock()
+    layout = MagicMock()
+    layout.tile_size = 32
+    map_data = {
+        "layers": {
+            1: [[0, 2], [0, 0]]
+        },
+        "tiles": {
+            2: MagicMock()
+        },
+        "layer_order": [1],
+        "layer_order_values": {1: 0}
+    }
+    map_data["tiles"][2].depth = 0
+    map_data["tiles"][2].frames = []
+    map_data["tiles"][2].properties = {"material": "grass"}
+    map_data["tiles"][2].image = pygame.Surface((32, 32))
+
+    mm = MapManager(map_data, layout)
+    assert mm._grass_grid is not None
+    assert len(mm._grass_grid) == 2
+    assert len(mm._grass_grid[0]) == 2
+    assert mm._grass_grid[0][1] is map_data["tiles"][2].image
+    assert mm._grass_grid[0][0] is None
+
+
+@pytest.mark.tc("UT-003")
+def test_rect_pool_reused_in_build_screen_occluding_rects():
+    """UT-003: Rect pool is reused and no new Rects are allocated when within pool bounds."""
+    game = MagicMock()
+    game.tile_size = 32
+    game.visible_sprites.offset = pygame.math.Vector2(0, 0)
+    game.player.depth = 1
+    rm = RenderManager(game)
+    assert len(rm._rect_pool) == 2000
+
+    cam_offset = pygame.math.Vector2(10, 20)
+    occluding_rects = []
+
+    # Pre-populate _frame_visible_fg_tiles
+    rm._frame_visible_fg_tiles = [(32, 64, 2, pygame.Surface((32, 32)), None)]
+
+    first_pool_rect_id = id(rm._rect_pool[0])
+
+    rm._build_screen_occluding_rects(cam_offset, 1, occluding_rects)
+
+    assert len(occluding_rects) == 1
+    rect, depth, img = occluding_rects[0]
+    assert id(rect) == first_pool_rect_id
+    assert rect.x == 32 + 10
+    assert rect.y == 64 + 20
+
+
+@pytest.mark.tc("UT-004")
+def test_grass_grid_lookup_O1_performance():
+    """UT-004: Grass tile lookup using get_grass_tile_image_at is fast."""
+    import time
+    game = MagicMock()
+    layout = MagicMock()
+    layout.tile_size = 32
+    layout.to_world.side_effect = lambda x, y: (x // 32, y // 32)
+    map_data = {
+        "layers": {
+            1: [[0, 2], [0, 0]]
+        },
+        "tiles": {
+            2: MagicMock()
+        },
+        "layer_order": [1],
+        "layer_order_values": {1: 0}
+    }
+    map_data["tiles"][2].depth = 0
+    map_data["tiles"][2].frames = []
+    map_data["tiles"][2].properties = {"material": "grass"}
+    map_data["tiles"][2].image = pygame.Surface((32, 32))
+
+    mm = MapManager(map_data, layout)
+
+    t0 = time.perf_counter()
+    for _ in range(1000):
+        mm.get_grass_tile_image_at(48, 16)  # point inside (1, 0) tile
+    t1 = time.perf_counter()
+
+    delta = (t1 - t0) * 1000
+    assert delta < 5.0, f"Grass lookup took too long: {delta:.2f}ms"
+
+
+@pytest.mark.tc("UT-005")
+def test_rect_pool_grows_when_limit_exceeded():
+    """UT-005: Pool appends new Rects if more visible tiles are requested."""
+    game = MagicMock()
+    game.tile_size = 32
+    rm = RenderManager(game)
+    # Shrink pool for testing
+    rm._rect_pool = [pygame.Rect(0, 0, 32, 32) for _ in range(2)]
+
+    cam_offset = pygame.math.Vector2(0, 0)
+    occluding_rects = []
+
+    # 3 visible tiles -> exceeds pool size of 2
+    rm._frame_visible_fg_tiles = [
+        (0, 0, 2, pygame.Surface((32, 32)), None),
+        (32, 0, 2, pygame.Surface((32, 32)), None),
+        (64, 0, 2, pygame.Surface((32, 32)), None),
+    ]
+
+    rm._build_screen_occluding_rects(cam_offset, 1, occluding_rects)
+
+    assert len(rm._rect_pool) == 3
+    assert len(occluding_rects) == 3
+
+
+@pytest.mark.tc("IT-001")
+def test_viewport_culling_limits_iterations():
+    """IT-001: RenderManager only loops over viewport bounds."""
+    game = MagicMock()
+    game.tile_size = 32
+    game.screen = pygame.Surface((1280, 720))
+    game.visible_sprites.offset = pygame.math.Vector2(0, 0)
+    game.player.depth = 1
+    game.player.rect = pygame.Rect(0, 0, 32, 32)
+    game._intra_walk_target = None
+
+    # Create MapManager with 10x10 map and 1 foreground tile at (9, 9) (far outside viewport)
+    layout = MagicMock()
+    layout.tile_size = 32
+    map_data = {
+        "layers": {
+            1: [[0]*10 for _ in range(9)] + [[0]*9 + [2]]
+        },
+        "tiles": {
+            2: MagicMock()
+        },
+        "layer_order": [1],
+        "layer_order_values": {1: 2}
+    }
+    map_data["tiles"][2].depth = 2
+    map_data["tiles"][2].frames = []
+    map_data["tiles"][2].image = pygame.Surface((32, 32))
+    map_data["tiles"][2].occluded_image = None
+
+    game.map_manager = MapManager(map_data, layout)
+
+    rm = RenderManager(game)
+    # Set viewport to top-left 320x240
+    rm._viewport_world = pygame.Rect(0, 0, 320, 240)
+
+    occluding_rects = []
+    rm._draw_static_foreground_tiles(
+        pygame.math.Vector2(0, 0),
+        False,
+        pygame.Rect(0, 0, 32, 32),
+        1,
+        occluding_rects
+    )
+
+    # The tile at (9, 9) (world x=288, y=288) is outside 320x240 viewport (clipped by depth check and y-coord)
+    # Wait, 288 is within 320, but y=288 is outside 240. So it should be culled!
+    assert len(occluding_rects) == 0
+
+
+@pytest.mark.tc("IT-002")
+def test_draw_static_foreground_tiles_returns_empty_list():
+    """IT-002: draw_static_foreground_tiles returns an empty list."""
+    game = MagicMock()
+    game.tile_size = 32
+    game.screen = pygame.Surface((800, 600))
+    game.visible_sprites.offset = pygame.math.Vector2(0, 0)
+    game.player.depth = 1
+    game.player.rect = pygame.Rect(0, 0, 32, 32)
+    game._intra_walk_target = None
+
+    # Empty map
+    layout = MagicMock()
+    layout.tile_size = 32
+    map_data = {
+        "layers": {},
+        "tiles": {},
+        "layer_order": [],
+        "layer_order_values": {}
+    }
+    game.map_manager = MapManager(map_data, layout)
+
+    rm = RenderManager(game)
+    rm._viewport_world = pygame.Rect(0, 0, 800, 600)
+
+    res = rm._draw_static_foreground_tiles(
+        pygame.math.Vector2(0, 0),
+        False,
+        pygame.Rect(0, 0, 32, 32),
+        1,
+        []
+    )
+    assert res == []
+
+
+@pytest.mark.tc("IT-003")
+def test_draw_foreground_walk_active_skips_occluded_blit():
+    """IT-003: During active walk, occlusion blitting is skipped (walk_active=True)."""
+    game = MagicMock()
+    game.tile_size = 32
+    game.screen = MagicMock()
+    game.visible_sprites.offset = pygame.math.Vector2(0, 0)
+    game.player.depth = 1
+    game.player.rect = pygame.Rect(0, 0, 32, 32)
+    game.player.image = pygame.Surface((32, 32))
+    game._intra_walk_target = MagicMock()  # active walk
+
+    # Map with 1 foreground tile at (0, 0)
+    layout = MagicMock()
+    layout.tile_size = 32
+    map_data = {
+        "layers": {
+            1: [[2]]
+        },
+        "tiles": {
+            2: MagicMock()
+        },
+        "layer_order": [1],
+        "layer_order_values": {1: 2}
+    }
+    map_data["tiles"][2].depth = 2
+    map_data["tiles"][2].frames = []
+    map_data["tiles"][2].image = pygame.Surface((32, 32))
+    map_data["tiles"][2].occluded_image = pygame.Surface((32, 32))
+
+    game.map_manager = MapManager(map_data, layout)
+
+    rm = RenderManager(game)
+    rm._viewport_world = pygame.Rect(0, 0, 800, 600)
+
+    # We call draw_foreground which invokes _draw_static_foreground_tiles
+    rm.draw_foreground()
+
+    # Verify that screen.blit was NOT called (which would happen in _blit_occluded_tiles_near_player)
+    # wait, screen.blit is called in _blit_foreground_surface, let's check:
+    # get_foreground_layer_surface is called and returns a Surface, which is blitted.
+    # But for the occluded tile specifically, screen.blit at _blit_occluded_tiles_near_player must not be called.
+    # Let's verify that the only blit call on screen was the foreground layer surface (if any),
+    # or just that the screen did not blit the occluded tile.
+    # Actually, we can patch _blit_occluded_tiles_near_player to verify it wasn't called,
+    # or verify that walk_active=True causes the skip.
+    # Let's inspect screen.blit calls:
+    assert game.screen.blit.call_count <= 1  # only at most the pre-rendered surface blit, no occluded tile blit

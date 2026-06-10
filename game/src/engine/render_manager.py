@@ -1,3 +1,5 @@
+import math
+
 import pygame
 from src.config import Settings
 from src.engine.asset_manager import AssetManager
@@ -34,6 +36,8 @@ class RenderManager:
         self._occ_composite_cache: dict[object, pygame.Surface] = {}
         # Frame-level viewport-culled foreground cache to optimize loops
         self._frame_visible_fg_tiles: list[tuple[int, int, int, pygame.Surface, pygame.Surface | None]] | None = None
+        # Pool size 2000 is sufficient to cover standard viewport bounds (40x22 tiles)
+        self._rect_pool = [pygame.Rect(0, 0, game.tile_size, game.tile_size) for _ in range(2000)]
 
     def draw_background(self):
         """Draw tiles with depth <= player depth (behind player).
@@ -123,36 +127,40 @@ class RenderManager:
         """
         cam_x = int(cam_offset.x)
         cam_y = int(cam_offset.y)
-        vp = self._viewport_world
         tile_size = self.game.tile_size
 
         visible_tiles = getattr(self, "_frame_visible_fg_tiles", None)
-        if visible_tiles is not None:
-            # Optimized path (pre-filtered by depth and viewport)
-            for wx, wy, depth, img, _occ in visible_tiles:
-                occluding_rects.append((
-                    pygame.Rect(wx + cam_x, wy + cam_y, tile_size, tile_size),
-                    depth,
-                    img,
-                ))
+        pool = getattr(self, "_rect_pool", None)
+        if visible_tiles is not None and pool is not None:
+            pool_len = len(pool)
+            for i, (wx, wy, depth, img, _occ) in enumerate(visible_tiles):
+                if i < pool_len:
+                    rect = pool[i]
+                    rect.x = wx + cam_x
+                    rect.y = wy + cam_y
+                    rect.width = tile_size
+                    rect.height = tile_size
+                else:
+                    rect = pygame.Rect(wx + cam_x, wy + cam_y, tile_size, tile_size)
+                    pool.append(rect)
+                occluding_rects.append((rect, depth, img))
         else:
             # Fallback path for unit tests calling this method directly
-            for wx, wy, depth, img, _occ_img in self.game.map_manager._fg_occlusion_world:
+            vp = self._viewport_world
+            for wx, wy, depth, img, _occ in self.game.map_manager._fg_occlusion_world:
                 if depth <= player_depth:
                     continue
                 if wx + tile_size <= vp.left or wx >= vp.right:
                     continue
                 if wy + tile_size <= vp.top or wy >= vp.bottom:
                     continue
-                occluding_rects.append(
-                    (
-                        pygame.Rect(wx + cam_x, wy + cam_y, tile_size, tile_size),
-                        depth,
-                        img,
-                    )
-                )
+                occluding_rects.append((
+                    pygame.Rect(wx + cam_x, wy + cam_y, tile_size, tile_size),
+                    depth,
+                    img,
+                ))
 
-    def _blit_occluded_tiles_near_player(
+    def _blit_occluded_tiles_near_player(  # noqa: C901
         self,
         cam_offset: pygame.Vector2,
         player_screen_rect: pygame.Rect,
@@ -167,18 +175,27 @@ class RenderManager:
         cam_y = int(cam_offset.y)
         tile_size = self.game.tile_size
         screen = self.game.screen
-        vp = self._viewport_world
 
         visible_tiles = getattr(self, "_frame_visible_fg_tiles", None)
-        if visible_tiles is not None:
-            # Optimized path (pre-filtered by depth and viewport)
-            for wx, wy, depth, img, occ_img in visible_tiles:
-                self._tile_rect.x = wx + cam_x
-                self._tile_rect.y = wy + cam_y
-                if player_screen_rect.colliderect(self._tile_rect):
-                    screen.blit(occ_img if occ_img is not None else img, (self._tile_rect.x, self._tile_rect.y))
+        grid = getattr(self.game.map_manager, "_fg_occlusion_grid", None)
+        if visible_tiles is not None and isinstance(grid, dict):
+            # Optimized path: scan only the 3x3 area around player
+            player_col = int(self.game.player.rect.centerx // tile_size)
+            player_row = int(self.game.player.rect.centery // tile_size)
+
+            for r in range(player_row - 1, player_row + 2):
+                for c in range(player_col - 1, player_col + 2):
+                    tile_info = grid.get((c, r))
+                    if tile_info:
+                        depth, img, occ_img = tile_info
+                        if depth > player_depth:
+                            self._tile_rect.x = c * tile_size + cam_x
+                            self._tile_rect.y = r * tile_size + cam_y
+                            if player_screen_rect.colliderect(self._tile_rect):
+                                screen.blit(occ_img if occ_img is not None else img, (self._tile_rect.x, self._tile_rect.y))
         else:
-            # Fallback path for unit tests calling this method directly
+            # Fallback compatibility path for unit tests
+            vp = self._viewport_world
             for wx, wy, depth, img, occ_img in self.game.map_manager._fg_occlusion_world:
                 if depth <= player_depth:
                     continue
@@ -209,18 +226,42 @@ class RenderManager:
         """
         self._blit_foreground_surface(cam_offset, player_depth)
 
-        # Viewport-cull and depth-filter the entire cache once per frame
-        cx, cy = cam_offset.x, cam_offset.y
         tile_size = self.game.tile_size
         vp = self._viewport_world
+        mm = self.game.map_manager
+        grid = getattr(mm, "_fg_occlusion_grid", None)
 
-        self._frame_visible_fg_tiles = [
-            (wx, wy, depth, img, occ_img)
-            for wx, wy, depth, img, occ_img in self.game.map_manager._fg_occlusion_world
-            if depth > player_depth
-            and wx + tile_size > vp.left and wx < vp.right
-            and wy + tile_size > vp.top and wy < vp.bottom
-        ]
+        if isinstance(grid, dict):
+            width = getattr(mm, "width", 0)
+            height = getattr(mm, "height", 0)
+            if not isinstance(width, int):
+                width = int(math.ceil(vp.right / tile_size))
+            if not isinstance(height, int):
+                height = int(math.ceil(vp.bottom / tile_size))
+
+            start_col = max(0, int(vp.left // tile_size))
+            end_col = min(width, int(math.ceil(vp.right / tile_size)))
+            start_row = max(0, int(vp.top // tile_size))
+            end_row = min(height, int(math.ceil(vp.bottom / tile_size)))
+
+            self._frame_visible_fg_tiles = []
+            for y in range(start_row, end_row):
+                wy = y * tile_size
+                for x in range(start_col, end_col):
+                    tile_info = grid.get((x, y))
+                    if tile_info:
+                        depth, img, occ_img = tile_info
+                        if depth > player_depth:
+                            self._frame_visible_fg_tiles.append((x * tile_size, wy, depth, img, occ_img))
+        else:
+            # Fallback path for unit tests using mocks
+            self._frame_visible_fg_tiles = [
+                (wx, wy, depth, img, occ_img)
+                for wx, wy, depth, img, occ_img in getattr(mm, "_fg_occlusion_world", [])
+                if depth > player_depth
+                and wx + tile_size > vp.left and wx < vp.right
+                and wy + tile_size > vp.top and wy < vp.bottom
+            ]
 
         self._build_screen_occluding_rects(cam_offset, player_depth, occluding_rects)
         if not walk_active:

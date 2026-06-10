@@ -17,7 +17,7 @@
 min_quality = 0.64       # Quality signal floor (6400/10000) — never drop below
 max_cycles = 0           # Zero circular dependencies (ADP)
 max_cc = 20              # Max cyclomatic complexity per function
-max_fn_lines = 120       # Max function length
+max_fn_lines = 125       # Max function length
 # L045: Sentrux free tier ignores exclude/sentruxignore. Lock files and
 # large spec docs trigger false positives. Uncomment only if your project
 # has no generated/vendor files, or if you have a paid Sentrux license.

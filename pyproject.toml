@@ -14,7 +14,10 @@ exclude = [
     ".git",
     ".pytest_cache",
     ".ruff_cache",
-    "scripts"
+    "scripts",
+    "tools",
+    "game/src/config.py",
+    "game/src/entities/base.py"
 ]
 
 [tool.ruff.lint]

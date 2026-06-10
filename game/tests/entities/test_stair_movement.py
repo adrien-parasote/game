@@ -230,17 +230,17 @@ class TestStairMovementUnit:
         # This will be verified in custom_draw integration/unit test, or we mock sprite drawing.
         # Let's mock a CameraGroup and a Sprite.
         from src.entities.groups import CameraGroup
-        
+
         # We need a headless display to do this, conftest handles it
         group = CameraGroup()
         sprite = BaseEntity(pos=(100, 100))
         sprite.image = pygame.Surface((32, 32))
         sprite._vertical_move = {"visual_y_offset": -12}
-        
+
         # Mock surface to blit on
         surface = MagicMock()
         group.offset = pygame.math.Vector2(0, 0)
-        
+
         with patch.object(surface, 'blit') as mock_blit:
             group.custom_draw(surface)
             # The custom_draw method draws all sprites in the group.
@@ -249,7 +249,7 @@ class TestStairMovementUnit:
             # Clear mock
             mock_blit.reset_mock()
             group.custom_draw(surface)
-            
+
             assert mock_blit.called
             # The position blitted should be visual_rect.topleft + offset + visual_y_offset.
             # sprite.rect is center=(100, 100) -> top_left = (100 - 16, 100 - 16) = (84, 84)
@@ -268,10 +268,10 @@ class TestStairMovementUnit:
         sprite.image = pygame.Surface((32, 32))
         sprite._vertical_move = None
         group.add(sprite)
-        
+
         surface = MagicMock()
         group.offset = pygame.math.Vector2(0, 0)
-        
+
         with patch.object(surface, 'blit') as mock_blit:
             group.custom_draw(surface)
             dest_pos = mock_blit.call_args[0][1]
@@ -279,7 +279,6 @@ class TestStairMovementUnit:
 
     def test_ut_016_vertical_move_map_config(self):
         """UT-016: VERTICAL_MOVE_MAP is defined with correct stair translations."""
-        from src.config import Settings
         # Check that Settings has VERTICAL_MOVE_MAP and it is correct
         assert hasattr(Settings, "VERTICAL_MOVE_MAP")
         assert Settings.VERTICAL_MOVE_MAP[((1, 0), "right")] == (1, -1)

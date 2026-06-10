@@ -78,7 +78,7 @@ class BaseEntity(pygame.sprite.Sprite):
                 dx = 1 if self.direction.x > 0.01 else (-1 if self.direction.x < -0.01 else 0)
                 dy = 1 if self.direction.y > 0.01 else (-1 if self.direction.y < -0.01 else 0)
                 dir_tuple = (dx, dy)
-                
+
                 # Check mapping in VERTICAL_MOVE_MAP
                 map_key = (dir_tuple, stair_dir)
                 if map_key in Settings.VERTICAL_MOVE_MAP:

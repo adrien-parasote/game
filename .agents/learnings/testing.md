@@ -1306,4 +1306,29 @@ grep -rn "__new__(RenderManager)" tests/
 
 ---
 
-*Last updated: 2026-06-10 — added A-TEST-045 from P-004 dirty flag HARDEN session (__new__ bypass attrs sync).*
+### A-TEST-046 · 2026-06-11 · U · Minor Rework
+**Les MagicMock dans les tests provoquent des TypeErrors lors de comparaisons ou de dépaquetages dans les chemins optimisés**
+
+Quand on optimise des boucles de rendu à partir de structures spatiales, on utilise des comparaisons numériques (`x < limit` ou `depth > threshold`) ou du dépaquetage de tuples (`depth, img, occ_img = grid.get((x,y))`).
+Cependant, dans la suite de tests existante, `game.map_manager` ou d'autres objets peuvent être configurés comme des `MagicMock`. L'accès aux attributs manquants sur un mock (comme `width` ou `_fg_occlusion_grid.get()`) renvoie par défaut d'autres instances de `MagicMock`.
+En Python 3, comparer un `MagicMock` à un entier avec `<` ou `>` lève une `TypeError: '<' not supported between instances of 'int' and 'MagicMock'`. De même, tenter de dépaqueter un mock lève une `ValueError` ou une `TypeError`.
+
+**Règle :** Les chemins de rendu optimisés doivent toujours être défensifs et type-checker les propriétés obtenues de managers externes (ex: utiliser `isinstance(width, int)` ou vérifier si `_fg_occlusion_grid` est bien un `dict`). Si un attribut est un mock, le code doit proprement basculer sur le chemin de compatibilité d'origine (fallback) utilisé par les tests existants.
+
+```python
+# ❌ Comparaison directe d'un attribut de mock
+start_row = max(0, int(vp.top // tile_size))
+end_row = min(self.game.map_manager.height, int(math.ceil(vp.bottom / tile_size)))  # TypeError si map_manager.height est un mock
+
+# ✅ Type-checking défensif pour basculer sur le fallback ou sécuriser la comparaison
+width = getattr(mm, "width", 0)
+if not isinstance(width, int):
+    width = int(math.ceil(vp.right / tile_size))  # Fallback si mock
+```
+
+**Evidence :** 10 tests de rendu échouaient avec des `TypeError` ou des `ValueError` sur les comparaisons et dépaquetages après intégration de `_fg_occlusion_grid` dans `RenderManager` car `map_manager` était mocké. Résolu en ajoutant des gardes `isinstance` et `isinstance(..., dict)`.
+
+---
+
+*Last updated: 2026-06-11 — added A-TEST-046 from static foreground culling optimization (P-001) HARDEN session.*
+

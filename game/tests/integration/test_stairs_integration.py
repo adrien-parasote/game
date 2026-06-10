@@ -9,8 +9,8 @@ pygame.display.init()
 pygame.font.init()
 
 from src.config import Settings
-from src.entities.player import Player
 from src.entities.npc import NPC
+from src.entities.player import Player
 from src.map.manager import MapManager
 
 
@@ -23,13 +23,13 @@ class TestStairsIntegration:
             map_w, map_h = 10, 10
             grid = [[0] * map_w for _ in range(map_h)]
             tiles = {}
-            
+
             # Map configurations to unique tile IDs
             tile_id_counter = 1
             for (tx, ty), config in tile_configs.items():
                 tile_id = tile_id_counter
                 grid[ty][tx] = tile_id
-                
+
                 tile = MagicMock()
                 tile.properties = config
                 # Mock direction flags setup from parser
@@ -38,7 +38,7 @@ class TestStairsIntegration:
                 tile.direction_flags = {d.strip() for d in direction_prop.split(",")} if direction_prop else {"any"}
                 tile.depth = config.get("depth", 0)
                 tile.walkable = config.get("walkable", True)
-                
+
                 tiles[tile_id] = tile
                 tile_id_counter += 1
 
@@ -67,15 +67,15 @@ class TestStairsIntegration:
             (1, 1): {"stair_direction": "right", "walkable": True},
             (2, 0): {"walkable": True}
         })
-        
+
         player = Player(pos=(48, 48))  # Center of (1, 1)
         player.speed = 100
-        
+
         mock_game = MagicMock()
         mock_game.map_manager = mm
         mock_game.layout = mm.layout
         player.game = mock_game
-        
+
         # Mock walkable function to query MapManager
         player.walkable_func = lambda x, y, requester=None: mm.is_walkable(int(x // 32), int(y // 32))
 
@@ -101,10 +101,10 @@ class TestStairsIntegration:
             (1, 1): {"stair_direction": "right", "walkable": True, "visual_y_offset": -12},
             (2, 0): {"walkable": True} # normal tile
         })
-        
+
         player = Player(pos=(48, 48))
         player.speed = 100
-        
+
         mock_game = MagicMock()
         mock_game.map_manager = mm
         mock_game.layout = mm.layout
@@ -121,7 +121,7 @@ class TestStairsIntegration:
         # Complete movement
         player.update(0.5)
         assert player.pos == pygame.math.Vector2(80, 16) # reached (2, 0)
-        
+
         # Start next move on normal tile (2, 0)
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
@@ -135,10 +135,10 @@ class TestStairsIntegration:
             (3, 1): {"stair_direction": "right", "walkable": True},
             (4, 0): {"walkable": True}
         })
-        
+
         player = Player(pos=(48, 112)) # center of (1, 3)
         player.speed = 100
-        
+
         mock_game = MagicMock()
         mock_game.map_manager = mm
         mock_game.layout = mm.layout
@@ -170,10 +170,10 @@ class TestStairsIntegration:
             # Destination tile (2, 0) is a wall
             (2, 0): {"walkable": False}
         })
-        
+
         player = Player(pos=(48, 48))
         player.speed = 100
-        
+
         mock_game = MagicMock()
         mock_game.map_manager = mm
         mock_game.layout = mm.layout
@@ -193,10 +193,10 @@ class TestStairsIntegration:
             (1, 1): {"stair_direction": "right", "walkable": True},
             (2, 0): {"walkable": True}
         })
-        
+
         npc = NPC(pos=(48, 48))
         npc.speed = 100
-        
+
         mock_game = MagicMock()
         mock_game.map_manager = mm
         mock_game.layout = mm.layout
@@ -217,10 +217,10 @@ class TestStairsIntegration:
             (1, 1): {"direction": "right", "walkable": True}, # NOT stair_direction
             (2, 1): {"walkable": True}
         })
-        
+
         player = Player(pos=(48, 48))
         player.speed = 100
-        
+
         mock_game = MagicMock()
         mock_game.map_manager = mm
         mock_game.layout = mm.layout

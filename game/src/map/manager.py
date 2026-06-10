@@ -55,8 +55,13 @@ class MapManager:
         # P-001 — World-space foreground occlusion cache.
         # Populated once at init; never mutated after.
         # Format: list[tuple[world_x_px, world_y_px, depth, img, occ_img | None]]
+        self._fg_occlusion_grid: dict[tuple[int, int], tuple[int, pygame.Surface, pygame.Surface | None]] = {}
         self._fg_occlusion_world: list[tuple[int, int, int, pygame.Surface, pygame.Surface | None]] = []
         self._build_fg_occlusion_world()
+
+        # P-008 — Grass material grid pre-computation
+        self._grass_grid: list[list[pygame.Surface | None]] = []
+        self._build_grass_grid()
 
     def _build_fg_occlusion_world(self) -> None:
         """Build the world-space foreground occlusion cache (P-001).
@@ -92,8 +97,35 @@ class MapManager:
                     wy = y * tile_size
                     occ_img = getattr(tile, "occluded_image", None)
                     result.append((wx, wy, depth, tile.image, occ_img))
+                    self._fg_occlusion_grid[(x, y)] = (depth, tile.image, occ_img)
 
         self._fg_occlusion_world = result
+
+    def _build_grass_grid(self) -> None:
+        """Pre-compute a 2D grid of grass tile images for O(1) wading checks."""
+        self._grass_grid = [[None for _ in range(self.width)] for _ in range(self.height)]
+        for y in range(self.height):
+            for x in range(self.width):
+                # Scan layers top-to-bottom (reversed order)
+                for layer_id in reversed(self.layer_order):
+                    layer_data = self.layers.get(layer_id)
+                    if not layer_data:
+                        continue
+                    tile_id = layer_data[y][x]
+                    if tile_id == 0 or tile_id not in self.tiles:
+                        continue
+                    tile = self.tiles[tile_id]
+                    depth = getattr(tile, "depth", 0)
+                    if not isinstance(depth, int | float):
+                        depth = 0
+                    if depth > 1:
+                        continue
+                    props = getattr(tile, "properties", {})
+                    if not isinstance(props, dict):
+                        props = {}
+                    if props.get("material") == "grass":
+                        self._grass_grid[y][x] = tile.image
+                    break
 
     def get_layer_surface(
         self, layer_id: int, pygame_module, max_bg_depth: int = 1
@@ -426,37 +458,10 @@ class MapManager:
         return None
 
     def get_grass_tile_image_at(self, pixel_x: int, pixel_y: int) -> "pygame.Surface | None":
-        """Return the image surface of the grass tile at pixel_x, pixel_y, or None.
-
-        Identical scan logic to get_terrain_material_at():
-        - Scans layers top-to-bottom (reversed layer_order)
-        - Skips tiles with depth > 1 (roofs, ceilings)
-        - Returns tile.image when the topmost depth≤1 tile has material == "grass"
-        - Returns None if position is out of bounds, no tile is found, or material != "grass"
-        """
+        """Return the image surface of the grass tile at pixel_x, pixel_y, or None (O(1) lookup)."""
         grid_pos = self.layout.to_world(pixel_x, pixel_y)
         tx, ty = int(grid_pos[0]), int(grid_pos[1])
 
-        if not (0 <= ty < self.height and 0 <= tx < self.width):
-            return None
-
-        for layer_id in reversed(self.layer_order):
-            layer_data = self.layers.get(layer_id)
-            if not layer_data:
-                continue
-
-            tile_id = layer_data[ty][tx]
-            if tile_id == 0 or tile_id not in self.tiles:
-                continue
-
-            tile = self.tiles[tile_id]
-            if getattr(tile, "depth", 0) > 1:
-                continue  # Roof/ceiling tiles are not grass
-
-            props = getattr(tile, "properties", {}) or {}
-            if props.get("material") == "grass":
-                return tile.image
-            # A non-grass tile at depth≤1 is the visible ground — no wading here.
-            return None
-
+        if 0 <= ty < self.height and 0 <= tx < self.width:
+            return self._grass_grid[ty][tx]
         return None
