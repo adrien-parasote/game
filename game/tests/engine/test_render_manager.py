@@ -1299,6 +1299,7 @@ def test_p001_walk_active_skips_occluded_blit():
 def test_fg_occlusion_world_build_time():
     """TC-014: _build_fg_occlusion_world on a 40x40 map completes in < 50ms."""
     import time
+
     from src.map.layout import OrthogonalLayout
 
     # Build a 40x40 map with alternating fg tiles
@@ -1404,7 +1405,7 @@ def test_p004_cache_hit_skips_sprite_iteration():
     # First call — populates cache
     rm._apply_partial_occlusion(occluding_rects)
     # Restore sprite image (simulating draw_scene restore step)
-    for sp, orig in list(rm._occ_composite_cache.items()):
+    for _sp, _orig in list(rm._occ_composite_cache.items()):
         pass  # cache holds composite; sprite.image was swapped by first call
 
     call_count_after_first = game.visible_sprites.get_sorted_sprites.call_count

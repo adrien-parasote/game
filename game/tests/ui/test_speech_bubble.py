@@ -26,11 +26,22 @@ from unittest.mock import MagicMock
 import pygame
 import pytest
 
+
 # Import after pygame is ready (session conftest initialises it);
-# mock image loading to avoid filesystem hits.
-with mock.patch("pygame.image.load") as _mock_load:
-    _fake_tile = pygame.Surface((32, 32))
-    _mock_load.return_value = _fake_tile
+# _load_tiles now uses AssetManager.get_image(fallback=True) — mock that.
+# name_plate tiles require a 96x64 surface for subsurface() calls;
+# all other tiles need 32x32.
+def _mock_get_image(path: str, fallback: bool = False) -> pygame.Surface:
+    """Mock AssetManager.get_image: returns surface sized for each tile type."""
+    if "23-bubble_name" in str(path):
+        return pygame.Surface((96, 64))
+    return pygame.Surface((32, 32))
+
+
+with mock.patch(
+    "src.ui.speech_bubble.AssetManager.get_image",
+    side_effect=_mock_get_image,
+):
     from src.ui.speech_bubble import SpeechBubble
 
 
@@ -65,7 +76,11 @@ class _MockFont:
 
 def _make_bubble(**kwargs) -> SpeechBubble:
     """Return a SpeechBubble with a mock font, ready to draw."""
-    bubble = SpeechBubble(**kwargs)
+    with mock.patch(
+        "src.ui.speech_bubble.AssetManager.get_image",
+        side_effect=_mock_get_image,
+    ):
+        bubble = SpeechBubble(**kwargs)
     bubble.set_font(_MockFont())  # type: ignore
     return bubble
 
@@ -159,14 +174,10 @@ class TestSpeechBubbleFontGuard(unittest.TestCase):
     @pytest.mark.tc("UT-SPB-07")
     def test_raises_when_font_not_set(self):
         """draw() raises RuntimeError when no font is assigned."""
-        with mock.patch("pygame.image.load") as ml:
-
-            def mock_load(path):
-                if "23-bubble_name" in path:
-                    return pygame.Surface((96, 64))
-                return pygame.Surface((32, 32))
-
-            ml.side_effect = mock_load
+        with mock.patch(
+            "src.ui.speech_bubble.AssetManager.get_image",
+            side_effect=_mock_get_image,
+        ):
             bubble = SpeechBubble()
         # font deliberately NOT set
         with pytest.raises(AssertionError):
@@ -177,14 +188,10 @@ class TestSpeechBubbleNamePlate(unittest.TestCase):
     @pytest.mark.tc("UT-SPB-08")
     def test_name_plate_rendered(self):
         """When speaker_name is provided, a second blit occurs for the name plate."""
-        with mock.patch("pygame.image.load") as ml:
-
-            def mock_load(path):
-                # Ensure name_plate tiles are created
-                return pygame.Surface((96, 64))
-
-            ml.side_effect = mock_load
-
+        with mock.patch(
+            "src.ui.speech_bubble.AssetManager.get_image",
+            side_effect=_mock_get_image,
+        ):
             bubble = _make_bubble()
             # Also set the name_font
             bubble.set_name_font(_MockFont(12))  # type: ignore
@@ -212,13 +219,10 @@ class TestSpeechBubbleMissingBranches(unittest.TestCase):
     @staticmethod
     def _make_bubble_no_font():
         """SpeechBubble sans font, avec mock qui gère name_plate."""
-
-        def mock_load(path):
-            if "23-bubble_name" in path:
-                return pygame.Surface((96, 64))
-            return pygame.Surface((32, 32))
-
-        with mock.patch("pygame.image.load", side_effect=mock_load):
+        with mock.patch(
+            "src.ui.speech_bubble.AssetManager.get_image",
+            side_effect=_mock_get_image,
+        ):
             return SpeechBubble()
 
     def test_wrap_text_raises_when_font_not_set(self):
@@ -242,11 +246,21 @@ class TestSpeechBubbleMissingBranches(unittest.TestCase):
         result = bubble.get_total_pages("Some long text here")
         assert result == 1
 
-    def test_load_tiles_raises_file_not_found(self):
-        """Ligne 69 : FileNotFoundError quand un asset PNG est manquant."""
-        with mock.patch("src.ui.speech_bubble.os.path.exists", return_value=False):  # noqa: SIM117
-            with pytest.raises(FileNotFoundError):
-                SpeechBubble()
+    def test_load_tiles_graceful_when_assets_missing(self):
+        """_load_tiles uses AssetManager fallback=True: missing assets do not raise.
+
+        SpeechBubble must be constructable even when HUD PNG files are absent
+        (consistent with ChestUI / HUD behavior elsewhere in the codebase).
+        """
+        with mock.patch(
+            "src.ui.speech_bubble.AssetManager.get_image",
+            return_value=pygame.Surface((32, 32)),
+        ):
+            # Must not raise even though all name_plate surfaces are 32x32 (too small for subsurface)
+            bubble = SpeechBubble()
+        assert isinstance(bubble, SpeechBubble)
+
+
 
 
 if __name__ == "__main__":

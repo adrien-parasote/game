@@ -6,7 +6,6 @@ The bubble is built from 32x32 tiles located in `assets/images/HUD/`:
 The tail (queue) is tile 21-bubble_queue.png.
 """
 
-import os
 from collections.abc import Callable
 from pathlib import Path
 
@@ -65,21 +64,37 @@ class SpeechBubble:
         self._load_tiles()
 
     def _load_tiles(self) -> None:
-        """Load all PNG tiles and cache them as pygame.Surface objects."""
+        """Load all PNG tiles and cache them as pygame.Surface objects.
+
+        Uses AssetManager with ``fallback=True`` so missing assets produce a
+        magenta placeholder instead of raising — consistent with the rest of
+        the codebase (e.g. ChestUI, HUD).  Tests that want to verify the
+        missing-asset warning should check for logged errors, not exceptions.
+        """
+        import logging
+
         self.tiles: dict = {}
         for key, filename in TILES.items():
             path = str(Path(ASSET_DIR) / filename)
-            if not os.path.exists(path):
-                raise FileNotFoundError(f"Bubble asset not found: {path}")
-            img = AssetManager().get_image(path)
+            img = AssetManager().get_image(path, fallback=True)
+
+            if img.get_width() < TILE_SIZE or img.get_height() < TILE_SIZE:
+                logging.warning("SpeechBubble: tile '%s' is a placeholder", key)
 
             # Use default size for arrow as requested; scale others to TILE_SIZE
             if key == "arrow":
                 self.tiles[key] = img
             elif key == "name_plate":
-                self.tiles["name_plate_left"] = img.subsurface(pygame.Rect(0, 0, 32, 64))
-                self.tiles["name_plate_center"] = img.subsurface(pygame.Rect(32, 0, 32, 64))
-                self.tiles["name_plate_right"] = img.subsurface(pygame.Rect(64, 0, 32, 64))
+                if img.get_width() >= 96 and img.get_height() >= 64:
+                    self.tiles["name_plate_left"] = img.subsurface(pygame.Rect(0, 0, 32, 64))
+                    self.tiles["name_plate_center"] = img.subsurface(pygame.Rect(32, 0, 32, 64))
+                    self.tiles["name_plate_right"] = img.subsurface(pygame.Rect(64, 0, 32, 64))
+                else:
+                    logging.warning(
+                        "SpeechBubble: name_plate surface too small (%dx%d), skipping",
+                        img.get_width(),
+                        img.get_height(),
+                    )
             else:
                 self.tiles[key] = pygame.transform.smoothscale(img, (TILE_SIZE, TILE_SIZE))
 

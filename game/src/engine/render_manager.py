@@ -80,7 +80,6 @@ class RenderManager:
         Error: if the layer surface is None (build failed), this layer is silently
         skipped — logged by MapManager, not re-raised here.
         """
-        tile_size = self.game.tile_size
         screen_w = self._screen_rect.width
         screen_h = self._screen_rect.height
 
@@ -135,7 +134,7 @@ class RenderManager:
         vp = self._viewport_world
         tile_size = self.game.tile_size
 
-        for wx, wy, depth, img, occ_img in self.game.map_manager._fg_occlusion_world:
+        for wx, wy, depth, img, _occ_img in self.game.map_manager._fg_occlusion_world:
             if depth <= player_depth:
                 continue
             # World-space AABB check before allocating a Rect
