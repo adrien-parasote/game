@@ -49,6 +49,7 @@ class MapManager:
             self.layer_max_depths[layer_id] = max_d
 
         self.cached_surfaces = {}
+        self._fg_surfaces: dict[tuple[int, int], pygame.Surface | None] = {}
         self._window_cache = None
 
     def get_layer_surface(
@@ -86,6 +87,52 @@ class MapManager:
             import logging
 
             logging.error(f"Failed to pre-render layer {layer_id}: {e}")
+            return None
+    def get_foreground_layer_surface(
+        self, layer_id: int, pygame_module, min_depth: int = 1
+    ) -> pygame.Surface | None:
+        """Get or create a pre-rendered surface of static foreground tiles for a layer.
+
+        Includes only static (non-animated) tiles with depth > min_depth.
+        Cached by (layer_id, min_depth) — rebuilt only on first call per combination.
+        Used by RenderManager._draw_static_foreground_tiles to avoid per-frame iteration
+        over all visible tiles (P-001 optimisation).
+        """
+        key = (layer_id, min_depth)
+        if key in self._fg_surfaces:
+            return self._fg_surfaces[key]
+
+        if layer_id not in self.layers:
+            self._fg_surfaces[key] = None
+            return None
+
+        tile_size = getattr(self.layout, "tile_size", 32)
+        width_px = self.width * tile_size
+        height_px = self.height * tile_size
+
+        try:
+            surface = pygame_module.Surface((width_px, height_px), pygame_module.SRCALPHA)
+            layer_data = self.layers[layer_id]
+
+            for y in range(self.height):
+                for x in range(self.width):
+                    tile_id = layer_data[y][x]
+                    if tile_id == 0 or tile_id not in self.tiles:
+                        continue
+                    tile = self.tiles[tile_id]
+                    if tile.frames:  # skip animated tiles
+                        continue
+                    if tile.depth <= min_depth:  # skip background-depth tiles
+                        continue
+                    px, py = x * tile_size, y * tile_size
+                    surface.blit(tile.image, (px, py))
+
+            self._fg_surfaces[key] = surface
+            return surface
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to pre-render foreground layer {layer_id}: {e}")
+            self._fg_surfaces[key] = None
             return None
 
     def is_walkable(self, x: int, y: int) -> bool:
