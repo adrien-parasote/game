@@ -273,6 +273,8 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
         self.flicker_phase = random.uniform(0, 2 * math.pi)
         self.f_alpha = 1.0
         self.f_scale = 1.0
+        # P-005: flicker throttle — update at 15 Hz (every 4 frames at 60 fps)
+        self._flicker_tick: int = 0
 
     def _parse_misc(
         self,
@@ -498,10 +500,16 @@ class InteractiveEntity(InteractiveLightingMixin, InteractiveParticleMixin, Base
                 self.game.audio_manager.propose_ambient(self.sfx_ambient, dist)
 
         if self.is_on and self.halo_size > 0:
-            self._update_flicker(dt, ticks_ms)
+            # P-005: throttle flicker computation to ~15 Hz (every 4 frames at 60 fps).
+            # f_alpha/f_scale hold their last computed value on skipped frames — visually
+            # indistinguishable from per-frame updates for slow sinusoidal flicker.
+            self._flicker_tick = (self._flicker_tick + 1) % 4
+            if self._flicker_tick == 0:
+                self._update_flicker(dt, ticks_ms)
         else:
             self.f_alpha = 1.0
             self.f_scale = 1.0
+            self._flicker_tick = 0
 
         self._update_animation(dt)
         self._update_particles(dt)

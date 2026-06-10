@@ -37,14 +37,14 @@ class InteractiveParticleMixin:
                     )
 
         if self.particles_list:
-            alive = []
+            # P-003: update in-place then filter — avoids intermediate list + append overhead.
+            # Mutation (life, x, y) happens before the comprehension filter.
             for p in self.particles_list:
                 p["life"] -= dt
                 if p["life"] > 0:
                     p["x"] += (p["vx"] + math.sin(p["phase"] + p["life"] * 3.0) * 5.0) * dt
                     p["y"] += p["vy"] * dt
-                    alive.append(p)
-            self.particles_list = alive
+            self.particles_list = [p for p in self.particles_list if p["life"] > 0]
 
     def _draw_particles(
         self,
