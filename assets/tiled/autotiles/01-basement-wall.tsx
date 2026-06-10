@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.12.1" name="01-basement-wall" class="00-tileset" tilewidth="32" tileheight="32" tilecount="16" columns="16">
+<tileset version="1.10" tiledversion="1.12.1" name="01-castel-wall" class="00-tileset" tilewidth="32" tileheight="32" tilecount="16" columns="16">
  <properties>
   <property name="walkable" type="bool" value="false"/>
  </properties>
@@ -85,8 +85,8 @@
   </properties>
  </tile>
  <wangsets>
-  <wangset name="01-basement-wall" type="mixed" tile="-1">
-   <wangcolor name="01-basement-wall" color="#cccccc" tile="-1" probability="1"/>
+  <wangset name="01-castel-wall" type="mixed" tile="-1">
+   <wangcolor name="01-castel-wall" color="#cccccc" tile="-1" probability="1"/>
    <wangtile tileid="0" wangid="1,0,1,0,1,0,1,0"/>
    <wangtile tileid="1" wangid="1,0,1,0,1,0,0,0"/>
    <wangtile tileid="2" wangid="0,0,1,0,1,0,1,0"/>

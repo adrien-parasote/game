@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.12.1" name="01-basement-top" class="00-tileset" tilewidth="32" tileheight="32" tilecount="48" columns="8">
+<tileset version="1.10" tiledversion="1.12.1" name="01-castel-wall-top" class="00-tileset" tilewidth="32" tileheight="32" tilecount="48" columns="8">
  <properties>
   <property name="depth" type="int" value="2"/>
  </properties>
@@ -241,8 +241,8 @@
   </properties>
  </tile>
  <wangsets>
-  <wangset name="01-basement-top" type="mixed" tile="-1">
-   <wangcolor name="01-basement-top" color="#cccccc" tile="-1" probability="1"/>
+  <wangset name="01-castel-wall-top" type="mixed" tile="-1">
+   <wangcolor name="01-castel-wall-top" color="#cccccc" tile="-1" probability="1"/>
    <wangtile tileid="1" wangid="1,0,0,0,0,0,0,0"/>
    <wangtile tileid="2" wangid="0,0,0,0,0,0,1,0"/>
    <wangtile tileid="3" wangid="1,0,0,0,0,0,1,0"/>
