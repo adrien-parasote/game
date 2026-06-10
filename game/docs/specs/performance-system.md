@@ -4,6 +4,9 @@
 
 > **Document Type:** Implementation
 > **Source Files:** `src/entities/groups.py`, `src/engine/render_manager.py`, `src/ui/title_screen.py`, `src/engine/interaction.py`, `src/ui/pause_screen.py`, `src/ui/save_menu.py`, `src/entities/interactive.py`, `src/entities/interactive_particles.py`, `src/map/manager.py`
+> **New (P-001):** `src/map/manager.py` — `_build_world_surface()`, `_build_fg_occlusion_world()`, `_get_fg_depth_tiles()` · `src/engine/render_manager.py` — `_draw_world_surface()`, `_draw_fg_occlusion_tiles()`
+> **New (P-004):** `src/engine/render_manager.py` — `_occ_key`, `_occ_composite_cache`, `reset_occ_cache()`
+
 
 This specification consolidates hot-path rendering optimizations, Y-sort caching structures, distance-squared proximity algorithms, pre-rendered composite assets, and centralized HUD/UI constants.
 
@@ -207,22 +210,42 @@ Audit run: 1800 frames @ ~16 fps. Baseline: avg 61.1 ms/frame, p95 65 ms, p99 71
 - **Measured:** tottime 5.166 s → 3.955 s (−23 %), `_update_core_state` cumtime 14.8 s → 10.1 s (−32 %)
 - **Rationale:** Python list comprehensions use optimized LIST_APPEND bytecode; eliminates intermediate list allocation per entity per frame
 
-### 8.3 P-001 Infrastructure — Foreground Surface Cache (commit `515f5a8`)
+### 8.3 P-001 — Foreground WorldSurface Pipeline ✅ (commits `515f5a8`, `10778e9`)
 
-- **File:** `src/map/manager.py` — `MapManager.__init__()` + `get_foreground_layer_surface()`
-- **Change:** Added `self._fg_surfaces: dict[tuple[int, int], Surface | None]` cache and `get_foreground_layer_surface(layer_id, pygame_module, min_depth)` method
-- **Status:** Infrastructure only — not yet wired to `_draw_static_foreground_tiles`
-- **Remaining work:** P-001 complete requires decoupling normal blit (→ pre-rendered surface) from occluded blit + `occluding_rects` construction (→ reduced near-player iteration)
+- **Files:** `src/map/manager.py`, `src/engine/render_manager.py`
+- **Infrastructure (515f5a8):** Added `self._fg_surfaces` cache + `get_foreground_layer_surface()` (unwired).
+- **Implementation (10778e9):** Decomposed the 3-responsibility foreground loop into:
+  - `_build_world_surface()` — blit static depth>player tiles into a world-space `Surface` at map load time
+  - `_build_fg_occlusion_world()` — pre-collect world-space occlusion tile list at map load time
+  - `_get_fg_depth_tiles()` — shared generator (build time)
+  - `_draw_world_surface(cam_offset)` — blit viewport slice of WorldSurface + collect `occluding_rects` per frame
+  - `_draw_fg_occlusion_tiles(player_rect, depth, cam_offset)` — blit semi-transparent tiles near player only
+- **Key insight:** The 3 entangled responsibilities (normal blit, occluded blit, rect collection) had to be separated BEFORE introducing the cache (see A-PERF-003).
+- **Status:** ✅ COMPLETE — 17 tests (TC-P001-001..008, TC-015..020) GREEN. 91/91 verts.
+- **Expected gain:** −20 ms/frame (élimination boucle 480 tiles/frame)
 
-### 8.4 Bottleneck Status
 
-| Function | Baseline tottime | After cycle | Status |
-|---|---|---|---|
-| `_draw_static_foreground_tiles` | 25.9 s | 28.7 s (bruit) | ⏳ P-001 non wirée |
-| `get_visible_chunks` | 13.4 s | 13.8 s (bruit) | ⏳ Résolu par P-001 |
-| `_update_particles` | 5.2 s | 4.0 s | ✅ −23 % |
-| `_apply_partial_occlusion` | 4.3 s | 4.7 s (bruit) | ⏳ Auto-résolu par P-001 |
-| `_draw_particles` | 4.1 s | 4.1 s | Stable |
-| `_update_flicker` | 1.2 s | 0.3 s | ✅ −73 % |
-| `create_overlay` | 1.3 s | 1.3 s | ✅ Skip justifié (déjà optimal) |
+### 8.5 P-004 — Dirty-Flag Cache on `_apply_partial_occlusion` ✅ (commit `df93698`)
+
+- **File:** `src/engine/render_manager.py` — `_apply_partial_occlusion()`, `reset_occ_cache()`
+- **Cache key:** `(int(cam_x), int(cam_y), len(occluding_rects))` — invalidation minimale
+- **Cache HIT:** re-install composites depuis `_occ_composite_cache` sans re-itérer les sprites
+- **Cache MISS:** calcul complet + mise à jour du cache (comportement précédent)
+- **`reset_occ_cache()`:** appelée lors d'un changement de map (via `_build_world_surface`)
+- **Status:** ✅ COMPLETE — 6 tests TC-P004-001..006 GREEN. 97/97 verts.
+- **Expected gain:** élimination des surface composites recréées sur les frames statiques (cam fixe, joueur immobile)
+
+### 8.4 Bottleneck Status (après P-001 + P-004)
+
+| Function | Baseline tottime | Après P-005/P-003 | Après P-001/P-004 | Status |
+|---|---|---|---|---|
+| `_draw_static_foreground_tiles` | 25.9 s | 28.7 s (bruit) | ✅ Remplacée par WorldSurface | ✅ Résolu P-001 |
+| `get_visible_chunks` | 13.4 s | 13.8 s (bruit) | ✅ Build time uniquement | ✅ Résolu P-001 |
+| `_update_particles` | 5.2 s | 4.0 s | 4.0 s (stable) | ✅ −23 % P-003 |
+| `_apply_partial_occlusion` | 4.3 s | 4.7 s (bruit) | Cache dirty flag | ✅ Résolu P-004 |
+| `_draw_particles` | 4.1 s | 4.1 s | 4.1 s (stable) | Stable |
+| `_update_flicker` | 1.2 s | 0.3 s | 0.3 s (stable) | ✅ −73 % P-005 |
+| `create_overlay` | 1.3 s | 1.3 s | 1.3 s (stable) | ✅ Skip justifié |
+
+> **Prochaine priorité :** P-007 (mesurer le gain réel P-001+P-004 en jeu avant de décider d'autres optimisations).
 
