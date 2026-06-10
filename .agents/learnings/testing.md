@@ -1205,3 +1205,64 @@ from asset_convertor.gui.recolor_panel import RecolorPanel
 ---
 
 *Last updated: 2026-06-09 — added L-TEST-021, A-TEST-043 from recolor swatch fix + palette import HARDEN session.*
+
+---
+
+### L-TEST-022 · 2026-06-10 · U · Minor Rework
+**`AssetManager(fallback=True)` est le seul point de contrôle d'assets — ne pas ajouter `os.path.exists + raise` dans les modules source**
+
+Toute classe qui appelle `AssetManager().get_image(path)` (sans `fallback=True`) sur des assets optionnels/non-présents en CI provoque un `FileNotFoundError` qui remonte jusqu'à `Game.__init__()`, cassant **tous** les tests qui instancient `Game()`.
+
+Le pattern existant dans la codebase (ChestUI, HUD) est : `AssetManager().get_image(path, fallback=True)` — les assets manquants produisent une surface magenta 32×32 et un log ERROR, sans exception. Ne jamais doublon-checker avec `os.path.exists + raise` dans le code source : la gestion de fallback appartient exclusivement à `AssetManager`.
+
+```python
+# ❌ os.path.exists + raise — casse Game.__init__() sans assets réels
+def _load_tiles(self):
+    for key, filename in TILES.items():
+        path = str(Path(ASSET_DIR) / filename)
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Bubble asset not found: {path}")
+        img = AssetManager().get_image(path)  # fallback=False par défaut
+
+# ✅ AssetManager(fallback=True) — cohérent avec ChestUI/HUD, zero raise
+def _load_tiles(self):
+    for key, filename in TILES.items():
+        path = str(Path(ASSET_DIR) / filename)
+        img = AssetManager().get_image(path, fallback=True)  # surface 32x32 si absent
+```
+
+**Conséquence sur les tests :** Les tests qui mockaient `src.module.os.path.exists` doivent être mis à jour vers `mock.patch("src.module.AssetManager.get_image", side_effect=factory)` où `factory` retourne des surfaces de la bonne taille par tile key.
+
+**Règle :** Quand un module chargeur d'assets migre de `os.path.exists + raise` vers `AssetManager(fallback=True)`, chercher et mettre à jour **tous les sites** `mock.patch("src.module.os.path.exists", ...)` dans la test suite (typiquement 3-5 sites).
+
+**Evidence :** `speech_bubble._load_tiles()` — 82→10 failures après remplacement + 5 sites de mock mis à jour dans `test_speech_bubble.py`. commit `3c1f288`.
+
+---
+
+### A-TEST-044 · 2026-06-10 · U · Minor Rework
+**Mock `module.os.path.exists` est silencieusement invalidé par `ruff --fix` (F401)**
+
+Quand un module source importe `os` uniquement pour `os.path.exists` dans une fonction, ruff détecte `F401 imported but unused` après que la fonction a été refactorisée (ex: migration vers `AssetManager`). `ruff --fix` supprime automatiquement `import os`. Résultat : les tests qui mockent encore `src.module.os.path.exists` échouent à la **collecte** pytest avec `AttributeError: module '...' has no attribute 'os'`.
+
+```
+# Séquence de failure :
+# 1. Module migre de os.path.exists → AssetManager(fallback=True)
+# 2. ruff --fix supprime `import os` (F401)
+# 3. pytest collect → AttributeError: module 'src.ui.speech_bubble' has no attribute 'os'
+# 4. TOUS les tests du fichier sont COLLECTION ERROR (pas juste des failures)
+```
+
+**Détection avant commit :**
+```bash
+grep -rn "src\..*\.os\.path\.exists" tests/ --include="*.py"
+# Toute ligne = mock à risque si le module n'importe plus os explicitement
+# Vérifier avec : grep "^import os" src/module.py
+```
+
+**Fix :** Remplacer `mock.patch("src.module.os.path.exists", ...)` par `mock.patch("src.module.AssetManager.get_image", side_effect=factory)` quand le module produit ne fait plus de check `os.path.exists` direct.
+
+**Evidence :** `test_speech_bubble.py` — `AttributeError: module 'src.ui.speech_bubble' has no attribute 'os'` en collection pytest après `ruff --fix`. 5 sites mis à jour. commit `3c1f288`.
+
+---
+
+*Last updated: 2026-06-10 — added L-TEST-022, A-TEST-044 from pre-existing failures fix session (performance audit VERIFY).*

@@ -476,3 +476,36 @@ Apply to every file in the change set before writing a single line of code. Audi
 ---
 
 *Last updated: 2026-05-27 — added L-UI-013 from code-quality-constants-i18n cycle.*
+
+---
+
+### A-UI-009 · 2026-06-10 · U · Minor Rework
+**`monkeypatch.setattr(ui, attr, val)` avant `ui.open()` — les attrs sont écrasés par `open()`**
+
+Quand un test fait `monkeypatch.setattr(ui, "_bg", dummy_surface)` puis `ui.open(entity, player)`, tous les attrs surchargés sont perdus : `open()` appelle `_load_background()` qui réinitialise `_bg`, `_slot_img`, `_hover_img`, etc. La surchargé de `monkeypatch` est silencieusement ignorée.
+
+```python
+# ❌ _bg est écrasé par ui.open() → draw() utilise le placeholder AssetManager
+ui = ChestUI()
+monkeypatch.setattr(ui, "_bg", dummy_bg)       # perdu
+monkeypatch.setattr(ui, "_slot_img", dummy_slot) # perdu
+ui.open(entity, player)   # appelle _load_background() → réinitialise _bg
+ui.draw(screen)           # utilise le placeholder 32x32 magenta, pas dummy_bg
+
+# ✅ open() d'abord, monkeypatch ensuite
+ui = ChestUI()
+ui.open(entity, player)                        # _load_background() se termine ici
+monkeypatch.setattr(ui, "_bg", dummy_bg)       # override stable post-open()
+monkeypatch.setattr(ui, "_slot_img", dummy_slot)
+ui.draw(screen)           # utilise dummy_bg
+```
+
+**Règle :** Pour tout test qui surchargeons des attrs d'un objet UI avec `monkeypatch` pour contrôler le rendu, appeler la méthode d'init (`.open()`, `.reset()`, `.load()`) **avant** les setattr. Sinon, les attrs d'instance seront réinitialisés par l'init.
+
+**Extension :** S'applique aussi à `monkeypatch.setattr(obj, "attr", val)` sur tout objet qui a un chemin d'init lazy (`__init__` → `_load_assets()` → attr assignment).
+
+**Evidence :** `test_draw_when_open_and_assets_present` — `assert (255,0,255) == (255,0,0)` car dummy_bg était le placeholder magenta d'AssetManager, non dummy surface rouge. Corrigé en inversant l'ordre open() / setattr(). commit `3c1f288`.
+
+---
+
+*Last updated: 2026-06-10 — added A-UI-009 from pre-existing failures fix session (performance audit VERIFY).*
