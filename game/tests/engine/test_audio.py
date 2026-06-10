@@ -324,8 +324,9 @@ def test_stop_all_ambients(audio_manager):
 
 def _make_enabled_audio():
     """AudioManager with mixer initialized and is_enabled=True."""
+    from unittest.mock import MagicMock, patch
+
     from src.engine.audio import AudioManager
-    from unittest.mock import patch, MagicMock
 
     with (
         patch("pygame.mixer.get_init", return_value=True),
@@ -339,8 +340,9 @@ def _make_enabled_audio():
 def test_audio_mixer_init_called_when_not_initialized(caplog):
     """__init__ calls pygame.mixer.init() when mixer is not yet initialized (line 48)."""
     import logging
+    from unittest.mock import MagicMock, patch
+
     from src.engine.audio import AudioManager
-    from unittest.mock import patch, MagicMock
 
     with (
         patch("pygame.mixer.get_init", return_value=False),
@@ -421,8 +423,9 @@ def test_flush_ambient_no_free_channel(caplog, tmp_path):
 def test_flush_ambient_pygame_error_logs(caplog, tmp_path):
     """flush_ambient() logs ERROR when pygame.mixer.Sound raises pygame.error (224-226)."""
     import logging
-    import pygame
     from unittest.mock import patch
+
+    import pygame
 
     am = _make_enabled_audio()
     am.sfx_dir = str(tmp_path)

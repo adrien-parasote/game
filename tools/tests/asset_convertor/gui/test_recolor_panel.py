@@ -565,6 +565,7 @@ class TestSwatchRendering(unittest.TestCase):
     def _get_rebuild_swatches_source(self) -> str:
         """Return the source code of _rebuild_swatches for inspection."""
         import inspect
+
         import asset_convertor.gui.recolor_panel as rp_module
         return inspect.getsource(rp_module.RecolorPanel._rebuild_swatches)
 
@@ -573,6 +574,7 @@ class TestSwatchRendering(unittest.TestCase):
         import ast
         import inspect
         import textwrap
+
         import asset_convertor.gui.recolor_panel as rp_module
 
         src = inspect.getsource(rp_module.RecolorPanel._rebuild_swatches)
@@ -839,6 +841,7 @@ class TestImportPaletteIntegration(unittest.TestCase):
         import ast
         import inspect
         import textwrap
+
         import asset_convertor.gui.recolor_panel as rp_module
 
         src = inspect.getsource(rp_module.RecolorPanel._rebuild_swatches)

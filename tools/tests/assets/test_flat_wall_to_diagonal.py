@@ -284,7 +284,8 @@ def test_unknown_direction_raises_value_error():
 
 def test_convert_oserror_on_open(tmp_path):
     """Lines 111-113: OSError during image open is caught, re-raised with stderr output."""
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
+
     from PIL import UnidentifiedImageError
 
     valid_file = tmp_path / "wall.png"
@@ -297,7 +298,7 @@ def test_convert_oserror_on_open(tmp_path):
 
 def test_convert_oserror_on_save(tmp_path, capsys):
     """Lines 136-138: OSError during image save is caught, logged, and re-raised."""
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
 
     img = Image.new("RGBA", (32, 32), (100, 100, 100, 255))
     input_file = tmp_path / "wall.png"

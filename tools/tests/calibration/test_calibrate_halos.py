@@ -242,6 +242,7 @@ class TestHandleEvent:
 
     def _setup(self):
         from unittest.mock import MagicMock
+
         import pygame
         self.pygame = pygame
         self.fire_pts: list = []
@@ -251,8 +252,8 @@ class TestHandleEvent:
         return self
 
     def _call(self, event):
-        from calibration.calibrate_halos import _handle_event
         import pygame
+        from calibration.calibrate_halos import _handle_event
         return _handle_event(event, True, self.mode, self.fire_pts, self.mush_pts, self.screen)
 
     def test_quit_event_stops_running(self):
@@ -329,8 +330,9 @@ class TestHandleEvent:
         self._call(event)  # must not raise
 
     def test_s_calls_save(self, tmp_path, monkeypatch):
-        import pygame
         import os
+
+        import pygame
         monkeypatch.chdir(tmp_path)
         os.makedirs("scripts", exist_ok=True)
         self._setup()
@@ -340,8 +342,9 @@ class TestHandleEvent:
         assert (tmp_path / "scripts" / "calibration_result.py").exists()
 
     def test_left_click_fire_mode_large(self):
+        from unittest.mock import MagicMock, patch
+
         import pygame
-        from unittest.mock import patch, MagicMock
         self._setup()
         event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=1, pos=(300, 400))
         with patch("pygame.key.get_mods", return_value=0):
@@ -350,8 +353,9 @@ class TestHandleEvent:
         assert self.fire_pts[0][2] == R_FIRE_L
 
     def test_left_click_fire_mode_shift_medium(self):
-        import pygame
         from unittest.mock import patch
+
+        import pygame
         self._setup()
         event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=1, pos=(100, 200))
         with patch("pygame.key.get_mods", return_value=pygame.KMOD_SHIFT):
@@ -360,8 +364,9 @@ class TestHandleEvent:
         assert self.fire_pts[0][2] == R_FIRE_M
 
     def test_left_click_fire_mode_ctrl_small(self):
-        import pygame
         from unittest.mock import patch
+
+        import pygame
         self._setup()
         event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=1, pos=(100, 200))
         with patch("pygame.key.get_mods", return_value=pygame.KMOD_CTRL):
@@ -370,8 +375,9 @@ class TestHandleEvent:
         assert self.fire_pts[0][2] == R_FIRE_S
 
     def test_left_click_mush_mode_large(self):
-        import pygame
         from unittest.mock import patch
+
+        import pygame
         self._setup()
         self.mode = MODE_MUSH
         event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=1, pos=(50, 60))
@@ -381,8 +387,9 @@ class TestHandleEvent:
         assert self.mush_pts[0][2] == R_MUSH_L
 
     def test_left_click_mush_mode_shift_medium(self):
-        import pygame
         from unittest.mock import patch
+
+        import pygame
         self._setup()
         self.mode = MODE_MUSH
         event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=1, pos=(50, 60))
@@ -392,8 +399,9 @@ class TestHandleEvent:
         assert self.mush_pts[0][2] == R_MUSH_M
 
     def test_left_click_mush_mode_ctrl_small(self):
-        import pygame
         from unittest.mock import patch
+
+        import pygame
         self._setup()
         self.mode = MODE_MUSH
         event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=1, pos=(50, 60))
@@ -403,8 +411,9 @@ class TestHandleEvent:
         assert self.mush_pts[0][2] == R_MUSH_S
 
     def test_right_click_removes_fire_point(self):
-        import pygame
         from unittest.mock import patch
+
+        import pygame
         self._setup()
         self.fire_pts = [(100, 100, 45)]
         event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=3, pos=(100, 100))
@@ -413,8 +422,9 @@ class TestHandleEvent:
         assert len(self.fire_pts) == 0
 
     def test_right_click_removes_mush_point(self):
-        import pygame
         from unittest.mock import patch
+
+        import pygame
         self._setup()
         self.mush_pts = [(200, 200, 22, (70, 220, 200))]
         event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=3, pos=(200, 200))
@@ -423,8 +433,9 @@ class TestHandleEvent:
         assert len(self.mush_pts) == 0
 
     def test_right_click_noop_when_no_nearby_point(self):
-        import pygame
         from unittest.mock import patch
+
+        import pygame
         self._setup()
         self.fire_pts = [(100, 100, 45)]
         event = _FakeEvent(pygame.MOUSEBUTTONDOWN, button=3, pos=(500, 500))
@@ -433,8 +444,9 @@ class TestHandleEvent:
         assert len(self.fire_pts) == 1  # unchanged
 
     def test_f_key_toggles_fullscreen(self):
+        from unittest.mock import MagicMock, patch
+
         import pygame
-        from unittest.mock import patch, MagicMock
         self._setup()
         fake_screen = MagicMock()
         event = _FakeEvent(pygame.KEYDOWN, key=pygame.K_f)
@@ -449,6 +461,7 @@ class TestHandleEvent:
 # ---------------------------------------------------------------------------
 
 import os
+
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 

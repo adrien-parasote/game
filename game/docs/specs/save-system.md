@@ -192,3 +192,14 @@ N/A - Not applicable
 
 ## Serialization Rules
 Active dialogue state is NOT serialized. Loading a game always spawns the player in the overworld, cancelling any active dialogue.
+
+## Project Deliverables Tree
+```text
+├── ../../tests/ui/test_title_screen.py
+├── ../../tests/ui/test_save_menu.py
+├── ../../tests/ui/test_pause_screen.py
+├── ../../tests/engine/test_save_manager.py
+├── saves/slot_1_thumb.png
+├── saves/slot_X
+└── saves/
+```

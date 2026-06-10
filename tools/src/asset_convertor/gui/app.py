@@ -1311,7 +1311,8 @@ class App(ctk.CTk):
             return
         try:
             from asset_convertor.exporters.tsx_generator import (
-                export_blob_tops_sheet, export_wall_sides_sheet,
+                export_blob_tops_sheet,
+                export_wall_sides_sheet,
             )
 
             export_tsx = self._export_tsx_var.get()

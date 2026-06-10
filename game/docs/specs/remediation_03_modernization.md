@@ -350,21 +350,14 @@ grep -rn "os.path.join" src/  # → 0 (if complete migration)
 ---
 
 ## File Tree
-
-```
-src/
-├── entities/
-│   ├── player.py                    [MODIFY] — @override on update()
-│   ├── groups.py                    [MODIFY] — @override on add() and remove()
-│   └── npc.py                       [MODIFY] — @override on update()
-└── engine/
-    └── render_manager.py            [MODIFY] — BlitSequence, OccludingRect type aliases
-
-docs/
-└── ADRs/
-    └── ADR-008-frect-migration.md   [NEW] — FRect non-migration decision
-
-# Optional Step 11 — same files + os.path.join removal
+```text
+├── src/entities/player.py
+├── src/entities/groups.py
+├── src/entities/npc.py
+├── src/engine/render_manager.py
+├── src/engine/asset_manager.py
+├── docs/ADRs/ADR-008-frect-migration.md
+└── entities-system.md
 ```
 
 ---

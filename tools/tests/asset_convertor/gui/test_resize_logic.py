@@ -13,7 +13,6 @@ from __future__ import annotations
 import pytest
 from PIL import Image
 
-
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 def _make_image(w: int, h: int, color: tuple[int, int, int, int] = (255, 0, 0, 255)) -> Image.Image:

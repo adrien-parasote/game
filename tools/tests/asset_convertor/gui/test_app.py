@@ -498,8 +498,9 @@ def test_on_format_change_mz_rejected():
 @pytest.mark.unit
 def test_validate_xp_animated_horizontal_valid():
     """XP animated horizontal: width multiple of 96, height 128 → valid."""
-    from PIL import Image
     import tkinter as tk
+
+    from PIL import Image
     app = App()
     app._animated_var = tk.BooleanVar(value=True)
     app._anim_type_var = __import__("customtkinter").StringVar(value="Horizontale (Eau/Sol)")
@@ -604,6 +605,7 @@ def test_clear_canvas_grid_sets_all_false():
 def test_export_recolor_no_state_shows_error():
     """_export_recolor with no result_img shows error status (covers line 1044-1046)."""
     import dataclasses
+
     from asset_convertor.gui.state import RecolorState
     app = App()
     rs = RecolorState(result_img=None)
@@ -631,10 +633,11 @@ def test_export_standard_no_result_img_is_noop():
 @pytest.mark.unit
 def test_on_convert_success_a2_flat_no_animation():
     """_on_convert_success_a2 with flat (non-animated) tiles does not start animation."""
-    from PIL import Image
     import dataclasses
     import tkinter as tk
     from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     # Flat tile list (not 2D) → no animation
@@ -667,8 +670,9 @@ def test_on_convert_error_sets_error_status():
 @pytest.mark.unit
 def test_on_convert_success_single_shows_dimensions():
     """_on_convert_success_single displays image dimensions in output info label."""
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
     app = App()
     img = Image.new("RGBA", (320, 240))
     with patch.object(app, "_display_result_image"):
@@ -693,8 +697,9 @@ def test_on_recolor_state_change_updates_state():
 @pytest.mark.unit
 def test_on_recolor_preview_ready_displays_image():
     """_on_recolor_preview_ready calls _display_result_image without error."""
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
     app = App()
     img = Image.new("RGBA", (64, 64), (200, 100, 50, 255))
     with patch.object(app, "_display_result_image"):
@@ -718,6 +723,7 @@ def test_on_type_change_non_recolor_switches_to_canvas():
 def test_on_type_change_recolor_with_source_img():
     """_on_type_change to Recolor with source_img extracts palette."""
     import dataclasses
+
     from PIL import Image
     app = App()
     src_img = Image.new("RGBA", (4, 4), (100, 150, 200, 255))
@@ -731,6 +737,7 @@ def test_on_type_change_recolor_with_source_img():
 def test_on_type_change_recolor_already_has_state():
     """_on_type_change to Recolor when recolor state already exists preserves it."""
     import dataclasses
+
     from asset_convertor.gui.state import RecolorState
     app = App()
     rs = RecolorState(source_palette=[(10, 20, 30, 255)])
@@ -789,8 +796,9 @@ def test_on_speed_change_invalid_falls_back_to_150():
 @pytest.mark.unit
 def test_on_convert_success_a2_enables_export():
     """_on_convert_success_a2 enables export button."""
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
     app = App()
     tile = Image.new("RGBA", (48, 48), (100, 100, 100, 255))
     tiles_flat = [tile, tile, tile, tile]
@@ -810,6 +818,7 @@ def test_on_convert_success_a2_enables_export():
 def test_export_standard_with_result_img(tmp_path):
     """_export_standard exports a simple image to disk when result_img is set."""
     import dataclasses
+
     from PIL import Image
     app = App()
     img = Image.new("RGBA", (96, 48))
@@ -936,8 +945,9 @@ def test_run_conversion_no_source_is_noop():
 def test_run_conversion_recolor_no_remap_is_noop():
     """_run_conversion logs warning when Recolor mode but remap_table is empty."""
     import dataclasses
-    from PIL import Image
+
     from asset_convertor.gui.state import RecolorState
+    from PIL import Image
     app = App()
     src = Image.new("RGBA", (4, 4))
     rs = RecolorState(source_palette=[], remap_table={})
@@ -953,8 +963,9 @@ def test_run_conversion_recolor_no_remap_is_noop():
 @pytest.mark.unit
 def test_on_convert_success_a4_enables_export():
     """_on_convert_success_a4 enables export button."""
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
     app = App()
     result_img = Image.new("RGBA", (192, 48))
     wall_tiles = [Image.new("RGBA", (48, 48)) for _ in range(16)]
@@ -983,8 +994,9 @@ def test_export_no_source_path_is_noop(tmp_path):
 def test_export_dispatches_to_export_a3(tmp_path):
     """_export calls _export_a3 for A3 resource type."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
     app = App()
     img = Image.new("RGBA", (96, 48))
     app._state = dataclasses.replace(
@@ -1008,8 +1020,9 @@ def test_export_dispatches_to_export_a3(tmp_path):
 def test_export_standard_with_tiles_a2(tmp_path):
     """_export_standard for A2 with tiles calls the export pipeline."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
     app = App()
     tile = Image.new("RGBA", (48, 48))
     tiles = [[tile, tile], [tile, tile]]
@@ -1035,8 +1048,9 @@ def test_run_conversion_starts_thread_with_source():
     """_run_conversion launches a thread when source image is present."""
     import dataclasses
     import threading
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     src = Image.new("RGBA", (192, 192))
@@ -1074,8 +1088,9 @@ def test_export_recolor_no_result_is_noop(tmp_path):
 def test_export_recolor_saves_png(tmp_path):
     """_export_recolor writes a PNG when RecolorState.result_img is set."""
     import dataclasses
-    from PIL import Image
+
     from asset_convertor.gui.state import RecolorState
+    from PIL import Image
     app = App()
     img = Image.new("RGBA", (32, 32), (200, 100, 50, 255))
     rs = RecolorState(result_img=img)
@@ -1104,6 +1119,7 @@ def test_setup_animation_not_animated_does_not_schedule():
 def test_setup_animation_horizontal_3_frames():
     """_setup_animation 3 horizontal frames → frame_sequence [0,1,2,1]."""
     import tkinter as tk
+
     import customtkinter as ctk
     app = App()
     app._animated_var = tk.BooleanVar(value=True)
@@ -1120,6 +1136,7 @@ def test_setup_animation_horizontal_3_frames():
 def test_setup_animation_vertical_3_frames():
     """_setup_animation 3 vertical frames → frame_sequence [0,1,2]."""
     import tkinter as tk
+
     import customtkinter as ctk
     app = App()
     app._animated_var = tk.BooleanVar(value=True)
@@ -1135,6 +1152,7 @@ def test_setup_animation_vertical_3_frames():
 def test_setup_animation_4_frames():
     """_setup_animation 4 frames → frame_sequence [0,1,2,3]."""
     import tkinter as tk
+
     import customtkinter as ctk
     app = App()
     app._animated_var = tk.BooleanVar(value=True)
@@ -1150,6 +1168,7 @@ def test_setup_animation_4_frames():
 def test_setup_animation_5_frames_fallback():
     """_setup_animation 5 frames → frame_sequence [0,1,2,3,4]."""
     import tkinter as tk
+
     import customtkinter as ctk
     app = App()
     app._animated_var = tk.BooleanVar(value=True)
@@ -1166,7 +1185,7 @@ def test_setup_animation_5_frames_fallback():
 @pytest.mark.unit
 def test_stop_animation_cancels_timer():
     """_stop_animation cancels pending after() timer."""
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
     app = App()
     app._timer_id = "fake_timer_id"
     with patch.object(app, "after_cancel") as mock_cancel:
@@ -1192,8 +1211,9 @@ def test_stop_animation_no_timer_is_noop():
 def test_convert_a3_calls_success_callback():
     """_convert_a3 calls _on_convert_success_a3 via after() on success."""
     import dataclasses
+    from unittest.mock import MagicMock, patch
+
     from PIL import Image
-    from unittest.mock import patch, MagicMock
     app = App()
     src = Image.new("RGBA", (192, 192), (128, 128, 128, 255))
     app._state = dataclasses.replace(app._state, source_img=src)
@@ -1221,9 +1241,10 @@ def test_convert_a3_calls_success_callback():
 def test_convert_a3_calls_error_callback_on_failure():
     """_convert_a3 calls _on_convert_error via after() when conversion fails."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
     from asset_convertor.core import converter_mv_a3
+    from PIL import Image
 
     app = App()
     src = Image.new("RGBA", (192, 192))
@@ -1252,9 +1273,10 @@ def test_convert_a3_calls_error_callback_on_failure():
 def test_apply_recolor_calls_success_callback():
     """_apply_recolor calls _on_convert_success_single via after() on success."""
     import dataclasses
-    from PIL import Image
-    from asset_convertor.gui.state import RecolorState
     from unittest.mock import patch
+
+    from asset_convertor.gui.state import RecolorState
+    from PIL import Image
 
     app = App()
     src = Image.new("RGBA", (32, 32), (200, 100, 50, 255))
@@ -1296,8 +1318,9 @@ def test_on_type_change_a3_builds_secondary():
 def test_on_type_change_recolor_palette_extraction_fails():
     """_on_type_change Recolor: when extract_palette raises, falls back to empty RecolorState."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     src = Image.new("RGBA", (4, 4), (100, 150, 200, 255))
@@ -1317,8 +1340,9 @@ def test_on_type_change_recolor_palette_extraction_fails():
 def test_on_speed_change_restarts_active_timer():
     """_on_speed_change restarts the animation timer when one is already running."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     tile = Image.new("RGBA", (48, 48))
@@ -1342,8 +1366,9 @@ def test_on_speed_change_restarts_active_timer():
 def test_export_dispatches_to_export_a4(tmp_path):
     """_export calls _export_a4 when resource_type is A4."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     app._state = dataclasses.replace(
@@ -1365,8 +1390,9 @@ def test_export_dispatches_to_export_a4(tmp_path):
 def test_export_dispatches_to_export_recolor(tmp_path):
     """_export calls _export_recolor when resource_type is Recolor."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     app._state = dataclasses.replace(
@@ -1390,8 +1416,9 @@ def test_export_dispatches_to_export_recolor(tmp_path):
 def test_export_standard_oserror_sets_error_status(tmp_path):
     """_export_standard catches OSError and displays error status."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     img = Image.new("RGBA", (96, 48))
@@ -1416,9 +1443,10 @@ def test_export_standard_oserror_sets_error_status(tmp_path):
 @pytest.mark.unit
 def test_on_convert_success_a2_animated_tiles():
     """_on_convert_success_a2 calls _setup_animation when animated with 2D tile list."""
-    from PIL import Image
-    from unittest.mock import patch
     import tkinter as tk
+    from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     tile = Image.new("RGBA", (48, 48))
@@ -1443,9 +1471,10 @@ def test_on_convert_success_a2_animated_tiles():
 def test_apply_recolor_error_handler():
     """_apply_recolor calls _on_convert_error when apply_remap raises."""
     import dataclasses
-    from PIL import Image
-    from asset_convertor.gui.state import RecolorState
     from unittest.mock import patch
+
+    from asset_convertor.gui.state import RecolorState
+    from PIL import Image
 
     app = App()
     src = Image.new("RGBA", (32, 32))
@@ -1475,8 +1504,9 @@ def test_apply_recolor_error_handler():
 def test_export_standard_a3_with_tsx(tmp_path):
     """_export_standard A3 with tsx enabled calls export_simple_sheet."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     img = Image.new("RGBA", (96, 48))
@@ -1497,8 +1527,9 @@ def test_export_standard_a3_with_tsx(tmp_path):
 def test_export_standard_a2_with_tsx_includes_tsx_in_status(tmp_path):
     """_export_standard A2 tiles with tsx: status mentions tsx file."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     tile = Image.new("RGBA", (48, 48))
@@ -1536,6 +1567,7 @@ def test_export_a4_no_tops_attr_is_noop(tmp_path):
 def test_export_a4_without_tsx(tmp_path):
     """_export_a4 saves two PNGs when export_tsx is False."""
     import dataclasses
+
     from PIL import Image
     app = App()
     app._a4_tops = Image.new("RGBA", (192, 48))
@@ -1552,8 +1584,9 @@ def test_export_a4_without_tsx(tmp_path):
 def test_export_a4_with_tsx(tmp_path):
     """_export_a4 calls export_simple_sheet and export_wall_sides_sheet when TSX enabled."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
     app = App()
     app._a4_tops = Image.new("RGBA", (192, 48))
     app._a4_sides = Image.new("RGBA", (192, 48))
@@ -1575,6 +1608,7 @@ def test_export_a4_with_tsx(tmp_path):
 def test_update_animation_controls_state_animated_on():
     """_update_animation_controls_state sets controls enabled when animated."""
     import tkinter as tk
+
     import customtkinter as ctk
     app = App()
     app._animated_var = tk.BooleanVar(value=True)
@@ -1615,8 +1649,9 @@ def test_convert_resize_is_method_on_app_and_dispatches():
     """_convert_resize est dans le dispatch de _run_conversion pour Resize."""
     import dataclasses
     import threading
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     src = Image.new("RGBA", (96, 48))
@@ -1641,8 +1676,9 @@ def test_convert_resize_is_method_on_app_and_dispatches():
 def test_convert_resize_calls_success_callback():
     """_convert_resize appelle _on_convert_success_resize via after() sur succès."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     src = Image.new("RGBA", (96, 48))
@@ -1669,6 +1705,7 @@ def test_convert_resize_calls_success_callback():
 def test_export_resize_writes_file(tmp_path):
     """_export_resize écrit {stem}_32px.png sur le disque."""
     import dataclasses
+
     from PIL import Image
 
     app = App()
@@ -1683,8 +1720,9 @@ def test_export_resize_writes_file(tmp_path):
 def test_export_dispatch_calls_export_resize(tmp_path):
     """_export appelle _export_resize quand resource_type == 'Resize'."""
     import dataclasses
-    from PIL import Image
     from unittest.mock import patch
+
+    from PIL import Image
 
     app = App()
     app._state = dataclasses.replace(

@@ -295,6 +295,7 @@ def test_save_io_error_does_not_crash(manager, tmp_saves_dir, caplog):
 def test_get_saves_dir_fallback(caplog):
     """_get_saves_dir() falls back to 'saves' when get_pref_path raises."""
     import logging
+
     from src.engine.save_manager import _get_saves_dir
 
     with (
@@ -309,8 +310,8 @@ def test_get_saves_dir_fallback(caplog):
 
 def test_load_version_mismatch_returns_none(manager, tmp_saves_dir, caplog):
     """load() returns None and logs WARNING when version field doesn't match SCHEMA_VERSION."""
-    import logging
     import json
+    import logging
 
     os.makedirs(tmp_saves_dir, exist_ok=True)
     path = os.path.join(tmp_saves_dir, "slot_1.json")
@@ -336,6 +337,7 @@ def test_load_version_mismatch_returns_none(manager, tmp_saves_dir, caplog):
 def test_load_thumbnail_pygame_error_returns_none(manager, tmp_saves_dir, caplog):
     """load_thumbnail() returns None when pygame.image.load raises pygame.error."""
     import logging
+
     import pygame
 
     # Create a fake thumbnail file so the path check passes
