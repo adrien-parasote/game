@@ -34,6 +34,24 @@ Runs comprehensive system verification prior to merge:
 
 > **Project-specific override:** This project targets 90% global coverage (stricter than the Stream Coding default of 80%) due to the critical nature of game engine code. Critical modules (player movement, save/load, collision) target 100%.
 
+### 1.4 Performance Profiling Toolchain
+
+A 4-axis profiling harness is available at `scripts/dev/profile_game.py`. It is driven by two autonomous agent skills:
+
+| Skill | Rôle | Modifie le code |
+|---|---|---|
+| `perf-audit` | Diagnostic complet — produit un rapport de décision structuré (P-NNN) | ❌ Non |
+| `profile-game` | Correction ciblée d'un P-NNN issu du rapport `perf-audit` | ✅ Oui |
+
+**Axes mesurés :**
+- **Frame timing** : avg, p50, p95, p99, spikes — seuil confort p95 < 20 ms
+- **CPU hotspots** : tottime + cumtime filtrés sur `game/src/` uniquement
+- **Mémoire** : delta Python heap via `tracemalloc` — seuil : < 10 KB/frame
+- **GC pressure** : collections gen0/gen1/gen2 + uncollectable — seuil gen0 < 100/30 s
+
+**Règle :** Ne jamais optimiser un hot-path sans baseline de profiling. Le rapport
+`scripts/dev/perf_audit_YYYYMMDD.md` est la source de vérité avant toute correction.
+
 ---
 
 ## 2. Technical & Architectural Standards

@@ -72,10 +72,11 @@ logs/
 .sc-*
 .tdd_lock
 
-# Agent runtime files and rules (only commit learnings)
+# Agent runtime files and rules (only commit learnings and project skills)
 .agents/*
 !.agents/learnings/
 !.agents/learnings.md
+!.agents/skills/
 
 # ==============================================================================
 # 📚 Game Wiki (Nested but isolated repo)
