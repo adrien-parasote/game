@@ -201,21 +201,13 @@ def test_game_update_loop(mock_load):
 @pytest.mark.tc("CORE-R-03")
 def test_game_draw_loop(mock_load):
     game = Game()
-    # Mock subsystems
-    game.map_manager = MagicMock()
-    game.map_manager.get_visible_chunks.return_value = []
-    game.player = MagicMock()
-    game.player.pos = pygame.math.Vector2(0, 0)
-    game.player.rect = pygame.Rect(0, 0, 32, 32)
-    game.player.depth = 1  # custom_draw compares sprite_depth > max_depth (needs int)
-    game.inventory_ui = MagicMock()
-    game.dialogue_manager = MagicMock()
-    game.screen = pygame.Surface((800, 600))
+    # _draw() delegates entirely to render_manager.draw_scene() — mock it
+    game.render_manager = MagicMock()
 
     # _draw takes no arguments
     game._draw()
 
-    assert game.map_manager.get_visible_chunks.called
+    assert game.render_manager.draw_scene.called
 
 
 @patch("src.engine.game.Game._load_map")
