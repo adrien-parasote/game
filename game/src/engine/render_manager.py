@@ -27,6 +27,11 @@ class RenderManager:
         # F3: Pre-computed animated tile caches — populated once per frame in draw_scene()
         self._frame_anim_all: list[tuple[int, int, int, int]] = []
         self._frame_anim_by_layer: dict[int, list[tuple[int, int, int, int]]] = {}
+        # P-004: Occlusion composite dirty-flag cache
+        # Key: (cam_x, cam_y, len(occluding_rects)) — invalidated when camera or rect count changes
+        # Cache: {sprite: composite_surface} — re-installed without recomputing on cache hit
+        self._occ_key: tuple[int, int, int] | None = None
+        self._occ_composite_cache: dict[object, pygame.Surface] = {}
 
     def draw_background(self):
         """Draw tiles with depth <= player depth (behind player).
@@ -371,29 +376,69 @@ class RenderManager:
 
         return composite, used_composites
 
+    def reset_occ_cache(self) -> None:
+        """P-004: Invalidate the _apply_partial_occlusion dirty-flag cache.
+
+        Call this whenever the map changes or the fg tile set changes so that the
+        cached composites are not re-installed for a stale set of occluding rects.
+
+        Anti-pattern: do NOT call this per-frame — it defeats the caching purpose.
+        Error: safe to call even before the first _apply_partial_occlusion call.
+        """
+        self._occ_key = None
+        self._occ_composite_cache = {}
+
     def _apply_partial_occlusion(
         self, occluding_rects: OccludingRect
     ) -> dict[object, pygame.Surface]:
-        """For each visible sprite intersecting an occluding tile, replace sprite.image
+        """P-004: For each visible sprite intersecting an occluding tile, replace sprite.image
         with a composite surface where only the overlapping zone is semi-transparent.
 
         Must be called BEFORE custom_draw() so pygame renders composites in depth order.
         Returns a dict {sprite: original_image} for the caller to restore after drawing.
+
+        P-004 dirty-flag cache:
+          Cache key: (int(cam_x), int(cam_y), len(occluding_rects))
+          Cache HIT: re-install previously computed composites without reiterating sprites.
+          Cache MISS: full computation + update _occ_composite_cache and _occ_key.
+          Invalidated by: reset_occ_cache() (on map change).
 
         Args:
             occluding_rects: list of (screen-space Rect, depth) tuples from draw_foreground().
 
         Returns:
             dict mapping each modified sprite to its original image surface.
+
+        Anti-pattern: do not use _occ_composite_cache outside this method — sprite.image
+        is swapped back by draw_scene() every frame, so the cache holds composites,
+        not originals. The saved_images dict always contains the current-frame originals.
+        Error: if a cached sprite no longer exists in visible_sprites, re-install is a no-op
+        (sprite.image assignment is harmless if the sprite has been removed from the group).
         """
         if not occluding_rects:
+            # Clear cache key so next non-empty call recomputes
+            self._occ_key = None
+            self._occ_composite_cache = {}
             return dict()
 
         cam_offset = self.game.visible_sprites.offset
-        saved_images: dict[object, pygame.Surface] = {}
+        current_key = (int(cam_offset.x), int(cam_offset.y), len(occluding_rects))
+
+        # P-004 cache HIT — same camera position and same number of occluding rects.
+        # Re-install cached composites without re-iterating sprites or rebuilding surfaces.
+        if current_key == self._occ_key and self._occ_composite_cache:
+            saved_images: dict[object, pygame.Surface] = {}
+            for sprite, composite in self._occ_composite_cache.items():
+                saved_images[sprite] = sprite.image
+                sprite.image = composite
+            return saved_images
+
+        # P-004 cache MISS — recompute composites.
         player_depth = self.game.player.depth
         walk_active = getattr(self.game, "_intra_walk_target", None) is not None
         used_composites = 0  # F4: track pool index to avoid reference sharing between sprites
+        saved_images = {}
+        new_cache: dict[object, pygame.Surface] = {}
 
         for sprite in self.game.visible_sprites.get_sorted_sprites():
             if not sprite.image or not sprite.rect:
@@ -432,7 +477,11 @@ class RenderManager:
             # Swap: save original, install composite. Caller restores after custom_draw.
             saved_images[sprite] = sprite.image
             sprite.image = composite
+            new_cache[sprite] = composite  # P-004: store composite for next-frame cache hit
 
+        # Update cache state
+        self._occ_key = current_key
+        self._occ_composite_cache = new_cache
         return saved_images
 
     def _update_animated_tile_cache(self, cam_offset: pygame.Vector2) -> None:

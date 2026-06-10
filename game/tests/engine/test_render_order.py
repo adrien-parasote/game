@@ -46,6 +46,9 @@ def _make_render_manager():
     rm._occlusion_pool = []
     rm._alpha_surf = None
     rm._wading_surf = None
+    # P-004: occlusion dirty-flag cache (normally initialized in __init__)
+    rm._occ_key = None
+    rm._occ_composite_cache = {}
     return rm
 
 

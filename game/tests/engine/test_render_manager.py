@@ -1327,3 +1327,169 @@ def test_fg_occlusion_world_build_time():
         f"_build_fg_occlusion_world on 40x40 map took {elapsed*1000:.1f}ms (limit: 50ms)"
     )
     assert len(mm._fg_occlusion_world) > 0
+
+
+# ===========================================================================
+# P-004 — _apply_partial_occlusion dirty flag / cache
+# Spec: perf_audit_20260610_2200.md § P-004
+# Tests are RED until dirty-flag cache is implemented in RenderManager.
+# ===========================================================================
+
+
+def _make_game_with_occluding_sprite(cam_x=0, cam_y=0):
+    """Helper: minimal game mock with one sprite occluded by one fg tile."""
+    game = MagicMock()
+    game.tile_size = 32
+    game.visible_sprites.offset = pygame.math.Vector2(cam_x, cam_y)
+    game.player.depth = 1
+    game._intra_walk_target = None
+
+    # One sprite at (0,0) depth=1 (same as player → included)
+    sprite = MagicMock()
+    sprite.image = pygame.Surface((32, 32))
+    sprite.rect = pygame.Rect(0, 0, 32, 32)
+    sprite.depth = 1
+    game.visible_sprites.get_sorted_sprites.return_value = [sprite]
+
+    return game, sprite
+
+
+# ---------------------------------------------------------------------------
+# TC-P004-001 — __init__ exposes cache state attributes
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-P004-001")
+def test_p004_init_exposes_occ_cache_attrs():
+    """TC-P004-001: RenderManager must expose _occ_key and _occ_composite_cache at init."""
+    game = MagicMock()
+    rm = RenderManager(game)
+    assert hasattr(rm, "_occ_key"), "_occ_key must be initialised in __init__"
+    assert hasattr(rm, "_occ_composite_cache"), "_occ_composite_cache must be initialised in __init__"
+    assert rm._occ_key is None, "_occ_key must be None on first init (forces first-frame computation)"
+    assert isinstance(rm._occ_composite_cache, dict), "_occ_composite_cache must be a dict"
+
+
+# ---------------------------------------------------------------------------
+# TC-P004-002 — Composite created on first call, cached
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-P004-002")
+def test_p004_first_call_creates_composite_and_caches():
+    """TC-P004-002: First call with occluding rects creates composites and stores them in _occ_composite_cache."""
+    game, sprite = _make_game_with_occluding_sprite()
+    rm = RenderManager(game)
+
+    occ_rect = pygame.Rect(0, 0, 32, 32)  # overlaps sprite at (0,0)
+    img = pygame.Surface((32, 32))
+    occluding_rects = [(occ_rect, 2, img)]  # depth=2 > sprite.depth=1
+
+    result = rm._apply_partial_occlusion(occluding_rects)
+
+    assert len(result) == 1, "sprite must be in saved_images"
+    assert rm._occ_key is not None, "_occ_key must be set after first call"
+    assert len(rm._occ_composite_cache) == 1, "_occ_composite_cache must have 1 entry after first call"
+
+
+# ---------------------------------------------------------------------------
+# TC-P004-003 — Same cam + same rects → cache HIT → get_sorted_sprites called once total
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-P004-003")
+def test_p004_cache_hit_skips_sprite_iteration():
+    """TC-P004-003: Identical cam_offset + occluding_rects length → cache hit → sprite not re-processed."""
+    game, sprite = _make_game_with_occluding_sprite(cam_x=10, cam_y=20)
+    rm = RenderManager(game)
+
+    occ_rect = pygame.Rect(10, 20, 32, 32)  # overlaps sprite screen rect
+    img = pygame.Surface((32, 32))
+    occluding_rects = [(occ_rect, 2, img)]
+
+    # First call — populates cache
+    rm._apply_partial_occlusion(occluding_rects)
+    # Restore sprite image (simulating draw_scene restore step)
+    for sp, orig in list(rm._occ_composite_cache.items()):
+        pass  # cache holds composite; sprite.image was swapped by first call
+
+    call_count_after_first = game.visible_sprites.get_sorted_sprites.call_count
+
+    # Second call — same cam, same rects → cache HIT
+    rm._apply_partial_occlusion(occluding_rects)
+    call_count_after_second = game.visible_sprites.get_sorted_sprites.call_count
+
+    assert call_count_after_second == call_count_after_first, (
+        "get_sorted_sprites must NOT be called again on cache hit — "
+        f"calls after 1st={call_count_after_first}, after 2nd={call_count_after_second}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# TC-P004-004 — cam_offset changes → cache MISS → composite re-created
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-P004-004")
+def test_p004_cam_change_invalidates_cache():
+    """TC-P004-004: cam_offset change between calls → cache miss → sprite re-processed."""
+    game, sprite = _make_game_with_occluding_sprite(cam_x=0, cam_y=0)
+    rm = RenderManager(game)
+
+    occ_rect = pygame.Rect(0, 0, 32, 32)
+    img = pygame.Surface((32, 32))
+    occluding_rects = [(occ_rect, 2, img)]
+
+    # First call at cam (0,0)
+    rm._apply_partial_occlusion(occluding_rects)
+    count_after_first = game.visible_sprites.get_sorted_sprites.call_count
+
+    # Move camera
+    game.visible_sprites.offset = pygame.math.Vector2(32, 0)
+
+    # Second call — cam changed → cache miss
+    rm._apply_partial_occlusion(occluding_rects)
+    count_after_second = game.visible_sprites.get_sorted_sprites.call_count
+
+    assert count_after_second > count_after_first, (
+        "get_sorted_sprites must be called again after cam_offset changes (cache miss)"
+    )
+
+
+# ---------------------------------------------------------------------------
+# TC-P004-005 — occluding_rects count changes → cache MISS
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-P004-005")
+def test_p004_rect_count_change_invalidates_cache():
+    """TC-P004-005: Change in number of occluding_rects → cache miss → recompute."""
+    game, sprite = _make_game_with_occluding_sprite()
+    rm = RenderManager(game)
+
+    img = pygame.Surface((32, 32))
+    rects_1 = [(pygame.Rect(0, 0, 32, 32), 2, img)]
+    rects_2 = [(pygame.Rect(0, 0, 32, 32), 2, img), (pygame.Rect(32, 0, 32, 32), 2, img)]
+
+    # First call with 1 rect
+    rm._apply_partial_occlusion(rects_1)
+    count_after_first = game.visible_sprites.get_sorted_sprites.call_count
+
+    # Second call with 2 rects → cache miss
+    rm._apply_partial_occlusion(rects_2)
+    count_after_second = game.visible_sprites.get_sorted_sprites.call_count
+
+    assert count_after_second > count_after_first, (
+        "get_sorted_sprites must be called again when occluding_rects count changes (cache miss)"
+    )
+
+
+# ---------------------------------------------------------------------------
+# TC-P004-006 — reset_occ_cache() clears key and composites
+# ---------------------------------------------------------------------------
+@pytest.mark.tc("TC-P004-006")
+def test_p004_reset_occ_cache_clears_state():
+    """TC-P004-006: reset_occ_cache() (called on map change) resets _occ_key and _occ_composite_cache."""
+    game, sprite = _make_game_with_occluding_sprite()
+    rm = RenderManager(game)
+
+    img = pygame.Surface((32, 32))
+    occluding_rects = [(pygame.Rect(0, 0, 32, 32), 2, img)]
+
+    rm._apply_partial_occlusion(occluding_rects)
+    assert rm._occ_key is not None
+
+    rm.reset_occ_cache()
+
+    assert rm._occ_key is None, "reset_occ_cache() must set _occ_key to None"
+    assert rm._occ_composite_cache == {}, "reset_occ_cache() must clear _occ_composite_cache"
