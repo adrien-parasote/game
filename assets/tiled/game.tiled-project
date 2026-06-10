@@ -78,6 +78,58 @@
         {
             "color": "#ffa0a0a4",
             "drawFill": true,
+            "id": 24,
+            "members": [
+                {
+                    "name": "depth",
+                    "type": "int",
+                    "value": 0
+                },
+                {
+                    "name": "material",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "movement_type",
+                    "propertyType": "25-movement_type",
+                    "type": "string",
+                    "value": "stair"
+                },
+                {
+                    "name": "stair_direction",
+                    "propertyType": "23-direction",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "visual_y_offset",
+                    "type": "int",
+                    "value": -12
+                },
+                {
+                    "name": "walkable",
+                    "type": "bool",
+                    "value": true
+                }
+            ],
+            "name": "01-vertical-move",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
             "id": 17,
             "members": [
                 {
@@ -589,6 +641,17 @@
                 "underground"
             ],
             "valuesAsFlags": true
+        },
+        {
+            "id": 25,
+            "name": "25-movement_type",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "stair",
+                "ladder"
+            ],
+            "valuesAsFlags": false
         }
     ]
 }
