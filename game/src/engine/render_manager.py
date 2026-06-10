@@ -32,6 +32,8 @@ class RenderManager:
         # Cache: {sprite: composite_surface} — re-installed without recomputing on cache hit
         self._occ_key: tuple[int, int, int] | None = None
         self._occ_composite_cache: dict[object, pygame.Surface] = {}
+        # Frame-level viewport-culled foreground cache to optimize loops
+        self._frame_visible_fg_tiles: list[tuple[int, int, int, pygame.Surface, pygame.Surface | None]] | None = None
 
     def draw_background(self):
         """Draw tiles with depth <= player depth (behind player).
@@ -116,41 +118,39 @@ class RenderManager:
     ) -> None:
         """P-001: Build screen-space occluding rects from the world-space cache.
 
-        Replaces the per-frame visible-chunk loop with a list comprehension over
-        the pre-computed _fg_occlusion_world cache.  Only tiles with:
-          - depth > player_depth (occluding condition)
-          - world rect intersecting the current viewport
-        are added to occluding_rects.
-
-        Rect coordinates are converted to screen-space: screen_pos = world_pos + cam_offset.
-
-        Anti-pattern: do not filter by player proximity here — NPC sprites may be
-        behind tiles the player doesn't touch.  Player-proximity filter lives in
-        _blit_occluded_tiles_near_player (separate concern).
-        Error: if _fg_occlusion_world is empty (bg-only map), extends nothing.
+        Uses the pre-filtered self._frame_visible_fg_tiles if present (optimized path).
+        Otherwise falls back to iterating over the full map cache (compatibility path).
         """
         cam_x = int(cam_offset.x)
         cam_y = int(cam_offset.y)
         vp = self._viewport_world
         tile_size = self.game.tile_size
 
-        for wx, wy, depth, img, _occ_img in self.game.map_manager._fg_occlusion_world:
-            if depth <= player_depth:
-                continue
-            # World-space AABB check before allocating a Rect
-            if wx + tile_size <= vp.left or wx >= vp.right:
-                continue
-            if wy + tile_size <= vp.top or wy >= vp.bottom:
-                continue
-            screen_x = wx + cam_x
-            screen_y = wy + cam_y
-            occluding_rects.append(
-                (
-                    pygame.Rect(screen_x, screen_y, tile_size, tile_size),
+        visible_tiles = getattr(self, "_frame_visible_fg_tiles", None)
+        if visible_tiles is not None:
+            # Optimized path (pre-filtered by depth and viewport)
+            for wx, wy, depth, img, _occ in visible_tiles:
+                occluding_rects.append((
+                    pygame.Rect(wx + cam_x, wy + cam_y, tile_size, tile_size),
                     depth,
                     img,
+                ))
+        else:
+            # Fallback path for unit tests calling this method directly
+            for wx, wy, depth, img, _occ_img in self.game.map_manager._fg_occlusion_world:
+                if depth <= player_depth:
+                    continue
+                if wx + tile_size <= vp.left or wx >= vp.right:
+                    continue
+                if wy + tile_size <= vp.top or wy >= vp.bottom:
+                    continue
+                occluding_rects.append(
+                    (
+                        pygame.Rect(wx + cam_x, wy + cam_y, tile_size, tile_size),
+                        depth,
+                        img,
+                    )
                 )
-            )
 
     def _blit_occluded_tiles_near_player(
         self,
@@ -160,17 +160,8 @@ class RenderManager:
     ) -> None:
         """P-001: Blit semi-transparent occluded tile images only for tiles adjacent to the player.
 
-        Iterates the world-space cache but only blits when the tile's screen-space
-        rect collides with the player's screen-space hitbox.  This avoids blitting
-        every foreground tile each frame — only tiles the player is physically under.
-
-        Image selection:
-          - occ_img (semi-transparent) if available
-          - img (normal) as fallback when tile has no occluded variant
-
-        Anti-pattern: do not call this when walk_active=True — the player is hidden
-        and occlusion would create visible alpha artifacts on moving tiles.
-        Error: if _fg_occlusion_world is empty, returns immediately without blit.
+        Uses the pre-filtered self._frame_visible_fg_tiles if present (optimized path).
+        Otherwise falls back to iterating over the full map cache (compatibility path).
         """
         cam_x = int(cam_offset.x)
         cam_y = int(cam_offset.y)
@@ -178,20 +169,27 @@ class RenderManager:
         screen = self.game.screen
         vp = self._viewport_world
 
-        for wx, wy, depth, img, occ_img in self.game.map_manager._fg_occlusion_world:
-            if depth <= player_depth:
-                continue
-            # Viewport cull first (cheap AABB)
-            if wx + tile_size <= vp.left or wx >= vp.right:
-                continue
-            if wy + tile_size <= vp.top or wy >= vp.bottom:
-                continue
-            screen_x = wx + cam_x
-            screen_y = wy + cam_y
-            self._tile_rect.x = screen_x
-            self._tile_rect.y = screen_y
-            if player_screen_rect.colliderect(self._tile_rect):
-                screen.blit(occ_img if occ_img is not None else img, (screen_x, screen_y))
+        visible_tiles = getattr(self, "_frame_visible_fg_tiles", None)
+        if visible_tiles is not None:
+            # Optimized path (pre-filtered by depth and viewport)
+            for wx, wy, depth, img, occ_img in visible_tiles:
+                self._tile_rect.x = wx + cam_x
+                self._tile_rect.y = wy + cam_y
+                if player_screen_rect.colliderect(self._tile_rect):
+                    screen.blit(occ_img if occ_img is not None else img, (self._tile_rect.x, self._tile_rect.y))
+        else:
+            # Fallback path for unit tests calling this method directly
+            for wx, wy, depth, img, occ_img in self.game.map_manager._fg_occlusion_world:
+                if depth <= player_depth:
+                    continue
+                if wx + tile_size <= vp.left or wx >= vp.right:
+                    continue
+                if wy + tile_size <= vp.top or wy >= vp.bottom:
+                    continue
+                self._tile_rect.x = wx + cam_x
+                self._tile_rect.y = wy + cam_y
+                if player_screen_rect.colliderect(self._tile_rect):
+                    screen.blit(occ_img if occ_img is not None else img, (self._tile_rect.x, self._tile_rect.y))
 
     def _draw_static_foreground_tiles(
         self,
@@ -203,21 +201,32 @@ class RenderManager:
     ) -> BlitSequence:
         """P-001: Static foreground tile rendering — delegates to 3 focused sub-methods.
 
-        Pipeline (replaces the old per-tile visible-chunk loop):
-          1. _blit_foreground_surface   — single WorldSurface blit per layer
-          2. _build_screen_occluding_rects — O(fg_tiles) list comprehension
-          3. _blit_occluded_tiles_near_player — semi-transparent blit only near player
-
-        Returns [] always (P-001 contract: caller must not iterate the return value
-        for blitting — all blits happen inside the sub-methods).
-
-        Anti-pattern: do NOT reintroduce per-tile iteration here.
-        See spec §6 Anti-patterns A-PERF-001..A-PERF-004.
+        Optimized pipeline:
+          1. _blit_foreground_surface      — single WorldSurface blit per layer
+          2. Compile viewport-culled list  — O(N_fg_world) list comprehension
+          3. _build_screen_occluding_rects — O(visible_fg) translation
+          4. _blit_occluded_tiles_near_player — sparse blit only near player
         """
         self._blit_foreground_surface(cam_offset, player_depth)
+
+        # Viewport-cull and depth-filter the entire cache once per frame
+        cx, cy = cam_offset.x, cam_offset.y
+        tile_size = self.game.tile_size
+        vp = self._viewport_world
+
+        self._frame_visible_fg_tiles = [
+            (wx, wy, depth, img, occ_img)
+            for wx, wy, depth, img, occ_img in self.game.map_manager._fg_occlusion_world
+            if depth > player_depth
+            and wx + tile_size > vp.left and wx < vp.right
+            and wy + tile_size > vp.top and wy < vp.bottom
+        ]
+
         self._build_screen_occluding_rects(cam_offset, player_depth, occluding_rects)
         if not walk_active:
             self._blit_occluded_tiles_near_player(cam_offset, player_screen_rect, player_depth)
+
+        self._frame_visible_fg_tiles = None
         return []
 
     def _draw_animated_foreground_tiles(
