@@ -699,5 +699,34 @@ def _apply_partial_occlusion(self, occluding_rects: list[...], cam_offset: tuple
 
 **Evidence :** P-004 commit `df93698`. 6 tests TC-P004-001..006 RED → GREEN au premier pass. 97/97 tests verts. Zéro human enforcement sur l'implémentation.
 
-*Last updated: 2026-06-10 — A-PERF-003 résolu (P-001), L-PERF-004 (3-method decomposition), L-PERF-005 (dirty flag cache key).*
+---
+
+### L-GAME-018 · 2026-06-11 · P · Minor Rework
+**Appliquer les décalages visuels de rendu uniquement au moment de l'affichage (render time) sans altérer le hitbox physique (`self.rect`)**
+
+Lors de l'implémentation de la hauteur visuelle dans les escaliers (Option A/C), modifier le hitbox physique (`self.rect`) de l'entité brise les collisions physiques et le calcul d'alignement avec les tuiles de Pygame. Le décalage vertical doit être purement cosmétique.
+
+**Pattern :** 
+1. Stocker le décalage vertical visuel (ex: `visual_y_offset`) ou les propriétés de mouvement vertical dans l'entité (`self._vertical_move`).
+2. Dans la boucle de rendu (`CameraGroup.custom_draw`), récupérer ce décalage et l'appliquer uniquement sur la position de dessin du sprite (`offset_pos` passée à `surface.blit`).
+3. Laisser `self.rect` inchangé pour que la physique, les collisions et les calculs de grille restent cohérents.
+
+**Evidence :** Implémentation du décalage visuel des escaliers dans `groups.py` et `base.py`. 22 tests unitaires et d'intégration passent avec succès sans regression de la physique de collision.
+
+---
+
+### L-GAME-019 · 2026-06-11 · P · Minor Rework
+**Traiter les interceptions de direction diagonale dans `start_move()` avant les contrôles de contraintes de sortie**
+
+Dans un moteur de jeu basé sur des cases (grid-based movement), l'interception de direction (par exemple, transformer un déplacement gauche/droite en diagonale sur un escalier) doit s'exécuter avant de valider si la direction demandée est autorisée par les contraintes de sortie de la tuile (ex: `get_direction_flags`).
+
+**Pattern :**
+1. Intercepter la direction d'entrée dans `start_move()`.
+2. Si l'entité est sur une tuile spéciale (ex: escalier), mapper la direction d'entrée vers la direction de sortie cible (diagonale) et mettre à jour `self.direction`.
+3. Effectuer ensuite la vérification par rapport aux drapeaux de direction autorisés (`allowed_directions = get_direction_flags(...)`) avec la direction mise à jour.
+4. Cela évite que les contraintes de direction standard de la tuile bloquent à tort le mouvement de l'escalier.
+
+**Evidence :** Implémentation de la logique d'interception au début de `BaseEntity.start_move()` dans `base.py` résolvant les conflits de blocage directionnel.
+
+*Last updated: 2026-06-11 — A-PERF-003 résolu (P-001), L-PERF-004 (3-method decomposition), L-PERF-005 (dirty flag cache key), L-GAME-018 (render-time offset), L-GAME-019 (diagonal interception priority).*
 

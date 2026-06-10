@@ -237,6 +237,37 @@ class MapManager:
             result &= flags
         return result if result else set()
 
+    def get_vertical_move_props(self, tx: int, ty: int) -> dict | None:
+        """
+        Return vertical movement properties for the tile at (tx, ty), or None.
+
+        Scans all layers at (tx, ty). Returns the first tile that has a
+        'stair_direction' property (indicating a 25-vertical-move class tile).
+
+        Returns:
+            dict with keys 'stair_direction' (str), 'movement_type' (str),
+            'visual_y_offset' (int) — or None if not a vertical-move tile.
+        """
+        if not (0 <= ty < self.height and 0 <= tx < self.width):
+            return None
+
+        for layer_id in reversed(self.layer_order):
+            if layer_id not in self.layers:
+                continue
+            tile_id = self.layers[layer_id][ty][tx]
+            if tile_id == 0 or tile_id not in self.tiles:
+                continue
+            tile = self.tiles[tile_id]
+            props = tile.properties or {}
+            stair_dir = props.get("stair_direction", "")
+            if stair_dir:  # Non-empty string → explicit stair tile
+                return {
+                    "stair_direction": stair_dir,
+                    "movement_type": props.get("movement_type", "stair"),
+                    "visual_y_offset": int(props.get("visual_y_offset", -12)),
+                }
+        return None  # "" or absent → neutral tile, not a stair
+
     def get_visible_chunks(
         self, viewport_rect: pygame.Rect, min_depth: int | None = None
     ) -> Iterator[tuple[int, int, int, int]]:

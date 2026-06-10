@@ -35,6 +35,7 @@ class BaseEntity(pygame.sprite.Sprite):
         self.depth = 1
         self.name: str = ""
         self._world_state_key: str | None = None
+        self._vertical_move: dict | None = None  # Props 25-vertical-move de la tuile courante
 
     def move(self, dt: float):
         """Move towards target_pos if is_moving, else start move if direction exists."""
@@ -66,6 +67,31 @@ class BaseEntity(pygame.sprite.Sprite):
 
         current_tx = int(self.pos.x // Settings.TILE_SIZE)
         current_ty = int(self.pos.y // Settings.TILE_SIZE)
+
+        # ── [NOUVEAU] ── Interception escalier
+        if self.game and hasattr(self.game, "map_manager"):
+            vm = self.game.map_manager.get_vertical_move_props(current_tx, current_ty)
+            if vm and isinstance(vm, dict):
+                self._vertical_move = vm
+                stair_dir = vm["stair_direction"]
+                # Convert direction to discrete values
+                dx = 1 if self.direction.x > 0.01 else (-1 if self.direction.x < -0.01 else 0)
+                dy = 1 if self.direction.y > 0.01 else (-1 if self.direction.y < -0.01 else 0)
+                dir_tuple = (dx, dy)
+                
+                # Check mapping in VERTICAL_MOVE_MAP
+                map_key = (dir_tuple, stair_dir)
+                if map_key in Settings.VERTICAL_MOVE_MAP:
+                    self.direction = pygame.math.Vector2(Settings.VERTICAL_MOVE_MAP[map_key])
+                else:
+                    # Input non-mappé sur escalier -> Blocage silencieux complet
+                    self.direction = pygame.math.Vector2(0, 0)
+                    return
+            else:
+                self._vertical_move = None
+        else:
+            self._vertical_move = None
+
         if self.game and hasattr(self.game, "map_manager"):
             allowed_directions = self.game.map_manager.get_direction_flags(current_tx, current_ty)
 

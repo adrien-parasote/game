@@ -120,8 +120,14 @@ class CameraGroup(pygame.sprite.Group):
             # Align bottom-right of sprite image to bottom-right of logical hitbox
             visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
 
+            # ── [NOUVEAU] ── Décalage visuel escalier
+            stair_y_offset = 0
+            vm = getattr(sprite, '_vertical_move', None)
+            if vm is not None and isinstance(vm, dict):
+                stair_y_offset = vm["visual_y_offset"]
+
             # Calculate world visual rect in screen space
-            offset_pos = visual_rect.topleft + self.offset
+            offset_pos = (visual_rect.left + self.offset.x, visual_rect.top + self.offset.y + stair_y_offset)
 
             # Simple Frustum Culling: check if sprite overlaps screen
             screen_sprite_rect = pygame.Rect(offset_pos, visual_rect.size)
