@@ -1,91 +1,85 @@
-<!-- Generated: 2026-06-05 | Files scanned: 9 | Token estimate: ~520 -->
+<!-- Generated: 2026-06-11 | Files scanned: 11 | Token estimate: ~650 -->
 
-# Asset Convertor — Autotile Converter Architecture
+# Asset Convertor — Autotile & Recolor Tool Architecture
 
 ## Tool Purpose
-Converts RPG Maker XP/MV/MZ autotile PNG files into Tiled-compatible 47-tile blob tilesets (PNG sheet + TSX wangset). Supports static and animated autotiles (horizontal water / vertical waterfall).
+Converts RPG Maker XP/MV/MZ autotile PNG files into Tiled-compatible 47-tile blob tilesets (PNG sheet + TSX wangset), handles building A3 and wall A4 sheets, recolors sprites with presets/manual remapping, and resizes 48px assets to 32px.
 
 ## Entry Point
-`tools/src/asset_convertor/__main__.py` → `gui/app.py:App`
+`tools/src/asset_convertor/__main__.py` → `gui/app.py:App` (CustomTkinter GUI)
 
-## Conversion Pipeline
-User loads PNG → GUI validates → `convert_xp` or `convert_mv` → `assemble_sheet` + `generate_tsx` → writes PNG + TSX
+## Main GUI Architecture
+- **Primary Toolbar:** Mode Selection [🎮 Animé (A1) | 🏠 Bâtiment (A3) | 🧱 Mur (A4) | 🎨 Recolor | 🌱 Sol (A2)]
+- **Secondary Toolbar:** Dynamic context panels (Format XP/MV/MZ, speed, or resize scale hints).
+- **3-Panel Layout:** SOURCE | SORTIE | APERÇU (Canvas grid for A1/A2/A3/A4, or RecolorPanel for Recolor mode).
 
-> ⚠️ **Type contract**: both converters always return `list[list[Image.Image]]` (frames × tiles).
-> Static = 1 frame. Animated = N frames. `tile_size = result[0][0].width` — never `result[0].width`.
+## Conversion Pathways
 
-### XP Path (96×128 or multiples → 32px tiles)
-- `gui/app.py:_convert` → `converter_xp.convert_xp(img, is_animated, animation_mode)`
-- Returns `list[list[Image.Image]]` — 1 frame (static) or N frames (animated horizontal)
-- `converter_xp.py:_extract_subtile` → crops 16×16 sub-tiles from 6×8 XP grid
-- `converter_xp.py:_build_tile_from_bitmask` → builds blob tile from 4 quadrant lookups
-- Vertical animation: not supported for XP — raises `ValueError`
+### A2/A1 Ground Path (XP or MV)
+- XP: `converter_xp.convert_xp(img, is_animated, mode)` (crops 16x16 sub-tiles → 47 blob tiles)
+- MV: `converter_mv.convert_mv(img, is_animated, mode)` (crops 24px mini-tiles → 47 normalized 32px/48px tiles)
+- Returns `list[list[Image.Image]]` (frames × tiles)
 
-### MV/MZ Path (64×96 or 96×144 → normalized to 32px)
-- `gui/app.py:_convert` → `converter_mv.convert_mv(img, is_animated, animation_mode)`
-- Returns `list[list[Image.Image]]` — 1 frame (static) or N frames (animated)
-- `converter_mv.py:detect_tile_size(img)` → returns 32 or 48 from `_VALID_BLOCK_SIZES`
-- `converter_mv.py:_build_mv_tile(img, bitmask, tile_size)` → standard floor tile assembly
-- `converter_mv.py:_build_waterfall_tile(img, bitmask, tile_size)` → 4-shape waterfall mapping
-- Internal helpers: `_convert_mv_static`, `_convert_mv_animated_horizontal`, `_convert_mv_animated_vertical`
+### A3 Building/Roof Path (MV only)
+- `converter_mv_a3.convert_mv_a3(img) -> tuple[Image, Image]` (roof_strip, wall_strip)
+- Roofs are assembled via WALL_AUTOTILE_TABLE (16 shapes)
 
-### Animation Cycle Rules (shared by GUI and TSX generator)
-| Frames | Mode | Sequence |
-|--------|------|----------|
-| 3 | Horizontale | `[0, 1, 2, 1]` ping-pong |
-| 3 | Verticale | `[0, 1, 2]` linear |
-| 4 | Either | `[0, 1, 2, 3]` linear |
-| N | Other | `[0..N-1]` linear |
+### A4 Wall Path (MV only)
+- `converter_mv_a4.convert_mv_a4(img) -> tuple[Image, Image]` (tops_strip, sides_strip)
+- Row parity mapping: even rows → tops (FLOOR 47 shapes), odd rows → sides (WALL 16 shapes)
+- Canvas supports **Mur** (4-neighbor sides) and **Sol** (8-neighbor tops) toggle
 
-### Export Path
-- `tsx_generator.assemble_sheet(tiles_by_frame, tile_size)` → 8×(6×N) PNG (slot 47 = transparent)
-- `tsx_generator.generate_tsx(name, size, png, is_animated, animation_mode, duration, num_frames)` → XML with `<animation>` nodes per tile
-- `tsx_generator.export(tiles, name, output_dir, tile_size, ...)` → writes .png + .tsx, returns paths
+### Recolor Engine
+- `recolor.extract_palette(img) -> list[Color]` (max 32 colors extracted)
+- `recolor.apply_remap(img, table) -> Image` (re-indexes colors via mapping table)
+- `gui/recolor_panel.py`: Swatches display + Lospec presets (Dawnbringer, Endesga) + manual color mapping
+
+### Resize Tool
+- `gui/app.py`: resizes 48px inputs to 32px using crisp `Image.NEAREST` scaling
+
+### Exporters
+- `tsx_generator.assemble_sheet()`: stacks animation frames vertically into a single PNG sheet
+- `tsx_generator.generate_tsx()`: writes Tiled TSX file with `<animation>` cycle nodes (ping-pong or linear)
+- `tsx_generator.export()`: writes .png + .tsx files
 
 ## Key Files
 ```
-tools/src/asset_convertor/
-  __main__.py              entry point → App()
-  core/
-    converter_xp.py        XP → list[list[47 tiles]] (BLOB_BITMASKS, convert_xp)
-    converter_mv.py        MV/MZ → list[list[47 tiles]] (detect_tile_size, convert_mv, waterfall)
-    constants.py           shared constants (TILE_SIZE, SUBTILE_SIZE, BLOB_BITMASKS)
-  exporters/
-    tsx_generator.py       PNG sheet + TSX writer (assemble_sheet, generate_tsx, export)
-  gui/
-    app.py                 customtkinter 3-panel GUI (App, AppState, animation timer)
+tools/src/
+├── asset_convertor/
+│   ├── core/
+│   │   ├── constants.py       # Centralized constants (BLOB_BITMASKS, tufts)
+│   │   ├── converter_mv.py    # MV A2/A1 converter & waterfall lookup
+│   │   ├── converter_mv_a3.py # A3 converter (roof/wall split)
+│   │   ├── converter_mv_a4.py # A4 converter (interleaved tops/sides)
+│   │   ├── converter_xp.py    # XP converter
+│   │   ├── palettes.py        # Predefined Lospec palettes
+│   │   └── recolor.py         # Recolor palette extractor & remapper
+│   ├── exporters/
+│   │   ├── exporter.py        # Exporter interface
+│   │   └── tsx_generator.py   # PNG assembly + TSX XML animation loop writer
+│   └── gui/
+│       ├── app.py             # App CTk main UI loop & state coordinator
+│       ├── recolor_panel.py   # Palette list, preset grid, remapping table
+│       └── state.py           # Immutable AppState & RecolorState dataclasses
+├── assets/
+│   └── flat_wall_to_diagonal.py # CLI converter for diagonal wall segments
+└── calibration/
+    └── calibrate_halos.py     # Torch halo light mask calibration tool
 ```
 
 ## Public API Contracts
-| Symbol | File | Signature | Returns |
-|--------|------|-----------|---------| 
-| `convert_xp` | converter_xp.py | `(img, is_animated=False, animation_mode="Horizontale") -> list[list[Image]]` | N frames of 47 tiles |
-| `convert_mv` | converter_mv.py | `(img, is_animated=False, animation_mode="Horizontale") -> list[list[Image]]` | N frames of 47 tiles |
-| `detect_tile_size` | converter_mv.py | `(img: Image) -> int` | 32 or 48 |
-| `assemble_sheet` | tsx_generator.py | `(tiles_by_frame, tile_size) -> Image` | 8×(6×N) PNG |
-| `export` | tsx_generator.py | `(tiles, name, dir, size, is_animated, animation_mode, duration) -> tuple[str,str]` | (png_path, tsx_path) |
-| `BLOB_BITMASKS` | converter_xp.py | `tuple[int, ...]` | 47 valid blob bitmasks |
+| Symbol | Signature | Role |
+|---|---|---|
+| `convert_xp` | `(img, is_animated, mode) -> list[list[Image]]` | XP Autotile parsing |
+| `convert_mv` | `(img, is_animated, mode) -> list[list[Image]]` | MV A2 Autotile parsing |
+| `convert_mv_a3` | `(img) -> tuple[Image, Image]` | A3 split roof & wall parsing |
+| `convert_mv_a4` | `(img) -> tuple[Image, Image]` | A4 split tops & sides parsing |
+| `extract_palette` | `(img) -> list[Color]` | Palette extraction |
+| `apply_remap` | `(img, table) -> Image` | Color reindexing |
+| `export` | `(tiles, name, dir, size, is_animated, mode, duration) -> tuple[str,str]` | Writes PNG + TSX |
 
-## Bitmask Convention (shared)
-NW=1, N=2, NE=4, W=8, E=16, SW=32, S=64, SE=128
-
-## Sample Files
-```
-tools/src/input/
-  sample_xp.png        96×128 px (XP autotile)
-  sample_mv_32px.png   64×96 px  (MV, tile_size=32)
-  sample_mv_48px.png   96×144 px (MV, tile_size=48)
-```
-
-## Test Coverage (97 tests)
-```
-tools/tests/asset_convertor/
-  core/test_converter_xp.py           TC-001..010 (unit, static + animated + mutation)
-  core/test_converter_mv.py           TC-011..020 (unit, static + animated + waterfall)
-  exporters/test_tsx_generator.py     TC-021..035 (unit, sheet assembly + TSX animation XML)
-  core/test_converter_integration.py  IT-001..009 (integration, sample files, full pipeline)
-  gui/test_app.py                     App init, validation, animation controls (unit, headless)
-```
-
-## Spec
-`tools/docs/specs/autotile_converter_spec.md`
+## Test Coverage
+- `tools/tests/asset_convertor/core/`: XP, MV, A3, A4, recolor, and quantizer tests.
+- `tools/tests/asset_convertor/gui/`: CTk app, AppState, resize, and RecolorPanel tests.
+- `tools/tests/assets/`: Flat-to-diagonal wall converter tests.
+- `tools/tests/calibration/`: Halo light mask calibration tests.

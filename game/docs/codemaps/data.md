@@ -1,15 +1,16 @@
-<!-- Generated: 2026-05-27 | Last doc-update: 2026-05-27 (Steps 1-11 remédiation) | Files scanned: 73 | Token estimate: ~900 -->
+<!-- Generated: 2026-05-27 | Last doc-update: 2026-06-11 (stair movement & occlusion cache) | Files scanned: 73 | Token estimate: ~900 -->
 
 # Data & Dependencies Architecture
 
 ## Configuration & Data Files
-- **Settings** (`settings.json`): Screen, debug flags, colors, key bindings → `src/config.py`.
+- **Settings** (`settings.json`): Screen, debug flags, colors, key bindings → `src/config.py` (which defines `VERTICAL_MOVE_MAP` for diagonal stair movements).
 - **Localization** (`assets/langs/fr.json`): Nested JSON `"npc.farmer.dialogue"` → string → `I18nManager`.
 - **Loot Tables** (`assets/data/loot_table.json`): `{item_id, min_qty, max_qty, chance}`. Max 20 stacks; overflow trimmed with WARNING.
 - **Gameplay Data** (`gameplay.json`): Item registry — `item_id → {name, description, icon, type, equip_slot, stack_max}`.
 - **Property Types** (`assets/data/propertytypes.json`): Enum metadata for Tiled object property validation.
-- **Maps** (`assets/tiled/maps/*.tmj`): Tilemap JSON — layers, objects, properties.
+- **Maps** (`assets/tiled/maps/*.tmj`): Tilemap JSON — layers, objects, properties (including custom properties `stair_direction`, `visual_y_offset` on stair tiles).
 - **Tilesets** (`assets/tiled/tilesets/*.tsx`): Spritesheet grid definitions (XML).
+
 
 ## Game Events (`GameEvent`, `src/engine/game_events.py`)
 ```python

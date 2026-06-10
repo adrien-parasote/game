@@ -86,7 +86,6 @@
 | Path / Identifier | Format | Schema location | Producer |
 |---|---|---|---|
 | `tools/src/input/*.png` | PNG image | This spec § Input Validation | User |
-| `tools/src/asset_convertor/core/minimap.py` | Python Module | asset_convertor_spec.md § Modules | asset_convertor_spec |
 
 ### Public Interface
 
@@ -105,8 +104,7 @@ N/A — this spec invokes no external interfaces beyond the Python stdlib and Pi
 
 | Concept | Status in this spec | Mentioned in |
 |---|---|---|
-| 47-tile blob bitmask | Produced (output tileset) | asset_convertor_spec.md (canvas autotile mode) |
-| minimap.py bitmask engine | Consumed (canvas validator) | asset_convertor_spec.md |
+| 47-tile blob bitmask | Produced (output tileset) | asset_convertor_mv_gui.md (canvas autotile mode) |
 
 ---
 
@@ -125,8 +123,7 @@ N/A — this spec invokes no external interfaces beyond the Python stdlib and Pi
 tools/src/asset_convertor/
 ├── core/
 │   ├── converter_xp.py     [MODIFY] XP sub-tile assembly → 47 PIL Images per frame
-│   ├── converter_mv.py     [MODIFY] MV/MZ sub-tile assembly → 47 PIL Images per frame
-│   └── minimap.py          [EXISTING] bitmask engine (consumed by canvas)
+│   └── converter_mv.py     [MODIFY] MV/MZ sub-tile assembly → 47 PIL Images per frame
 ├── exporters/
 │   └── tsx_generator.py    [MODIFY] PNG sheet + TSX animation nodes writer
 └── gui/

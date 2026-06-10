@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-27 | Last doc-update: 2026-05-27 (Steps 1-11 remédiation) | Files scanned: 73 | Token estimate: ~1100 -->
+<!-- Generated: 2026-05-27 | Last doc-update: 2026-06-11 (stair movement & occlusion cache) | Files scanned: 73 | Token estimate: ~1100 -->
 
 # Engine Logic Flow
 
@@ -18,6 +18,7 @@ PAUSED  → GameEvent.goto_title()        → _transition_to_title()        → 
 ## Movement Chain
 `Player.input()` (WASD/Arrows) → `BaseEntity.move(dt)` → `CollisionChecker.is_collidable()` (tile + obstacle group) → `rect` update + animation frame
 - **Footsteps**: frames 1 and 3. `MapManager.get_terrain_material_at()` → depth≤1 tiles only. `AudioManager.play_sfx(footstep_{material})` with fallback.
+- **Diagonal Stair Movement**: Horizontal inputs (right/left) on stair tiles (`stair_direction` property "right"/"left") are intercepted in `BaseEntity.start_move()` and mapped to diagonal moves via `Settings.VERTICAL_MOVE_MAP`. Other directions are blocked. Visual Y-position is adjusted by `stair_y_offset` in `CameraGroup.custom_draw()`.
 
 ## Interaction Chain
 `INTERACT_KEY (E)` → `InteractionManager.handle_interactions()` (`distance_squared_to`, module-level `_RANGE_SQ_*` constants)
@@ -86,6 +87,7 @@ sub_types: chest | lever | door | sign | animated_decor
 ## Rendering Pipeline
 `RenderManager.draw_scene()` → pre-computes `_frame_anim_all`/`_frame_anim_by_layer` (1x/frame)
 → `draw_background()` → `_apply_partial_occlusion()` → `_apply_grass_wading_to_images()` → `custom_draw()` → `draw_foreground() → OccludingRect`
-- **Partial Occlusion**: sprite rects ∩ foreground tiles (depth > sprite.depth) → composite with `OCCLUSION_ALPHA` (50%). Skips player during scripted intra-map walks.
+- **Partial Occlusion**: sprite rects ∩ foreground tiles (depth > sprite.depth) → composite with `OCCLUSION_ALPHA` (50%). Skips player during scripted intra-map walks. Uses `_occ_composite_cache` keyed by camera offset & number of occluding rects to cache blitted composites.
 - **Grass Wading**: `MapManager.get_grass_tile_image_at()` at foot center → reblit grass over bottom 8px. Skips player during scripted walks.
+- **Foreground Optimization**: `MapManager.get_foreground_layer_surface()` pre-renders static foreground tiles per layer to bypass per-tile visible chunk scans.
 - **Test contract**: tests calling `draw_background()`/`draw_foreground()` directly must pre-populate `_frame_anim_by_layer`/`_frame_anim_all` (see A-PERF-002).

@@ -14,7 +14,7 @@
 - [Existing A2 converter (reference implementation)](../../src/asset_convertor/core/converter_mv.py)
 - [WALL_AUTOTILE_TABLE source](https://github.com/rpgtkoolmv/corescript/blob/master/js/rpg_core/Tilemap.js)
 - [GUI State spec — mode constants](./asset_convertor_mv_gui.md#appstate-fields)
-- [TSX exporter](../../src/asset_convertor/exporters/tsx_exporter.py)
+- [TSX exporter](../../src/asset_convertor/exporters/tsx_generator.py)
 
 ---
 
@@ -57,8 +57,7 @@ Implement two new converter modules for RPG Maker MV autotile formats:
 | Path / Identifier | Format | Schema location | Producer |
 |---|---|---|---|
 | `core/converter_mv.py` | Python Module | `autotile_converter_spec.md` | A2 spec |
-| `exporters/png_exporter.py` | Python Module | Existing codebase | Exporter |
-| `exporters/tsx_exporter.py` | Python Module | Existing codebase | Exporter |
+| `exporters/tsx_generator.py` | Python Module | Existing codebase | Exporter |
 
 ### Public Interface
 

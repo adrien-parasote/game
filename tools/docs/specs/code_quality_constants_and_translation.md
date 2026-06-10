@@ -80,16 +80,8 @@ tests/
 
 | ID | Component | Description | Assertion |
 |---|---|---|---|
-| TC-001 | core/constants | Constant Values Integrity | Assertions pass and values represent correct original magic values |
-| TC-002 | core/subtile | Subtile Constants usage | Zero hardcoded border coefficients exist |
-| TC-003 | core/texture | Texture Constants usage | Noise remains **bit-for-bit** identical to original output (verified with `numpy.array_equal`, not `allclose`) |
-| TC-004 | gui/state | State Defaults integration | Directories and color variables default to constants |
-| TC-005 | core/subtile | Translation complete | No French comments in `tools/asset_convertor/core/`. Note: user-facing labels in `gui/app.py` are excluded (French mandatory per GUI spec). |
-| TC-006 | core/constants | Float Precision | For each float constant, `ast.literal_eval(repr(constant)) == original_value` using Python `==` (no tolerance) |
-| TC-007 | core/constants | Leaf module (no package imports) | Parsing `tools/asset_convertor/core/constants.py` with `ast` reveals zero `ImportFrom` nodes referencing `tools.asset_convertor` package |
-| IT-001 | full | Clean test suite pass | All existing tests pass green. Count ≥ 361 (exact number grows as new feature specs add tests). |
-| IT-002 | preview | Pygame preview module compile | Works cleanly |
-| IT-003 | pipeline | Export integration verify | Export succeeds |
+| TC-001 | core/constants | Check that unused constants are pruned | Unused constants are not present in constants.py |
+| TC-004 | core/constants | Tuft matrices validity and comments | Tuft matrices contain only valid values; no French developer comments exist in source files |
 
 ---
 
@@ -100,13 +92,11 @@ tests/
 Extraction of magic values into `tools/asset_convertor/core/constants.py`.
 Constants include: grid constraints, noise defaults, border effects, dithering thresholds, default application settings, default UI colors, and preview settings.
 
-**Float constant precision rule:** All floating-point constants must be extracted as their **exact source code string representation** — do not round or truncate. Verify by parsing the original file with `ast.parse`, extracting each `ast.Constant` node's `.value`, and asserting `original_value == new_constant` using Python `==` (bitwise identical, no tolerance). TC-003 must use `numpy.array_equal` (not `numpy.allclose`) to confirm generated textures are bit-for-bit identical before and after extraction.
-
 ### F-TOOL-QUAL-02: French Comments Translation
 
 Translate French **code comments** (`# ...`) to English across `tools/asset_convertor/core/` and `tools/asset_convertor/gui/` modules.
 
-**⛔ EXCEPTION — `gui/app.py` user-facing labels:** Per [asset_convertor_spec.md](./asset_convertor_spec.md#L1) § "UI Language Constraint", all user-visible widget labels in `gui/app.py` MUST remain in French. Do NOT translate them.
+**⛔ EXCEPTION — `gui/app.py` user-facing labels:** Per [asset_convertor_mv_gui.md](./asset_convertor_mv_gui.md#L1) § "UI Language Constraint", all user-visible widget labels in `gui/app.py` MUST remain in French. Do NOT translate them.
 
 Scope:
 - ✅ Code comments in any `.py` file under `tools/asset_convertor/` (except gui/app.py UI strings)
@@ -117,7 +107,7 @@ Scope:
 
 - Code structure will be checked for unnecessary allocations or loop overheads.
 - Clean up of imports and sorting where needed to conform to the coding standard.
-- The tests in `tests/tools/asset_convertor/` will act as our safety net (≥ 361 tests — count grows as new specs add tests).
+- The tests in `tests/tools/asset_convertor/` will act as our safety net (≥ 97 tests — count grows as new specs add tests).
 
 ---
 
@@ -134,5 +124,3 @@ Scope:
 ## Deep Links
 
 - Strategic blueprint: [constants_extraction_blueprint.md](../strategic/constants_extraction_blueprint.md#7-questions-framework)
-- Core subtile: [subtile.py](../../../tools/asset_convertor/core/subtile.py#L1)
-- Core texture: [texture.py](../../../tools/asset_convertor/core/texture.py#L1)

@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-27 | Last doc-update: 2026-05-29 (pixel-perfect occlusion) | Files scanned: 73 | Token estimate: ~1400 -->
+<!-- Generated: 2026-05-27 | Last doc-update: 2026-06-11 (stair movement & occlusion cache) | Files scanned: 73 | Token estimate: ~1400 -->
 
 # Game Engine Architecture
 
@@ -17,7 +17,7 @@
 |---|---|---|---|
 | **GameStateManager** | `src/engine/game_state_manager.py` | 309 | State machine (TITLE/PLAYING/PAUSED), global event routing, save/load orchestration |
 | **Game** | `src/engine/game.py` | 420 | Gameplay orchestrator, thin wrappers to sub-managers |
-| **RenderManager** | `src/engine/render_manager.py` | 597 | Scene rendering (background/foreground/HUD/occlusion/wading). `draw_foreground()→OccludingRect(Rect,depth,Surface\|None)`. `_create_composite_occlusion_surface()` applies `BLEND_RGBA_MULT` directly on composite for pixel-perfect partial-tile alpha. Frame-anim pre-computed 1x/frame. |
+| **RenderManager** | `src/engine/render_manager.py` | 597 | Scene rendering (background/foreground/HUD/occlusion/wading). `draw_foreground()→OccludingRect(Rect,depth,Surface\|None)`. `_create_composite_occlusion_surface()` applies `BLEND_RGBA_MULT` directly on composite. `_occ_composite_cache` caches partial-occlusion composites by camera offset & rect count. |
 | **InteractionManager** | `src/engine/interaction.py` | 400 | Proximity/facing checks (objects, NPCs, pickups, chests, emotes, teleporters) |
 | **EntityFactory** | `src/engine/entity_factory.py` | 265 | Entity spawning (interactive, teleport, NPC, pickup). Pattern: `EntityFactory(game: Any)`. |
 | **MapLoader** | `src/engine/map_loader.py` | 115 | Map loading pipeline (parse, BGM, cleanup, spawn, player position) |
@@ -25,9 +25,9 @@
 | **CollisionChecker** | `src/engine/collision_checker.py` | 80 | Tile + entity collision checks |
 | **SaveManager** | `src/engine/save_manager.py` | 271 | JSON save/load (3 slots), thumbnails. Path: `pygame.system.get_pref_path("adrien","game")` + fallback `saves/` |
 | **GameEvents** | `src/engine/game_events.py` | 59 | `GameEvent` dataclass + `GameEventType` enum. Factory: `new_game()`, `load_requested(n)`, `pause_requested()`, etc. |
-| **MapManager** | `src/map/manager.py` | 191 | Layer surfaces, TMJ state, collision tile queries |
+| **MapManager** | `src/map/manager.py` | 191 | Layer surfaces, TMJ state, collision tile queries. `get_foreground_layer_surface()` pre-renders static foreground tiles per layer. |
 | **TmjParser** | `src/map/tmj_parser.py` | 263 | TMJ/TSX parsing → structured `map_data` dict |
-| **CameraGroup** | `src/entities/groups.py` | 121 | Y-sorted rendering, camera offset, dirty-flag sort cache |
+| **CameraGroup** | `src/entities/groups.py` | 121 | Y-sorted rendering, camera offset, dirty-flag sort cache. `stair_y_offset` shifts sprite render position when moving on stairs. |
 | **AssetManager** | `src/engine/asset_manager.py` | 125 | Singleton image/font cache with per-map clear. `get_occlusion_mask(tile_surf)→Surface\|None`: BLEND_RGBA_MULT modulation mask cached by `id(tile_surf)`, built once at load time (A=OCCLUSION_ALPHA where opaque, A=255 where transparent). Cleared in `clear_cache()`. |
 | **I18nManager** | `src/engine/i18n.py` | 58 | Singleton translation lookup via nested key paths |
 
