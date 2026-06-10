@@ -1266,3 +1266,44 @@ grep -rn "src\..*\.os\.path\.exists" tests/ --include="*.py"
 ---
 
 *Last updated: 2026-06-10 — added L-TEST-022, A-TEST-044 from pre-existing failures fix session (performance audit VERIFY).*
+
+---
+
+### A-TEST-045 · 2026-06-10 · P · Minor Rework
+**Helpers test utilisant `__new__` pour bypasser `__init__` de `RenderManager` — attrs de cache manquants après ajout de nouveaux champs**
+
+Quand `RenderManager.__init__` est bypassé via `__new__` dans un helper test (`_make_render_manager` dans `test_render_order.py`), tous les attributs ajoutés à `__init__` après la création du helper sont absents de l'instance de test. L'appel à `draw_scene()` ou `_apply_partial_occlusion()` lève un `AttributeError` sur ces attributs.
+
+```python
+# ❌ __new__ bypass — manque les attrs ajoutés dans __init__
+def _make_render_manager(game):
+    rm = RenderManager.__new__(RenderManager)  # bypass __init__
+    rm.game = game
+    # ... attrs manuels copiés depuis init v1
+    # → APRÈS ajout de _occ_key + _occ_composite_cache dans __init__,
+    #   ces attrs sont absents → AttributeError au premier test utilisant P-004
+
+# ✅ Synchroniser le helper AVEC chaque nouveau attr ajouté à __init__
+def _make_render_manager(game):
+    rm = RenderManager.__new__(RenderManager)
+    rm.game = game
+    # ... attrs existants ...
+    rm._occ_key = None               # ← P-004 — obligatoire
+    rm._occ_composite_cache = {}     # ← P-004 — obligatoire
+```
+
+**Règle :** Tout helper test utilisant `__new__` sur une classe qui évolue DOIT être mis à jour en MÊME TEMPS que l'ajout du nouvel attribut dans `__init__`. La revue du diff doit inclure une recherche `grep -rn "__new__(RenderManager)"` pour identifier tous les sites à mettre à jour.
+
+**Détection systématique :**
+```bash
+grep -rn "__new__(RenderManager)" tests/
+# → chaque site = candidat à mettre à jour si __init__ change
+```
+
+**Scope :** Projet-spécifique (pattern `__new__` bypass est rare mais récurrent dans ce projet pour éviter les assets disque dans les tests de perf).
+
+**Evidence :** `test_render_order.py::_make_render_manager` — 1 test rouge (`TC-P004-002` côté render_order) après ajout de `_occ_key`/`_occ_composite_cache` dans `RenderManager.__init__`. Fix 2 lignes. 97/97 tests verts après.
+
+---
+
+*Last updated: 2026-06-10 — added A-TEST-045 from P-004 dirty flag HARDEN session (__new__ bypass attrs sync).*

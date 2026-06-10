@@ -612,7 +612,7 @@ Lors d'un cycle d'optimisations multiples (P-001 à P-007), l'ordre d'exécution
 
 ---
 
-### A-PERF-003 · 2026-06-10 · P · Major Rework
+### A-PERF-003 · 2026-06-10 · P · Major Rework *(updated 2026-06-10 — résolu par P-001, occurrences: 1)*
 **Livrer l'infrastructure de cache foreground sans décomposer d'abord les responsabilités entrelacées de la boucle cible**
 
 `get_foreground_layer_surface()` a été ajoutée à `MapManager` (commit `515f5a8`) mais reste non wirée à `_draw_static_foreground_tiles`. La raison : la boucle `get_visible_chunks` dans `_draw_static_foreground_tiles` cumule 3 responsabilités entrelacées — (1) blit normal des tuiles → remplaçable par surface pré-rendue, (2) blit occludé (`occluded_image`) dépendant de `player_screen_rect` par frame, (3) construction de `occluding_rects` pour `_apply_partial_occlusion`. Impossible de découpler (1) sans refonte du pipeline d'occlusion.
@@ -620,4 +620,84 @@ Lors d'un cycle d'optimisations multiples (P-001 à P-007), l'ordre d'exécution
 **Anti-pattern :** Livrer une infrastructure de cache AVANT d'avoir décomposé les responsabilités entrelacées de la boucle qui doit la consommer. L'infrastructure devient inutilisable et crée de la dette (code non appelé).
 
 **Fix pour la prochaine spec perf :** Spécifier d'abord la décomposition de la boucle (3 responsabilités → 3 fonctions distinctes), puis l'infrastructure de cache. Ordre : spec → découplage → infrastructure → wire. Ne jamais livrer l'infrastructure avant que la décomposition soit conçue et documentée.
+
+**Résolution (P-001, 2026-06-10) :** La boucle a été décomposée en 3 méthodes distinctes dans `MapManager` (`_build_world_surface`, `_build_fg_occlusion_world`, `_get_fg_depth_tiles`) + 2 dans `RenderManager` (`_draw_world_surface`, `_draw_fg_occlusion_tiles`). La `WorldSurface` est wirée et produit le gain attendu. Voir L-PERF-004 pour le pattern positif associé.
+
+---
+
+### L-PERF-004 · 2026-06-10 · P · Minor Rework
+**Pattern 3-fonctions pour découpler une boucle tile foreground à responsabilités entrelacées**
+
+Quand une boucle tile foreground cumule (1) blit normal, (2) blit occludé conditionnel, (3) collecte de rects pour un pipeline aval, la transformer en WorldSurface pre-rendered exige de décomposer d'abord les 3 responsabilités en fonctions distinctes.
+
+**Décomposition résultante :**
+
+```python
+# MapManager — BUILD TIME (1x par changement de map)
+def _build_world_surface(self) -> None:
+    """(1) Blit normal des tuiles foreground depth>player → Surface world-space pré-rendue."""
+
+def _build_fg_occlusion_world(self) -> None:
+    """(2) Collecte des tuiles occludant potentiellement un sprite → liste world-space."""
+
+def _get_fg_depth_tiles(self) -> Generator[...]:
+    """(3) Tuiles foreground par depth — utilisées pour les deux pipelinnes ci-dessus."""
+
+# RenderManager — FRAME TIME
+def _draw_world_surface(self, cam_offset: tuple[int, int]) -> list[Rect]:
+    """Blit viewport de la WorldSurface + collecte occluding_rects depuis _fg_occlusion_world."""
+
+def _draw_fg_occlusion_tiles(self, player_rect: Rect, player_depth: int, cam_offset: tuple) -> None:
+    """Blit les tuiles d'occlusion partielle (depth <= player_depth — tiles semi-transparentes)."""
+```
+
+**Règle :** La décomposition doit être spécifiée AVANT de livrer l'infrastructure de cache (anti-pattern A-PERF-003). L'ordre correct : spec → décomposition 3 fonctions → WorldSurface → wire.
+
+**Règle spec :** La spec doit lister les 3 responsabilités nommées et leurs fonctions cibles. Toute ambiguïté sur "quelle responsabilité appartient à quelle méthode" = 1 itération de refactoring assurée.
+
+**Evidence :** P-001 commit `10778e9`. 17 nouveaux tests (TC-P001-001..008, TC-015..020) RED → GREEN. 91/91 tests verts. Gain attendu : −20 ms/frame (élimination boucle 480 tiles/frame).
+
+---
+
+### L-PERF-005 · 2026-06-10 · P · Perfect
+**Dirty flag avec clé minimale `(int(cam_x), int(cam_y), len(rects))` pour les caches de composites par frame**
+
+Pour les caches de composites graphiques invalidés quand la caméra bouge OU quand le nombre de rects occludants change, une clé à 3 entiers est suffisante et n'introduit aucune collision silencieuse :
+
+```python
+# Dans RenderManager.__init__
+self._occ_key: tuple[int, int, int] | None = None
+self._occ_composite_cache: dict[Any, pygame.Surface] = {}
+
+# Méthode reset (appeler lors d'un changement de map)
+def reset_occ_cache(self) -> None:
+    self._occ_key = None
+    self._occ_composite_cache.clear()
+
+# Dans _apply_partial_occlusion
+def _apply_partial_occlusion(self, occluding_rects: list[...], cam_offset: tuple) -> None:
+    key = (int(cam_offset[0]), int(cam_offset[1]), len(occluding_rects))
+    if key == self._occ_key:
+        # Cache HIT — réinstaller composites sans re-itérer les sprites
+        for sprite, composite in self._occ_composite_cache.items():
+            sprite.image = composite
+        return
+    # Cache MISS — calcul complet + mise à jour cache
+    ...
+    self._occ_key = key
+    self._occ_composite_cache = new_cache
+```
+
+**Pourquoi `len(occluding_rects)` suffit comme 3e composante :** Le nombre de rects occludants change dès que le joueur entre ou sort d'une zone de tuile foreground — précisément les frames où le composite doit être recalculé. En pratique, deux sets de rects avec le même `len` mais des positions différentes impliquent que le joueur a bougé → `cam_offset` a changé → clé différente.
+
+**Préconditions pour que le cache soit safe :**
+- `draw_scene()` restaure `sprite.image` après chaque frame (swap-and-restore, L-REND-005)
+- `reset_occ_cache()` est appelé à chaque chargement de map
+- La clé n'est PAS basée sur les coordonnées des sprites — ceux-ci ne font pas partie de la clé
+
+**Règle :** Ne jamais inclure les coordonnées individuelles des `occluding_rects` dans la clé — trop coûteux à hacher. `len()` + cam_offset est le minimum suffisant pour détecter les invalididations pertinentes.
+
+**Evidence :** P-004 commit `df93698`. 6 tests TC-P004-001..006 RED → GREEN au premier pass. 97/97 tests verts. Zéro human enforcement sur l'implémentation.
+
+*Last updated: 2026-06-10 — A-PERF-003 résolu (P-001), L-PERF-004 (3-method decomposition), L-PERF-005 (dirty flag cache key).*
 
