@@ -82,3 +82,5 @@ logs/
 # 📚 Game Wiki (Nested but isolated repo)
 # ==============================================================================
 game-wiki/
+scripts/dev/perf_audit_*
+scripts/dev/profile_*
