@@ -598,3 +598,26 @@ Quand une méthode de rendu graphique ou d'orchestration de scène (`draw_scene`
 **Evidence :** Refactoring de `RenderManager.py` : la méthode `_apply_grass_wading` a été divisée en extrayant `_render_grass_wading_for_sprite` (passant de 115 lignes à deux méthodes de moins de 45 lignes chacune). 1086/1086 tests validés avec succès après modularisation, 100% de conformité aux gates d'architecture.
 
 ---
+
+---
+
+### L-PERF-003 · 2026-06-10 · P · Minor Rework
+**Mesurer après chaque micro-optimisation isolée pour révéler le bottleneck réel suivant**
+
+Lors d'un cycle d'optimisations multiples (P-001 à P-007), l'ordre d'exécution prévu (P-002 → P-001 → P-005 → P-003) a été réordonné après investigation. Mesurer après chaque correction individuelle a révélé que P-003 (`_update_particles`) était le 2e bottleneck réel APRÈS P-005 (`_update_flicker`), alors que le plan initial plaçait P-001 (foreground tiles) en 1er.
+
+**Pattern :** Profiler une correction à la fois avec un run de N frames identique à la baseline. Ne jamais grouper deux corrections sans mesure intermédiaire — les gains s'annulent, se compensent ou s'amplifient de façon non linéaire.
+
+**Evidence :** P-005 : 1.165 s → 0.313 s (−73 %, mesuré). P-003 : 5.166 s → 3.955 s (−23 %, mesuré). Sans mesures intermédiaires, ces gains individuels auraient été inobservables, et l'attribution causale aurait été impossible.
+
+---
+
+### A-PERF-003 · 2026-06-10 · P · Major Rework
+**Livrer l'infrastructure de cache foreground sans décomposer d'abord les responsabilités entrelacées de la boucle cible**
+
+`get_foreground_layer_surface()` a été ajoutée à `MapManager` (commit `515f5a8`) mais reste non wirée à `_draw_static_foreground_tiles`. La raison : la boucle `get_visible_chunks` dans `_draw_static_foreground_tiles` cumule 3 responsabilités entrelacées — (1) blit normal des tuiles → remplaçable par surface pré-rendue, (2) blit occludé (`occluded_image`) dépendant de `player_screen_rect` par frame, (3) construction de `occluding_rects` pour `_apply_partial_occlusion`. Impossible de découpler (1) sans refonte du pipeline d'occlusion.
+
+**Anti-pattern :** Livrer une infrastructure de cache AVANT d'avoir décomposé les responsabilités entrelacées de la boucle qui doit la consommer. L'infrastructure devient inutilisable et crée de la dette (code non appelé).
+
+**Fix pour la prochaine spec perf :** Spécifier d'abord la décomposition de la boucle (3 responsabilités → 3 fonctions distinctes), puis l'infrastructure de cache. Ordre : spec → découplage → infrastructure → wire. Ne jamais livrer l'infrastructure avant que la décomposition soit conçue et documentée.
+

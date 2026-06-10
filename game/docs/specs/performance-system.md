@@ -3,7 +3,7 @@
 > Document Type: Implementation
 
 > **Document Type:** Implementation
-> **Source Files:** `src/entities/groups.py`, `src/engine/render_manager.py`, `src/ui/title_screen.py`, `src/engine/interaction.py`, `src/ui/pause_screen.py`, `src/ui/save_menu.py`
+> **Source Files:** `src/entities/groups.py`, `src/engine/render_manager.py`, `src/ui/title_screen.py`, `src/engine/interaction.py`, `src/ui/pause_screen.py`, `src/ui/save_menu.py`, `src/entities/interactive.py`, `src/entities/interactive_particles.py`, `src/map/manager.py`
 
 This specification consolidates hot-path rendering optimizations, Y-sort caching structures, distance-squared proximity algorithms, pre-rendered composite assets, and centralized HUD/UI constants.
 
@@ -180,8 +180,49 @@ N/A - Not applicable
 
 | Anti-pattern | Why it's bad | What to do instead |
 |---|---|---|
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
+| Call `_update_flicker()` every frame | 64 800 calls/frame × 18 entities at 60 fps — 1.165 s tottime | Throttle to 15 Hz via `_flicker_tick % 4` — f_alpha/f_scale hold last value on skipped frames |
+| Append-to-list in particle update loop | Python `list.append()` has overhead per call; `alive = []` allocates a new list every frame per entity | Use list comprehension `[p for p in lst if p["life"] > 0]` — optimized LIST_APPEND bytecode |
+| Iterate all visible chunks to blit static foreground tiles | `get_visible_chunks` generator traverses ~480 tiles × 1800 frames = 864 000 iterations | Pre-render static foreground tiles into `get_foreground_layer_surface()` cache; iterate only near-player tiles for occlusion |
+| Allocate `pygame.Rect` inside tile loops | Hundreds of temporary objects per frame trigger GC stutters | Pre-allocate `self._tile_rect` once in `__init__`, use `.topleft =` to reposition |
+| Call `rotozoom()` or `smoothscale()` in `draw()` | Scaling pixels per frame creates massive CPU load | Read from bucketed caches |
+| Render fonts during rendering passes | Font texture creation is extremely slow | Cache composite text surfaces at startup |
+
+---
+
+## 8. Perf Audit Cycle — June 2026
+
+Audit run: 1800 frames @ ~16 fps. Baseline: avg 61.1 ms/frame, p95 65 ms, p99 71 ms.
+
+### 8.1 P-005 — Flicker Throttle (commit `6980c80`)
+
+- **File:** `src/entities/interactive.py` — `_parse_halo()` + `update()`
+- **Change:** `_flicker_tick: int = 0` counter added; `_update_flicker()` called only when `_flicker_tick % 4 == 0`
+- **Measured:** tottime 1.165 s → 0.313 s (−73 %), ncalls 64 800 → 16 200 (−75 %)
+- **Visual impact:** None — sinusoidal flicker at 15 Hz is imperceptible at 60 fps
+
+### 8.2 P-003 — Particle Update Loop (commit `6980c80`)
+
+- **File:** `src/entities/interactive_particles.py` — `_update_particles()`
+- **Change:** Replaced `alive = []; for p in …: if alive: alive.append(p)` with in-place mutation + list comprehension filter
+- **Measured:** tottime 5.166 s → 3.955 s (−23 %), `_update_core_state` cumtime 14.8 s → 10.1 s (−32 %)
+- **Rationale:** Python list comprehensions use optimized LIST_APPEND bytecode; eliminates intermediate list allocation per entity per frame
+
+### 8.3 P-001 Infrastructure — Foreground Surface Cache (commit `515f5a8`)
+
+- **File:** `src/map/manager.py` — `MapManager.__init__()` + `get_foreground_layer_surface()`
+- **Change:** Added `self._fg_surfaces: dict[tuple[int, int], Surface | None]` cache and `get_foreground_layer_surface(layer_id, pygame_module, min_depth)` method
+- **Status:** Infrastructure only — not yet wired to `_draw_static_foreground_tiles`
+- **Remaining work:** P-001 complete requires decoupling normal blit (→ pre-rendered surface) from occluded blit + `occluding_rects` construction (→ reduced near-player iteration)
+
+### 8.4 Bottleneck Status
+
+| Function | Baseline tottime | After cycle | Status |
+|---|---|---|---|
+| `_draw_static_foreground_tiles` | 25.9 s | 28.7 s (bruit) | ⏳ P-001 non wirée |
+| `get_visible_chunks` | 13.4 s | 13.8 s (bruit) | ⏳ Résolu par P-001 |
+| `_update_particles` | 5.2 s | 4.0 s | ✅ −23 % |
+| `_apply_partial_occlusion` | 4.3 s | 4.7 s (bruit) | ⏳ Auto-résolu par P-001 |
+| `_draw_particles` | 4.1 s | 4.1 s | Stable |
+| `_update_flicker` | 1.2 s | 0.3 s | ✅ −73 % |
+| `create_overlay` | 1.3 s | 1.3 s | ✅ Skip justifié (déjà optimal) |
+
