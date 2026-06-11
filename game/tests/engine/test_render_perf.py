@@ -57,7 +57,7 @@ def test_apply_grass_wading_early_exit_no_grass(dummy_game):
     dummy_game.map_manager._map_has_grass = False
     rm = RenderManager(dummy_game)
     
-    result = rm._apply_grass_wading_to_images()
+    result = rm.wading_renderer.apply_grass_wading_to_images()
     assert result == {}
     dummy_game.visible_sprites.get_sorted_sprites.assert_not_called()
 
@@ -67,5 +67,5 @@ def test_apply_grass_wading_no_early_exit_with_grass(dummy_game):
     dummy_game.map_manager._map_has_grass = True
     rm = RenderManager(dummy_game)
     
-    rm._apply_grass_wading_to_images()
+    rm.wading_renderer.apply_grass_wading_to_images()
     dummy_game.visible_sprites.get_sorted_sprites.assert_called_once()

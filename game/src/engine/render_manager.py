@@ -4,10 +4,11 @@ import pygame
 from src.config import Settings
 from src.engine.asset_manager import AssetManager
 from src.engine.lighting_constants import INDOOR_ATTENUATION
+from src.engine.render_occlusion import OcclusionRenderer, OccludingRect
+from src.engine.render_wading import WadingRenderer
 
 # Python 3.12 type aliases — replace inline annotations used across multiple methods
 type BlitSequence = list[tuple[pygame.Surface, tuple[int, int]]]
-type OccludingRect = list[tuple[pygame.Rect, int, pygame.Surface | None]]
 
 
 class RenderManager:
@@ -19,25 +20,16 @@ class RenderManager:
         self._tile_rect = pygame.Rect(0, 0, game.tile_size, game.tile_size)
         self._screen_rect = pygame.Rect(0, 0, game.screen.get_width(), game.screen.get_height())
         self._viewport_world = pygame.Rect(0, 0, 0, 0)
-        # F4: Pre-allocated SRCALPHA surface pool — reused every frame, cleared with fill()
-        # Pool for composite occlusion: distinct surface per occluded sprite, avoids reference sharing
-        self._occlusion_pool: list[pygame.Surface] = []
-        # Alpha surface for crop blitting (sequentially used — single instance is safe)
-        self._alpha_surf: pygame.Surface | None = None
-        # Grass wading surface template (resized on demand, copied for each sprite)
-        self._wading_composite: pygame.Surface | None = None
         # F3: Pre-computed animated tile caches — populated once per frame in draw_scene()
         self._frame_anim_all: list[tuple[int, int, int, int]] = []
         self._frame_anim_by_layer: dict[int, list[tuple[int, int, int, int]]] = {}
-        # P-004: Occlusion composite dirty-flag cache
-        # Key: (cam_x, cam_y, len(occluding_rects)) — invalidated when camera or rect count changes
-        # Cache: {sprite: composite_surface} — re-installed without recomputing on cache hit
-        self._occ_key: tuple[int, int, int] | None = None
-        self._occ_composite_cache: dict[object, pygame.Surface] = {}
         # Frame-level viewport-culled foreground cache to optimize loops
         self._frame_visible_fg_tiles: list[tuple[int, int, int, pygame.Surface, pygame.Surface | None]] | None = None
         # Pool size 2000 is sufficient to cover standard viewport bounds (40x22 tiles)
         self._rect_pool = [pygame.Rect(0, 0, game.tile_size, game.tile_size) for _ in range(2000)]
+        
+        self.occlusion_renderer = OcclusionRenderer(game)
+        self.wading_renderer = WadingRenderer(game)
 
     def draw_background(self):
         """Draw tiles with depth <= player depth (behind player).
@@ -664,8 +656,8 @@ class RenderManager:
         # saved_images tracks the PRE-OCCLUSION originals. _apply_grass_wading_to_images
         # receives it so that wading stacks on the occlusion composite while saving the
         # true original (pre-occlusion), giving a single restore step.
-        saved_images = self._apply_partial_occlusion(occluding_rects)
-        wading_saved = self._apply_grass_wading_to_images(cam_offset, saved_images)
+        saved_images = self.occlusion_renderer.apply_partial_occlusion(occluding_rects)
+        wading_saved = self.wading_renderer.apply_grass_wading_to_images(cam_offset, saved_images)
 
         self.game.visible_sprites.custom_draw(self.game.screen, min_depth=self.game.player.depth)
 
@@ -894,6 +886,5 @@ class RenderManager:
         
         Appelé par game.py dans transition_map(), après _load_map().
         """
-        self._wading_composite = None
-        self._occ_key = None
-        self._occ_composite_cache.clear()
+        self.occlusion_renderer.reset_cache()
+        self.wading_renderer.reset_cache()

@@ -203,7 +203,7 @@ def test_apply_partial_occlusion_empty_list_returns_empty_dict():
     game.player.depth = 1
     rm = RenderManager(game)
 
-    result = rm._apply_partial_occlusion([])
+    result = rm.occlusion_renderer.apply_partial_occlusion([])
     assert result == {}
     game.visible_sprites.get_sorted_sprites.assert_not_called()
 
@@ -225,7 +225,7 @@ def test_apply_partial_occlusion_no_intersection_skips_sprite():
 
     rm = RenderManager(game)
     occluding_rects = [(pygame.Rect(0, 0, 32, 32), 2, None)]  # no tile image (legacy path)
-    result = rm._apply_partial_occlusion(occluding_rects)
+    result = rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
 
     assert result == {}  # No sprite was saved/modified
     assert sprite.image is not None  # image untouched
@@ -254,7 +254,7 @@ def test_apply_partial_occlusion_partial_intersection_creates_composite():
     rm = RenderManager(game)
     # Tile covers y=32..64 — intersects lower 16px of sprite (y=32..48)
     occluding_rects = [(pygame.Rect(0, 32, 32, 32), 2, None)]
-    result = rm._apply_partial_occlusion(occluding_rects)
+    result = rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
 
     assert sprite in result  # original saved
     assert result[sprite] is original_image  # correct original stored
@@ -281,7 +281,7 @@ def test_apply_partial_occlusion_full_intersection_composite_all_alpha():
 
     rm = RenderManager(game)
     occluding_rects = [(pygame.Rect(0, 0, 64, 64), 2, None)]  # tile much larger than sprite
-    result = rm._apply_partial_occlusion(occluding_rects)
+    result = rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
 
     assert sprite in result
     composite = sprite.image
@@ -311,7 +311,7 @@ def test_apply_partial_occlusion_two_tiles_both_applied():
         (pygame.Rect(0, 0, 32, 32), 2, None),  # top half of sprite
         (pygame.Rect(0, 32, 32, 32), 2, None),  # bottom half of sprite
     ]
-    result = rm._apply_partial_occlusion(occluding_rects)
+    result = rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
     assert sprite in result  # composite was generated
 
 
@@ -332,7 +332,7 @@ def test_apply_partial_occlusion_same_depth_no_occlusion():
 
     rm = RenderManager(game)
     occluding_rects = [(pygame.Rect(0, 0, 32, 32), 2, None)]  # tile_depth == sprite_depth
-    result = rm._apply_partial_occlusion(occluding_rects)
+    result = rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
 
     assert result == {}  # Not occluded
 
@@ -366,7 +366,7 @@ def test_apply_partial_occlusion_walk_active_skips_player_only():
 
     rm = RenderManager(game)
     occluding_rects = [(pygame.Rect(0, 0, 64, 64), 2, None)]
-    result = rm._apply_partial_occlusion(occluding_rects)
+    result = rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
 
     # Player skipped — NPC processed
     assert player_sprite not in result
@@ -400,7 +400,7 @@ def test_it001_draw_foreground_triggers_partial_occlusion():
 
     with (
         patch.object(rm, "draw_foreground", return_value=occluding),
-        patch.object(rm, "_apply_partial_occlusion", return_value={}) as mock_apo,
+        patch.object(rm.occlusion_renderer, "apply_partial_occlusion", return_value={}) as mock_apo,
     ):
         rm.draw_scene()
         mock_apo.assert_called_once_with(occluding)
@@ -443,7 +443,7 @@ def test_it002_npc_semi_occluded_swap_and_restore():
     # _apply_partial_occlusion swaps image and returns the saved dict
     with (
         patch.object(rm, "draw_foreground", return_value=occluding),
-        patch.object(rm, "_apply_partial_occlusion", return_value={npc: original_surf}) as mock_apo,
+        patch.object(rm.occlusion_renderer, "apply_partial_occlusion", return_value={npc: original_surf}) as mock_apo,
     ):
         # Simulate what draw_scene does with the returned saved_images
         npc.image = composite_surf  # simulates swap done by _apply_partial_occlusion
@@ -480,7 +480,7 @@ def test_it003_scripted_walk_skips_player_but_processes_npcs():
 
     rm = RenderManager(game)
     occluding_rects = [(pygame.Rect(0, 0, 64, 64), 2, None)]
-    result = rm._apply_partial_occlusion(occluding_rects)
+    result = rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
 
     assert player_sprite not in result  # player skipped
     assert npc_sprite in result  # NPC processed
@@ -565,7 +565,7 @@ def test_grass_wading_sprite_on_grass_triggers_composite():
     game.visible_sprites.get_sorted_sprites.return_value = [sprite]
 
     rm = RenderManager(game)
-    result = rm._apply_grass_wading_to_images()
+    result = rm.wading_renderer.apply_grass_wading_to_images()
     assert sprite in result, "Expected sprite to have a wading composite"
 
 
@@ -579,7 +579,7 @@ def test_grass_wading_sprite_not_on_grass_no_composite():
     game.visible_sprites.get_sorted_sprites.return_value = [sprite]
 
     rm = RenderManager(game)
-    result = rm._apply_grass_wading_to_images()
+    result = rm.wading_renderer.apply_grass_wading_to_images()
     assert result == {}, "Expected no composites for sprite not on grass"
 
 
@@ -596,7 +596,7 @@ def test_grass_wading_none_rect_skips_silently():
     game.visible_sprites.get_sorted_sprites.return_value = [sprite]
 
     rm = RenderManager(game)
-    rm._apply_grass_wading_to_images()  # must not raise
+    rm.wading_renderer.apply_grass_wading_to_images()  # must not raise
 
 
 # ---------------------------------------------------------------------------
@@ -612,7 +612,7 @@ def test_grass_wading_none_image_skips_silently():
     game.visible_sprites.get_sorted_sprites.return_value = [sprite]
 
     rm = RenderManager(game)
-    rm._apply_grass_wading_to_images()  # must not raise
+    rm.wading_renderer.apply_grass_wading_to_images()  # must not raise
 
 
 # ---------------------------------------------------------------------------
@@ -626,7 +626,7 @@ def test_grass_wading_no_map_manager_returns_immediately():
     game.visible_sprites.get_sorted_sprites.return_value = [sprite]
 
     rm = RenderManager(game)
-    result = rm._apply_grass_wading_to_images()
+    result = rm.wading_renderer.apply_grass_wading_to_images()
     assert result == {}
     game.visible_sprites.get_sorted_sprites.assert_not_called()
 
@@ -646,7 +646,7 @@ def test_grass_wading_sprite_at_screen_edge_no_crash():
     game.map_manager.get_grass_tile_image_at.return_value = grass_surf
 
     rm = RenderManager(game)
-    rm._apply_grass_wading_to_images()  # must not raise
+    rm.wading_renderer.apply_grass_wading_to_images()  # must not raise
     assert True
 
 
@@ -670,7 +670,7 @@ def test_grass_wading_two_sprites_only_grass_composite():
     game.visible_sprites.get_sorted_sprites.return_value = [sprite_grass, sprite_dirt]
 
     rm = RenderManager(game)
-    result = rm._apply_grass_wading_to_images()
+    result = rm.wading_renderer.apply_grass_wading_to_images()
 
     assert sprite_grass in result
     assert sprite_dirt not in result
@@ -693,7 +693,7 @@ def test_grass_wading_walk_active_skips_player():
     game.visible_sprites.get_sorted_sprites.return_value = [player_sprite]
 
     rm = RenderManager(game)
-    result = rm._apply_grass_wading_to_images()
+    result = rm.wading_renderer.apply_grass_wading_to_images()
     assert player_sprite not in result
 
 
@@ -752,7 +752,7 @@ def test_gwit002_npc_on_grass_wading_applied():
     game.visible_sprites.get_sorted_sprites.return_value = [npc]
 
     rm = RenderManager(game)
-    result = rm._apply_grass_wading_to_images()
+    result = rm.wading_renderer.apply_grass_wading_to_images()
     assert npc in result, "Expected composite for NPC on grass"
 
 
@@ -774,7 +774,7 @@ def test_gwit003_scripted_walk_skips_player_processes_npc():
     game.visible_sprites.get_sorted_sprites.return_value = [player_sprite, npc]
 
     rm = RenderManager(game)
-    result = rm._apply_grass_wading_to_images()
+    result = rm.wading_renderer.apply_grass_wading_to_images()
 
     # Player skipped, NPC processed
     assert player_sprite not in result
@@ -803,7 +803,7 @@ def test_grass_wading_does_not_blit_black_bar():
 
     rm = RenderManager(game)
     cam_offset = pygame.math.Vector2(0, 0)
-    composite = rm._build_wading_composite(sprite, cam_offset, game.tile_size, 10, 140)
+    composite = rm.wading_renderer._build_wading_composite(sprite, cam_offset, game.tile_size, 10, 140)
     assert composite is not None
 
     # Upper body (above wading zone) must still be red — not overwritten by a black bar
@@ -922,7 +922,7 @@ def test_occ_ut003_npc_partial_tile_same_as_player():
     partial_tile_surf.fill((100, 100, 100, 255))  # opaque tile
     occluding_rects = [(pygame.Rect(0, 0, 32, 32), 2, partial_tile_surf)]
 
-    result = rm._apply_partial_occlusion(occluding_rects)
+    result = rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
 
     assert npc in result, "NPC sprite must be occluded by partial tile (same as player)"
     assert result[npc] is npc_image, "Original NPC image must be saved"
@@ -1363,10 +1363,10 @@ def test_p004_init_exposes_occ_cache_attrs():
     """TC-P004-001: RenderManager must expose _occ_key and _occ_composite_cache at init."""
     game = MagicMock()
     rm = RenderManager(game)
-    assert hasattr(rm, "_occ_key"), "_occ_key must be initialised in __init__"
-    assert hasattr(rm, "_occ_composite_cache"), "_occ_composite_cache must be initialised in __init__"
-    assert rm._occ_key is None, "_occ_key must be None on first init (forces first-frame computation)"
-    assert isinstance(rm._occ_composite_cache, dict), "_occ_composite_cache must be a dict"
+    assert hasattr(rm.occlusion_renderer, "_occ_key"), "_occ_key must be initialised in __init__"
+    assert hasattr(rm.occlusion_renderer, "_occ_composite_cache"), "_occ_composite_cache must be initialised in __init__"
+    assert rm.occlusion_renderer._occ_key is None, "_occ_key must be None on first init (forces first-frame computation)"
+    assert isinstance(rm.occlusion_renderer._occ_composite_cache, dict), "_occ_composite_cache must be a dict"
 
 
 # ---------------------------------------------------------------------------
@@ -1382,11 +1382,11 @@ def test_p004_first_call_creates_composite_and_caches():
     img = pygame.Surface((32, 32))
     occluding_rects = [(occ_rect, 2, img)]  # depth=2 > sprite.depth=1
 
-    result = rm._apply_partial_occlusion(occluding_rects)
+    result = rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
 
     assert len(result) == 1, "sprite must be in saved_images"
-    assert rm._occ_key is not None, "_occ_key must be set after first call"
-    assert len(rm._occ_composite_cache) == 1, "_occ_composite_cache must have 1 entry after first call"
+    assert rm.occlusion_renderer._occ_key is not None, "_occ_key must be set after first call"
+    assert len(rm.occlusion_renderer._occ_composite_cache) == 1, "_occ_composite_cache must have 1 entry after first call"
 
 
 # ---------------------------------------------------------------------------
@@ -1403,15 +1403,15 @@ def test_p004_cache_hit_skips_sprite_iteration():
     occluding_rects = [(occ_rect, 2, img)]
 
     # First call — populates cache
-    rm._apply_partial_occlusion(occluding_rects)
+    rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
     # Restore sprite image (simulating draw_scene restore step)
-    for _sp, _orig in list(rm._occ_composite_cache.items()):
+    for _sp, _orig in list(rm.occlusion_renderer._occ_composite_cache.items()):
         pass  # cache holds composite; sprite.image was swapped by first call
 
     call_count_after_first = game.visible_sprites.get_sorted_sprites.call_count
 
     # Second call — same cam, same rects → cache HIT
-    rm._apply_partial_occlusion(occluding_rects)
+    rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
     call_count_after_second = game.visible_sprites.get_sorted_sprites.call_count
 
     assert call_count_after_second == call_count_after_first, (
@@ -1434,14 +1434,14 @@ def test_p004_cam_change_invalidates_cache():
     occluding_rects = [(occ_rect, 2, img)]
 
     # First call at cam (0,0)
-    rm._apply_partial_occlusion(occluding_rects)
+    rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
     count_after_first = game.visible_sprites.get_sorted_sprites.call_count
 
     # Move camera
     game.visible_sprites.offset = pygame.math.Vector2(32, 0)
 
     # Second call — cam changed → cache miss
-    rm._apply_partial_occlusion(occluding_rects)
+    rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
     count_after_second = game.visible_sprites.get_sorted_sprites.call_count
 
     assert count_after_second > count_after_first, (
@@ -1463,11 +1463,11 @@ def test_p004_rect_count_change_invalidates_cache():
     rects_2 = [(pygame.Rect(0, 0, 32, 32), 2, img), (pygame.Rect(32, 0, 32, 32), 2, img)]
 
     # First call with 1 rect
-    rm._apply_partial_occlusion(rects_1)
+    rm.occlusion_renderer.apply_partial_occlusion(rects_1)
     count_after_first = game.visible_sprites.get_sorted_sprites.call_count
 
     # Second call with 2 rects → cache miss
-    rm._apply_partial_occlusion(rects_2)
+    rm.occlusion_renderer.apply_partial_occlusion(rects_2)
     count_after_second = game.visible_sprites.get_sorted_sprites.call_count
 
     assert count_after_second > count_after_first, (
@@ -1487,16 +1487,16 @@ def test_p004_reset_occ_cache_clears_state():
     img = pygame.Surface((32, 32))
     occluding_rects = [(pygame.Rect(0, 0, 32, 32), 2, img)]
 
-    rm._apply_partial_occlusion(occluding_rects)
-    assert rm._occ_key is not None
+    rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
+    assert rm.occlusion_renderer._occ_key is not None
 
-    rm._apply_partial_occlusion(occluding_rects)
-    assert rm._occ_key is not None
+    rm.occlusion_renderer.apply_partial_occlusion(occluding_rects)
+    assert rm.occlusion_renderer._occ_key is not None
 
-    rm.reset_occ_cache()
+    rm.occlusion_renderer.reset_cache()
 
-    assert rm._occ_key is None, "reset_occ_cache() must set _occ_key to None"
-    assert rm._occ_composite_cache == {}, "reset_occ_cache() must clear _occ_composite_cache"
+    assert rm.occlusion_renderer._occ_key is None, "reset_occ_cache() must set _occ_key to None"
+    assert rm.occlusion_renderer._occ_composite_cache == {}, "reset_occ_cache() must clear _occ_composite_cache"
 
 
 # ===========================================================================
@@ -1799,12 +1799,12 @@ def test_wading_composite_reallocates_only_on_size_change():
     assert getattr(rm, "_wading_composite", None) is None
     
     # Call 1: surface should be created
-    comp1 = rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
-    wading_comp_id = id(rm._wading_composite)
+    comp1 = rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    wading_comp_id = id(rm.wading_renderer._wading_composite)
     
     # Call 2: same size, template surface should NOT be recreated
-    comp2 = rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
-    assert id(rm._wading_composite) == wading_comp_id, "Template should be reused"
+    comp2 = rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    assert id(rm.wading_renderer._wading_composite) == wading_comp_id, "Template should be reused"
     assert id(comp1) != id(comp2), "Each call must return a fresh copy"
 
 
@@ -1817,8 +1817,8 @@ def test_wading_composite_returns_unique_copy():
     sprite_a = _make_sprite(w=32, h=48)
     sprite_b = _make_sprite(w=32, h=48)
     
-    comp_a = rm._build_wading_composite(sprite_a, pygame.math.Vector2(0, 0), 32, 10, 100)
-    comp_b = rm._build_wading_composite(sprite_b, pygame.math.Vector2(0, 0), 32, 10, 100)
+    comp_a = rm.wading_renderer._build_wading_composite(sprite_a, pygame.math.Vector2(0, 0), 32, 10, 100)
+    comp_b = rm.wading_renderer._build_wading_composite(sprite_b, pygame.math.Vector2(0, 0), 32, 10, 100)
     
     assert comp_a is not None
     assert comp_b is not None
@@ -1839,13 +1839,13 @@ def test_wading_composite_fills_transparent_before_blit():
     red_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
     red_surf.fill((255, 0, 0, 255))
     sprite = _make_sprite(image=red_surf, w=32, h=48)
-    rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
     
     # Second frame: blue sprite, same size (reuses template)
     blue_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
     blue_surf.fill((0, 0, 255, 255))
     sprite.image = blue_surf
-    comp2 = rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    comp2 = rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
     
     # The template must have been filled with (0,0,0,0) before blitting the blue sprite.
     # Therefore, no red pixels should remain anywhere in the composite.
@@ -1862,13 +1862,13 @@ def test_reset_render_caches_clears_wading_composite():
     rm = RenderManager(game)
     sprite = _make_sprite(w=32, h=48)
     
-    rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
-    assert rm._wading_composite is not None
+    rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    assert rm.wading_renderer._wading_composite is not None
     
     rm.reset_render_caches()
-    assert rm._wading_composite is None
-    assert rm._occ_key is None
-    assert rm._occ_composite_cache == {}
+    assert rm.wading_renderer._wading_composite is None
+    assert rm.occlusion_renderer._occ_key is None
+    assert rm.occlusion_renderer._occ_composite_cache == {}
 
 
 @pytest.mark.tc("TC-RPERF-U-005")
@@ -1878,12 +1878,12 @@ def test_wading_composite_unchanged_if_not_on_grass():
     rm = RenderManager(game)
     sprite = _make_sprite(w=32, h=48)
     
-    if not hasattr(rm, "_wading_composite"):
-        rm._wading_composite = None
+    if not hasattr(rm.wading_renderer, "_wading_composite"):
+        rm.wading_renderer._wading_composite = None
         
-    assert rm._wading_composite is None
-    rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
-    assert rm._wading_composite is None
+    assert rm.wading_renderer._wading_composite is None
+    rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    assert rm.wading_renderer._wading_composite is None
 
 
 @pytest.mark.tc("TC-RPERF-I-001")
@@ -1898,13 +1898,13 @@ def test_wading_composite_visual_fidelity():
     sprite = _make_sprite(image=red_surf, w=32, h=48)
     
     # First frame
-    comp1 = rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    comp1 = rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
     # Change sprite to solid green (simulating animation)
     green_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
     green_surf.fill((0, 255, 0, 255))
     sprite.image = green_surf
     # Second frame
-    comp2 = rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    comp2 = rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
     
     # Top of the sprite should be solid green, no red remnants
     assert comp2.get_at((16, 16)) == (0, 255, 0, 255), "Previous frame pixels leaked!"
@@ -1916,9 +1916,9 @@ def test_reset_render_caches_integration():
     # This tests the RenderManager side. The game.py side is verified via TDD lock.
     game = _make_game_for_grass_wading(on_grass=True)
     rm = RenderManager(game)
-    rm._wading_composite = pygame.Surface((32, 48))
+    rm.wading_renderer._wading_composite = pygame.Surface((32, 48))
     rm.reset_render_caches()
-    assert rm._wading_composite is None
+    assert rm.wading_renderer._wading_composite is None
 
 
 @pytest.mark.tc("TC-RPERF-I-004")
@@ -1940,7 +1940,7 @@ def test_two_sprites_same_size_no_corruption():
     game.visible_sprites.get_sorted_sprites.return_value = [sprite1, sprite2]
     
     # Generate composites
-    result = rm._apply_grass_wading_to_images()
+    result = rm.wading_renderer.apply_grass_wading_to_images()
     
     # Validate they don't corrupt each other
     comp1 = sprite1.image

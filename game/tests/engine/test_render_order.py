@@ -20,6 +20,8 @@ import pygame
 import pytest
 from src.config import Settings
 from src.engine.render_manager import RenderManager
+from src.engine.render_occlusion import OcclusionRenderer
+from src.engine.render_wading import WadingRenderer
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -47,8 +49,8 @@ def _make_render_manager():
     rm._alpha_surf = None
     rm._wading_surf = None
     # P-004: occlusion dirty-flag cache (normally initialized in __init__)
-    rm._occ_key = None
-    rm._occ_composite_cache = {}
+    rm.occlusion_renderer = OcclusionRenderer(game)
+    rm.wading_renderer = WadingRenderer(game)
     return rm
 
 
