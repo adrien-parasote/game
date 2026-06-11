@@ -296,6 +296,7 @@ class TmjParser:
         props.update(custom_props.get(i, {}))
         props.setdefault("walkable", True)
         props.setdefault("depth", 0)
+        props["tile_id"] = i
 
         occluded = None
         if props["depth"] > 0:

@@ -105,27 +105,48 @@ class BaseEntity(pygame.sprite.Sprite):
             self.direction = pygame.math.Vector2(0, 0)
             return False
 
-        dir_diag = Settings.VERTICAL_MOVE_MAP[map_key]
-        diag_tx, diag_ty = current_tx + dir_diag[0], current_ty + dir_diag[1]
-        ortho_tx, ortho_ty = current_tx + dx, current_ty + dy
+        # Determine whether we should move diagonally on the stair
+        should_move_diagonally = False
+        tile_id = vm.get("tile_id", 0)
 
-        diag_vm = self.game.map_manager.get_vertical_move_props(diag_tx, diag_ty)
-        next_vm = self.game.map_manager.get_vertical_move_props(ortho_tx, ortho_ty)
-        diag_is_stair = diag_vm is not None and isinstance(diag_vm, dict)
-        ortho_is_stair = next_vm is not None and isinstance(next_vm, dict)
+        if stair_dir == "right":
+            # Right-ascending stairs:
+            # - left tile has tile_id % 6 == 0
+            # - right tile has tile_id % 6 == 1
+            is_left_tile = (tile_id % 6 == 0)
+            if dx == 1:  # climbing
+                should_move_diagonally = not is_left_tile
+            elif dx == -1:  # descending
+                should_move_diagonally = is_left_tile
+        elif stair_dir == "left":
+            # Left-ascending stairs:
+            # - left tile of pair has tile_id % 6 == 2 or tile_id == 1
+            # - right tile of pair has tile_id % 6 == 3
+            is_left_tile = (tile_id % 6 == 2 or tile_id == 1)
+            if dx == -1:  # climbing
+                should_move_diagonally = is_left_tile
+            elif dx == 1:  # descending
+                should_move_diagonally = not is_left_tile
 
-        is_diag_walkable = False
-        is_ortho_walkable = True
-        if hasattr(self.game.map_manager, "is_walkable"):
-            is_diag_walkable = self.game.map_manager.is_walkable(diag_tx, diag_ty)
-            is_ortho_walkable = self.game.map_manager.is_walkable(ortho_tx, ortho_ty)
+        # Let's determine the target tile coordinate based on selected movement type
+        if should_move_diagonally:
+            dir_diag = Settings.VERTICAL_MOVE_MAP[map_key]
+            target_dir = dir_diag
+        else:
+            target_dir = (dx, 0)
 
-        # Interception decision:
-        # 1. Next flat tile is stair  2. Diagonal target is stair
-        # 3. Both normal but diagonal walkable and orthogonal blocked (step-boundary)
-        if ortho_is_stair or diag_is_stair or (is_diag_walkable and not is_ortho_walkable):
-            self.direction = pygame.math.Vector2(dir_diag)
-        # else: step-off — keep original orthogonal direction
+        # Check if the target tile is a stair tile
+        target_tx = current_tx + target_dir[0]
+        target_ty = current_ty + target_dir[1]
+        target_vm = self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
+        target_is_stair = target_vm is not None and isinstance(target_vm, dict)
+
+        # If the target is not a stair tile, we are stepping off.
+        # Step-off is always orthogonal (flat), so target_dir must be (dx, 0)
+        if not target_is_stair:
+            target_dir = (dx, 0)
+
+        self.direction = pygame.math.Vector2(target_dir)
         return True
 
     def _clamp_target_to_world(self) -> None:
