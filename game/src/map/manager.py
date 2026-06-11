@@ -298,9 +298,9 @@ class MapManager:
                     visual_y_offset = int(props["visual_y_offset"])
                 else:
                     if stair_dir == "right":
-                        visual_y_offset = 0 if (local_tile_id % 6 == 0) else -16
+                        visual_y_offset = -16 if (local_tile_id % 6 == 0) else 0
                     else:  # left
-                        visual_y_offset = -16 if (local_tile_id % 6 == 2 or local_tile_id == 1) else 0
+                        visual_y_offset = 0 if (local_tile_id % 6 == 2 or local_tile_id == 1) else -16
                 return {
                     "stair_direction": stair_dir,
                     "movement_type": props.get("movement_type", "stair"),

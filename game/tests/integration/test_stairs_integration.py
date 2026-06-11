@@ -126,12 +126,12 @@ class TestStairsIntegration:
 
         # Pos is still at (48, 48) which is on stair tile (1, 1)
         assert player._vertical_move is not None
-        assert player._vertical_move["visual_y_offset"] == 0
+        assert player._vertical_move["visual_y_offset"] == -16
 
         # Complete movement to (2, 1)
         player.update(0.5)
         assert player.pos == pygame.math.Vector2(80, 48)
-        assert player._vertical_move["visual_y_offset"] == -16
+        assert player._vertical_move["visual_y_offset"] == 0
 
         # Step off to (3, 1)
         player.direction = pygame.math.Vector2(1, 0)
