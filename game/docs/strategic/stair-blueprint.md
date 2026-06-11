@@ -18,7 +18,7 @@
 | Decision | Options | Chosen | Rationale |
 |----------|---------|--------|-----------|
 | Stair Metadata Storage | 1. Hardcoded coordinates<br>2. Tiled Object Layer<br>3. Tiled Tile Properties | **3. Tiled Tile Properties** | Extremely scalable. Mappers just place stairs, and `MapManager` reads the `direction` property automatically. |
-| Visual Offset Implementation | 1. Offset `rect.center` (Option C)<br>2. Offset `image` blit (Option A) | **2. Offset `image` blit** | Option C (sortir du grid) oblige à "raccrocher" le joueur à la grille à la fin de l'escalier, causant des bugs de collision ou des "sauts". En gardant la physique 100% alignée sur la grille (en se déplaçant physiquement en diagonale parfaite `x+32, y-32`) et en ajoutant un offset purement visuel (Option A), on garde la robustesse du moteur tout en trompant l'œil. |
+| Visual Offset Implementation | 1. Offset `rect.center` (Option C)<br>2. Offset `image` blit (Option A) | **2. Offset `image` blit** | Option C (getting off the grid) requires "snapping" the player back to the grid at the end of the staircase, causing collision bugs or "jumps". By keeping the physics 100% aligned with the grid (physically moving in perfect diagonal `x+32, y-32`) and adding a purely visual offset (Option A), we maintain the engine's robustness while tricking the eye. |
 
 ## Exclusions & Boundaries
 | Excluded | Why | Risk of Reversal |
@@ -35,6 +35,6 @@
 ## Gap Discovery
 | # | Gap | Resolution | Owner |
 |---|-----|---------------------|-------|
-| 1 | Valeur de l'offset Y visuel | À calibrer expérimentalement lors du dev (ex: -8px ou -12px) | Code |
-| 2 | Arrêt au milieu de l'escalier | Comportement naturel conservé : le joueur termine sur la tuile courante (marche) et s'arrête. | Code |
-| 3 | Application aux NPCs | Validé : la logique s'applique à la classe mère `BaseEntity`. | Code |
+| 1 | Visual Y-offset value | To be calibrated experimentally during development (e.g., -8px or -12px) | Code |
+| 2 | Stopping mid-staircase | Natural behavior preserved: the player ends on the current tile (step) and stops. | Code |
+| 3 | Application to NPCs | Validated: the logic applies to the parent class `BaseEntity`. | Code |

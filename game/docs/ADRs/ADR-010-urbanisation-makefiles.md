@@ -1,13 +1,13 @@
-# Plan d'Urbanisation : Makefiles & Environnements
+# Urbanization Plan: Makefiles & Environments
 
-## Objectif
-Simplifier l'infrastructure du projet pour n'avoir **qu'un seul environnement virtuel** et **un seul Makefile**.
+## Goal
+Simplify the project infrastructure to have **only one virtual environment** and **only one Makefile**.
 
-## Changements Proposés
+## Proposed Changes
 
-### 1. Centralisation des Dépendances
-Au lieu d'avoir `game/requirements.txt` et `tools/requirements.txt`, nous allons avoir un seul `requirements.txt` à la racine.
-Nous en profiterons pour nettoyer les dépendances obsolètes de l'ancien `asset_convertor` (`dearpygui`, `opensimplex`) et ajouter `customtkinter`.
+### 1. Centralization of Dependencies
+Instead of having `game/requirements.txt` and `tools/requirements.txt`, we will have a single `requirements.txt` at the root.
+We will take this opportunity to clean up obsolete dependencies from the old `asset_convertor` (`dearpygui`, `opensimplex`) and add `customtkinter`.
 
 #### [NEW] requirements.txt
 ```txt
@@ -30,17 +30,17 @@ pyobjc-framework-Cocoa; sys_platform == 'darwin'
 
 ---
 
-### 2. Makefile Unique à la racine
-Un seul fichier `Makefile` pour tout orchestrer. Il créera un unique `venv` à la racine et utilisera les configurations globales déjà présentes dans `pyproject.toml`.
+### 2. Single Makefile at the Root
+A single `Makefile` to orchestrate everything. It will create a single `venv` at the root and use the global configurations already present in `pyproject.toml`.
 
 #### [MODIFY] Makefile
-Le nouveau Makefile contiendra :
-- `make setup` : Crée le venv racine et installe le `requirements.txt` global.
-- `make run-game` : Lance le jeu.
-- `make run-tools` : Lance le générateur procédural.
-- `make test` : Lance `pytest` (qui couvre déjà `game/` et `tools/`).
-- `make lint` / `make typecheck` : Commandes utilitaires pour `ruff` et `pyright`.
-- `make clean` : Nettoie les caches et le `venv`.
+The new Makefile will contain:
+- `make setup`: Creates the root venv and installs the global `requirements.txt`.
+- `make run-game`: Launches the game.
+- `make run-tools`: Launches the procedural generator.
+- `make test`: Runs `pytest` (which already covers both `game/` and `tools/`).
+- `make lint` / `make typecheck`: Utility commands for `ruff` and `pyright`.
+- `make clean`: Cleans caches and the `venv`.
 
 #### [DELETE] game/Makefile
 #### [DELETE] tools/Makefile

@@ -2,8 +2,8 @@
 
 > Document type: Implementation
 
-**Covers:** Stair Movement Feature — horizontal stairs (escaliers latéraux).
-**Extension future:** Cette architecture supporte aussi les échelles (`ladder`) via la même classe Tiled.
+**Covers:** Stair Movement Feature — horizontal stairs (lateral stairs).
+**Future extension:** This architecture also supports ladders (`ladder`) via the same Tiled class.
 **Revision:** v4 — post adversarial review corrections 2026-06-10.
 
 ---
@@ -18,44 +18,44 @@
 
 ## Cross-Spec Contracts
 
-### Produces
+## Produces
 
-| Artifact | Type | Consommateurs |
+| Artifact | Type | Consumers |
 |----------|------|---------------|
-| `MapManager.get_vertical_move_props(tx, ty) → dict \| None` | Nouvelle méthode | map-world-system, npc-system |
-| `BaseEntity._vertical_move: dict \| None` | Nouveau champ | camera-rendering |
-| `VERTICAL_MOVE_MAP` | Nouvelle constante | engine-core |
+| `MapManager.get_vertical_move_props(tx, ty) → dict \| None` | New method | map-world-system, npc-system |
+| `BaseEntity._vertical_move: dict \| None` | New field | camera-rendering |
+| `VERTICAL_MOVE_MAP` | New constant | engine-core |
 
-### Consumes
+## Consumes
 
 | Artifact | Source | Usage |
 |----------|--------|-------|
-| `MapManager.tiles[id].properties` | map-world-system | Lecture de `stair_direction` dans `get_vertical_move_props` |
-| `BaseEntity.start_move()` | entities-system | Point d'insertion de l'interception escalier |
-| `CameraGroup.custom_draw()` | camera-rendering | Point d'insertion du `visual_y_offset` |
-| `MapManager.get_direction_flags()` | map-world-system | Appelé APRÈS l'interception (ordre critique) |
+| `MapManager.tiles[id].properties` | map-world-system | Reads `stair_direction` in `get_vertical_move_props` |
+| `BaseEntity.start_move()` | entities-system | Insertion point for stair interception |
+| `CameraGroup.custom_draw()` | camera-rendering | Insertion point for `visual_y_offset` |
+| `MapManager.get_direction_flags()` | map-world-system | Called AFTER interception (critical order) |
 
-### Public Interface
+## Public Interface
 
-| Interface | Signature | Contrat |
+| Interface | Signature | Contract |
 |-----------|-----------|--------|
-| `get_vertical_move_props` | `(tx: int, ty: int) → dict \| None` | Retourne `{stair_direction, movement_type, visual_y_offset}` ou `None` |
-| `_vertical_move` | `dict \| None` | Mis à jour dans `start_move()` uniquement. Lu dans `custom_draw()` |
+| `get_vertical_move_props` | `(tx: int, ty: int) → dict \| None` | Returns `{stair_direction, movement_type, visual_y_offset}` or `None` |
+| `_vertical_move` | `dict \| None` | Updated in `start_move()` only. Read in `custom_draw()` |
 | `VERTICAL_MOVE_MAP` | `dict[tuple[tuple[int,int], str], tuple[int,int]]` | 4 mappings (input_dir, stair_dir) → intercepted_dir |
 
 ---
 
-## 0. Tiled Configuration — Classe `01-vertical-move`
+## 0. Tiled Configuration — Class `01-vertical-move`
 
-### 0.1 Pourquoi une classe dédiée
+### 0.1 Why a Dedicated Class
 
-**Problème de collision de nom (VÉRIFIÉ dans le code) :** Le parser `tmj_parser.py` (L307-308) utilise `props["direction"]` pour construire `direction_flags` — le système qui contrôle quelles directions de sortie sont autorisées sur une tuile. Placer `direction="right"` sur une tuile d'escalier serait interprété comme "bloquer tout mouvement sauf vers la droite", cassant complètement la logique de déplacement.
+**Name collision issue (VERIFIED in code):** The parser `tmj_parser.py` (L307-308) uses `props["direction"]` to build `direction_flags` — the system that controls which exit directions are allowed on a tile. Placing `direction="right"` on a stair tile would be interpreted as "block all movement except to the right", completely breaking movement logic.
 
-**Solution :** La classe Tiled `01-vertical-move` avec un champ `stair_direction` (nom distinct) remplace `01-tileset_ground` pour les tilesets de déplacement vertical.
+**Solution:** The Tiled class `01-vertical-move` with a `stair_direction` field (distinct name) replaces `01-tileset_ground` for vertical movement tilesets.
 
-### 0.2 Définition de la classe Tiled `01-vertical-move` (IMPLÉMENTÉE)
+### 0.2 Definition of the Tiled Class `01-vertical-move` (IMPLEMENTED)
 
-Présente dans `game.tiled-project` (id=24) :
+Present in `game.tiled-project` (id=24):
 
 ```json
 {
@@ -73,100 +73,100 @@ Présente dans `game.tiled-project` (id=24) :
 }
 ```
 
-**Champs :**
-- `stair_direction` (enum `23-direction`, **défaut `""`**) : `"right"` = escalier montant vers la droite, `"left"` = montant vers la gauche. **Défaut vide = tuile neutre, pas un escalier.** Jamais `"any"` sur une tuile d'escalier.
-- `movement_type` (enum `25-movement_type`, défaut `"stair"`) : `"stair"` | `"ladder"` — pour l'extension future.
-- `visual_y_offset` (int, défaut `-12`) : décalage Y visuel en pixels lors du rendu sur cette tuile. Ajustable par tileset.
-- `walkable` (bool, défaut `true`) : `false` sur les tuiles-murs. Géré par le système `is_walkable()` existant.
-- `depth` (int, défaut `0`) : profondeur de rendu, identique à `00-tileset`.
-- `material` (string, défaut `""`) : matériau pour les sons de pas.
+**Fields:**
+- `stair_direction` (enum `23-direction`, **default `""`**): `"right"` = staircase ascending to the right, `"left"` = ascending to the left. **Default empty = neutral tile, not a staircase.** Never `"any"` on a stair tile.
+- `movement_type` (enum `25-movement_type`, default `"stair"`): `"stair"` | `"ladder"` — for future extension.
+- `visual_y_offset` (int, default `-12`): visual Y offset in pixels when rendering on this tile. Adjustable per tileset.
+- `walkable` (bool, default `true`): `false` on wall tiles. Managed by the existing `is_walkable()` system.
+- `depth` (int, default `0`): rendering depth, identical to `00-tileset`.
+- `material` (string, default `""`): material for footstep sounds.
 
-### 0.3 Application dans `01-stairs.tsx` (VÉRIFIÉE — audit 2026-06-10)
+### 0.3 Application in `01-stairs.tsx` (VERIFIED — audit 2026-06-10)
 
-**Comportement réel du parser (VÉRIFIÉ — tmj_parser.py L295-298) :**
-Le tileset a `class="01-vertical-move"` dans son attribut XML, mais le parser (`_parse_tileset_properties`) ne résout PAS les classes Tiled via `TiledProject.resolve()` pour les tilesets (uniquement pour les objets, L108). Il lit uniquement les nœuds `<properties>` XML du TSX — et `01-stairs.tsx` n'en a PAS au niveau tileset.
+**Actual Parser Behavior (VERIFIED — tmj_parser.py L295-298):**
+The tileset has `class="01-vertical-move"` in its XML attribute, but the parser (`_parse_tileset_properties`) does NOT resolve Tiled classes via `TiledProject.resolve()` for tilesets (only for objects, L108). It only reads the XML `<properties>` nodes of the TSX — and `01-stairs.tsx` does NOT have them at the tileset level.
 
-**Conséquence :** `tileset_props = {}`. Seules les propriétés explicitement surchargées par tuile (nœuds `<property>` dans `<tile>`) apparaissent dans `tile.properties`. Les défauts de classe (`movement_type`, `visual_y_offset`) sont **absents**.
+**Consequence:** `tileset_props = {}`. Only explicitly overridden properties per tile (`<property>` nodes inside `<tile>`) appear in `tile.properties`. Class defaults (`movement_type`, `visual_y_offset`) are **absent**.
 
-Résultat réel dans `tile.properties` :
+Actual result in `tile.properties`:
 
 ```python
-# Tuile marche droite (ex: id 0)
+# Right step tile (e.g. id 0)
 {
-    "walkable": True,            # fallback hardcodé (_parse_tile_properties_and_anims L241)
-    "depth": 0,                  # fallback hardcodé (L242)
-    "direction": "any",          # fallback hardcodé (L243)
-    "material": "stone",         # override explicite dans TSX
-    "stair_direction": "right",  # override explicite dans TSX
-    # ⚠️ "movement_type" et "visual_y_offset" sont ABSENTS
+    "walkable": True,            # hardcoded fallback (_parse_tile_properties_and_anims L241)
+    "depth": 0,                  # hardcoded fallback (L242)
+    "direction": "any",          # hardcoded fallback (L243)
+    "material": "stone",         # explicit override in TSX
+    "stair_direction": "right",  # explicit override in TSX
+    # ⚠️ "movement_type" and "visual_y_offset" are ABSENT
 }
 
-# Tuile neutre / vide (ex: id 4) — aucun nœud <tile> dans le TSX
+# Neutral / empty tile (e.g. id 4) — no <tile> node in TSX
 {
-    "walkable": True,            # fallback hardcodé (_process_single_tile L297)
-    "depth": 0,                  # fallback hardcodé (L298)
-    # ⚠️ "stair_direction" est ABSENT → get_vertical_move_props retourne None ✅
+    "walkable": True,            # hardcoded fallback (_process_single_tile L297)
+    "depth": 0,                  # hardcoded fallback (L298)
+    # ⚠️ "stair_direction" is ABSENT → get_vertical_move_props returns None ✅
 }
 ```
 
-**Impact sur `get_vertical_move_props` :** La méthode gère l'absence via des valeurs par défaut :
-- `props.get("movement_type", "stair")` → retourne `"stair"` ✅
-- `int(props.get("visual_y_offset", -12))` → retourne `-12` ✅
+**Impact on `get_vertical_move_props`:** The method handles absence via default values:
+- `props.get("movement_type", "stair")` → returns `"stair"` ✅
+- `int(props.get("visual_y_offset", -12))` → returns `-12` ✅
 
-Ces fallbacks codés en dur **doivent correspondre** aux défauts de la classe Tiled `01-vertical-move`. Si les défauts Tiled changent, les fallbacks doivent être mis à jour.
+These hardcoded fallbacks **must match** the defaults of the Tiled class `01-vertical-move`. If the Tiled defaults change, the fallbacks must be updated.
 
-**Inventaire complet des tuiles (VÉRIFIÉ) :**
+**Complete tile inventory (VERIFIED):**
 
-| Tuile(s) | Rôle | `walkable` | `stair_direction` |
+| Tile(s) | Role | `walkable` | `stair_direction` |
 |---------|------|-----------|------------------|
-| 0, 6, 12, 18, 19, 24, 25, 30, 31 | 🪜 Marches droites | `True` | `"right"` (override explicite) |
-| 1, 8, 14, 20, 21, 26, 27, 32, 33 | 🪜 Marches gauches | `True` | `"left"` (override explicite) |
-| 2, 7, 13 | 🧱 Murs de l'escalier | `False` | `""` (hérité — ignoré car non-walkable) |
-| 3, 4, 5, 9, 10, 11, 15, 16, 17, 22, 23, 28, 29, 34, 35 | ⬜ Neutres / vides | `True` | `""` (hérité — pas un escalier) |
+| 0, 6, 12, 18, 19, 24, 25, 30, 31 | 🪜 Right steps | `True` | `"right"` (explicit override) |
+| 1, 8, 14, 20, 21, 26, 27, 32, 33 | 🪜 Left steps | `True` | `"left"` (explicit override) |
+| 2, 7, 13 | 🧱 Staircase walls | `False` | `""` (inherited — ignored because non-walkable) |
+| 3, 4, 5, 9, 10, 11, 15, 16, 17, 22, 23, 28, 29, 34, 35 | ⬜ Neutral / empty | `True` | `""` (inherited — not a staircase) |
 
-**Règle de détection d'un escalier dans le code :**
-`stair_direction` est non-vide ET non-None → tuile d'escalier.
-`stair_direction == ""` → tuile neutre, `get_vertical_move_props` retourne `None`.
+**Staircase detection rule in the code:**
+`stair_direction` is non-empty AND not None → stair tile.
+`stair_direction == ""` → neutral tile, `get_vertical_move_props` returns `None`.
 
-### 0.4 Détection des murs d'escalier
+### 0.4 Stair Wall Detection
 
-La détection des murs utilise le système existant `is_walkable()` dans `MapManager`. Les tuiles avec `walkable=false` (id 2, 7, 13) bloquent le mouvement via `walkable_func` dans `start_move`. Aucune propriété supplémentaire n'est nécessaire pour les murs : le système existant suffit.
+Wall detection uses the existing `is_walkable()` system in `MapManager`. Tiles with `walkable=false` (ids 2, 7, 13) block movement via `walkable_func` in `start_move`. No additional properties are needed for walls: the existing system is sufficient.
 
-### 0.5 Limitation du parser — résolution de classe TSX
+### 0.5 Parser Limitation — TSX Class Resolution
 
-Le parser `tmj_parser.py` ne résout PAS l'attribut `class=` sur les tilesets via `TiledProject.resolve()`. Les propriétés de classe non-surchargées (`movement_type`, `visual_y_offset`) ne sont pas disponibles dans `tile.properties`.
+The parser `tmj_parser.py` does NOT resolve the `class=` attribute on tilesets via `TiledProject.resolve()`. Un-overridden class properties (`movement_type`, `visual_y_offset`) are not available in `tile.properties`.
 
-**Stratégie retenue :** Plutôt que de modifier le parser (impact sur tous les tilesets), la méthode `get_vertical_move_props` utilise des **valeurs par défaut codées en dur** qui correspondent aux défauts de la classe Tiled :
+**Adopted Strategy:** Rather than modifying the parser (which would impact all tilesets), the `get_vertical_move_props` method uses **hardcoded default values** that match the Tiled class defaults:
 
-| Propriété | Défaut classe Tiled | Fallback dans `get_vertical_move_props` | Correspond ? |
+| Property | Tiled Class Default | Fallback in `get_vertical_move_props` | Matches? |
 |-----------|--------------------|-----------------------------------------|--------------|
 | `movement_type` | `"stair"` | `props.get("movement_type", "stair")` | ✅ |
 | `visual_y_offset` | `-12` | `int(props.get("visual_y_offset", -12))` | ✅ |
 | `stair_direction` | `""` | `props.get("stair_direction", "")` | ✅ |
 
-**Risque :** Si les défauts de la classe Tiled changent, les fallbacks dans le code doivent être mis à jour manuellement. Accepté car la classe Tiled est stable et les fallbacks sont centralisés dans une seule méthode.
+**Risk:** If the Tiled defaults change, the fallbacks in the code must be updated manually. Accepted because the Tiled class is stable and the fallbacks are centralized in a single method.
 
 ---
 
 ## 1. Core Logic & Movement Interception
 
-### 1.1 Table de mapping `VERTICAL_MOVE_MAP` (dans `config.py`)
+### 1.1 `VERTICAL_MOVE_MAP` Mapping Table (in `config.py`)
 
-Remplace le mapping hardcodé dans `start_move`. À ajouter dans `Settings` :
+Replaces the hardcoded mapping in `start_move`. To add in `Settings`:
 
 ```python
 # Maps (input_direction, stair_direction) → intercepted_direction
 VERTICAL_MOVE_MAP: dict[tuple[tuple[int, int], str], tuple[int, int]] = {
-    ((1, 0), "right"):  (1, -1),   # Droite sur escalier droit → montée diagonale
-    ((-1, 0), "right"): (-1, 1),   # Gauche sur escalier droit → descente diagonale
-    ((1, 0), "left"):  (1, 1),    # Droite sur escalier gauche → descente diagonale
-    ((-1, 0), "left"):  (-1, -1),  # Gauche sur escalier gauche → montée diagonale
-    # Extension future :
-    # ((0, 1), "up"): (0, 1),   # Haut sur échelle → montée verticale (même tile_size, Y inversé pygame)
+    ((1, 0), "right"):  (1, -1),   # Right on right staircase → diagonal climb
+    ((-1, 0), "right"): (-1, 1),   # Left on right staircase → diagonal descent
+    ((1, 0), "left"):  (1, 1),    # Right on left staircase → diagonal descent
+    ((-1, 0), "left"):  (-1, -1),  # Left on left staircase → diagonal climb
+    # Future extension:
+    # ((0, 1), "up"): (0, 1),   # Up on ladder → vertical climb (same tile_size, inverted pygame Y)
 }
 ```
 
-### 1.2 `MapManager` — nouvelle méthode `get_vertical_move_props`
+### 1.2 `MapManager` — New Method `get_vertical_move_props`
 
 ```python
 def get_vertical_move_props(self, tx: int, ty: int) -> dict | None:
@@ -201,114 +201,114 @@ def get_vertical_move_props(self, tx: int, ty: int) -> dict | None:
     return None  # "" or absent → neutral tile, not a stair
 ```
 
-**Ordre de scan :** reversed(layer_order) = top-to-bottom → la tuile d'escalier la plus haute dans la pile de layers est retournée.
+**Scan order:** reversed(layer_order) = top-to-bottom → the highest stair tile in the layer stack is returned.
 
-### 1.3 `BaseEntity` — flag `_vertical_move` et modification de `start_move()`
+### 1.3 `BaseEntity` — `_vertical_move` Flag and Modification of `start_move()`
 
-**Nouveau champ dans `__init__` :**
+**New field in `__init__`:**
 ```python
-self._vertical_move: dict | None = None  # Props 25-vertical-move de la tuile courante
+self._vertical_move: dict | None = None  # 25-vertical-move properties of current tile
 ```
 
-**Ordre d'exécution dans `start_move()` (CRITIQUE — l'interception escalier doit être AVANT `get_direction_flags`) :**
+**Execution order in `start_move()` (CRITICAL — stair interception must be BEFORE `get_direction_flags`):**
 
 ```
-1. Calcul de current_tx, current_ty
-2. ── [NOUVEAU] ── Query get_vertical_move_props(current_tx, current_ty)
-   a. Si tuile est un escalier :
-      - Si input_dir == (0, 0) : laisser passer
-      - Sinon : lookup VERTICAL_MOVE_MAP[(input_dir, stair_direction)]
-        → Si mapping trouvé : remplacer self.direction par la direction interceptée
-        → Si pas de mapping : reset direction + return (blocage silencieux complet de tout input non-géré, y compris diagonales)
-      - Mettre à jour self._vertical_move avec les props
-   b. Sinon (sol normal) : self._vertical_move = None
-3. Check get_direction_flags (existant) — s'applique sur la direction DÉJÀ interceptée
-4. Calcul target_pos = self.pos + self.direction * TILE_SIZE  (direction peut être diagonale)
-5. World boundary clamping (existant)
-6. Check walkable_func (existant) — vérifie la tuile cible diagonale
+1. Calculate current_tx, current_ty
+2. ── [NEW] ── Query get_vertical_move_props(current_tx, current_ty)
+   a. If the tile is a staircase:
+      - If input_dir == (0, 0): let it pass
+      - Else: lookup VERTICAL_MOVE_MAP[(input_dir, stair_direction)]
+        → If mapping found: replace self.direction with the intercepted direction
+        → If no mapping: reset direction + return (complete silent blocking of all unmanaged input, including diagonals)
+      - Update self._vertical_move with the properties
+   b. Else (normal floor): self._vertical_move = None
+3. Check get_direction_flags (existing) — applies to the ALREADY intercepted direction
+4. Calculate target_pos = self.pos + self.direction * TILE_SIZE (direction can be diagonal)
+5. World boundary clamping (existing)
+6. Check walkable_func (existing) — verifies the target diagonal tile
 7. Set is_moving = True
 ```
 
-**Pourquoi l'interception AVANT `get_direction_flags` :** Le check `get_direction_flags` utilise la direction demandée pour décider si le mouvement est autorisé. Si on vérifie `"right"` contre les flags d'une tuile d'escalier, et que la tuile a `direction="any"` (défaut), ça passe. Mais si l'ordre était inversé, une tuile d'escalier avec des flags restrictifs bloquerait avant l'interception.
+**Why interception is BEFORE `get_direction_flags`:** The `get_direction_flags` check uses the requested direction to decide if movement is allowed. If we verify `"right"` against the flags of a stair tile, and the tile has `direction="any"` (default), it passes. If the order were reversed, a stair tile with restrictive flags would block before interception.
 
-### 1.4 Rendering — `visual_y_offset` via flag (PAS par frame)
+### 1.4 Rendering — `visual_y_offset` via Flag (NOT per Frame)
 
-**Anti-Pattern résolu :** La section précédente disait "update per frame". C'est incorrect et contradictoire avec l'Anti-Pattern #4.
+**Resolved Anti-Pattern:** The previous section said "update per frame". This is incorrect and contradicts Anti-Pattern #4.
 
-**Règle définitive :** `self._vertical_move` est mis à jour UNIQUEMENT dans `start_move()` (une fois par déplacement). Le rendu lit `self._vertical_move["visual_y_offset"]` si non-None, sinon 0.
+**Definitive Rule:** `self._vertical_move` is updated ONLY in `start_move()` (once per movement). The renderer reads `self._vertical_move["visual_y_offset"]` if non-None, otherwise 0.
 
-**Point d'intégration : `CameraGroup.custom_draw()`** ([groups.py#L94](file:///Users/adrien.parasote/Documents/perso/game/game/src/entities/groups.py#L94))
+**Integration Point: `CameraGroup.custom_draw()`** ([groups.py#L94](file:///Users/adrien.parasote/Documents/perso/game/game/src/entities/groups.py#L94))
 
-La modification se fait dans la méthode `custom_draw()` de `CameraGroup`, qui est le propriétaire du pipeline de rendu des entités (voir `camera-rendering.md`). Le code actuel (L124-129) :
+The modification is done in the `custom_draw()` method of `CameraGroup`, which owns the entity rendering pipeline (see `camera-rendering.md`). The current code (L124-129):
 
 ```python
-# Code actuel (groups.py L121-129)
+# Current code (groups.py L121-129)
 visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
 offset_pos = visual_rect.topleft + self.offset
 # ... culling ...
 surface.blit(sprite.image, offset_pos)
 ```
 
-Modification à appliquer — ajout du `y_offset` dans `offset_pos` :
+Modification to apply — adding the `y_offset` to `offset_pos`:
 
 ```python
-# Code modifié
+# Modified code
 visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
 
-# ── [NOUVEAU] ── Décalage visuel escalier
+# ── [NEW] ── Stair visual offset
 stair_y_offset = 0
 vm = getattr(sprite, '_vertical_move', None)
 if vm is not None:
     stair_y_offset = vm["visual_y_offset"]
 
 offset_pos = (visual_rect.left + self.offset.x, visual_rect.top + self.offset.y + stair_y_offset)
-# ... culling avec offset_pos ...
+# ... culling with offset_pos ...
 surface.blit(sprite.image, offset_pos)
 ```
 
-**Note :** `sprite.rect` n'est PAS modifié. La physique de collision reste intacte. `getattr` avec fallback `None` assure la compatibilité avec les sprites qui n'ont pas `_vertical_move` (obstacles, décorations).
+**Note:** `sprite.rect` is NOT modified. Collision physics remain intact. `getattr` with a fallback of `None` ensures compatibility with sprites that do not have `_vertical_move` (obstacles, decorations).
 
-**Limitation assumée (Snap Visuel) :** Étant donné que `_vertical_move` est mis à jour au début du déplacement en fonction de la tuile d'origine, le `y_offset` s'applique de façon binaire. Lorsqu'une entité commence à marcher depuis le sol vers un escalier, elle n'a pas d'offset. Lorsqu'elle s'arrête sur l'escalier puis entame son prochain pas, l'offset de `-12` s'applique d'un coup, créant un "snap" visuel de 12 pixels vers le haut. L'inverse se produit en sortant de l'escalier. Cette discontinuité esthétique est acceptée pour cette version afin d'éviter des calculs d'interpolation complexes par frame.
+**Assumed Limitation (Visual Snap):** Since `_vertical_move` is updated at the start of the movement based on the source tile, the `y_offset` is applied in a binary fashion. When an entity starts walking from the floor to a staircase, it has no offset. When it stops on the staircase and begins its next step, the offset of `-12` s applies at once, creating a visual "snap" of 12 pixels upwards. The reverse occurs when exiting the staircase. This aesthetic discontinuity is accepted for this version to avoid complex per-frame interpolation calculations.
 
-**Transition stair→floor :** Quand l'entité arrive sur une tuile normale et commence son déplacement suivant, `start_move()` met `self._vertical_move = None` → `stair_y_offset = 0` instantanément au prochain rendu.
+**stair→floor transition:** When the entity arrives on a normal tile and starts its next movement, `start_move()` sets `self._vertical_move = None` → `stair_y_offset = 0` instantaneously in the next render.
 
 ---
 
 ## 2. NPC Pathfinding
 
-### 2.1 Compatibilité avec le système actuel
+### 2.1 Compatibility with the Current System
 
-L'interception dans `start_move()` s'applique à tous les `BaseEntity`. Si le pathfinder NPC génère des steps tile-by-tile sous forme de vecteurs directionnels `(1,0)`, `(-1,0)` etc. (ce qui est le cas standard), l'interception les corrige automatiquement en diagonal quand l'entité se trouve sur un escalier.
+The interception in `start_move()` applies to all `BaseEntity`s. If the NPC pathfinder generates tile-by-tile steps in the form of directional vectors like `(1,0)`, `(-1,0)`, etc. (which is the standard case), the interception automatically corrects them to diagonal when the entity is on a staircase.
 
-**Condition requise :** Le pathfinder doit opérer en grid-steps (direction vers la tuile suivante), pas en trajectoire pixel-directe. Si le pathfinder calcule un vecteur direct `(target_px - pos_px)`, il contournera `start_move()` et l'interception ne s'appliquera pas.
+**Requirement:** The pathfinder must operate in grid-steps (direction to the next tile), not direct pixel trajectories. If the pathfinder calculates a direct vector `(target_px - pos_px)`, it will bypass `start_move()` and the interception will not apply.
 
-### 2.2 Coût diagonal dans l'algorithme A\*
+### 2.2 Diagonal Cost in the A\* Algorithm
 
-Si le pathfinder utilise A\*, le coût d'une tuile d'escalier doit refléter le déplacement réel :
-- Un pas diagonal couvre `√2 × TILE_SIZE` pixels mais coûte `1 tile` en temps de grille.
-- Si A\* calcule les distances en tiles, les escaliers sont transparents (coût identique).
-- Si A\* calcule les distances en pixels, ajouter un coût `√2` pour les tuiles avec `stair_direction`.
+If the pathfinder uses A\*, the cost of a stair tile must reflect the actual displacement:
+- A diagonal step covers `√2 × TILE_SIZE` pixels but costs `1 tile` in grid time.
+- If A\* calculates distances in tiles, staircases are transparent (identical cost).
+- If A\* calculates distances in pixels, add a cost of `√2` for tiles with `stair_direction`.
 
-**[Tiled Author Task]** : Pas de configuration supplémentaire requise à ce stade si le pathfinder est grid-based. À réévaluer si les NPCs contournent les escaliers.
+**[Tiled Author Task]**: No additional configuration required at this stage if the pathfinder is grid-based. To be re-evaluated if NPCs bypass staircases.
 
-### 2.3 Cas limite : NPC arrive à destination en haut d'escalier
+### 2.3 Edge Case: NPC Arrives at Destination at Top of Staircase
 
-Si la cible NPC est une tuile au-delà du haut de l'escalier, le NPC traverse normalement via l'interception. Si la cible EST sur l'escalier, le NPC s'arrête à la position correcte (grid-alignée).
+If the NPC target is a tile beyond the top of the stairs, the NPC traverses normally via interception. If the target IS on the staircase, the NPC stops at the correct (grid-aligned) position.
 
 ---
 
 ## 3. Anti-Patterns
 
-| # | Anti-Pattern | Violation | Comportement correct |
+| # | Anti-Pattern | Why Incorrect | What to Do Instead |
 |---|-------------|-----------|---------------------|
-| 1 | Réutiliser `direction` pour la direction d'escalier | `direction` est réservé à `direction_flags` (tmj_parser.py L307). Placer `direction="right"` bloquerait tout mouvement sauf vers la droite. | Utiliser exclusivement `stair_direction`. |
-| 2 | Modifier `self.rect` pour l'offset visuel | Casse la physique de collision. `rect` est utilisé pour le positionnement grid et la détection de collision. | Appliquer l'offset uniquement dans `offset_pos` lors du `blit()` dans `custom_draw()`. |
-| 3 | Restreindre l'interception au Player | Tout `BaseEntity` passe par `start_move()`. Restreindre au Player empêcherait les NPCs de monter les escaliers. | L'interception dans `start_move()` s'applique à toutes les entités automatiquement. |
-| 4 | Appeler `get_vertical_move_props` dans `update()` ou `move()` | Crée un appel par frame au lieu d'un appel par déplacement. Impact perf inutile. | Une seule lecture dans `start_move()`, résultat stocké dans `self._vertical_move`. |
-| 5 | Inférer un escalier depuis les couches visuelles | Les couches visuelles peuvent contenir des décorations sans propriétés d'escalier. | Se baser uniquement sur `stair_direction` dans `tile.properties`. |
-| 6 | Vérifier `get_direction_flags` AVANT l'interception escalier | La direction interceptée (diagonale) serait vérifiée contre les flags de la tuile source — risque de blocage incorrect. | L'interception escalier est toujours AVANT `get_direction_flags` dans `start_move()`. |
-| 7 | Placer `stair_direction` non-vide sur des tuiles-murs | Les tuiles avec `walkable=false` ne doivent pas avoir de direction d'escalier. | `walkable=false` bloque le mouvement via `is_walkable()`. `stair_direction` reste vide sur les murs. |
-| 8 | Supposer que `movement_type`/`visual_y_offset` sont dans `tile.properties` | Le parser ne résout pas les classes TSX (§0.5). Ces propriétés sont absentes sauf override explicite. | Utiliser `props.get("movement_type", "stair")` et `props.get("visual_y_offset", -12)` avec fallbacks. |
+| 1 | Reusing `direction` for stair direction | `direction` is reserved for `direction_flags` (tmj_parser.py L307). Placing `direction="right"` would block all movement except to the right. | Use `stair_direction` exclusively. |
+| 2 | Modifying `self.rect` for visual offset | Breaks collision physics. `rect` is used for grid positioning and collision detection. | Apply the offset only in `offset_pos` during `blit()` in `custom_draw()`. |
+| 3 | Restricting interception to the Player | All `BaseEntity`s go through `start_move()`. Restricting to the Player would prevent NPCs from climbing stairs. | The interception in `start_move()` automatically applies to all entities. |
+| 4 | Calling `get_vertical_move_props` in `update()` or `move()` | Creates a per-frame call instead of a per-movement call. Unnecessary performance impact. | A single read in `start_move()`, result stored in `self._vertical_move`. |
+| 5 | Inferring a staircase from visual layers | Visual layers can contain decorations without stair properties. | Rely solely on `stair_direction` in `tile.properties`. |
+| 6 | Checking `get_direction_flags` BEFORE stair interception | The intercepted (diagonal) direction would be checked against the source tile flags — risk of incorrect blocking. | Stair interception is always BEFORE `get_direction_flags` in `start_move()`. |
+| 7 | Placing non-empty `stair_direction` on wall tiles | Tiles with `walkable=false` should not have a stair direction. | `walkable=false` blocks movement via `is_walkable()`. `stair_direction` remains empty on walls. |
+| 8 | Assuming `movement_type`/`visual_y_offset` are in `tile.properties` | The parser does not resolve TSX classes (§0.5). These properties are absent unless explicitly overridden. | Use `props.get("movement_type", "stair")` and `props.get("visual_y_offset", -12)` with fallbacks. |
 
 ---
 
@@ -317,23 +317,23 @@ Si la cible NPC est une tuile au-delà du haut de l'escalier, le NPC traverse no
 | Error State | Cause | Handling | Verification |
 |-------------|-------|----------|--------------|
 | Tile has no `stair_direction` property | Normal floor tile | `get_vertical_move_props` returns `None`. `self._vertical_move = None`. Movement normal. | VERIFIED (tmj_parser.py defaults) |
-| `stair_direction` value not in `VERTICAL_MOVE_MAP` | Config manquante ou direction non-gérée | `start_move` laisse passer sans interception (mouvement orthogonal normal). Log WARNING. | ASSUMED |
-| `get_vertical_move_props` called out of bounds | tx/ty hors carte | Bounds check en tête de fonction → retourne `None`. | SPECIFIED |
-| Diagonal target not walkable | Tuile cible `walkable=False` | `walkable_func` remet `target_pos = self.pos`. Mouvement annulé silencieusement. | VERIFIED (base.py L101-104) |
-| `self.game` or `map_manager` absent | Tests unitaires sans contexte | Guard existant `hasattr(self.game, "map_manager")` → skip. | VERIFIED (base.py L69) |
+| `stair_direction` value not in `VERTICAL_MOVE_MAP` | Missing config or unhandled direction | `start_move` lets it pass without interception (normal orthogonal movement). Log WARNING. | ASSUMED |
+| `get_vertical_move_props` called out of bounds | tx/ty hors carte | Bounds check en tête of function → returns `None`. | SPECIFIED |
+| Diagonal target not walkable | Target tile `walkable=False` | `walkable_func` resets `target_pos = self.pos`. Movement silently cancelled. | VERIFIED (base.py L101-104) |
+| `self.game` or `map_manager` absent | Unit tests without context | Existing guard `hasattr(self.game, "map_manager")` → skip. | VERIFIED (base.py L69) |
 | `movement_type` inconnu (ex: `"ladder"`) | Extension non implémentée | Traité identiquement à `"stair"` par `VERTICAL_MOVE_MAP` (même clé). Extension future. | ASSUMED |
 
 ---
 
 ## Assumptions
 
-| # | Hypothèse | Risque | Source Type | Gestion |
+| # | Assumption | Risk | Source Type | Handling |
 |---|-----------|--------|-------------|---------|
-| A1 | `stair_direction` est dans `tile.properties` pour les tuiles avec override explicite dans le TSX | Faible | SHOW | VÉRIFIÉ — les 18 tuiles d'escalier ont un `<property>` explicite dans le TSX |
-| A2 | `movement_type` et `visual_y_offset` sont absents de `tile.properties` (parser ne résout pas la classe TSX) | Moyen | SHOW | Géré via fallbacks hardcodés dans `get_vertical_move_props` qui correspondent aux défauts de classe (§0.5) |
-| A3 | Le pathfinder NPC opère en grid-steps (direction vers la tuile suivante), pas en trajectoire pixel-directe | Moyen | SHOW | VÉRIFIÉ — npc.py L125-131 (process_ai) utilise des choix de vecteurs orthogonaux unitaires. |
-| A4 | `TileMapData.properties` (champ existant, type `dict[str, Any] or None`) est le point d'accès. Aucune modification de schéma de `TileMapData` n'est nécessaire | Faible | SHOW | VÉRIFIÉ — le champ existe déjà (tmj_parser.py L20) |
-| A5 | Le "snap" visuel de 12 pixels lors de la transition sol ↔ escalier est esthétiquement acceptable pour le moment, évitant de complexifier le rendu avec de l'interpolation. | Moyen | TELL | Tolérance assumée. Documenté dans §1.4. |
+| A1 | `stair_direction` is in `tile.properties` for tiles with explicit override in the TSX | Low | SHOW | VERIFIED — all 18 stair tiles have an explicit `<property>` in the TSX |
+| A2 | `movement_type` and `visual_y_offset` are absent from `tile.properties` (parser does not resolve TSX class) | Medium | SHOW | Managed via hardcoded fallbacks in `get_vertical_move_props` matching class defaults (§0.5) |
+| A3 | The NPC pathfinder operates in grid-steps (direction to next tile), not direct pixel trajectory | Medium | SHOW | VERIFIED — npc.py L125-131 (process_ai) uses orthogonal unit vector choices. |
+| A4 | `TileMapData.properties` (existing field, type `dict[str, Any] or None`) is the entry point. No schema modification of `TileMapData` is needed | Low | SHOW | VERIFIED — the field already exists (tmj_parser.py L20) |
+| A5 | The visual "snap" of 12 pixels during floor ↔ staircase transition is aesthetically acceptable for now, avoiding rendering complexity with interpolation. | Medium | TELL | Assumed tolerance. Documented in §1.4. |
 
 ---
 
@@ -341,56 +341,56 @@ Si la cible NPC est une tuile au-delà du haut de l'escalier, le NPC traverse no
 
 ### Unit Tests (`game/tests/entities/test_stair_movement.py`)
 
-**MapManager :**
-- `UT-001`: `get_vertical_move_props(tx, ty)` retourne `{"stair_direction": "right", "movement_type": "stair", "visual_y_offset": -12}` sur mock tile avec `stair_direction="right"`.
-- `UT-002`: `get_vertical_move_props(tx, ty)` retourne `None` sur tuile sans `stair_direction`.
-- `UT-003`: `get_vertical_move_props(-1, 0)` retourne `None` (out of bounds — bounds check).
-- `UT-004`: `get_vertical_move_props(tx, ty)` retourne `None` sur tuile avec `direction="right"` mais sans `stair_direction` (vérifie qu'il n'y a pas de confusion de noms).
+**MapManager:**
+- `UT-001`: `get_vertical_move_props(tx, ty)` returns `{"stair_direction": "right", "movement_type": "stair", "visual_y_offset": -12}` on mock tile with `stair_direction="right"`.
+- `UT-002`: `get_vertical_move_props(tx, ty)` returns `None` on tile without `stair_direction`.
+- `UT-003`: `get_vertical_move_props(-1, 0)` returns `None` (out of bounds — bounds check).
+- `UT-004`: `get_vertical_move_props(tx, ty)` returns `None` on tile with `direction="right"` but without `stair_direction` (verifies no name collision).
 
-**BaseEntity — start_move sur escalier droit (`stair_direction="right"`) :**
-- `UT-005`: Input `(1, 0)` → `direction` interceptée à `(1, -1)`, `target_pos` = `(pos.x+32, pos.y-32)`, `is_moving = True`.
-- `UT-006`: Input `(-1, 0)` → `direction` interceptée à `(-1, 1)`, `target_pos` = `(pos.x-32, pos.y+32)`.
-- `UT-007`: Input `(0, -1)` (Haut) → `is_moving` reste `False`, `direction` reset à `(0, 0)`. Blocage silencieux.
-- `UT-008`: Input `(1, 1)` (Diagonale non-mappée) → `is_moving` reste `False`, `direction` reset à `(0, 0)`. Blocage silencieux (empêche la sortie diagonale).
+**BaseEntity — start_move on right staircase (`stair_direction="right"`):**
+- `UT-005`: Input `(1, 0)` → `direction` intercepted at `(1, -1)`, `target_pos` = `(pos.x+32, pos.y-32)`, `is_moving = True`.
+- `UT-006`: Input `(-1, 0)` → `direction` intercepted at `(-1, 1)`, `target_pos` = `(pos.x-32, pos.y+32)`.
+- `UT-007`: Input `(0, -1)` (Up) → `is_moving` remains `False`, `direction` reset to `(0, 0)`. Silent blocking.
+- `UT-008`: Input `(1, 1)` (Unmapped diagonal) → `is_moving` remains `False`, `direction` reset to `(0, 0)`. Silent blocking (prevents diagonal exit).
 
-**BaseEntity — start_move sur escalier gauche (`stair_direction="left"`) :**
-- `UT-009`: Input `(-1, 0)` → direction interceptée à `(-1, -1)`, `target_pos` = `(pos.x-32, pos.y-32)`.
-- `UT-010`: Input `(1, 0)` → direction interceptée à `(1, 1)`, `target_pos` = `(pos.x+32, pos.y+32)`.
+**BaseEntity — start_move on left staircase (`stair_direction="left"`):**
+- `UT-009`: Input `(-1, 0)` → direction intercepted at `(-1, -1)`, `target_pos` = `(pos.x-32, pos.y-32)`.
+- `UT-010`: Input `(1, 0)` → direction intercepted at `(1, 1)`, `target_pos` = `(pos.x+32, pos.y+32)`.
 
-**BaseEntity — transitions :**
-- `UT-011`: Entité sur sol normal → `_vertical_move` est `None`. Input `(1, 0)` → mouvement orthogonal normal `(pos.x+32, pos.y)`.
-- `UT-012`: Entité quitte une tuile d'escalier vers sol normal → `_vertical_move` est `None` après `start_move()`. Offset visuel = 0.
-- `UT-013`: `walkable_func` retourne `False` pour la cible diagonale → `target_pos` = `pos`, `is_moving = False` (escalier bloqué par mur).
+**BaseEntity — transitions:**
+- `UT-011`: Entity on normal floor → `_vertical_move` is `None`. Input `(1, 0)` → normal orthogonal movement `(pos.x+32, pos.y)`.
+- `UT-012`: Entity leaves stair tile to normal floor → `_vertical_move` is `None` after `start_move()`. Visual offset = 0.
+- `UT-013`: `walkable_func` returns `False` for diagonal target → `target_pos` = `pos`, `is_moving = False` (staircase blocked by wall).
 
-**Rendering offset :**
-- `UT-014`: `_vertical_move = {"visual_y_offset": -12, ...}` → `draw_pos.y = entity.rect.y - 12`. `entity.rect.y` inchangé.
-- `UT-015`: `_vertical_move = None` → `draw_pos.y = entity.rect.y` (pas d'offset).
+**Rendering offset:**
+- `UT-014`: `_vertical_move = {"visual_y_offset": -12, ...}` → `draw_pos.y = entity.rect.y - 12`. `entity.rect.y` unchanged.
+- `UT-015`: `_vertical_move = None` → `draw_pos.y = entity.rect.y` (no offset).
 
-**VERTICAL_MOVE_MAP (config) :**
-- `UT-016`: `VERTICAL_MOVE_MAP[((1, 0), "right")] == (1, -1)` — vérifie que la table est correcte pour les 4 combinaisons.
+**VERTICAL_MOVE_MAP (config):**
+- `UT-016`: `VERTICAL_MOVE_MAP[((1, 0), "right")] == (1, -1)` — verifies table correctness for all 4 combinations.
 
 ### Integration Tests (`game/tests/integration/test_stairs_integration.py`)
 
-- `IT-001`: Charger une mini-map avec une tuile `stair_direction="right"`. Spawner le joueur dessus. Input Droite. Asserter que `pos == (initial.x + 32, initial.y - 32)` et `is_moving = False` (déplacement terminé).
-- `IT-002`: Même setup. Asserter que `_vertical_move["visual_y_offset"] == -12` pendant le mouvement, puis `_vertical_move = None` après avoir atteint une tuile sol.
-- `IT-003`: Mini-map avec 3 tuiles d'escalier successives (`stair_direction="right"`). Joueur traverse les 3 tuiles en inputs Droite répétés. Asserter que la position finale est `(x + 96, y - 96)` (3 × diagonal).
-- `IT-004`: Mini-map avec escalier entouré de murs (`walkable=False`). Input Haut sur tuile d'escalier → `is_moving = False`. Input Bas → `is_moving = False`.
-- `IT-005`: NPC avec pathfinding vers une tuile au-delà d'un escalier. Asserter que le NPC traverse l'escalier en diagonale (via l'interception `start_move()`) sans se bloquer.
-- `IT-006`: Tuile avec `direction="right"` (sans `stair_direction`) → `get_vertical_move_props` retourne `None`. Pas d'interception. Vérifie l'isolation du système `direction_flags`.
+- `IT-001`: Load mini-map with a `stair_direction="right"` tile. Spawn player on it. Input Right. Assert `pos == (initial.x + 32, initial.y - 32)` and `is_moving = False` (movement completed).
+- `IT-002`: Same setup. Assert `_vertical_move["visual_y_offset"] == -12` during movement, then `_vertical_move = None` after reaching a floor tile.
+- `IT-003`: Mini-map with 3 consecutive stair tiles (`stair_direction="right"`). Player traverses the 3 tiles with repeated Right inputs. Assert that final position is `(x + 96, y - 96)` (3 × diagonal).
+- `IT-004`: Mini-map with staircase surrounded by walls (`walkable=False`). Input Up on stair tile → `is_moving = False`. Input Down → `is_moving = False`.
+- `IT-005`: NPC with pathfinding to a tile beyond a staircase. Assert that the NPC traverses the staircase diagonally (via the `start_move()` interception) without getting stuck.
+- `IT-006`: Tile with `direction="right"` (without `stair_direction`) → `get_vertical_move_props` returns `None`. No interception. Verifies isolation of the `direction_flags` system.
 
 ---
 
 ## 6. Deep Links
 
-- `MapManager`: [game/src/map/manager.py#L1](file:///Users/adrien.parasote/Documents/perso/game/game/src/map/manager.py#L1) — `get_direction_flags` (L119), nouveau `get_vertical_move_props`
-- `BaseEntity`: [game/src/entities/base.py#L1](file:///Users/adrien.parasote/Documents/perso/game/game/src/entities/base.py#L1) — `start_move()` (L62), nouveau `_vertical_move`
-- `CameraGroup.custom_draw`: [game/src/entities/groups.py#L94](file:///Users/adrien.parasote/Documents/perso/game/game/src/entities/groups.py#L94) — point d'intégration rendering y_offset (L121-129)
-- `TmjParser._parse_tileset_properties`: [game/src/map/tmj_parser.py#L189](file:///Users/adrien.parasote/Documents/perso/game/game/src/map/tmj_parser.py#L189) — lit les `<properties>` XML (ne résout PAS `class=`)
-- `TmjParser._parse_tile_properties_and_anims`: [game/src/map/tmj_parser.py#L230](file:///Users/adrien.parasote/Documents/perso/game/game/src/map/tmj_parser.py#L230) — fallbacks walkable/depth/direction (L241-243)
-- `TmjParser._process_single_tile`: [game/src/map/tmj_parser.py#L276](file:///Users/adrien.parasote/Documents/perso/game/game/src/map/tmj_parser.py#L276) — construction de `direction_flags` depuis `props["direction"]` (L307-308)
+- `MapManager`: [game/src/map/manager.py#L1](file:///Users/adrien.parasote/Documents/perso/game/game/src/map/manager.py#L1) — `get_direction_flags` (L119), new `get_vertical_move_props`
+- `BaseEntity`: [game/src/entities/base.py#L1](file:///Users/adrien.parasote/Documents/perso/game/game/src/entities/base.py#L1) — `start_move()` (L62), new `_vertical_move`
+- `CameraGroup.custom_draw`: [game/src/entities/groups.py#L94](file:///Users/adrien.parasote/Documents/perso/game/game/src/entities/groups.py#L94) — rendering y_offset integration point (L121-129)
+- `TmjParser._parse_tileset_properties`: [game/src/map/tmj_parser.py#L189](file:///Users/adrien.parasote/Documents/perso/game/game/src/map/tmj_parser.py#L189) — reads XML `<properties>` (does NOT resolve `class=`)
+- `TmjParser._parse_tile_properties_and_anims`: [game/src/map/tmj_parser.py#L230](file:///Users/adrien.parasote/Documents/perso/game/game/src/map/tmj_parser.py#L230) — walkable/depth/direction fallbacks (L241-243)
+- `TmjParser._process_single_tile`: [game/src/map/tmj_parser.py#L276](file:///Users/adrien.parasote/Documents/perso/game/game/src/map/tmj_parser.py#L276) — `direction_flags` construction from `props["direction"]` (L307-308)
 - `Settings` (config): [game/src/config.py#L1](file:///Users/adrien.parasote/Documents/perso/game/game/src/config.py#L1) — `VERTICAL_MOVE_MAP`
-- Tileset escaliers: [assets/tiled/tiles/01-stairs.tsx#L1](file:///Users/adrien.parasote/Documents/perso/game/assets/tiled/tiles/01-stairs.tsx#L1) — `class="01-vertical-move"`, 36 tuiles
-- Tiled Project (classes): [assets/tiled/game.tiled-project#L1](file:///Users/adrien.parasote/Documents/perso/game/assets/tiled/game.tiled-project#L1) — classe `01-vertical-move` (id=24)
+- Stair tileset: [assets/tiled/tiles/01-stairs.tsx#L1](file:///Users/adrien.parasote/Documents/perso/game/assets/tiled/tiles/01-stairs.tsx#L1) — `class="01-vertical-move"`, 36 tiles
+- Tiled Project (classes): [assets/tiled/game.tiled-project#L1](file:///Users/adrien.parasote/Documents/perso/game/assets/tiled/game.tiled-project#L1) — class `01-vertical-move` (id=24)
 
 ## Project Deliverables Tree
 ```text

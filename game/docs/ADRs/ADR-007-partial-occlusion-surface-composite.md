@@ -1,72 +1,64 @@
-# ADR-007 — Occlusion Partielle : Surface Composite vs Scissor Clip vs API Modifier
+# ADR-007 — Partial Occlusion: Composite Surface vs Scissor Clip vs API Modifier
 
-**Date :** 2026-05-22
-**Statut :** Accepté
-**Contexte :** Feature d'occlusion partielle des sprites NPC (sprites > TILE_SIZE)
+**Date:** 2026-05-22  
+**Status:** Accepted  
+**Context:** Feature for partial occlusion of NPC sprites (sprites > TILE_SIZE)
 
-## Contexte
+## Context
 
-Les sprites NPC (32×48px) sont plus grands qu'un tile (32×32px). Quand un NPC passe
-derrière un tile foreground (depth > player.depth), l'implémentation actuelle applique
-`set_alpha()` global sur toute l'image — incorrect visuellement. Il faut rendre seule
-la partie du sprite sur le tile concerné en alpha.
+NPC sprites (32×48px) are larger than a single tile (32×32px). When an NPC passes behind a foreground tile (depth > player.depth), the current implementation applies a global `set_alpha()` to the entire image, which is visually incorrect. Only the portion of the sprite overlapping the occluding tile should be rendered with alpha.
 
-Trois approches évaluées.
+Three approaches were evaluated.
 
 ## Options
 
-### Option A — Surface composite SRCALPHA (retenue)
+### Option A — SRCALPHA Composite Surface (Chosen)
 
-Pour chaque NPC occludé, créer une surface temporaire `SRCALPHA` aux dimensions du sprite.
-Blit opaque complet, puis blit de la zone occludée en alpha via `pygame.Rect.clip()`.
+For each occluded NPC, create a temporary `SRCALPHA` surface with the same dimensions as the sprite. Perform a full opaque blit, then blit the occluded zone with alpha using `pygame.Rect.clip()`.
 
-**Avantages :**
-- Logique localisée dans `RenderManager.draw_scene()`
-- `CameraGroup.custom_draw()` reste inchangé (générique)
-- Calcul O(1) par intersection
-- Surface allouée seulement si NPC occludé (cas rare)
-- Lisible, testable
+**Advantages:**
+- Logic is localized in `RenderManager.draw_scene()`
+- `CameraGroup.custom_draw()` remains generic and unchanged
+- O(1) computation per intersection
+- Surface is allocated only if the NPC is actually occluded (rare case)
+- Readable and testable
 
-**Inconvénients :**
-- 1 `Surface()` alloc par NPC occludé par frame (≈ 32×48px SRCALPHA)
-- Sur 2 NPCs occludés simultanément → 2 petites allocs/frame
+**Disadvantages:**
+- 1 `Surface()` allocation per occluded NPC per frame (≈ 32×48px SRCALPHA)
+- If 2 NPCs are occluded simultaneously, this results in 2 small allocations per frame
 
-### Option B — Modifier `custom_draw()` API
+### Option B — Modifying the `custom_draw()` API
 
-Passer une liste de `(rect, alpha)` zones occludantes à `CameraGroup.custom_draw()`,
-gérer le clipping lors du blit de chaque sprite.
+Pass a list of occluding zones `(rect, alpha)` to `CameraGroup.custom_draw()`, and handle the clipping during each sprite's blit.
 
-**Rejetée car :**
-- Couple l'API générique `CameraGroup` au système d'occlusion spécifique
-- `custom_draw()` devient non-testable sans mock des zones occludantes
-- Violente la SRP : CameraGroup = camera + Y-sort, pas occlusion
+**Rejected because:**
+- Couples the generic `CameraGroup` API to the specific occlusion system
+- `custom_draw()` becomes untestable without mocking the occluding zones
+- Violates the SRP: CameraGroup is responsible for camera + Y-sorting, not occlusion logic
 
-### Option C — `pygame.Surface.set_clip()` (scissor)
+### Option C — `pygame.Surface.set_clip()` (Scissor)
 
-Utiliser le clipping natif de la surface écran pour séparer les zones opaques/alpha.
-`screen.set_clip(opaque_zone)` + blit opaque, puis `screen.set_clip(occluded_zone)` + blit alpha.
+Use the screen surface's native clipping to separate opaque and alpha zones. Set the screen clip to the opaque zone, blit opaque, then set the screen clip to the occluded zone, and blit alpha.
 
-**Rejetée car :**
-- Logique de complement de rect difficile pour des formes non-rectangulaires
-- Risque d'oublier de reset le clip → artefacts graphiques globaux
-- Moins lisible que la composition explicite
+**Rejected because:**
+- Calculating the complement of rects is difficult for non-rectangular shapes
+- Risk of forgetting to reset the clip, causing global graphical artifacts
+- Less readable than explicit composition
 
-## Décision
+## Decision
 
-**Option A** — Surface composite SRCALPHA dans `draw_scene()`.
+**Option A** — SRCALPHA composite surface in `draw_scene()`.
 
-## Conséquences
+## Consequences
 
-- `draw_foreground()` change son type de retour : `bool` → `list[pygame.Rect]`
-  (les screen-space rects des tiles occludants actifs)
-- `draw_scene()` itère sur les sprites du pass 3b pour appliquer l'occlusion partielle
-- Tests TC-OCC-001/002 à adapter (bool → truthiness de la liste)
-- Player garde son alpha global actuel (inchangé)
+- `draw_foreground()` changes its return type: `bool` -> `list[pygame.Rect]` (the screen-space rects of the active occluding tiles)
+- `draw_scene()` iterates over sprites in pass 3b to apply partial occlusion
+- Tests TC-OCC-001/002 need to be adapted (bool -> truthiness of the list)
+- The Player retains their current global alpha behavior (unchanged)
 
-## Invariant de performance
+## Performance Invariant
 
-`len(occluded_rects)` est borné par le nombre de tiles visibles depth > 1.
-Sur le viewport 1280×720 avec tiles 32×32 : max ~1400 tiles visibles,
-mais les tiles occludants sont une petite fraction.
-Les NPCs occludés simultanément : typiquement 0-2.
-Impact perf : négligeable.
+`len(occluded_rects)` is bounded by the number of visible tiles with depth > 1.
+On a 1280×720 viewport with 32×32 tiles: max ~1400 visible tiles, but occluding tiles represent a tiny fraction.
+Simultaneously occluded NPCs: typically 0-2.
+Performance impact: negligible.

@@ -4,63 +4,63 @@
 [![Pygame-CE](https://img.shields.io/badge/built%20with-pygame--ce-orange?style=flat-square&logo=pygame)](https://pyga.me/)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg?style=flat-square&logo=python&logoColor=white)](https://github.com/astral-sh/ruff)
 
-Bienvenue dans le "Meta-Workspace" de **The Heir's Awakening**. Ce répertoire racine est le point d'entrée pour les développeurs, centralisant le moteur de jeu, les outils de génération procédurale, et les configurations de nos agents IA (Stream Coding).
+Welcome to the **The Heir's Awakening** "Meta-Workspace". This root directory is the entry point for developers, centralizing the game engine, procedural generation tools, and our AI agent configurations (Stream Coding).
 
-> 📖 **Joueurs, Scénaristes et Game Designers :**  
-> Tout ce qui concerne l'histoire, les mécaniques (GDD), la vision globale et la feuille de route du jeu se trouve sur notre **[Wiki GitHub Officiel](https://github.com/adrien-parasote/game/wiki)**.
-
----
-
-## 🏗️ Architecture du Projet
-
-Le projet adopte une séparation stricte entre le moteur technique et la documentation métier (Lore/GDD) pour garder le code propre et éviter la surcharge cognitive.
-
-- **[`game/`](./game)** : Le moteur RPG construit avec Pygame-CE. Contient le code source, les entités, le rendu, les tests et la documentation *strictement technique* (Spécifications IA, ADRs).
-- **[`tools/`](./tools)** : Outils de développement autonomes (Générateur de tilesets procédural avec Dear PyGui).
-- **[`assets/`](./assets)** : Ressources partagées (images, audio, données) utilisées par le jeu et les outils.
-- **[`scripts/`](./scripts)** : Pipelines de build, gestion de release, et vérifications de qualité.
-- **`game-wiki/`** *(Non versionné ici)* : Si vous l'avez cloné, ce dossier "fantôme" (ignoré par Git) contient le wiki local permettant l'édition de la documentation humaine côte à côte avec le code.
+> 📖 **Players, Writers, and Game Designers:**  
+> Everything regarding the story, mechanics (GDD), global vision, and roadmap of the game can be found on our **[Official GitHub Wiki](https://github.com/adrien-parasote/game/wiki)**.
 
 ---
 
-## 🚀 Getting Started (Développeurs)
+## 🏗️ Project Architecture
 
-### Prérequis
+The project adopts a strict separation between the technical engine and business documentation (Lore/GDD) to keep the code clean and prevent cognitive overload.
+
+- **[`game/`](./game)**: The RPG engine built with Pygame-CE. Contains the source code, entities, rendering, tests, and *strictly technical* documentation (AI specifications, ADRs).
+- **[`tools/`](./tools)**: Standalone development tools (Procedural tileset generator built with Dear PyGui).
+- **[`assets/`](./assets)**: Shared assets (images, audio, data) used by both the game and the tools.
+- **[`scripts/`](./scripts)**: Build pipelines, release management, and quality checks.
+- **`game-wiki/`** *(Not versioned here)*: If you have cloned it, this "ghost" folder (ignored by Git) contains the local wiki allowing you to edit human-facing documentation side-by-side with the code.
+
+---
+
+## 🚀 Getting Started (Developers)
+
+### Prerequisites
 - **Python 3.12+**
-- **Make** (optionnel, mais recommandé)
+- **Make** (optional, but recommended)
 
-### Lancement Rapide
-Pour travailler sur un domaine spécifique, naviguez dans son répertoire :
+### Quick Start
+To work on a specific area, navigate to its directory:
 ```bash
-# Pour le moteur de jeu :
+# For the game engine:
 cd game
-make setup  # Initialise le venv et installe les dépendances
-make run    # Lance le jeu
+make setup  # Initializes the venv and installs dependencies
+make run    # Runs the game
 
-# Pour les outils procéduraux :
+# For the procedural tools:
 cd tools
 make setup
 make run
 ```
 
-### Installation Manuelle (Sans Make)
-1. `cd game` (ou `cd tools`)
+### Manual Installation (Without Make)
+1. `cd game` (or `cd tools`)
 2. `python -m venv venv`
-3. Activation : `source venv/bin/activate` (Linux/macOS) ou `venv\Scripts\activate` (Windows)
+3. Activation: `source venv/bin/activate` (Linux/macOS) or `venv\Scripts\activate` (Windows)
 4. `pip install -r requirements.txt`
 
 ---
 
-## 🧪 Qualité & IA (Stream Coding)
+## 🧪 Quality & AI (Stream Coding)
 
-Ce projet est activement développé avec des agents IA respectant une méthodologie stricte (Stream Coding).
+This project is actively developed with AI agents following a strict methodology (Stream Coding).
 
-- **Testing** : Lancez `make test` à la racine, ou dans `game/`.
-- **Linting & Formattage** : `ruff check .`
-- **Validation IA** : `verify.py` et `spec_conformance.py` assurent que le code généré respecte à 100% les spécifications (`game/docs/specs/`).
-- **Sentinelles Git** : Ne jamais bypasser les hooks sans raison valable. Les commits sont formatés sémantiquement.
+- **Testing**: Run `make test` at the root, or within `game/`.
+- **Linting & Formatting**: `ruff check .`
+- **AI Validation**: `verify.py` and `spec_conformance.py` ensure that generated code conforms 100% to the specifications (`game/docs/specs/`).
+- **Git Sentinels**: Never bypass hooks without a valid reason. Commits are formatted semantically.
 
 ---
 
-## 📜 Licence
+## 📜 License
 MIT

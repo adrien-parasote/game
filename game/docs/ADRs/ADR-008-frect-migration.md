@@ -1,46 +1,42 @@
-# ADR-008 — Migration vers pygame.FRect : Décision de Non-Migration (Phase 1)
+# ADR-008 — Migration to pygame.FRect: Non-Migration Decision (Phase 1)
 
-**Date :** 2026-05-26
-**Status :** ✅ Accepted — Migration différée
+**Date:** 2026-05-26  
+**Status:** ✅ Accepted — Migration deferred  
 
-## Contexte
+## Context
 
-Le guide de référence `pygame_ce_python_312_best_practices.md §2.2` recommande l'utilisation
-de `pygame.FRect` pour les entités mobiles afin d'éliminer le jitter sub-pixel.
+The reference guide `pygame_ce_python_312_best_practices.md §2.2` recommends using `pygame.FRect` for moving entities to eliminate sub-pixel jitter.
 
-Le projet utilise actuellement `pygame.Rect` (entier) pour les hitboxes et positions de rendu,
-combiné avec `pygame.math.Vector2` pour les positions sub-pixel (`pos`, `target_pos`).
+The project currently uses `pygame.Rect` (integer) for hitboxes and rendering positions, combined with `pygame.math.Vector2` for sub-pixel positions (`pos`, `target_pos`).
 
-## Analyse coût/bénéfice
+## Cost/Benefit Analysis
 
-**Bénéfice :**
-- Supprimerait le double-stockage `Vector2 pos` + `Rect` dans `BaseEntity`
-- Éliminerait les arrondis manuels `int(self.pos.x)`, `int(self.pos.y)`
-- Conformité totale avec le guide de référence §2.2
+**Benefits:**
+- Would remove the duplicate storage of `Vector2 pos` + `Rect` in `BaseEntity`
+- Would eliminate manual rounding like `int(self.pos.x)`, `int(self.pos.y)`
+- Full compliance with reference guide §2.2
 
-**Coût :**
-- Impact sur `base.py`, `player.py`, `npc.py`, `groups.py`, `collision_checker.py`
-- Potentiel de régression sur la détection de collisions (FRect vs Rect en collision check)
-- Effort estimé : >4h + 2h de tests de régression collision
+**Costs:**
+- Impact on `base.py`, `player.py`, `npc.py`, `groups.py`, and `collision_checker.py`
+- Potential for regression in collision detection (FRect vs Rect in collision checking)
+- Estimated effort: >4h + 2h of collision regression testing
 
-**Jitter actuel :** Non observé. Le système `Vector2 pos` + `Rect` arrondi fonctionne
-correctement. Aucun rapport de jitter en gameplay.
+**Current Jitter:** Not observed. The rounded `Vector2 pos` + `Rect` system functions correctly. No jitter reported during gameplay.
 
-## Décision
+## Decision
 
-**Ne pas migrer vers FRect en Phase 1.**
+**Do not migrate to FRect in Phase 1.**
 
-Le double-système est fonctionnel. Le bénéfice (simplification du code) ne justifie pas
-le risque de régression sur les collisions et l'effort de migration.
+The dual-system is functional. The benefit (code simplification) does not justify the risk of collision regression and the migration effort.
 
-## Conditions de révision
+## Revision Conditions
 
-Reconsidérer si :
-1. Du jitter sub-pixel est observé en distribution (écrans haute résolution)
-2. La migration vers FRect est proposée dans une release dédiée avec test suite de collision complète
-3. pygame-ce fournit un guide de migration officiel FRect
+Reconsider if:
+1. Sub-pixel jitter is observed in distribution (high-resolution screens)
+2. FRect migration is proposed in a dedicated release with a complete collision test suite
+3. pygame-ce provides an official FRect migration guide
 
-## Fichiers non modifiés
+## Unmodified Files
 
 - `src/entities/base.py`
 - `src/entities/player.py`
