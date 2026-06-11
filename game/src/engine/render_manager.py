@@ -553,16 +553,12 @@ class RenderManager:
                 self._viewport_world
             ):
                 self._frame_anim_all.append((px, py, tile_id, depth))
-                # Resolve layer membership by checking tile_id at grid coordinate
+                # Resolve layer membership from pre-computed map (O(1))
                 col = px // tile_size
                 row = py // tile_size
-                for lid in self.game.map_manager.layer_order:
-                    if lid in self.game.map_manager.layers:
-                        layer_data = self.game.map_manager.layers[lid]
-                        if 0 <= row < len(layer_data) and 0 <= col < len(layer_data[row]):  # noqa: SIM102
-                            if layer_data[row][col] == tile_id:
-                                self._frame_anim_by_layer[lid].append((px, py, tile_id, depth))
-                                break
+                lid = self.game.map_manager._anim_tile_layer_map.get((col, row))
+                if lid is not None:
+                    self._frame_anim_by_layer[lid].append((px, py, tile_id, depth))
 
     def _compute_effective_night_alpha(self) -> int:
         """Compute the darkness overlay alpha for the current map's lighting mode.
@@ -852,6 +848,11 @@ class RenderManager:
         if not self.game.map_manager:
             empty_res: dict[object, pygame.Surface] = {}
             return empty_res
+
+        # Early-exit if the map has no grass tiles at all (H-003)
+        if not getattr(self.game.map_manager, "_map_has_grass", False):
+            empty_res2: dict[object, pygame.Surface] = {}
+            return empty_res2
 
         if cam_offset is None:
             cam_offset = self.game.visible_sprites.offset

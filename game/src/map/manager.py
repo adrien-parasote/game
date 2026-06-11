@@ -62,6 +62,13 @@ class MapManager:
         # P-008 — Grass material grid pre-computation
         self._grass_grid: list[list[pygame.Surface | None]] = []
         self._build_grass_grid()
+        self._map_has_grass: bool = any(
+            img is not None for row in self._grass_grid for img in row
+        )
+
+        # H-002: Pre-compute animated tile layer membership
+        self._anim_tile_layer_map: dict[tuple[int, int], int] = {}
+        self._build_anim_tile_layer_map()
 
     def _build_fg_occlusion_world(self) -> None:
         """Build the world-space foreground occlusion cache (P-001).
@@ -126,6 +133,30 @@ class MapManager:
                     if props.get("material") == "grass":
                         self._grass_grid[y][x] = tile.image
                     break
+
+    def update_grass_state(self) -> None:
+        """Doit être appelé si l'herbe est créée/détruite dynamiquement en jeu."""
+        self._map_has_grass = any(
+            img is not None for row in self._grass_grid for img in row
+        )
+
+    def _build_anim_tile_layer_map(self) -> None:
+        """Pre-compute (col, row) -> layer_id for all animated tiles.
+
+        Called once at init. Result is immutable — never modify per-frame.
+        Anti-pattern: never call this per-frame (O(layers * W * H)).
+        """
+        for lid in self.layer_order:
+            layer_data = self.layers.get(lid)
+            if not layer_data:
+                continue
+            for y, row_data in enumerate(layer_data):
+                for x, tile_id in enumerate(row_data):
+                    if tile_id == 0 or tile_id not in self.tiles:
+                        continue
+                    if self.tiles[tile_id].frames:
+                        # setdefault keeps the FIRST layer encountered, matching old 'break' logic
+                        self._anim_tile_layer_map.setdefault((x, y), lid)
 
     def get_layer_surface(
         self, layer_id: int, pygame_module, max_bg_depth: int = 1
