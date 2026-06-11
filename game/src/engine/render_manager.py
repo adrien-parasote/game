@@ -504,8 +504,12 @@ class RenderManager:
             # Build the visual screen-space rect — identical formula to custom_draw().
             # Aligns sprite image bottom-right to hitbox bottom-right then applies camera offset.
             visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
+            stair_y_offset = getattr(sprite, 'current_stair_offset', 0.0)
+            if not isinstance(stair_y_offset, (int, float)):
+                stair_y_offset = 0.0
+
             sprite_screen_rect = pygame.Rect(
-                (visual_rect.left + cam_offset.x, visual_rect.top + cam_offset.y),
+                (visual_rect.left + cam_offset.x, visual_rect.top + cam_offset.y + stair_y_offset),
                 visual_rect.size,
             )
 
@@ -767,8 +771,12 @@ class RenderManager:
         # Determine screen-space position of the sprite's visual rect to look up
         # which grass tile pixels align with the wading zone.
         visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
+        stair_y_offset = getattr(sprite, 'current_stair_offset', 0.0)
+        if not isinstance(stair_y_offset, (int, float)):
+            stair_y_offset = 0.0
+
         sprite_screen_left = visual_rect.left + cam_offset.x
-        sprite_screen_top = visual_rect.top + cam_offset.y
+        sprite_screen_top = visual_rect.top + cam_offset.y + stair_y_offset
 
         # Wading zone in screen space (for tile lookup only)
         wading_screen_top = sprite_screen_top + local_wading_top
