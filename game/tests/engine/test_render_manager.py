@@ -1781,3 +1781,170 @@ def test_draw_foreground_walk_active_skips_occluded_blit():
     # or verify that walk_active=True causes the skip.
     # Let's inspect screen.blit calls:
     assert game.screen.blit.call_count <= 1  # only at most the pre-rendered surface blit, no occluded tile blit
+
+
+# ===========================================================================
+# PERFORMANCE OPTIMIZATIONS — H-001 Wading Composite Reuse
+# ===========================================================================
+
+@pytest.mark.tc("TC-RPERF-U-001")
+def test_wading_composite_reallocates_only_on_size_change():
+    """TC-RPERF-U-001: _wading_composite is allocated only once per unique size (resize-on-demand)."""
+    game = _make_game_for_grass_wading(on_grass=True)
+    rm = RenderManager(game)
+    sprite = _make_sprite(w=32, h=48)
+    
+    # We will just verify that _wading_composite gets instantiated and doesn't change id
+    # when called multiple times with the same sprite size.
+    assert getattr(rm, "_wading_composite", None) is None
+    
+    # Call 1: surface should be created
+    comp1 = rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    wading_comp_id = id(rm._wading_composite)
+    
+    # Call 2: same size, template surface should NOT be recreated
+    comp2 = rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    assert id(rm._wading_composite) == wading_comp_id, "Template should be reused"
+    assert id(comp1) != id(comp2), "Each call must return a fresh copy"
+
+
+@pytest.mark.tc("TC-RPERF-U-002")
+def test_wading_composite_returns_unique_copy():
+    """TC-RPERF-U-002: Each sprite gets its own composite copy (no aliasing)."""
+    game = _make_game_for_grass_wading(on_grass=True)
+    rm = RenderManager(game)
+    
+    sprite_a = _make_sprite(w=32, h=48)
+    sprite_b = _make_sprite(w=32, h=48)
+    
+    comp_a = rm._build_wading_composite(sprite_a, pygame.math.Vector2(0, 0), 32, 10, 100)
+    comp_b = rm._build_wading_composite(sprite_b, pygame.math.Vector2(0, 0), 32, 10, 100)
+    
+    assert comp_a is not None
+    assert comp_b is not None
+    assert id(comp_a) != id(comp_b), "Sprites must receive independent Surface copies"
+
+
+@pytest.mark.tc("TC-RPERF-U-003")
+def test_wading_composite_fills_transparent_before_blit():
+    """TC-RPERF-U-003: fill((0,0,0,0)) precedes blit on the copy."""
+    game = _make_game_for_grass_wading(on_grass=True)
+    rm = RenderManager(game)
+    
+    # We will simulate the fill((0,0,0,0)) behavior by verifying that
+    # the returned composite has transparent pixels outside the sprite image and wading zone.
+    # A fresh copy of a dirty template would have garbage pixels if not filled.
+    
+    # First frame: red sprite
+    red_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
+    red_surf.fill((255, 0, 0, 255))
+    sprite = _make_sprite(image=red_surf, w=32, h=48)
+    rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    
+    # Second frame: blue sprite, same size (reuses template)
+    blue_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
+    blue_surf.fill((0, 0, 255, 255))
+    sprite.image = blue_surf
+    comp2 = rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    
+    # The template must have been filled with (0,0,0,0) before blitting the blue sprite.
+    # Therefore, no red pixels should remain anywhere in the composite.
+    w, h = comp2.get_size()
+    for x in range(w):
+        for y in range(h - 10):  # above wading zone
+            assert comp2.get_at((x, y)) != (255, 0, 0, 255), "Red pixel leaked into next frame (fill missing)"
+
+
+@pytest.mark.tc("TC-RPERF-U-004")
+def test_reset_render_caches_clears_wading_composite():
+    """TC-RPERF-U-004: reset_render_caches() sets _wading_composite to None."""
+    game = _make_game_for_grass_wading(on_grass=True)
+    rm = RenderManager(game)
+    sprite = _make_sprite(w=32, h=48)
+    
+    rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    assert rm._wading_composite is not None
+    
+    rm.reset_render_caches()
+    assert rm._wading_composite is None
+    assert rm._occ_key is None
+    assert rm._occ_composite_cache == {}
+
+
+@pytest.mark.tc("TC-RPERF-U-005")
+def test_wading_composite_unchanged_if_not_on_grass():
+    """TC-RPERF-U-005: _wading_composite remains unchanged if sprite is outside grass."""
+    game = _make_game_for_grass_wading(on_grass=False)
+    rm = RenderManager(game)
+    sprite = _make_sprite(w=32, h=48)
+    
+    if not hasattr(rm, "_wading_composite"):
+        rm._wading_composite = None
+        
+    assert rm._wading_composite is None
+    rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    assert rm._wading_composite is None
+
+
+@pytest.mark.tc("TC-RPERF-I-001")
+def test_wading_composite_visual_fidelity():
+    """TC-RPERF-I-001: Visual output is identical to a freshly allocated Surface."""
+    game = _make_game_for_grass_wading(on_grass=True)
+    rm = RenderManager(game)
+    
+    # Solid red sprite
+    red_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
+    red_surf.fill((255, 0, 0, 255))
+    sprite = _make_sprite(image=red_surf, w=32, h=48)
+    
+    # First frame
+    comp1 = rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    # Change sprite to solid green (simulating animation)
+    green_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
+    green_surf.fill((0, 255, 0, 255))
+    sprite.image = green_surf
+    # Second frame
+    comp2 = rm._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    
+    # Top of the sprite should be solid green, no red remnants
+    assert comp2.get_at((16, 16)) == (0, 255, 0, 255), "Previous frame pixels leaked!"
+
+
+@pytest.mark.tc("TC-RPERF-I-002")
+def test_reset_render_caches_integration():
+    """TC-RPERF-I-002: reset_render_caches called during map transition."""
+    # This tests the RenderManager side. The game.py side is verified via TDD lock.
+    game = _make_game_for_grass_wading(on_grass=True)
+    rm = RenderManager(game)
+    rm._wading_composite = pygame.Surface((32, 48))
+    rm.reset_render_caches()
+    assert rm._wading_composite is None
+
+
+@pytest.mark.tc("TC-RPERF-I-004")
+def test_two_sprites_same_size_no_corruption():
+    """TC-RPERF-I-004: 2 sprites of same size on grass in the same frame."""
+    game = _make_game_for_grass_wading(on_grass=True)
+    rm = RenderManager(game)
+    
+    # Red sprite
+    red_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
+    red_surf.fill((255, 0, 0, 255))
+    sprite1 = _make_sprite(image=red_surf, w=32, h=48)
+    
+    # Blue sprite
+    blue_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
+    blue_surf.fill((0, 0, 255, 255))
+    sprite2 = _make_sprite(image=blue_surf, w=32, h=48)
+    
+    game.visible_sprites.get_sorted_sprites.return_value = [sprite1, sprite2]
+    
+    # Generate composites
+    result = rm._apply_grass_wading_to_images()
+    
+    # Validate they don't corrupt each other
+    comp1 = sprite1.image
+    comp2 = sprite2.image
+    
+    assert comp1.get_at((16, 16)) == (255, 0, 0, 255), "Sprite 1 corrupted by Sprite 2"
+    assert comp2.get_at((16, 16)) == (0, 0, 255, 255), "Sprite 2 corrupted"

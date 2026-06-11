@@ -24,8 +24,8 @@ class RenderManager:
         self._occlusion_pool: list[pygame.Surface] = []
         # Alpha surface for crop blitting (sequentially used — single instance is safe)
         self._alpha_surf: pygame.Surface | None = None
-        # Grass wading surface (sequentially blitted and drawn immediately)
-        self._wading_surf: pygame.Surface | None = None
+        # Grass wading surface template (resized on demand, copied for each sprite)
+        self._wading_composite: pygame.Surface | None = None
         # F3: Pre-computed animated tile caches — populated once per frame in draw_scene()
         self._frame_anim_all: list[tuple[int, int, int, int]] = []
         self._frame_anim_by_layer: dict[int, list[tuple[int, int, int, int]]] = {}
@@ -764,8 +764,17 @@ class RenderManager:
         if local_wading_h <= 0:
             return None
 
-        # Build the composite: full opaque sprite image + wading overlay at the bottom.
-        composite = pygame.Surface(visual_size, pygame.SRCALPHA)
+        # F4: Pre-allocate ONE reusable wading composite template per unique sprite size.
+        # Resize on demand if the size changes.
+        if self._wading_composite is None or self._wading_composite.get_size() != visual_size:
+            self._wading_composite = pygame.Surface(visual_size, pygame.SRCALPHA)
+
+        # IMPORTANT: copy the surface for each sprite — the composite is assigned to sprite.image
+        # and must remain intact until post-draw restoration.
+        composite = self._wading_composite.copy()
+        
+        # Clear previous frame's pixels BEFORE blitting the sprite
+        composite.fill((0, 0, 0, 0))
         composite.blit(sprite.image, (0, 0))
 
         # Determine screen-space position of the sprite's visual rect to look up
@@ -789,12 +798,14 @@ class RenderManager:
         row_start = int((wading_screen_top - cam_offset.y) // tile_size)
         row_end = int((wading_screen_bottom - cam_offset.y - 1) // tile_size)
 
-        # F4: Reuse _wading_surf — resize only if wading zone changed size
+        # F4: We still need a temporary surface for the wading overlay pixels
+        # that we can modulate alpha on, before blitting to the composite.
         wading_size = (img_w, local_wading_h)
-        if self._wading_surf is None or self._wading_surf.get_size() != wading_size:
-            self._wading_surf = pygame.Surface(wading_size, pygame.SRCALPHA)
-        self._wading_surf.fill((0, 0, 0, 0))
-        wading_surf = self._wading_surf
+        # Reuse a temporary alpha surface for this
+        if getattr(self, "_wading_alpha_surf", None) is None or self._wading_alpha_surf.get_size() != wading_size:
+            self._wading_alpha_surf = pygame.Surface(wading_size, pygame.SRCALPHA)
+        self._wading_alpha_surf.fill((0, 0, 0, 0))
+        wading_surf = self._wading_alpha_surf
 
         self._blit_grass_tile_intersections(
             wading_surf,
@@ -876,3 +887,12 @@ class RenderManager:
                 sprite.image = composite
 
         return wading_only_originals
+
+    def reset_render_caches(self) -> None:
+        """Invalider tous les caches de rendu lors d'un changement de map.
+        
+        Appelé par game.py dans transition_map(), après _load_map().
+        """
+        self._wading_composite = None
+        self._occ_key = None
+        self._occ_composite_cache.clear()

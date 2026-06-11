@@ -295,6 +295,7 @@ class Game:
 
         # Load exactly at climax of transition
         self._load_map(target_map, target_spawn_id, transition_type)
+        self.render_manager.reset_render_caches()
 
         if transition_type == "fade":
             # Fade In
