@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pygame
 
@@ -16,7 +16,7 @@ class Settings:
     MAP_SIZE = 32
 
     # Maps (input_direction, stair_direction) → intercepted_direction
-    VERTICAL_MOVE_MAP: dict[tuple[tuple[int, int], str], tuple[int, int]] = {
+    VERTICAL_MOVE_MAP: ClassVar[dict[tuple[tuple[int, int], str], tuple[int, int]]] = {
         ((1, 0), "right"):  (1, -1),   # Droite sur escalier droit → montée diagonale
         ((-1, 0), "right"): (-1, 1),   # Gauche sur escalier droit → descente diagonale
         ((1, 0), "left"):  (1, 1),    # Droite sur escalier gauche → descente diagonale

@@ -654,5 +654,56 @@ A fallback check `getattr(self, "_frame_visible_fg_tiles", None) is not None` pr
 
 ---
 
-*Last updated: 2026-06-11 — L-MAP-011 (viewport-culled frame-level cache).*
+### L-MAP-012 · 2026-06-11 · U · Perfect
+**Multi-condition lookahead for diagonal stair traversal and orthogonal step-off**
 
+When implementing 2D grid-based diagonal staircases, lookahead checks must check:
+1. Whether the next flat tile in the input direction is a stair tile.
+2. Whether the next diagonal tile (the actual climbing target) is a stair tile.
+3. If both are normal tiles, the entity should only move diagonally (to exit the stairs) if the diagonal target is walkable and the orthogonal target is blocked. Otherwise, they step off orthogonally.
+
+This prevents both vertical/diagonal drift regressions and unmapped direction movement on lateral staircases.
+
+---
+
+### A-MAP-005 · 2026-06-11 · U · Minor Rework
+**Evaluating only the flat next tile in stair lookahead bypasses single-tile stair climbing**
+
+**Anti-pattern:** Checking only if the flat next tile in the input direction is a stair tile during lookahead.
+If a staircase is 1 tile wide or laid out diagonally (where adjacent stair tiles are diagonal but not flat-adjacent), the flat next tile is a normal floor/wall. The lookahead check thinks the staircase has ended and keeps the original orthogonal direction, completely bypassing diagonal climbing.
+**Fix:** Always evaluate both the flat next tile and the diagonal climbing target tile.
+
+---
+
+*Last updated: 2026-06-11 — L-MAP-012 (multi-condition lookahead), A-MAP-005 (flat-only lookahead anti-pattern).*
+
+---
+
+### L-MAP-013 · 2026-06-11 · P · Minor Rework
+**`tmj_parser.py` does not resolve Tiled class property defaults — explicit `setdefault` fallbacks required**
+
+`tmj_parser.py` parses explicit `<property>` nodes on tiles but does **not** resolve Tiled class-level default values (the defaults defined on a Tiled object class like `01-vertical-move`). When a tile's class is set but no property is overridden, `tile.properties` is empty — the class defaults are not injected.
+
+**Consequence:** Any `MapManager` method reading class-derived properties must apply hardcoded fallbacks that mirror the Tiled class definition:
+
+```python
+# ✅ Required pattern — class defaults not resolved by parser
+def get_vertical_move_props(self, tile_x: int, tile_y: int) -> dict | None:
+    tile = self._get_tile_at(tile_x, tile_y)
+    if tile is None or tile.tile_class != "01-vertical-move":
+        return None
+    props = dict(tile.properties)         # explicit overrides only
+    props.setdefault("stair_direction", "right")             # class default
+    props.setdefault("visual_y_offset", -Settings.TILE_SIZE / 2)  # class default
+    return props
+```
+
+**Scope:** Project-specific — depends on `tmj_parser.py` implementation. Shares the same root cause as L-MAP-002 (nested Tiled class properties not resolved), but targets stair tiles rather than tileset walkability.
+
+**Long-term fix:** Implement class-default resolution in `tmj_parser.py` — build a `{class_name: {prop: default_value}}` map from the tileset class definitions, then merge defaults into `tile.properties` during parsing. This would eliminate the need for per-caller `setdefault` patterns.
+
+**Evidence:** `get_vertical_move_props` in `manager.py` required explicit `setdefault` guards. `test_ut_001` and `test_ut_002` confirmed class-only tiles return correct defaults. 23/23 stair tests green.
+
+---
+
+*Last updated: 2026-06-11 — L-MAP-012, A-MAP-005, L-MAP-013 (tmj_parser class-default resolution gap).*

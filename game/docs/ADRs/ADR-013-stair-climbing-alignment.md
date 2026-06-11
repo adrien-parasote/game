@@ -1,4 +1,4 @@
-# ADR 003 — Stair Climbing Positioning and Alignment
+# ADR-013 — Stair Climbing Positioning and Alignment
 > Status: Proposed
 > Date: 2026-06-11
 
@@ -22,17 +22,19 @@ We will implement two coordinated changes in the movement and rendering pipeline
 
 1. **Symmetric Step-Off Rule**:
    Modify `BaseEntity.start_move` to look ahead. If the player presses a direction, we compute the next flat tile in that direction.
+   - To identify if a tile is a stair, explicitly check if `self.game.map_manager.get_vertical_move_props(tx, ty)` returns a valid dictionary.
    - If the next flat tile is a stair tile, apply the diagonal interception mapping from `VERTICAL_MOVE_MAP`.
-   - If the next flat tile is a floor tile (non-stair), bypass diagonal interception and move orthogonally (flat).
+   - If the next flat tile is a floor tile (returns `None`), bypass diagonal interception and move orthogonally (flat).
    This ensures that entry and exit boundary crossings are perfectly symmetric, resolving Y-coordinate drift.
 
 2. **Visual Offset Interpolation**:
    - Add a dynamic attribute `self.current_stair_offset` (initialized to `0`) to `BaseEntity`.
-   - When a step starts, cache the start offset and determine the target offset by querying the target tile's properties.
-   - During `BaseEntity.update(dt)`, if the entity is moving, calculate step progress:
-     $$\text{progress} = 1.0 - \frac{\text{distance to target}}{\text{total step distance}}$$
+   - When a step starts, cache the `start_pos`, the start visual offset, and determine the target offset by querying the target tile's properties.
+   - During `BaseEntity.update(dt)`, if the entity is moving, calculate step progress carefully guarding against zero division:
+     `total_dist = (self.target_pos - start_pos).magnitude()`
+     `progress = 1.0 - (distance_to_target / total_dist)` if `total_dist > 0` else `1.0`.
    - Interpolate `self.current_stair_offset` linearly between start and target offsets using this progress value. If standing still, the offset matches the current tile's offset.
-   - Update `CameraGroup.custom_draw` to apply `sprite.current_stair_offset` during rendering.
+   - Update `CameraGroup.custom_draw` to apply the offset during rendering. Crucially, use safe property access `getattr(sprite, 'current_stair_offset', 0)` to prevent `AttributeError` for non-BaseEntity sprites (e.g. particles, items).
 
 ---
 

@@ -1,0 +1,13 @@
+# Exempt legacy files and files with custom test filenames from strict 1:1 mapping
+src/entities/emote.py
+src/entities/npc.py
+src/entities/teleport.py
+src/entities/interactive_particles.py
+src/entities/interactive_lighting.py
+src/entities/groups.py
+src/entities/player.py
+src/entities/interactive.py
+src/entities/emote_sprite.py
+src/entities/interactive_constants.py
+src/entities/pickup.py
+src/entities/base.py

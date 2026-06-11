@@ -1,4 +1,4 @@
-# ADR 002 — Grass Material Grid Pre-Computation
+# ADR-012 — Grass Material Grid Pre-Computation
 > Status: Accepted
 > Date: 2026-06-11
 

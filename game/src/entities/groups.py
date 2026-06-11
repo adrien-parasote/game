@@ -120,11 +120,10 @@ class CameraGroup(pygame.sprite.Group):
             # Align bottom-right of sprite image to bottom-right of logical hitbox
             visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
 
-            # ── [NOUVEAU] ── Décalage visuel escalier
-            stair_y_offset = 0
-            vm = getattr(sprite, '_vertical_move', None)
-            if vm is not None and isinstance(vm, dict):
-                stair_y_offset = vm["visual_y_offset"]
+            # Dynamic stair visual offset (interpolated — replaces old _vertical_move-based offset)
+            stair_y_offset = getattr(sprite, 'current_stair_offset', 0.0)
+            if not isinstance(stair_y_offset, int | float):
+                stair_y_offset = 0.0
 
             # Calculate world visual rect in screen space
             offset_pos = (visual_rect.left + self.offset.x, visual_rect.top + self.offset.y + stair_y_offset)

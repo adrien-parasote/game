@@ -234,7 +234,19 @@ Asset: `assets/images/sprites/04-emotes.png` (5 columns × 8 rows).
 ## Cross-Spec Contracts
 
 ### Produces
-N/A - Not applicable
+
+`BaseEntity` (`src/entities/base.py`) exposes the following fields and methods produced by the stair movement system — any spec that reads these is consuming from [stair-movement.md](./stair-movement.md):
+
+| Artifact | Type | Consumer |
+|----------|------|----------|
+| `BaseEntity.current_stair_offset` | `float` | `camera-rendering` — applied as Y-offset in `custom_draw()` |
+| `BaseEntity.stair_start_offset` | `float` | Internal to entities-system — interpolation start value |
+| `BaseEntity.stair_target_offset` | `float` | Internal to entities-system — interpolation target value |
+| `BaseEntity.stair_move_distance` | `float` | Internal to entities-system — total step distance in pixels |
+| `BaseEntity._vertical_move` | `dict \| None` | Internal to entities-system — set in `start_move()`, read in `update_stair_offset()` |
+| `BaseEntity.update_stair_offset()` | method | Called by `update(dt)` after `move(dt)` completes |
+
+> See [stair-movement.md §1.3–1.4](./stair-movement.md) for the full contract. **NEVER call `map_manager.get_vertical_move_props()` inside `update()` or `move()`** — use the cached `self._vertical_move` (Anti-Pattern #4).
 
 ### Consumes
 N/A - Not applicable

@@ -15,8 +15,8 @@
 |---------|---------|---------|-----------|
 | Audio & Engine Setup | [audio_engine.md](learnings/audio_engine.md) | 6 | Session audio, SFX, BGM, init pygame mixer |
 | Testing & Traceability | [testing.md](learnings/testing.md) | 47 | Tout BUILD — le plus riche, lire en priorité |
-| Game Engine & Architecture | [game_engine.md](learnings/game_engine.md) | 28 | Architecture, refactoring, performance engine |
-| Map & Rendering | [map_rendering.md](learnings/map_rendering.md) | 24 | Map loading, rendering pipeline, depth, autotiles |
+| Game Engine & Architecture | [game_engine.md](learnings/game_engine.md) | 30 | Architecture, refactoring, performance engine |
+| Map & Rendering | [map_rendering.md](learnings/map_rendering.md) | 25 | Map loading, rendering pipeline, depth, autotiles |
 | UI & UX | [ui.md](learnings/ui.md) | 25 | Tout travail UI (ChestUI, PauseScreen, dialogue, halos) |
 | Tooling & Utilities | [tooling.md](learnings/tooling.md) | 7 | Développement d'outils, scripts de conversion, Asset Convertor |
 | Methodology, Agent & Docs | [methodology_and_docs.md](learnings/methodology_and_docs.md) | 33 | Workflow agents, spec writing, doc urbanization |

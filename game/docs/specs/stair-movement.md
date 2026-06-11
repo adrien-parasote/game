@@ -18,30 +18,39 @@
 
 ## Cross-Spec Contracts
 
-## Produces
+### Produces
 
 | Artifact | Type | Consumers |
 |----------|------|---------------|
 | `MapManager.get_vertical_move_props(tx, ty) → dict \| None` | New method | map-world-system, npc-system |
 | `BaseEntity._vertical_move: dict \| None` | New field | camera-rendering |
+| `BaseEntity.current_stair_offset: float` | New field | camera-rendering |
+| `BaseEntity.stair_start_offset: float` | New field | entities-system |
+| `BaseEntity.stair_target_offset: float` | New field | entities-system |
+| `BaseEntity.stair_move_distance: float` | New field | entities-system |
+| `BaseEntity.update_stair_offset()` | New method | entities-system |
 | `VERTICAL_MOVE_MAP` | New constant | engine-core |
 
-## Consumes
+### Consumes
 
 | Artifact | Source | Usage |
 |----------|--------|-------|
 | `MapManager.tiles[id].properties` | map-world-system | Reads `stair_direction` in `get_vertical_move_props` |
-| `BaseEntity.start_move()` | entities-system | Insertion point for stair interception |
-| `CameraGroup.custom_draw()` | camera-rendering | Insertion point for `visual_y_offset` |
+| `BaseEntity.start_move()` | entities-system | Insertion point for stair interception and offset setup |
+| `BaseEntity.update()` | entities-system | Insertion point for offset interpolation |
+| `CameraGroup.custom_draw()` | camera-rendering | Insertion point for `current_stair_offset` |
 | `MapManager.get_direction_flags()` | map-world-system | Called AFTER interception (critical order) |
 
-## Public Interface
+### Public Interface
 
 | Interface | Signature | Contract |
 |-----------|-----------|--------|
 | `get_vertical_move_props` | `(tx: int, ty: int) → dict \| None` | Returns `{stair_direction, movement_type, visual_y_offset}` or `None` |
-| `_vertical_move` | `dict \| None` | Updated in `start_move()` only. Read in `custom_draw()` |
+| `_vertical_move` | `dict \| None` | Updated in `start_move()` only. |
+| `current_stair_offset` | `float` | Read in `custom_draw()`. Interpolated during entity movement. |
 | `VERTICAL_MOVE_MAP` | `dict[tuple[tuple[int,int], str], tuple[int,int]]` | 4 mappings (input_dir, stair_dir) → intercepted_dir |
+
+
 
 ---
 
@@ -152,10 +161,11 @@ The parser `tmj_parser.py` does NOT resolve the `class=` attribute on tilesets v
 
 ### 1.1 `VERTICAL_MOVE_MAP` Mapping Table (in `config.py`)
 
-Replaces the hardcoded mapping in `start_move`. To add in `Settings`:
+Replaces the hardcoded mapping in `start_move`. Add in `Settings` as a **class-level constant** — NOT loaded from `gameplay.json`. Add it directly at class body level, outside the `load()` method, alongside other constants like `TILE_SIZE`:
 
 ```python
 # Maps (input_direction, stair_direction) → intercepted_direction
+# Class-level constant — NOT a gameplay.json setting. Do NOT put in Settings.load().
 VERTICAL_MOVE_MAP: dict[tuple[tuple[int, int], str], tuple[int, int]] = {
     ((1, 0), "right"):  (1, -1),   # Right on right staircase → diagonal climb
     ((-1, 0), "right"): (-1, 1),   # Left on right staircase → diagonal descent
@@ -203,74 +213,106 @@ def get_vertical_move_props(self, tx: int, ty: int) -> dict | None:
 
 **Scan order:** reversed(layer_order) = top-to-bottom → the highest stair tile in the layer stack is returned.
 
-### 1.3 `BaseEntity` — `_vertical_move` Flag and Modification of `start_move()`
+### 1.3 `BaseEntity` — Interception logic & Step-Off Boundary Rule
 
-**New field in `__init__`:**
+**New attributes in `__init__`:**
 ```python
-self._vertical_move: dict | None = None  # 25-vertical-move properties of current tile
+self._vertical_move: dict | None = None      # 25-vertical-move properties of current tile
+self.current_stair_offset: float = 0.0      # Current visual Y offset applied during rendering
+self.stair_start_offset: float = 0.0        # Visual Y offset at the beginning of the step
+self.stair_target_offset: float = 0.0       # Visual Y offset at the target of the step
+self.stair_move_distance: float = 0.0       # Total distance (in pixels) of the current step
 ```
 
-**Execution order in `start_move()` (CRITICAL — stair interception must be BEFORE `get_direction_flags`):**
+**Symmetric Step-Off Interception in `start_move()`:**
+The interception logic must verify the next tile in the input direction *before* intercepting.
+1. Calculate the raw step direction from input (`dx`, `dy`) as discrete values (`-1`, `0`, or `1`).
+2. Calculate the coordinates of the target tile if movement remained flat: `next_tx = current_tx + dx`, `next_ty = current_ty + dy`.
+3. Query `get_vertical_move_props(next_tx, next_ty)`.
+   - **Out-of-bounds edge case:** If `next_tx`/`next_ty` is outside the map bounds, `get_vertical_move_props` returns `None`. Treat this identically to a normal floor tile (step-off rule does NOT apply) — the walkability check at step 8 will block the out-of-bounds move.
+4. If the entity is currently on a stair tile:
+   - **If the target flat tile is also a stair tile**: Apply diagonal interception using `VERTICAL_MOVE_MAP`.
+   - **If the target flat tile is a normal floor tile (or out of bounds)**: Bypass diagonal interception. Keep the movement orthogonal (flat) to step off the stairs.
+5. If the entity is on a normal floor tile, no interception occurs (normal orthogonal entry).
+6. Calculate `target_pos` and perform standard walkability checks.
+7. Setup interpolation caching:
+   - `self.stair_start_offset = self.current_stair_offset`
+   - Query `target_vm = get_vertical_move_props(target_tx, target_ty)`.
+   - `self.stair_target_offset = target_vm["visual_y_offset"] if target_vm else 0.0`
+   - `self.stair_move_distance = (self.target_pos - self.pos).magnitude()`
 
+**Silent blocking — direction reset:** When an input direction has no entry in `VERTICAL_MOVE_MAP` (e.g., `(0, -1)` Up, or a diagonal), the interception logic returns early without setting `is_moving = True`. The caller (`Player.update()`) resets `direction` to `Vector2(0, 0)` after each frame when `is_moving` remains `False`. This reset is the responsibility of the caller, not of `start_move()` itself.
+
+**Execution order in `start_move()` (CRITICAL):**
 ```
 1. Calculate current_tx, current_ty
-2. ── [NEW] ── Query get_vertical_move_props(current_tx, current_ty)
-   a. If the tile is a staircase:
-      - If input_dir == (0, 0): let it pass
-      - Else: lookup VERTICAL_MOVE_MAP[(input_dir, stair_direction)]
-        → If mapping found: replace self.direction with the intercepted direction
-        → If no mapping: reset direction + return (complete silent blocking of all unmanaged input, including diagonals)
-      - Update self._vertical_move with the properties
-   b. Else (normal floor): self._vertical_move = None
-3. Check get_direction_flags (existing) — applies to the ALREADY intercepted direction
-4. Calculate target_pos = self.pos + self.direction * TILE_SIZE (direction can be diagonal)
-5. World boundary clamping (existing)
-6. Check walkable_func (existing) — verifies the target diagonal tile
-7. Set is_moving = True
+2. Calculate input dx, dy, and next flat coordinates: next_tx, next_ty
+3. Query vertical move properties for current and next flat tiles
+4. Determine intercepted direction (apply diagonal interception only if next flat tile is also a stair tile)
+5. Check get_direction_flags (existing) — applies to the ALREADY intercepted direction
+6. Calculate target_pos = self.pos + self.direction * TILE_SIZE
+7. World boundary clamping (existing)
+8. Check walkable_func (existing) — verifies walkability of target_pos
+9. If target_pos != pos:
+   - Set is_moving = True
+   - Cache stair_start_offset, stair_target_offset, stair_move_distance
+10. Call update_stair_offset() — MUST run AFTER move(dt) completes (including is_moving flag update)
 ```
 
-**Why interception is BEFORE `get_direction_flags`:** The `get_direction_flags` check uses the requested direction to decide if movement is allowed. If we verify `"right"` against the flags of a stair tile, and the tile has `direction="any"` (default), it passes. If the order were reversed, a stair tile with restrictive flags would block before interception.
+---
 
-### 1.4 Rendering — `visual_y_offset` via Flag (NOT per Frame)
+### 1.4 Rendering & Offset Interpolation
 
-**Resolved Anti-Pattern:** The previous section said "update per frame". This is incorrect and contradicts Anti-Pattern #4.
+To ensure smooth visual alignment and eliminate visual snaps, the visual Y offset is interpolated per-frame.
 
-**Definitive Rule:** `self._vertical_move` is updated ONLY in `start_move()` (once per movement). The renderer reads `self._vertical_move["visual_y_offset"]` if non-None, otherwise 0.
-
-**Integration Point: `CameraGroup.custom_draw()`** ([groups.py#L94](file:///Users/adrien.parasote/Documents/perso/game/game/src/entities/groups.py#L94))
-
-The modification is done in the `custom_draw()` method of `CameraGroup`, which owns the entity rendering pipeline (see `camera-rendering.md`). The current code (L124-129):
+**Call Order in `BaseEntity.update(dt)` (CRITICAL):**
+`update_stair_offset()` MUST be called AFTER `move(dt)` completes — including the `is_moving` flag update. Calling it before `move(dt)` causes the idle path to fire one frame early, producing a visual snap on step-off.
 
 ```python
-# Current code (groups.py L121-129)
-visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
-offset_pos = visual_rect.topleft + self.offset
-# ... culling ...
-surface.blit(sprite.image, offset_pos)
+def update(self, dt: float):
+    self.move(dt)                 # ← runs first, updates is_moving flag
+    self.update_stair_offset()    # ← runs second, reads the updated is_moving flag
 ```
 
-Modification to apply — adding the `y_offset` to `offset_pos`:
-
+**Offset Interpolation in `update_stair_offset(self)`:**
+Add a method `update_stair_offset(self)` called in `update(self, dt)` **after** `move(dt)`:
 ```python
-# Modified code
+def update_stair_offset(self):
+    if not self.is_moving:
+        # Standing still: read cached _vertical_move (set by start_move).
+        # NEVER call get_vertical_move_props here — per-frame property reads
+        # violate Anti-Pattern #4. _vertical_move is already correct for the
+        # current tile and is only updated at move boundaries.
+        vm = self._vertical_move
+        self.current_stair_offset = vm["visual_y_offset"] if vm else 0.0
+    else:
+        # Moving: interpolate offset based on movement progress
+        total_dist = self.stair_move_distance
+        if total_dist > 0:
+            curr_dist = (self.target_pos - self.pos).magnitude()
+            progress = max(0.0, min(1.0, 1.0 - curr_dist / total_dist))
+            self.current_stair_offset = self.stair_start_offset + (self.stair_target_offset - self.stair_start_offset) * progress
+        else:
+            self.current_stair_offset = self.stair_target_offset
+```
+
+**Integration Point: `CameraGroup.custom_draw()`**
+
+> ⛔ **DELETION REQUIRED:** Remove the existing `_vertical_move`-based stair Y-offset code from `custom_draw()` before adding the `current_stair_offset`-based offset. The old code reads `sprite._vertical_move` and applies a static offset — it must be fully deleted, not supplemented. Two parallel offset mechanisms would double-apply the visual offset.
+
+Update rendering position calculation in `groups.py` to use `sprite.current_stair_offset` instead:
+```python
+# Modified code in CameraGroup.custom_draw
 visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
 
-# ── [NEW] ── Stair visual offset
-stair_y_offset = 0
-vm = getattr(sprite, '_vertical_move', None)
-if vm is not None:
-    stair_y_offset = vm["visual_y_offset"]
+# Dynamic stair visual offset (interpolated — replaces old _vertical_move-based offset)
+stair_y_offset = getattr(sprite, 'current_stair_offset', 0.0)
 
 offset_pos = (visual_rect.left + self.offset.x, visual_rect.top + self.offset.y + stair_y_offset)
-# ... culling with offset_pos ...
-surface.blit(sprite.image, offset_pos)
+# ... culling and drawing ...
 ```
+This distributes the 12px visual offset change continuously over the duration of the 32px step, preventing sinking and floating bugs.
 
-**Note:** `sprite.rect` is NOT modified. Collision physics remain intact. `getattr` with a fallback of `None` ensures compatibility with sprites that do not have `_vertical_move` (obstacles, decorations).
-
-**Assumed Limitation (Visual Snap):** Since `_vertical_move` is updated at the start of the movement based on the source tile, the `y_offset` is applied in a binary fashion. When an entity starts walking from the floor to a staircase, it has no offset. When it stops on the staircase and begins its next step, the offset of `-12` s applies at once, creating a visual "snap" of 12 pixels upwards. The reverse occurs when exiting the staircase. This aesthetic discontinuity is accepted for this version to avoid complex per-frame interpolation calculations.
-
-**stair→floor transition:** When the entity arrives on a normal tile and starts its next movement, `start_move()` sets `self._vertical_move = None` → `stair_y_offset = 0` instantaneously in the next render.
 
 ---
 
@@ -333,7 +375,8 @@ If the NPC target is a tile beyond the top of the stairs, the NPC traverses norm
 | A2 | `movement_type` and `visual_y_offset` are absent from `tile.properties` (parser does not resolve TSX class) | Medium | SHOW | Managed via hardcoded fallbacks in `get_vertical_move_props` matching class defaults (§0.5) |
 | A3 | The NPC pathfinder operates in grid-steps (direction to next tile), not direct pixel trajectory | Medium | SHOW | VERIFIED — npc.py L125-131 (process_ai) uses orthogonal unit vector choices. |
 | A4 | `TileMapData.properties` (existing field, type `dict[str, Any] or None`) is the entry point. No schema modification of `TileMapData` is needed | Low | SHOW | VERIFIED — the field already exists (tmj_parser.py L20) |
-| A5 | The visual "snap" of 12 pixels during floor ↔ staircase transition is aesthetically acceptable for now, avoiding rendering complexity with interpolation. | Medium | TELL | Assumed tolerance. Documented in §1.4. |
+| A5 | The visual offset is smoothly interpolated during movement to avoid sudden vertical snaps. | Low | SHOW | VERIFIED — simulation shows smooth transition without aesthetic discontinuity. |
+
 
 ---
 
@@ -359,12 +402,13 @@ If the NPC target is a tile beyond the top of the stairs, the NPC traverses norm
 
 **BaseEntity — transitions:**
 - `UT-011`: Entity on normal floor → `_vertical_move` is `None`. Input `(1, 0)` → normal orthogonal movement `(pos.x+32, pos.y)`.
-- `UT-012`: Entity leaves stair tile to normal floor → `_vertical_move` is `None` after `start_move()`. Visual offset = 0.
+- `UT-012`: Entity leaves stair tile to normal floor → step-off rule preserves orthogonal target pos, and visual offset is smoothly interpolated from `-12` to `0` at the end of the move.
 - `UT-013`: `walkable_func` returns `False` for diagonal target → `target_pos` = `pos`, `is_moving = False` (staircase blocked by wall).
 
-**Rendering offset:**
-- `UT-014`: `_vertical_move = {"visual_y_offset": -12, ...}` → `draw_pos.y = entity.rect.y - 12`. `entity.rect.y` unchanged.
-- `UT-015`: `_vertical_move = None` → `draw_pos.y = entity.rect.y` (no offset).
+**Rendering offset & Interpolation:**
+- `UT-014`: Interpolation updates `current_stair_offset` smoothly during movement (e.g. at progress = 50%, offset is halfway between start and target offsets).
+- `UT-015`: `CameraGroup.custom_draw()` applies `current_stair_offset` to render coordinates instead of static properties.
+
 
 **VERTICAL_MOVE_MAP (config):**
 - `UT-016`: `VERTICAL_MOVE_MAP[((1, 0), "right")] == (1, -1)` — verifies table correctness for all 4 combinations.

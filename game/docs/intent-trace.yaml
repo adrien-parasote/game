@@ -7,18 +7,24 @@ version: "1"
 assertions:
   - id: "IA-001"
     assertion: "The player can ascend and descend the basement stairs and return to the exact starting logical coordinates without Y-coordinate drift."
-    rationale: ""
+    rationale: "The integration tests verify that traversing the stairs up and down returns the entity to the exact starting logical coordinates, ensuring step symmetry."
     scope: code
-    proof: {}
+    proof:
+      type: test_exit_code
+      reference: "game/tests/integration/test_stairs_integration.py"
+      expected_exit: 0
     files:
       - "game/src/entities/base.py"
     status: null
 
   - id: "IA-002"
     assertion: "The player sprite is rendered at the correct visual height corresponding to the stair graphic assets during all stages of movement and while standing still."
-    rationale: ""
+    rationale: "The unit tests verify that current_stair_offset is updated statically when standing still and is smoothly interpolated between starting and target offsets during movement progress."
     scope: code
-    proof: {}
+    proof:
+      type: test_exit_code
+      reference: "game/tests/entities/test_stair_movement.py"
+      expected_exit: 0
     files:
       - "game/src/entities/base.py"
       - "game/src/entities/groups.py"

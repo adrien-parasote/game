@@ -233,3 +233,53 @@ class TestStairsIntegration:
         # Should move orthogonally right, not diagonally
         assert player.direction == pygame.math.Vector2(1, 0)
         assert player.target_pos == pygame.math.Vector2(80, 48)
+
+    def test_it_007_stair_traversal_symmetry(self, setup_mini_map):
+        """IT-007: Ascent and descent stair traversal returns player to start without Y drift."""
+        mm = setup_mini_map({
+            (1, 3): {"walkable": True},
+            (2, 3): {"stair_direction": "right", "walkable": True, "visual_y_offset": -12},
+            (3, 2): {"stair_direction": "right", "walkable": True, "visual_y_offset": -12},
+            (4, 2): {"walkable": True}
+        })
+
+        player = Player(pos=(48, 112)) # center of (1, 3)
+        player.speed = 100
+        mock_game = MagicMock()
+        mock_game.map_manager = mm
+        mock_game.layout = mm.layout
+        player.game = mock_game
+        player.walkable_func = lambda x, y, requester=None: True
+
+        # 1. Step onto stairs: (1,3) -> (2,3)
+        player.direction = pygame.math.Vector2(1, 0)
+        player.start_move()
+        player.update(0.5)
+        assert player.pos == pygame.math.Vector2(80, 112) # center of (2, 3)
+
+        # 2. Step up stairs: (2,3) -> (3,2)
+        player.direction = pygame.math.Vector2(1, 0)
+        player.start_move()
+        player.update(0.5)
+        assert player.pos == pygame.math.Vector2(112, 80) # center of (3, 2)
+
+        # 3. Step down stairs: (3,2) -> (2,3)
+        player.direction = pygame.math.Vector2(-1, 0)
+        player.start_move()
+        player.update(0.5)
+        assert player.pos == pygame.math.Vector2(80, 112) # center of (2, 3)
+
+        # 4. Step off stairs: (2,3) -> (1,3)
+        player.direction = pygame.math.Vector2(-1, 0)
+        player.start_move()
+        # Verify the step-off rule kept direction orthogonal (not intercepted to (-1, +1))
+        assert player.direction == pygame.math.Vector2(-1, 0), (
+            "Step-off rule failed: direction should remain orthogonal (-1, 0) "
+            "when moving from stair tile to a normal floor tile"
+        )
+        player.update(0.5)
+
+        # Player must return to starting tile (1, 3) at coordinates (48, 112)
+        assert player.pos == pygame.math.Vector2(48, 112)
+        assert getattr(player, "current_stair_offset", 0.0) == 0.0
+

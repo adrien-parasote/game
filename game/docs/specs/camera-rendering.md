@@ -66,13 +66,14 @@ Depth filtering (refined in session 2026-05-14 to prevent entity occlusion):
 
 ```python
 visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
-offset_pos = visual_rect.topleft + self.offset
+stair_y_offset = getattr(sprite, 'current_stair_offset', 0.0)  # stair-movement spec §1.4
+offset_pos = (visual_rect.left + self.offset.x, visual_rect.top + self.offset.y + stair_y_offset)
 screen_sprite_rect = pygame.Rect(offset_pos, visual_rect.size)
 if screen_rect.colliderect(screen_sprite_rect):
     surface.blit(sprite.image, offset_pos)
 ```
 
-This ensures off-screen sprites are never blitted, reducing GPU load on large maps.
+> **Stair visual offset:** `BaseEntity` exposes `current_stair_offset: float` (see [stair-movement.md §1.4](./stair-movement.md)). This float is interpolated during stair traversal and must be applied as an additional Y-offset in **every** `blit()` call via `getattr(sprite, 'current_stair_offset', 0.0)`. The `getattr` default of `0.0` ensures normal sprites (no stair system) are unaffected. **Never read `sprite._vertical_move` directly** — that is the raw property store; `current_stair_offset` is the authoritative render value.
 
 ### 3.4. Visual Anchoring
 
@@ -476,6 +477,10 @@ N/A - Not applicable
 
 | Identifiant | Format | Producteur |
 |---|---|---|
+### Consumes
+
+| Identifiant | Format | Producteur |
+|---|---|---|
 | `MapManager.get_visible_chunks(min_depth)` | Iterator[(px, py, tile_id, depth)] | `src/map/manager.py` |
 | `MapManager.get_visible_animated_chunks(viewport)` | Iterator[(px, py, tile_id, depth)] | `src/map/manager.py` |
 | `CameraGroup.get_sorted_sprites()` | list[Sprite] | `src/entities/groups.py` |
@@ -483,6 +488,7 @@ N/A - Not applicable
 | `MapManager.get_grass_tile_image_at(px, py)` | `pygame.Surface \| None` | `src/map/manager.py` — see [map-world-system.md §4.2](./map-world-system.md#L83) |
 | `Settings.GRASS_WADING_DEPTH` | `int` (pixels) | `src/config.py` |
 | `Settings.GRASS_WADING_ALPHA` | `int` (0–255) | `src/config.py` |
+| `BaseEntity.current_stair_offset` | `float` | `src/entities/base.py` — see [stair-movement.md §1.4](./stair-movement.md). Applied as additional Y-offset in `custom_draw()` via `getattr(sprite, 'current_stair_offset', 0.0)`. Default `0.0` for non-stair sprites. |
 
 ### Tracked Interface Changes
 
@@ -528,16 +534,17 @@ N/A - Not applicable
 | Cache sprite size in `_apply_partial_occlusion` | Use `sprite.image.get_size()` dynamically | Frames can have variable sizes in the future |
 | Calculate `visual_rect` differently from `custom_draw` | Use exactly `get_rect(bottomright=sprite.rect.bottomright)` | Inconsistency = visual misalignment between rendered sprite and composite zone |
 | Guard `_apply_partial_occlusion` globally in `draw_scene()` | Pass `walk_active` and skip ONLY the player sprite internally | A global guard disables occlusion and wading for all other NPCs in the scene |
-| Do a second tile scan in `_apply_partial_occlusion` | Reuse rects collected in `draw_foreground()` | Double scan = duplicated work |
+| Do a second tile scan in `_apply_partial_occlusion` | Reuse rects collected in `draw_foreground()` | Duplicated work |
 | Ignore depth in `_apply_partial_occlusion` | Check `tile_depth > sprite_depth` | A tile must not occlude a sprite at the same or higher depth |
 | Return `bool` from `draw_foreground()` | Return `list[tuple[pygame.Rect, int]]` | Bool insufficient — rects and depth needed for precise zone occlusion |
 | Probe terrain at `sprite.rect.centerx, sprite.rect.centery` | Probe at foot: `sprite.rect.centerx, sprite.rect.bottom - 2` | Chest-height probe misses ground material — must probe at feet |
 | Blit grass wading to screen AFTER `custom_draw` | Call `_apply_grass_wading_to_images()` BEFORE `custom_draw` (Pass 3c pre-blit) | Screen-space blit after draw causes wading pixels from a lower-Y sprite (player) to bleed over heads of higher-Y sprites (NPCs) already rendered |
-| Allocate a full-sized `pygame.Surface` for the grass wading overlay | Use a small `pygame.Surface` matched exactly to the `wading_rect` size (e.g. 32x10) | Allocating large surfaces per frame degrades performance, whereas a tiny matched surface is highly optimized |
+| Allocate a full-sized `pygame.Surface` for the grass wading overlay | Use a small `pygame.Surface` matched exactly to the `wading_rect` size (e.g. 32x10) | Allocating large surfaces per frame degrades performance |
 | Blit the full grass tile image | Use `area=grass_crop` to extract only the relevant pixels | Without crop, blit overdraws beyond the wading zone |
 | Apply wading to sprites with `depth < player.depth` | Skip — Pass 2 entities are already below the grass layer | Background entities are behind grass; wading on them is incorrect |
 | Skip composite stacking with occlusion | Pass `pre_occlusion_originals` from `_apply_partial_occlusion` to `_apply_grass_wading_to_images` | Wading must stack on the occlusion composite, not the raw original image |
 | Guard `_apply_grass_wading_to_images` globally in `draw_scene()` | Pass `walk_active` and skip ONLY the player sprite internally | A global guard disables grass wading for all other NPCs in the scene |
+| Read `sprite._vertical_move` in `custom_draw()` to apply stair offset | Read `sprite.current_stair_offset` via `getattr(sprite, 'current_stair_offset', 0.0)` | `_vertical_move` is the raw property dict; `current_stair_offset` is the interpolated float ready for rendering. Using `_vertical_move` directly produces a static snap instead of smooth interpolation. |
 
 ## 9. Test Case Specifications
 

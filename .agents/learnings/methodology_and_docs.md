@@ -735,3 +735,9 @@ Activating the strict Ruff configuration (`"SIM", "PT", "RUF", "C90"`) instantly
 - **Evidence:** `verify.py` run at root `.` caused `P8_SpecConformance` to skip (looked in `./docs` instead of `./tools/docs/specs`) and `P4_Tests` to fail trying to run `game/tests` when only `tools/` was modified.
 - **Anti-pattern:** Running `verify.py` on the monorepo root without targeting the specific sub-project (`tools` vs `game`). This causes false positive test failures and falsely skipped spec checks.
 - **Fix:** In a monorepo setup, run `verify.py` explicitly targeting the sub-project directory (e.g., `cd tools && verify.py .` or manual `pytest tools/` if root `pyproject.toml` forces a global context).
+
+### A-SPEC-006 · 2026-06-11 · U · Major Rework
+- **Source:** game — ADR-013-stair-climbing-alignment.md
+- **Evidence:** Adversarial review caught 2 HIGH severity bugs before code generation: a ZeroDivisionError in a stated interpolation formula, and an AttributeError on a Pygame Group iteration.
+- **Anti-pattern:** Writing specs with raw mathematical formulas (e.g. `dist / total`) without specifying zero guards, and referencing groups/collections with an assumption of homogeneity (e.g. "update `CameraGroup` to apply `sprite.offset`") when the collection can contain heterogeneous objects.
+- **Fix:** When a spec contains a mathematical formula for interpolation or state, it MUST include the boundary guard (e.g., `if total > 0`). When a spec describes iterating a collection, it MUST specify safe attribute access (e.g., `getattr(sprite, 'prop', default)`) if the collection can contain objects without that property.

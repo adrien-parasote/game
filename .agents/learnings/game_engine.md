@@ -193,7 +193,12 @@ def _spawn_teleport(self, ent, props): ...               # 12L
 
 **Règle :** Toute méthode >40L qui contient un `if/elif` de dispatch doit être décomposée. Le dispatcher ne doit faire que router — aucune logique métier.
 
-**Evidence :** `game.py` (-70L sur `_spawn_entities`), `interaction.py` (-55L sur `_check_proximity_emotes`), `inventory.py` (-60L sur `draw`). Zéro régression.
+**Occurrence 2 (2026-06-11) — Stair interception in `start_move()` :**
+`start_move()` accumulated 71 statements (complexity 15) after adding diagonal stair interception inline. Extracted `_apply_stair_interception(current_tx, current_ty) → bool` (returns False = silent block) and `_clamp_target_to_world()`. `start_move()` dropped to ~30 statements / complexity ~7. All 23 stair tests + 1193 regression suite green.
+
+**Evidence :**
+- Occurrence 1 : `game.py` (-70L on `_spawn_entities`), `interaction.py` (-55L on `_check_proximity_emotes`), `inventory.py` (-60L on `draw`). Zéro régression.
+- Occurrence 2 (2026-06-11) : `base.py::start_move()` 71→30 stmts, complexity 15→7. 1193/1193 tests verts.
 
 ---
 
@@ -728,5 +733,32 @@ Dans un moteur de jeu basé sur des cases (grid-based movement), l'interception 
 
 **Evidence :** Implémentation de la logique d'interception au début de `BaseEntity.start_move()` dans `base.py` résolvant les conflits de blocage directionnel.
 
-*Last updated: 2026-06-11 — A-PERF-003 résolu (P-001), L-PERF-004 (3-method decomposition), L-PERF-005 (dirty flag cache key), L-GAME-018 (render-time offset), L-GAME-019 (diagonal interception priority).*
+### A-LINT-001 · 2026-06-11 · U · Minor Rework
+**Inline complexity growth in an existing method not caught during BUILD — surfaces only at VERIFY**
+
+When adding a significant logic block (≥30 statements) directly inside an existing method during BUILD, the cyclomatic complexity threshold (`C901 > 10`) and statement limit (`PLR0915 > 50`) are not caught until the VERIFY lint pass. The result is a separate post-VERIFY fix round that the user has to explicitly trigger ("fix all and come back to me") instead of being pre-empted in BUILD.
+
+**Anti-pattern:** Adding interception/dispatch logic inline inside a method that already has statements, without checking lint during implementation:
+```python
+# ❌ 71 statements, complexity 15 — only caught by ruff at VERIFY
+def start_move(self):
+    ...  # existing 30 statements
+    # NEW: stair interception block — adds 40 more statements inline
+    if self.game and hasattr(self.game, "map_manager"):
+        vm = self.game.map_manager.get_vertical_move_props(...)
+        if vm and isinstance(vm, dict):
+            ...  # 35 more lines inline
+```
+
+**Fix (two-level):**
+1. **Local (spec):** Whenever a spec task says "add interception logic to `start_move()`", the spec must also include a **Complexity Budget** note: « Extract into `_apply_X()` helper. `start_move()` must remain ≤50 statements / complexity ≤10 after the change. »
+2. **Process:** During BUILD implementation, run `ruff check --select C901,PLR0915 <modified_file>` immediately after writing the new logic block — before writing tests or moving to the next step.
+
+**Scope:** Universal — applies to any language with cyclomatic complexity rules.
+
+**Evidence:** `game/src/entities/base.py::start_move` — 71 stmts / complexity 15 caught only at VERIFY. Required extraction of `_apply_stair_interception()` and `_clamp_target_to_world()`. Separate lint-fix round triggered by user. 1193/1193 tests green after refactor.
+
+---
+
+*Last updated: 2026-06-11 — A-PERF-003 résolu (P-001), L-PERF-004 (3-method decomposition), L-PERF-005 (dirty flag cache key), L-GAME-018 (render-time offset), L-GAME-019 (diagonal interception priority), L-ARCH-004 (occurrence 2: stair interception dispatcher), A-LINT-001 (inline complexity blindspot at BUILD).*
 
