@@ -152,6 +152,7 @@ class Player(BaseEntity):
         # We don't call self.input() here to keep it testable with manual direction set
         # But in the game loop we would
         self.move(dt)
+        self.update_stair_offset()  # Must be called each frame to compute visual stair height
         self._update_animation(dt)
 
     def playerEmote(self, name: str):

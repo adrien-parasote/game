@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import pygame
@@ -101,7 +102,7 @@ class BaseEntity(pygame.sprite.Sprite):
         map_key = ((dx, dy), stair_dir)
 
         if map_key not in Settings.VERTICAL_MOVE_MAP:
-            # Input non-mappé sur escalier -> Blocage silencieux complet
+            # Non-mappable input on stair (e.g. UP/DOWN) → silent block
             self.direction = pygame.math.Vector2(0, 0)
             return False
 

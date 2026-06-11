@@ -125,15 +125,30 @@ class TestPlayerAnimation:
 
 class TestPlayerUpdate:
     def test_update_calls_move_and_animation(self):
-        """update() calls both move() and _update_animation()."""
+        """update() calls move(), update_stair_offset(), and _update_animation()."""
         p = _make_player()
         with (
             patch.object(p, "move") as mock_move,
+            patch.object(p, "update_stair_offset") as mock_stair_offset,
             patch.object(p, "_update_animation") as mock_anim,
         ):
             p.update(0.016)
             mock_move.assert_called_once_with(0.016)
+            mock_stair_offset.assert_called_once()
             mock_anim.assert_called_once_with(0.016)
+
+    def test_update_stair_offset_called_before_animation(self):
+        """update_stair_offset() must run before _update_animation() so the visual
+        height is ready before the sprite frame is selected."""
+        p = _make_player()
+        call_order = []
+        with (
+            patch.object(p, "move"),
+            patch.object(p, "update_stair_offset", side_effect=lambda: call_order.append("stair")),
+            patch.object(p, "_update_animation", side_effect=lambda dt: call_order.append("anim")),
+        ):
+            p.update(0.016)
+        assert call_order == ["stair", "anim"]
 
 
 class TestPlayerFootstep:
