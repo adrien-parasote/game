@@ -351,6 +351,42 @@ N/A — this spec produces no file artifacts consumed by other specs.
 
 ## Assumptions
 
+| # | Assumption | Risk | Validation |
+|---|---|---|---|
+| 1 | Standard Pygame blending operations are sufficient for performance | Low | Validated via `test_lighting_night_overlay_lt004` |
+
+## Error Handling
+
+| Error | Response | Fallback | Logging |
+|---|---|---|---|
+| Lighting Cache Miss | Re-render surface | Dynamic Render | Warn if freq > threshold |
+
+## Cross-Spec Contracts
+
+### Produces
+| Identifier | Format | Schema | Consumers |
+|---|---|---|---|
+| `_night_overlay` | Pygame Surface | Alpha masked surface | `render_manager.py` |
+
+### Consumes
+| Identifier | Format | Producer |
+|---|---|---|
+| Map Lighting Mode | string | `map-world-system.md` |
+
+### Public Interface
+| Method | Signature |
+|---|---|
+| `create_overlay` | `(alpha_override: int = None)` |
+
+### External Invocations
+| Component | Method |
+|---|---|
+| `RenderManager` | `_render_lighting_and_effects()` |
+
+### Tracked Concepts
+| Concept | Definition |
+|---|---|
+| Tiled Windows | Defines origin for lighting beams |
+
 ## Light Limits
 Maximum 16 dynamic lights per active chunk.
-

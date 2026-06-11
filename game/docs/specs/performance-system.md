@@ -138,46 +138,65 @@ All UI hardcoded literals are extracted into dedicated modules to enforce unifor
 
 | Assumption | Risk | Handling | Source Type |
 |---|---|---|---|
-| A | Low | H | gcloud test |
-| B | Low | H | gcloud test |
-| C | Low | H | gcloud test |
+| Single-threaded main loop — no concurrent access to rendering caches | Low | Architecture constraint — pygame-ce is single-threaded | SHOW — verified via codebase (no threading in game loop) |
+| 60 FPS target — frame budget is ~16.7 ms | Low | Profile baseline measured at ~61 ms/frame (pre-optimization) | SHOW — cProfile run on 1800 frames |
+| Map data is immutable after load — tiles/layers don't change at runtime | Medium | Caches built at init rely on this invariant | TELL — Tiled map format convention |
 
 ## Error Handling
 
 | Error | Response | Fallback | Detection | Logging |
 |---|---|---|---|---|
-| TBD | TBD | TBD | TBD | TBD |
+| `_fg_surfaces` cache miss for a depth value | Rebuild surface on demand | Render continues with rebuilt surface | `get_foreground_layer_surface()` returns None check | None — silent rebuild |
+| `_occ_composite_cache` stale after map transition | `reset_render_caches()` clears all caches | Fresh computation on next frame | Called in `game.py.transition_map()` | None — deterministic lifecycle |
+| `_flicker_tick` overflow | Wraps at Python int max (no overflow) | N/A | N/A | N/A |
 
 ## Test Cases
 
+> Detailed test cases for each hotspot are in their dedicated specs:
+> - P-001: [p001-foreground-rendering.md](./p001-foreground-rendering.md#L1) — TC-P001-001..020
+> - H-001–H-004: [render-pipeline-optimization.md](./render-pipeline-optimization.md#L1) — TC-RPERF-U-001..016
+
 | ID | Description | Assertion |
 |---|---|---|
-| UT-001 | pipeline test | A |
-| UT-002 | TBD | A |
-| UT-003 | TBD | A |
-| UT-004 | TBD | A |
-| UT-005 | TBD | A |
-| IT-001 | pipeline integration test | A |
-| IT-002 | TBD | A |
-| IT-003 | TBD | A |
-| TC-001 | TBD | A |
+| UT-001 | Flicker throttle reduces ncalls by 75% | `_flicker_tick % 4` guard verified |
+| UT-002 | Particle list comprehension replaces append loop | No `alive = []` pattern in `_update_particles` |
+| UT-003 | `reset_render_caches()` clears `_occ_key` and `_occ_composite_cache` | Both set to `None` / empty dict after call |
+| UT-004 | `_fg_occlusion_grid` schema matches `dict[tuple[int,int], tuple[int,Surface,Surface\|None]]` | Key/value types verified |
+| UT-005 | `_rect_pool` pre-allocates 2000 rects at init | `len(self._rect_pool) == 2000` after `__init__` |
+| IT-001 | Title screen draw uses no rotozoom | `test_title_screen_draw_no_rotozoom` — GREEN |
+| IT-002 | Interaction distance² semantics match original | `test_interaction_distance_sq_semantics_match_original` — GREEN |
+| IT-003 | Viewport rect reused across updates | `test_game_viewport_rect_reused_across_updates` — GREEN |
 
 ## Cross-Spec Contracts
 
 ### Produces
-N/A - Not applicable
+
+| Identifier | Format | Consumers |
+|---|---|---|
+| P-001 `_fg_occlusion_grid` | `dict[tuple[int,int], tuple[int, Surface, Surface\|None]]` | [render-pipeline-optimization.md](./render-pipeline-optimization.md#L1), [p001-foreground-rendering.md](./p001-foreground-rendering.md#L1) |
+| P-001 `_fg_occlusion_world` | `list[tuple[int,int,int,Surface,Surface\|None]]` | [render-pipeline-optimization.md](./render-pipeline-optimization.md#L1) |
+| P-004 `reset_occ_cache()` / `reset_render_caches()` | `(self) -> None` | [render-pipeline-optimization.md](./render-pipeline-optimization.md#L1), `game.py` |
 
 ### Consumes
-N/A - Not applicable
+
+| Identifier | Format | Producer |
+|---|---|---|
+| `MapManager.layers` | `dict[int, list[list[int]]]` | [map-world-system.md](./map-world-system.md#L1) |
+| `MapManager.tiles` | `dict[int, TileMapData]` | [map-world-system.md](./map-world-system.md#L1) |
 
 ### Public Interface
-N/A - Not applicable
+
+| Method | Signature | Stability |
+|---|---|---|
+| `RenderManager.draw_scene()` | `(self) -> None` | Stable — do not change without approval |
+| `RenderManager.reset_render_caches()` | `(self) -> None` | Stable — call on map transitions |
 
 ### External Invocations
-- N/A
+- `game.py.transition_map()` → `render_manager.reset_render_caches()`
 
 ### Tracked Concepts
-- N/A
+- Frame budget: 16.7 ms @ 60 FPS
+- Profiling baseline: 1800 frames via `cProfile`
 
 ## Anti-patterns
 

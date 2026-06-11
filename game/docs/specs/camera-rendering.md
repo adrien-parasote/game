@@ -134,10 +134,12 @@ Wrapped in `try-except TypeError` for test compatibility with mock surfaces.
 #### 4.3.1. `draw_foreground()` — Collecte des rects occludants
 
 ```python
-def draw_foreground(self) -> list[tuple[pygame.Rect, int]]:
+def draw_foreground(self) -> list[tuple[pygame.Rect, int, pygame.Surface | None]]:
 ```
 
-**Retourne** : liste de tuples `(screen-space Rect, depth)` pour tous les tiles actifs avec `depth > player.depth`. Liste vide `[]` si aucun tile occludant visible.
+**Retourne** : liste de tuples `(screen-space Rect, depth, occluded_image | None)` pour tous les tiles actifs avec `depth > player.depth`. Liste vide `[]` si aucun tile occludant visible.
+
+> **Note (AR — CS-001) :** Le type réel est `OccludingRect = list[tuple[pygame.Rect, int, pygame.Surface | None]]` (3-tuple). Le 3e élément `occluded_image` est la surface semi-transparente pré-calculée du tile, ou `None` si le tile n'a pas de variante occludée. Voir [render_manager.py L10](../../src/engine/render_manager.py#L10).
 
 **Boucle principale (Source A — tiles statiques) :**
 
@@ -182,7 +184,7 @@ for px, py, tile_id, depth in self.game.map_manager.get_visible_animated_chunks(
 > **Note :** Aujourd'hui aucun tile animé n'a `depth > 1`. Cette branche est inerte mais sera activée automatiquement dès qu'un tile animé foreground sera créé.
 
 ```python
-return occluding_rects  # list[tuple[pygame.Rect, int]], screen-space
+return occluding_rects  # list[tuple[pygame.Rect, int, pygame.Surface | None]], screen-space
 ```
 
 L'ancien `player_occluded: bool` est **supprimé**. `draw_scene()` ne teste plus `if is_occluded:` — il passe directement `occluding_rects` à `_apply_partial_occlusion`.
@@ -465,7 +467,7 @@ Stores `last_cols` and `last_rows` on the instance for callers that need the det
 
 | Identifiant | Format | Consommateurs |
 |---|---|---|
-| `RenderManager.draw_foreground()` → `list[tuple[pygame.Rect, int]]` | Python list de tuples (pygame.Rect screen-space, depth) | `draw_scene()` (même module) |
+| `RenderManager.draw_foreground()` → `OccludingRect` | `list[tuple[pygame.Rect, int, pygame.Surface \| None]]` — (screen-space Rect, depth, occluded_image) | `draw_scene()` (même module), [render-pipeline-optimization.md](./render-pipeline-optimization.md#L1) |
 
 ### Consumes
 N/A - Not applicable
@@ -494,7 +496,7 @@ N/A - Not applicable
 
 | Method | Old contract | New contract | Specs impactées |
 |--------|-------------|-------------|-----------------|
-| `draw_foreground()` | `bool` | `list[tuple[pygame.Rect, int]]` | `intra-map-teleport.md §4.6, §9.2` (corrigé) |
+| `draw_foreground()` | `bool` | `OccludingRect` = `list[tuple[pygame.Rect, int, pygame.Surface \| None]]` | `intra-map-teleport.md §4.6, §9.2` (corrigé), `render-pipeline-optimization.md` |
 | `_apply_partial_occlusion()` | n/a (nouveau) | `dict[Sprite, Surface]` | — |
 | `_apply_grass_wading_to_images()` | screen-blit (supprimé) | `dict[Sprite, Surface]` swap-and-restore, called BEFORE `custom_draw` | This spec §4.6 |
 | `_build_wading_composite()` | n/a (nouveau) | `pygame.Surface | None` — composite or None if not on grass | This spec §4.6 |
@@ -669,59 +671,3 @@ path/
   to/
     sprite.png
 ```
-
-
-## Cross-Spec Contracts
-
-### Produces
-N/A - Not applicable
-
-### Consumes
-N/A - Not applicable
-
-### Public Interface
-N/A - Not applicable
-
-
-N/A - Not applicable
-
-### Public Interface
-N/A - Not applicable
-
-### External Invocations
-- N/A
-
-### Tracked Concepts
-- N/A
-
-## Assumptions
-
-| Assumption | Risk | Handling | Source Type |
-|---|---|---|---|
-| A | Low | H | gcloud test |
-| B | Low | H | gcloud test |
-| C | Low | H | gcloud test |
-
-## Error Handling
-
-| Error | Response | Fallback | Detection | Logging |
-|---|---|---|---|---|
-| TBD | TBD | TBD | TBD | TBD |
-
-## Test Cases
-
-| ID | Description | Assertion |
-|---|---|---|
-| UT-001 | TBD | TBD |
-| IT-001 | TBD | TBD |
-| TC-001 | TBD | TBD |
-
-## Anti-patterns
-
-| Anti-pattern | Why it's bad | What to do instead |
-|---|---|---|
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
