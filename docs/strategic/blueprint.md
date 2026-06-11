@@ -1,54 +1,54 @@
-# Strategic Blueprint — Performance Optimizations
+# Strategic Blueprint — Stair Climbing Alignment & Positioning Fixes
 > Date: 2026-06-11
-> Target: Pygame-CE Game Engine optimizations
+> Target: Pygame-CE Game Engine - Entity movement and rendering
 
 ---
 
 ## 1. Success Metrics
 
-Our objective is to restore the game engine to 60 FPS on standard development machines:
+Our objective is to ensure pixel-perfect and logically symmetric stair traversal for both the player and NPCs:
 
 | Metric | Baseline | Target | Timeline |
 |---|---|---|---|
-| **Average Frame Time** | 45.73 ms | **< 16.7 ms** (60 FPS) | Immediately after implementation |
-| **p95 Frame Time** | 46.00 ms | **< 20.0 ms** | Immediately after implementation |
-| **p99 Frame Time** | 52.00 ms | **< 33.0 ms** | Immediately after implementation |
-| **Spikes > 33 ms** | 100.0% | **< 1.0%** of frames | Immediately after implementation |
-| **Memory Delta** | +0.80 KB/frame | **< 1.0 KB/frame** | Immediately after implementation |
-| **GC Pressure** | 3 gen0 coll / 30s | **< 30 gen0 coll / 30s** | Immediately after implementation |
+| **Y-Coordinate Drift** | 32 pixels (1 tile) shift on descent | **0 pixels** (perfect coordinate alignment) | Immediately after implementation |
+| **Step-On Alignment** | Sprite rendered in the wall (0 offset) | **Feet aligned with step** | Immediately after implementation |
+| **Middle-Step Floating** | Sudden 44px jump (floats too high) | **Smooth visual ascent/descent** | Immediately after implementation |
+| **Regression Rate** | N/A | **0% broken tests** (100% pass rate) | Immediately after implementation |
 
 ---
 
 ## 2. Constraint Mapping
 
-- **Pygame-CE Compatibility**: Must remain compatible with pygame-ce v2.5.7+.
-- **Visual Conformance**: Output rendering must be visually identical (pixel-perfect) to the unoptimized engine. No visual bugs, flickering, or occlusion errors.
-- **API Contracts**: `RenderManager.draw_foreground()` must return a list of `(pygame.Rect, int, pygame.Surface)` tuples. This is a public contract tested by unit tests (e.g. `test_draw_foreground_occluding_tile_returns_tuple_list`).
-- **Memory Boundaries**: Memory footprint growth must be negligible (no persistent reference leaks of pygame Surfaces).
+- **Hitbox Integrity**: Do not modify `sprite.rect` or the collision checking engine. The physics and collision bounds must remain standard axis-aligned bounding boxes (AABB) on the 2D grid.
+- **NPC Compatibility**: NPCs traversing the stairs must share the exact same movement interception, boundary, and offset interpolation rules.
+- **Tiled Properties**: No modifications to map assets (`.tmj`) or tileset (`.tsx`) property schemas. The engine must dynamically consume the existing properties (`stair_direction` and `visual_y_offset`).
+- **No External Dependencies**: Keep all calculations self-contained within standard Pygame-CE functions to prevent library dependencies or runtime overhead.
 
 ---
 
 ## 3. Architecture Direction
 
-We will implement local optimizations within `MapManager` and `RenderManager`:
-- **Spatial Indexing**: `MapManager` will index static foreground tiles by their `(grid_x, grid_y)` coordinates during map load, changing culling complexity from O(N_world) to O(Viewport).
-- **In-Place Rect Pool**: `RenderManager` will manage a pool of `pygame.Rect` objects, modifying their attributes in-place to avoid the garbage collection and allocation overhead of constructing new `Rect` instances.
-- **O(1) Grass Material Grid**: `MapManager` will pre-compute a 2D grid of grass tiles to avoid scanning all layers in reversed order for wading checks.
+We will implement a dual-part solution in `BaseEntity` and `CameraGroup`:
+1. **Symmetric Step-Off Boundary Rule**: Intercept diagonal stair movement only if the target tile in the player's current direction is also a stair tile. If it is a floor tile, bypass diagonal interception and move orthogonally (flat).
+2. **Visual Offset Interpolation**:
+   - Cache starting offset and target offset at the beginning of a step.
+   - Interpolate `self.current_stair_offset` linearly based on step progress (distance to target / total step distance).
+   - Draw sprites using `sprite.current_stair_offset` instead of static tile-based offsets.
 
 ---
 
 ## 4. Exclusions & Boundaries
 
-- **No Third-Party Spatial Partitioning Libraries**: We will not pull in dependencies like `R-Tree` or `quadtree` libraries. Simple 2D grid/array indexing is sufficient for a grid-based tilemap and keeps the codebase light.
-- **No Asset Modifiers**: No modification of sprite sheets, tilesets, or TMJ map files on disk.
-- **No Multi-Threading**: All optimizations must remain single-threaded to avoid introducing complexity or race conditions in Pygame.
+- **No Custom Pathfinding Changes**: We will not rewrite or modify NPC pathfinding algorithms for stairs. They will continue using standard grid coordinates.
+- **No Collision Layer Alterations**: No custom stair ramps or sloped collision polygons will be added to the physics engine.
+- **No Manual Coordinate Snapping**: Avoid teleporting or snapping coordinates at the end of steps to resolve alignment; the movement system must naturally land on correct coordinates.
 
 ---
 
 ## 5. Risk Assessment
 
-| Risk | Sévérité | Probabilité | Atténuation |
+| Risk | Severity | Probability | Mitigation |
 |---|---|---|---|
-| **Stale Cache / Out of Sync** | 🟠 Élevée | 🟡 Moyenne | Ensure `RenderManager.reset_occ_cache()` or map changes fully rebuild/clear all pre-computed grids and pools. |
-| **Memory leaks in Pool** | 🟡 Moyenne | 🟢 Faible | The `pygame.Rect` objects are lightweight and bounded by maximum viewport tiles (~2000). Pool will grow dynamically but never shrink, setting a hard cap on memory. |
-| **Test regressions** | 🟠 Élevée | 🟡 Moyenne | Run full pytest suite before and after every optimization. Refuse any change that breaks existing tests. |
+| **NPC Pathfinding Stalls** | 🟠 High | 🟢 Low | Ensure the step-off check correctly evaluates walkability and direction flags before applying orthogonal movement. |
+| **Visual Flickering / Jumps** | 🟡 Medium | 🟡 Medium | Linear interpolation must be updated every frame in `BaseEntity.update(dt)` using accurate delta-time scale. |
+| **Test Failures on Map Coordinate Checks** | 🟠 High | 🟢 Low | Ensure target positions match the exact 32-pixel grid system. Orthogonal step-off restores coordinate alignment naturally. |
