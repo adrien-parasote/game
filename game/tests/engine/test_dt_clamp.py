@@ -98,10 +98,14 @@ def test_static_clock_tick_followed_by_clamp():
     """Every `clock.tick(Settings.FPS) / 1000.0` in game_state_manager.py and
     game.py must have `min(` on the same or immediately following line."""
     import re
+    from pathlib import Path
 
+    # Compute the workspace root relative to this test file:
+    # test file is at game/tests/engine/test_dt_clamp.py → parent×3 = game/
+    _game_root = Path(__file__).resolve().parent.parent.parent
     files = [
-        "game/src/engine/game_state_manager.py",
-        "game/src/engine/game.py",
+        str(_game_root / "src/engine/game_state_manager.py"),
+        str(_game_root / "src/engine/game.py"),
     ]
 
     pattern_tick = re.compile(r"clock\.tick\(.*?\)\s*/\s*1000\.0")

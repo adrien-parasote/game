@@ -43,12 +43,16 @@ def test_inventory_load_item_data_json_error():
 def test_inventory_add_item_stacks_in_existing_slot():
     """add_item merges into an existing partial stack.
 
-    Uses ether_potion because it is the only item in item_data with stack_max=10.
-    add_item reads stack_max from item_data (not from the Item placed in the slot),
-    so the item_id must exist in item_data for stacking to work.
+    add_item uses item_data to look up stack_max, so we inject
+    item_data directly instead of relying on the asset file being
+    present at the relative path when pytest runs from game/.
     """
     inv = Inventory(capacity=5)
-    # Manually place a partial stack using the real item_id
+    # Inject item_data so add_item gets stack_max=10 without opening files
+    inv.item_data = {"ether_potion": {"stack_max": 10}}
+    inv.i18n = MagicMock()
+    inv.i18n.get_item.return_value = {"name": "Ether Potion", "description": "Restores MP."}
+
     from src.engine.inventory_system import Item
 
     existing = Item(
@@ -262,8 +266,25 @@ def test_dialogue_manager_draw():
 
 @pytest.mark.tc("TC-DLG-01")
 def test_dialogue_pagination():
-    """Verify that long text is paginated."""
+    """Verify that long text is paginated into multiple pages.
+
+    We inject a mock font (8px per char, 16px line height) and a small
+    dialogue box (600×120px) so that max_lines=1 → every wrapped line
+    becomes its own page, guaranteeing >1 page for 500 words.
+    """
     dm = DialogueManager()
+    # Inject mock font: 8 px per character, 16 px line height
+    mock_font = MagicMock()
+    mock_font.size.side_effect = lambda text: (len(text) * 8, 16)
+    mock_font.get_linesize.return_value = 16
+    mock_font.render.return_value = pygame.Surface((100, 16))
+    dm.font_message = mock_font
+    # Small box: available_h = 120 - DIALOGUE_MSG_Y_OFFSET_PLAIN(42) - 40 = 38px
+    # → max_lines = int(38 / (16 * 1.2)) = 1  →  each line = 1 page
+    dm.dialogue_box = MagicMock()
+    dm.dialogue_box.get_width.return_value = 600
+    dm.dialogue_box.get_height.return_value = 120
+
     long_text = "Word " * 500
     dm.start_dialogue(long_text)
     assert len(dm._pages) > 1

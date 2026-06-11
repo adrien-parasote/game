@@ -19,7 +19,7 @@ def test_game_initialization(mock_load):
     assert not game.inventory_ui.is_open
 
 
-@patch("os.path.exists", return_value=True)
+@patch("src.engine.game.os.path.exists", return_value=True)
 @patch("src.map.tmj_parser.TmjParser.load_map")
 @pytest.mark.tc("DBG-MAP")
 def test_game_actual_load_map(mock_load_map, mock_exists):
@@ -72,6 +72,8 @@ def test_game_actual_load_map(mock_load_map, mock_exists):
 
     with (
         patch("src.engine.audio.AudioManager.play_bgm") as mock_bgm,
+        patch("src.engine.audio.AudioManager.preload_sfx"),
+        patch("src.engine.loot_table.LootTable.load"),
         patch("src.engine.entity_factory.InteractiveEntity"),
         patch("src.engine.entity_factory.NPC"),
         patch("src.engine.entity_factory.Teleport"),
@@ -294,7 +296,9 @@ def test_game_load_world_world_file(mock_load):
     try:
         world_data = {"maps": [{"fileName": "01-village.tmj"}]}
         with (
-            patch("os.path.exists", return_value=True),
+            patch("src.engine.game.os.path.exists", return_value=True),
+            patch("src.engine.audio.AudioManager.preload_sfx"),
+            patch("src.engine.loot_table.LootTable.load"),
             patch(
                 "builtins.open",
                 unittest.mock.mock_open(read_data=__import__("json").dumps(world_data)),
@@ -317,14 +321,21 @@ def test_game_load_world_world_parse_error(mock_load):
     Settings.DEBUG = False
     real_open = builtins.open
 
+    _ASSET_FILES = {"loot_table.json", "propertytypes.json", "settings.json"}
+
     def selective_open(path, *args, **kwargs):
         if "world.world" in str(path):
             raise Exception("IO error")
+        # Return empty JSON for known asset files that live outside game/ when
+        # pytest is run from the game/ subdirectory (CWD mismatch).
+        if any(f in str(path) for f in _ASSET_FILES):
+            return unittest.mock.mock_open(read_data="{}")(*args, **kwargs)
         return real_open(path, *args, **kwargs)
 
     try:
         with (
-            patch("os.path.exists", return_value=True),
+            patch("src.engine.game.os.path.exists", return_value=True),
+            patch("src.engine.audio.AudioManager.preload_sfx"),
             patch("builtins.open", side_effect=selective_open),
         ):
             game = Game()

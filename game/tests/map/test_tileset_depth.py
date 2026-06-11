@@ -13,12 +13,16 @@ TC-PARSER-CLASS-001 : _parse_tileset_properties doit lire les propriétés
 """
 
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from unittest.mock import patch
 
 from src.map.tmj_parser import TmjParser
 
-DECORATIONS_TSX = "assets/tiled/tiles/02-decorations.tsx"
-WATER_TSX = "assets/tiled/autotiles/01-water.tsx"
+# Compute workspace root: test file is at game/tests/map/test_tileset_depth.py
+# → parent×3 = game/ → parent×1 = workspace root (where assets/ lives)
+_WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+DECORATIONS_TSX = str(_WORKSPACE_ROOT / "assets/tiled/tiles/02-decorations.tsx")
+WATER_TSX = str(_WORKSPACE_ROOT / "assets/tiled/autotiles/01-water.tsx")
 
 BRIDGE_TILE_X = 3  # column 3 (0-indexed)
 BRIDGE_TILE_Y = 6  # row 6

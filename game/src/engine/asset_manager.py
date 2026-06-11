@@ -47,7 +47,7 @@ class AssetManager:
             image = pygame.image.load(path).convert_alpha()
             self._images[path] = image
             return image
-        except pygame.error as e:
+        except (pygame.error, FileNotFoundError) as e:
             logging.error(f"Failed to load image {path}: {e}")
             if fallback:
                 placeholder = pygame.Surface((32, 32))
