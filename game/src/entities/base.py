@@ -206,6 +206,7 @@ class BaseEntity(pygame.sprite.Sprite):
                 target_tx = int(self.target_pos.x // Settings.TILE_SIZE)
                 target_ty = int(self.target_pos.y // Settings.TILE_SIZE)
                 target_vm = self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
+                self._vertical_move = target_vm
                 self.stair_target_offset = target_vm["visual_y_offset"] if target_vm else 0.0
             else:
                 self.stair_target_offset = 0.0

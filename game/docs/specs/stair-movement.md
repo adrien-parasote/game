@@ -74,7 +74,8 @@ Present in `game.tiled-project` (id=24):
         {"name": "material",       "type": "string", "value": ""},
         {"name": "movement_type",  "propertyType": "25-movement_type", "type": "string", "value": "stair"},
         {"name": "stair_direction","propertyType": "23-direction",     "type": "string", "value": ""},
-        {"name": "visual_y_offset","type": "int",    "value": -12},
+        {"name": "stair_half",     "type": "string", "value": ""},
+        {"name": "visual_y_offset","type": "int",    "value": 0},
         {"name": "walkable",       "type": "bool",   "value": true}
     ],
     "name": "01-vertical-move",
@@ -84,8 +85,9 @@ Present in `game.tiled-project` (id=24):
 
 **Fields:**
 - `stair_direction` (enum `23-direction`, **default `""`**): `"right"` = staircase ascending to the right, `"left"` = ascending to the left. **Default empty = neutral tile, not a staircase.** Never `"any"` on a stair tile.
+- `stair_half` (string, **default `""`**): `"bottom"` = bottom half of the step, `"top"` = top half of the step. Critical for determining when the diagonal physical movement is applied.
 - `movement_type` (enum `25-movement_type`, default `"stair"`): `"stair"` | `"ladder"` — for future extension.
-- `visual_y_offset` (int, default `-12`): visual Y offset in pixels when rendering on this tile. Adjustable per tileset.
+- `visual_y_offset` (int, default `0`): visual Y offset in pixels when rendering on this tile. Usually `-16` for bottom tiles and `0` for top tiles.
 - `walkable` (bool, default `true`): `false` on wall tiles. Managed by the existing `is_walkable()` system.
 - `depth` (int, default `0`): rendering depth, identical to `00-tileset`.
 - `material` (string, default `""`): material for footstep sounds.
@@ -126,12 +128,12 @@ These hardcoded fallbacks **must match** the defaults of the Tiled class `01-ver
 
 **Complete tile inventory (VERIFIED):**
 
-| Tile(s) | Role | `walkable` | `stair_direction` |
-|---------|------|-----------|------------------|
-| 0, 6, 12, 18, 19, 24, 25, 30, 31 | 🪜 Right steps | `True` | `"right"` (explicit override) |
-| 1, 8, 14, 20, 21, 26, 27, 32, 33 | 🪜 Left steps | `True` | `"left"` (explicit override) |
-| 2, 7, 13 | 🧱 Staircase walls | `False` | `""` (inherited — ignored because non-walkable) |
-| 3, 4, 5, 9, 10, 11, 15, 16, 17, 22, 23, 28, 29, 34, 35 | ⬜ Neutral / empty | `True` | `""` (inherited — not a staircase) |
+| Tile(s) | Role | `walkable` | Explicit Overrides |
+|---------|------|-----------|--------------------|
+| Right steps | 🪜 Right steps | `True` | `stair_direction="right"`, `stair_half` (`"bottom"` or `"top"`), `visual_y_offset` (`-16` or `0`) |
+| Left steps | 🪜 Left steps | `True` | `stair_direction="left"`, `stair_half` (`"bottom"` or `"top"`), `visual_y_offset` (`-16` or `0`) |
+| 2, 7, 13 | 🧱 Staircase walls | `False` | None (inherited — ignored because non-walkable) |
+| Neutral | ⬜ Neutral / empty | `True` | None (inherited — not a staircase) |
 
 **Staircase detection rule in the code:**
 `stair_direction` is non-empty AND not None → stair tile.
@@ -206,7 +208,8 @@ def get_vertical_move_props(self, tx: int, ty: int) -> dict | None:
             return {
                 "stair_direction": stair_dir,
                 "movement_type": props.get("movement_type", "stair"),
-                "visual_y_offset": int(props.get("visual_y_offset", -12)),
+                "stair_half": props.get("stair_half", ""),
+                "visual_y_offset": int(props.get("visual_y_offset", 0)),
             }
     return None  # "" or absent → neutral tile, not a stair
 ```
@@ -231,13 +234,25 @@ The interception logic must verify the next tile in the input direction *before*
 3. Query `get_vertical_move_props(next_tx, next_ty)`.
    - **Out-of-bounds edge case:** If `next_tx`/`next_ty` is outside the map bounds, `get_vertical_move_props` returns `None`. Treat this identically to a normal floor tile (step-off rule does NOT apply) — the walkability check at step 8 will block the out-of-bounds move.
 4. If the entity is currently on a stair tile:
-   - **If the target flat tile is also a stair tile**: Apply diagonal interception using `VERTICAL_MOVE_MAP`.
-   - **If the target flat tile is a normal floor tile (or out of bounds)**: Bypass diagonal interception. Keep the movement orthogonal (flat) to step off the stairs.
+   - Calculate `should_move_diagonally` based on the current tile's `stair_half` ("bottom" or "top") and movement direction.
+   - **2. Check Target Grid Tile**
+   - After determining `target_dir` (which may be diagonal), check if the target tile `(current_tx + target_dir.x, current_ty + target_dir.y)` has stair properties via `get_vertical_move_props`.
+   - **If the target tile is a stair tile**: Use `target_dir`.
+   - **If the target tile is NOT a stair tile**: Bypass diagonal interception and force `target_dir = (dx, 0)`. This handles stepping off the bottom extremity orthogonally.
+
+#### State Caching
+When `start_move()` computes the final `target_pos` and verifies walkability:
+1. Fetch `target_vm = get_vertical_move_props(target_tx, target_ty)`.
+2. Cache `self._vertical_move = target_vm` for the duration of the move.
+   - *Fix: This ensures that when the move completes and `is_moving` becomes `False`, the visual interpolation uses the correct target properties, preventing visual snapping at the extremities.*
+
 5. If the entity is on a normal floor tile, no interception occurs (normal orthogonal entry).
 6. Calculate `target_pos` and perform standard walkability checks.
 7. Setup interpolation caching:
+   - Calculate grid targets: `target_tx = int(self.target_pos.x // TILE_SIZE)` and `target_ty = int(self.target_pos.y // TILE_SIZE)`.
    - `self.stair_start_offset = self.current_stair_offset`
    - Query `target_vm = get_vertical_move_props(target_tx, target_ty)`.
+   - `self._vertical_move = target_vm`
    - `self.stair_target_offset = target_vm["visual_y_offset"] if target_vm else 0.0`
    - `self.stair_move_distance = (self.target_pos - self.pos).magnitude()`
 
@@ -248,7 +263,7 @@ The interception logic must verify the next tile in the input direction *before*
 1. Calculate current_tx, current_ty
 2. Calculate input dx, dy, and next flat coordinates: next_tx, next_ty
 3. Query vertical move properties for current and next flat tiles
-4. Determine intercepted direction (apply diagonal interception only if next flat tile is also a stair tile)
+4. Determine intercepted direction (apply diagonal interception based solely on should_move_diagonally)
 5. Check get_direction_flags (existing) — applies to the ALREADY intercepted direction
 6. Calculate target_pos = self.pos + self.direction * TILE_SIZE
 7. World boundary clamping (existing)
@@ -359,7 +374,7 @@ If the NPC target is a tile beyond the top of the stairs, the NPC traverses norm
 | Error State | Cause | Handling | Verification |
 |-------------|-------|----------|--------------|
 | Tile has no `stair_direction` property | Normal floor tile | `get_vertical_move_props` returns `None`. `self._vertical_move = None`. Movement normal. | VERIFIED (tmj_parser.py defaults) |
-| `stair_direction` value not in `VERTICAL_MOVE_MAP` | Missing config or unhandled direction | `start_move` lets it pass without interception (normal orthogonal movement). Log WARNING. | ASSUMED |
+| `stair_direction` value not in `VERTICAL_MOVE_MAP` | Missing config or unhandled direction | `VERTICAL_MOVE_MAP.get()` returns `None`. `start_move` aborts the move, keeping `is_moving = False` and resetting direction. Silent blocking. | ASSUMED |
 | `get_vertical_move_props` called out of bounds | tx/ty hors carte | Bounds check en tête of function → returns `None`. | SPECIFIED |
 | Diagonal target not walkable | Target tile `walkable=False` | `walkable_func` resets `target_pos = self.pos`. Movement silently cancelled. | VERIFIED (base.py L101-104) |
 | `self.game` or `map_manager` absent | Unit tests without context | Existing guard `hasattr(self.game, "map_manager")` → skip. | VERIFIED (base.py L69) |
