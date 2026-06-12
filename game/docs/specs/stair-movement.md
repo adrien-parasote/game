@@ -208,7 +208,7 @@ def get_vertical_move_props(self, tx: int, ty: int) -> dict | None:
             return {
                 "stair_direction": stair_dir,
                 "movement_type": props.get("movement_type", "stair"),
-                "stair_half": props.get("stair_half", ""),
+                "stair_half": bool(props.get("stair_half", False)),
                 "visual_y_offset": int(props.get("visual_y_offset", 0)),
             }
     return None  # "" or absent → neutral tile, not a stair
@@ -230,21 +230,35 @@ self.stair_move_distance: float = 0.0       # Total distance (in pixels) of the 
 **Symmetric Step-Off Interception in `start_move()`:**
 The interception logic must verify the next tile in the input direction *before* intercepting.
 1. Calculate the raw step direction from input (`dx`, `dy`) as discrete values (`-1`, `0`, or `1`).
-2. Calculate the coordinates of the target tile if movement remained flat: `next_tx = current_tx + dx`, `next_ty = current_ty + dy`.
-3. Query `get_vertical_move_props(next_tx, next_ty)`.
-   - **Out-of-bounds edge case:** If `next_tx`/`next_ty` is outside the map bounds, `get_vertical_move_props` returns `None`. Treat this identically to a normal floor tile (step-off rule does NOT apply) — the walkability check at step 8 will block the out-of-bounds move.
-4. If the entity is currently on a stair tile:
-   - Calculate `should_move_diagonally` based on the current tile's `stair_half` ("bottom" or "top") and movement direction.
-   - **2. Check Target Grid Tile**
-   - After determining `target_dir` (which may be diagonal), check if the target tile `(current_tx + target_dir.x, current_ty + target_dir.y)` has stair properties via `get_vertical_move_props`.
-   - **If the target tile is a stair tile**: Use `target_dir`.
-   - **If the target tile is NOT a stair tile**: Bypass diagonal interception and force `target_dir = (dx, 0)`. This handles stepping off the bottom extremity orthogonally.
+2. If the input has no entry in `VERTICAL_MOVE_MAP` (e.g. `(0, -1)` Up), silently block: reset `direction` to `(0, 0)`, return `False`.
+3. If the entity is currently on a stair tile, determine `should_move_diagonally`:
+
+   **Decision rule — `should_move_diagonally` (EXACT, sourced from `01-stairs.tsx`):**
+
+   The TSX exposes a boolean property `stair_half` on each walkable stair tile:
+   - `stair_half = True` → the tile is the **upper half** of a step (requires diagonal movement to reach the next Y level).
+   - `stair_half = False` / absent → the tile is the **lower half** of a step (movement stays flat to step off, or player is at the bottom entry).
+
+   ```python
+   stair_half = vm.get("stair_half", False)   # bool, from tile props
+   should_move_diagonally = bool(stair_half)
+   ```
+
+   No `tile_id % N` arithmetic. No parity checks. **Only `stair_half`.**
+
+4. Apply direction:
+   - If `should_move_diagonally`: `target_dir = VERTICAL_MOVE_MAP[map_key]` (diagonal).
+   - If not: `target_dir = (dx, 0)` (flat).
+
+5. **Step-off boundary rule (target grid check):**
+   - After computing `target_dir`, check if the target tile `(current_tx + target_dir[0], current_ty + target_dir[1])` has stair properties via `get_vertical_move_props`.
+   - **If the target tile is NOT a stair tile**: force `target_dir = (dx, 0)`. This handles stepping off the top extremity onto a flat floor tile.
 
 #### State Caching
 When `start_move()` computes the final `target_pos` and verifies walkability:
 1. Fetch `target_vm = get_vertical_move_props(target_tx, target_ty)`.
 2. Cache `self._vertical_move = target_vm` for the duration of the move.
-   - *Fix: This ensures that when the move completes and `is_moving` becomes `False`, the visual interpolation uses the correct target properties, preventing visual snapping at the extremities.*
+   - This ensures the visual interpolation uses the correct target properties, preventing visual snapping at the extremities.
 
 5. If the entity is on a normal floor tile, no interception occurs (normal orthogonal entry).
 6. Calculate `target_pos` and perform standard walkability checks.
@@ -406,36 +420,39 @@ If the NPC target is a tile beyond the top of the stairs, the NPC traverses norm
 - `UT-004`: `get_vertical_move_props(tx, ty)` returns `None` on tile with `direction="right"` but without `stair_direction` (verifies no name collision).
 
 **BaseEntity — start_move on right staircase (`stair_direction="right"`):**
-- `UT-005`: Input `(1, 0)` → `direction` intercepted at `(1, -1)`, `target_pos` = `(pos.x+32, pos.y-32)`, `is_moving = True`.
-- `UT-006`: Input `(-1, 0)` → `direction` intercepted at `(-1, 1)`, `target_pos` = `(pos.x-32, pos.y+32)`.
+- `UT-005a`: `stair_half=False` (lower half) + input `(1, 0)` → direction stays flat `(1, 0)`, target_pos = `(pos.x+32, pos.y)`, `is_moving = True`.
+- `UT-005b`: `stair_half=True` (upper half) + input `(1, 0)` → direction intercepted at `(1, -1)`, target_pos = `(pos.x+32, pos.y-32)`, `is_moving = True`.
+- `UT-006a`: `stair_half=True` (upper half) + input `(-1, 0)` → direction stays flat `(-1, 0)` (target tile is flat floor → step-off rule), `is_moving = True`.
+- `UT-006b`: `stair_half=False` (lower half / bottom entry) + input `(-1, 0)` → direction stays flat `(-1, 0)` (bottom of staircase, no stair tile below), `is_moving = True`.
 - `UT-007`: Input `(0, -1)` (Up) → `is_moving` remains `False`, `direction` reset to `(0, 0)`. Silent blocking.
-- `UT-008`: Input `(1, 1)` (Unmapped diagonal) → `is_moving` remains `False`, `direction` reset to `(0, 0)`. Silent blocking (prevents diagonal exit).
+- `UT-008`: Input `(1, 1)` (Unmapped diagonal) → `is_moving` remains `False`, `direction` reset to `(0, 0)`. Silent blocking.
 
 **BaseEntity — start_move on left staircase (`stair_direction="left"`):**
-- `UT-009`: Input `(-1, 0)` → direction intercepted at `(-1, -1)`, `target_pos` = `(pos.x-32, pos.y-32)`.
-- `UT-010`: Input `(1, 0)` → direction intercepted at `(1, 1)`, `target_pos` = `(pos.x+32, pos.y+32)`.
+- `UT-009a`: `stair_half=True` (upper half) + input `(-1, 0)` → direction stays flat `(-1, 0)` (step-off to flat floor), `is_moving = True`.
+- `UT-009b`: `stair_half=False` (lower half / bottom entry) + input `(-1, 0)` → direction stays flat `(-1, 0)` (bottom of staircase, no stair tile below), `is_moving = True`.
+- `UT-010a`: `stair_half=False` (lower half) + input `(1, 0)` → direction stays flat `(1, 0)` (step-off to flat floor), `is_moving = True`.
+- `UT-010b`: `stair_half=True` (upper half) + input `(1, 0)` → direction intercepted at `(1, 1)`, target_pos = `(pos.x+32, pos.y+32)`.
 
 **BaseEntity — transitions:**
 - `UT-011`: Entity on normal floor → `_vertical_move` is `None`. Input `(1, 0)` → normal orthogonal movement `(pos.x+32, pos.y)`.
-- `UT-012`: Entity leaves stair tile to normal floor → step-off rule preserves orthogonal target pos, and visual offset is smoothly interpolated from `-12` to `0` at the end of the move.
+- `UT-012`: Entity on stair tile with `stair_half=True` + input `(-1,0)` + next tile is normal floor → step-off rule forces direction flat `(-1, 0)`, target_pos = `(pos.x-32, pos.y)`, `is_moving = True`.
 - `UT-013`: `walkable_func` returns `False` for diagonal target → `target_pos` = `pos`, `is_moving = False` (staircase blocked by wall).
 
 **Rendering offset & Interpolation:**
 - `UT-014`: Interpolation updates `current_stair_offset` smoothly during movement (e.g. at progress = 50%, offset is halfway between start and target offsets).
 - `UT-015`: `CameraGroup.custom_draw()` applies `current_stair_offset` to render coordinates instead of static properties.
 
-
 **VERTICAL_MOVE_MAP (config):**
 - `UT-016`: `VERTICAL_MOVE_MAP[((1, 0), "right")] == (1, -1)` — verifies table correctness for all 4 combinations.
 
 ### Integration Tests (`game/tests/integration/test_stairs_integration.py`)
 
-- `IT-001`: Load mini-map with a `stair_direction="right"` tile. Spawn player on it. Input Right. Assert `pos == (initial.x + 32, initial.y - 32)` and `is_moving = False` (movement completed).
-- `IT-002`: Same setup. Assert `_vertical_move["visual_y_offset"] == -12` during movement, then `_vertical_move = None` after reaching a floor tile.
-- `IT-003`: Mini-map with 3 consecutive stair tiles (`stair_direction="right"`). Player traverses the 3 tiles with repeated Right inputs. Assert that final position is `(x + 96, y - 96)` (3 × diagonal).
+- `IT-001`: Load mini-map with a `stair_direction="right"`, `stair_half=True` tile. Spawn player on it. Input Right. Assert `pos == (initial.x + 32, initial.y - 32)` and `is_moving = False` (movement completed).
+- `IT-002`: Same setup. Assert `_vertical_move["visual_y_offset"] == -16` during movement, then `_vertical_move = None` after reaching a floor tile.
+- `IT-003`: Mini-map with 3 consecutive stair tiles (`stair_direction="right"`, alternating `stair_half`). Player traverses with repeated Right inputs. Assert each step applies interception only when `stair_half=True`.
 - `IT-004`: Mini-map with staircase surrounded by walls (`walkable=False`). Input Up on stair tile → `is_moving = False`. Input Down → `is_moving = False`.
-- `IT-005`: NPC with pathfinding to a tile beyond a staircase. Assert that the NPC traverses the staircase diagonally (via the `start_move()` interception) without getting stuck.
-- `IT-006`: Tile with `direction="right"` (without `stair_direction`) → `get_vertical_move_props` returns `None`. No interception. Verifies isolation of the `direction_flags` system.
+- `IT-005`: NPC with pathfinding to a tile beyond a staircase. Assert NPC traverses the staircase diagonally without getting stuck.
+- `IT-006`: Tile with `direction="right"` (without `stair_direction`) → `get_vertical_move_props` returns `None`. No interception.
 
 ---
 

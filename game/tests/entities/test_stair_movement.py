@@ -39,7 +39,6 @@ class TestStairMovementUnit:
                 "properties": {},
             }
             mm = MapManager(map_data, layout)
-            # Add width/height mocks as used by start_move
             mm.width = map_w
             mm.height = map_h
             return mm
@@ -47,13 +46,18 @@ class TestStairMovementUnit:
 
     def test_ut_001_get_vertical_move_props_stair_right(self, setup_map_manager):
         """UT-001: get_vertical_move_props(tx, ty) returns properties for right stair."""
-        mm = setup_map_manager({"stair_direction": "right", "movement_type": "stair", "visual_y_offset": -12})
+        mm = setup_map_manager({
+            "stair_direction": "right",
+            "movement_type": "stair",
+            "visual_y_offset": -12,
+            "stair_half": False,
+        })
         props = mm.get_vertical_move_props(1, 1)
         assert props == {
             "stair_direction": "right",
             "movement_type": "stair",
+            "stair_half": False,
             "visual_y_offset": -12,
-            "tile_id": 0,
         }
 
     def test_ut_002_get_vertical_move_props_none_on_normal_tile(self, setup_map_manager):
@@ -74,19 +78,30 @@ class TestStairMovementUnit:
         props = mm.get_vertical_move_props(1, 1)
         assert props is None
 
-    def test_ut_005a_start_move_stair_right_input_right_left_tile(self, setup_map_manager):
-        """UT-005a: Input (1, 0) on right stair (left tile: mod 6 == 0) -> direction (1, 0) (orthogonal)."""
-        entity = BaseEntity(pos=(48, 48))  # Center of tile (1,1)
+    def _make_entity_on_stair(self, mm, stair_dir, stair_half, visual_y_offset=0):
+        """Helper: create entity at (1,1) with mocked stair props."""
+        entity = BaseEntity(pos=(48, 48))
         entity.speed = 200
-        mm = setup_map_manager({"stair_direction": "right", "tile_id": 30}, tx=1, ty=1)
-        mm.get_vertical_move_props = MagicMock(side_effect=lambda x, y: (
-            {"stair_direction": "right", "movement_type": "stair", "visual_y_offset": 0, "tile_id": 30} if (x == 1 and y == 1) else
-            {"stair_direction": "right", "movement_type": "stair", "visual_y_offset": -16, "tile_id": 31} if (x == 2 and y == 1) else None
-        ))
         mm.get_direction_flags = MagicMock(return_value=["any"])
         entity.game = MagicMock()
         entity.game.map_manager = mm
+        # Default: current tile is stair, target tiles return None (flat floor)
+        current_props = {
+            "stair_direction": stair_dir,
+            "movement_type": "stair",
+            "stair_half": stair_half,
+            "visual_y_offset": visual_y_offset,
+        }
+        mm.get_vertical_move_props = MagicMock(side_effect=lambda x, y: (
+            current_props if (x == 1 and y == 1) else None
+        ))
+        return entity
 
+    # ── UT-005a: right stair, lower half (stair_half=False), input right ─────────
+    def test_ut_005a_right_stair_lower_half_input_right(self, setup_map_manager):
+        """UT-005a: stair_half=False + input (1,0) on right stair → flat (1,0)."""
+        mm = setup_map_manager()
+        entity = self._make_entity_on_stair(mm, "right", False)
         entity.direction = pygame.math.Vector2(1, 0)
         entity.start_move()
 
@@ -94,18 +109,23 @@ class TestStairMovementUnit:
         assert entity.target_pos == pygame.math.Vector2(80, 48)
         assert entity.is_moving is True
 
-    def test_ut_005b_start_move_stair_right_input_right_right_tile(self, setup_map_manager):
-        """UT-005b: Input (1, 0) on right stair (right tile: mod 6 == 1) -> direction (1, -1) (diagonal)."""
-        entity = BaseEntity(pos=(48, 48))  # Center of tile (1,1)
+    # ── UT-005b: right stair, upper half (stair_half=True), input right ──────────
+    def test_ut_005b_right_stair_upper_half_input_right(self, setup_map_manager):
+        """UT-005b: stair_half=True + input (1,0) on right stair → diagonal (1,-1)."""
+        mm = setup_map_manager()
+        entity = BaseEntity(pos=(48, 48))
         entity.speed = 200
-        mm = setup_map_manager({"stair_direction": "right", "tile_id": 31}, tx=1, ty=1)
-        mm.get_vertical_move_props = MagicMock(side_effect=lambda x, y: (
-            {"stair_direction": "right", "movement_type": "stair", "visual_y_offset": -16, "tile_id": 31} if (x == 1 and y == 1) else
-            {"stair_direction": "right", "movement_type": "stair", "visual_y_offset": 0, "tile_id": 30} if (x == 2 and y == 0) else None
-        ))
         mm.get_direction_flags = MagicMock(return_value=["any"])
         entity.game = MagicMock()
         entity.game.map_manager = mm
+
+        # Current tile: stair_half=True; target (2,0) is also a stair
+        current_props = {"stair_direction": "right", "movement_type": "stair", "stair_half": True, "visual_y_offset": -16}
+        target_props  = {"stair_direction": "right", "movement_type": "stair", "stair_half": False, "visual_y_offset": 0}
+        mm.get_vertical_move_props = MagicMock(side_effect=lambda x, y: (
+            current_props if (x == 1 and y == 1) else
+            target_props  if (x == 2 and y == 0) else None
+        ))
 
         entity.direction = pygame.math.Vector2(1, 0)
         entity.start_move()
@@ -114,19 +134,12 @@ class TestStairMovementUnit:
         assert entity.target_pos == pygame.math.Vector2(80, 16)
         assert entity.is_moving is True
 
-    def test_ut_006a_start_move_stair_right_input_left_right_tile(self, setup_map_manager):
-        """UT-006a: Input (-1, 0) on right stair (right tile: mod 6 == 1) -> direction (-1, 0) (orthogonal)."""
-        entity = BaseEntity(pos=(48, 48))
-        entity.speed = 200
-        mm = setup_map_manager({"stair_direction": "right", "tile_id": 31}, tx=1, ty=1)
-        mm.get_vertical_move_props = MagicMock(side_effect=lambda x, y: (
-            {"stair_direction": "right", "movement_type": "stair", "visual_y_offset": -16, "tile_id": 31} if (x == 1 and y == 1) else
-            {"stair_direction": "right", "movement_type": "stair", "visual_y_offset": 0, "tile_id": 30} if (x == 0 and y == 1) else None
-        ))
-        mm.get_direction_flags = MagicMock(return_value=["any"])
-        entity.game = MagicMock()
-        entity.game.map_manager = mm
-
+    # ── UT-006a: right stair, upper half, input left → step-off flat ─────────────
+    def test_ut_006a_right_stair_upper_half_input_left_stepoff(self, setup_map_manager):
+        """UT-006a: stair_half=True + input (-1,0) on right stair + target is flat → flat (-1,0)."""
+        mm = setup_map_manager()
+        entity = self._make_entity_on_stair(mm, "right", True)
+        # Target (0,1) returns None (flat floor) → step-off rule
         entity.direction = pygame.math.Vector2(-1, 0)
         entity.start_move()
 
@@ -134,35 +147,23 @@ class TestStairMovementUnit:
         assert entity.target_pos == pygame.math.Vector2(16, 48)
         assert entity.is_moving is True
 
-    def test_ut_006b_start_move_stair_right_input_left_left_tile(self, setup_map_manager):
-        """UT-006b: Input (-1, 0) on right stair (left tile: mod 6 == 0) -> direction (-1, 1) (diagonal)."""
-        entity = BaseEntity(pos=(48, 48))
-        entity.speed = 200
-        mm = setup_map_manager({"stair_direction": "right", "tile_id": 30}, tx=1, ty=1)
-        mm.get_vertical_move_props = MagicMock(side_effect=lambda x, y: (
-            {"stair_direction": "right", "movement_type": "stair", "visual_y_offset": 0, "tile_id": 30} if (x == 1 and y == 1) else
-            {"stair_direction": "right", "movement_type": "stair", "visual_y_offset": -16, "tile_id": 31} if (x == 0 and y == 2) else None
-        ))
-        mm.get_direction_flags = MagicMock(return_value=["any"])
-        entity.game = MagicMock()
-        entity.game.map_manager = mm
-
+    # ── UT-006b: right stair, lower half, input left → flat (already at bottom entry) ──
+    def test_ut_006b_right_stair_lower_half_input_left_flat(self, setup_map_manager):
+        """UT-006b: stair_half=False + input (-1,0) on right stair = bottom entry → flat (-1,0)."""
+        mm = setup_map_manager()
+        entity = self._make_entity_on_stair(mm, "right", False)
+        # Target (0,1) is None (flat floor = bottom of staircase exit)
         entity.direction = pygame.math.Vector2(-1, 0)
         entity.start_move()
 
-        assert entity.direction == pygame.math.Vector2(-1, 1)
-        assert entity.target_pos == pygame.math.Vector2(16, 80)
+        assert entity.direction == pygame.math.Vector2(-1, 0)
+        assert entity.target_pos == pygame.math.Vector2(16, 48)
         assert entity.is_moving is True
 
     def test_ut_007_start_move_stair_right_input_vertical(self, setup_map_manager):
-        """UT-007: Input (0, -1) (Up) on right stair -> is_moving remains False, direction reset to (0,0)."""
-        entity = BaseEntity(pos=(48, 48))
-        entity.speed = 200
-        mm = setup_map_manager({"stair_direction": "right"}, tx=1, ty=1)
-        mm.get_direction_flags = MagicMock(return_value=["any"])
-        entity.game = MagicMock()
-        entity.game.map_manager = mm
-
+        """UT-007: Input (0,-1) Up on right stair → is_moving False, direction reset."""
+        mm = setup_map_manager()
+        entity = self._make_entity_on_stair(mm, "right", True)
         entity.direction = pygame.math.Vector2(0, -1)
         entity.start_move()
 
@@ -170,33 +171,20 @@ class TestStairMovementUnit:
         assert entity.direction == pygame.math.Vector2(0, 0)
 
     def test_ut_008_start_move_stair_right_input_diagonal_unmapped(self, setup_map_manager):
-        """UT-008: Input (1, 1) on right stair -> is_moving remains False, direction reset to (0,0)."""
-        entity = BaseEntity(pos=(48, 48))
-        entity.speed = 200
-        mm = setup_map_manager({"stair_direction": "right"}, tx=1, ty=1)
-        mm.get_direction_flags = MagicMock(return_value=["any"])
-        entity.game = MagicMock()
-        entity.game.map_manager = mm
-
+        """UT-008: Input (1,1) on right stair → is_moving False, direction reset."""
+        mm = setup_map_manager()
+        entity = self._make_entity_on_stair(mm, "right", True)
         entity.direction = pygame.math.Vector2(1, 1)
         entity.start_move()
 
         assert entity.is_moving is False
         assert entity.direction == pygame.math.Vector2(0, 0)
 
-    def test_ut_009a_start_move_stair_left_input_left_right_tile(self, setup_map_manager):
-        """UT-009a: Input (-1, 0) on left stair (right tile of pair: mod 6 == 3) -> direction (-1, 0) (orthogonal)."""
-        entity = BaseEntity(pos=(48, 48))
-        entity.speed = 200
-        mm = setup_map_manager({"stair_direction": "left", "tile_id": 21}, tx=1, ty=1)
-        mm.get_vertical_move_props = MagicMock(side_effect=lambda x, y: (
-            {"stair_direction": "left", "movement_type": "stair", "visual_y_offset": 0, "tile_id": 21} if (x == 1 and y == 1) else
-            {"stair_direction": "left", "movement_type": "stair", "visual_y_offset": -16, "tile_id": 20} if (x == 0 and y == 1) else None
-        ))
-        mm.get_direction_flags = MagicMock(return_value=["any"])
-        entity.game = MagicMock()
-        entity.game.map_manager = mm
-
+    # ── UT-009a: left stair, upper half, input left → step-off flat ──────────────
+    def test_ut_009a_left_stair_upper_half_input_left_stepoff(self, setup_map_manager):
+        """UT-009a: stair_half=True + input (-1,0) on left stair + target flat → flat (-1,0)."""
+        mm = setup_map_manager()
+        entity = self._make_entity_on_stair(mm, "left", True)
         entity.direction = pygame.math.Vector2(-1, 0)
         entity.start_move()
 
@@ -204,39 +192,23 @@ class TestStairMovementUnit:
         assert entity.target_pos == pygame.math.Vector2(16, 48)
         assert entity.is_moving is True
 
-    def test_ut_009b_start_move_stair_left_input_left_left_tile(self, setup_map_manager):
-        """UT-009b: Input (-1, 0) on left stair (left tile of pair: mod 6 == 2) -> direction (-1, -1) (diagonal)."""
-        entity = BaseEntity(pos=(48, 48))
-        entity.speed = 200
-        mm = setup_map_manager({"stair_direction": "left", "tile_id": 20}, tx=1, ty=1)
-        mm.get_vertical_move_props = MagicMock(side_effect=lambda x, y: (
-            {"stair_direction": "left", "movement_type": "stair", "visual_y_offset": -16, "tile_id": 20} if (x == 1 and y == 1) else
-            {"stair_direction": "left", "movement_type": "stair", "visual_y_offset": 0, "tile_id": 21} if (x == 0 and y == 0) else None
-        ))
-        mm.get_direction_flags = MagicMock(return_value=["any"])
-        entity.game = MagicMock()
-        entity.game.map_manager = mm
-
+    # ── UT-009b: left stair, lower half, input left → flat (already at bottom entry) ──
+    def test_ut_009b_left_stair_lower_half_input_left_flat(self, setup_map_manager):
+        """UT-009b: stair_half=False + input (-1,0) on left stair = bottom entry → flat (-1,0)."""
+        mm = setup_map_manager()
+        entity = self._make_entity_on_stair(mm, "left", False)
         entity.direction = pygame.math.Vector2(-1, 0)
         entity.start_move()
 
-        assert entity.direction == pygame.math.Vector2(-1, -1)
-        assert entity.target_pos == pygame.math.Vector2(16, 16)
+        assert entity.direction == pygame.math.Vector2(-1, 0)
+        assert entity.target_pos == pygame.math.Vector2(16, 48)
         assert entity.is_moving is True
 
-    def test_ut_010a_start_move_stair_left_input_right_left_tile(self, setup_map_manager):
-        """UT-010a: Input (1, 0) on left stair (left tile of pair: mod 6 == 2) -> direction (1, 0) (orthogonal)."""
-        entity = BaseEntity(pos=(48, 48))
-        entity.speed = 200
-        mm = setup_map_manager({"stair_direction": "left", "tile_id": 20}, tx=1, ty=1)
-        mm.get_vertical_move_props = MagicMock(side_effect=lambda x, y: (
-            {"stair_direction": "left", "movement_type": "stair", "visual_y_offset": -16, "tile_id": 20} if (x == 1 and y == 1) else
-            {"stair_direction": "left", "movement_type": "stair", "visual_y_offset": 0, "tile_id": 21} if (x == 2 and y == 1) else None
-        ))
-        mm.get_direction_flags = MagicMock(return_value=["any"])
-        entity.game = MagicMock()
-        entity.game.map_manager = mm
-
+    # ── UT-010a: left stair, lower half, input right → step-off flat ─────────────
+    def test_ut_010a_left_stair_lower_half_input_right_stepoff(self, setup_map_manager):
+        """UT-010a: stair_half=False + input (1,0) on left stair + target flat → flat (1,0)."""
+        mm = setup_map_manager()
+        entity = self._make_entity_on_stair(mm, "left", False)
         entity.direction = pygame.math.Vector2(1, 0)
         entity.start_move()
 
@@ -244,18 +216,22 @@ class TestStairMovementUnit:
         assert entity.target_pos == pygame.math.Vector2(80, 48)
         assert entity.is_moving is True
 
-    def test_ut_010b_start_move_stair_left_input_right_right_tile(self, setup_map_manager):
-        """UT-010b: Input (1, 0) on left stair (right tile of pair: mod 6 == 3) -> direction (1, 1) (diagonal)."""
+    # ── UT-010b: left stair, upper half, input right → diagonal (1,+1) ───────────
+    def test_ut_010b_left_stair_upper_half_input_right_diagonal(self, setup_map_manager):
+        """UT-010b: stair_half=True + input (1,0) on left stair → diagonal (1,1)."""
+        mm = setup_map_manager()
         entity = BaseEntity(pos=(48, 48))
         entity.speed = 200
-        mm = setup_map_manager({"stair_direction": "left", "tile_id": 21}, tx=1, ty=1)
-        mm.get_vertical_move_props = MagicMock(side_effect=lambda x, y: (
-            {"stair_direction": "left", "movement_type": "stair", "visual_y_offset": 0, "tile_id": 21} if (x == 1 and y == 1) else
-            {"stair_direction": "left", "movement_type": "stair", "visual_y_offset": -16, "tile_id": 20} if (x == 2 and y == 2) else None
-        ))
         mm.get_direction_flags = MagicMock(return_value=["any"])
         entity.game = MagicMock()
         entity.game.map_manager = mm
+
+        current_props = {"stair_direction": "left", "movement_type": "stair", "stair_half": True, "visual_y_offset": -16}
+        target_props  = {"stair_direction": "left", "movement_type": "stair", "stair_half": False, "visual_y_offset": 0}
+        mm.get_vertical_move_props = MagicMock(side_effect=lambda x, y: (
+            current_props if (x == 1 and y == 1) else
+            target_props  if (x == 2 and y == 2) else None
+        ))
 
         entity.direction = pygame.math.Vector2(1, 0)
         entity.start_move()
@@ -265,7 +241,7 @@ class TestStairMovementUnit:
         assert entity.is_moving is True
 
     def test_ut_011_start_move_normal_tile(self, setup_map_manager):
-        """UT-011: Entity on normal tile -> _vertical_move is None, movement is normal orthogonal."""
+        """UT-011: Entity on normal tile → _vertical_move is None, movement is orthogonal."""
         entity = BaseEntity(pos=(48, 48))
         entity.speed = 200
         mm = setup_map_manager({"walkable": True})
@@ -282,40 +258,40 @@ class TestStairMovementUnit:
         assert entity.is_moving is True
 
     def test_ut_012_transition_stair_to_normal(self, setup_map_manager):
-        """UT-012: Entity leaves stair to normal tile -> step-off rule preserves orthogonal direction."""
-        entity = BaseEntity(pos=(48, 48))  # (1, 1)
+        """UT-012: stair_half=True + input (-1,0) + next tile is normal floor → step-off flat."""
+        entity = BaseEntity(pos=(48, 48))
         entity.speed = 200
-
-        # Current tile (1,1) is stair, next tile (0,1) is normal
-        mm = setup_map_manager({"stair_direction": "right"}, tx=1, ty=1)
+        mm = setup_map_manager()
         mm.get_direction_flags = MagicMock(return_value=["any"])
 
-        # Mock next tile (0,1) properties (no stair_direction)
+        # Current tile is stair (upper half); target (0,1) is normal floor (None)
         mm.get_vertical_move_props = MagicMock(side_effect=lambda x, y: (
-            {"stair_direction": "right", "movement_type": "stair", "visual_y_offset": -12} if (x == 1 and y == 1) else None
+            {"stair_direction": "right", "movement_type": "stair", "stair_half": True, "visual_y_offset": -16}
+            if (x == 1 and y == 1) else None
         ))
 
         entity.game = MagicMock()
         entity.game.map_manager = mm
-        entity.game.layout = mm.layout
 
-        # Move LEFT -> target is (0, 1) which is normal tile
         entity.direction = pygame.math.Vector2(-1, 0)
         entity.start_move()
 
-        # Direction should remain orthogonal (-1, 0), not intercepted to (-1, 1)
         assert entity.direction == pygame.math.Vector2(-1, 0)
         assert entity.target_pos == pygame.math.Vector2(16, 48)
         assert entity.is_moving is True
 
     def test_ut_013_target_not_walkable(self, setup_map_manager):
-        """UT-013: walkable_func returns False -> target_pos resets, is_moving is False."""
+        """UT-013: walkable_func returns False → target_pos resets, is_moving is False."""
         entity = BaseEntity(pos=(48, 48))
         entity.speed = 200
-        mm = setup_map_manager({"stair_direction": "right"})
+        mm = setup_map_manager()
         mm.get_direction_flags = MagicMock(return_value=["any"])
         entity.game = MagicMock()
         entity.game.map_manager = mm
+        mm.get_vertical_move_props = MagicMock(return_value={
+            "stair_direction": "right", "movement_type": "stair",
+            "stair_half": True, "visual_y_offset": -16,
+        })
         entity.walkable_func = lambda x, y, requester=None: False
 
         entity.direction = pygame.math.Vector2(1, 0)
@@ -333,12 +309,10 @@ class TestStairMovementUnit:
         entity.stair_move_distance = 32.0
         entity.target_pos = pygame.math.Vector2(80, 48)
 
-        # 50% progress (pos is halfway to target)
         entity.pos = pygame.math.Vector2(64, 48)
         entity.update_stair_offset()
         assert entity.current_stair_offset == pytest.approx(-8.0)
 
-        # 100% progress
         entity.pos = pygame.math.Vector2(80, 48)
         entity.update_stair_offset()
         assert entity.current_stair_offset == pytest.approx(-16.0)
@@ -359,8 +333,6 @@ class TestStairMovementUnit:
         with patch.object(surface, 'blit') as mock_blit:
             group.custom_draw(surface)
             assert mock_blit.called
-            # sprite center=(100, 100) -> top_left = (100 - 16, 100 - 16) = (84, 84)
-            # with current_stair_offset = -16.0 -> Y should be 84 - 16 = 68
             dest_pos = mock_blit.call_args[0][1]
             assert dest_pos[1] == 68
 

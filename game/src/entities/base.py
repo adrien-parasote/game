@@ -106,45 +106,18 @@ class BaseEntity(pygame.sprite.Sprite):
             self.direction = pygame.math.Vector2(0, 0)
             return False
 
-        # Determine whether we should move diagonally on the stair
-        should_move_diagonally = False
-        tile_id = vm.get("tile_id", 0)
+        # stair_half=True → upper half of step → diagonal movement needed.
+        # stair_half=False/absent → lower half → stay flat (entry/exit).
+        should_move_diagonally = bool(vm.get("stair_half", False))
 
-        if stair_dir == "right":
-            # Right-ascending stairs:
-            # - left tile has tile_id % 6 == 0
-            # - right tile has tile_id % 6 == 1
-            is_left_tile = (tile_id % 6 == 0)
-            if dx == 1:  # climbing
-                should_move_diagonally = not is_left_tile
-            elif dx == -1:  # descending
-                should_move_diagonally = is_left_tile
-        elif stair_dir == "left":
-            # Left-ascending stairs:
-            # - left tile of pair has tile_id % 6 == 2 or tile_id == 1
-            # - right tile of pair has tile_id % 6 == 3
-            is_left_tile = (tile_id % 6 == 2 or tile_id == 1)
-            if dx == -1:  # climbing
-                should_move_diagonally = is_left_tile
-            elif dx == 1:  # descending
-                should_move_diagonally = not is_left_tile
+        target_dir = Settings.VERTICAL_MOVE_MAP[map_key] if should_move_diagonally else (dx, 0)
 
-        # Let's determine the target tile coordinate based on selected movement type
-        if should_move_diagonally:
-            dir_diag = Settings.VERTICAL_MOVE_MAP[map_key]
-            target_dir = dir_diag
-        else:
-            target_dir = (dx, 0)
-
-        # Check if the target tile is a stair tile
+        # Step-off boundary: if the diagonal target is not a stair tile,
+        # force flat movement (handles top-extremity exit onto normal floor).
         target_tx = current_tx + target_dir[0]
         target_ty = current_ty + target_dir[1]
         target_vm = self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
-        target_is_stair = target_vm is not None and isinstance(target_vm, dict)
-
-        # If the target is not a stair tile, we are stepping off.
-        # Step-off is always orthogonal (flat), so target_dir must be (dx, 0)
-        if not target_is_stair:
+        if target_vm is None:
             target_dir = (dx, 0)
 
         self.direction = pygame.math.Vector2(target_dir)
