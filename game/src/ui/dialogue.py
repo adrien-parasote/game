@@ -6,11 +6,18 @@ import pygame
 from src.config import Settings
 from src.engine.asset_manager import AssetManager
 from src.ui.dialogue_constants import (
+    DIALOGUE_ARROW_X_INSET,
     DIALOGUE_ARROW_Y_OFFSET,
+    DIALOGUE_BOX_BOTTOM_INSET,
+    DIALOGUE_BOTTOM_MARGIN,
     DIALOGUE_CONTENT_MARGIN_X,
+    DIALOGUE_FONT_SCALE,
+    DIALOGUE_LINE_SPACING,
     DIALOGUE_MSG_Y_OFFSET_PLAIN,
     DIALOGUE_MSG_Y_OFFSET_TITLED,
+    DIALOGUE_SCALE,
     DIALOGUE_SHADOW_COLOR,
+    DIALOGUE_SHADOW_OFFSET,
     DIALOGUE_TEXT_COLOR,
 )
 
@@ -42,11 +49,11 @@ class DialogueManager:
         self.next_arrow = None
 
         # Scaling (based on HUD scale 0.5)
-        self.scale = 0.5
+        self.scale = DIALOGUE_SCALE
 
         # Style
         self._shadow_color = DIALOGUE_SHADOW_COLOR
-        self._shadow_offset = 1
+        self._shadow_offset = DIALOGUE_SHADOW_OFFSET
         self._text_color = DIALOGUE_TEXT_COLOR
 
         # Fonts
@@ -83,10 +90,10 @@ class DialogueManager:
             # 3. Fonts
             am = AssetManager()
             self.font_message = am.get_font(
-                Settings.FONT_NARRATIVE, int(Settings.FONT_SIZE_NARRATIVE * 1.5)
+                Settings.FONT_NARRATIVE, int(Settings.FONT_SIZE_NARRATIVE * DIALOGUE_FONT_SCALE)
             )  # Larger for dialogue
             self.font_title = am.get_font(
-                Settings.FONT_NOBLE, int(Settings.FONT_SIZE_NOBLE * 1.5)
+                Settings.FONT_NOBLE, int(Settings.FONT_SIZE_NOBLE * DIALOGUE_FONT_SCALE)
             )  # Larger for dialogue
 
         except Exception as e:
@@ -106,9 +113,9 @@ class DialogueManager:
         message_y_offset = (
             DIALOGUE_MSG_Y_OFFSET_TITLED if self.title else DIALOGUE_MSG_Y_OFFSET_PLAIN
         )
-        available_h = self.dialogue_box.get_height() - message_y_offset - 40
+        available_h = self.dialogue_box.get_height() - message_y_offset - DIALOGUE_BOTTOM_MARGIN
 
-        line_spacing = 1.2
+        line_spacing = DIALOGUE_LINE_SPACING
         line_height = self.font_message.get_linesize() * line_spacing
         max_lines = max(1, int(available_h // line_height))
 
@@ -218,7 +225,7 @@ class DialogueManager:
 
     def _draw_typewriter_text(self, screen, message_x, message_y, page_surf):
         assert self.font_message is not None, "font_message must be loaded before drawing"
-        line_spacing = 1.2
+        line_spacing = DIALOGUE_LINE_SPACING
         line_height = self.font_message.get_linesize() * line_spacing
         current_page_lines = self._pages[self._current_page_index]
         chars_to_show = len(self.displayed_text)
@@ -262,7 +269,7 @@ class DialogueManager:
 
         # 1. Position box at bottom
         box_rect = self.dialogue_box.get_rect(
-            midbottom=(Settings.WINDOW_WIDTH // 2, Settings.WINDOW_HEIGHT - 20)
+            midbottom=(Settings.WINDOW_WIDTH // 2, Settings.WINDOW_HEIGHT - DIALOGUE_BOX_BOTTOM_INSET)
         )
         screen.blit(self.dialogue_box, box_rect)
 
@@ -295,6 +302,6 @@ class DialogueManager:
 
         # 4. Draw Next Arrow when page is complete
         if self.next_arrow and self._is_page_complete:
-            arrow_x = box_rect.x + box_rect.width - content_margin_x + 10
+            arrow_x = box_rect.x + box_rect.width - content_margin_x + DIALOGUE_ARROW_X_INSET
             arrow_y = box_rect.y + DIALOGUE_ARROW_Y_OFFSET
             screen.blit(self.next_arrow, (arrow_x, arrow_y))

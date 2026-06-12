@@ -17,10 +17,10 @@ class Settings:
 
     # Maps (input_direction, stair_direction) → intercepted_direction
     VERTICAL_MOVE_MAP: ClassVar[dict[tuple[tuple[int, int], str], tuple[int, int]]] = {
-        ((1, 0), "right"):  (1, -1),   # Droite sur escalier droit → montée diagonale
-        ((-1, 0), "right"): (-1, 1),   # Gauche sur escalier droit → descente diagonale
-        ((1, 0), "left"):  (1, 1),    # Droite sur escalier gauche → descente diagonale
-        ((-1, 0), "left"):  (-1, -1),  # Gauche sur escalier gauche → montée diagonale
+        ((1, 0), "right"):  (1, -1),   # Right on right-stair → diagonal ascent
+        ((-1, 0), "right"): (-1, 1),   # Left on right-stair → diagonal descent
+        ((1, 0), "left"):  (1, 1),    # Right on left-stair → diagonal descent
+        ((-1, 0), "left"):  (-1, -1),  # Left on left-stair → diagonal ascent
     }
 
     # Internal Defaults (Fallback)

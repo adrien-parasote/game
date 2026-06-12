@@ -1,6 +1,5 @@
 # Technical Specification — Engine Core [Implementation]
 
-> Document Type: Implementation
 
 > **Document Type:** Implementation
 > **Source:** `src/engine/game.py`, `src/engine/game_state_manager.py`, `src/ui/title_screen.py`, `src/ui/pause_screen.py`, `src/ui/hud.py`, `src/config.py`
@@ -319,57 +318,4 @@ Strict UI priority layers prevent overlapping menus and input conflicts:
 - **State Switcher**: [game_state_manager.py L1](../../src/engine/game_state_manager.py#L1)
 - **Glow & Lights**: [title_screen.py L1](../../src/ui/title_screen.py#L1)
 
-## Assumptions
 
-| Assumption | Risk | Handling | Source Type |
-|---|---|---|---|
-| A | Low | H | gcloud test |
-| B | Low | H | gcloud test |
-| C | Low | H | gcloud test |
-
-## Error Handling
-
-| Error | Response | Fallback | Detection | Logging |
-|---|---|---|---|---|
-| TBD | TBD | TBD | TBD | TBD |
-
-## Test Cases
-
-| ID | Description | Assertion |
-|---|---|---|
-| UT-001 | pipeline test | A |
-| UT-002 | TBD | A |
-| UT-003 | TBD | A |
-| UT-004 | TBD | A |
-| UT-005 | TBD | A |
-| IT-001 | pipeline integration test | A |
-| IT-002 | TBD | A |
-| IT-003 | TBD | A |
-| TC-001 | TBD | A |
-
-## Cross-Spec Contracts
-
-### Produces
-N/A - Not applicable
-
-### Consumes
-N/A - Not applicable
-
-### Public Interface
-N/A - Not applicable
-
-### External Invocations
-- N/A
-
-### Tracked Concepts
-- N/A
-
-## Anti-patterns
-
-| Anti-pattern | Why it's bad | What to do instead |
-|---|---|---|
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |

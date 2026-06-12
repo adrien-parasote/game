@@ -1,3 +1,7 @@
+> **Status: IMPLEMENTED** — Wiki/Repo documentation split completed per ADR-009 (2026-05-27).
+
+---
+
 # Documentation Split & Global Readme Update
 
 This plan details the partitioning of the existing documentation between the technical repository and the "human" wiki, as well as the redesign of the main README to reflect this new architecture.

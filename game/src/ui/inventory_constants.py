@@ -60,3 +60,11 @@ INV_STAT_NAME_OFFSET_Y: int = 16  # Item name label Y-offset in the stats panel 
 
 # Fallback placeholder
 INV_PLACEHOLDER_SIZE: int = 32  # Fallback surface size for missing assets (px)
+
+# Animation
+INV_ANIM_FRAME_DURATION: float = 0.15  # seconds per animation frame
+INV_ANIM_FRAMES: int = 4  # number of animation frames in item sprite cycle
+
+# Layout
+INV_ICON_BASE_SIZE: int = 48  # base pixel size for item icons
+INV_TAB_COUNT: int = 4  # number of inventory tabs

@@ -21,7 +21,15 @@ from src.ui.speech_bubble_constants import (
     _PADDING_X,
     _TAIL_GAP,
     ASSET_DIR,
+    BUBBLE_ARROW_INSET,
     BUBBLE_CENTER_FILL,
+    BUBBLE_LINES_PER_PAGE,
+    BUBBLE_MAX_WIDTH_PX,
+    BUBBLE_NAME_PLATE_EDGE_W,
+    BUBBLE_NAME_PLATE_H,
+    BUBBLE_NAME_PLATE_MIN_H,
+    BUBBLE_NAME_PLATE_MIN_W,
+    BUBBLE_NAME_PLATE_PADDING_X,
     BUBBLE_NAME_TEXT_COLOR,
     MIN_BUBBLE_SIZE,
     TILE_SIZE,
@@ -50,8 +58,8 @@ class SpeechBubble:
 
     def __init__(
         self,
-        max_width_px: int = 352,
-        arrow_inset: int = 4,
+        max_width_px: int = BUBBLE_MAX_WIDTH_PX,
+        arrow_inset: int = BUBBLE_ARROW_INSET,
     ) -> None:
         self.max_width_px = max(max_width_px, MIN_BUBBLE_SIZE)
         self.pad_top = _PADDING_TOP
@@ -85,7 +93,7 @@ class SpeechBubble:
             if key == "arrow":
                 self.tiles[key] = img
             elif key == "name_plate":
-                if img.get_width() >= 96 and img.get_height() >= 64:
+                if img.get_width() >= BUBBLE_NAME_PLATE_MIN_W and img.get_height() >= BUBBLE_NAME_PLATE_MIN_H:
                     self.tiles["name_plate_left"] = img.subsurface(pygame.Rect(0, 0, 32, 64))
                     self.tiles["name_plate_center"] = img.subsurface(pygame.Rect(32, 0, 32, 64))
                     self.tiles["name_plate_right"] = img.subsurface(pygame.Rect(64, 0, 32, 64))
@@ -197,12 +205,12 @@ class SpeechBubble:
         name_surf = font_to_use.render(speaker_name, True, BUBBLE_NAME_TEXT_COLOR)
 
         name_w = name_surf.get_width()
-        plate_padding_x = 16
+        plate_padding_x = BUBBLE_NAME_PLATE_PADDING_X
         target_w = name_w + plate_padding_x * 2
 
         # Scale down the plate to be less massive (32px high instead of 64px)
-        plate_h = 32
-        edge_w = 16
+        plate_h = BUBBLE_NAME_PLATE_H
+        edge_w = BUBBLE_NAME_PLATE_EDGE_W
 
         left_tile = pygame.transform.smoothscale(self.tiles["name_plate_left"], (edge_w, plate_h))
         center_tile = pygame.transform.smoothscale(
@@ -247,7 +255,7 @@ class SpeechBubble:
         line_height = self.font.get_linesize()
 
         # Limit to 4 lines per page for typical speech bubble size
-        lines_per_page = 4
+        lines_per_page = BUBBLE_LINES_PER_PAGE
         total_pages = max(1, (len(all_lines) + lines_per_page - 1) // lines_per_page)
         page = max(0, min(page, total_pages - 1))
         page_lines = all_lines[page * lines_per_page : (page + 1) * lines_per_page]
@@ -298,5 +306,5 @@ class SpeechBubble:
         if not self.font:
             return 1
         all_lines = self._wrap_text(text)
-        lines_per_page = 4
+        lines_per_page = BUBBLE_LINES_PER_PAGE
         return max(1, (len(all_lines) + lines_per_page - 1) // lines_per_page)

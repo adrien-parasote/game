@@ -4,7 +4,7 @@
 
 **Covers:** Stair Movement Feature — horizontal stairs (lateral stairs).
 **Future extension:** This architecture also supports ladders (`ladder`) via the same Tiled class.
-**Revision:** v4 — post adversarial review corrections 2026-06-10.
+**Revision:** v5 — descent diagonal logic corrected per ADR-013 (2026-06-12).
 
 ---
 
@@ -233,7 +233,7 @@ The interception logic must verify the next tile in the input direction *before*
 2. If the input has no entry in `VERTICAL_MOVE_MAP` (e.g. `(0, -1)` Up), silently block: reset `direction` to `(0, 0)`, return `False`.
 3. If the entity is currently on a stair tile, determine `should_move_diagonally`:
 
-   **Decision rule — `should_move_diagonally` (EXACT, sourced from `01-stairs.tsx`):**
+   **Decision rule — `should_move_diagonally` (EXACT, sourced from `01-stairs.tsx` and ADR-013):**
 
    The TSX exposes a boolean property `stair_half` on each walkable stair tile:
    - `stair_half = True` → the tile is the **upper half** of a step (requires diagonal movement to reach the next Y level).
@@ -241,10 +241,13 @@ The interception logic must verify the next tile in the input direction *before*
 
    ```python
    stair_half = vm.get("stair_half", False)   # bool, from tile props
-   should_move_diagonally = bool(stair_half)
+   is_going_up = intercepted_dir[1] < 0         # negative Y = going up (pygame coords)
+   # For ascending: diagonal on upper-half tile
+   # For descending: diagonal on lower-half tile (= full tile in descent direction)
+   should_move_diagonally = stair_half if is_going_up else (not stair_half)
    ```
 
-   No `tile_id % N` arithmetic. No parity checks. **Only `stair_half`.**
+   No `tile_id % N` arithmetic. No parity checks. **Only `stair_half` and direction.**
 
 4. Apply direction:
    - If `should_move_diagonally`: `target_dir = VERTICAL_MOVE_MAP[map_key]` (diagonal).
@@ -474,3 +477,13 @@ If the NPC target is a tile beyond the top of the stairs, the NPC traverses norm
 ├── game/tests/entities/test_stair_movement.py
 └── game/tests/integration/test_stairs_integration.py
 ```
+
+## Revision History
+
+| Version | Date | Change |
+|---------|------|--------|
+| v1 | 2026-06-04 | Initial spec — basic stair interception |
+| v2 | 2026-06-08 | Added NPC pathfinding section, cross-spec contracts |
+| v3 | 2026-06-09 | Added §0 Tiled config, error handling, test cases |
+| v4 | 2026-06-10 | Post adversarial review corrections |
+| v5 | 2026-06-12 | Corrected descent diagonal logic per ADR-013: `should_move_diagonally = not stair_half` for descent (was `bool(stair_half)`) |

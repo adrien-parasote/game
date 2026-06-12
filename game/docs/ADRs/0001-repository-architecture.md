@@ -1,7 +1,8 @@
+<!-- Alias: ADR-000 — This file predates the ADR-NNN naming convention. -->
 # ADR 0001: Domain-Driven Monorepo Architecture
 
 ## Status
-Proposed
+✅ Accepted
 
 ## Context
 The project is growing and currently has a flat structure at the root (`docs`, `src`, `test`, `tools`, `scripts`), mixing game code, tooling code, and assets. 

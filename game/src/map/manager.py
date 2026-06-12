@@ -3,6 +3,7 @@ from collections.abc import Iterator
 
 import pygame
 
+from src.engine.engine_constants import GRASS_MAX_DEPTH
 from .layout import LayoutStrategy
 
 
@@ -125,7 +126,7 @@ class MapManager:
                     depth = getattr(tile, "depth", 0)
                     if not isinstance(depth, int | float):
                         depth = 0
-                    if depth > 1:
+                    if depth > GRASS_MAX_DEPTH:
                         continue
                     props = getattr(tile, "properties", {})
                     if not isinstance(props, dict):
@@ -135,7 +136,7 @@ class MapManager:
                     break
 
     def update_grass_state(self) -> None:
-        """Doit être appelé si l'herbe est créée/détruite dynamiquement en jeu."""
+        """Must be called if grass is dynamically created/destroyed at runtime."""
         self._map_has_grass = any(
             img is not None for row in self._grass_grid for img in row
         )

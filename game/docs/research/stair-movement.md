@@ -32,3 +32,31 @@
 **Build/Adapt:** We will **Adapt** the Tiled properties and **Build** the interceptor logic in `BaseEntity.start_move()`. 
 - **Tiled:** Standardize the property (e.g., `stair="right"` meaning it ascends to the right).
 - **Code:** Read this property in `start_move()` and modify `self.direction` before calculating `target_pos`.
+
+---
+
+## Addendum: Descent Asymmetry Fix (2026-06-11)
+
+> Source: stair_mechanics_analysis.md (originally French, translated 2026-06-12)
+
+### Root Cause
+
+After initial implementation, a second bug was identified affecting descent movement. The logic for determining whether the player should move diagonally was set to `should_move_diagonally = stair_half` unconditionally, which only works correctly for **ascent**.
+
+**On ascent:** The upper-half tile (`stair_half=True`) is where diagonal movement must occur to reach the next Y level — correct.
+
+**On descent:** The lower-half tile (`stair_half=False`) is where diagonal movement must occur to descend to the next Y level — incorrect with the original formula. This caused a zigzag misalignment during descent.
+
+### Fix
+
+The algorithm now checks the movement direction:
+- **Ascending** (`intercepted_dir[1] < 0`): `should_move_diagonally = stair_half`
+- **Descending** (`intercepted_dir[1] > 0`): `should_move_diagonally = not stair_half`
+
+In code (`base.py` line 115):
+```python
+should_move_diagonally = stair_half if is_going_up else (not stair_half)
+```
+
+Unit tests in `test_stair_movement.py` were updated to reflect this physical symmetry. The fix is documented in ADR-013.
+

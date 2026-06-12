@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import pygame
+from src.engine.engine_constants import TILED_PROJECT_PATH
 from src.map.project_schema import TiledProject
 
 
@@ -26,7 +27,7 @@ class TmjParser:
     def __init__(self):
         self.project: TiledProject | None = None
         # Attempt to load project from standard location
-        project_path = "assets/tiled/game.tiled-project"
+        project_path = TILED_PROJECT_PATH
         if os.path.exists(project_path):
             self.project = TiledProject(project_path)
 

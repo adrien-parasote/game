@@ -30,3 +30,13 @@ TILES: dict = {
 # Bubble rendering colors
 BUBBLE_CENTER_FILL: tuple[int, int, int] = (255, 255, 255)  # White fill for the inner content area
 BUBBLE_NAME_TEXT_COLOR: tuple[int, int, int] = (255, 255, 255)  # Name plate text color
+
+# Bubble layout dimensions
+BUBBLE_MAX_WIDTH_PX: int = 352  # max bubble width in pixels
+BUBBLE_ARROW_INSET: int = 4  # px inset for arrow within bubble tail
+BUBBLE_NAME_PLATE_PADDING_X: int = 16  # px horizontal padding for speaker name plate
+BUBBLE_NAME_PLATE_H: int = 32  # height of speaker name plate in px
+BUBBLE_NAME_PLATE_EDGE_W: int = 16  # width of edge slice for 9-slice name plate
+BUBBLE_LINES_PER_PAGE: int = 4  # max lines of text shown per bubble page
+BUBBLE_NAME_PLATE_MIN_W: int = 96  # minimum width of name plate
+BUBBLE_NAME_PLATE_MIN_H: int = 64  # minimum height of name plate tile

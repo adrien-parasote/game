@@ -26,7 +26,7 @@ A complete scan of the project workspace reveals the following documentation foo
 
 ## 2. Key Urbanization & Consistency Gaps Identified
 
-### Gap 1: Unregistered Specifications in `00_MASTER.md`
+### Gap 1: Unregistered Specifications in `00_MASTER.md` ✅ RESOLVED
 The master technical specification index (`00_MASTER.md`) lists only 15 consolidated core technical specifications. However, there are 21 files present in `docs/specs/`. The following 4 files are completely unregistered and orphan from the index:
 1. `code-quality-constants-i18n.md` — Pass for translating French logs/docstrings and extracting magic color tuples.
 2. `remediation_01_dt_text_cache.md` — Spec for DT Clamping and component-level pre-rendered text caching.
@@ -35,7 +35,7 @@ The master technical specification index (`00_MASTER.md`) lists only 15 consolid
 
 *Recommendation:* Do NOT delete these files as they contain historical context, implementation decisions, and test cases that future AI agents need to understand why these modifications were done. Instead, list them under a new dedicated **"Remediation & Hardening Specifications"** section in `00_MASTER.md`.
 
-### Gap 2: Unregistered ADR in `00_MASTER.md`
+### Gap 2: Unregistered ADR in `00_MASTER.md` ✅ RESOLVED
 The master index registers `ADR-001` through `ADR-007`. However, `ADR-008-frect-migration.md` exists on disk but is absent from the global registry table.
 
 *Recommendation:* List `ADR-008` (FRect Non-Migration Decision) under Section 5 of `00_MASTER.md` with its correct relative path and summary.

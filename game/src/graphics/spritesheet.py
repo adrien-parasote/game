@@ -2,7 +2,7 @@ import logging
 import os
 
 import pygame
-from src.engine.engine_constants import COLOR_PLACEHOLDER_BLUE
+from src.engine.engine_constants import COLOR_PLACEHOLDER_BLUE, SPRITESHEET_FALLBACK_FRAME_COUNT, SPRITESHEET_FALLBACK_SIZE
 
 
 class SpriteSheet:
@@ -38,7 +38,7 @@ class SpriteSheet:
         """
         if not self.valid or self.sheet is None:
             # Fallback returning a list of plain colored dummy surfaces
-            return [self._create_dummy_surface((32, 32), transparent) for _ in range(cols * rows)]
+            return [self._create_dummy_surface(SPRITESHEET_FALLBACK_SIZE, transparent) for _ in range(cols * rows)]
 
         sheet_w, sheet_h = self.sheet.get_size()
         frame_w = sheet_w // cols
@@ -54,7 +54,7 @@ class SpriteSheet:
         """
         if not self.valid or self.sheet is None:
             # Fallback with dummy surfaces
-            return [self._create_dummy_surface((frame_w, frame_h), transparent) for _ in range(16)]
+            return [self._create_dummy_surface((frame_w, frame_h), transparent) for _ in range(SPRITESHEET_FALLBACK_FRAME_COUNT)]
 
         sheet_w, sheet_h = self.sheet.get_size()
         cols = sheet_w // frame_w

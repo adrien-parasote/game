@@ -3,6 +3,8 @@
 
 from pathlib import Path
 
+from src.ui.ui_colors import COLOR_SLOT_BORDER, COLOR_SLOT_BORDER_HOVER, COLOR_TEXT_STONE
+
 # ---------------------------------------------------------------------------
 # Asset paths (relative to project root)
 # ---------------------------------------------------------------------------
@@ -52,6 +54,6 @@ _INV_ARROW_EDGE_OFFSET = 20  # px — inset from the panel edge
 # Draw constants
 # ---------------------------------------------------------------------------
 CHEST_TITLE_TEXT: str = "Chest"
-CHEST_TEXT_COLOR: tuple[int, int, int] = (60, 40, 30)  # Dark brown — parchment theme
-CHEST_SLOT_FALLBACK_COLOR: tuple[int, int, int] = (200, 200, 200)
-CHEST_INV_SLOT_FALLBACK_COLOR: tuple[int, int, int] = (180, 180, 180)
+CHEST_TEXT_COLOR: tuple[int, int, int] = COLOR_TEXT_STONE  # Dark brown — parchment theme
+CHEST_SLOT_FALLBACK_COLOR: tuple[int, int, int] = COLOR_SLOT_BORDER
+CHEST_INV_SLOT_FALLBACK_COLOR: tuple[int, int, int] = COLOR_SLOT_BORDER_HOVER

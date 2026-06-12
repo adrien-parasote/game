@@ -5,6 +5,18 @@ import pygame
 from src.config import Settings
 from src.engine.inventory_system import Inventory
 from src.entities.emote import EmoteManager
+from src.entities.player_constants import (
+    PLAYER_ANIM_FRAME_DURATION,
+    PLAYER_FOOTSTEP_FRAMES,
+    PLAYER_FOOTSTEP_VOLUME,
+    PLAYER_FRAMES_PER_ROW,
+    PLAYER_INITIAL_GOLD,
+    PLAYER_INITIAL_HP,
+    PLAYER_INITIAL_LEVEL,
+    PLAYER_ROW_OFFSETS,
+    PLAYER_SPRITESHEET_COLS,
+    PLAYER_SPRITESHEET_ROWS,
+)
 from src.graphics.spritesheet import SpriteSheet
 
 from .base import BaseEntity
@@ -37,11 +49,11 @@ class Player(BaseEntity):
             ).resolve()
         )
         sheet = SpriteSheet(sheet_path)
-        self.frames = sheet.load_grid(4, 4)
+        self.frames = sheet.load_grid(PLAYER_SPRITESHEET_COLS, PLAYER_SPRITESHEET_ROWS)
 
         # Animation State
         self.frame_index = 0.0
-        self.animation_speed = 1.0 / 0.15  # frames per second (150ms per frame)
+        self.animation_speed = 1.0 / PLAYER_ANIM_FRAME_DURATION  # frames per second (150ms per frame)
         self.current_state = "down"  # default facing
         self._was_moving = False  # tracks previous frame's movement to avoid per-tile reset
 
@@ -51,10 +63,10 @@ class Player(BaseEntity):
         self.rect.center = pos
 
         # Stats
-        self.level = 1
-        self.hp = 100
-        self.max_hp = 100
-        self.gold = 0
+        self.level = PLAYER_INITIAL_LEVEL
+        self.hp = PLAYER_INITIAL_HP
+        self.max_hp = PLAYER_INITIAL_HP
+        self.gold = PLAYER_INITIAL_GOLD
         self.inventory = Inventory()
 
         # Emote System
@@ -90,14 +102,14 @@ class Player(BaseEntity):
     def _update_animation(self, dt: float):
         """Update sprite animation based on state and dt."""
         # Row offset based on direction state
-        row_offsets = {"down": 0, "left": 4, "right": 8, "up": 12}
+        row_offsets = PLAYER_ROW_OFFSETS
         offset = row_offsets.get(self.current_state, 0)
 
         prev_int_frame = int(self.frame_index)
 
         if self.is_moving:
             self.frame_index += self.animation_speed * dt
-            self.frame_index %= 4
+            self.frame_index %= PLAYER_FRAMES_PER_ROW
         elif not self._was_moving:
             # Only reset to idle frame after 2+ consecutive stopped frames.
             # Absorbs the single is_moving=False tile-arrival frame during continuous movement.
@@ -108,22 +120,22 @@ class Player(BaseEntity):
         current_int_frame = int(self.frame_index)
 
         # Trigger footstep on frames 1 and 3
-        if self.is_moving and current_int_frame != prev_int_frame and current_int_frame in (1, 3):
+        if self.is_moving and current_int_frame != prev_int_frame and current_int_frame in PLAYER_FOOTSTEP_FRAMES:
             material = self._resolve_footstep_material()
 
             sfx_name = f"04-footstep_{material}" if material else "04-footstep"
 
             if self.audio_manager:
                 success = self.audio_manager.play_sfx(
-                    sfx_name, source_id="player", volume_multiplier=0.15
+                    sfx_name, source_id="player", volume_multiplier=PLAYER_FOOTSTEP_VOLUME
                 )
                 if not success and material:
                     self.audio_manager.play_sfx(
-                        "04-footstep", source_id="player", volume_multiplier=0.15
+                        "04-footstep", source_id="player", volume_multiplier=PLAYER_FOOTSTEP_VOLUME
                     )
 
         # Get integer index to select frame (0 to 3) + offset
-        current_frame = int(self.frame_index) % 4
+        current_frame = int(self.frame_index) % PLAYER_FRAMES_PER_ROW
         self.image = self.frames[offset + current_frame]
 
     def _resolve_footstep_material(self) -> str | None:

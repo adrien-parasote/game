@@ -25,9 +25,9 @@
 | **CollisionChecker** | `src/engine/collision_checker.py` | 80 | Tile + entity collision checks |
 | **SaveManager** | `src/engine/save_manager.py` | 271 | JSON save/load (3 slots), thumbnails. Path: `pygame.system.get_pref_path("adrien","game")` + fallback `saves/` |
 | **GameEvents** | `src/engine/game_events.py` | 59 | `GameEvent` dataclass + `GameEventType` enum. Factory: `new_game()`, `load_requested(n)`, `pause_requested()`, etc. |
-| **MapManager** | `src/map/manager.py` | 191 | Layer surfaces, TMJ state, collision tile queries. `get_foreground_layer_surface()` pre-renders static foreground tiles per layer. |
+| **MapManager** | `src/map/manager.py` | 191 | Layer surfaces, TMJ state, collision tile queries. `get_foreground_layer_surface()` pre-renders static foreground tiles per layer. `get_vertical_move_props(tx, ty)` returns stair properties for a tile. `_fg_occlusion_grid` caches foreground occlusion rects per layer. |
 | **TmjParser** | `src/map/tmj_parser.py` | 263 | TMJ/TSX parsing → structured `map_data` dict |
-| **CameraGroup** | `src/entities/groups.py` | 121 | Y-sorted rendering, camera offset, dirty-flag sort cache. `stair_y_offset` shifts sprite render position when moving on stairs. |
+| **CameraGroup** | `src/entities/groups.py` | 121 | Y-sorted rendering, camera offset, dirty-flag sort cache. `stair_y_offset` shifts sprite render position when moving on stairs. `current_stair_offset` (float) drives interpolated visual Y shift per frame. |
 | **AssetManager** | `src/engine/asset_manager.py` | 125 | Singleton image/font cache with per-map clear. `get_occlusion_mask(tile_surf)→Surface\|None`: BLEND_RGBA_MULT modulation mask cached by `id(tile_surf)`, built once at load time (A=OCCLUSION_ALPHA where opaque, A=255 where transparent). Cleared in `clear_cache()`. |
 | **I18nManager** | `src/engine/i18n.py` | 58 | Singleton translation lookup via nested key paths |
 
@@ -51,6 +51,7 @@
 - **InteractiveEntity** (`src/entities/interactive.py`, ~470L): Chests/levers/doors/signs/decor. Animated state machine, `day_night_driven`, halo lighting.
 - **NPC** (`src/entities/npc.py`, 148L): Random AI patrol, interact trigger.
 - **Player** (`src/entities/player.py`, 122L): Input, directional animation.
+- **BaseEntity** (`src/entities/base.py`): Grid movement, `start_move()` interception, `_vertical_move`, `current_stair_offset`, `stair_start_offset`, `stair_target_offset`, `stair_move_distance` (stair interpolation fields), `_apply_stair_interception()`, `update_stair_offset()`.
 - **PickupItem** (`src/entities/pickup.py`, 45L): Static collectible, looted state.
 - **EmoteManager** (`src/entities/emote.py`, 62L): `!` / `?` / `frustration` emote sprites.
 

@@ -483,9 +483,9 @@ class RenderManager:
         self._render_ui_overlays(cam_offset)
 
     def reset_render_caches(self) -> None:
-        """Invalider tous les caches de rendu lors d'un changement de map.
-        
-        Appelé par game.py dans transition_map(), après _load_map().
+        """Invalidate all render caches on map change.
+
+        Called by game.py in transition_map(), after _load_map().
         """
         self.occlusion_renderer.reset_cache()
         self.wading_renderer.reset_cache()

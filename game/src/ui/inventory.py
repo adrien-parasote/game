@@ -6,6 +6,8 @@ import pygame
 from src.config import Settings
 from src.engine.asset_manager import AssetManager
 from src.ui.inventory_constants import (
+    INV_ANIM_FRAME_DURATION,
+    INV_ANIM_FRAMES,
     INV_ASSET_BG,
     INV_ASSET_HOVER,
     INV_ASSET_POINTER,
@@ -21,8 +23,10 @@ from src.ui.inventory_constants import (
     INV_GRID_SPACING_X,
     INV_GRID_SPACING_Y,
     INV_GRID_START,
+    INV_ICON_BASE_SIZE,
     INV_ORIGINAL_CURSOR_HEIGHT,
     INV_ORIGINAL_CURSOR_WIDTH,
+    INV_TAB_COUNT,
     INV_TAB_X_POSITIONS,
     INV_TAB_Y,
     INV_TARGET_WIDTH,
@@ -148,7 +152,7 @@ class InventoryUI(InventoryDrawMixin, InventoryInputMixin):
         logging.info(f"Inventory {'opened' if self.is_open else 'closed'}")
 
     def set_tab(self, index):
-        if 0 <= index < 4:
+        if 0 <= index < INV_TAB_COUNT:
             self.active_tab = index
         else:
             self.active_tab = 0
@@ -182,9 +186,9 @@ class InventoryUI(InventoryDrawMixin, InventoryInputMixin):
 
         # Update character preview animation (Idle)
         self.anim_timer += dt
-        if self.anim_timer >= 0.15:  # 150ms per frame
+        if self.anim_timer >= INV_ANIM_FRAME_DURATION:  # 150ms per frame
             self.anim_timer = 0
-            self.anim_frame = (self.anim_frame + 1) % 4
+            self.anim_frame = (self.anim_frame + 1) % INV_ANIM_FRAMES
 
         # Update hover state
         self.update_hover(pygame.mouse.get_pos())
@@ -208,7 +212,7 @@ class InventoryUI(InventoryDrawMixin, InventoryInputMixin):
                 self.icon_cache[icon_filename] = None
                 return None
             # Scale icon to fit slot (approx 48x48 base, scaled by s)
-            target_size = int(48 * self.scale_factor)
+            target_size = int(INV_ICON_BASE_SIZE * self.scale_factor)
             img = pygame.transform.smoothscale(img, (target_size, target_size))
             self.icon_cache[icon_filename] = img
             return img

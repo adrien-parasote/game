@@ -36,7 +36,7 @@ class BaseEntity(pygame.sprite.Sprite):
         self.depth = 1
         self.name: str = ""
         self._world_state_key: str | None = None
-        self._vertical_move: dict | None = None  # Props 25-vertical-move de la tuile courante
+        self._vertical_move: dict | None = None  # 25-vertical-move properties of the current tile
         self.current_stair_offset: float = 0.0
         self.stair_start_offset: float = 0.0
         self.stair_target_offset: float = 0.0

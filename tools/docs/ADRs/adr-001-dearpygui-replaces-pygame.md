@@ -1,7 +1,7 @@
 # ADR-001: Dear PyGui replaces Pygame preview, CLI preserved
 
 > **Date:** 2026-05-31
-> **Status:** ACCEPTED
+> **Status:** ❌ Superseded by ADR-002
 > **Context:** Asset Convertor V3
 
 ## Context

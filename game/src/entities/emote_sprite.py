@@ -1,4 +1,5 @@
 import pygame
+from src.entities.emote_constants import EMOTE_RISE_PX
 
 
 class EmoteSprite(pygame.sprite.Sprite):
@@ -36,7 +37,7 @@ class EmoteSprite(pygame.sprite.Sprite):
 
         # Linear interpolation for the rise effect
         progress = self.elapsed / self.duration
-        rise_offset = progress * 15
+        rise_offset = progress * EMOTE_RISE_PX
 
         # Follow player + rise offset
         if self.player.rect and self.rect:
