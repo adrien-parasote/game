@@ -1415,3 +1415,36 @@ assert ratio < 150, f"Ratio {ratio:.1f} suggests O(n) scaling"  # O(1) = ratio �
 
 *Last updated: 2026-06-12 — added A-TEST-047 (os.path.exists global scope), A-TEST-048 (pygame FileNotFoundError fallback), L-TEST-023 (O1 timing threshold) from stair mechanics + test coverage HARDEN session.*
 
+
+---
+
+### L-TEST-024 · 2026-06-12 · U · Perfect
+**`git stash` + test rerun = 2-command oracle to confirm a pre-existing test failure**
+
+When a test fails during BUILD and it is unclear if the failure pre-existed before the current changes, `git stash` + `pytest <test>` + `git stash pop` provides a definitive answer in ~10 seconds with zero ambiguity.
+
+**Protocol:**
+```bash
+# Step 1 — stash all current changes (reverts to HEAD)
+git stash
+
+# Step 2 — run just the suspect test
+python -m pytest tests/path/to/test_file.py::TestClass::test_name -x -q
+
+# Step 3 — restore changes
+git stash pop
+
+# Interpretation:
+# FAIL before AND after stash → pre-existing failure (not caused by current changes)
+# PASS before stash, FAIL after → regression introduced by current changes
+```
+
+**Why it works:** `git stash` is a deterministic HEAD snapshot, not a guess or diff. The test either fails on HEAD or it doesn't — no interpretation needed.
+
+**When to use:** Any time a failing test could be either a pre-existing failure OR a regression from current changes. 10-second cost, zero ambiguity.
+
+**Evidence:** `test_it_007_stair_traversal_symmetry` confirmed pre-existing via git stash + rerun in the 2026-06-12 audit BUILD. The test had been failing since before the current session — stash confirmed it failed on HEAD too.
+
+---
+
+*Last updated: 2026-06-12 — added L-TEST-024 (git stash pre-existing failure oracle) from audit-2026-06-12 BUILD session.*

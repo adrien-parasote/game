@@ -741,3 +741,71 @@ Activating the strict Ruff configuration (`"SIM", "PT", "RUF", "C90"`) instantly
 - **Evidence:** Adversarial review caught 2 HIGH severity bugs before code generation: a ZeroDivisionError in a stated interpolation formula, and an AttributeError on a Pygame Group iteration.
 - **Anti-pattern:** Writing specs with raw mathematical formulas (e.g. `dist / total`) without specifying zero guards, and referencing groups/collections with an assumption of homogeneity (e.g. "update `CameraGroup` to apply `sprite.offset`") when the collection can contain heterogeneous objects.
 - **Fix:** When a spec contains a mathematical formula for interpolation or state, it MUST include the boundary guard (e.g., `if total > 0`). When a spec describes iterating a collection, it MUST specify safe attribute access (e.g., `getattr(sprite, 'prop', default)`) if the collection can contain objects without that property.
+
+---
+
+### L-AGENT-008 · 2026-06-12 · U · Perfect
+**Parallel 3-agent BUILD for independent file-domain streams completes with zero conflicts**
+
+When a BUILD task can be split into streams with zero shared-file overlap at the git level (e.g., code constants vs. test additions vs. doc urbanization), running 3 parallel subagents completes the work in under 6 minutes with no merge conflicts. The key constraint is **no two streams write to the same file**.
+
+**Pattern:**
+1. Identify independent streams by file domain (source files, test files, doc files).
+2. Verify zero overlap: run `git diff --stat` mentally — no file appears in two streams.
+3. Launch all streams simultaneously via `invoke_subagent` with distinct file lists.
+4. Integrate sequentially only for the final commit.
+
+```yaml
+# Example split from 2026-06-12 audit BUILD:
+Stream A (code):  src/engine/*.py, src/ui/*.py, src/entities/*.py  # NO overlap with B/C
+Stream B (tests): tests/engine/*.py, tests/ui/*.py                  # NO overlap with A/C
+Stream C (docs):  game/docs/specs/*.md, game/docs/strategic/*.md     # NO overlap with A/B
+```
+
+**Contrast with L-AGENT-006:** L-AGENT-006 describes module-boundary spec setup for complex multi-step builds. This pattern is simpler: when the task is a cleanup pass across independent domains, no dependency DAG is needed — just verify zero file overlap and launch.
+
+**Evidence:** 3-stream parallel BUILD (code/tests/docs) for 2026-06-12 audit. Zero conflicts. All streams completed in <6 minutes wall-clock vs. estimated 18+ minutes sequential.
+
+---
+
+### A-AGENT-008 · 2026-06-12 · U · Minor Rework
+**Subagent audit scoped to subdirectories misses root-level `src/*.py` files**
+
+When delegating a code audit (FR comments, magic constants, etc.) to a subagent with scope `engine/, entities/, graphics/, map/, ui/`, root-level source files (`src/config.py`, `src/main.py`) are silently skipped. These files can contain the same issues the audit targets.
+
+**Anti-pattern:**
+```bash
+# ❌ Scoped to subdirectories only — config.py invisible
+rg "pattern" src/engine/ src/entities/ src/graphics/ src/map/ src/ui/
+
+# ✅ Include root-level files explicitly
+rg "pattern" src/ --include="*.py"  # covers src/*.py AND all subdirs
+```
+
+**Fix:** Any audit prompt targeting `src/` sub-domains MUST also include `src/*.py` (or use `src/` as the root with no subdirectory filtering). Enumerate this explicitly in the subagent prompt.
+
+**Evidence:** 4 FR-language comments in `src/config.py` missed by the code-audit subagent in the 2026-06-12 BUILD. Discovered during verification. Corrected manually.
+
+---
+
+### A-SPEC-008 · 2026-06-12 · U · Minor Rework
+**Adding a constant for a pattern identified in an audit report without verifying the pattern exists in source**
+
+An audit report identified a pattern `sprite.rect.bottom - 2` and a constant `ENTITY_FOOT_Y_OFFSET` was added to `player_constants.py` for it. During refactor-clean, the literal `sprite.rect.bottom - 2` was found to not exist anywhere in source. The constant was dead on arrival.
+
+**Anti-pattern:** Treating an audit report's pattern description as a confirmed source literal. Audit reports describe intent or architecture patterns — they do NOT guarantee the exact expression appears in code.
+
+**Fix — Pre-edit investigation gate for new constants:**
+```bash
+# ✅ Before adding a constant, verify the literal EXISTS in the file:
+grep -n "rect.bottom - 2" src/entities/player.py
+# If 0 results → do NOT add the constant. Document in BUILD Addendum instead.
+```
+
+**Rule:** The Pre-Edit Investigation Gate (coding-standards.md) applies to constant extraction too. A constant that replaces nothing is dead code on arrival.
+
+**Evidence:** `ENTITY_FOOT_Y_OFFSET` added to `player_constants.py` — removed during refactor-clean. Zero usages. Root cause: audit report listed the pattern; source investigation was skipped.
+
+---
+
+*Last updated: 2026-06-12 — L-AGENT-008 (parallel 3-stream BUILD), A-AGENT-008 (root-level src files in audit), A-SPEC-008 (speculative constant for non-existent pattern).*
