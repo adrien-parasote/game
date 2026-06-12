@@ -1,6 +1,7 @@
 # ADR-013 — Stair Climbing Positioning and Alignment
-> Status: Proposed
-> Date: 2026-06-11
+
+**Date:** 2026-06-11
+**Status:** Proposed
 
 ---
 

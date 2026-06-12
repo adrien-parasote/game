@@ -1,7 +1,6 @@
 # ADR-009: Side-by-Side Workspace for GitHub Wiki and AI Specs
 
-## Status
-Accepted
+## Status ✅ Accepted — Migration deferred  
 
 ## Context
 Our current repository `game` contains both the source code/AI specifications and the Game Design Documentation (lore, rules, user-facing docs). 

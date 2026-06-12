@@ -1,6 +1,7 @@
 # ADR-011 — Spatial Grid Indexing and Rect Pooling
-> Status: Accepted
-> Date: 2026-06-11
+
+**Date:** 2026-06-11
+**Status:** ✅ Accepted
 
 ---
 
