@@ -3,7 +3,8 @@
 > Document Type: Implementation
 
 > **Document Type:** Implementation
-> **Source Files:** `src/entities/interactive.py`, `src/entities/pickup.py`, `src/entities/emote.py`, `src/entities/emote_sprite.py`, `src/engine/interaction.py`
+> **Source Files:** `src/entities/interactive.py`, `src/entities/pickup.py`, `src/entities/emote.py`, `src/entities/emote_sprite.py`, `src/engine/interaction.py`, `src/entities/player.py`
+> **Constants Files:** `src/entities/player_constants.py` (NEW commit 06ee7f4), `src/entities/emote_constants.py` (NEW commit 06ee7f4), `src/entities/interactive_constants.py`
 
 This document consolidates all engine-level interactive entities, ground items, and emote visual indicators into a single, high-fidelity implementation specification.
 
@@ -114,7 +115,7 @@ Asset: `assets/images/sprites/04-emotes.png` (5 columns × 8 rows).
 ### 6.2 Lifespan & Path Interpolation
 - **Duration**: 0.6 seconds.
 - **Follow Logic**: Pinned to the parent's horizontal coordinate (`self._entity.rect.centerx`).
-- **Rise Offset**: Interpolates upward linearly by 15px over its 0.6s lifetime.
+- **Rise Offset**: Interpolates upward linearly by `EMOTE_RISE_PX` (15px) over its 0.6s lifetime. See [`emote_constants.py`](../../src/entities/emote_constants.py#L7).
 - **Cooldown**: Proximity emotes (`interact`) have a **1.5s rate-limit** to prevent spam. Failed (`question`) and full-inventory (`frustration`) emotes have no cooldown for instant feedback.
 - **Single-Emote Invariant**: Triggering a new emote immediately empties the parent's emote group.
 
@@ -208,6 +209,25 @@ Asset: `assets/images/sprites/04-emotes.png` (5 columns × 8 rows).
 - **Ground pickups logic**: [pickup.py L1](../../src/entities/pickup.py#L1)
 - **Emote manager & sprites**: [emote.py L1](../../src/entities/emote.py#L1)
 - **Walkable override set updates**: [game.py L119](../../src/engine/game.py#L119)
+- **Player entity constants**: [player_constants.py L1](../../src/entities/player_constants.py#L1) — spritesheet layout, animation timing, footstep frames, starting stats
+- **Emote animation constants**: [emote_constants.py L1](../../src/entities/emote_constants.py#L1) — `EMOTE_RISE_PX = 15`
+
+### 10.1 Player Constants Reference (`src/entities/player_constants.py`)
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `PLAYER_SPRITESHEET_COLS` | `4` | Number of columns in the player spritesheet |
+| `PLAYER_SPRITESHEET_ROWS` | `4` | Number of rows in the player spritesheet |
+| `PLAYER_ANIM_FRAME_DURATION` | `0.15` | Seconds per animation frame |
+| `PLAYER_FRAMES_PER_ROW` | `4` | Frames per direction row |
+| `PLAYER_ROW_OFFSETS` | `{"down": 0, "left": 4, "right": 8, "up": 12}` | Row-index start per walking direction (4 frames each row) |
+| `PLAYER_FOOTSTEP_FRAMES` | `(1, 3)` | Animation frame indices that trigger footstep sound |
+| `PLAYER_FOOTSTEP_VOLUME` | `0.15` | Footstep audio volume |
+| `PLAYER_INITIAL_LEVEL` | `1` | Starting player level |
+| `PLAYER_INITIAL_HP` | `100` | Starting player HP |
+| `PLAYER_INITIAL_GOLD` | `0` | Starting player gold |
+
+> **PLAYER_ROW_OFFSETS direction mapping:** The spritesheet is 4×16 frames total (4 cols × 4 rows). Each direction occupies one 4-frame row. Row offsets are frame-absolute indices: `down=0` (frames 0–3), `left=4` (frames 4–7), `right=8` (frames 8–11), `up=12` (frames 12–15). Used in `player.py` to index animation rows from the spritesheet.
 
 ## Assumptions
 

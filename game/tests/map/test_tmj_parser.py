@@ -3,6 +3,8 @@
 Covers: missing file raises FileNotFoundError, invalid JSON format raises ValueError,
         map properties parsed correctly, layer depth/order property, path resolution.
 """
+# TC traceability: engine-core.md §TMJ (TmjParser)
+# TC IDs to be assigned when spec test case table is added.
 
 import json
 import os

@@ -2,6 +2,8 @@
 
 Covers: lifecycle, animation frame selection, rise-offset movement, auto-kill.
 """
+# TC traceability: entities-system.md §6.2 (EmoteSprite)
+# TC IDs to be assigned when spec test case table is added.
 
 import pygame
 

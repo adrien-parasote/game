@@ -3,6 +3,8 @@
 Covers: cooldown gate, interactive emote triggered/skipped, pickup emote,
         NPC emote triggered/skipped, trigger_only exclusion, emote cooldown reset.
 """
+# TC traceability: entities-system.md §InteractionEmoteMixin
+# TC IDs to be assigned when spec test case table is added.
 
 from unittest.mock import MagicMock
 

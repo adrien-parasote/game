@@ -2,6 +2,8 @@
 
 Covers: initialization, animation state, update cycle, direction/frame mapping.
 """
+# TC traceability: entities-system.md §10 (Player module)
+# TC IDs to be assigned when spec test case table is added.
 
 import os
 from unittest.mock import MagicMock, patch
@@ -164,7 +166,7 @@ class TestPlayerFootstep:
         p._update_animation(dt=0.2)
 
     def test_footstep_fallback_when_material_sfx_fails(self):
-        """Ligne 119 : quand play_sfx(matiere) échoue, fallback sur '04-footstep'."""
+        """Line 119: when play_sfx(material) fails, fall back to '04-footstep'."""
         p = _make_player()
         p.is_moving = True
         p._was_moving = True
@@ -176,15 +178,15 @@ class TestPlayerFootstep:
         mock_game.map_manager.get_terrain_material_at.return_value = "stone"
         mock_game.walkable_override_entities = []
         p.game = mock_game
-        # dt=0.016 → 0.99 + 6.67*0.016 ≈ 1.097 → franchit le frame 1 → play_sfx("stone") → False → fallback
+        # dt=0.016 → 0.99 + 6.67*0.016 ≈ 1.097 → crosses frame 1 → play_sfx("stone") → False → fallback
         p._update_animation(dt=0.016)
-        # Si le frame a été franchi, play_sfx est appelé au moins une fois
+        # If the frame boundary was crossed, play_sfx is called at least once
         assert audio.play_sfx.call_count >= 1
 
 
 class TestPlayerResolveFootstepMaterial:
     def test_entity_material_takes_priority(self):
-        """Ligne 137 (entity.rect truthy) : entity_material non vide → retourné en priorité."""
+        """Line 137 (entity.rect truthy): entity_material non-empty → returned with priority."""
         p = _make_player()
         mock_entity = MagicMock()
         mock_entity.rect = pygame.Rect(90, 90, 40, 40)
@@ -198,10 +200,10 @@ class TestPlayerResolveFootstepMaterial:
         assert result == "wood"
 
     def test_entity_rect_none_is_skipped(self):
-        """Ligne 137 : entity.rect falsy → continue (not entity.rect branch)."""
+        """Line 137: entity.rect falsy → continue (not entity.rect branch)."""
         p = _make_player()
         mock_entity = MagicMock()
-        mock_entity.rect = None  # falsy → continue, ligne 137 couverte
+        mock_entity.rect = None  # falsy → continue, line 137 covered
         mock_entity.material = "wood"
         mock_game = MagicMock()
         mock_game.walkable_override_entities = [mock_entity]
@@ -209,11 +211,11 @@ class TestPlayerResolveFootstepMaterial:
         p.game = mock_game
         p.pos = pygame.math.Vector2(100, 100)
         result = p._resolve_footstep_material()
-        # rect=None → entité skippée → fallback map_manager
+        # rect=None → entity skipped → fallback to map_manager
         assert result == "grass"
 
     def test_map_manager_material_fallback(self):
-        """Sans override entity, on utilise map_manager."""
+        """Without override entity, map_manager is used as fallback."""
         p = _make_player()
         mock_game = MagicMock()
         mock_game.walkable_override_entities = []

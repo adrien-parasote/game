@@ -3,17 +3,13 @@
 > Document Type: Implementation
 
 **Covers:** F-QUAL-01 (French→EN translation), F-QUAL-02 (magic color constants), F-QUAL-03 (existing constant usage bugs)
-**Spec version:** 1.0 | **Last updated:** 2026-05-27
+**Spec version:** 1.1 | **Last updated:** 2026-06-12
 
 ---
 
 ## Assumptions
 
-| Assumption | Risk | Handling | Source Type |
-|---|---|---|---|
-| A | Low | H | gcloud test |
-| B | Low | H | gcloud test |
-| C | Low | H | gcloud test |
+N/A — This is a zero-logic-change refactor. All items verified during BUILD (see BUILD Addendum below). No runtime assumptions remain.
 
 ## Overview
 
@@ -29,21 +25,11 @@ This is a **zero-logic-change** refactor: no behavior changes, no new features, 
 
 ## Test Cases
 
-| ID | Description | Assertion |
-|---|---|---|
-| UT-001 | TBD | TBD |
-| IT-001 | TBD | TBD |
-| TC-001 | TBD | TBD |
+> See **Test Case Specifications** section below for IT-001..TC-007.
 
 ## Anti-patterns
 
-| Anti-pattern | Why it's bad | What to do instead |
-|---|---|---|
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
-| TBD | TBD | TBD |
+> See **Anti-Patterns** section below for AP-01..AP-08.
 
 ## Constraints
 
@@ -87,14 +73,16 @@ All files modified or created by this spec:
 ```
 src/
   engine/
-    engine_constants.py          [NEW] — placeholder colors
+    engine_constants.py          [NEW] — placeholder colors + spritesheet fallback + map constants
     asset_manager.py             [MODIFY] — use COLOR_PLACEHOLDER_MAGENTA
     save_manager.py              [MODIFY] — translate 3 FR occurrences
     game.py                      [MODIFY] — use COLOR_BLACK for fade surface
   ui/
     ui_colors.py                 [MODIFY] — add COLOR_BLACK, COLOR_WHITE
-    speech_bubble_constants.py   [MODIFY] — add BUBBLE_CENTER_FILL, BUBBLE_NAME_TEXT_COLOR
+    speech_bubble_constants.py   [MODIFY] — add BUBBLE_CENTER_FILL, BUBBLE_NAME_TEXT_COLOR + 6 layout constants
     speech_bubble.py             [MODIFY] — use 3 new constants
+    dialogue_constants.py        [MODIFY] — add 9 new layout/color constants (see BUILD Addendum §C)
+    inventory_constants.py       [MODIFY] — add 4 new layout constants (see BUILD Addendum §D)
     save_menu.py                 [MODIFY] — use SAVE_TITLE_COLOR at line 224; translate "Retour"→"Back"
     save_slot.py                 [MODIFY] — use COLOR_BLACK
     pause_screen_constants.py    [MODIFY] — translate _BUTTON_DEFAULTS
@@ -104,6 +92,8 @@ src/
     title_screen.py              [MODIFY] — use COLOR_BLACK
     title_screen_lights.py       [MODIFY] — use COLOR_BLACK
   entities/
+    player_constants.py          [NEW] — player spritesheet layout, animation, audio, starting stats
+    emote_constants.py           [NEW] — emote animation constants
     interactive_constants.py     [MODIFY] — add PARTICLE_DEFAULT_COLOR
     interactive_particles.py     [MODIFY] — use PARTICLE_DEFAULT_COLOR
     interactive.py               [MODIFY] — translate French comment at line 383
@@ -112,6 +102,7 @@ src/
     pickup.py                    [MODIFY] — use COLOR_PLACEHOLDER_MAGENTA
   graphics/
     spritesheet.py               [MODIFY] — use COLOR_PLACEHOLDER_BLUE
+  config.py                      [MODIFY] — translate 4 FR comments
 ```
 
 ---
@@ -204,14 +195,27 @@ label = self._i18n.get("menu.back", "Back")
 
 ```python
 """
-Engine-level constants — placeholder and debug colors.
-These colors appear in fallback/error rendering paths (never in production UI).
+Engine-level constants — placeholder and fallback colors.
+These colors appear in error/missing-asset rendering paths only (never in production UI).
+Spec: game/docs/specs/code-quality-constants-i18n.md § F-QUAL-02-A
 """
 
-# Placeholder colors for missing or fallback assets (debug-visible, non-production)
+# Fallback colors for missing or fallback assets (debug-visible, non-production)
 COLOR_PLACEHOLDER_MAGENTA: tuple[int, int, int] = (255, 0, 255)
 COLOR_PLACEHOLDER_BLUE: tuple[int, int, int] = (0, 0, 255)
+
+# SpriteSheet fallback dimensions (used when image load fails)
+SPRITESHEET_FALLBACK_SIZE: tuple[int, int] = (32, 32)
+SPRITESHEET_FALLBACK_FRAME_COUNT: int = 16
+
+# Map layer depth threshold for grass-eligible tiles
+GRASS_MAX_DEPTH: int = 1
+
+# Tiled project file path (relative to workspace root)
+TILED_PROJECT_PATH: str = "assets/tiled/game.tiled-project"
 ```
+
+> **Note (BUILD Addendum):** The original spec defined only `COLOR_PLACEHOLDER_MAGENTA` and `COLOR_PLACEHOLDER_BLUE`. During implementation, 4 additional engine-level constants were extracted here from previously inline values in `spritesheet.py`, `map/manager.py`, and `map/tmj_parser.py`. Recorded per anti-divergence rule.
 
 #### F-QUAL-02-B: `src/ui/ui_colors.py` additions
 
@@ -569,6 +573,7 @@ Recorded here per the Rule of Divergence.
 | `src/ui/title_screen.py` line 74 | `"Charger une partie"` | `"Load Game"` |
 | `src/ui/title_screen.py` line 263 | docstring `"ESC ou clic sur le bouton retour → MAIN_MENU."` | `"ESC or click on back button → MAIN_MENU."` |
 | `src/ui/pause_screen.py` line 260 | `"Partie sauvegardée !"` | `"Game saved!"` |
+| `src/config.py` | 4 French comments in Settings class | Translated to English inline |
 
 ### Extra Constant Adoption Found
 
@@ -582,4 +587,84 @@ Recorded here per the Rule of Divergence.
 | File | String | Rationale |
 |------|--------|-----------|
 | `src/ui/title_screen.py` line 218 | `"L'Éveil de l'Héritier"` | Game's proper title — stays French by design. Marked with inline comment. |
+
+---
+
+### New Constants Files (Commit 06ee7f4)
+
+Two new entity constants files were extracted from inline values in `player.py` and `emote_sprite.py`:
+
+#### §A — `src/entities/player_constants.py` [NEW]
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `PLAYER_SPRITESHEET_COLS` | `4` | Number of columns in the player spritesheet |
+| `PLAYER_SPRITESHEET_ROWS` | `4` | Number of rows in the player spritesheet |
+| `PLAYER_ANIM_FRAME_DURATION` | `0.15` | Seconds per animation frame |
+| `PLAYER_FRAMES_PER_ROW` | `4` | Frames per direction row |
+| `PLAYER_ROW_OFFSETS` | `{"down": 0, "left": 4, "right": 8, "up": 12}` | Row-index start per direction in the spritesheet (4 frames each) |
+| `PLAYER_FOOTSTEP_FRAMES` | `(1, 3)` | Animation frame indices that trigger footstep sound |
+| `PLAYER_FOOTSTEP_VOLUME` | `0.15` | Footstep audio volume |
+| `PLAYER_INITIAL_LEVEL` | `1` | Starting player level |
+| `PLAYER_INITIAL_HP` | `100` | Starting player HP |
+| `PLAYER_INITIAL_GOLD` | `0` | Starting player gold |
+
+#### §B — `src/entities/emote_constants.py` [NEW]
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `EMOTE_RISE_PX` | `15` | Vertical rise distance in pixels during emote display animation (matches entities-system.md §6.2) |
+
+#### §C — Extra constants in `src/ui/dialogue_constants.py`
+
+The following 9 constants were added to `dialogue_constants.py` in commit 06ee7f4 (extracted from inline values in `dialogue.py` and `speech_bubble.py`):
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `DIALOGUE_SHADOW_COLOR` | `(180, 170, 150)` | Light shadow on parchment background |
+| `DIALOGUE_TEXT_COLOR` | `(60, 40, 30)` | Dark brown, high-contrast text color |
+| `DIALOGUE_SCALE` | `0.5` | Scale factor for dialogue panel relative to screen |
+| `DIALOGUE_FONT_SCALE` | `1.5` | Multiplier applied to narrative/noble font sizes |
+| `DIALOGUE_BOTTOM_MARGIN` | `40` | Margin from bottom of available height (px) |
+| `DIALOGUE_LINE_SPACING` | `1.2` | Line spacing multiplier |
+| `DIALOGUE_BOX_BOTTOM_INSET` | `20` | Inset from WINDOW_HEIGHT for box bottom edge (px) |
+| `DIALOGUE_SHADOW_OFFSET` | `1` | Text shadow offset in pixels |
+| `DIALOGUE_ARROW_X_INSET` | `10` | Inset for continue arrow from right margin (px) |
+
+#### §D — Extra constants in `src/ui/inventory_constants.py`
+
+The following 4 constants were added to `inventory_constants.py` in commit 06ee7f4 (extracted from inline values in `inventory.py`):
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `INV_DRAG_HIGHLIGHT_BORDER` | `3` | Border width for drag-selected slot (px) |
+| `INV_DRAG_BORDER_RADIUS_BASE` | `12` | Base border radius for drag highlight (before scale) |
+| `INV_STAT_NAME_OFFSET_Y` | `16` | Item name label Y-offset in the stats panel (px) |
+| `INV_PLACEHOLDER_SIZE` | `32` | Fallback surface size for missing assets (px) |
+
+#### §E — Extra constants in `src/ui/speech_bubble_constants.py`
+
+Beyond the 2 colors from the original spec (F-QUAL-02-C), 6 additional layout constants were extracted in commit 06ee7f4:
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `BUBBLE_MAX_WIDTH_PX` | `352` | Max bubble width in pixels |
+| `BUBBLE_ARROW_INSET` | `4` | Inset for arrow within bubble tail (px) |
+| `BUBBLE_NAME_PLATE_PADDING_X` | `16` | Horizontal padding for speaker name plate (px) |
+| `BUBBLE_NAME_PLATE_H` | `32` | Height of speaker name plate (px) |
+| `BUBBLE_NAME_PLATE_EDGE_W` | `16` | Width of edge slice for 9-slice name plate |
+| `BUBBLE_LINES_PER_PAGE` | `4` | Max lines of text shown per bubble page |
+| `BUBBLE_NAME_PLATE_MIN_W` | `96` | Minimum width of name plate |
+| `BUBBLE_NAME_PLATE_MIN_H` | `64` | Minimum height of name plate tile |
+
+#### §F — Extra constants in `src/engine/engine_constants.py`
+
+Beyond the 2 placeholder colors from the original spec (F-QUAL-02-A), 4 additional engine-level constants were extracted in commit 06ee7f4:
+
+| Constant | Value | Purpose |
+|----------|-------|---------|
+| `SPRITESHEET_FALLBACK_SIZE` | `(32, 32)` | Fallback surface dimensions when image load fails |
+| `SPRITESHEET_FALLBACK_FRAME_COUNT` | `16` | Fallback frame count when image load fails |
+| `GRASS_MAX_DEPTH` | `1` | Map layer depth threshold for grass-eligible tiles |
+| `TILED_PROJECT_PATH` | `"assets/tiled/game.tiled-project"` | Tiled project file path (relative to workspace root) |
 

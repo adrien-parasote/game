@@ -2,7 +2,7 @@
 
 
 > **Document Type:** Implementation
-> **Source:** `src/engine/game.py`, `src/engine/game_state_manager.py`, `src/ui/title_screen.py`, `src/ui/pause_screen.py`, `src/ui/hud.py`, `src/config.py`
+> **Source:** `src/engine/game.py`, `src/engine/game_state_manager.py`, `src/ui/title_screen.py`, `src/ui/pause_screen.py`, `src/ui/hud.py`, `src/config.py`, `src/engine/engine_constants.py`
 
 This document specifies the core RPG Tile Engine lifecycle, GameStateManager orchestrations, rendering pipelines, grid-based movement systems, spatial interaction checks, Title Screen breathing lights animations, Pause Screen overlays, and UI priority guidelines.
 
@@ -18,7 +18,20 @@ This document specifies the core RPG Tile Engine lifecycle, GameStateManager orc
 | **Entity** | Sprites, Sorting, Movement | `BaseEntity`, `Player`, `CameraGroup`, `Teleport`, `EmoteBubble` |
 | **Logic** | Gating, Proximity, Collision | `InteractionManager`, `CollisionChecker`, `spatial_utils` |
 
----
+### 1.1 Engine Constants Inventory (`src/engine/engine_constants.py`)
+
+This file is a **leaf module** (zero imports from `src/`). It provides:
+
+| Constant | Value | Consumers |
+|----------|-------|-----------|
+| `COLOR_PLACEHOLDER_MAGENTA` | `(255, 0, 255)` | `asset_manager.py`, `teleport.py`, `pickup.py` |
+| `COLOR_PLACEHOLDER_BLUE` | `(0, 0, 255)` | `spritesheet.py` |
+| `SPRITESHEET_FALLBACK_SIZE` | `(32, 32)` | `spritesheet.py` — fallback surface dimensions when image load fails |
+| `SPRITESHEET_FALLBACK_FRAME_COUNT` | `16` | `spritesheet.py` — fallback frame count when image load fails |
+| `GRASS_MAX_DEPTH` | `1` | `map/manager.py` — layer depth threshold for grass-eligible tiles |
+| `TILED_PROJECT_PATH` | `"assets/tiled/game.tiled-project"` | `map/tmj_parser.py` — Tiled project file path |
+
+> See also: [code-quality-constants-i18n.md §F-QUAL-02-A](./code-quality-constants-i18n.md#L203) — original spec + BUILD Addendum §F for anti-divergence record.
 
 ## 2. GameStateManager & Screen State Machine
 

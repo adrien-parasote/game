@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Any
 
 import pygame
+from src.config import Settings
+from src.engine.asset_manager import AssetManager
 from src.engine.engine_constants import TILED_PROJECT_PATH
 from src.map.project_schema import TiledProject
 
@@ -158,8 +160,6 @@ class TmjParser:
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"Tileset image not found: {img_path}")
 
-        from src.engine.asset_manager import AssetManager
-
         sheet = AssetManager().get_image(img_path)
 
         tileset_props = self._parse_tileset_properties(root)
@@ -301,8 +301,6 @@ class TmjParser:
 
         occluded = None
         if props["depth"] > 0:
-            from src.config import Settings
-
             occluded = surface.copy()
             occluded.set_alpha(Settings.OCCLUSION_ALPHA)
 

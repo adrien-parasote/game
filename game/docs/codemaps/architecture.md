@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-27 | Last doc-update: 2026-06-11 (stair movement & occlusion cache) | Files scanned: 73 | Token estimate: ~1400 -->
+<!-- Generated: 2026-05-27 | Last doc-update: 2026-06-12 (player_constants, emote_constants, extended constants layer) | Files scanned: 75 | Token estimate: ~1450 -->
 
 # Game Engine Architecture
 
@@ -34,7 +34,11 @@
 ## Key Subsystems
 
 ### UI & HUD
-- **Constants**: All UI modules have `_constants.py`. Shared colors in `src/ui/ui_colors.py`. Protocols: `chest_protocol.py`, `inventory_protocol.py`.
+- **Constants pattern**: Every module has a `*_constants.py` sibling (imported by its module, never cross-imported). Shared colors only in `src/ui/ui_colors.py`. Protocols: `chest_protocol.py`, `inventory_protocol.py`.
+- `dialogue_constants.py`: margins, Y offsets, colors, scale factors (14 constants)
+- `speech_bubble_constants.py`: tile dict, layout dims, name-plate geometry (8 constants + `TILES` dict)
+- `inventory_constants.py`: asset paths, grid coords, drag/animation constants (26 constants)
+- `chest_constants.py`: asset paths, panel layout, arrow zones, draw constants (imports from `ui_colors`)
 - **InventoryUI** (`src/ui/inventory.py`, 404L) + `inventory_draw.py` (247L): Grid + equipment slots, D&D state machine.
 - **ChestUI** (`src/ui/chest.py`, 343L) + `chest_layout.py`, `chest_draw.py` (280L), `chest_transfer.py`. Paged scrolling (18-slot pages).
 - **TitleScreen** (`src/ui/title_screen.py`, 431L): MAIN_MENU/LOAD_MENU/OPTIONS. 33 fire halos + 25 bioluminescent mushrooms. Returns `GameEvent`.
@@ -54,6 +58,8 @@
 - **BaseEntity** (`src/entities/base.py`): Grid movement, `start_move()` interception, `_vertical_move`, `current_stair_offset`, `stair_start_offset`, `stair_target_offset`, `stair_move_distance` (stair interpolation fields), `_apply_stair_interception()`, `update_stair_offset()`.
 - **PickupItem** (`src/entities/pickup.py`, 45L): Static collectible, looted state.
 - **EmoteManager** (`src/entities/emote.py`, 62L): `!` / `?` / `frustration` emote sprites.
+- **player_constants.py** (`src/entities/player_constants.py`): 9 constants — spritesheet grid (`PLAYER_SPRITESHEET_COLS/ROWS`), animation (`PLAYER_ANIM_FRAME_DURATION`, `PLAYER_FRAMES_PER_ROW`, `PLAYER_ROW_OFFSETS`), audio (`PLAYER_FOOTSTEP_FRAMES`, `PLAYER_FOOTSTEP_VOLUME`), starting stats (`PLAYER_INITIAL_LEVEL/HP/GOLD`).
+- **emote_constants.py** (`src/entities/emote_constants.py`): `EMOTE_RISE_PX = 15` — vertical rise in px during emote display animation.
 
 ### Engine Support
 - **LightingManager** (`src/engine/lighting.py`, 300L): Night overlay, additive torch masks, slanted window beam shafts.
@@ -61,6 +67,7 @@
 - **AudioManager** (`src/engine/audio.py`, 248L): BGM/SFX (32 channels), mute toggle, spatial ambient.
 - **LootTable** (`src/engine/loot_table.py`, 130L): JSON-driven chest contents, stack splitting.
 - **WorldState** (`src/engine/world_state.py`, 22L): `{map_name}_{tiled_id}` keyed dict for cross-map persistence.
+- **engine_constants.py** (`src/engine/engine_constants.py`): `COLOR_PLACEHOLDER_MAGENTA/BLUE` (debug fallback colors), `SPRITESHEET_FALLBACK_SIZE` (32×32), `SPRITESHEET_FALLBACK_FRAME_COUNT` (16), `GRASS_MAX_DEPTH` (1), `TILED_PROJECT_PATH`. Imported by `spritesheet.py` and `map/manager.py`.
 
 ## Documentation & Tooling
 ```

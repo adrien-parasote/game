@@ -2,7 +2,7 @@
 
 > Document Type: Strategic  
 > **Evolving** — nothing is set in stone. Full vision: [game_vision.md](./game_vision.md#gameplay-loop)  
-> Last Update: 2026-05-15
+> Last Update: 2026-06-12
 
 ---
 

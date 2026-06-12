@@ -1,5 +1,8 @@
 # Strategic Blueprint: Domain-Driven Monorepo Migration
 
+> **Status: COMPLETED (2026-03)** — Migration fully executed. Current structure (`/game`, `/tools`, `/assets`, `/scripts`) is live. This document is historical reference only.
+> See `ADR-0001` for the definitive architecture decision.
+
 ## 1. Problem Statement
 The current repository structure mixes `docs`, `src`, `test`, `tools`, and `scripts` at the root level. This makes the project architecture unreadable and fluid navigation impossible. Most importantly, game code and tooling code are fundamentally distinct domains that require their own separate documentation, source code, and tests, but they are currently entangled.
 

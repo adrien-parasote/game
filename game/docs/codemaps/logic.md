@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-27 | Last doc-update: 2026-06-11 (stair movement & occlusion cache) | Files scanned: 73 | Token estimate: ~1100 -->
+<!-- Generated: 2026-05-27 | Last doc-update: 2026-06-12 (constants layer audit — no logic changes) | Files scanned: 75 | Token estimate: ~1100 -->
 
 # Engine Logic Flow
 

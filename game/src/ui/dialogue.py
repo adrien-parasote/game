@@ -102,6 +102,9 @@ class DialogueManager:
     def _paginate(self, text: str):
         """Split text into pages based on font metrics and box size."""
         if not self.font_message or not self.dialogue_box:
+            logging.warning(
+                "_paginate: font_message or dialogue_box not loaded — falling back to raw text."
+            )
             self._pages = [[text]] if text else []
             return
 

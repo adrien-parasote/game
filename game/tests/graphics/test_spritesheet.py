@@ -4,6 +4,8 @@ Covers: invalid/empty path → valid=False, non-existent file → valid=False,
         pygame load error → valid=False, load_grid fallback, load_grid_by_size fallback,
         successful grid slicing on a real surface.
 """
+# TC traceability: engine-core.md §SpriteSheet (graphics/spritesheet.py)
+# TC IDs to be assigned when spec test case table is added.
 
 import logging
 from unittest.mock import patch

@@ -120,8 +120,9 @@ def test_inventory_hover():
     # grid_start is around (326, 218) scaled? No, I'll check real values.
     # I'll just check if it detects SOMETHING when calling update_hover
     ui.update_hover((326, 218))
-    # Even if it is None (if scaling is different), calling it increases coverage.
-    assert hasattr(ui, "hovered_slot")
+    # update_hover either sets a slot or resets to None — both are valid outcomes.
+    # What matters is that hovered_slot is set to the correct type.
+    assert ui.hovered_slot is None or isinstance(ui.hovered_slot, tuple)
 
 
 def test_inventory_tabs():
@@ -138,8 +139,8 @@ def test_inventory_tabs():
 
     ui.is_open = True
     ui.handle_input(event)
-    # Even if it doesn't change (depends on exact Rect), it exercises the branch.
-    assert hasattr(ui, "active_tab")
+    # active_tab is always an int (0 to INV_TAB_COUNT-1)
+    assert isinstance(ui.active_tab, int)
 
 
 def test_dialogue_draw():
@@ -171,7 +172,8 @@ def test_inventory_full_render():
 
     screen = pygame.Surface((800, 600))
     ui.draw(screen)
-    assert True  # If it didn't crash, the draw method passed
+    # draw() completed without raising — verify screen is still a valid Surface
+    assert screen.get_size() == (800, 600)
 
 
 def test_inventory_info_zone():
@@ -188,7 +190,8 @@ def test_inventory_info_zone():
 
     screen = pygame.Surface((800, 600))
     ui._draw_info_zone(screen)
-    assert True
+    # _draw_info_zone completed without raising — verify screen is still valid
+    assert screen.get_size() == (800, 600)
 
 
 def test_inventory_character_preview_keys():
