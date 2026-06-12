@@ -106,9 +106,13 @@ class BaseEntity(pygame.sprite.Sprite):
             self.direction = pygame.math.Vector2(0, 0)
             return False
 
-        # stair_half=True → upper half of step → diagonal movement needed.
-        # stair_half=False/absent → lower half → stay flat (entry/exit).
-        should_move_diagonally = bool(vm.get("stair_half", False))
+        # Determine if the character is ascending the stairs
+        is_going_up = (stair_dir == "right" and dx == 1) or (stair_dir == "left" and dx == -1)
+        stair_half = bool(vm.get("stair_half", False))
+
+        # Ascending: diagonal move happens on the 'stair_half=True' tile
+        # Descending: diagonal move happens on the 'stair_half=False' tile
+        should_move_diagonally = stair_half if is_going_up else (not stair_half)
 
         target_dir = Settings.VERTICAL_MOVE_MAP[map_key] if should_move_diagonally else (dx, 0)
 
