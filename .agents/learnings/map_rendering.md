@@ -707,3 +707,10 @@ def get_vertical_move_props(self, tile_x: int, tile_y: int) -> dict | None:
 ---
 
 *Last updated: 2026-06-11 — L-MAP-012, A-MAP-005, L-MAP-013 (tmj_parser class-default resolution gap).*
+
+### A-MAP-007: Rigid Directional Mapping (Asymmetric Stairs)
+- **Date:** 2026-06-12
+- **Source:** game — manager.py / base.py (stair movement)
+- **Evidence:** Fixed a bug where descending stairs caused a "zigzag" because the `stair_half=True` property rigidly triggered a diagonal movement regardless of player travel direction (Commit 6379196).
+- **Anti-pattern:** Assuming a static tile property (`stair_half=True` or "diagonal_trigger=True") dictates physical traversal movement uniformly in all directions. When a player ascends, they hit the diagonal trigger on the second half of the stairs. When they descend, they hit the same tile FIRST, but need to move flat, and diagonal on the other tile.
+- **Fix:** When mapping physical movement properties to tiled structures, the trigger condition must be evaluated bidirectionally: `is_going_up = (dir == 'right' and dx == 1) or (dir == 'left' and dx == -1)`. Then toggle the logic: `should_move_diagonally = property if is_going_up else (not property)`. Test both ascent and descent individually.
