@@ -11,7 +11,7 @@ assertions:
     scope: code
     proof:
       type: test_exit_code
-      reference: "game/tests/integration/test_stairs_integration.py"
+      reference: "tests/integration/test_stairs_integration.py"
       expected_exit: 0
     files:
       - "game/src/entities/base.py"
@@ -23,7 +23,7 @@ assertions:
     scope: code
     proof:
       type: test_exit_code
-      reference: "game/tests/entities/test_stair_movement.py"
+      reference: "tests/entities/test_stair_movement.py"
       expected_exit: 0
     files:
       - "game/src/entities/base.py"

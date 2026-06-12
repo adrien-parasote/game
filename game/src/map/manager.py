@@ -324,21 +324,13 @@ class MapManager:
             props = tile.properties or {}
             stair_dir = props.get("stair_direction", "")
             if stair_dir:  # Non-empty string → explicit stair tile
-                local_tile_id = props.get("tile_id", 0)
-                if "visual_y_offset" in props:
-                    visual_y_offset = int(props["visual_y_offset"])
-                else:
-                    if stair_dir == "right":
-                        visual_y_offset = -16 if (local_tile_id % 6 == 0) else 0
-                    else:  # left
-                        visual_y_offset = 0 if (local_tile_id % 6 == 2 or local_tile_id == 1) else -16
                 return {
                     "stair_direction": stair_dir,
                     "movement_type": props.get("movement_type", "stair"),
                     "stair_half": bool(props.get("stair_half", False)),
-                    "visual_y_offset": int(props.get("visual_y_offset", 0)),
+                    "visual_y_offset": visual_y_offset,
                 }
-        return None  # "" or absent → neutral tile, not a stair
+        return None  # absent → neutral tile, not a stair
 
     def get_visible_chunks(
         self, viewport_rect: pygame.Rect, min_depth: int | None = None

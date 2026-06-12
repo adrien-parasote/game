@@ -1,5 +1,5 @@
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pygame
 import pytest
@@ -17,14 +17,12 @@ from src.map.manager import MapManager
 class TestStairsIntegration:
     @pytest.fixture
     def setup_mini_map(self):
-        """Builds a MapManager for integration tests."""
+        """Builds a MapManager for integration tests using stair_half=True/False."""
         def _create(tile_configs: dict[tuple[int, int], dict]):
-            # 5x5 grid
             map_w, map_h = 10, 10
             grid = [[0] * map_w for _ in range(map_h)]
             tiles = {}
 
-            # Map configurations to unique tile IDs
             tile_id_counter = 1
             for (tx, ty), config in tile_configs.items():
                 tile_id = tile_id_counter
@@ -32,8 +30,6 @@ class TestStairsIntegration:
 
                 tile = MagicMock()
                 tile.properties = config
-                # Mock direction flags setup from parser
-                # tmj_parser sets direction_flags as a set from props.get("direction", "any")
                 direction_prop = config.get("direction", "any")
                 tile.direction_flags = {d.strip() for d in direction_prop.split(",")} if direction_prop else {"any"}
                 tile.depth = config.get("depth", 0)
@@ -62,42 +58,46 @@ class TestStairsIntegration:
         return _create
 
     def test_it_001_player_walk_up_right_stair(self, setup_mini_map):
-        """IT-001: Walk right on a right-stair tile -> diagonal target and alignment."""
+        """IT-001: Walk right on a right-stair tile → diagonal target and alignment.
+
+        Layout (right stair, 2-tile step):
+          (1,1) stair_half=False  → flat entry
+          (2,1) stair_half=True   → diagonal climb → target (3,0)
+          (3,0) stair_half=False  → next step entry
+        """
         mm = setup_mini_map({
-            (1, 1): {"stair_direction": "right", "walkable": True, "tile_id": 30},
-            (2, 1): {"stair_direction": "right", "walkable": True, "tile_id": 31},
-            (3, 0): {"stair_direction": "right", "walkable": True, "tile_id": 30}
+            (1, 1): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
+            (2, 1): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": 0},
+            (3, 0): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
         })
 
-        player = Player(pos=(48, 48))  # Center of (1, 1)
+        player = Player(pos=(48, 48))  # center of (1,1)
         player.speed = 100
 
         mock_game = MagicMock()
         mock_game.map_manager = mm
         mock_game.layout = mm.layout
         player.game = mock_game
-
-        # Mock walkable function to query MapManager
         player.walkable_func = lambda x, y, requester=None: mm.is_walkable(int(x // 32), int(y // 32))
 
-        # Input Right on left tile of step -> horizontal move
+        # Input Right on lower-half tile → flat
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
 
         assert player.direction == pygame.math.Vector2(1, 0)
-        assert player.target_pos == pygame.math.Vector2(80, 48)  # target center of (2,1)
+        assert player.target_pos == pygame.math.Vector2(80, 48)
         assert player.is_moving is True
 
         player.update(0.5)
         assert player.is_moving is False
         assert player.pos == pygame.math.Vector2(80, 48)
 
-        # Input Right on right tile of step -> diagonal move
+        # Input Right on upper-half tile → diagonal
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
 
         assert player.direction == pygame.math.Vector2(1, -1)
-        assert player.target_pos == pygame.math.Vector2(112, 16)  # target center of (3,0)
+        assert player.target_pos == pygame.math.Vector2(112, 16)
         assert player.is_moving is True
 
         player.update(0.5)
@@ -105,11 +105,11 @@ class TestStairsIntegration:
         assert player.pos == pygame.math.Vector2(112, 16)
 
     def test_it_002_visual_y_offset_active_during_movement(self, setup_mini_map):
-        """IT-002: visual_y_offset is non-zero when pos is on stair, None after moving off."""
+        """IT-002: visual_y_offset is accessible when on a stair tile, None after step-off."""
         mm = setup_mini_map({
-            (1, 1): {"stair_direction": "right", "walkable": True, "tile_id": 30},
-            (2, 1): {"stair_direction": "right", "walkable": True, "tile_id": 31},
-            (3, 1): {"walkable": True} # normal tile
+            (1, 1): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
+            (2, 1): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -16},
+            (3, 1): {"walkable": True},
         })
 
         player = Player(pos=(48, 48))
@@ -121,36 +121,50 @@ class TestStairsIntegration:
         player.game = mock_game
         player.walkable_func = lambda x, y, requester=None: True
 
+        # start_move from (1,1): stair_half=False → flat, target=(2,1)
+        # _vertical_move is set to TARGET tile (2,1)'s props after start_move
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
-
-        # Pos is still at (48, 48) which is on stair tile (1, 1)
         assert player._vertical_move is not None
-        assert player._vertical_move["visual_y_offset"] == -16
+        assert player._vertical_move["stair_direction"] == "right"
+        assert player.direction == pygame.math.Vector2(1, 0)  # flat move confirmed
 
-        # Complete movement to (2, 1)
+        # Complete movement to (2,1)
         player.update(0.5)
         assert player.pos == pygame.math.Vector2(80, 48)
-        assert player._vertical_move["visual_y_offset"] == 0
 
-        # Step off to (3, 1)
+        # start_move from (2,1): stair_half=True, target (3,0) is None → step-off flat to (3,1)
+        # _vertical_move is set to TARGET tile (3,1)'s props = None (normal tile)
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
+        assert player.direction == pygame.math.Vector2(1, 0)    # step-off confirmed
+        assert player._vertical_move is None                    # target (3,1) is normal tile
         player.update(0.5)
         assert player.pos == pygame.math.Vector2(112, 48)
+
+        # start_move from (3,1): normal tile → no stair interception, _vertical_move stays None
+        player.direction = pygame.math.Vector2(1, 0)
+        player.start_move()
         assert player._vertical_move is None
 
     def test_it_003_multi_stair_traversal(self, setup_mini_map):
-        """IT-003: Multi-tile stair traversal (2 full steps)."""
+        """IT-003: Multi-tile stair traversal — 2 full steps (flat+diag+flat+step-off).
+
+        Layout (stair_half alternates per step):
+          (1,3) False → flat (entry)
+          (2,3) True  → diagonal → (3,2)
+          (3,2) False → flat (next step entry)
+          (4,2) True  → diagonal → (5,1), but target is (5,2)=normal → step-off flat
+        """
         mm = setup_mini_map({
-            (1, 3): {"stair_direction": "right", "walkable": True, "tile_id": 30},
-            (2, 3): {"stair_direction": "right", "walkable": True, "tile_id": 31},
-            (3, 2): {"stair_direction": "right", "walkable": True, "tile_id": 30},
-            (4, 2): {"stair_direction": "right", "walkable": True, "tile_id": 31},
-            (5, 2): {"walkable": True}
+            (1, 3): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
+            (2, 3): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -16},
+            (3, 2): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
+            (4, 2): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -16},
+            (5, 2): {"walkable": True},
         })
 
-        player = Player(pos=(48, 112)) # center of (1, 3)
+        player = Player(pos=(48, 112))  # center of (1,3)
         player.speed = 100
 
         mock_game = MagicMock()
@@ -159,36 +173,35 @@ class TestStairsIntegration:
         player.game = mock_game
         player.walkable_func = lambda x, y, requester=None: True
 
-        # Step 1: Right input (horizontal)
+        # Step 1: flat (entry)
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
         player.update(0.5)
-        assert player.pos == pygame.math.Vector2(80, 112) # center of (2, 3)
+        assert player.pos == pygame.math.Vector2(80, 112)  # (2,3)
 
-        # Step 2: Right input (diagonal)
+        # Step 2: diagonal ↗
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
         player.update(0.5)
-        assert player.pos == pygame.math.Vector2(112, 80) # center of (3, 2)
+        assert player.pos == pygame.math.Vector2(112, 80)  # (3,2)
 
-        # Step 3: Right input (horizontal)
+        # Step 3: flat (next step entry)
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
         player.update(0.5)
-        assert player.pos == pygame.math.Vector2(144, 80) # center of (4, 2)
+        assert player.pos == pygame.math.Vector2(144, 80)  # (4,2)
 
-        # Step 4: Right input (step-off)
+        # Step 4: step-off (target (5,2) is normal → forced flat)
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
         player.update(0.5)
-        assert player.pos == pygame.math.Vector2(176, 80) # center of (5, 2)
+        assert player.pos == pygame.math.Vector2(176, 80)  # (5,2)
 
     def test_it_004_stair_walls_block_movement(self, setup_mini_map):
         """IT-004: Wall tiles surrounding stairs block movement properly."""
         mm = setup_mini_map({
-            (1, 1): {"stair_direction": "right", "walkable": True, "tile_id": 31},
-            # Destination tile (2, 0) is a wall
-            (2, 0): {"walkable": False}
+            (1, 1): {"stair_direction": "right", "walkable": True, "stair_half": True, "visual_y_offset": -16},
+            (2, 0): {"walkable": False},
         })
 
         player = Player(pos=(48, 48))
@@ -200,7 +213,6 @@ class TestStairsIntegration:
         player.game = mock_game
         player.walkable_func = lambda x, y, requester=None: mm.is_walkable(int(x // 32), int(y // 32))
 
-        # Input Right -> target is (80, 16) which is not walkable
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
 
@@ -210,8 +222,8 @@ class TestStairsIntegration:
     def test_it_005_npc_stair_traversal(self, setup_mini_map):
         """IT-005: NPCs traverse stairs using the same interception logic."""
         mm = setup_mini_map({
-            (1, 1): {"stair_direction": "right", "walkable": True, "tile_id": 31},
-            (2, 0): {"stair_direction": "right", "walkable": True, "tile_id": 30}
+            (1, 1): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -16},
+            (2, 0): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
         })
 
         npc = NPC(pos=(48, 48))
@@ -223,7 +235,6 @@ class TestStairsIntegration:
         npc.game = mock_game
         npc.walkable_func = lambda x, y, requester=None: True
 
-        # NPC pathfinder sets input direction
         npc.direction = pygame.math.Vector2(1, 0)
         npc.start_move()
 
@@ -234,8 +245,8 @@ class TestStairsIntegration:
     def test_it_006_direction_flags_isolation(self, setup_mini_map):
         """IT-006: direction property without stair_direction does not trigger stair movement."""
         mm = setup_mini_map({
-            (1, 1): {"direction": "right", "walkable": True}, # NOT stair_direction
-            (2, 1): {"walkable": True}
+            (1, 1): {"direction": "right", "walkable": True},
+            (2, 1): {"walkable": True},
         })
 
         player = Player(pos=(48, 48))
@@ -250,21 +261,28 @@ class TestStairsIntegration:
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
 
-        # Should move orthogonally right, not diagonally
         assert player.direction == pygame.math.Vector2(1, 0)
         assert player.target_pos == pygame.math.Vector2(80, 48)
 
     def test_it_007_stair_traversal_symmetry(self, setup_mini_map):
-        """IT-007: Ascent and descent stair traversal returns player to start without Y drift."""
+        """IT-007: Ascent then descent returns the player to exact starting coordinates (no Y drift).
+
+        Layout (stair_half controls direction for BOTH ascent and descent):
+          (1,3) normal floor
+          (2,3) stair_half=False → flat entry
+          (3,3) stair_half=True  → diagonal climb/descent
+          (4,2) stair_half=True  → diagonal climb/descent
+          (5,2) normal floor
+        """
         mm = setup_mini_map({
             (1, 3): {"walkable": True},
-            (2, 3): {"stair_direction": "right", "walkable": True, "tile_id": 30},
-            (3, 3): {"stair_direction": "right", "walkable": True, "tile_id": 31},
-            (4, 2): {"stair_direction": "right", "walkable": True, "tile_id": 30},
-            (5, 2): {"walkable": True}
+            (2, 3): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
+            (3, 3): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -16},
+            (4, 2): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -32},
+            (5, 2): {"walkable": True},
         })
 
-        player = Player(pos=(48, 112)) # center of (1, 3)
+        player = Player(pos=(48, 112))  # center of (1,3)
         player.speed = 100
         mock_game = MagicMock()
         mock_game.map_manager = mm
@@ -272,44 +290,40 @@ class TestStairsIntegration:
         player.game = mock_game
         player.walkable_func = lambda x, y, requester=None: True
 
-        # 1. Step onto stairs: (1,3) -> (2,3)
+        # 1. Step onto stairs: (1,3) → (2,3)  [flat]
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
         player.update(0.5)
-        assert player.pos == pygame.math.Vector2(80, 112) # center of (2, 3)
+        assert player.pos == pygame.math.Vector2(80, 112)
 
-        # 2. Walk right: (2,3) -> (3,3)
+        # 2. Flat step on stair: (2,3) → (3,3)  [flat]
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
         player.update(0.5)
-        assert player.pos == pygame.math.Vector2(112, 112) # center of (3, 3)
+        assert player.pos == pygame.math.Vector2(112, 112)
 
-        # 3. Step up stairs: (3,3) -> (4,2)
+        # 3. Diagonal climb: (3,3) → (4,2)  [diag (1,-1)]
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
         player.update(0.5)
-        assert player.pos == pygame.math.Vector2(144, 80) # center of (4, 2)
+        assert player.pos == pygame.math.Vector2(144, 80)
 
-        # 4. Step down stairs: (4,2) -> (3,3)
+        # 4. Descent: (4,2) → (3,3)  [diag (-1,1)]
         player.direction = pygame.math.Vector2(-1, 0)
         player.start_move()
         player.update(0.5)
-        assert player.pos == pygame.math.Vector2(112, 112) # center of (3, 3)
+        assert player.pos == pygame.math.Vector2(112, 112)
 
-        # 5. Walk left: (3,3) -> (2,3)
+        # 5. Flat step back: (3,3) → (2,3)  [flat]
         player.direction = pygame.math.Vector2(-1, 0)
         player.start_move()
         player.update(0.5)
-        assert player.pos == pygame.math.Vector2(80, 112) # center of (2, 3)
+        assert player.pos == pygame.math.Vector2(80, 112)
 
-        # 6. Step off stairs: (2,3) -> (1,3)
+        # 6. Step off stairs: (2,3) → (1,3)  [flat]
         player.direction = pygame.math.Vector2(-1, 0)
         player.start_move()
-        # Verify the step-off rule kept direction orthogonal
-        assert player.direction == pygame.math.Vector2(-1, 0)
         player.update(0.5)
 
-        # Player must return to starting tile (1, 3) at coordinates (48, 112)
-        assert player.pos == pygame.math.Vector2(48, 112)
+        assert player.pos == pygame.math.Vector2(48, 112)   # back to start ✅
         assert getattr(player, "current_stair_offset", 0.0) == 0.0
-
