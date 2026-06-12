@@ -1,7 +1,7 @@
 # ADR-013 — Stair Climbing Positioning and Alignment
 
 **Date:** 2026-06-11
-**Status:** Proposed
+**Status:** Accepted — Implemented 2026-06-11 (commit d5f98ce5)
 
 ---
 
