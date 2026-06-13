@@ -324,13 +324,14 @@ class MapManager:
             tile = self.tiles[tile_id]
             props = tile.properties or {}
             stair_dir = props.get("stair_direction", "")
-            if stair_dir:  # Non-empty string → explicit stair tile
+            stair_clip = bool(props.get("stair_clip", False))
+            if stair_dir or stair_clip:  # Explicit stair tile or clip tile
                 return {
                     "stair_direction": stair_dir,
                     "movement_type": props.get("movement_type", "stair"),
                     "stair_half": bool(props.get("stair_half", False)),
                     "visual_y_offset": int(props.get("visual_y_offset", 0)),
-                    "stair_clip": bool(props.get("stair_clip", False)),
+                    "stair_clip": stair_clip,
                 }
         return None  # absent → neutral tile, not a stair
 
