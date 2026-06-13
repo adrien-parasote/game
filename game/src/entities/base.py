@@ -129,7 +129,9 @@ class BaseEntity(pygame.sprite.Sprite):
         target_tx = current_tx + target_dir[0]
         target_ty = current_ty + target_dir[1]
         target_vm = self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
-        if target_vm is None:
+        if target_vm is None and not self.game.map_manager.is_walkable(target_tx, target_ty):
+            # Only force flat if the diagonal target is impassable (wall).
+            # Walkable floor tiles are valid stair exit points (e.g. descending to lower floor).
             target_dir = (dx, 0)
 
         self.direction = pygame.math.Vector2(target_dir)
