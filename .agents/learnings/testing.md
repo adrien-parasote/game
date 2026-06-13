@@ -1,5 +1,32 @@
 ## 🧪 Testing
 
+### L-TEST-056 · 2026-06-13 · U · Minor Rework
+**Testing pygame.Surface.blit fails due to read-only attribute in Python 3.13 / newer pygame**
+
+When writing tests that assert rendering behavior, attempting to mock `surface.blit` via `patch.object(surface, 'blit', wraps=surface.blit)` throws an `AttributeError: 'pygame.surface.Surface' object attribute 'blit' is read-only`. 
+
+```python
+# ❌ FAILS: Cannot patch a C-extension read-only method
+surface = pygame.Surface((800, 600))
+with patch.object(surface, 'blit', wraps=surface.blit) as mock_blit:
+    group.custom_draw(surface)
+```
+
+```python
+# ✅ CORRECT: Use MagicMock() for the surface and inspect its call arguments
+mock_surface = MagicMock()
+mock_surface.get_rect.return_value = pygame.Rect(0, 0, 800, 600)
+group.custom_draw(mock_surface)
+
+assert mock_surface.blit.called
+clipped_surface = mock_surface.blit.call_args[0][0]
+assert clipped_surface.get_at((0, 39)).a > 0
+```
+
+**Règle :** To test rendering composition on a surface, never patch `pygame.Surface.blit`. Instead, inject a `MagicMock()` in place of the surface, mock its `get_rect()` if needed for culling, and inspect the surfaces passed to `mock_surface.blit`. This allows direct pixel assertions on the composed/clipped surfaces passed to the mock.
+
+**Evidence :** `test_stair_movement.py::test_ut_017_stair_clip_composition` and `test_ut_018_combined_clip_and_offset` crashed with `AttributeError`. Fixed by replacing the real `pygame.Surface` injection with a `MagicMock()` and extracting the rendering results from `call_args`.
+
 ### L-TEST-014 · 2026-05-14 · U · Minor Rework
 **Tests qui lisent `pygame.display.get_surface()` pour des dimensions → non-déterministes**
 
