@@ -34,7 +34,11 @@ class CameraGroup(pygame.sprite.Group):
             return self.offset
         # Standard centering offset
         off_x = self.half_width - target.rect.centerx
-        off_y = self.half_height - target.rect.centery
+        stair_offset = getattr(target, 'current_stair_offset', 0)
+        if not isinstance(stair_offset, (int, float)):
+            stair_offset = 0
+        visual_y = target.rect.centery + stair_offset
+        off_y = self.half_height - visual_y
 
         # Screen dimensions
         if self.display_surface:
@@ -132,6 +136,8 @@ class CameraGroup(pygame.sprite.Group):
             screen_sprite_rect = pygame.Rect(offset_pos, visual_rect.size)
             if screen_rect.colliderect(screen_sprite_rect):
                 stair_clip = getattr(sprite, 'current_stair_clip', 0.0)
+                if not isinstance(stair_clip, (int, float)):
+                    stair_clip = 0.0
                 if stair_clip > 0:
                     clipped_image = pygame.Surface(visual_rect.size, pygame.SRCALPHA)
                     clipped_image.blit(sprite.image, (0, 0))
