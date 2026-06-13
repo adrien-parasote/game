@@ -48,3 +48,10 @@ grep -rn "L-NOM-ID" .agents/learnings/
 - **Evidence:** Bypassed Spec Gate and committed code directly to fix 8 broken unit tests caused by a false positive from an earlier Adversarial Review.
 - **Anti-pattern:** Accepting an Adversarial Review "CRITICAL" finding as absolute truth without verifying unit tests first. Removed an intentional fallback mechanism for dynamic grid geometry, breaking the test suite. Subsequently skipped Spec Gate and TDD gates to quickly revert.
 - **Fix:** Adversarial Review findings are hypotheses, not facts. Verify findings against existing tests before altering specs. Never skip Spec Gate after a regression — fix spec first, then code.
+
+### L018: Dynamic entities require dynamic cache keys
+- **Date:** 2026-06-13
+- **Source:** game — render_occlusion
+- **Evidence:** Player animation froze visually while moving because `OcclusionRenderer` cache key only used static `camera_offset` and `len(rects)`.
+- **Anti-pattern:** Caching composite visual surfaces of dynamic entities using only environment/static state keys (like camera position).
+- **Fix:** Include the dynamic entity's state (e.g., `is_moving` or `frame_index`) in the cache invalidation logic, or bypass the cache entirely for moving entities.
