@@ -181,14 +181,14 @@ class TestStairMovementUnit:
         assert entity.direction == pygame.math.Vector2(0, 0)
 
     def test_ut_008_start_move_stair_right_input_diagonal_unmapped(self, setup_map_manager):
-        """UT-008: Input (1,1) on right stair → is_moving False, direction reset."""
+        """UT-008: Input (1,1) on right stair → is_moving True because dy is ignored."""
         mm = setup_map_manager()
         entity = self._make_entity_on_stair(mm, "right", True)
         entity.direction = pygame.math.Vector2(1, 1)
         entity.start_move()
-
-        assert entity.is_moving is False
-        assert entity.direction == pygame.math.Vector2(0, 0)
+    
+        assert entity.is_moving is True
+        assert entity.direction == pygame.math.Vector2(1, 0)
 
     # ── UT-009a: left stair, upper half, input left → step-off flat ──────────────
     def test_ut_009a_left_stair_upper_half_input_left_stepoff(self, setup_map_manager):

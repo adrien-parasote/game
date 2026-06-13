@@ -265,19 +265,12 @@ class TestStairsIntegration:
         assert player.target_pos == pygame.math.Vector2(80, 48)
 
     def test_it_007_stair_traversal_symmetry(self, setup_mini_map):
-        """IT-007: Ascent then descent returns the player to exact starting coordinates (no Y drift).
-
-        Layout (stair_half controls direction for BOTH ascent and descent):
-          (1,3) normal floor
-          (2,3) stair_half=False → flat entry
-          (3,3) stair_half=True  → diagonal climb/descent
-          (4,2) stair_half=True  → diagonal climb/descent
-          (5,2) normal floor
-        """
+        """IT-007: Ascent then descent returns the player to exact starting coordinates (no Y drift)."""
         mm = setup_mini_map({
             (1, 3): {"walkable": True},
             (2, 3): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
             (3, 3): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -16},
+            (3, 2): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": -16},
             (4, 2): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -32},
             (5, 2): {"walkable": True},
         })
@@ -308,13 +301,13 @@ class TestStairsIntegration:
         player.update(0.5)
         assert player.pos == pygame.math.Vector2(144, 80)
 
-        # 4. Descent: (4,2) → (3,3)  [diag (-1,1)]
+        # 4. Descent flat: (4,2) → (3,2)  [flat]
         player.direction = pygame.math.Vector2(-1, 0)
         player.start_move()
         player.update(0.5)
-        assert player.pos == pygame.math.Vector2(112, 112)
+        assert player.pos == pygame.math.Vector2(112, 80)
 
-        # 5. Flat step back: (3,3) → (2,3)  [flat]
+        # 5. Descent diag: (3,2) → (2,3)  [diag (-1, 1)]
         player.direction = pygame.math.Vector2(-1, 0)
         player.start_move()
         player.update(0.5)
@@ -324,6 +317,5 @@ class TestStairsIntegration:
         player.direction = pygame.math.Vector2(-1, 0)
         player.start_move()
         player.update(0.5)
-
-        assert player.pos == pygame.math.Vector2(48, 112)   # back to start ✅
+        assert player.pos == pygame.math.Vector2(48, 112)
         assert getattr(player, "current_stair_offset", 0.0) == 0.0

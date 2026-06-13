@@ -98,8 +98,9 @@ class BaseEntity(pygame.sprite.Sprite):
         self._vertical_move = vm
         stair_dir = vm["stair_direction"]
         dx = 1 if self.direction.x > 0.01 else (-1 if self.direction.x < -0.01 else 0)
-        dy = 1 if self.direction.y > 0.01 else (-1 if self.direction.y < -0.01 else 0)
-        map_key = ((dx, dy), stair_dir)
+        # Intentionally ignore dy: VERTICAL_MOVE_MAP keys always use (dx, 0).
+        # A residual dy from the previous diagonal step would cause a silent block.
+        map_key = ((dx, 0), stair_dir)
 
         if map_key not in Settings.VERTICAL_MOVE_MAP:
             # Non-mappable input on stair (e.g. UP/DOWN) → silent block

@@ -90,7 +90,9 @@ class OcclusionRenderer:
         cam_offset = self.game.visible_sprites.offset
         current_key = (int(cam_offset.x), int(cam_offset.y), len(occluding_rects))
 
-        if current_key == self._occ_key and self._occ_composite_cache:
+        any_moving = any(getattr(sp, "is_moving", False) for sp in self.game.visible_sprites.sprites())
+
+        if not any_moving and current_key == self._occ_key and self._occ_composite_cache:
             saved_images: dict[object, pygame.Surface] = {}
             for sprite, composite in self._occ_composite_cache.items():
                 saved_images[sprite] = sprite.image
