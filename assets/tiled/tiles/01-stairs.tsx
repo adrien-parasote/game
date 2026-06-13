@@ -33,7 +33,7 @@
    <property name="material" value="stone" />
    <property name="stair_direction" propertytype="23-direction" value="left" />
    <property name="stair_half" type="bool" value="false" />
-   <property name="visual_y_offset" type="int" value="-16" />
+   <property name="visual_y_offset" type="int" value="0" />
   </properties>
  </tile>
  <tile id="5" type="01-vertical-move">
