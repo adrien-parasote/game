@@ -4,7 +4,7 @@
 
 **Covers:** Stair Movement Feature — horizontal stairs (lateral stairs).
 **Future extension:** This architecture also supports ladders (`ladder`) via the same Tiled class.
-**Revision:** v5 — descent diagonal logic corrected per ADR-013 (2026-06-12).
+**Revision:** v6 — Added dynamic stair clipping per ADR-015 (2026-06-13).
 
 ---
 
@@ -27,6 +27,9 @@
 | `BaseEntity.current_stair_offset: float` | New field | camera-rendering |
 | `BaseEntity.stair_start_offset: float` | New field | entities-system |
 | `BaseEntity.stair_target_offset: float` | New field | entities-system |
+| `BaseEntity.current_stair_clip: float` | New field | camera-rendering |
+| `BaseEntity.stair_start_clip: float` | New field | entities-system |
+| `BaseEntity.stair_target_clip: float` | New field | entities-system |
 | `BaseEntity.stair_move_distance: float` | New field | entities-system |
 | `BaseEntity.update_stair_offset()` | New method | entities-system |
 | `VERTICAL_MOVE_MAP` | New constant | engine-core |
@@ -45,9 +48,10 @@
 
 | Interface | Signature | Contract |
 |-----------|-----------|--------|
-| `get_vertical_move_props` | `(tx: int, ty: int) → dict \| None` | Returns `{stair_direction, movement_type, visual_y_offset}` or `None` |
+| `get_vertical_move_props` | `(tx: int, ty: int) → dict \| None` | Returns `{stair_direction, movement_type, stair_half, visual_y_offset, stair_clip}` or `None` |
 | `_vertical_move` | `dict \| None` | Updated in `start_move()` only. |
 | `current_stair_offset` | `float` | Read in `custom_draw()`. Interpolated during entity movement. |
+| `current_stair_clip` | `float` | Read in `custom_draw()`. Interpolated during entity movement to dynamically clip the sprite. |
 | `VERTICAL_MOVE_MAP` | `dict[tuple[tuple[int,int], str], tuple[int,int]]` | 4 mappings (input_dir, stair_dir) → intercepted_dir |
 
 
@@ -73,6 +77,7 @@ Present in `game.tiled-project` (id=24):
         {"name": "depth",          "type": "int",    "value": 0},
         {"name": "material",       "type": "string", "value": ""},
         {"name": "movement_type",  "propertyType": "25-movement_type", "type": "string", "value": "stair"},
+        {"name": "stair_clip",     "type": "bool",   "value": false},
         {"name": "stair_direction","propertyType": "23-direction",     "type": "string", "value": ""},
         {"name": "stair_half",     "type": "string", "value": ""},
         {"name": "visual_y_offset","type": "int",    "value": 0},
@@ -86,6 +91,7 @@ Present in `game.tiled-project` (id=24):
 **Fields:**
 - `stair_direction` (enum `23-direction`, **default `""`**): `"right"` = staircase ascending to the right, `"left"` = ascending to the left. **Default empty = neutral tile, not a staircase.** Never `"any"` on a stair tile.
 - `stair_half` (string, **default `""`**): `"bottom"` = bottom half of the step, `"top"` = top half of the step. Critical for determining when the diagonal physical movement is applied.
+- `stair_clip` (bool, **default `false`**): `true` = this tile clips the bottom half of the sprite when walked on, simulating depth.
 - `movement_type` (enum `25-movement_type`, default `"stair"`): `"stair"` | `"ladder"` — for future extension.
 - `visual_y_offset` (int, default `0`): visual Y offset in pixels when rendering on this tile. Usually `-16` for bottom tiles and `0` for top tiles.
 - `walkable` (bool, default `true`): `false` on wall tiles. Managed by the existing `is_walkable()` system.
@@ -122,18 +128,22 @@ Actual result in `tile.properties`:
 
 **Impact on `get_vertical_move_props`:** The method handles absence via default values:
 - `props.get("movement_type", "stair")` → returns `"stair"` ✅
-- `int(props.get("visual_y_offset", -12))` → returns `-12` ✅
+- `int(props.get("visual_y_offset", 0))` → returns `0` ✅
 
 These hardcoded fallbacks **must match** the defaults of the Tiled class `01-vertical-move`. If the Tiled defaults change, the fallbacks must be updated.
 
 **Complete tile inventory (VERIFIED):**
 
-| Tile(s) | Role | `walkable` | Explicit Overrides |
-|---------|------|-----------|--------------------|
-| Right steps | 🪜 Right steps | `True` | `stair_direction="right"`, `stair_half` (`"bottom"` or `"top"`), `visual_y_offset` (`-16` or `0`) |
-| Left steps | 🪜 Left steps | `True` | `stair_direction="left"`, `stair_half` (`"bottom"` or `"top"`), `visual_y_offset` (`-16` or `0`) |
-| 2, 7, 13 | 🧱 Staircase walls | `False` | None (inherited — ignored because non-walkable) |
-| Neutral | ⬜ Neutral / empty | `True` | None (inherited — not a staircase) |
+| Tile(s) | Role | `walkable` | `stair_clip` | Explicit Overrides |
+|---------|------|-----------|------------|--------------------|
+| Right steps (upper-half view, e.g. IDs 16, 35) | 🪜 Right steps — depth view | `True` | `true` — clips player's lower half to simulate depth | `stair_direction="right"`, `stair_half`, `visual_y_offset`, `stair_clip=true` |
+| Right steps (lower-half / entry tiles) | 🪜 Right steps — flat approach | `True` | `false` (default) | `stair_direction="right"`, `stair_half`, `visual_y_offset` |
+| Left steps (upper-half view) | 🪜 Left steps — depth view | `True` | `true` | `stair_direction="left"`, `stair_half`, `visual_y_offset`, `stair_clip=true` |
+| Left steps (lower-half / entry tiles) | 🪜 Left steps — flat approach | `True` | `false` (default) | `stair_direction="left"`, `stair_half`, `visual_y_offset` |
+| 2, 7, 13 | 🧱 Staircase walls | `False` | `false` (irrelevant — non-walkable) | None |
+| Neutral | ⬜ Neutral / empty | `True` | `false` (default) | None |
+
+**`stair_clip=true` rule:** Apply to tiles where the player's lower body should disappear behind the stair face. These are the "side-view" tiles where the stair geometry is visually above the player's feet position.
 
 **Staircase detection rule in the code:**
 `stair_direction` is non-empty AND not None → stair tile.
@@ -152,7 +162,7 @@ The parser `tmj_parser.py` does NOT resolve the `class=` attribute on tilesets v
 | Property | Tiled Class Default | Fallback in `get_vertical_move_props` | Matches? |
 |-----------|--------------------|-----------------------------------------|--------------|
 | `movement_type` | `"stair"` | `props.get("movement_type", "stair")` | ✅ |
-| `visual_y_offset` | `-12` | `int(props.get("visual_y_offset", -12))` | ✅ |
+| `visual_y_offset` | `0` | `int(props.get("visual_y_offset", 0))` | ✅ |
 | `stair_direction` | `""` | `props.get("stair_direction", "")` | ✅ |
 
 **Risk:** If the Tiled defaults change, the fallbacks in the code must be updated manually. Accepted because the Tiled class is stable and the fallbacks are centralized in a single method.
@@ -210,6 +220,7 @@ def get_vertical_move_props(self, tx: int, ty: int) -> dict | None:
                 "movement_type": props.get("movement_type", "stair"),
                 "stair_half": bool(props.get("stair_half", False)),
                 "visual_y_offset": int(props.get("visual_y_offset", 0)),
+                "stair_clip": bool(props.get("stair_clip", False)),
             }
     return None  # "" or absent → neutral tile, not a stair
 ```
@@ -224,8 +235,29 @@ self._vertical_move: dict | None = None      # 25-vertical-move properties of cu
 self.current_stair_offset: float = 0.0      # Current visual Y offset applied during rendering
 self.stair_start_offset: float = 0.0        # Visual Y offset at the beginning of the step
 self.stair_target_offset: float = 0.0       # Visual Y offset at the target of the step
-self.stair_move_distance: float = 0.0       # Total distance (in pixels) of the current step
+self.stair_start_pos: pygame.math.Vector2   # World position at the start of the current step (interpolation anchor)
+self.current_stair_clip: float = 0.0        # Current visual clip applied during rendering
+self.stair_start_clip: float = 0.0          # Visual clip at the beginning of the step
+self.stair_target_clip: float = 0.0         # Visual clip at the target of the step
+self.stair_move_distance: float = 0.0       # Total distance (in pixels) of the current step (kept for API compat)
 ```
+
+> **Implementation note:** `stair_start_pos` is set in `start_move()` to `pygame.math.Vector2(self.pos)` before movement begins. `update_stair_offset()` uses `(self.target_pos - self.stair_start_pos).magnitude()` as the total step distance denominator (equivalent to `stair_move_distance` but avoids floating-point drift). Initialize `stair_start_pos` in `__init__` to `pygame.math.Vector2(pos)`.
+
+**New private helper `_max_stair_clip(self) → float`:**
+```python
+def _max_stair_clip(self) -> float:
+    """Return maximum clip amount for this entity.
+
+    Returns float(Settings.TILE_SIZE // 2) (16.0) for all sprites, since
+    the visual step geometry is fixed at 16px. Never uses sprite height
+    proportional clipping, as that would cause visual gaps (floating torso
+    artifacts) for taller sprites (e.g. 48px or 64px tall).
+    """
+    return float(Settings.TILE_SIZE // 2)
+```
+
+**Usage:** Call `self._max_stair_clip()` in `start_move()` and `update_stair_offset()` instead of inline `else 16`.
 
 **Symmetric Step-Off Interception in `start_move()`:**
 The interception logic must verify the next tile in the input direction *before* intercepting.
@@ -241,7 +273,13 @@ The interception logic must verify the next tile in the input direction *before*
 
    ```python
    stair_half = vm.get("stair_half", False)   # bool, from tile props
-   is_going_up = intercepted_dir[1] < 0         # negative Y = going up (pygame coords)
+   # is_going_up uses domain semantics: right direction on right staircase = ascending;
+   # left direction on left staircase = ascending. This is equivalent to
+   # intercepted_dir[1] < 0 for the current VERTICAL_MOVE_MAP, but stated explicitly
+   # to remain correct if the map is extended with non-obvious entries.
+   # ⚠️ WARNING: if VERTICAL_MOVE_MAP gains a case where right+right_stair = descending,
+   # this formula must be updated. Use intercepted_dir[1] < 0 as the canonical truth.
+   is_going_up = (stair_dir == "right" and dx == 1) or (stair_dir == "left" and dx == -1)
    # For ascending: diagonal on upper-half tile
    # For descending: diagonal on lower-half tile (= full tile in descent direction)
    should_move_diagonally = stair_half if is_going_up else (not stair_half)
@@ -268,9 +306,12 @@ When `start_move()` computes the final `target_pos` and verifies walkability:
 7. Setup interpolation caching:
    - Calculate grid targets: `target_tx = int(self.target_pos.x // TILE_SIZE)` and `target_ty = int(self.target_pos.y // TILE_SIZE)`.
    - `self.stair_start_offset = self.current_stair_offset`
+   - `self.stair_start_clip = self.current_stair_clip`
    - Query `target_vm = get_vertical_move_props(target_tx, target_ty)`.
    - `self._vertical_move = target_vm`
    - `self.stair_target_offset = target_vm["visual_y_offset"] if target_vm else 0.0`
+   - `max_clip = self._max_stair_clip()`  ← uses helper; never hardcodes pixel value
+   - `self.stair_target_clip = max_clip if target_vm and target_vm.get("stair_clip") else 0.0`
    - `self.stair_move_distance = (self.target_pos - self.pos).magnitude()`
 
 **Silent blocking — direction reset:** When an input direction has no entry in `VERTICAL_MOVE_MAP` (e.g., `(0, -1)` Up, or a diagonal), the interception logic returns early without setting `is_moving = True`. The caller (`Player.update()`) resets `direction` to `Vector2(0, 0)` after each frame when `is_moving` remains `False`. This reset is the responsibility of the caller, not of `start_move()` itself.
@@ -317,6 +358,9 @@ def update_stair_offset(self):
         # current tile and is only updated at move boundaries.
         vm = self._vertical_move
         self.current_stair_offset = vm["visual_y_offset"] if vm else 0.0
+        
+        max_clip = self._max_stair_clip()  # half sprite height, or TILE_SIZE//2 if no image yet
+        self.current_stair_clip = max_clip if vm and vm.get("stair_clip") else 0.0
     else:
         # Moving: interpolate offset based on movement progress
         total_dist = self.stair_move_distance
@@ -324,26 +368,63 @@ def update_stair_offset(self):
             curr_dist = (self.target_pos - self.pos).magnitude()
             progress = max(0.0, min(1.0, 1.0 - curr_dist / total_dist))
             self.current_stair_offset = self.stair_start_offset + (self.stair_target_offset - self.stair_start_offset) * progress
+            self.current_stair_clip = self.stair_start_clip + (self.stair_target_clip - self.stair_start_clip) * progress
         else:
             self.current_stair_offset = self.stair_target_offset
+            self.current_stair_clip = self.stair_target_clip
 ```
 
 **Integration Point: `CameraGroup.custom_draw()`**
 
 > ⛔ **DELETION REQUIRED:** Remove the existing `_vertical_move`-based stair Y-offset code from `custom_draw()` before adding the `current_stair_offset`-based offset. The old code reads `sprite._vertical_move` and applies a static offset — it must be fully deleted, not supplemented. Two parallel offset mechanisms would double-apply the visual offset.
 
-Update rendering position calculation in `groups.py` to use `sprite.current_stair_offset` instead:
+**Combined clip + offset design intent:**
+- `stair_y_offset` shifts the entire sprite image **up/down in screen space**, correcting grid alignment for diagonal steps. Example: `-16` moves the sprite 16px higher on screen.
+- `stair_clip` removes pixels from the **image bottom** (image-space), hiding the player's lower body behind the stair face.
+- These two effects are **independent by design** and tuned per tile: the offset aligns the sprite to the grid; the clip creates the depth illusion. Both non-zero simultaneously is the normal case on `stair_clip=true` tiles.
+- Visual contract: after applying both, the player's visible bottom on screen is `offset_pos.y + (image_height - stair_clip)`. Tiles must be authored so this aligns with the visual stair face.
+
+**Complete replacement for the drawing body in `CameraGroup.custom_draw()` (replaces L109-L143 of groups.py):**
 ```python
-# Modified code in CameraGroup.custom_draw
+# Align bottom-right of sprite image to bottom-right of logical hitbox
 visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
 
 # Dynamic stair visual offset (interpolated — replaces old _vertical_move-based offset)
 stair_y_offset = getattr(sprite, 'current_stair_offset', 0.0)
+if not isinstance(stair_y_offset, int | float):
+    stair_y_offset = 0.0
 
 offset_pos = (visual_rect.left + self.offset.x, visual_rect.top + self.offset.y + stair_y_offset)
-# ... culling and drawing ...
+
+# Frustum culling — MUST occur BEFORE composition to avoid allocating a surface for off-screen sprites
+screen_sprite_rect = pygame.Rect(offset_pos, visual_rect.size)
+if not screen_rect.colliderect(screen_sprite_rect):
+    continue
+
+# Dynamic clipping via Composition (only when sprite is in the clip zone)
+stair_clip = int(getattr(sprite, 'current_stair_clip', 0.0))
+if stair_clip > 0:
+    # 1. Create a transparent surface of the same dimensions (preserves size for occlusion logic)
+    clipped_image = pygame.Surface(sprite.image.get_size(), pygame.SRCALPHA)
+    # 2. Blit the original image at origin
+    clipped_image.blit(sprite.image, (0, 0))
+    # 3. Clear the bottom `stair_clip` pixels — BLEND_RGBA_MIN with (0,0,0,0) zeroes all channels
+    clip_rect = pygame.Rect(0, clipped_image.get_height() - stair_clip, clipped_image.get_width(), stair_clip)
+    clipped_image.fill((0, 0, 0, 0), clip_rect, special_flags=pygame.BLEND_RGBA_MIN)
+    surface.blit(clipped_image, offset_pos)
+else:
+    surface.blit(sprite.image, offset_pos)
+
+# Debug Hitbox Rendering
+if Settings.DEBUG:
+    debug_rect = sprite.rect.move(self.offset.x, self.offset.y)
+    try:  # noqa: SIM105
+        pygame.draw.rect(surface, (255, 0, 0), debug_rect, 1)
+    except TypeError:
+        # Fallback for mock surfaces in tests where pygame.draw.rect fails
+        pass
 ```
-This distributes the 12px visual offset change continuously over the duration of the 32px step, preventing sinking and floating bugs.
+This distributes both the Y-offset and the clip continuously over the duration of each step, preventing sinking, floating, and sudden-reveal bugs.
 
 
 ---
@@ -369,6 +450,23 @@ If the pathfinder uses A\*, the cost of a stair tile must reflect the actual dis
 
 If the NPC target is a tile beyond the top of the stairs, the NPC traverses normally via interception. If the target IS on the staircase, the NPC stops at the correct (grid-aligned) position.
 
+### 2.4 NPC Sprite Clipping on `stair_clip` Tiles
+
+Because `update_stair_offset()` runs on all `BaseEntity`s, NPCs walking over a `stair_clip=true` tile will also have their lower half clipped. **This is intentional** — it preserves visual consistency between the player and NPCs traversing the same staircase geometry.
+
+If a specific NPC type should NOT be clipped (e.g. a floating ghost), add an opt-out attribute to that entity subclass:
+```python
+# In the entity subclass __init__:
+self.stair_clip_exempt: bool = True
+```
+Then guard in `update_stair_offset()`:
+```python
+if getattr(self, 'stair_clip_exempt', False):
+    self.current_stair_clip = 0.0
+    return
+```
+**Default:** all entities are clipped. `stair_clip_exempt` is opt-in, not opt-out.
+
 ---
 
 ## 3. Anti-Patterns
@@ -382,7 +480,8 @@ If the NPC target is a tile beyond the top of the stairs, the NPC traverses norm
 | 5 | Inferring a staircase from visual layers | Visual layers can contain decorations without stair properties. | Rely solely on `stair_direction` in `tile.properties`. |
 | 6 | Checking `get_direction_flags` BEFORE stair interception | The intercepted (diagonal) direction would be checked against the source tile flags — risk of incorrect blocking. | Stair interception is always BEFORE `get_direction_flags` in `start_move()`. |
 | 7 | Placing non-empty `stair_direction` on wall tiles | Tiles with `walkable=false` should not have a stair direction. | `walkable=false` blocks movement via `is_walkable()`. `stair_direction` remains empty on walls. |
-| 8 | Assuming `movement_type`/`visual_y_offset` are in `tile.properties` | The parser does not resolve TSX classes (§0.5). These properties are absent unless explicitly overridden. | Use `props.get("movement_type", "stair")` and `props.get("visual_y_offset", -12)` with fallbacks. |
+| 8 | Assuming `movement_type`/`visual_y_offset` are in `tile.properties` | The parser does not resolve TSX classes (§0.5). These properties are absent unless explicitly overridden. | Use `props.get("movement_type", "stair")` and `props.get("visual_y_offset", 0)` with fallbacks. |
+| 9 | Using `subsurface` for clipping rendering | Modifying the surface dimensions breaks alignment logic and occlusion culling checks. | Use Composition: render original to a transparent surface, fill bottom with transparent color, then blit. |
 
 ---
 
@@ -408,6 +507,11 @@ If the NPC target is a tile beyond the top of the stairs, the NPC traverses norm
 | A3 | The NPC pathfinder operates in grid-steps (direction to next tile), not direct pixel trajectory | Medium | SHOW | VERIFIED — npc.py L125-131 (process_ai) uses orthogonal unit vector choices. |
 | A4 | `TileMapData.properties` (existing field, type `dict[str, Any] or None`) is the entry point. No schema modification of `TileMapData` is needed | Low | SHOW | VERIFIED — the field already exists (tmj_parser.py L20) |
 | A5 | The visual offset is smoothly interpolated during movement to avoid sudden vertical snaps. | Low | SHOW | VERIFIED — simulation shows smooth transition without aesthetic discontinuity. |
+| A6 | `sprite.image` supports per-pixel alpha (`SRCALPHA`) when `stair_clip > 0` — required for `BLEND_RGBA_MIN` to zero the alpha channel | Medium | ASSUMED | All game entity images are loaded with `convert_alpha()`. Verify in UT-017 that `clipped_image` has `SRCALPHA`. |
+| A7 | `stair_clip=true` on the specified tiles (depth-view upper-half tiles, e.g. IDs 16, 35) produces the correct depth illusion — i.e. the visual stair face aligns with where the clip removes pixels | Medium | ASSUMED | Visual verification required during first gameplay test. Debug overlay (`Settings.DEBUG`) shows hitbox alignment. |
+| A8 | Per-frame surface composition (`pygame.Surface` + `blit` + `fill`) is negligible for ≤4 stair-stepping entities simultaneously | Medium | ASSUMED | Not measured. Accept for initial implementation; profile if frame drops occur on stair tiles. |
+| A9 | `_max_stair_clip()` returning `float(Settings.TILE_SIZE // 2)` correctly represents the stair step height boundary for leg occlusion | Medium | ASSUMED | Step geometry is fixed at 16px. Validated for standard and taller sprites (prevents floating torso visual gaps). |
+| A10 | Sprite animation frame dimension changes during a step do not affect clip correctness because `_max_stair_clip()` returns a fixed `TILE_SIZE`-derived value, independent of `sprite.image` dimensions | Low | ASSUMED | Safe by design — clip amount is geometry-based (step height), not sprite-based. |
 
 
 ---
@@ -417,7 +521,7 @@ If the NPC target is a tile beyond the top of the stairs, the NPC traverses norm
 ### Unit Tests (`game/tests/entities/test_stair_movement.py`)
 
 **MapManager:**
-- `UT-001`: `get_vertical_move_props(tx, ty)` returns `{"stair_direction": "right", "movement_type": "stair", "visual_y_offset": -12}` on mock tile with `stair_direction="right"`.
+- `UT-001`: `get_vertical_move_props(tx, ty)` returns `{"stair_direction": "right", "movement_type": "stair", "visual_y_offset": 0}` on mock tile with `stair_direction="right"`.
 - `UT-002`: `get_vertical_move_props(tx, ty)` returns `None` on tile without `stair_direction`.
 - `UT-003`: `get_vertical_move_props(-1, 0)` returns `None` (out of bounds — bounds check).
 - `UT-004`: `get_vertical_move_props(tx, ty)` returns `None` on tile with `direction="right"` but without `stair_direction` (verifies no name collision).
@@ -442,8 +546,17 @@ If the NPC target is a tile beyond the top of the stairs, the NPC traverses norm
 - `UT-013`: `walkable_func` returns `False` for diagonal target → `target_pos` = `pos`, `is_moving = False` (staircase blocked by wall).
 
 **Rendering offset & Interpolation:**
-- `UT-014`: Interpolation updates `current_stair_offset` smoothly during movement (e.g. at progress = 50%, offset is halfway between start and target offsets).
+- `UT-014`: At progress = 50% of a step toward `target_offset=-16, target_clip=max_clip`: assert `current_stair_offset == -8.0` and `current_stair_clip == max_clip / 2`. At progress = 100%: assert `current_stair_offset == -16.0` and `current_stair_clip == max_clip`.
 - `UT-015`: `CameraGroup.custom_draw()` applies `current_stair_offset` to render coordinates instead of static properties.
+- `UT-017`: `CameraGroup.custom_draw()` with `current_stair_clip = 8` on a 32×48 sprite: assert pixel at `(0, 39)` has alpha > 0 (visible); assert pixel at `(0, 47)` has alpha == 0 (cleared). Assert `sprite.image` is unchanged after draw (original surface not mutated). Assert clipped surface has `pygame.SRCALPHA` flag.
+- `UT-018` (combined clip + offset): Entity on tile with `visual_y_offset=-16` AND `stair_clip=true`. After `update_stair_offset()` (idle, fully arrived): `current_stair_offset == -16.0`, `current_stair_clip == _max_stair_clip()`. Call `custom_draw()`. Assert `offset_pos.y == visual_rect.top + camera_offset.y - 16`. Assert the blit uses `clipped_image` (not `sprite.image` directly). Assert pixel at image bottom is alpha 0 on the composed surface.
+
+**_max_stair_clip helper:**
+- `UT-019a`: Entity with `image.get_height() == 48` → `_max_stair_clip() == 16.0`.
+- `UT-019b`: Entity with `image = None` → `_max_stair_clip() == float(Settings.TILE_SIZE // 2)`.
+
+**stair_clip_exempt opt-out:**
+- `UT-020`: Entity subclass with `stair_clip_exempt = True` placed on a `stair_clip=true` tile. After `update_stair_offset()` (idle): assert `current_stair_clip == 0.0`. Assert `current_stair_offset` IS still set to the tile's `visual_y_offset` (clip exemption does NOT imply offset exemption).
 
 **VERTICAL_MOVE_MAP (config):**
 - `UT-016`: `VERTICAL_MOVE_MAP[((1, 0), "right")] == (1, -1)` — verifies table correctness for all 4 combinations.
@@ -487,3 +600,7 @@ If the NPC target is a tile beyond the top of the stairs, the NPC traverses norm
 | v3 | 2026-06-09 | Added §0 Tiled config, error handling, test cases |
 | v4 | 2026-06-10 | Post adversarial review corrections |
 | v5 | 2026-06-12 | Corrected descent diagonal logic per ADR-013: `should_move_diagonally = not stair_half` for descent (was `bool(stair_half)`) |
+| v6 | 2026-06-13 | Added dynamic stair clipping per ADR-015 |
+| v7 | 2026-06-13 | Post adversarial review (Round 0): completed `custom_draw()` code block, added `_max_stair_clip()` helper, fixed hardcoded fallback (TILE_SIZE//2), added clip+offset combined intent prose, added tile inventory `stair_clip` column, added A6–A9 assumptions, improved UT-017 with pixel assertions, added UT-018/UT-019. |
+| v8 | 2026-06-13 | Post adversarial review (Round 1 — Gemini 3.5 Flash): fixed `_max_stair_clip()` to return `TILE_SIZE//2` instead of `get_height()//2` (F-HIGH-04), centralized `visual_y_offset` fallback to `0` (F-MED-04). Post adversarial review (Round 1 — Claude Opus 4.6): updated `camera-rendering.md` cross-spec contract for `current_stair_clip` (F-HIGH-05), updated ADR-015 clip formula (F-HIGH-06), added A10 assumption. |
+| v9 | 2026-06-13 | Post adversarial review (Round 2 — Claude Sonnet 4.6): added `stair_start_pos` to `__init__` attribute list with implementation note (F-006); aligned `is_going_up` formula to code's domain-semantic derivation with VERTICAL_MOVE_MAP extension warning (F-004); added UT-020 for `stair_clip_exempt` opt-out including offset-not-exempt assertion (F-005); added SRCALPHA assertion to UT-017 (A6 coverage). |

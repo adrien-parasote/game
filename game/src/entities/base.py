@@ -40,8 +40,15 @@ class BaseEntity(pygame.sprite.Sprite):
         self.current_stair_offset: float = 0.0
         self.stair_start_offset: float = 0.0
         self.stair_target_offset: float = 0.0
+        self.current_stair_clip: float = 0.0
+        self.stair_start_clip: float = 0.0
+        self.stair_target_clip: float = 0.0
         self.stair_move_distance: float = 0.0
         self.stair_start_pos: pygame.math.Vector2 = pygame.math.Vector2(pos)
+
+    def _max_stair_clip(self) -> float:
+        """Return maximum clip amount for this entity."""
+        return float(Settings.TILE_SIZE // 2)
 
     def move(self, dt: float):
         """Move towards target_pos if is_moving, else start move if direction exists."""
@@ -180,14 +187,18 @@ class BaseEntity(pygame.sprite.Sprite):
             # Setup interpolation caching
             self.stair_start_pos = pygame.math.Vector2(self.pos)
             self.stair_start_offset = self.current_stair_offset
+            self.stair_start_clip = self.current_stair_clip
             if self.game and hasattr(self.game, "map_manager"):
                 target_tx = int(self.target_pos.x // Settings.TILE_SIZE)
                 target_ty = int(self.target_pos.y // Settings.TILE_SIZE)
                 target_vm = self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
                 self._vertical_move = target_vm
                 self.stair_target_offset = target_vm["visual_y_offset"] if target_vm else 0.0
+                max_clip = self._max_stair_clip()
+                self.stair_target_clip = max_clip if target_vm and target_vm.get("stair_clip") else 0.0
             else:
                 self.stair_target_offset = 0.0
+                self.stair_target_clip = 0.0
             self.stair_move_distance = (self.target_pos - self.pos).magnitude()
 
     def interact(self, initiator) -> Any:
@@ -199,10 +210,15 @@ class BaseEntity(pygame.sprite.Sprite):
         self.update_stair_offset()
 
     def update_stair_offset(self):
+        if getattr(self, 'stair_clip_exempt', False):
+            self.current_stair_clip = 0.0
+
         if not self.is_moving:
             # Standing still: read cached _vertical_move
             vm = self._vertical_move
             self.current_stair_offset = vm["visual_y_offset"] if vm else 0.0
+            if not getattr(self, 'stair_clip_exempt', False):
+                self.current_stair_clip = self._max_stair_clip() if vm and vm.get("stair_clip") else 0.0
         else:
             # Moving: interpolate offset based on movement progress
             total_dist = (self.target_pos - self.stair_start_pos).magnitude()
@@ -210,5 +226,9 @@ class BaseEntity(pygame.sprite.Sprite):
                 curr_dist = (self.target_pos - self.pos).magnitude()
                 progress = max(0.0, min(1.0, 1.0 - curr_dist / total_dist))
                 self.current_stair_offset = self.stair_start_offset + (self.stair_target_offset - self.stair_start_offset) * progress
+                if not getattr(self, 'stair_clip_exempt', False):
+                    self.current_stair_clip = self.stair_start_clip + (self.stair_target_clip - self.stair_start_clip) * progress
             else:
                 self.current_stair_offset = self.stair_target_offset
+                if not getattr(self, 'stair_clip_exempt', False):
+                    self.current_stair_clip = self.stair_target_clip

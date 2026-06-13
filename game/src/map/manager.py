@@ -2,8 +2,8 @@ import math
 from collections.abc import Iterator
 
 import pygame
-
 from src.engine.engine_constants import GRASS_MAX_DEPTH
+
 from .layout import LayoutStrategy
 
 
@@ -330,6 +330,7 @@ class MapManager:
                     "movement_type": props.get("movement_type", "stair"),
                     "stair_half": bool(props.get("stair_half", False)),
                     "visual_y_offset": int(props.get("visual_y_offset", 0)),
+                    "stair_clip": bool(props.get("stair_clip", False)),
                 }
         return None  # absent → neutral tile, not a stair
 
