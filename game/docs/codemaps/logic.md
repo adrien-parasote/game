@@ -18,7 +18,7 @@ PAUSED  → GameEvent.goto_title()        → _transition_to_title()        → 
 ## Movement Chain
 `Player.input()` (WASD/Arrows) → `BaseEntity.move(dt)` → `CollisionChecker.is_collidable()` (tile + obstacle group) → `rect` update + animation frame
 - **Footsteps**: frames 1 and 3. `MapManager.get_terrain_material_at()` → depth≤1 tiles only. `AudioManager.play_sfx(footstep_{material})` with fallback.
-- **Diagonal Stair Movement**: Horizontal inputs (right/left) on stair tiles (`stair_direction` property "right"/"left") are intercepted in `BaseEntity.start_move()` and mapped to diagonal moves via `Settings.VERTICAL_MOVE_MAP`. Other directions are blocked. Visual Y-position is adjusted by `stair_y_offset` in `CameraGroup.custom_draw()`.
+- **Diagonal Stair Movement**: Horizontal inputs (right/left) on stair tiles (`stair_direction` property "right"/"left") are intercepted in `BaseEntity.start_move()` and mapped to diagonal moves via `Settings.VERTICAL_MOVE_MAP`. Other directions are blocked. Visual Y-position is adjusted by `current_stair_offset`. If `stair_clip` is set, `current_stair_clip` hides the bottom pixels via `CameraGroup.custom_draw()` composition.
 
 ## Interaction Chain
 `INTERACT_KEY (E)` → `InteractionManager.handle_interactions()` (`distance_squared_to`, module-level `_RANGE_SQ_*` constants)
