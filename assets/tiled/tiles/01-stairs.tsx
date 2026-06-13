@@ -31,7 +31,7 @@
  <tile id="4" type="01-vertical-move">
   <properties>
    <property name="material" value="stone" />
-   <property name="stair_direction" propertytype="23-direction" value="left" />
+   <property name="stair_direction" propertytype="23-direction" value="right" />
    <property name="stair_half" type="bool" value="false" />
    <property name="visual_y_offset" type="int" value="0" />
   </properties>
@@ -39,7 +39,7 @@
  <tile id="5" type="01-vertical-move">
   <properties>
    <property name="material" value="stone" />
-   <property name="stair_direction" propertytype="23-direction" value="left" />
+   <property name="stair_direction" propertytype="23-direction" value="right" />
    <property name="stair_half" type="bool" value="true" />
    <property name="visual_y_offset" type="int" value="-16" />
   </properties>
@@ -117,7 +117,7 @@
  <tile id="16" type="01-vertical-move">
   <properties>
    <property name="material" value="stone" />
-   <property name="stair_direction" propertytype="23-direction" value="left" />
+   <property name="stair_direction" propertytype="23-direction" value="right" />
    <property name="stair_half" type="bool" value="false" />
    <property name="visual_y_offset" type="int" value="0" />
   </properties>
@@ -125,7 +125,7 @@
  <tile id="17" type="01-vertical-move">
   <properties>
    <property name="material" value="stone" />
-   <property name="stair_direction" propertytype="23-direction" value="left" />
+   <property name="stair_direction" propertytype="23-direction" value="right" />
    <property name="stair_half" type="bool" value="true" />
    <property name="visual_y_offset" type="int" value="-16" />
   </properties>
