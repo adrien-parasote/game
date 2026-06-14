@@ -1,0 +1,6 @@
+enhancement:
+  - head-branch: ['^feat/.*']
+bug:
+  - head-branch: ['^bug/.*']
+refactor:
+  - head-branch: ['^refactor/.*']
