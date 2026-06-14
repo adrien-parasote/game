@@ -606,8 +606,8 @@ class TestStairMovementUnit:
         entity._vertical_move = current_props
         entity.start_move()
 
-        # Target dir should be (1, 1) to go diagonally down-right
-        assert entity.direction == pygame.math.Vector2(1, 1)
+        # Target dir should be (1, 0) (flat) because descending from Top Half (stair_half=True) is flat.
+        assert entity.direction == pygame.math.Vector2(1, 0)
         assert entity.is_moving is True
 
     def test_ut_022_down_right_stair_ascending(self, setup_map_manager):
@@ -648,6 +648,6 @@ class TestStairMovementUnit:
         entity._vertical_move = current_props
         entity.start_move()
 
-        # Target dir should be (-1, -1) to go diagonally up-left
-        assert entity.direction == pygame.math.Vector2(-1, -1)
+        # Target dir should be (-1, 0) (flat) because ascending from Bottom Half (stair_half=False) is flat.
+        assert entity.direction == pygame.math.Vector2(-1, 0)
         assert entity.is_moving is True
