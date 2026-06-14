@@ -16,11 +16,33 @@ class Settings:
     MAP_SIZE = 32
 
     # Maps (input_direction, stair_direction) → intercepted_direction
+    #
+    # Compound direction format: "<type>,<entry_side>"
+    #   type      = "up"   (ascending visual asset)
+    #             | "down" (descending visual asset)
+    #   entry_side = "left"  (bottom/entry of asset is on the left)
+    #              | "right" (bottom/entry of asset is on the right)
+    #
+    # Group A — up,left & down,right: player enters from right side to ascend
+    #   RIGHT = ascend (+1,-1)  |  LEFT = descend (-1,+1)
+    # Group B — up,right & down,left: player enters from left side to ascend
+    #   LEFT = ascend (-1,-1)   |  RIGHT = descend (+1,+1)
     VERTICAL_MOVE_MAP: ClassVar[dict[tuple[tuple[int, int], str], tuple[int, int]]] = {
-        ((1, 0), "right"):  (1, -1),   # Right on right-stair → diagonal ascent
-        ((-1, 0), "right"): (-1, 1),   # Left on right-stair → diagonal descent
-        ((1, 0), "left"):  (1, 1),    # Right on left-stair → diagonal descent
-        ((-1, 0), "left"):  (-1, -1),  # Left on left-stair → diagonal ascent
+        # --- Group A (up,left / down,right) ---
+        ((1, 0),  "up,left"):    (1, -1),
+        ((-1, 0), "up,left"):   (-1,  1),
+        ((1, 0),  "down,right"): (1, -1),
+        ((-1, 0), "down,right"): (-1, 1),
+        # --- Group B (up,right / down,left) ---
+        ((1, 0),  "up,right"):   (1,  1),
+        ((-1, 0), "up,right"):  (-1, -1),
+        ((1, 0),  "down,left"):  (1,  1),
+        ((-1, 0), "down,left"): (-1, -1),
+        # --- Legacy single-word keys (backward compat) ---
+        ((1, 0),  "right"):  (1, -1),
+        ((-1, 0), "right"): (-1,  1),
+        ((1, 0),  "left"):   (1,  1),
+        ((-1, 0), "left"):  (-1, -1),
     }
 
     # Internal Defaults (Fallback)
