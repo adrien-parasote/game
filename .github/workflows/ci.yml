@@ -34,5 +34,8 @@ jobs:
     - name: Type check with Pyright
       run: pyright
       
+    - name: Install xvfb
+      run: sudo apt-get update && sudo apt-get install -y xvfb
+      
     - name: Test with pytest
-      run: pytest
+      run: xvfb-run pytest
