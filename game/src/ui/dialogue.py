@@ -8,8 +8,8 @@ from src.engine.asset_manager import AssetManager
 from src.ui.dialogue_constants import (
     DIALOGUE_ARROW_X_INSET,
     DIALOGUE_ARROW_Y_OFFSET,
-    DIALOGUE_BOX_BOTTOM_INSET,
     DIALOGUE_BOTTOM_MARGIN,
+    DIALOGUE_BOX_BOTTOM_INSET,
     DIALOGUE_CONTENT_MARGIN_X,
     DIALOGUE_FONT_SCALE,
     DIALOGUE_LINE_SPACING,
@@ -272,7 +272,10 @@ class DialogueManager:
 
         # 1. Position box at bottom
         box_rect = self.dialogue_box.get_rect(
-            midbottom=(Settings.WINDOW_WIDTH // 2, Settings.WINDOW_HEIGHT - DIALOGUE_BOX_BOTTOM_INSET)
+            midbottom=(
+                Settings.WINDOW_WIDTH // 2,
+                Settings.WINDOW_HEIGHT - DIALOGUE_BOX_BOTTOM_INSET,
+            )
         )
         screen.blit(self.dialogue_box, box_rect)
 

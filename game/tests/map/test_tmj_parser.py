@@ -15,7 +15,6 @@ from unittest.mock import MagicMock, patch
 import pygame
 import pytest
 
-
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 
@@ -148,9 +147,7 @@ def test_load_map_spawn_player_detected(tmp_path):
                         "y": 64,
                         "width": 32,
                         "height": 48,
-                        "properties": [
-                            {"name": "spawn_player", "value": True}
-                        ],
+                        "properties": [{"name": "spawn_player", "value": True}],
                     }
                 ],
             }

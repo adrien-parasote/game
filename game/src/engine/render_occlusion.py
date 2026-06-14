@@ -4,6 +4,7 @@ from src.engine.asset_manager import AssetManager
 
 type OccludingRect = list[tuple[pygame.Rect, int, pygame.Surface | None]]
 
+
 class OcclusionRenderer:
     """Helper class managing occlusion compositing for RenderManager."""
 
@@ -90,7 +91,9 @@ class OcclusionRenderer:
         cam_offset = self.game.visible_sprites.offset
         current_key = (int(cam_offset.x), int(cam_offset.y), len(occluding_rects))
 
-        any_moving = any(getattr(sp, "is_moving", False) for sp in self.game.visible_sprites.sprites())
+        any_moving = any(
+            getattr(sp, "is_moving", False) for sp in self.game.visible_sprites.sprites()
+        )
 
         if not any_moving and current_key == self._occ_key and self._occ_composite_cache:
             saved_images: dict[object, pygame.Surface] = {}
@@ -115,8 +118,8 @@ class OcclusionRenderer:
                 continue
 
             visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
-            stair_y_offset = getattr(sprite, 'current_stair_offset', 0.0)
-            if not isinstance(stair_y_offset, (int, float)):
+            stair_y_offset = getattr(sprite, "current_stair_offset", 0.0)
+            if not isinstance(stair_y_offset, int | float):
                 stair_y_offset = 0.0
 
             sprite_screen_rect = pygame.Rect(

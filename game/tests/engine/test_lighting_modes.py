@@ -61,9 +61,7 @@ def test_outdoor_mode_uses_time_system_alpha():
         game = _make_game("outdoor", ambient_dark_alpha=0)
         game.time_system = TimeSystem(initial_hour=hour)
         expected = game.time_system.night_alpha
-        assert _compute_effective_alpha(game) == expected, (
-            f"hour={hour}: expected {expected}"
-        )
+        assert _compute_effective_alpha(game) == expected, f"hour={hour}: expected {expected}"
 
 
 # ---------------------------------------------------------------------------
@@ -79,9 +77,7 @@ def test_underground_mode_fixed_alpha():
         game = _make_game("underground", ambient_dark_alpha=ambient)
         game.time_system = TimeSystem(initial_hour=hour)
         result = _compute_effective_alpha(game)
-        assert result == ambient, (
-            f"hour={hour}: expected {ambient}, got {result}"
-        )
+        assert result == ambient, f"hour={hour}: expected {ambient}, got {result}"
 
 
 # ---------------------------------------------------------------------------
@@ -165,25 +161,32 @@ def test_map_loader_stores_lighting_mode_on_game():
     game.walkable_override_entities = []
 
     map_result = {
-        "width": 2, "height": 2,
-        "layers": {}, "tiles": {},
-        "layer_names": {}, "layer_order": [], "layer_order_values": {},
-        "spawn_player": None, "entities": [],
+        "width": 2,
+        "height": 2,
+        "layers": {},
+        "tiles": {},
+        "layer_names": {},
+        "layer_order": [],
+        "layer_order_values": {},
+        "spawn_player": None,
+        "entities": [],
         "properties": {"lighting_mode": "underground", "ambient_dark_alpha": 150},
     }
 
     loader = MapLoader(game)
-    with patch.object(loader, "_clear_groups"), \
-         patch.object(loader, "_position_player"), \
-         patch.object(loader, "_start_initial_ambients"), \
-         patch.object(loader, "_resolve_spawn", return_value=(16, 16)), \
-         patch.object(loader, "_save_npc_states"), \
-         patch.object(loader, "_save_interactive_states"), \
-         patch("src.engine.map_loader.TmjParser") as mock_parser_cls, \
-         patch("src.engine.map_loader.MapManager") as mock_mm_cls, \
-         patch("src.engine.map_loader.AnimationMapManager"), \
-         patch("src.engine.map_loader.OrthogonalLayout"), \
-         patch("os.path.exists", return_value=True):
+    with (
+        patch.object(loader, "_clear_groups"),
+        patch.object(loader, "_position_player"),
+        patch.object(loader, "_start_initial_ambients"),
+        patch.object(loader, "_resolve_spawn", return_value=(16, 16)),
+        patch.object(loader, "_save_npc_states"),
+        patch.object(loader, "_save_interactive_states"),
+        patch("src.engine.map_loader.TmjParser") as mock_parser_cls,
+        patch("src.engine.map_loader.MapManager") as mock_mm_cls,
+        patch("src.engine.map_loader.AnimationMapManager"),
+        patch("src.engine.map_loader.OrthogonalLayout"),
+        patch("os.path.exists", return_value=True),
+    ):
         mock_parser = MagicMock()
         mock_parser.load_map.return_value = map_result
         mock_parser_cls.return_value = mock_parser
@@ -226,25 +229,32 @@ def test_map_loader_defaults_when_property_absent():
     game.walkable_override_entities = []
 
     map_result = {
-        "width": 2, "height": 2,
-        "layers": {}, "tiles": {},
-        "layer_names": {}, "layer_order": [], "layer_order_values": {},
-        "spawn_player": None, "entities": [],
+        "width": 2,
+        "height": 2,
+        "layers": {},
+        "tiles": {},
+        "layer_names": {},
+        "layer_order": [],
+        "layer_order_values": {},
+        "spawn_player": None,
+        "entities": [],
         "properties": {},  # no lighting_mode
     }
 
     loader = MapLoader(game)
-    with patch.object(loader, "_clear_groups"), \
-         patch.object(loader, "_position_player"), \
-         patch.object(loader, "_start_initial_ambients"), \
-         patch.object(loader, "_resolve_spawn", return_value=(16, 16)), \
-         patch.object(loader, "_save_npc_states"), \
-         patch.object(loader, "_save_interactive_states"), \
-         patch("src.engine.map_loader.TmjParser") as mock_parser_cls, \
-         patch("src.engine.map_loader.MapManager") as mock_mm_cls, \
-         patch("src.engine.map_loader.AnimationMapManager"), \
-         patch("src.engine.map_loader.OrthogonalLayout"), \
-         patch("os.path.exists", return_value=True):
+    with (
+        patch.object(loader, "_clear_groups"),
+        patch.object(loader, "_position_player"),
+        patch.object(loader, "_start_initial_ambients"),
+        patch.object(loader, "_resolve_spawn", return_value=(16, 16)),
+        patch.object(loader, "_save_npc_states"),
+        patch.object(loader, "_save_interactive_states"),
+        patch("src.engine.map_loader.TmjParser") as mock_parser_cls,
+        patch("src.engine.map_loader.MapManager") as mock_mm_cls,
+        patch("src.engine.map_loader.AnimationMapManager"),
+        patch("src.engine.map_loader.OrthogonalLayout"),
+        patch("os.path.exists", return_value=True),
+    ):
         mock_parser = MagicMock()
         mock_parser.load_map.return_value = map_result
         mock_parser_cls.return_value = mock_parser
@@ -383,7 +393,9 @@ def test_create_overlay_called_with_effective_alpha():
     active_torches = []
     window_positions = []
     if effective_alpha > 0:
-        lm.create_overlay(window_positions, active_torches, cam_offset, alpha_override=effective_alpha)
+        lm.create_overlay(
+            window_positions, active_torches, cam_offset, alpha_override=effective_alpha
+        )
 
     # Verify: effective_alpha == ambient (underground fixed), NOT time_system value
     assert effective_alpha == ambient, (

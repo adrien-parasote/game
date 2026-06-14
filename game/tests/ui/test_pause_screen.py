@@ -121,7 +121,6 @@ def test_pause_screen_handle_event_click_sauvegarder(pause_screen):
     pause_screen._save_menu.refresh.assert_called_once()
 
 
-
 def test_pause_screen_handle_event_ignore_wrong_button(pause_screen):
     event = MagicMock()
     event.type = pygame.MOUSEBUTTONDOWN
@@ -273,4 +272,3 @@ def test_make_halo_surface_gaussian_blur_fallback(pause_screen):
     with patch("pygame.transform.gaussian_blur", side_effect=AttributeError("no blur")):
         surf = pause_screen._make_halo_surface("Test")
     assert isinstance(surf, pygame.Surface)
-

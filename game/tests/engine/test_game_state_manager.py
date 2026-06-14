@@ -356,7 +356,6 @@ def test_resolve_default_map_with_debug_room(gsm):
         assert gsm._resolve_default_map() == "debug/99-debug_room.tmj"
 
 
-
 # (imports already at top of file)
 
 

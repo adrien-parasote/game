@@ -56,16 +56,18 @@ class MapManager:
         # P-001 — World-space foreground occlusion cache.
         # Populated once at init; never mutated after.
         # Format: list[tuple[world_x_px, world_y_px, depth, img, occ_img | None]]
-        self._fg_occlusion_grid: dict[tuple[int, int], tuple[int, pygame.Surface, pygame.Surface | None]] = {}
-        self._fg_occlusion_world: list[tuple[int, int, int, pygame.Surface, pygame.Surface | None]] = []
+        self._fg_occlusion_grid: dict[
+            tuple[int, int], tuple[int, pygame.Surface, pygame.Surface | None]
+        ] = {}
+        self._fg_occlusion_world: list[
+            tuple[int, int, int, pygame.Surface, pygame.Surface | None]
+        ] = []
         self._build_fg_occlusion_world()
 
         # P-008 — Grass material grid pre-computation
         self._grass_grid: list[list[pygame.Surface | None]] = []
         self._build_grass_grid()
-        self._map_has_grass: bool = any(
-            img is not None for row in self._grass_grid for img in row
-        )
+        self._map_has_grass: bool = any(img is not None for row in self._grass_grid for img in row)
 
         # H-002: Pre-compute animated tile layer membership
         self._anim_tile_layer_map: dict[tuple[int, int], int] = {}
@@ -137,9 +139,7 @@ class MapManager:
 
     def update_grass_state(self) -> None:
         """Must be called if grass is dynamically created/destroyed at runtime."""
-        self._map_has_grass = any(
-            img is not None for row in self._grass_grid for img in row
-        )
+        self._map_has_grass = any(img is not None for row in self._grass_grid for img in row)
 
     def _build_anim_tile_layer_map(self) -> None:
         """Pre-compute (col, row) -> layer_id for all animated tiles.
@@ -195,6 +195,7 @@ class MapManager:
 
             logging.error(f"Failed to pre-render layer {layer_id}: {e}")
             return None
+
     def get_foreground_layer_surface(
         self, layer_id: int, pygame_module, min_depth: int = 1
     ) -> pygame.Surface | None:
@@ -238,6 +239,7 @@ class MapManager:
             return surface
         except Exception as e:
             import logging
+
             logging.error(f"Failed to pre-render foreground layer {layer_id}: {e}")
             self._fg_surfaces[key] = None
             return None
@@ -331,9 +333,11 @@ class MapManager:
                 return {
                     "stair_direction": stair_dir,
                     "movement_type": props.get("movement_type", "stair"),
-                    "stair_half": props.get("half", props.get("stair_half", False)) in (True, "true"),
+                    "stair_half": props.get("half", props.get("stair_half", False))
+                    in (True, "true"),
                     "visual_y_offset": int(props.get("visual_y_offset", 0)),
-                    "stair_clip": props.get("clip", props.get("stair_clip", False)) in (True, "true"),
+                    "stair_clip": props.get("clip", props.get("stair_clip", False))
+                    in (True, "true"),
                 }
         return None  # absent → neutral tile, not a stair
 

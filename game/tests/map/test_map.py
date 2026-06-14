@@ -1014,6 +1014,7 @@ def test_order_property_used_for_layer_sorting():
 # These tests are RED until _build_fg_occlusion_world is implemented.
 # ===========================================================================
 
+
 def _make_fg_tile(depth: int = 2, has_occ: bool = True, animated: bool = False):
     """Helper: create a foreground tile mock for P-001 tests."""
     tile = MagicMock()
@@ -1079,7 +1080,9 @@ def test_fg_occlusion_world_excludes_background_depth():
 
     assert hasattr(mm, "_fg_occlusion_world")
     for _wx, _wy, depth, _img, _occ in mm._fg_occlusion_world:
-        assert depth > 0, f"Found tile with depth={depth} <= 0 in _fg_occlusion_world (must exclude bg tiles)"
+        assert depth > 0, (
+            f"Found tile with depth={depth} <= 0 in _fg_occlusion_world (must exclude bg tiles)"
+        )
 
 
 @pytest.mark.tc("TC-003")
@@ -1091,9 +1094,7 @@ def test_fg_occlusion_world_excludes_animated_tiles():
 
     assert hasattr(mm, "_fg_occlusion_world")
     # The map only has 1 tile, and it's animated — cache must be empty
-    assert mm._fg_occlusion_world == [], (
-        "Animated tile must be excluded from _fg_occlusion_world"
-    )
+    assert mm._fg_occlusion_world == [], "Animated tile must be excluded from _fg_occlusion_world"
 
 
 @pytest.mark.tc("TC-004")

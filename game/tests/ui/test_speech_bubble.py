@@ -261,7 +261,5 @@ class TestSpeechBubbleMissingBranches(unittest.TestCase):
         assert isinstance(bubble, SpeechBubble)
 
 
-
-
 if __name__ == "__main__":
     unittest.main()

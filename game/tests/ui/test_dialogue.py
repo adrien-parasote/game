@@ -219,4 +219,3 @@ def test_advance_does_nothing_when_not_active():
     dm.is_active = False
     dm.advance()  # Must not raise
     assert dm.is_active is False
-

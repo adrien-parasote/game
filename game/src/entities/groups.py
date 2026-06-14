@@ -34,8 +34,8 @@ class CameraGroup(pygame.sprite.Group):
             return self.offset
         # Standard centering offset
         off_x = self.half_width - target.rect.centerx
-        stair_offset = getattr(target, 'current_stair_offset', 0)
-        if not isinstance(stair_offset, (int, float)):
+        stair_offset = getattr(target, "current_stair_offset", 0)
+        if not isinstance(stair_offset, int | float):
             stair_offset = 0
         visual_y = target.rect.centery + stair_offset
         off_y = self.half_height - visual_y
@@ -125,27 +125,27 @@ class CameraGroup(pygame.sprite.Group):
             visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
 
             # Dynamic stair visual offset (interpolated — replaces old _vertical_move-based offset)
-            stair_y_offset = getattr(sprite, 'current_stair_offset', 0.0)
+            stair_y_offset = getattr(sprite, "current_stair_offset", 0.0)
             if not isinstance(stair_y_offset, int | float):
                 stair_y_offset = 0.0
 
             # Calculate world visual rect in screen space
-            offset_pos = (visual_rect.left + self.offset.x, visual_rect.top + self.offset.y + stair_y_offset)
+            offset_pos = (
+                visual_rect.left + self.offset.x,
+                visual_rect.top + self.offset.y + stair_y_offset,
+            )
 
             # Simple Frustum Culling: check if sprite overlaps screen
             screen_sprite_rect = pygame.Rect(offset_pos, visual_rect.size)
             if screen_rect.colliderect(screen_sprite_rect):
-                stair_clip = getattr(sprite, 'current_stair_clip', 0.0)
-                if not isinstance(stair_clip, (int, float)):
+                stair_clip = getattr(sprite, "current_stair_clip", 0.0)
+                if not isinstance(stair_clip, int | float):
                     stair_clip = 0.0
                 if stair_clip > 0:
                     clipped_image = pygame.Surface(visual_rect.size, pygame.SRCALPHA)
                     clipped_image.blit(sprite.image, (0, 0))
                     clip_rect = pygame.Rect(
-                        0,
-                        visual_rect.height - int(stair_clip),
-                        visual_rect.width,
-                        int(stair_clip)
+                        0, visual_rect.height - int(stair_clip), visual_rect.width, int(stair_clip)
                     )
                     clipped_image.fill((0, 0, 0, 0), clip_rect, pygame.BLEND_RGBA_MIN)
                     surface.blit(clipped_image, offset_pos)

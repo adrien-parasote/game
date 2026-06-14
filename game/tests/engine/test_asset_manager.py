@@ -10,7 +10,6 @@ import pygame
 import pytest
 from src.engine.asset_manager import AssetManager
 
-
 # ── Singleton ──────────────────────────────────────────────────────────────────
 
 
@@ -135,7 +134,7 @@ def test_get_occlusion_mask_cache_hit():
 def test_get_occlusion_mask_fully_opaque_returns_none():
     """Fully opaque tile (no transparent pixels) → get_occlusion_mask returns None."""
     am = AssetManager()
-    # 8×8 opaque surface (no alpha)
+    # 8x8 opaque surface (no alpha)
     surf = pygame.Surface((8, 8))
     surf.fill((255, 0, 0))
     # Convert to per-pixel alpha so get_at().a works

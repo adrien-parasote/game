@@ -272,7 +272,7 @@ def test_dialogue_pagination():
     """Verify that long text is paginated into multiple pages.
 
     We inject a mock font (8px per char, 16px line height) and a small
-    dialogue box (600×120px) so that max_lines=1 → every wrapped line
+    dialogue box (600x120px) so that max_lines=1 → every wrapped line
     becomes its own page, guaranteeing >1 page for 500 words.
     """
     dm = DialogueManager()

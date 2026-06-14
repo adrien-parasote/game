@@ -13,7 +13,6 @@ from unittest.mock import patch
 import pygame
 import pytest
 
-
 # ── Constructor — invalid paths ────────────────────────────────────────────────
 
 
@@ -85,7 +84,7 @@ def test_load_grid_by_size_fallback_when_invalid():
 
 
 def test_load_grid_slices_correctly():
-    """load_grid on a valid 64x64 surface with 2 cols × 2 rows → 4 surfaces of 32×32."""
+    """load_grid on a valid 64x64 surface with 2 cols x 2 rows -> 4 surfaces of 32x32."""
     from src.graphics.spritesheet import SpriteSheet
 
     # Build a fake 64x64 sheet

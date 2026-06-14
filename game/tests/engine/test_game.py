@@ -236,7 +236,6 @@ def test_game_trigger_dialogue_subdirectory(mock_load):
         mock_get.assert_called_with("dialogues.test_map-sign_1")
 
 
-
 class DummySprite(pygame.sprite.Sprite):
     def __init__(self, element_id=""):
         super().__init__()
@@ -728,19 +727,21 @@ class TestGameCoverage:
     @patch("src.engine.game.Game._load_map")
     def test_get_initial_map_with_debug_room(self, _):  # noqa: PT019
         from src.config import Settings
+
         original_debug = Settings.DEBUG
         Settings.DEBUG = True
         import os
+
         real_exists = os.path.exists
+
         def mock_exists(path):
             if "99-debug_room.tmj" in str(path):
                 return True
             return real_exists(path)
+
         try:
             with patch("os.path.exists", side_effect=mock_exists):
                 game = Game(skip_map_load=True)
                 assert game._get_initial_map() == "debug/99-debug_room.tmj"
         finally:
             Settings.DEBUG = original_debug
-
-

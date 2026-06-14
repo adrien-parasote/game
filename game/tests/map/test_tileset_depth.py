@@ -19,7 +19,7 @@ from unittest.mock import patch
 from src.map.tmj_parser import TmjParser
 
 # Compute workspace root: test file is at game/tests/map/test_tileset_depth.py
-# → parent×3 = game/ → parent×1 = workspace root (where assets/ lives)
+# -> parent x 3 = game/ -> parent x 1 = workspace root (where assets/ lives)
 _WORKSPACE_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 DECORATIONS_TSX = str(_WORKSPACE_ROOT / "assets/tiled/tiles/02-decorations.tsx")
 WATER_TSX = str(_WORKSPACE_ROOT / "assets/tiled/autotiles/01-water.tsx")

@@ -243,6 +243,9 @@ class TmjParser:
                 "depth": tileset_props.get("depth", 0),
                 "direction": tileset_props.get("direction", "any"),
             }
+            tile_type = tile.get("type")
+            if tile_type:
+                props["type"] = tile_type
 
             properties_node = tile.find("properties")
             if properties_node is not None:
@@ -304,8 +307,15 @@ class TmjParser:
             occluded = surface.copy()
             occluded.set_alpha(Settings.OCCLUSION_ALPHA)
 
-        direction_str = str(props.get("direction", "any")).strip() or "any"
-        direction_flags = set(d.strip() for d in direction_str.split(",") if d.strip()) or {"any"}
+        direction_val = str(props.get("direction", "any")).strip() or "any"
+        is_stair = props.get("type") == "01-vertical-move" or props.get("movement_type") == "stair"
+
+        if is_stair:
+            direction_flags = {"any"}
+        else:
+            direction_flags = set(d.strip() for d in direction_val.split(",") if d.strip()) or {
+                "any"
+            }
 
         tile_dict[global_id] = TileMapData(
             image=surface,

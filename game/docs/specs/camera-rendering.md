@@ -75,6 +75,22 @@ if screen_rect.colliderect(screen_sprite_rect):
 
 > **Stair visual offset:** `BaseEntity` exposes `current_stair_offset: float` (see [stair-movement.md §1.4](./stair-movement.md)). This float is interpolated during stair traversal and must be applied as an additional Y-offset in **every** `blit()` call via `getattr(sprite, 'current_stair_offset', 0.0)`. The `getattr` default of `0.0` ensures normal sprites (no stair system) are unaffected. **Never read `sprite._vertical_move` directly** — that is the raw property store; `current_stair_offset` is the authoritative render value.
 
+> **Stair clip rendering:** `BaseEntity` exposes `current_stair_clip: float` (see [stair-movement.md §1.4](./stair-movement.md)). When `current_stair_clip > 0`, the sprite's bottom pixels must be made transparent via composition — NOT by modifying `sprite.image`. The rendering path inside the frustum cull block becomes:
+>
+> ```python
+> stair_clip = int(getattr(sprite, 'current_stair_clip', 0.0))
+> if stair_clip > 0:
+>     clipped_image = pygame.Surface(sprite.image.get_size(), pygame.SRCALPHA)
+>     clipped_image.blit(sprite.image, (0, 0))
+>     clip_rect = pygame.Rect(0, clipped_image.get_height() - stair_clip, clipped_image.get_width(), stair_clip)
+>     clipped_image.fill((0, 0, 0, 0), clip_rect, special_flags=pygame.BLEND_RGBA_MIN)
+>     surface.blit(clipped_image, offset_pos)
+> else:
+>     surface.blit(sprite.image, offset_pos)
+> ```
+>
+> See [stair-movement.md §1.4](./stair-movement.md) for the complete rendering block including frustum culling integration. The clip amount is interpolated per-frame during stair traversal, creating a smooth depth illusion. The `getattr` default of `0.0` ensures non-stair sprites take the fast `else` path.
+
 ### 3.4. Visual Anchoring
 
 Sprites are anchored `bottomright` of visual image to `bottomright` of logical hitbox:
@@ -491,6 +507,7 @@ N/A - Not applicable
 | `Settings.GRASS_WADING_DEPTH` | `int` (pixels) | `src/config.py` |
 | `Settings.GRASS_WADING_ALPHA` | `int` (0–255) | `src/config.py` |
 | `BaseEntity.current_stair_offset` | `float` | `src/entities/base.py` — see [stair-movement.md §1.4](./stair-movement.md). Applied as additional Y-offset in `custom_draw()` via `getattr(sprite, 'current_stair_offset', 0.0)`. Default `0.0` for non-stair sprites. |
+| `BaseEntity.current_stair_clip` | `float` | `src/entities/base.py` — see [stair-movement.md §1.4](./stair-movement.md). When `> 0`, triggers composition-based clipping of the sprite's bottom pixels in `custom_draw()`. Default `0.0` for non-stair sprites. |
 
 ### Tracked Interface Changes
 

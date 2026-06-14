@@ -443,7 +443,9 @@ def test_it002_npc_semi_occluded_swap_and_restore():
     # _apply_partial_occlusion swaps image and returns the saved dict
     with (
         patch.object(rm, "draw_foreground", return_value=occluding),
-        patch.object(rm.occlusion_renderer, "apply_partial_occlusion", return_value={npc: original_surf}) as mock_apo,
+        patch.object(
+            rm.occlusion_renderer, "apply_partial_occlusion", return_value={npc: original_surf}
+        ) as mock_apo,
     ):
         # Simulate what draw_scene does with the returned saved_images
         npc.image = composite_surf  # simulates swap done by _apply_partial_occlusion
@@ -803,7 +805,9 @@ def test_grass_wading_does_not_blit_black_bar():
 
     rm = RenderManager(game)
     cam_offset = pygame.math.Vector2(0, 0)
-    composite = rm.wading_renderer._build_wading_composite(sprite, cam_offset, game.tile_size, 10, 140)
+    composite = rm.wading_renderer._build_wading_composite(
+        sprite, cam_offset, game.tile_size, 10, 140
+    )
     assert composite is not None
 
     # Upper body (above wading zone) must still be red — not overwritten by a black bar
@@ -1077,7 +1081,7 @@ def test_build_screen_occluding_rects_filters_by_depth():
     """TC-008: Tiles with depth <= player_depth are excluded from occluding_rects."""
     # Tile at depth=1 (== player_depth=1) must be excluded
     fg_world = [
-        _make_fg_world_entry(wx=0, wy=0, depth=1),   # excluded (depth == player_depth)
+        _make_fg_world_entry(wx=0, wy=0, depth=1),  # excluded (depth == player_depth)
         _make_fg_world_entry(wx=32, wy=0, depth=2),  # included (depth > player_depth)
     ]
     game = _make_game_p001(fg_world=fg_world)
@@ -1086,7 +1090,9 @@ def test_build_screen_occluding_rects_filters_by_depth():
     rm._viewport_world = pygame.Rect(0, 0, 640, 480)
 
     occluding_rects = []
-    rm._build_screen_occluding_rects(pygame.math.Vector2(0, 0), player_depth=1, occluding_rects=occluding_rects)
+    rm._build_screen_occluding_rects(
+        pygame.math.Vector2(0, 0), player_depth=1, occluding_rects=occluding_rects
+    )
 
     depths = [d for _, d, _ in occluding_rects]
     assert 1 not in depths, f"depth=1 tile must be excluded, but depths found: {depths}"
@@ -1101,8 +1107,8 @@ def test_build_screen_occluding_rects_filters_by_depth():
 def test_build_screen_occluding_rects_filters_by_viewport():
     """TC-009: Tiles outside the viewport are excluded from occluding_rects."""
     fg_world = [
-        _make_fg_world_entry(wx=0, wy=0, depth=2),      # inside viewport (0,0,640,480)
-        _make_fg_world_entry(wx=1000, wy=1000, depth=2), # outside viewport
+        _make_fg_world_entry(wx=0, wy=0, depth=2),  # inside viewport (0,0,640,480)
+        _make_fg_world_entry(wx=1000, wy=1000, depth=2),  # outside viewport
     ]
     game = _make_game_p001(fg_world=fg_world)
 
@@ -1110,7 +1116,9 @@ def test_build_screen_occluding_rects_filters_by_viewport():
     rm._viewport_world = pygame.Rect(0, 0, 640, 480)
 
     occluding_rects = []
-    rm._build_screen_occluding_rects(pygame.math.Vector2(0, 0), player_depth=1, occluding_rects=occluding_rects)
+    rm._build_screen_occluding_rects(
+        pygame.math.Vector2(0, 0), player_depth=1, occluding_rects=occluding_rects
+    )
 
     assert len(occluding_rects) == 1, (
         f"Expected 1 rect (in-viewport tile), got {len(occluding_rects)}"
@@ -1135,8 +1143,8 @@ def test_build_screen_occluding_rects_screen_coords():
 
     assert len(occluding_rects) == 1
     rect, depth, _ = occluding_rects[0]
-    assert rect.x == 64 + (-32), f"Expected screen_x={64-32}, got {rect.x}"
-    assert rect.y == 96 + (-16), f"Expected screen_y={96-16}, got {rect.y}"
+    assert rect.x == 64 + (-32), f"Expected screen_x={64 - 32}, got {rect.x}"
+    assert rect.y == 96 + (-16), f"Expected screen_y={96 - 16}, got {rect.y}"
 
 
 # ---------------------------------------------------------------------------
@@ -1154,8 +1162,9 @@ def test_blit_occluded_tiles_skips_non_colliding():
 
     rm._blit_occluded_tiles_near_player(cam, player_screen_rect, player_depth=1)
 
-    game.screen.blit.assert_not_called(), (
-        "screen.blit must not be called for tile far from player"
+    (
+        game.screen.blit.assert_not_called(),
+        ("screen.blit must not be called for tile far from player"),
     )
 
 
@@ -1182,9 +1191,7 @@ def test_blit_occluded_tiles_uses_occluded_image():
 
     assert game.screen.blit.called, "screen.blit must be called when player collides with tile"
     blitted_surf = game.screen.blit.call_args[0][0]
-    assert blitted_surf is occ_surf, (
-        f"Expected occ_img to be blitted, got {blitted_surf}"
-    )
+    assert blitted_surf is occ_surf, f"Expected occ_img to be blitted, got {blitted_surf}"
 
 
 # ---------------------------------------------------------------------------
@@ -1208,9 +1215,7 @@ def test_blit_occluded_tiles_fallback_to_image_if_no_occ():
 
     assert game.screen.blit.called, "screen.blit must be called (fallback to img)"
     blitted_surf = game.screen.blit.call_args[0][0]
-    assert blitted_surf is img_surf, (
-        "When occ_img is None, img must be blitted as fallback"
-    )
+    assert blitted_surf is img_surf, "When occ_img is None, img must be blitted as fallback"
 
 
 # ---------------------------------------------------------------------------
@@ -1221,7 +1226,9 @@ def test_p001_draw_static_foreground_tiles_returns_empty_list():
     """IT-001: After P-001 refactor, _draw_static_foreground_tiles must return []."""
     fg_world = [_make_fg_world_entry(wx=0, wy=0, depth=2)]
     game = _make_game_p001(fg_world=fg_world, layer_order=[1])
-    game.map_manager.get_foreground_layer_surface.return_value = pygame.Surface((64, 64), pygame.SRCALPHA)
+    game.map_manager.get_foreground_layer_surface.return_value = pygame.Surface(
+        (64, 64), pygame.SRCALPHA
+    )
 
     rm = RenderManager(game)
     rm._viewport_world = pygame.Rect(0, 0, 640, 480)
@@ -1248,7 +1255,9 @@ def test_p001_draw_foreground_occluding_rects_populated():
     """IT-002: draw_foreground() returns non-empty occluding_rects when fg tiles in viewport."""
     fg_world = [_make_fg_world_entry(wx=0, wy=0, depth=2)]
     game = _make_game_p001(fg_world=fg_world, layer_order=[1])
-    game.map_manager.get_foreground_layer_surface.return_value = pygame.Surface((64, 64), pygame.SRCALPHA)
+    game.map_manager.get_foreground_layer_surface.return_value = pygame.Surface(
+        (64, 64), pygame.SRCALPHA
+    )
     game.visible_sprites.offset = pygame.math.Vector2(0, 0)
     game.player.rect = pygame.Rect(200, 200, 32, 32)  # far from tile — no occluded blit
     game.player.depth = 1
@@ -1274,7 +1283,9 @@ def test_p001_walk_active_skips_occluded_blit():
     """IT-003: walk_active=True → _blit_occluded_tiles_near_player is NOT called."""
     fg_world = [_make_fg_world_entry(wx=0, wy=0, depth=2)]
     game = _make_game_p001(fg_world=fg_world, layer_order=[1], walk_active=True)
-    game.map_manager.get_foreground_layer_surface.return_value = pygame.Surface((64, 64), pygame.SRCALPHA)
+    game.map_manager.get_foreground_layer_surface.return_value = pygame.Surface(
+        (64, 64), pygame.SRCALPHA
+    )
 
     rm = RenderManager(game)
     rm._viewport_world = pygame.Rect(0, 0, 640, 480)
@@ -1287,8 +1298,9 @@ def test_p001_walk_active_skips_occluded_blit():
             player_depth=1,
             occluding_rects=[],
         )
-        mock_occ.assert_not_called(), (
-            "_blit_occluded_tiles_near_player must NOT be called when walk_active=True"
+        (
+            mock_occ.assert_not_called(),
+            ("_blit_occluded_tiles_near_player must NOT be called when walk_active=True"),
         )
 
 
@@ -1325,7 +1337,7 @@ def test_fg_occlusion_world_build_time():
     elapsed = time.perf_counter() - t0
 
     assert elapsed < 0.05, (
-        f"_build_fg_occlusion_world on 40x40 map took {elapsed*1000:.1f}ms (limit: 50ms)"
+        f"_build_fg_occlusion_world on 40x40 map took {elapsed * 1000:.1f}ms (limit: 50ms)"
     )
     assert len(mm._fg_occlusion_world) > 0
 
@@ -1364,9 +1376,15 @@ def test_p004_init_exposes_occ_cache_attrs():
     game = MagicMock()
     rm = RenderManager(game)
     assert hasattr(rm.occlusion_renderer, "_occ_key"), "_occ_key must be initialised in __init__"
-    assert hasattr(rm.occlusion_renderer, "_occ_composite_cache"), "_occ_composite_cache must be initialised in __init__"
-    assert rm.occlusion_renderer._occ_key is None, "_occ_key must be None on first init (forces first-frame computation)"
-    assert isinstance(rm.occlusion_renderer._occ_composite_cache, dict), "_occ_composite_cache must be a dict"
+    assert hasattr(rm.occlusion_renderer, "_occ_composite_cache"), (
+        "_occ_composite_cache must be initialised in __init__"
+    )
+    assert rm.occlusion_renderer._occ_key is None, (
+        "_occ_key must be None on first init (forces first-frame computation)"
+    )
+    assert isinstance(rm.occlusion_renderer._occ_composite_cache, dict), (
+        "_occ_composite_cache must be a dict"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1386,7 +1404,9 @@ def test_p004_first_call_creates_composite_and_caches():
 
     assert len(result) == 1, "sprite must be in saved_images"
     assert rm.occlusion_renderer._occ_key is not None, "_occ_key must be set after first call"
-    assert len(rm.occlusion_renderer._occ_composite_cache) == 1, "_occ_composite_cache must have 1 entry after first call"
+    assert len(rm.occlusion_renderer._occ_composite_cache) == 1, (
+        "_occ_composite_cache must have 1 entry after first call"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1496,12 +1516,15 @@ def test_p004_reset_occ_cache_clears_state():
     rm.occlusion_renderer.reset_cache()
 
     assert rm.occlusion_renderer._occ_key is None, "reset_occ_cache() must set _occ_key to None"
-    assert rm.occlusion_renderer._occ_composite_cache == {}, "reset_occ_cache() must clear _occ_composite_cache"
+    assert rm.occlusion_renderer._occ_composite_cache == {}, (
+        "reset_occ_cache() must clear _occ_composite_cache"
+    )
 
 
 # ===========================================================================
 # PERFORMANCE OPTIMIZATIONS — UT-001..005, IT-001..003
 # ===========================================================================
+
 
 @pytest.mark.tc("UT-001")
 def test_fg_occlusion_grid_matches_world_list():
@@ -1511,14 +1534,10 @@ def test_fg_occlusion_grid_matches_world_list():
     layout = MagicMock()
     layout.tile_size = 32
     map_data = {
-        "layers": {
-            1: [[0, 2], [0, 0]]
-        },
-        "tiles": {
-            2: MagicMock()
-        },
+        "layers": {1: [[0, 2], [0, 0]]},
+        "tiles": {2: MagicMock()},
         "layer_order": [1],
-        "layer_order_values": {1: 2}
+        "layer_order_values": {1: 2},
     }
     map_data["tiles"][2].depth = 2
     map_data["tiles"][2].frames = []
@@ -1541,14 +1560,10 @@ def test_grass_grid_contains_correct_material_surfaces():
     layout = MagicMock()
     layout.tile_size = 32
     map_data = {
-        "layers": {
-            1: [[0, 2], [0, 0]]
-        },
-        "tiles": {
-            2: MagicMock()
-        },
+        "layers": {1: [[0, 2], [0, 0]]},
+        "tiles": {2: MagicMock()},
         "layer_order": [1],
-        "layer_order_values": {1: 0}
+        "layer_order_values": {1: 0},
     }
     map_data["tiles"][2].depth = 0
     map_data["tiles"][2].frames = []
@@ -1594,19 +1609,16 @@ def test_rect_pool_reused_in_build_screen_occluding_rects():
 def test_grass_grid_lookup_O1_performance():
     """UT-004: Grass tile lookup using get_grass_tile_image_at is fast."""
     import time
+
     game = MagicMock()
     layout = MagicMock()
     layout.tile_size = 32
     layout.to_world.side_effect = lambda x, y: (x // 32, y // 32)
     map_data = {
-        "layers": {
-            1: [[0, 2], [0, 0]]
-        },
-        "tiles": {
-            2: MagicMock()
-        },
+        "layers": {1: [[0, 2], [0, 0]]},
+        "tiles": {2: MagicMock()},
         "layer_order": [1],
-        "layer_order_values": {1: 0}
+        "layer_order_values": {1: 0},
     }
     map_data["tiles"][2].depth = 0
     map_data["tiles"][2].frames = []
@@ -1621,7 +1633,9 @@ def test_grass_grid_lookup_O1_performance():
     t1 = time.perf_counter()
 
     delta = (t1 - t0) * 1000
-    assert delta < 200.0, f"Grass lookup took too long: {delta:.2f}ms (1000 iterations should be < 200ms)"
+    assert delta < 200.0, (
+        f"Grass lookup took too long: {delta:.2f}ms (1000 iterations should be < 200ms)"
+    )
 
 
 @pytest.mark.tc("UT-005")
@@ -1664,14 +1678,10 @@ def test_viewport_culling_limits_iterations():
     layout = MagicMock()
     layout.tile_size = 32
     map_data = {
-        "layers": {
-            1: [[0]*10 for _ in range(9)] + [[0]*9 + [2]]
-        },
-        "tiles": {
-            2: MagicMock()
-        },
+        "layers": {1: [[0] * 10 for _ in range(9)] + [[0] * 9 + [2]]},
+        "tiles": {2: MagicMock()},
         "layer_order": [1],
-        "layer_order_values": {1: 2}
+        "layer_order_values": {1: 2},
     }
     map_data["tiles"][2].depth = 2
     map_data["tiles"][2].frames = []
@@ -1686,11 +1696,7 @@ def test_viewport_culling_limits_iterations():
 
     occluding_rects = []
     rm._draw_static_foreground_tiles(
-        pygame.math.Vector2(0, 0),
-        False,
-        pygame.Rect(0, 0, 32, 32),
-        1,
-        occluding_rects
+        pygame.math.Vector2(0, 0), False, pygame.Rect(0, 0, 32, 32), 1, occluding_rects
     )
 
     # The tile at (9, 9) (world x=288, y=288) is outside 320x240 viewport (clipped by depth check and y-coord)
@@ -1712,23 +1718,14 @@ def test_draw_static_foreground_tiles_returns_empty_list():
     # Empty map
     layout = MagicMock()
     layout.tile_size = 32
-    map_data = {
-        "layers": {},
-        "tiles": {},
-        "layer_order": [],
-        "layer_order_values": {}
-    }
+    map_data = {"layers": {}, "tiles": {}, "layer_order": [], "layer_order_values": {}}
     game.map_manager = MapManager(map_data, layout)
 
     rm = RenderManager(game)
     rm._viewport_world = pygame.Rect(0, 0, 800, 600)
 
     res = rm._draw_static_foreground_tiles(
-        pygame.math.Vector2(0, 0),
-        False,
-        pygame.Rect(0, 0, 32, 32),
-        1,
-        []
+        pygame.math.Vector2(0, 0), False, pygame.Rect(0, 0, 32, 32), 1, []
     )
     assert res == []
 
@@ -1749,14 +1746,10 @@ def test_draw_foreground_walk_active_skips_occluded_blit():
     layout = MagicMock()
     layout.tile_size = 32
     map_data = {
-        "layers": {
-            1: [[2]]
-        },
-        "tiles": {
-            2: MagicMock()
-        },
+        "layers": {1: [[2]]},
+        "tiles": {2: MagicMock()},
         "layer_order": [1],
-        "layer_order_values": {1: 2}
+        "layer_order_values": {1: 2},
     }
     map_data["tiles"][2].depth = 2
     map_data["tiles"][2].frames = []
@@ -1780,12 +1773,15 @@ def test_draw_foreground_walk_active_skips_occluded_blit():
     # Actually, we can patch _blit_occluded_tiles_near_player to verify it wasn't called,
     # or verify that walk_active=True causes the skip.
     # Let's inspect screen.blit calls:
-    assert game.screen.blit.call_count <= 1  # only at most the pre-rendered surface blit, no occluded tile blit
+    assert (
+        game.screen.blit.call_count <= 1
+    )  # only at most the pre-rendered surface blit, no occluded tile blit
 
 
 # ===========================================================================
 # PERFORMANCE OPTIMIZATIONS — H-001 Wading Composite Reuse
 # ===========================================================================
+
 
 @pytest.mark.tc("TC-RPERF-U-001")
 def test_wading_composite_reallocates_only_on_size_change():
@@ -1793,17 +1789,21 @@ def test_wading_composite_reallocates_only_on_size_change():
     game = _make_game_for_grass_wading(on_grass=True)
     rm = RenderManager(game)
     sprite = _make_sprite(w=32, h=48)
-    
+
     # We will just verify that _wading_composite gets instantiated and doesn't change id
     # when called multiple times with the same sprite size.
     assert getattr(rm, "_wading_composite", None) is None
-    
+
     # Call 1: surface should be created
-    comp1 = rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    comp1 = rm.wading_renderer._build_wading_composite(
+        sprite, pygame.math.Vector2(0, 0), 32, 10, 100
+    )
     wading_comp_id = id(rm.wading_renderer._wading_composite)
-    
+
     # Call 2: same size, template surface should NOT be recreated
-    comp2 = rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    comp2 = rm.wading_renderer._build_wading_composite(
+        sprite, pygame.math.Vector2(0, 0), 32, 10, 100
+    )
     assert id(rm.wading_renderer._wading_composite) == wading_comp_id, "Template should be reused"
     assert id(comp1) != id(comp2), "Each call must return a fresh copy"
 
@@ -1813,13 +1813,17 @@ def test_wading_composite_returns_unique_copy():
     """TC-RPERF-U-002: Each sprite gets its own composite copy (no aliasing)."""
     game = _make_game_for_grass_wading(on_grass=True)
     rm = RenderManager(game)
-    
+
     sprite_a = _make_sprite(w=32, h=48)
     sprite_b = _make_sprite(w=32, h=48)
-    
-    comp_a = rm.wading_renderer._build_wading_composite(sprite_a, pygame.math.Vector2(0, 0), 32, 10, 100)
-    comp_b = rm.wading_renderer._build_wading_composite(sprite_b, pygame.math.Vector2(0, 0), 32, 10, 100)
-    
+
+    comp_a = rm.wading_renderer._build_wading_composite(
+        sprite_a, pygame.math.Vector2(0, 0), 32, 10, 100
+    )
+    comp_b = rm.wading_renderer._build_wading_composite(
+        sprite_b, pygame.math.Vector2(0, 0), 32, 10, 100
+    )
+
     assert comp_a is not None
     assert comp_b is not None
     assert id(comp_a) != id(comp_b), "Sprites must receive independent Surface copies"
@@ -1830,29 +1834,33 @@ def test_wading_composite_fills_transparent_before_blit():
     """TC-RPERF-U-003: fill((0,0,0,0)) precedes blit on the copy."""
     game = _make_game_for_grass_wading(on_grass=True)
     rm = RenderManager(game)
-    
+
     # We will simulate the fill((0,0,0,0)) behavior by verifying that
     # the returned composite has transparent pixels outside the sprite image and wading zone.
     # A fresh copy of a dirty template would have garbage pixels if not filled.
-    
+
     # First frame: red sprite
     red_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
     red_surf.fill((255, 0, 0, 255))
     sprite = _make_sprite(image=red_surf, w=32, h=48)
     rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
-    
+
     # Second frame: blue sprite, same size (reuses template)
     blue_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
     blue_surf.fill((0, 0, 255, 255))
     sprite.image = blue_surf
-    comp2 = rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
-    
+    comp2 = rm.wading_renderer._build_wading_composite(
+        sprite, pygame.math.Vector2(0, 0), 32, 10, 100
+    )
+
     # The template must have been filled with (0,0,0,0) before blitting the blue sprite.
     # Therefore, no red pixels should remain anywhere in the composite.
     w, h = comp2.get_size()
     for x in range(w):
         for y in range(h - 10):  # above wading zone
-            assert comp2.get_at((x, y)) != (255, 0, 0, 255), "Red pixel leaked into next frame (fill missing)"
+            assert comp2.get_at((x, y)) != (255, 0, 0, 255), (
+                "Red pixel leaked into next frame (fill missing)"
+            )
 
 
 @pytest.mark.tc("TC-RPERF-U-004")
@@ -1861,10 +1869,10 @@ def test_reset_render_caches_clears_wading_composite():
     game = _make_game_for_grass_wading(on_grass=True)
     rm = RenderManager(game)
     sprite = _make_sprite(w=32, h=48)
-    
+
     rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
     assert rm.wading_renderer._wading_composite is not None
-    
+
     rm.reset_render_caches()
     assert rm.wading_renderer._wading_composite is None
     assert rm.occlusion_renderer._occ_key is None
@@ -1877,10 +1885,10 @@ def test_wading_composite_unchanged_if_not_on_grass():
     game = _make_game_for_grass_wading(on_grass=False)
     rm = RenderManager(game)
     sprite = _make_sprite(w=32, h=48)
-    
+
     if not hasattr(rm.wading_renderer, "_wading_composite"):
         rm.wading_renderer._wading_composite = None
-        
+
     assert rm.wading_renderer._wading_composite is None
     rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
     assert rm.wading_renderer._wading_composite is None
@@ -1891,21 +1899,25 @@ def test_wading_composite_visual_fidelity():
     """TC-RPERF-I-001: Visual output is identical to a freshly allocated Surface."""
     game = _make_game_for_grass_wading(on_grass=True)
     rm = RenderManager(game)
-    
+
     # Solid red sprite
     red_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
     red_surf.fill((255, 0, 0, 255))
     sprite = _make_sprite(image=red_surf, w=32, h=48)
-    
+
     # First frame
-    comp1 = rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
+    comp1 = rm.wading_renderer._build_wading_composite(
+        sprite, pygame.math.Vector2(0, 0), 32, 10, 100
+    )
     # Change sprite to solid green (simulating animation)
     green_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
     green_surf.fill((0, 255, 0, 255))
     sprite.image = green_surf
     # Second frame
-    comp2 = rm.wading_renderer._build_wading_composite(sprite, pygame.math.Vector2(0, 0), 32, 10, 100)
-    
+    comp2 = rm.wading_renderer._build_wading_composite(
+        sprite, pygame.math.Vector2(0, 0), 32, 10, 100
+    )
+
     # Top of the sprite should be solid green, no red remnants
     assert comp2.get_at((16, 16)) == (0, 255, 0, 255), "Previous frame pixels leaked!"
 
@@ -1926,25 +1938,25 @@ def test_two_sprites_same_size_no_corruption():
     """TC-RPERF-I-004: 2 sprites of same size on grass in the same frame."""
     game = _make_game_for_grass_wading(on_grass=True)
     rm = RenderManager(game)
-    
+
     # Red sprite
     red_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
     red_surf.fill((255, 0, 0, 255))
     sprite1 = _make_sprite(image=red_surf, w=32, h=48)
-    
+
     # Blue sprite
     blue_surf = pygame.Surface((32, 48), pygame.SRCALPHA)
     blue_surf.fill((0, 0, 255, 255))
     sprite2 = _make_sprite(image=blue_surf, w=32, h=48)
-    
+
     game.visible_sprites.get_sorted_sprites.return_value = [sprite1, sprite2]
-    
+
     # Generate composites
     result = rm.wading_renderer.apply_grass_wading_to_images()
-    
+
     # Validate they don't corrupt each other
     comp1 = sprite1.image
     comp2 = sprite2.image
-    
+
     assert comp1.get_at((16, 16)) == (255, 0, 0, 255), "Sprite 1 corrupted by Sprite 2"
     assert comp2.get_at((16, 16)) == (0, 0, 255, 255), "Sprite 2 corrupted"

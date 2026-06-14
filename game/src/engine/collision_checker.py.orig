@@ -53,8 +53,6 @@ class CollisionChecker:
         if not tile_overridden:
             wx, wy = self.game.layout.to_world(px_center, py_center)
             if not self.game.map_manager.is_walkable(int(wx), int(wy)):
-                with open("/tmp/block.log", "a") as f:
-                    f.write(f"Blocked at {px_center}, {py_center}\n")
                 return True
 
         # 2. Dynamic obstacles (doors, etc.)
@@ -62,8 +60,6 @@ class CollisionChecker:
             if obj == requester:
                 continue
             if obj.rect and obj.rect.collidepoint(px_center, py_center):
-                with open("/tmp/block.log", "a") as f:
-                    f.write(f"Blocked at {px_center}, {py_center}\n")
                 return True
 
         # 3. NPCs
@@ -71,16 +67,12 @@ class CollisionChecker:
             if npc == requester:
                 continue
             if npc.rect and npc.rect.collidepoint(px_center, py_center):
-                with open("/tmp/block.log", "a") as f:
-                    f.write(f"Blocked at {px_center}, {py_center}\n")
                 return True
 
         # 4. Player (only blocks entities other than themselves)
         if self.game.player != requester:
             player_rect = getattr(self.game.player, "rect", None)
             if player_rect and player_rect.collidepoint(px_center, py_center):
-                with open("/tmp/block.log", "a") as f:
-                    f.write(f"Blocked at {px_center}, {py_center}\n")
                 return True
 
         return False

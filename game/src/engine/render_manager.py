@@ -2,9 +2,8 @@ import math
 
 import pygame
 from src.config import Settings
-from src.engine.asset_manager import AssetManager
 from src.engine.lighting_constants import INDOOR_ATTENUATION
-from src.engine.render_occlusion import OcclusionRenderer, OccludingRect
+from src.engine.render_occlusion import OccludingRect, OcclusionRenderer
 from src.engine.render_wading import WadingRenderer
 
 # Python 3.12 type aliases — replace inline annotations used across multiple methods
@@ -24,10 +23,12 @@ class RenderManager:
         self._frame_anim_all: list[tuple[int, int, int, int]] = []
         self._frame_anim_by_layer: dict[int, list[tuple[int, int, int, int]]] = {}
         # Frame-level viewport-culled foreground cache to optimize loops
-        self._frame_visible_fg_tiles: list[tuple[int, int, int, pygame.Surface, pygame.Surface | None]] | None = None
+        self._frame_visible_fg_tiles: (
+            list[tuple[int, int, int, pygame.Surface, pygame.Surface | None]] | None
+        ) = None
         # Pool size 2000 is sufficient to cover standard viewport bounds (40x22 tiles)
         self._rect_pool = [pygame.Rect(0, 0, game.tile_size, game.tile_size) for _ in range(2000)]
-        
+
         self.occlusion_renderer = OcclusionRenderer(game)
         self.wading_renderer = WadingRenderer(game)
 
@@ -93,9 +94,7 @@ class RenderManager:
                 continue
 
             # Viewport clip in world-space: what portion of the WorldSurface is visible?
-            src_rect = pygame.Rect(
-                int(-cam_offset.x), int(-cam_offset.y), screen_w, screen_h
-            )
+            src_rect = pygame.Rect(int(-cam_offset.x), int(-cam_offset.y), screen_w, screen_h)
             # Clamp to surface bounds — avoid blit errors when camera near map edge
             surf_w, surf_h = surface.get_size()
             src_rect = src_rect.clip(pygame.Rect(0, 0, surf_w, surf_h))
@@ -146,11 +145,13 @@ class RenderManager:
                     continue
                 if wy + tile_size <= vp.top or wy >= vp.bottom:
                     continue
-                occluding_rects.append((
-                    pygame.Rect(wx + cam_x, wy + cam_y, tile_size, tile_size),
-                    depth,
-                    img,
-                ))
+                occluding_rects.append(
+                    (
+                        pygame.Rect(wx + cam_x, wy + cam_y, tile_size, tile_size),
+                        depth,
+                        img,
+                    )
+                )
 
     def _blit_occluded_tiles_near_player(  # noqa: C901
         self,
@@ -184,7 +185,10 @@ class RenderManager:
                             self._tile_rect.x = c * tile_size + cam_x
                             self._tile_rect.y = r * tile_size + cam_y
                             if player_screen_rect.colliderect(self._tile_rect):
-                                screen.blit(occ_img if occ_img is not None else img, (self._tile_rect.x, self._tile_rect.y))
+                                screen.blit(
+                                    occ_img if occ_img is not None else img,
+                                    (self._tile_rect.x, self._tile_rect.y),
+                                )
         else:
             # Fallback compatibility path for unit tests
             vp = self._viewport_world
@@ -198,7 +202,10 @@ class RenderManager:
                 self._tile_rect.x = wx + cam_x
                 self._tile_rect.y = wy + cam_y
                 if player_screen_rect.colliderect(self._tile_rect):
-                    screen.blit(occ_img if occ_img is not None else img, (self._tile_rect.x, self._tile_rect.y))
+                    screen.blit(
+                        occ_img if occ_img is not None else img,
+                        (self._tile_rect.x, self._tile_rect.y),
+                    )
 
     def _draw_static_foreground_tiles(
         self,
@@ -244,15 +251,19 @@ class RenderManager:
                     if tile_info:
                         depth, img, occ_img = tile_info
                         if depth > player_depth:
-                            self._frame_visible_fg_tiles.append((x * tile_size, wy, depth, img, occ_img))
+                            self._frame_visible_fg_tiles.append(
+                                (x * tile_size, wy, depth, img, occ_img)
+                            )
         else:
             # Fallback path for unit tests using mocks
             self._frame_visible_fg_tiles = [
                 (wx, wy, depth, img, occ_img)
                 for wx, wy, depth, img, occ_img in getattr(mm, "_fg_occlusion_world", [])
                 if depth > player_depth
-                and wx + tile_size > vp.left and wx < vp.right
-                and wy + tile_size > vp.top and wy < vp.bottom
+                and wx + tile_size > vp.left
+                and wx < vp.right
+                and wy + tile_size > vp.top
+                and wy < vp.bottom
             ]
 
         self._build_screen_occluding_rects(cam_offset, player_depth, occluding_rects)

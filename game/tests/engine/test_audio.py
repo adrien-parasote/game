@@ -361,6 +361,7 @@ def test_audio_mixer_init_called_when_not_initialized(caplog):
 def test_toggle_mute_sets_ambient_volume_to_zero():
     """toggle_mute(muted=True) calls set_volume(0) on ambient_sounds (line 66)."""
     from unittest.mock import MagicMock
+
     am = _make_enabled_audio()
     mock_sound = MagicMock()
     am.ambient_sounds["water"] = mock_sound
@@ -372,6 +373,7 @@ def test_toggle_mute_sets_ambient_volume_to_zero():
 def test_play_sfx_with_volume_multiplier():
     """play_sfx with volume_multiplier != 1.0 calls set_volume on the sound (line 156)."""
     from unittest.mock import MagicMock
+
     am = _make_enabled_audio()
     mock_sound = MagicMock()
     am.sounds["hit"] = mock_sound
@@ -417,7 +419,9 @@ def test_flush_ambient_no_free_channel(caplog, tmp_path):
         am.propose_ambient("rain", 50.0)
         am.flush_ambient()
 
-    assert any("channel" in r.message.lower() or "free" in r.message.lower() for r in caplog.records)
+    assert any(
+        "channel" in r.message.lower() or "free" in r.message.lower() for r in caplog.records
+    )
 
 
 def test_flush_ambient_pygame_error_logs(caplog, tmp_path):
@@ -444,6 +448,7 @@ def test_flush_ambient_pygame_error_logs(caplog, tmp_path):
 def test_flush_ambient_stops_stale_channels():
     """flush_ambient() stops channels whose names are no longer proposed (lines 239-243)."""
     from unittest.mock import MagicMock
+
     am = _make_enabled_audio()
 
     mock_channel = MagicMock()
@@ -459,7 +464,6 @@ def test_flush_ambient_stops_stale_channels():
     # After flush with no proposals, all channels should be stopped
     mock_channel.stop.assert_called_once()
     assert "wind" not in am.ambient_sounds
-
 
 
 # assert True (legacy bypass)

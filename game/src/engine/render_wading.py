@@ -1,6 +1,7 @@
 import pygame
 from src.config import Settings
 
+
 class WadingRenderer:
     """Helper class managing grass wading compositing for RenderManager."""
 
@@ -80,13 +81,13 @@ class WadingRenderer:
             self._wading_composite = pygame.Surface(visual_size, pygame.SRCALPHA)
 
         composite = self._wading_composite.copy()
-        
+
         composite.fill((0, 0, 0, 0))
         composite.blit(sprite.image, (0, 0))
 
         visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
-        stair_y_offset = getattr(sprite, 'current_stair_offset', 0.0)
-        if not isinstance(stair_y_offset, (int, float)):
+        stair_y_offset = getattr(sprite, "current_stair_offset", 0.0)
+        if not isinstance(stair_y_offset, int | float):
             stair_y_offset = 0.0
 
         sprite_screen_left = visual_rect.left + cam_offset.x
@@ -103,10 +104,11 @@ class WadingRenderer:
         row_end = int((wading_screen_bottom - cam_offset.y - 1) // tile_size)
 
         wading_size = (img_w, local_wading_h)
-        if getattr(self, "_wading_alpha_surf", None) is None or self._wading_alpha_surf.get_size() != wading_size:
-            self._wading_alpha_surf = pygame.Surface(wading_size, pygame.SRCALPHA)
-        self._wading_alpha_surf.fill((0, 0, 0, 0))
-        wading_surf = self._wading_alpha_surf
+        wading_surf = getattr(self, "_wading_alpha_surf", None)
+        if wading_surf is None or wading_surf.get_size() != wading_size:
+            wading_surf = pygame.Surface(wading_size, pygame.SRCALPHA)
+            self._wading_alpha_surf = wading_surf
+        wading_surf.fill((0, 0, 0, 0))
 
         self._blit_grass_tile_intersections(
             wading_surf,

@@ -53,7 +53,9 @@ class Player(BaseEntity):
 
         # Animation State
         self.frame_index = 0.0
-        self.animation_speed = 1.0 / PLAYER_ANIM_FRAME_DURATION  # frames per second (150ms per frame)
+        self.animation_speed = (
+            1.0 / PLAYER_ANIM_FRAME_DURATION
+        )  # frames per second (150ms per frame)
         self.current_state = "down"  # default facing
         self._was_moving = False  # tracks previous frame's movement to avoid per-tile reset
 
@@ -110,17 +112,29 @@ class Player(BaseEntity):
         if self.is_moving:
             self.frame_index += self.animation_speed * dt
             self.frame_index %= PLAYER_FRAMES_PER_ROW
-        elif not self._was_moving:
-            # Only reset to idle frame after 2+ consecutive stopped frames.
-            # Absorbs the single is_moving=False tile-arrival frame during continuous movement.
+        else:
+            # Not moving: always reset to idle frame.
             self.frame_index = 0.0
+            # DEBUG LOGGING FOR STUCK PLAYER
+            if self.direction.length() > 0 and (
+                not hasattr(self, "_last_stuck_log")
+                or pygame.time.get_ticks() - self._last_stuck_log > 200
+            ):
+                import logging
+
+                logging.warning(f"Player blocked at {self.pos} trying to move {self.direction}")
+                self._last_stuck_log = pygame.time.get_ticks()
 
         self._was_moving = self.is_moving
 
         current_int_frame = int(self.frame_index)
 
         # Trigger footstep on frames 1 and 3
-        if self.is_moving and current_int_frame != prev_int_frame and current_int_frame in PLAYER_FOOTSTEP_FRAMES:
+        if (
+            self.is_moving
+            and current_int_frame != prev_int_frame
+            and current_int_frame in PLAYER_FOOTSTEP_FRAMES
+        ):
             material = self._resolve_footstep_material()
 
             sfx_name = f"04-footstep_{material}" if material else "04-footstep"

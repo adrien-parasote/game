@@ -18,6 +18,7 @@ class TestStairsIntegration:
     @pytest.fixture
     def setup_mini_map(self):
         """Builds a MapManager for integration tests using stair_half=True/False."""
+
         def _create(tile_configs: dict[tuple[int, int], dict]):
             map_w, map_h = 10, 10
             grid = [[0] * map_w for _ in range(map_h)]
@@ -31,7 +32,9 @@ class TestStairsIntegration:
                 tile = MagicMock()
                 tile.properties = config
                 direction_prop = config.get("direction", "any")
-                tile.direction_flags = {d.strip() for d in direction_prop.split(",")} if direction_prop else {"any"}
+                tile.direction_flags = (
+                    {d.strip() for d in direction_prop.split(",")} if direction_prop else {"any"}
+                )
                 tile.depth = config.get("depth", 0)
                 tile.walkable = config.get("walkable", True)
 
@@ -55,6 +58,7 @@ class TestStairsIntegration:
             mm.width = map_w
             mm.height = map_h
             return mm
+
         return _create
 
     def test_it_001_player_walk_up_right_stair(self, setup_mini_map):
@@ -65,11 +69,28 @@ class TestStairsIntegration:
           (2,1) stair_half=True   → diagonal climb → target (3,0)
           (3,0) stair_half=False  → next step entry
         """
-        mm = setup_mini_map({
-            (1, 1): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
-            (2, 1): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": 0},
-            (3, 0): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
-        })
+        mm = setup_mini_map(
+            {
+                (1, 1): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": False,
+                    "visual_y_offset": 0,
+                },
+                (2, 1): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": True,
+                    "visual_y_offset": 0,
+                },
+                (3, 0): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": False,
+                    "visual_y_offset": 0,
+                },
+            }
+        )
 
         player = Player(pos=(48, 48))  # center of (1,1)
         player.speed = 100
@@ -78,7 +99,9 @@ class TestStairsIntegration:
         mock_game.map_manager = mm
         mock_game.layout = mm.layout
         player.game = mock_game
-        player.walkable_func = lambda x, y, requester=None: mm.is_walkable(int(x // 32), int(y // 32))
+        player.walkable_func = lambda x, y, requester=None: mm.is_walkable(
+            int(x // 32), int(y // 32)
+        )
 
         # Input Right on lower-half tile → flat
         player.direction = pygame.math.Vector2(1, 0)
@@ -106,11 +129,23 @@ class TestStairsIntegration:
 
     def test_it_002_visual_y_offset_active_during_movement(self, setup_mini_map):
         """IT-002: visual_y_offset is accessible when on a stair tile, None after step-off."""
-        mm = setup_mini_map({
-            (1, 1): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
-            (2, 1): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -16},
-            (3, 1): {"walkable": True},
-        })
+        mm = setup_mini_map(
+            {
+                (1, 1): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": False,
+                    "visual_y_offset": 0,
+                },
+                (2, 1): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": True,
+                    "visual_y_offset": -16,
+                },
+                (3, 1): {"walkable": True},
+            }
+        )
 
         player = Player(pos=(48, 48))
         player.speed = 100
@@ -137,8 +172,8 @@ class TestStairsIntegration:
         # _vertical_move is set to TARGET tile (3,1)'s props = None (normal tile)
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
-        assert player.direction == pygame.math.Vector2(1, 0)    # step-off confirmed
-        assert player._vertical_move is None                    # target (3,1) is normal tile
+        assert player.direction == pygame.math.Vector2(1, 0)  # step-off confirmed
+        assert player._vertical_move is None  # target (3,1) is normal tile
         player.update(0.5)
         assert player.pos == pygame.math.Vector2(112, 48)
 
@@ -156,13 +191,35 @@ class TestStairsIntegration:
           (3,2) False → flat (next step entry)
           (4,2) True  → diagonal → (5,1), but target is (5,2)=normal → step-off flat
         """
-        mm = setup_mini_map({
-            (1, 3): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
-            (2, 3): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -16},
-            (3, 2): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
-            (4, 2): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -16},
-            (5, 2): {"walkable": True},
-        })
+        mm = setup_mini_map(
+            {
+                (1, 3): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": False,
+                    "visual_y_offset": 0,
+                },
+                (2, 3): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": True,
+                    "visual_y_offset": -16,
+                },
+                (3, 2): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": False,
+                    "visual_y_offset": 0,
+                },
+                (4, 2): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": True,
+                    "visual_y_offset": -16,
+                },
+                (5, 2): {"walkable": True},
+            }
+        )
 
         player = Player(pos=(48, 112))  # center of (1,3)
         player.speed = 100
@@ -199,10 +256,17 @@ class TestStairsIntegration:
 
     def test_it_004_stair_walls_block_movement(self, setup_mini_map):
         """IT-004: Wall tiles surrounding stairs block movement properly."""
-        mm = setup_mini_map({
-            (1, 1): {"stair_direction": "right", "walkable": True, "stair_half": True, "visual_y_offset": -16},
-            (2, 0): {"walkable": False},
-        })
+        mm = setup_mini_map(
+            {
+                (1, 1): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": True,
+                    "visual_y_offset": -16,
+                },
+                (2, 0): {"walkable": False},
+            }
+        )
 
         player = Player(pos=(48, 48))
         player.speed = 100
@@ -211,7 +275,9 @@ class TestStairsIntegration:
         mock_game.map_manager = mm
         mock_game.layout = mm.layout
         player.game = mock_game
-        player.walkable_func = lambda x, y, requester=None: mm.is_walkable(int(x // 32), int(y // 32))
+        player.walkable_func = lambda x, y, requester=None: mm.is_walkable(
+            int(x // 32), int(y // 32)
+        )
 
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
@@ -221,10 +287,22 @@ class TestStairsIntegration:
 
     def test_it_005_npc_stair_traversal(self, setup_mini_map):
         """IT-005: NPCs traverse stairs using the same interception logic."""
-        mm = setup_mini_map({
-            (1, 1): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -16},
-            (2, 0): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
-        })
+        mm = setup_mini_map(
+            {
+                (1, 1): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": True,
+                    "visual_y_offset": -16,
+                },
+                (2, 0): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": False,
+                    "visual_y_offset": 0,
+                },
+            }
+        )
 
         npc = NPC(pos=(48, 48))
         npc.speed = 100
@@ -244,10 +322,12 @@ class TestStairsIntegration:
 
     def test_it_006_direction_flags_isolation(self, setup_mini_map):
         """IT-006: direction property without stair_direction does not trigger stair movement."""
-        mm = setup_mini_map({
-            (1, 1): {"direction": "right", "walkable": True},
-            (2, 1): {"walkable": True},
-        })
+        mm = setup_mini_map(
+            {
+                (1, 1): {"direction": "right", "walkable": True},
+                (2, 1): {"walkable": True},
+            }
+        )
 
         player = Player(pos=(48, 48))
         player.speed = 100
@@ -266,14 +346,36 @@ class TestStairsIntegration:
 
     def test_it_007_stair_traversal_symmetry(self, setup_mini_map):
         """IT-007: Ascent then descent returns the player to exact starting coordinates (no Y drift)."""
-        mm = setup_mini_map({
-            (1, 3): {"walkable": True},
-            (2, 3): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": 0},
-            (3, 3): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -16},
-            (3, 2): {"stair_direction": "right", "walkable": True, "stair_half": False, "visual_y_offset": -16},
-            (4, 2): {"stair_direction": "right", "walkable": True, "stair_half": True,  "visual_y_offset": -32},
-            (5, 2): {"walkable": True},
-        })
+        mm = setup_mini_map(
+            {
+                (1, 3): {"walkable": True},
+                (2, 3): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": False,
+                    "visual_y_offset": 0,
+                },
+                (3, 3): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": True,
+                    "visual_y_offset": -16,
+                },
+                (3, 2): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": False,
+                    "visual_y_offset": -16,
+                },
+                (4, 2): {
+                    "stair_direction": "right",
+                    "walkable": True,
+                    "stair_half": True,
+                    "visual_y_offset": -32,
+                },
+                (5, 2): {"walkable": True},
+            }
+        )
 
         player = Player(pos=(48, 112))  # center of (1,3)
         player.speed = 100

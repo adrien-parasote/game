@@ -45,8 +45,10 @@ def test_load_valid_locale_populates_data():
     data = {"greeting": "Hello", "menu": {"start": "Start Game"}}
     manager = I18nManager()
 
-    with patch("os.path.exists", return_value=True), \
-         patch("builtins.open", unittest_mock_open(json.dumps(data))):
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("builtins.open", unittest_mock_open(json.dumps(data))),
+    ):
         manager.load("en")
 
     assert manager.data.get("greeting") == "Hello"
@@ -71,8 +73,10 @@ def test_load_corrupted_json_clears_data(tmp_path):
     manager = I18nManager()
 
     # Point the path resolution to our tmp file by patching exists + open
-    with patch("os.path.exists", return_value=True), \
-         patch("builtins.open", side_effect=Exception("parse error")):
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("builtins.open", side_effect=Exception("parse error")),
+    ):
         manager.load("bad")
 
     assert manager.data == {}
@@ -130,9 +134,7 @@ def test_get_item_returns_name_and_description():
     """get_item() returns name + description from items dict."""
     manager = I18nManager()
     manager.data = {
-        "items": {
-            "sword_iron": {"name": "Iron Sword", "description": "A sharp blade."}
-        }
+        "items": {"sword_iron": {"name": "Iron Sword", "description": "A sharp blade."}}
     }
     result = manager.get_item("sword_iron")
     assert result["name"] == "Iron Sword"

@@ -101,7 +101,7 @@ def test_static_clock_tick_followed_by_clamp():
     from pathlib import Path
 
     # Compute the workspace root relative to this test file:
-    # test file is at game/tests/engine/test_dt_clamp.py → parent×3 = game/
+    # test file is at game/tests/engine/test_dt_clamp.py → parent x 3 = game/
     _game_root = Path(__file__).resolve().parent.parent.parent
     files = [
         str(_game_root / "src/engine/game_state_manager.py"),

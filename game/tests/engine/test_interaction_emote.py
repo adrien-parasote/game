@@ -12,7 +12,6 @@ import pygame
 import pytest
 from src.engine.interaction_emote import InteractionEmoteMixin
 
-
 # ── Minimal concrete class ─────────────────────────────────────────────────────
 
 
@@ -36,8 +35,14 @@ def _make_game(player_pos=(100, 100), player_state="down"):
     return game
 
 
-def _make_obj(pos=(100, 110), is_on=False, is_passable=False,
-               activate_from_anywhere=False, sub_type="lever", trigger_only=False):
+def _make_obj(
+    pos=(100, 110),
+    is_on=False,
+    is_passable=False,
+    activate_from_anywhere=False,
+    sub_type="lever",
+    trigger_only=False,
+):
     """Build a minimal interactive object at a given position."""
     obj = MagicMock()
     obj.pos = pygame.math.Vector2(*pos)

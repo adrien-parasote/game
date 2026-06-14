@@ -1,0 +1,8 @@
+@@ -62,6 +63,7 @@
+             if obj.rect and obj.rect.collidepoint(px_center, py_center):
+                 # Passable obstacles (like open doors) don't block
+                 if not getattr(obj, "is_passable", False):
++                    print(f"DEBUG: blocked by obstacle {obj}")
+                     return True
+ 
+         return False

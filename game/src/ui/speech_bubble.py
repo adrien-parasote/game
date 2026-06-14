@@ -93,7 +93,10 @@ class SpeechBubble:
             if key == "arrow":
                 self.tiles[key] = img
             elif key == "name_plate":
-                if img.get_width() >= BUBBLE_NAME_PLATE_MIN_W and img.get_height() >= BUBBLE_NAME_PLATE_MIN_H:
+                if (
+                    img.get_width() >= BUBBLE_NAME_PLATE_MIN_W
+                    and img.get_height() >= BUBBLE_NAME_PLATE_MIN_H
+                ):
                     self.tiles["name_plate_left"] = img.subsurface(pygame.Rect(0, 0, 32, 64))
                     self.tiles["name_plate_center"] = img.subsurface(pygame.Rect(32, 0, 32, 64))
                     self.tiles["name_plate_right"] = img.subsurface(pygame.Rect(64, 0, 32, 64))

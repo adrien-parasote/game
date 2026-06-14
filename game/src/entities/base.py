@@ -115,7 +115,14 @@ class BaseEntity(pygame.sprite.Sprite):
             return False
 
         # Determine if the character is ascending the stairs
-        is_going_up = (stair_dir == "right" and dx == 1) or (stair_dir == "left" and dx == -1)
+        if stair_dir in ("up,right", "down,left", "right"):
+            # UP is Right, DOWN is Left
+            is_going_up = (dx == 1)
+        elif stair_dir in ("up,left", "down,right", "left"):
+            # UP is Left, DOWN is Right
+            is_going_up = (dx == -1)
+        else:
+            is_going_up = False
         stair_half = bool(vm.get("stair_half", False))
 
         # Ascending: diagonal move happens on the 'stair_half=True' tile
@@ -124,14 +131,12 @@ class BaseEntity(pygame.sprite.Sprite):
 
         target_dir = Settings.VERTICAL_MOVE_MAP[map_key] if should_move_diagonally else (dx, 0)
 
-        # Step-off boundary: if the diagonal target is not a stair tile,
-        # force flat movement (handles top-extremity exit onto normal floor).
         target_tx = current_tx + target_dir[0]
         target_ty = current_ty + target_dir[1]
         target_vm = self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
-        if target_vm is None and not self.game.map_manager.is_walkable(target_tx, target_ty):
-            # Only force flat if the diagonal target is impassable (wall).
-            # Walkable floor tiles are valid stair exit points (e.g. descending to lower floor).
+        if target_vm is None:
+            # Step-off boundary: if the diagonal target is not a stair tile,
+            # force flat movement to exit the stairs correctly onto the floor.
             target_dir = (dx, 0)
 
         self.direction = pygame.math.Vector2(target_dir)

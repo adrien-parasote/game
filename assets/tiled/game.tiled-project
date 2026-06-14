@@ -81,9 +81,25 @@
             "id": 24,
             "members": [
                 {
+                    "name": "clip",
+                    "type": "bool",
+                    "value": false
+                },
+                {
                     "name": "depth",
                     "type": "int",
                     "value": 0
+                },
+                {
+                    "name": "direction",
+                    "propertyType": "23-direction",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "half",
+                    "type": "bool",
+                    "value": false
                 },
                 {
                     "name": "material",
@@ -95,17 +111,6 @@
                     "propertyType": "25-movement_type",
                     "type": "string",
                     "value": "stair"
-                },
-                {
-                    "name": "stair_direction",
-                    "propertyType": "23-direction",
-                    "type": "string",
-                    "value": ""
-                },
-                {
-                    "name": "stair_half",
-                    "type": "bool",
-                    "value": false
                 },
                 {
                     "name": "visual_y_offset",

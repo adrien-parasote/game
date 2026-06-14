@@ -116,7 +116,6 @@ def test_draw_when_open_and_assets_present(monkeypatch, mock_font):
     assert ui._bg is dummy_bg
 
 
-
 @pytest.mark.tc("CHEST-U-10")
 def test_load_background_missing_file(monkeypatch, caplog):
     """AssetManager fallback: missing file returns a placeholder surface, not None."""

@@ -331,7 +331,9 @@ def test_load_version_mismatch_returns_none(manager, tmp_saves_dir, caplog):
         result = manager.load(1)
 
     assert result is None
-    assert any("version" in r.message.lower() or "mismatch" in r.message.lower() for r in caplog.records)
+    assert any(
+        "version" in r.message.lower() or "mismatch" in r.message.lower() for r in caplog.records
+    )
 
 
 def test_load_thumbnail_pygame_error_returns_none(manager, tmp_saves_dir, caplog):
@@ -385,4 +387,3 @@ def test_save_replace_error_logged(manager, tmp_saves_dir, caplog):
         manager.save(1, game)
 
     assert any("error" in r.levelname.lower() for r in caplog.records)
-
