@@ -234,14 +234,14 @@ class RenderManager:
             width = getattr(mm, "width", 0)
             height = getattr(mm, "height", 0)
             if not isinstance(width, int):
-                width = int(math.ceil(vp.right / tile_size))
+                width = math.ceil(vp.right / tile_size)
             if not isinstance(height, int):
-                height = int(math.ceil(vp.bottom / tile_size))
+                height = math.ceil(vp.bottom / tile_size)
 
             start_col = max(0, int(vp.left // tile_size))
-            end_col = min(width, int(math.ceil(vp.right / tile_size)))
+            end_col = min(width, math.ceil(vp.right / tile_size))
             start_row = max(0, int(vp.top // tile_size))
-            end_row = min(height, int(math.ceil(vp.bottom / tile_size)))
+            end_row = min(height, math.ceil(vp.bottom / tile_size))
 
             self._frame_visible_fg_tiles = []
             for y in range(start_row, end_row):

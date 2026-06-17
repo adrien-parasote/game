@@ -35,7 +35,7 @@ class InteractiveLightingMixin:
         self.light_mask_cache = []
         for i in range(LIGHT_MASK_CACHE_COUNT):
             scale = LIGHT_MASK_SCALE_BASE + (i * LIGHT_MASK_SCALE_STEP)
-            scaled_size = int(round(self.halo_size * scale))
+            scaled_size = round(self.halo_size * scale)
             if scaled_size > 0:
                 self.light_mask_cache.append(self._create_halo_surf(scaled_size))
             else:
@@ -110,10 +110,10 @@ class InteractiveLightingMixin:
 
         dark_factor = global_darkness / 180.0
         global_factor = max(0.15, dark_factor)
-        scale_idx = max(0, min(9, int(round((self.f_scale - 0.97) / 0.0066))))
+        scale_idx = max(0, min(9, round((self.f_scale - 0.97) / 0.0066)))
         # P9: set_alpha() instead of .copy() — avoids Surface allocation per frame
         render_surf = self.light_mask_cache[scale_idx]
-        m = max(0, min(255, int(round(255 * global_factor * self.f_alpha))))
+        m = max(0, min(255, round(255 * global_factor * self.f_alpha)))
         render_surf.set_alpha(m)
         if self.rect:
             halo_pos = (

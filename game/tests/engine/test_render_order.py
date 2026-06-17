@@ -215,7 +215,7 @@ class TestOcclusionSkippedDuringWalk:
     def test_occlusion_active_when_not_walking(self):
         """TC-RENDER-002a (non-regression): Without walk, occluded_image IS used,
         and draw_foreground() returns a non-empty list[tuple[Rect, int]]."""
-        rm, fg_tile_data, normal_blits, occluded_blits = self._make_rm_with_occluding_tile()
+        rm, _fg_tile_data, normal_blits, occluded_blits = self._make_rm_with_occluding_tile()
         rm.game._intra_walk_target = None  # no walk
 
         result = rm.draw_foreground()
@@ -239,7 +239,7 @@ class TestOcclusionSkippedDuringWalk:
         tile blit. _blit_occluded_tiles_near_player is not called when walk_active=True.
         draw_foreground() still returns the collected rects for NPC sprite occlusion.
         """
-        rm, fg_tile_data, normal_blits, occluded_blits = self._make_rm_with_occluding_tile()
+        rm, _fg_tile_data, _normal_blits, occluded_blits = self._make_rm_with_occluding_tile()
         rm.game._intra_walk_target = pygame.math.Vector2(100, 100)  # walk active
 
         result = rm.draw_foreground()

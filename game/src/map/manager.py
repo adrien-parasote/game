@@ -359,10 +359,10 @@ class MapManager:
 
         # Calculate start and end indices using math boundaries (O(1) range calculation)
         start_col = max(0, int(viewport_rect.left // tile_size))
-        end_col = min(self.width, int(math.ceil(viewport_rect.right / tile_size)))
+        end_col = min(self.width, math.ceil(viewport_rect.right / tile_size))
 
         start_row = max(0, int(viewport_rect.top // tile_size))
-        end_row = min(self.height, int(math.ceil(viewport_rect.bottom / tile_size)))
+        end_row = min(self.height, math.ceil(viewport_rect.bottom / tile_size))
 
         for layer_id in self.layer_order:
             layer_order_val = self.layer_depths.get(layer_id, 0)
@@ -402,10 +402,10 @@ class MapManager:
         ts = tile_size
 
         start_col = max(0, int(viewport_rect.left // tile_size))
-        end_col = min(self.width, int(math.ceil(viewport_rect.right / tile_size)))
+        end_col = min(self.width, math.ceil(viewport_rect.right / tile_size))
 
         start_row = max(0, int(viewport_rect.top // tile_size))
-        end_row = min(self.height, int(math.ceil(viewport_rect.bottom / tile_size)))
+        end_row = min(self.height, math.ceil(viewport_rect.bottom / tile_size))
 
         layers_to_scan = [layer_id] if layer_id is not None else self.layer_order
         for lid in layers_to_scan:

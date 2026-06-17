@@ -73,7 +73,7 @@ class TestEntityFactoryCoverage:
             MockNPC.return_value = inst
             ef.spawn_npc(ent, props)
             # Verify MockNPC was called with facing_direction="left"
-            args, kwargs = MockNPC.call_args
+            _args, kwargs = MockNPC.call_args
             assert kwargs.get("facing_direction") == "left"
             assert kwargs.get("sub_type") == "static_npc"
 

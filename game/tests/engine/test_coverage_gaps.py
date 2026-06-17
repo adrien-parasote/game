@@ -224,7 +224,7 @@ class TestRenderManagerBranches:
 
     def test_normal_blit_appended_when_no_collision(self):
         """Ligne 109 : tile sans collision player → ajouté à normal_blits."""
-        game, rm = self._make_rm()
+        _game, rm = self._make_rm()
         # Test simple que RenderManager s'initialise et ne crash pas
         assert rm is not None
 

@@ -99,7 +99,7 @@ class TestStairMovementUnit:
             "stair_clip": False,
         }
         mm.get_vertical_move_props = MagicMock(
-            side_effect=lambda x, y: (current_props if (x == 1 and y == 1) else None)
+            side_effect=lambda x, y: current_props if (x == 1 and y == 1) else None
         )
         return entity
 

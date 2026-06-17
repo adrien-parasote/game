@@ -134,7 +134,7 @@ class TestSpeechBubblePosition(unittest.TestCase):
 
         # Single blit call for the entire bubble (including integrated tail)
         assert blit.call_count == 1
-        bg_surf, (bx, by) = blit.call_args_list[0][0]
+        bg_surf, (_bx, by) = blit.call_args_list[0][0]
 
         expected_y = rect.top - bubble.tail_gap - bg_surf.get_height()
         assert by == expected_y
@@ -210,7 +210,7 @@ class TestSpeechBubbleNamePlate(unittest.TestCase):
             assert blit.call_count == 2
 
             # Verify the second blit contains the name plate surface
-            name_plate_surf, pos = blit.call_args_list[1][0]
+            name_plate_surf, _pos = blit.call_args_list[1][0]
             assert isinstance(name_plate_surf, pygame.Surface)
             assert name_plate_surf.get_width() > 0
 

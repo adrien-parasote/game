@@ -138,7 +138,7 @@ class TestInteractiveCoverage:
     @pytest.mark.tc("INT-U-04")
     def test_update_closing_door_decrements_frame(self):
         """L288-292: closing (is_closing=True) decrements frame_index."""
-        entity, obstacles = _make_interactive(sub_type="door", is_on=False, is_passable=True)
+        entity, _obstacles = _make_interactive(sub_type="door", is_on=False, is_passable=True)
         entity.is_animating = True
         entity.is_closing = True
         entity.frame_index = 2.0

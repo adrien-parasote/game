@@ -1142,7 +1142,7 @@ def test_build_screen_occluding_rects_screen_coords():
     rm._build_screen_occluding_rects(cam, player_depth=1, occluding_rects=occluding_rects)
 
     assert len(occluding_rects) == 1
-    rect, depth, _ = occluding_rects[0]
+    rect, _depth, _ = occluding_rects[0]
     assert rect.x == 64 + (-32), f"Expected screen_x={64 - 32}, got {rect.x}"
     assert rect.y == 96 + (-16), f"Expected screen_y={96 - 16}, got {rect.y}"
 
@@ -1270,7 +1270,7 @@ def test_p001_draw_foreground_occluding_rects_populated():
     assert len(result) > 0, (
         "draw_foreground must return non-empty list when fg tile at (0,0) is in viewport"
     )
-    occ_rect, depth, tile_img = result[0]
+    occ_rect, depth, _tile_img = result[0]
     assert isinstance(occ_rect, pygame.Rect)
     assert depth == 2
 
@@ -1393,7 +1393,7 @@ def test_p004_init_exposes_occ_cache_attrs():
 @pytest.mark.tc("TC-P004-002")
 def test_p004_first_call_creates_composite_and_caches():
     """TC-P004-002: First call with occluding rects creates composites and stores them in _occ_composite_cache."""
-    game, sprite = _make_game_with_occluding_sprite()
+    game, _sprite = _make_game_with_occluding_sprite()
     rm = RenderManager(game)
 
     occ_rect = pygame.Rect(0, 0, 32, 32)  # overlaps sprite at (0,0)
@@ -1415,7 +1415,7 @@ def test_p004_first_call_creates_composite_and_caches():
 @pytest.mark.tc("TC-P004-003")
 def test_p004_cache_hit_skips_sprite_iteration():
     """TC-P004-003: Identical cam_offset + occluding_rects length → cache hit → sprite not re-processed."""
-    game, sprite = _make_game_with_occluding_sprite(cam_x=10, cam_y=20)
+    game, _sprite = _make_game_with_occluding_sprite(cam_x=10, cam_y=20)
     rm = RenderManager(game)
 
     occ_rect = pygame.Rect(10, 20, 32, 32)  # overlaps sprite screen rect
@@ -1446,7 +1446,7 @@ def test_p004_cache_hit_skips_sprite_iteration():
 @pytest.mark.tc("TC-P004-004")
 def test_p004_cam_change_invalidates_cache():
     """TC-P004-004: cam_offset change between calls → cache miss → sprite re-processed."""
-    game, sprite = _make_game_with_occluding_sprite(cam_x=0, cam_y=0)
+    game, _sprite = _make_game_with_occluding_sprite(cam_x=0, cam_y=0)
     rm = RenderManager(game)
 
     occ_rect = pygame.Rect(0, 0, 32, 32)
@@ -1475,7 +1475,7 @@ def test_p004_cam_change_invalidates_cache():
 @pytest.mark.tc("TC-P004-005")
 def test_p004_rect_count_change_invalidates_cache():
     """TC-P004-005: Change in number of occluding_rects → cache miss → recompute."""
-    game, sprite = _make_game_with_occluding_sprite()
+    game, _sprite = _make_game_with_occluding_sprite()
     rm = RenderManager(game)
 
     img = pygame.Surface((32, 32))
@@ -1501,7 +1501,7 @@ def test_p004_rect_count_change_invalidates_cache():
 @pytest.mark.tc("TC-P004-006")
 def test_p004_reset_occ_cache_clears_state():
     """TC-P004-006: reset_occ_cache() (called on map change) resets _occ_key and _occ_composite_cache."""
-    game, sprite = _make_game_with_occluding_sprite()
+    game, _sprite = _make_game_with_occluding_sprite()
     rm = RenderManager(game)
 
     img = pygame.Surface((32, 32))
@@ -1548,7 +1548,7 @@ def test_fg_occlusion_grid_matches_world_list():
     assert mm._fg_occlusion_grid is not None
     assert len(mm._fg_occlusion_grid) == len(mm._fg_occlusion_world)
     assert (1, 0) in mm._fg_occlusion_grid
-    depth, img, occ_img = mm._fg_occlusion_grid[(1, 0)]
+    depth, img, _occ_img = mm._fg_occlusion_grid[(1, 0)]
     assert depth == 2
     assert img is map_data["tiles"][2].image
 
@@ -1599,7 +1599,7 @@ def test_rect_pool_reused_in_build_screen_occluding_rects():
     rm._build_screen_occluding_rects(cam_offset, 1, occluding_rects)
 
     assert len(occluding_rects) == 1
-    rect, depth, img = occluding_rects[0]
+    rect, _depth, _img = occluding_rects[0]
     assert id(rect) == first_pool_rect_id
     assert rect.x == 32 + 10
     assert rect.y == 64 + 20

@@ -637,7 +637,7 @@ def test_get_visible_chunks_full_viewport(map_manager):
     viewport.left, viewport.right, viewport.top, viewport.bottom = 0, 64, 0, 64
     chunks = list(map_manager.get_visible_chunks(viewport))
     assert len(chunks) == 1
-    px, py, tile_id, depth = chunks[0]
+    _px, _py, tile_id, depth = chunks[0]
     assert tile_id == 1
     assert depth == 1
 
