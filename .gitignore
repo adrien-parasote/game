@@ -10,6 +10,7 @@ __pycache__/
 .mypy_cache/
 .coverage
 htmlcov/
+
 # ==============================================================================
 # 📦 Virtual Environments
 # ==============================================================================
@@ -84,3 +85,5 @@ logs/
 game-wiki/
 scripts/dev/perf_audit_*
 scripts/dev/profile_*
+
+game/docs/*.md
