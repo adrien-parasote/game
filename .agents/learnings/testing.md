@@ -1040,7 +1040,7 @@ Quand un projet utilise un simple `requirements.txt` pour fixer ses dépendances
 
 Plutôt que d'alourdir inutilement la gestion des paquets ou d'abandonner `pyproject.toml`, la création d'un fichier lock minimal documentant la vérité unique de `requirements.txt` permet de valider le scan de sécurité statique sans polluer le runtime.
 
-**Evidence :** `security_scan.py` levait une alerte `DEPS [A06]: HIGH` en raison du `pyproject.toml` sans lock. La création d'un fichier [poetry.lock](file:///Users/adrien.parasote/Documents/perso/game/poetry.lock) factice et explicite a permis de passer à 0 alerte.
+**Evidence :** `security_scan.py` levait une alerte `DEPS [A06]: HIGH` en raison du `pyproject.toml` sans lock. La création d'un fichier [poetry.lock](../../poetry.lock) factice et explicite a permis de passer à 0 alerte.
 
 *Last updated: 2026-05-22 — L-TEST-017, A-TEST-015, L-TEST-018 depuis la session camera rendering et occlusion.*
 

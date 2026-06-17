@@ -555,7 +555,7 @@ All existing tests cover runtime behavior. These test cases are verification scr
 - `src/ui/save_menu_constants.py` — SAVE_TITLE_COLOR defined here: [save_menu_constants.py](../../src/ui/save_menu_constants.py#L36)
 - `src/ui/pause_screen_constants.py` — PANEL_W/PANEL_H defined here: [pause_screen_constants.py](../../src/ui/pause_screen_constants.py#L11-L12)
 - `docs/specs/development-quality.md` — related quality spec: [development-quality.md](./development-quality.md#L1)
-- Implementation plan (DISCOVER output): [implementation_plan.md](file:///Users/adrien.parasote/.gemini/antigravity-ide/brain/3e726d7b-ddd4-4dd3-987b-4de921bf4b9f/implementation_plan.md#L1)
+- Implementation plan (DISCOVER output): [implementation_plan.md](../implementation_plan.md#L1)
 
 ---
 
