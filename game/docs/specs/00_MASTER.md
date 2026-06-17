@@ -59,7 +59,7 @@ This document serves as the Master Index and Architectural Registry for the 25 c
 ### 1.7 Navigation Extensions
 | Spec | File | Modules Covered |
 |------|------|-----------------|  
-| **Stair Movement** | [stair-movement.md](./stair-movement.md#L1) | `BaseEntity._apply_stair_interception`, `MapManager.get_vertical_move_props`, diagonal stair climbing |
+| **Stair Movement** | [vertical-move.md](./vertical-move.md#L1) | `BaseEntity._apply_stair_interception`, `MapManager.get_vertical_move_props`, diagonal stair climbing |
 
 ---
 
@@ -132,6 +132,9 @@ This document serves as the Master Index and Architectural Registry for the 25 c
 | [ADR-011](../ADRs/ADR-011-spatial-index-and-rect-pooling.md#L1) | Spatial Index + Rect Pooling | Pre-allocated rect pool and spatial grid for render performance |
 | [ADR-012](../ADRs/ADR-012-grass-material-grid.md#L1) | Grass Material Grid | Pre-computed 2D grass grid for O(1) wading lookups |
 | [ADR-013](../ADRs/ADR-013-stair-climbing-alignment.md#L1) | Stair Climbing Alignment | Descent direction asymmetry fix — `not stair_half` for downward movement |
+| [ADR-015](../ADRs/ADR-015-dynamic-stair-clipping.md#L1) | Dynamic Stair Clipping | Proportional bottom-half clipping of player sprite on stairs |
+| [ADR-016](../ADRs/ADR-016-dynamic-stair-interpolation.md#L1) | Dynamic Stair Slope Alternation | Alternates flat and diagonal steps based on `visual_y_offset` |
+
 
 ---
 

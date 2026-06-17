@@ -1333,31 +1333,34 @@ grep -rn "__new__(RenderManager)" tests/
 
 ---
 
-### A-TEST-046 · 2026-06-11 · U · Minor Rework
-**Les MagicMock dans les tests provoquent des TypeErrors lors de comparaisons ou de dépaquetages dans les chemins optimisés**
+### A-TEST-046 · 2026-06-11 · U · Minor Rework *(updated 2026-06-17 — occurrences: 2)*
+**Les MagicMock dans les tests provoquent des TypeErrors ou KeyErrors lors de comparaisons, dépaquetages ou accès par index**
 
-Quand on optimise des boucles de rendu à partir de structures spatiales, on utilise des comparaisons numériques (`x < limit` ou `depth > threshold`) ou du dépaquetage de tuples (`depth, img, occ_img = grid.get((x,y))`).
-Cependant, dans la suite de tests existante, `game.map_manager` ou d'autres objets peuvent être configurés comme des `MagicMock`. L'accès aux attributs manquants sur un mock (comme `width` ou `_fg_occlusion_grid.get()`) renvoie par défaut d'autres instances de `MagicMock`.
-En Python 3, comparer un `MagicMock` à un entier avec `<` ou `>` lève une `TypeError: '<' not supported between instances of 'int' and 'MagicMock'`. De même, tenter de dépaqueter un mock lève une `ValueError` ou une `TypeError`.
+Quand on optimise ou refactore du code qui utilise des structures renvoyées par des managers (comme `map_manager`), ces objets peuvent être configurés comme des `MagicMock` dans les tests existants.
+L'accès aux attributs manquants sur un mock renvoie par défaut d'autres instances de `MagicMock` qui sont toujours évaluées comme vraies (`if current_vm:` sera True).
+Tenter de comparer un `MagicMock` à un entier lève une `TypeError`, tenter de le dépaqueter lève une `ValueError`/`TypeError`, et tenter de faire un accès par index (`current_vm["stair_direction"]`) sur un mock qui n'est pas configuré pour cela lève une `KeyError` ou renvoie un autre mock au lieu d'une valeur attendue.
 
-**Règle :** Les chemins de rendu optimisés doivent toujours être défensifs et type-checker les propriétés obtenues de managers externes (ex: utiliser `isinstance(width, int)` ou vérifier si `_fg_occlusion_grid` est bien un `dict`). Si un attribut est un mock, le code doit proprement basculer sur le chemin de compatibilité d'origine (fallback) utilisé par les tests existants.
+**Règle :** Sécuriser les lectures de propriétés et de dictionnaires obtenus de managers externes susceptibles d'être mockés. Utiliser des gardes de type comme `isinstance(current_vm, dict)` et utiliser `.get()` pour éviter les KeyErrors.
 
 ```python
-# ❌ Comparaison directe d'un attribut de mock
-start_row = max(0, int(vp.top // tile_size))
-end_row = min(self.game.map_manager.height, int(math.ceil(vp.bottom / tile_size)))  # TypeError si map_manager.height est un mock
+# ❌ Accès par index direct sur un attribut pouvant être un MagicMock
+current_vm = self.map_manager.get_vertical_move_props(tx, ty)
+if current_vm:
+    stair_dir = current_vm["stair_direction"]  # KeyError ou mock retourné
 
-# ✅ Type-checking défensif pour basculer sur le fallback ou sécuriser la comparaison
-width = getattr(mm, "width", 0)
-if not isinstance(width, int):
-    width = int(math.ceil(vp.right / tile_size))  # Fallback si mock
+# ✅ Type-checking défensif
+current_vm = self.map_manager.get_vertical_move_props(tx, ty)
+if isinstance(current_vm, dict):
+    stair_dir = current_vm.get("stair_direction")
 ```
 
-**Evidence :** 10 tests de rendu échouaient avec des `TypeError` ou des `ValueError` sur les comparaisons et dépaquetages après intégration de `_fg_occlusion_grid` dans `RenderManager` car `map_manager` était mocké. Résolu en ajoutant des gardes `isinstance` et `isinstance(..., dict)`.
+**Evidence :**
+1. Occurrence 1 : 10 tests de rendu échouaient avec des `TypeError` ou des `ValueError` après intégration de `_fg_occlusion_grid` dans `RenderManager` car `map_manager` était mocké. Résolu en ajoutant des gardes `isinstance` et `isinstance(..., dict)`.
+2. Occurrence 2 (2026-06-17) : La refactorisation du mouvement vertical (escaliers/échelles) levait des `KeyError` dans les tests existants car le mock de `map_manager` renvoyait des objets MagicMock évalués comme vrais. Résolu en protégeant les lectures dans `base.py` avec `isinstance(current_vm, dict)`.
 
 ---
 
-*Last updated: 2026-06-11 — added A-TEST-046 from static foreground culling optimization (P-001) HARDEN session.*
+*Last updated: 2026-06-17 — updated A-TEST-046 with vertical-move refactoring mock dict lookup KeyError occurrence.*
 
 ---
 

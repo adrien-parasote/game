@@ -168,16 +168,16 @@ class TestStairsIntegration:
         player.update(0.5)
         assert player.pos == pygame.math.Vector2(80, 48)
 
-        # start_move from (2,1): stair_half=True, target (3,0) is None → step-off flat to (3,1)
-        # _vertical_move is set to TARGET tile (3,1)'s props = None (normal tile)
+        # start_move from (2,1): stair_half=True, target (3,0) is None → keep diagonal to (3,0) (climbing step-off)
+        # _vertical_move is set to TARGET tile (3,0)'s props = None (normal tile)
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
-        assert player.direction == pygame.math.Vector2(1, 0)  # step-off confirmed
-        assert player._vertical_move is None  # target (3,1) is normal tile
+        assert player.direction == pygame.math.Vector2(1, -1)  # diagonal climb step-off
+        assert player._vertical_move is None  # target (3,0) is normal tile
         player.update(0.5)
-        assert player.pos == pygame.math.Vector2(112, 48)
+        assert player.pos == pygame.math.Vector2(112, 16)
 
-        # start_move from (3,1): normal tile → no stair interception, _vertical_move stays None
+        # start_move from (3,0): normal tile → no stair interception, _vertical_move stays None
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
         assert player._vertical_move is None
@@ -248,11 +248,11 @@ class TestStairsIntegration:
         player.update(0.5)
         assert player.pos == pygame.math.Vector2(144, 80)  # (4,2)
 
-        # Step 4: step-off (target (5,2) is normal → forced flat)
+        # Step 4: step-off (target (5,1) is normal → keep diagonal)
         player.direction = pygame.math.Vector2(1, 0)
         player.start_move()
         player.update(0.5)
-        assert player.pos == pygame.math.Vector2(176, 80)  # (5,2)
+        assert player.pos == pygame.math.Vector2(176, 48)  # (5,1)
 
     def test_it_004_stair_walls_block_movement(self, setup_mini_map):
         """IT-004: Wall tiles surrounding stairs block movement properly."""

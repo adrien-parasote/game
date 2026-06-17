@@ -4,6 +4,8 @@ from typing import Any
 import pygame
 from src.config import Settings
 
+logger = logging.getLogger(__name__)
+
 
 class BaseEntity(pygame.sprite.Sprite):
     """Base class for all game entities (Player, NPCs, Obstacles)."""
@@ -40,15 +42,8 @@ class BaseEntity(pygame.sprite.Sprite):
         self.current_stair_offset: float = 0.0
         self.stair_start_offset: float = 0.0
         self.stair_target_offset: float = 0.0
-        self.current_stair_clip: float = 0.0
-        self.stair_start_clip: float = 0.0
-        self.stair_target_clip: float = 0.0
         self.stair_move_distance: float = 0.0
         self.stair_start_pos: pygame.math.Vector2 = pygame.math.Vector2(pos)
-
-    def _max_stair_clip(self) -> float:
-        """Return maximum clip amount for this entity."""
-        return float(Settings.TILE_SIZE // 2)
 
     def move(self, dt: float):
         """Move towards target_pos if is_moving, else start move if direction exists."""
@@ -65,13 +60,6 @@ class BaseEntity(pygame.sprite.Sprite):
             # Reached target
             self.pos = pygame.math.Vector2(self.target_pos)
             self.is_moving = False
-            # Transition _vertical_move to the target tile properties
-            if self.game and hasattr(self.game, "map_manager"):
-                tx = int(self.pos.x // Settings.TILE_SIZE)
-                ty = int(self.pos.y // Settings.TILE_SIZE)
-                self._vertical_move = self.game.map_manager.get_vertical_move_props(tx, ty)
-            else:
-                self._vertical_move = None
         else:
             # Step towards target
             step = move_vector.normalize() * self.speed * dt
@@ -79,68 +67,6 @@ class BaseEntity(pygame.sprite.Sprite):
 
         if self.rect:
             self.rect.center = (round(self.pos.x), round(self.pos.y))
-
-    def _apply_stair_interception(self, current_tx: int, current_ty: int) -> bool:
-        """Apply stair direction interception if standing on a stair tile.
-
-        Checks whether the current tile has stair properties and adjusts
-        self.direction to the correct diagonal — or resets it to (0, 0) for
-        unmapped inputs (silent block).
-
-        Returns:
-            True  — movement should continue (direction may have been rewritten).
-            False — movement is silently blocked (caller must return immediately).
-
-        Side effect: sets self._vertical_move from the current tile.
-        """
-        if not (self.game and hasattr(self.game, "map_manager")):
-            self._vertical_move = None
-            return True
-
-        vm = self.game.map_manager.get_vertical_move_props(current_tx, current_ty)
-        if not (vm and isinstance(vm, dict)):
-            self._vertical_move = None
-            return True
-
-        self._vertical_move = vm
-        stair_dir = vm["stair_direction"]
-        dx = 1 if self.direction.x > 0.01 else (-1 if self.direction.x < -0.01 else 0)
-        # Intentionally ignore dy: VERTICAL_MOVE_MAP keys always use (dx, 0).
-        # A residual dy from the previous diagonal step would cause a silent block.
-        map_key = ((dx, 0), stair_dir)
-
-        if map_key not in Settings.VERTICAL_MOVE_MAP:
-            # Non-mappable input on stair (e.g. UP/DOWN) → silent block
-            self.direction = pygame.math.Vector2(0, 0)
-            return False
-
-        # Determine if the character is ascending the stairs
-        if stair_dir in ("up,right", "down,left", "right"):
-            # UP is Right, DOWN is Left
-            is_going_up = (dx == 1)
-        elif stair_dir in ("up,left", "down,right", "left"):
-            # UP is Left, DOWN is Right
-            is_going_up = (dx == -1)
-        else:
-            is_going_up = False
-        stair_half = bool(vm.get("stair_half", False))
-
-        # Ascending: diagonal move happens on the 'stair_half=True' tile
-        # Descending: diagonal move happens on the 'stair_half=False' tile
-        should_move_diagonally = stair_half if is_going_up else (not stair_half)
-
-        target_dir = Settings.VERTICAL_MOVE_MAP[map_key] if should_move_diagonally else (dx, 0)
-
-        target_tx = current_tx + target_dir[0]
-        target_ty = current_ty + target_dir[1]
-        target_vm = self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
-        if target_vm is None:
-            # Step-off boundary: if the diagonal target is not a stair tile,
-            # force flat movement to exit the stairs correctly onto the floor.
-            target_dir = (dx, 0)
-
-        self.direction = pygame.math.Vector2(target_dir)
-        return True
 
     def _clamp_target_to_world(self) -> None:
         """Clamp self.target_pos to world boundaries based on entity size."""
@@ -163,50 +89,129 @@ class BaseEntity(pygame.sprite.Sprite):
         if self.direction.magnitude() == 0:
             return
 
-        current_tx = int(self.pos.x // Settings.TILE_SIZE)
-        current_ty = int(self.pos.y // Settings.TILE_SIZE)
+        # 1. Compute grid position
+        tx = int(self.pos.x // Settings.TILE_SIZE)
+        ty = int(self.pos.y // Settings.TILE_SIZE)
 
-        if not self._apply_stair_interception(current_tx, current_ty):
+        # 2. Call get_vertical_move_props
+        current_vm = (
+            self.game.map_manager.get_vertical_move_props(tx, ty)
+            if (self.game and hasattr(self.game, "map_manager"))
+            else None
+        )
+
+        # 3. Always assign current_vm to clear stale state
+        self._vertical_move = current_vm
+
+        # 4. If current_vm is None or not a dict -> normal floor movement, exit
+        if current_vm is None or not isinstance(current_vm, dict):
+            if self.game and hasattr(self.game, "map_manager"):
+                allowed_directions = self.game.map_manager.get_direction_flags(tx, ty)
+                if abs(self.direction.x) > abs(self.direction.y):
+                    requested_dir = "right" if self.direction.x > 0 else "left"
+                else:
+                    requested_dir = "down" if self.direction.y > 0 else "up"
+                if "any" not in allowed_directions and requested_dir not in allowed_directions:
+                    return
+
+            self.target_pos = self.pos + self.direction * Settings.TILE_SIZE
+            self._clamp_target_to_world()
+
+            if self.walkable_func is not None:
+                if not self.walkable_func(self.target_pos.x, self.target_pos.y, requester=self):
+                    self.target_pos = pygame.math.Vector2(self.pos)
+                    return
+
+            if self.target_pos != self.pos:
+                self.is_moving = True
+                self.stair_start_pos = pygame.math.Vector2(self.pos)
+                self.stair_move_distance = (self.target_pos - self.pos).magnitude()
+                self.stair_start_offset = self.current_stair_offset
+                self.stair_target_offset = 0.0
             return
 
-        if self.game and hasattr(self.game, "map_manager"):
-            allowed_directions = self.game.map_manager.get_direction_flags(current_tx, current_ty)
-            if abs(self.direction.x) > abs(self.direction.y):
-                requested_dir = "right" if self.direction.x > 0 else "left"
-            else:
-                requested_dir = "down" if self.direction.y > 0 else "up"
-            if "any" not in allowed_directions and requested_dir not in allowed_directions:
-                return  # Movement blocked by current tile's exit constraints
+        # 5. Look up behavior
+        behavior = Settings.MOVEMENT_BEHAVIORS.get(current_vm.get("movement_type", "stair"))
+        if behavior is None:
+            logger.warning(
+                f"Unknown movement_type '{current_vm.get('movement_type', 'stair')}' at ({tx},{ty})"
+            )
+            return
 
-        # Calculate target and clamp to world
-        self.target_pos = self.pos + self.direction * Settings.TILE_SIZE
+        # 6. Filter input_dir by behavior.allowed_axes
+        input_dir = (int(round(self.direction.x)), int(round(self.direction.y)))
+        if behavior.allowed_axes == "horizontal":
+            input_dir = (input_dir[0], 0)
+        elif behavior.allowed_axes == "vertical":
+            input_dir = (0, input_dir[1])
+
+        if input_dir == (0, 0):
+            self.direction = pygame.math.Vector2(0, 0)
+            return
+
+        # 7. Look up intercepted direction
+        intercepted_dir = behavior.move_map.get((input_dir, current_vm.get("stair_direction", "")))
+        if intercepted_dir is None:
+            logger.warning(
+                f"Unknown stair_direction '{current_vm.get('stair_direction', '')}' at ({tx},{ty})"
+            )
+            self.direction = pygame.math.Vector2(0, 0)
+            return
+
+        # 8. Slope alternation check
+        stair_half = current_vm.get("stair_half", False)
+        is_diag = behavior.is_diagonal(stair_half, intercepted_dir[1])
+        if is_diag:
+            predicted_dir = intercepted_dir
+        else:
+            if behavior.fallback_axis == "horizontal":
+                predicted_dir = (intercepted_dir[0], 0)
+            elif behavior.fallback_axis == "vertical":
+                predicted_dir = (0, intercepted_dir[1])
+            else:
+                predicted_dir = intercepted_dir
+
+        # 9. Boundary check
+        target_tx = tx + predicted_dir[0]
+        target_ty = ty + predicted_dir[1]
+        target_vm = (
+            self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
+            if (self.game and hasattr(self.game, "map_manager"))
+            else None
+        )
+
+        # 10. Step-off handling
+        final_dir = predicted_dir
+        if target_vm is None:
+            if intercepted_dir[1] > 0:  # descending
+                final_dir = (intercepted_dir[0], 0)
+                target_tx = tx + final_dir[0]
+                target_ty = ty + final_dir[1]
+                target_vm = (
+                    self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
+                    if (self.game and hasattr(self.game, "map_manager"))
+                    else None
+                )
+
+        # 11. Walkable check
+        self.target_pos = self.pos + pygame.math.Vector2(final_dir) * Settings.TILE_SIZE
         self._clamp_target_to_world()
 
-        # Check custom collisions (e.g. MapManager wall tiles)
-        if self.walkable_func is not None:  # noqa: SIM102
+        if self.walkable_func is not None:
             if not self.walkable_func(self.target_pos.x, self.target_pos.y, requester=self):
                 self.target_pos = pygame.math.Vector2(self.pos)
+                self.direction = pygame.math.Vector2(0, 0)
                 return
 
-        # Only start if target isn't current pos
+        # 12. Update target pos and initialize offset tracking
         if self.target_pos != self.pos:
             self.is_moving = True
-            # Setup interpolation caching
+            self.direction = pygame.math.Vector2(final_dir)
             self.stair_start_pos = pygame.math.Vector2(self.pos)
-            self.stair_start_offset = self.current_stair_offset
-            self.stair_start_clip = self.current_stair_clip
-            if self.game and hasattr(self.game, "map_manager"):
-                target_tx = int(self.target_pos.x // Settings.TILE_SIZE)
-                target_ty = int(self.target_pos.y // Settings.TILE_SIZE)
-                target_vm = self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
-                self._vertical_move = target_vm
-                self.stair_target_offset = target_vm["visual_y_offset"] if target_vm else 0.0
-                max_clip = self._max_stair_clip()
-                self.stair_target_clip = max_clip if target_vm and target_vm.get("stair_clip") else 0.0
-            else:
-                self.stair_target_offset = 0.0
-                self.stair_target_clip = 0.0
             self.stair_move_distance = (self.target_pos - self.pos).magnitude()
+            self.stair_start_offset = self.current_stair_offset
+            self.stair_target_offset = float(target_vm.get("visual_y_offset", 0.0)) if target_vm else 0.0
+            self._vertical_move = target_vm
 
     def interact(self, initiator) -> Any:
         """Called when another entity interacts with this one. To be overridden."""
@@ -217,25 +222,16 @@ class BaseEntity(pygame.sprite.Sprite):
         self.update_stair_offset()
 
     def update_stair_offset(self):
-        if getattr(self, 'stair_clip_exempt', False):
-            self.current_stair_clip = 0.0
-
         if not self.is_moving:
-            # Standing still: read cached _vertical_move
             vm = self._vertical_move
-            self.current_stair_offset = vm["visual_y_offset"] if vm else 0.0
-            if not getattr(self, 'stair_clip_exempt', False):
-                self.current_stair_clip = self._max_stair_clip() if vm and vm.get("stair_clip") else 0.0
+            self.current_stair_offset = float(vm.get("visual_y_offset", 0.0)) if vm else 0.0
         else:
-            # Moving: interpolate offset based on movement progress
-            total_dist = (self.target_pos - self.stair_start_pos).magnitude()
-            if total_dist > 0:
+            if self.stair_move_distance > 0:
                 curr_dist = (self.target_pos - self.pos).magnitude()
-                progress = max(0.0, min(1.0, 1.0 - curr_dist / total_dist))
-                self.current_stair_offset = self.stair_start_offset + (self.stair_target_offset - self.stair_start_offset) * progress
-                if not getattr(self, 'stair_clip_exempt', False):
-                    self.current_stair_clip = self.stair_start_clip + (self.stair_target_clip - self.stair_start_clip) * progress
+                progress = max(0.0, min(1.0, 1.0 - curr_dist / self.stair_move_distance))
+                self.current_stair_offset = (
+                    self.stair_start_offset
+                    + (self.stair_target_offset - self.stair_start_offset) * progress
+                )
             else:
                 self.current_stair_offset = self.stair_target_offset
-                if not getattr(self, 'stair_clip_exempt', False):
-                    self.current_stair_clip = self.stair_target_clip

@@ -73,7 +73,7 @@
 ```
 docs/
   specs/            21 implementation specs (Stream Coding v6.0 — Linked Test Functions + Deep Links)
-  ADRs/             8 ADRs (ADR-001..008). ADR-008: FRect non-migration.
+  ADRs/             16 ADRs (ADR-000..016, excluding 014). ADR-008: FRect non-migration.
   strategic/        MASTER_ROADMAP.md, game_vision.md, best_practices_remediation_blueprint.md
   traceability.md   Auto-generated (scripts/dev/tc_report.py)
   codemaps/         Architecture maps (this directory)

@@ -11,7 +11,7 @@ assertions:
     scope: code
     proof:
       type: test_exit_code
-      reference: "tests/integration/test_stairs_integration.py"
+      reference: "game/tests/integration/test_stairs_integration.py"
       expected_exit: 0
     files:
       - "game/src/entities/base.py"
@@ -23,9 +23,23 @@ assertions:
     scope: code
     proof:
       type: test_exit_code
-      reference: "tests/entities/test_stair_movement.py"
+      reference: "game/tests/entities/test_stair_movement.py"
       expected_exit: 0
     files:
       - "game/src/entities/base.py"
       - "game/src/entities/groups.py"
     status: null
+
+  - id: "IA-003"
+    assertion: "An entity on a ladder is restricted to vertical (Up/Down) movement only, ignoring horizontal inputs."
+    rationale: "Unit tests verify that pressing Left/Right on a ladder tile blocks movement and resets direction, while Up/Down inputs trigger vertical movement."
+    scope: code
+    proof:
+      type: test_exit_code
+      reference: "game/tests/entities/test_ladder_movement.py"
+      expected_exit: 0
+    files:
+      - "game/src/entities/base.py"
+    status: null
+
+

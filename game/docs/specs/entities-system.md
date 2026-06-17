@@ -255,7 +255,7 @@ Asset: `assets/images/sprites/04-emotes.png` (5 columns × 8 rows).
 
 ### Produces
 
-`BaseEntity` (`src/entities/base.py`) exposes the following fields and methods produced by the stair movement system — any spec that reads these is consuming from [stair-movement.md](./stair-movement.md):
+`BaseEntity` (`src/entities/base.py`) exposes the following fields and methods produced by the stair movement system — any spec that reads these is consuming from [vertical-move.md](./vertical-move.md):
 
 | Artifact | Type | Consumer |
 |----------|------|----------|
@@ -266,7 +266,7 @@ Asset: `assets/images/sprites/04-emotes.png` (5 columns × 8 rows).
 | `BaseEntity._vertical_move` | `dict \| None` | Internal to entities-system — set in `start_move()`, read in `update_stair_offset()` |
 | `BaseEntity.update_stair_offset()` | method | Called by `update(dt)` after `move(dt)` completes |
 
-> See [stair-movement.md §1.3–1.4](./stair-movement.md) for the full contract. **NEVER call `map_manager.get_vertical_move_props()` inside `update()` or `move()`** — use the cached `self._vertical_move` (Anti-Pattern #4).
+> See [vertical-move.md §5.1](./vertical-move.md) for the full contract. **NEVER call `map_manager.get_vertical_move_props()` inside `update()` or `move()`** — use the cached `self._vertical_move` (Anti-Pattern #4).
 
 ### Consumes
 N/A - Not applicable
