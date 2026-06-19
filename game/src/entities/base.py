@@ -136,7 +136,15 @@ class BaseEntity(pygame.sprite.Sprite):
                 self.stair_start_pos = pygame.math.Vector2(self.pos)
                 self.stair_move_distance = (self.target_pos - self.pos).magnitude()
                 self.stair_start_offset = self.current_stair_offset
-                self.stair_target_offset = 0.0
+                target_tx = int(self.target_pos.x // Settings.TILE_SIZE)
+                target_ty = int(self.target_pos.y // Settings.TILE_SIZE)
+                target_vm = (
+                    self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
+                    if (self.game and hasattr(self.game, "map_manager"))
+                    else None
+                )
+                self.stair_target_offset = float(target_vm.get("visual_y_offset", 0.0)) if target_vm else 0.0
+                self._vertical_move = target_vm
             return
 
         # 5. Look up behavior
