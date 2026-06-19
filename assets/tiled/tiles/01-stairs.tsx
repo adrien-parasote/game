@@ -263,32 +263,24 @@
  <tile id="36" type="01-vertical-move">
   <properties>
    <property name="depth" type="int" value="2"/>
-   <property name="movement_type" value="ladder"/>
-   <property name="stair_direction" value="ladder"/>
    <property name="visual_y_offset" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="37" type="01-vertical-move">
   <properties>
    <property name="depth" type="int" value="2"/>
-   <property name="movement_type" value="ladder"/>
-   <property name="stair_direction" value="ladder"/>
    <property name="visual_y_offset" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="38" type="01-vertical-move">
   <properties>
    <property name="depth" type="int" value="2"/>
-   <property name="movement_type" value="ladder"/>
-   <property name="stair_direction" value="ladder"/>
    <property name="visual_y_offset" type="int" value="0"/>
   </properties>
  </tile>
  <tile id="39" type="01-vertical-move">
   <properties>
    <property name="depth" type="int" value="2"/>
-   <property name="movement_type" value="ladder"/>
-   <property name="stair_direction" value="ladder"/>
    <property name="visual_y_offset" type="int" value="0"/>
   </properties>
  </tile>
