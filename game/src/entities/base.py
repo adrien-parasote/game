@@ -93,6 +93,10 @@ class BaseEntity(pygame.sprite.Sprite):
         tx = int(self.pos.x // Settings.TILE_SIZE)
         ty = int(self.pos.y // Settings.TILE_SIZE)
 
+        logger.info(
+            f"[DEBUG_MOVE] {self.__class__.__name__} starting move at ({tx}, {ty}) | pos={self.pos} | dir={self.direction}"
+        )
+
         # 2. Call get_vertical_move_props
         current_vm = (
             self.game.map_manager.get_vertical_move_props(tx, ty)
@@ -102,6 +106,11 @@ class BaseEntity(pygame.sprite.Sprite):
 
         # 3. Always assign current_vm to clear stale state
         self._vertical_move = current_vm
+
+        if current_vm is not None and isinstance(current_vm, dict):
+            logger.info(
+                f"[DEBUG_MOVE] Vertical move tile detected at ({tx}, {ty}) | current_vm={current_vm}"
+            )
 
         # 4. If current_vm is None or not a dict -> normal floor movement, exit
         if current_vm is None or not isinstance(current_vm, dict):
@@ -161,6 +170,11 @@ class BaseEntity(pygame.sprite.Sprite):
         # 8. Slope alternation check
         stair_half = current_vm.get("stair_half", False)
         is_diag = behavior.is_diagonal(stair_half, intercepted_dir[1])
+        logger.info(
+            f"[DEBUG_MOVE] Interception: input={input_dir} -> intercepted={intercepted_dir} | "
+            f"stair_half={stair_half} -> is_diagonal={is_diag}"
+        )
+
         if is_diag:
             predicted_dir = intercepted_dir
         else:
@@ -192,6 +206,13 @@ class BaseEntity(pygame.sprite.Sprite):
                     if (self.game and hasattr(self.game, "map_manager"))
                     else None
                 )
+                logger.info(
+                    f"[DEBUG_MOVE] Step-off (descending) detected. Forced flat: {final_dir} | target_vm={target_vm}"
+                )
+            else:
+                logger.info(
+                    f"[DEBUG_MOVE] Step-off (climbing) detected. Keeping diagonal: {final_dir} | target_vm={target_vm}"
+                )
 
         # 11. Walkable check
         self.target_pos = self.pos + pygame.math.Vector2(final_dir) * Settings.TILE_SIZE
@@ -201,6 +222,9 @@ class BaseEntity(pygame.sprite.Sprite):
             if not self.walkable_func(self.target_pos.x, self.target_pos.y, requester=self):
                 self.target_pos = pygame.math.Vector2(self.pos)
                 self.direction = pygame.math.Vector2(0, 0)
+                logger.info(
+                    f"[DEBUG_MOVE] Target position {self.target_pos} not walkable. Aborting."
+                )
                 return
 
         # 12. Update target pos and initialize offset tracking
@@ -212,6 +236,11 @@ class BaseEntity(pygame.sprite.Sprite):
             self.stair_start_offset = self.current_stair_offset
             self.stair_target_offset = float(target_vm.get("visual_y_offset", 0.0)) if target_vm else 0.0
             self._vertical_move = target_vm
+            logger.info(
+                f"[DEBUG_MOVE] Move initialized. target_pos={self.target_pos} | target_grid=({target_tx}, {target_ty}) | "
+                f"offset: {self.stair_start_offset} -> {self.stair_target_offset}"
+            )
+
 
     def interact(self, initiator) -> Any:
         """Called when another entity interacts with this one. To be overridden."""

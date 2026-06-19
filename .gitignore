@@ -88,3 +88,4 @@ scripts/dev/profile_*
 
 game/docs/*.md
 game/docs/adversarial-review/**
+.tdd_lock
