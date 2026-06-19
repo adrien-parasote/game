@@ -334,8 +334,7 @@ class MapManager:
                     "stair_direction": stair_dir,
                     "movement_type": props.get("movement_type", "stair"),
                     "visual_y_offset": int(props.get("visual_y_offset", 0)),
-                    "stair_half": props.get("half", props.get("stair_half", False))
-                    in (True, "true"),
+                    "half": props.get("half", False) in (True, "true"),
                 }
         return None  # absent → neutral tile, not a stair
 

@@ -168,11 +168,11 @@ class BaseEntity(pygame.sprite.Sprite):
             return
 
         # 8. Slope alternation check
-        stair_half = current_vm.get("stair_half", False)
-        is_diag = behavior.is_diagonal(stair_half, intercepted_dir[1])
+        half = current_vm.get("half", False)
+        is_diag = behavior.is_diagonal(half, intercepted_dir[1])
         logger.info(
             f"[DEBUG_MOVE] Interception: input={input_dir} -> intercepted={intercepted_dir} | "
-            f"stair_half={stair_half} -> is_diagonal={is_diag}"
+            f"half={half} -> is_diagonal={is_diag}"
         )
 
         if is_diag:

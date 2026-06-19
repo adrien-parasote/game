@@ -53,14 +53,14 @@ class TestStairMovementUnit:
                 "stair_direction": "right",
                 "movement_type": "stair",
                 "visual_y_offset": -12,
-                "stair_half": False,
+                "half": False,
             }
         )
         props = mm.get_vertical_move_props(1, 1)
         assert props == {
             "stair_direction": "right",
             "movement_type": "stair",
-            "stair_half": False,
+            "half": False,
             "visual_y_offset": -12,
         }
 
@@ -82,7 +82,7 @@ class TestStairMovementUnit:
         props = mm.get_vertical_move_props(1, 1)
         assert props is None
 
-    def _make_entity_on_stair(self, mm, stair_dir, stair_half, visual_y_offset=0):
+    def _make_entity_on_stair(self, mm, stair_dir, half, visual_y_offset=0):
         """Helper: create entity at (1,1) with mocked stair props."""
         entity = BaseEntity(pos=(48, 48))
         entity.speed = 200
@@ -93,7 +93,7 @@ class TestStairMovementUnit:
         current_props = {
             "stair_direction": stair_dir,
             "movement_type": "stair",
-            "stair_half": stair_half,
+            "half": half,
             "visual_y_offset": visual_y_offset,
             "stair_clip": False,
         }
@@ -102,9 +102,9 @@ class TestStairMovementUnit:
         )
         return entity
 
-    # ── UT-005a: right stair, lower half (stair_half=False), input right ─────────
+    # ── UT-005a: right stair, lower half (half=False), input right ─────────
     def test_ut_005a_right_stair_lower_half_input_right(self, setup_map_manager):
-        """UT-005a: stair_half=False + input (1,0) on right stair → flat (1,0)."""
+        """UT-005a: half=False + input (1,0) on right stair → flat (1,0)."""
         mm = setup_map_manager()
         entity = self._make_entity_on_stair(mm, "right", False)
         entity.direction = pygame.math.Vector2(1, 0)
@@ -114,9 +114,9 @@ class TestStairMovementUnit:
         assert entity.target_pos == pygame.math.Vector2(80, 48)
         assert entity.is_moving is True
 
-    # ── UT-005b: right stair, upper half (stair_half=True), input right ──────────
+    # ── UT-005b: right stair, upper half (half=True), input right ──────────
     def test_ut_005b_right_stair_upper_half_input_right(self, setup_map_manager):
-        """UT-005b: stair_half=True + input (1,0) on right stair → diagonal (1,-1)."""
+        """UT-005b: half=True + input (1,0) on right stair → diagonal (1,-1)."""
         mm = setup_map_manager()
         entity = BaseEntity(pos=(48, 48))
         entity.speed = 200
@@ -124,18 +124,18 @@ class TestStairMovementUnit:
         entity.game = MagicMock()
         entity.game.map_manager = mm
 
-        # Current tile: stair_half=True; target (2,0) is also a stair
+        # Current tile: half=True; target (2,0) is also a stair
         current_props = {
             "stair_direction": "right",
             "movement_type": "stair",
-            "stair_half": True,
+            "half": True,
             "visual_y_offset": -16,
             "stair_clip": True,
         }
         target_props = {
             "stair_direction": "right",
             "movement_type": "stair",
-            "stair_half": False,
+            "half": False,
             "visual_y_offset": 0,
             "stair_clip": False,
         }
@@ -158,7 +158,7 @@ class TestStairMovementUnit:
 
     # ── UT-006a: right stair, upper half, input left → step-off flat ─────────────
     def test_ut_006a_right_stair_upper_half_input_left_stepoff(self, setup_map_manager):
-        """UT-006a: stair_half=True + input (-1,0) on right stair + target is flat → flat (-1,0)."""
+        """UT-006a: half=True + input (-1,0) on right stair + target is flat → flat (-1,0)."""
         mm = setup_map_manager()
         entity = self._make_entity_on_stair(mm, "right", True)
         # Target (0,1) returns None (flat floor) → step-off rule
@@ -171,19 +171,19 @@ class TestStairMovementUnit:
 
     # ── UT-006b: right stair, lower half, input left → diagonal ───────────
     def test_ut_006b_right_stair_lower_half_input_left_diagonal(self, setup_map_manager):
-        """UT-006b: stair_half=False + input (-1,0) on right stair → diagonal (-1,1)."""
+        """UT-006b: half=False + input (-1,0) on right stair → diagonal (-1,1)."""
         mm = setup_map_manager()
         current_props = {
             "stair_direction": "right",
             "movement_type": "stair",
-            "stair_half": False,
+            "half": False,
             "visual_y_offset": 0,
             "stair_clip": False,
         }
         target_props = {
             "stair_direction": "right",
             "movement_type": "stair",
-            "stair_half": True,
+            "half": True,
             "visual_y_offset": -16,
             "stair_clip": True,
         }
@@ -231,7 +231,7 @@ class TestStairMovementUnit:
 
     # ── UT-009a: left stair, upper half, input left → step-off flat ──────────────
     def test_ut_009a_left_stair_upper_half_input_left_stepoff(self, setup_map_manager):
-        """UT-009a: stair_half=True + input (-1,0) on left stair + target flat → flat (-1,0)."""
+        """UT-009a: half=True + input (-1,0) on left stair + target flat → flat (-1,0)."""
         mm = setup_map_manager()
         entity = self._make_entity_on_stair(mm, "left", True)
         entity.direction = pygame.math.Vector2(-1, 0)
@@ -243,7 +243,7 @@ class TestStairMovementUnit:
 
     # ── UT-009b: left stair, lower half, input left → flat (already at bottom entry) ──
     def test_ut_009b_left_stair_lower_half_input_left_flat(self, setup_map_manager):
-        """UT-009b: stair_half=False + input (-1,0) on left stair = bottom entry → flat (-1,0)."""
+        """UT-009b: half=False + input (-1,0) on left stair = bottom entry → flat (-1,0)."""
         mm = setup_map_manager()
         entity = self._make_entity_on_stair(mm, "left", False)
         entity.direction = pygame.math.Vector2(-1, 0)
@@ -255,19 +255,19 @@ class TestStairMovementUnit:
 
     # ── UT-010a: left stair, lower half, input right → diagonal (1,1) ─────────────
     def test_ut_010a_left_stair_lower_half_input_right_diagonal(self, setup_map_manager):
-        """UT-010a: stair_half=False + input (1,0) on left stair → diagonal (1,1)."""
+        """UT-010a: half=False + input (1,0) on left stair → diagonal (1,1)."""
         mm = setup_map_manager()
         current_props = {
             "stair_direction": "left",
             "movement_type": "stair",
-            "stair_half": False,
+            "half": False,
             "visual_y_offset": 0,
             "stair_clip": False,
         }
         target_props = {
             "stair_direction": "left",
             "movement_type": "stair",
-            "stair_half": True,
+            "half": True,
             "visual_y_offset": -16,
             "stair_clip": True,
         }
@@ -295,19 +295,19 @@ class TestStairMovementUnit:
 
     # ── UT-010b: left stair, upper half, input right → flat (1,0) ───────────
     def test_ut_010b_left_stair_upper_half_input_right_flat(self, setup_map_manager):
-        """UT-010b: stair_half=True + input (1,0) on left stair → flat (1,0)."""
+        """UT-010b: half=True + input (1,0) on left stair → flat (1,0)."""
         mm = setup_map_manager()
         current_props = {
             "stair_direction": "left",
             "movement_type": "stair",
-            "stair_half": True,
+            "half": True,
             "visual_y_offset": -16,
             "stair_clip": True,
         }
         target_props = {
             "stair_direction": "left",
             "movement_type": "stair",
-            "stair_half": False,
+            "half": False,
             "visual_y_offset": 0,
             "stair_clip": False,
         }
@@ -351,7 +351,7 @@ class TestStairMovementUnit:
         assert entity.is_moving is True
 
     def test_ut_012_transition_stair_to_normal(self, setup_map_manager):
-        """UT-012: stair_half=True + input (-1,0) + next tile is normal floor → step-off flat."""
+        """UT-012: half=True + input (-1,0) + next tile is normal floor → step-off flat."""
         entity = BaseEntity(pos=(48, 48))
         entity.speed = 200
         mm = setup_map_manager()
@@ -363,7 +363,7 @@ class TestStairMovementUnit:
                 {
                     "stair_direction": "right",
                     "movement_type": "stair",
-                    "stair_half": True,
+                    "half": True,
                     "visual_y_offset": -16,
                     "stair_clip": True,
                 }
@@ -394,7 +394,7 @@ class TestStairMovementUnit:
             return_value={
                 "stair_direction": "right",
                 "movement_type": "stair",
-                "stair_half": True,
+                "half": True,
                 "visual_y_offset": -16,
                 "stair_clip": True,
             }
@@ -469,14 +469,14 @@ class TestStairMovementUnit:
         current_props = {
             "stair_direction": "down,right",
             "movement_type": "stair",
-            "stair_half": True,
+            "half": True,
             "visual_y_offset": 0,
             "stair_clip": True,
         }
         target_props = {
             "stair_direction": "down,right",
             "movement_type": "stair",
-            "stair_half": False,
+            "half": False,
             "visual_y_offset": 16,
             "stair_clip": False,
         }
@@ -495,7 +495,7 @@ class TestStairMovementUnit:
         entity._vertical_move = current_props
         entity.start_move()
 
-        # Target dir should be (1, 0) (flat) because descending from Top Half (stair_half=True) is flat.
+        # Target dir should be (1, 0) (flat) because descending from Top Half (half=True) is flat.
         assert entity.direction == pygame.math.Vector2(1, 0)
         assert entity.is_moving is True
 
@@ -511,14 +511,14 @@ class TestStairMovementUnit:
         current_props = {
             "stair_direction": "down,right",
             "movement_type": "stair",
-            "stair_half": False,
+            "half": False,
             "visual_y_offset": 16,
             "stair_clip": False,
         }
         target_props = {
             "stair_direction": "down,right",
             "movement_type": "stair",
-            "stair_half": True,
+            "half": True,
             "visual_y_offset": 0,
             "stair_clip": True,
         }
@@ -537,6 +537,6 @@ class TestStairMovementUnit:
         entity._vertical_move = current_props
         entity.start_move()
 
-        # Target dir should be (-1, 0) (flat) because ascending from Bottom Half (stair_half=False) is flat.
+        # Target dir should be (-1, 0) (flat) because ascending from Bottom Half (half=False) is flat.
         assert entity.direction == pygame.math.Vector2(-1, 0)
         assert entity.is_moving is True

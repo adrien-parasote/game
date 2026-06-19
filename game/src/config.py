@@ -13,7 +13,7 @@ class StairBehavior:
     """Encapsulates movement map, slope alternation, and input restriction for one tile type."""
 
     move_map: dict[tuple[tuple[int, int], str], tuple[int, int]]
-    # Returns True if this step should be diagonal given (stair_half: bool, dy: int)
+    # Returns True if this step should be diagonal given (half: bool, dy: int)
     is_diagonal: Callable[[bool, int], bool]
     # Axes allowed for input: "horizontal" | "vertical"
     allowed_axes: str
@@ -47,8 +47,8 @@ class Settings:
             ((1, 0), "left"): (1, 1),  # Right → descend
             ((-1, 0), "left"): (-1, -1),  # Left  → climb
         },
-        is_diagonal=lambda stair_half, dy: (dy < 0 and stair_half) or (
-            dy > 0 and not stair_half
+        is_diagonal=lambda half, dy: (dy < 0 and half) or (
+            dy > 0 and not half
         ),
         allowed_axes="horizontal",
         fallback_axis="horizontal",
@@ -59,7 +59,7 @@ class Settings:
             ((0, -1), "ladder"): (0, -1),  # Up on ladder → move up
             ((0, 1), "ladder"): (0, 1),  # Down on ladder → move down
         },
-        is_diagonal=lambda stair_half, dy: False,  # Ladders are always straight vertical
+        is_diagonal=lambda half, dy: False,  # Ladders are always straight vertical
         allowed_axes="vertical",
         fallback_axis="vertical",
     )

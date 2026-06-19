@@ -125,7 +125,7 @@ The ordered call sequence inside `start_move()` — an AI coder must implement t
 5. Look up `behavior = MOVEMENT_BEHAVIORS.get(current_vm["movement_type"])` → if `None`, log warning, exit.
 6. Filter `input_dir` by `behavior.allowed_axes` (e.g. if 'horizontal', set `input_dir = (input_dir[0], 0)`). If the resulting `input_dir` is `(0, 0)`, **silently discard input** and exit.
 7. Look up `intercepted_dir = behavior.move_map.get((input_dir, current_vm["stair_direction"]))` → if `None`, log warning, abort.
-8. **§4.3 slope alternation FIRST:** apply `behavior.is_diagonal(current_vm["stair_half"], intercepted_dir[1])` to decide `predicted_dir`. (If True, use full `(dx, dy)`. If False, use behavior's fallback axis).
+8. **§4.3 slope alternation FIRST:** apply `behavior.is_diagonal(current_vm["half"], intercepted_dir[1])` to decide `predicted_dir`. (If True, use full `(dx, dy)`. If False, use behavior's fallback axis).
 9. **§4.4 boundary check AFTER:** call `get_vertical_move_props(tx + predicted_dir[0], ty + predicted_dir[1])` → `target_vm`. Store for use in §5.1 init.
 10. If `target_vm` is `None` (not a stair tile) → we are stepping off. If descending (`intercepted_dir[1] > 0`), force `final_dir = (intercepted_dir[0], 0)` and re-fetch `target_vm` at this new location. If climbing, keep `final_dir = predicted_dir`.
 11. Walkable check on final target tile coordinates.
@@ -151,7 +151,7 @@ All movement types are defined via a single `StairBehavior` dataclass. Adding a 
 class StairBehavior:
     """Encapsulates movement map, slope alternation, and input restriction for one tile type."""
     move_map: dict[tuple[tuple[int, int], str], tuple[int, int]]
-    # Returns True if this step should be diagonal given (stair_half: bool, dy: int)
+    # Returns True if this step should be diagonal given (half: bool, dy: int)
     is_diagonal: Callable[[bool, int], bool]
     # Axes allowed for input: "horizontal" | "vertical"
     allowed_axes: str
@@ -176,7 +176,7 @@ STAIR_BEHAVIOR = StairBehavior(
         ((1, 0),  "left"):   (1,  1),   # Right → descend
         ((-1, 0), "left"):  (-1, -1),   # Left  → climb
     },
-    is_diagonal=lambda stair_half, dy: (dy < 0 and stair_half) or (dy > 0 and not stair_half),
+    is_diagonal=lambda half, dy: (dy < 0 and half) or (dy > 0 and not half),
     allowed_axes="horizontal",
     fallback_axis="horizontal",
 )
@@ -186,7 +186,7 @@ LADDER_BEHAVIOR = StairBehavior(
         ((0, -1), "ladder"): (0, -1),  # Up on ladder → move up
         ((0,  1), "ladder"): (0,  1),  # Down on ladder → move down
     },
-    is_diagonal=lambda stair_half, dy: False,  # Ladders are always straight vertical
+    is_diagonal=lambda half, dy: False,  # Ladders are always straight vertical
     allowed_axes="vertical",
     fallback_axis="vertical",
 )
@@ -228,7 +228,7 @@ def get_vertical_move_props(self, tx: int, ty: int) -> dict | None:
                 "stair_direction": stair_dir,
                 "movement_type": props.get("movement_type", "stair"),
                 "visual_y_offset": int(props.get("visual_y_offset", 0)),
-                "stair_half": props.get("half", props.get("stair_half", False)) in (True, "true"),
+                "half": props.get("half", False) in (True, "true"),
             }
     return None
 ```
@@ -241,11 +241,11 @@ To keep the character feet aligned with the shallow 26.5° staircase slope (16px
 
 Variable definitions:
 - `intercepted_dir` = `behavior.move_map.get((input_dir, current_vm["stair_direction"]))` — the raw diagonal from the move map (e.g. `(1, -1)`).
-- `stair_half` = `current_vm["stair_half"]` — boolean from Tiled (`True` on upper step, `False` on lower step). Mapped from Tiled property `half` or `stair_half`.
+- `half` = `current_vm["half"]` — boolean from Tiled (`True` on upper step, `False` on lower step). Mapped from Tiled property `half`.
 
 Alternation rule (encoded in `STAIR_BEHAVIOR.is_diagonal`):
-* Climbing up (`intercepted_dir[1] < 0`): diagonal move occurs when `stair_half is True` (entity is on the upper half of the step).
-* Descending down (`intercepted_dir[1] > 0`): diagonal move occurs when `stair_half is False` (entity is on the lower half of the step).
+* Climbing up (`intercepted_dir[1] < 0`): diagonal move occurs when `half is True` (entity is on the upper half of the step).
+* Descending down (`intercepted_dir[1] > 0`): diagonal move occurs when `half is False` (entity is on the lower half of the step).
 * If `is_diagonal` is False, keep only the behavior's `fallback_axis` component (for stairs: `final_dir = (dx, 0)`; for ladders: `final_dir = (0, dy)`).
 
 ### 4.4 Boundary Step-Off Rule
