@@ -92,6 +92,11 @@
                     "value": ""
                 },
                 {
+                    "name": "half",
+                    "type": "bool",
+                    "value": false
+                },
+                {
                     "name": "material",
                     "type": "string",
                     "value": ""

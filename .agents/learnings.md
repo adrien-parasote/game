@@ -55,3 +55,10 @@ grep -rn "L-NOM-ID" .agents/learnings/
 - **Evidence:** Player animation froze visually while moving because `OcclusionRenderer` cache key only used static `camera_offset` and `len(rects)`.
 - **Anti-pattern:** Caching composite visual surfaces of dynamic entities using only environment/static state keys (like camera position).
 - **Fix:** Include the dynamic entity's state (e.g., `is_moving` or `frame_index`) in the cache invalidation logic, or bypass the cache entirely for moving entities.
+
+### L019: Swapped stair direction mappings cause collision blockages
+- **Date:** 2026-06-19
+- **Source:** game — stair-movement (STAIR_BEHAVIOR in config.py)
+- **Evidence:** Player got blocked trying to move right in basement staircase, triggering descending step-off and solid wall collision.
+- **Anti-pattern:** Mismatch between visual stair tileset properties and engine behavioral mapping keys (`up,left` vs `up,right`).
+- **Fix:** Ensure the second parameter (`left`/`right`) of compound stair directions consistently maps to the entry side (lowest step visually) for both `up` and `down` assets. In this case, swap `up,left` and `up,right` in the engine's STAIR_BEHAVIOR move_map.
