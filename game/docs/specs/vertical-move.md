@@ -160,14 +160,14 @@ class StairBehavior:
 
 STAIR_BEHAVIOR = StairBehavior(
     move_map={
-        # --- Group A (up,left / down,right): ascend by going LEFT ---
-        ((1, 0),  "up,left"):     (1,  1),   # Right → descend
-        ((-1, 0), "up,left"):    (-1, -1),   # Left  → climb
+        # --- Group A (up,right / down,right): ascend by going LEFT ---
+        ((1, 0),  "up,right"):    (1,  1),   # Right → descend
+        ((-1, 0), "up,right"):   (-1, -1),   # Left  → climb
         ((1, 0),  "down,right"): (1,  1),   # Right → descend
         ((-1, 0), "down,right"): (-1, -1),  # Left  → climb
-        # --- Group B (up,right / down,left): ascend by going RIGHT ---
-        ((1, 0),  "up,right"):    (1, -1),   # Right → climb
-        ((-1, 0), "up,right"):   (-1,  1),   # Left  → descend
+        # --- Group B (up,left / down,left): ascend by going RIGHT ---
+        ((1, 0),  "up,left"):    (1, -1),   # Right → climb
+        ((-1, 0), "up,left"):   (-1,  1),   # Left  → descend
         ((1, 0),  "down,left"):  (1, -1),   # Right → climb
         ((-1, 0), "down,left"): (-1,  1),   # Left  → descend
         # --- Legacy single-word keys (backward compat) ---
