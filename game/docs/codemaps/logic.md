@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-27 | Last doc-update: 2026-06-12 (constants layer audit — no logic changes) | Files scanned: 75 | Token estimate: ~1100 -->
+<!-- Generated: 2026-06-21 | Last doc-update: 2026-06-21 (stair movement refactoring & dynamic clipping) | Files scanned: 75 | Token estimate: ~1100 -->
 
 # Engine Logic Flow
 
@@ -18,7 +18,7 @@ PAUSED  → GameEvent.goto_title()        → _transition_to_title()        → 
 ## Movement Chain
 `Player.input()` (WASD/Arrows) → `BaseEntity.move(dt)` → `CollisionChecker.is_collidable()` (tile + obstacle group) → `rect` update + animation frame
 - **Footsteps**: frames 1 and 3. `MapManager.get_terrain_material_at()` → depth≤1 tiles only. `AudioManager.play_sfx(footstep_{material})` with fallback.
-- **Diagonal Stair Movement**: Horizontal inputs (right/left) on stair tiles (`stair_direction` property "right"/"left") are intercepted in `BaseEntity.start_move()` and mapped to diagonal moves via `Settings.VERTICAL_MOVE_MAP`. Other directions are blocked. Visual Y-position is adjusted by `current_stair_offset`. If `stair_clip` is set, `current_stair_clip` hides the bottom pixels via `CameraGroup.custom_draw()` composition.
+- **Diagonal Stair Movement**: Horizontal inputs (right/left) on stair tiles (`stair_direction` property "right"/"left") are intercepted in `BaseEntity.start_move()` and mapped to diagonal moves via `Settings.VERTICAL_MOVE_MAP`. Other directions are blocked. Visual Y-position is adjusted by `current_stair_offset`. If `clip` is true, `current_stair_clip` hides the bottom pixels via `CameraGroup.custom_draw()` composition, and grass wading rendering is bypassed.
 
 ## Interaction Chain
 `INTERACT_KEY (E)` → `InteractionManager.handle_interactions()` (`distance_squared_to`, module-level `_RANGE_SQ_*` constants)

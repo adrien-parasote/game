@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-27 | Last doc-update: 2026-06-12 (constants layer audit — no data changes) | Files scanned: 75 | Token estimate: ~900 -->
+<!-- Generated: 2026-06-21 | Last doc-update: 2026-06-21 (stair movement refactoring & dynamic clipping) | Files scanned: 75 | Token estimate: ~900 -->
 
 # Data & Dependencies Architecture
 
@@ -8,7 +8,7 @@
 - **Loot Tables** (`assets/data/loot_table.json`): `{item_id, min_qty, max_qty, chance}`. Max 20 stacks; overflow trimmed with WARNING.
 - **Gameplay Data** (`gameplay.json`): Item registry — `item_id → {name, description, icon, type, equip_slot, stack_max}`.
 - **Property Types** (`assets/data/propertytypes.json`): Enum metadata for Tiled object property validation.
-- **Maps** (`assets/tiled/maps/*.tmj`): Tilemap JSON — layers, objects, properties (including custom properties `stair_direction`, `visual_y_offset` on stair tiles).
+- **Maps** (`assets/tiled/maps/*.tmj`): Tilemap JSON — layers, objects, properties (including custom properties `stair_direction`, `visual_y_offset`, `clip` on stair tiles).
 - **Tilesets** (`assets/tiled/tilesets/*.tsx`): Spritesheet grid definitions (XML).
 
 
