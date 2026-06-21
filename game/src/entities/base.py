@@ -201,7 +201,9 @@ class BaseEntity(pygame.sprite.Sprite):
             return
 
         # 10. Step-off handling
-        final_dir, target_vm = self._handle_vertical_step_off(tx, ty, predicted_dir, intercepted_dir)
+        final_dir, target_vm = self._handle_vertical_step_off(
+            tx, ty, predicted_dir, intercepted_dir, current_vm
+        )
 
         # 11. Walkable check
         self.target_pos = self.pos + pygame.math.Vector2(final_dir) * Settings.TILE_SIZE
@@ -280,6 +282,7 @@ class BaseEntity(pygame.sprite.Sprite):
         ty: int,
         predicted_dir: tuple[int, int],
         intercepted_dir: tuple[int, int],
+        current_vm: dict,
     ) -> tuple[tuple[int, int], dict | None]:
         """Adjust movement direction and target properties for step-off scenarios."""
         target_tx = tx + predicted_dir[0]
@@ -294,24 +297,30 @@ class BaseEntity(pygame.sprite.Sprite):
 
         final_dir = predicted_dir
         if target_vm is None:
-            if intercepted_dir[1] > 0:  # descending
-                final_dir = (intercepted_dir[0], 0)
-                target_tx = tx + final_dir[0]
-                target_ty = ty + final_dir[1]
-                target_vm = (
-                    self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
-                    if (self.game and hasattr(self.game, "map_manager"))
-                    else None
-                )
-                if not isinstance(target_vm, dict):
-                    target_vm = None
-                logger.info(
-                    f"[DEBUG_MOVE] Step-off (descending) detected. Forced flat: {final_dir} | target_vm={target_vm}"
-                )
-            else:
-                logger.info(
-                    f"[DEBUG_MOVE] Step-off (climbing) detected. Keeping diagonal: {final_dir} | target_vm={target_vm}"
-                )
+            if current_vm.get("movement_type") == "stair":
+                # Step-off decision: choose flat or diagonal exit based on minimizing visual Y jump in pixels.
+                current_offset = float(self.current_stair_offset)
+                flat_jump = -current_offset
+                diag_jump = intercepted_dir[1] * Settings.TILE_SIZE - current_offset
+
+                if abs(flat_jump) <= abs(diag_jump):
+                    final_dir = (intercepted_dir[0], 0)
+                    target_tx = tx + final_dir[0]
+                    target_ty = ty + final_dir[1]
+                    target_vm = (
+                        self.game.map_manager.get_vertical_move_props(target_tx, target_ty)
+                        if (self.game and hasattr(self.game, "map_manager"))
+                        else None
+                    )
+                    if not isinstance(target_vm, dict):
+                        target_vm = None
+                    logger.info(
+                        f"[DEBUG_MOVE] Step-off detected. Visual Y jump minimizes to flat: {final_dir} | target_vm={target_vm}"
+                    )
+                else:
+                    logger.info(
+                        f"[DEBUG_MOVE] Step-off detected. Visual Y jump minimizes to diagonal: {final_dir} | target_vm={target_vm}"
+                    )
         return final_dir, target_vm
 
 

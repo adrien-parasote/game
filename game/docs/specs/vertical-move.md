@@ -137,7 +137,7 @@ The ordered call sequence inside `start_move()` — an AI coder must implement t
 7. Look up `intercepted_dir = behavior.move_map.get((input_dir, current_vm["stair_direction"]))` → if `None`, log warning, abort.
 8. **§4.3 slope alternation FIRST:** apply `behavior.is_diagonal(current_vm["half"], intercepted_dir[1])` to decide `predicted_dir`. (If True, use full `(dx, dy)`. If False, use behavior's fallback axis).
 9. **§4.4 boundary check AFTER:** call `get_vertical_move_props(tx + predicted_dir[0], ty + predicted_dir[1])` → `target_vm`. Store for use in §5.1 init.
-10. If `target_vm` is `None` (not a stair tile) → we are stepping off. If descending (`intercepted_dir[1] > 0`), force `final_dir = (intercepted_dir[0], 0)` and re-fetch `target_vm` at this new location. If climbing, keep `final_dir = predicted_dir`.
+10. If `target_vm` is `None` (not a stair tile) → we are stepping off. Dynamically choose the `final_dir` (flat vs diagonal) that minimizes the visual Y offset jump (see §4.4). If flat, force `final_dir = (intercepted_dir[0], 0)` and re-fetch `target_vm` at this new location.
 11. Walkable check on final target tile coordinates.
 12. If walkable → update `target_pos`; initialize offset tracking fields (see §5.1, explicitly overwriting `self._vertical_move = target_vm` to store target properties or clear to `None` when stepping off).
 
@@ -246,7 +246,7 @@ def get_vertical_move_props(self, tx: int, ty: int) -> dict | None:
 
 ### 4.3 Slope Alternation Logic
 
-> **Execution order:** Slope alternation runs FIRST (step 8 in §4.0), then §4.4 boundary check runs AFTER (step 9). If §4.4 detects a step-off (target is not a stair tile), it overrides `predicted_dir` to `(dx, 0)` — the slope alternation result is discarded in that case.
+> **Execution order:** Slope alternation runs FIRST (step 8 in §4.0), then §4.4 boundary check runs AFTER (step 9). If §4.4 detects a step-off (target is not a stair tile), it overrides `predicted_dir` to a flat or diagonal move depending on the visual Y jump optimization — the slope alternation result may be discarded in that case.
 
 To keep the character feet aligned with the shallow 26.5° staircase slope (16px rise per 32px step) instead of a steep 45°, the logical grid movement alternates between flat `(dx, 0)` and diagonal `(dx, dy)` steps.
 
@@ -266,8 +266,14 @@ Alternation rule (encoded in `STAIR_BEHAVIOR.is_diagonal`):
 Call `get_vertical_move_props(tx + predicted_dir[0], ty + predicted_dir[1])` → `target_vm`.
 Store `target_vm` — it is reused in §5.1 to initialize `stair_target_offset`.
 * If `target_vm` is `None` (target is not a stair tile) → we are stepping off.
-  * If descending (`intercepted_dir[1] > 0`), force `final_dir = (intercepted_dir[0], 0)` and re-fetch `target_vm` at this new flat location to ensure correct offsets.
-  * If climbing, keep `final_dir = predicted_dir`.
+  * Compare the absolute visual Y offsets (jumps) for both flat and diagonal exit options:
+    * Flat exit jump: `flat_jump = -visual_y_offset` (logical row remains unchanged).
+    * Diagonal exit jump: `diag_jump = intercepted_dir[1] * Settings.TILE_SIZE - visual_y_offset` (logical row changes by `intercepted_dir[1]`).
+  * If the flat jump is visually smoother (`abs(flat_jump) <= abs(diag_jump)`):
+    * Force `final_dir = (intercepted_dir[0], 0)` (flat exit).
+    * Re-fetch `target_vm` at this new flat location `(tx + final_dir[0], ty + final_dir[1])` to ensure correct target offsets.
+  * Otherwise:
+    * Keep `final_dir = intercepted_dir` (diagonal exit).
 
 ### 4.5 Input Restrictions
 

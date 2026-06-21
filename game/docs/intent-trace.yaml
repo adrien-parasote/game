@@ -43,7 +43,7 @@ assertions:
     status: null
 
   - id: "IA-004"
-    assertion: "An entity on a tile with clip = true has its sprite cropped from the bottom by the absolute value of visual_y_offset (defaulting to 8, clamped to sprite height), and the crop amount interpolates smoothly during movement."
+    assertion: "An entity on a tile with clip = true has its sprite bottom-cropped by the absolute value of visual_y_offset (defaulting to 8, clamped to sprite height), and the crop amount interpolates smoothly during movement."
     rationale: "Unit tests in test_stair_movement.py verify that BaseEntity.current_stair_clip is updated when standing still and is smoothly interpolated during movement, and that CameraGroup.custom_draw applies the blit area crop when a non-zero clip is present."
     scope: code
     proof:
