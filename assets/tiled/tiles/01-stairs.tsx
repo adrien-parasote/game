@@ -117,6 +117,7 @@
  <tile id="16" type="01-vertical-move">
   <properties>
    <property name="clip" type="bool" value="true"/>
+   <property name="clip_display_y_offset" type="int" value="5"/>
    <property name="direction" propertytype="23-direction" value="down,left"/>
    <property name="material" value="stone"/>
    <property name="visual_y_offset" type="int" value="24"/>
@@ -125,6 +126,7 @@
  <tile id="17" type="01-vertical-move">
   <properties>
    <property name="clip" type="bool" value="true"/>
+   <property name="clip_display_y_offset" type="int" value="5"/>
    <property name="direction" propertytype="23-direction" value="down,left"/>
    <property name="material" value="stone"/>
    <property name="visual_y_offset" type="int" value="8"/>
@@ -253,6 +255,7 @@
  <tile id="34" type="01-vertical-move">
   <properties>
    <property name="clip" type="bool" value="true"/>
+   <property name="clip_display_y_offset" type="int" value="5"/>
    <property name="direction" propertytype="23-direction" value="down,right"/>
    <property name="material" value="stone"/>
    <property name="visual_y_offset" type="int" value="8"/>
@@ -261,6 +264,7 @@
  <tile id="35" type="01-vertical-move">
   <properties>
    <property name="clip" type="bool" value="true"/>
+   <property name="clip_display_y_offset" type="int" value="5"/>
    <property name="direction" propertytype="23-direction" value="down,right"/>
    <property name="material" value="stone"/>
    <property name="visual_y_offset" type="int" value="24"/>

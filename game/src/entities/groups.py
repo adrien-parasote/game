@@ -144,7 +144,14 @@ class CameraGroup(pygame.sprite.Group):
                     w, h = sprite.image.get_size()
                     clip_amount = max(0, min(clip_amount, h))
                     area = pygame.Rect(0, 0, w, h - clip_amount)
-                    surface.blit(sprite.image, offset_pos, area=area)
+                    clip_display_offset = int(
+                        getattr(sprite, "current_stair_clip_display_offset", 0.0)
+                    )
+                    surface.blit(
+                        sprite.image,
+                        (offset_pos[0], offset_pos[1] - clip_display_offset),
+                        area=area,
+                    )
                 else:
                     surface.blit(sprite.image, offset_pos)
 

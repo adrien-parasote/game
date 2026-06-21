@@ -1,6 +1,31 @@
 ## 🧪 Testing
 
-### L-TEST-056 · 2026-06-13 · U · Minor Rework
+### A-TEST-057 · 2026-06-21 · P · Minor Rework
+**Strict dict equality on public return dicts breaks at every extension**
+
+When a function returns a dict and a test uses strict equality (`assert result == {...}`),
+adding any new key (even backward-compatible, with a default) breaks the test.
+
+```python
+# ❌ FRAGILE: must be updated every time a new key is added to the dict
+assert props == {"stair_direction": "right", "movement_type": "stair", ...}
+
+# ✅ ROBUST: checks only the keys you care about
+assert props["stair_direction"] == "right"
+assert props["movement_type"] == "stair"
+assert "clip_display_y_offset" in props  # explicit presence check when needed
+```
+
+**Règle :** Ne jamais faire une assertion d'égalité stricte sur un dict retourné par une fonction publique
+qui est susceptible d'être étendue. Préférer des assertions ciblées sur les clés vérifiées. Si l'exhaustivité est
+nécessaire (s'assurer qu'il n'y a pas de clés inattendues), utiliser `assert set(props.keys()) == expected_keys`.
+
+**Evidence :** `test_stair_movement.py::UT-001` a cassé lors de l'ajout de `clip_display_y_offset`
+dans le dict retourné par `get_vertical_move_props()` — 1 test à mettre à jour pour chaque nouvelle clé.
+
+---
+
+### L-TEST-056 · 2026-06-13 · U · Minor Rework (occurrence ×2 — 2026-06-21 clip_display_offset)
 **Testing pygame.Surface.blit fails due to read-only attribute in Python 3.13 / newer pygame**
 
 When writing tests that assert rendering behavior, attempting to mock `surface.blit` via `patch.object(surface, 'blit', wraps=surface.blit)` throws an `AttributeError: 'pygame.surface.Surface' object attribute 'blit' is read-only`. 

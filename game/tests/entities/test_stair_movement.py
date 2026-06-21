@@ -63,6 +63,7 @@ class TestStairMovementUnit:
             "half": False,
             "visual_y_offset": -12,
             "clip": False,
+            "clip_display_y_offset": 0,
         }
 
     def test_ut_002_get_vertical_move_props_none_on_normal_tile(self, setup_map_manager):

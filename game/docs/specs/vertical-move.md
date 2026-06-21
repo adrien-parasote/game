@@ -37,6 +37,7 @@ This specification defines the diagonal movement behavior for lateral stairs and
 |------|--------|-----------------|-----------|
 | `BaseEntity.current_stair_offset` | `float` | [vertical-move.md §5.1](./vertical-move.md#L256) | [camera-rendering.md](./camera-rendering.md#L76) |
 | `BaseEntity.current_stair_clip` | `float` | [vertical-move.md §5.3](./vertical-move.md#L356) | [camera-rendering.md](./camera-rendering.md), [entities-system.md](./entities-system.md) |
+| `BaseEntity.current_stair_clip_display_offset` | `float` | [vertical-move.md §5.3](./vertical-move.md#L375) | [camera-rendering.md](./camera-rendering.md) |
 | `BaseEntity._vertical_move` | `dict \| None` | [vertical-move.md §4.2](./vertical-move.md#L162) | [entities-system.md](./entities-system.md#L258) |
 | `BaseEntity.update_stair_offset()` | `method` | [vertical-move.md §5.1](./vertical-move.md#L256) | [entities-system.md](./entities-system.md#L267) |
 | `MapManager.get_vertical_move_props` | `method` | [vertical-move.md §4.2](./vertical-move.md#L162) | [entities-system.md](./entities-system.md#L258) |
@@ -240,6 +241,7 @@ def get_vertical_move_props(self, tx: int, ty: int) -> dict | None:
                 "visual_y_offset": int(props.get("visual_y_offset", 0)),
                 "half": props.get("half", False) in (True, "true"),
                 "clip": props.get("clip", False) in (True, "true"),
+                "clip_display_y_offset": int(props.get("clip_display_y_offset", 0)),
             }
     return None
 ```
@@ -299,7 +301,8 @@ Ladder movement is handled automatically via `LADDER_BEHAVIOR` registered in `MO
 
 **Field initialization (in `__init__`):**
 To prevent `AttributeError` before the first movement, the entity must initialize these tracking fields to `0.0` in `BaseEntity.__init__()`:
-`current_stair_offset`, `stair_start_offset`, `stair_target_offset`, `current_stair_clip`, `stair_start_clip`, `stair_target_clip`.
+`current_stair_offset`, `stair_start_offset`, `stair_target_offset`, `current_stair_clip`, `stair_start_clip`, `stair_target_clip`,
+`current_stair_clip_display_offset`, `stair_start_clip_display_offset`, `stair_target_clip_display_offset`.
 
 **Field initialization (in `start_move()`, step 12 of §4.0 sequence):**
 These fields must be set **before** `is_moving` is set to `True`, using `target_vm` already fetched in §4.4:
@@ -367,7 +370,8 @@ if clip_amount > 0:
     w, h = sprite.image.get_size()
     clip_amount = max(0, min(clip_amount, h))
     area = pygame.Rect(0, 0, w, h - clip_amount)
-    surface.blit(sprite.image, offset_pos, area=area)
+    clip_display_offset = int(getattr(sprite, 'current_stair_clip_display_offset', 0.0))
+    surface.blit(sprite.image, (offset_pos[0], offset_pos[1] - clip_display_offset), area=area)
 else:
     surface.blit(sprite.image, offset_pos)
 ```
@@ -377,6 +381,7 @@ else:
 *   **Tiled trigger:** The clipping effect is triggered on any tile with Tiled property `clip = true`.
 *   **Clip calculation:** The clip amount uses the `visual_y_offset` (only if positive, resolving upward shifts to 0.0), defaulting to 8 if it is missing or 0, and clamped to the sprite's height.
 *   **Interpolation:** The clip amount is interpolated smoothly between start and target values during movement.
+*   **Display Y offset:** The optional Tiled property `clip_display_y_offset` (int, default 0) shifts the blit position upward by N pixels when `clip_amount > 0`. It does NOT modify the clip rectangle. It has its own triplet of interpolated fields (`current_stair_clip_display_offset`, `stair_start_clip_display_offset`, `stair_target_clip_display_offset`) following the same pattern as the clip triplet.
 *   **Grass wading interaction:** If `getattr(sprite, "current_stair_clip", 0.0) > 0`, the grass wading rendering effect is bypassed on the entity to prevent drawing grass over clipped transparent areas. The `WadingRenderer.apply_grass_wading_to_images` method in `src/engine/render_wading.py` must explicitly skip any sprite with a positive `current_stair_clip`.
 
 ---

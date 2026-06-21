@@ -1,6 +1,6 @@
-# Intent Trace — business assertions with deterministic proofs
-# Created at: STRATEGY stage (assertions only)
-# Updated at: SPEC stage (proof + rationale attached)
+# Intent Trace — root-level, paths relative to repo root
+# Invocation: python3 .agents/skills/verification-loop/scripts/intent_gate.py . --trace docs/intent-trace.yaml
+# Source of truth for game sub-project: game/docs/intent-trace.yaml
 
 version: "1"
 
@@ -54,7 +54,3 @@ assertions:
       - "game/src/entities/base.py"
       - "game/src/entities/groups.py"
     status: null
-
-
-
-

@@ -47,6 +47,9 @@ class BaseEntity(pygame.sprite.Sprite):
         self.current_stair_clip: float = 0.0
         self.stair_start_clip: float = 0.0
         self.stair_target_clip: float = 0.0
+        self.current_stair_clip_display_offset: float = 0.0
+        self.stair_start_clip_display_offset: float = 0.0
+        self.stair_target_clip_display_offset: float = 0.0
 
     def move(self, dt: float):
         """Move towards target_pos if is_moving, else start move if direction exists."""
@@ -126,6 +129,7 @@ class BaseEntity(pygame.sprite.Sprite):
     def _init_stair_clip_properties(self, target_vm: dict | None):
         """Initialize clip properties for moving to a target tile."""
         self.stair_start_clip = self.current_stair_clip
+        self.stair_start_clip_display_offset = self.current_stair_clip_display_offset
         if target_vm and target_vm.get("clip"):
             raw_offset = target_vm.get("visual_y_offset", 8)
             if raw_offset >= 0:
@@ -134,8 +138,12 @@ class BaseEntity(pygame.sprite.Sprite):
                 self.stair_target_clip = float(min(clip_amount, sprite_height))
             else:
                 self.stair_target_clip = 0.0
+            self.stair_target_clip_display_offset = float(
+                target_vm.get("clip_display_y_offset", 0)
+            )
         else:
             self.stair_target_clip = 0.0
+            self.stair_target_clip_display_offset = 0.0
 
     def _start_normal_move(self, tx: int, ty: int):
         """Handle starting movement on a normal (non-vertical) tile."""
@@ -347,8 +355,12 @@ class BaseEntity(pygame.sprite.Sprite):
                     self.current_stair_clip = float(min(clip_amount, sprite_height))
                 else:
                     self.current_stair_clip = 0.0
+                self.current_stair_clip_display_offset = float(
+                    vm.get("clip_display_y_offset", 0)
+                )
             else:
                 self.current_stair_clip = 0.0
+                self.current_stair_clip_display_offset = 0.0
         else:
             if self.stair_move_distance > 0:
                 curr_dist = (self.target_pos - self.pos).magnitude()
@@ -361,6 +373,12 @@ class BaseEntity(pygame.sprite.Sprite):
                     self.stair_start_clip
                     + (self.stair_target_clip - self.stair_start_clip) * progress
                 )
+                self.current_stair_clip_display_offset = (
+                    self.stair_start_clip_display_offset
+                    + (self.stair_target_clip_display_offset - self.stair_start_clip_display_offset)
+                    * progress
+                )
             else:
                 self.current_stair_offset = self.stair_target_offset
                 self.current_stair_clip = self.stair_target_clip
+                self.current_stair_clip_display_offset = self.stair_target_clip_display_offset
