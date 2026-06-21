@@ -43,3 +43,18 @@ def test_main_module_guard():
         importlib.import_module("asset_convertor.__main__")
 
     mock_loop.assert_not_called()
+
+
+def test_main_execution_via_runpy():
+    """Verify executing __main__.py directly runs main() via runpy."""
+    import runpy
+    fake_app = MagicMock()
+    with (
+        patch("asset_convertor.gui.app.App", return_value=fake_app) as mock_app_cls,
+        patch.object(fake_app, "mainloop", return_value=None) as mock_loop,
+    ):
+        runpy.run_module("asset_convertor.__main__", run_name="__main__")
+
+    mock_app_cls.assert_called_once()
+    mock_loop.assert_called_once()
+

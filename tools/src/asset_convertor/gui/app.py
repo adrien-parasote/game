@@ -1576,7 +1576,7 @@ class App(ctk.CTk):
         self._canvas_grid = [row[:] for row in _GRID_DEFAULT]
         self._redraw_canvas_grid()
         if self._state.resource_type == "A4":
-            mode = self._a4_canvas_mode_var.get()
+            mode = self._canvas_mode_var.get()
             if mode == "Top":
                 self.lbl_canvas_info.configure(
                     text="Cliquez pour dessiner — bitmask 8-voisins (Sol/Toit)"
