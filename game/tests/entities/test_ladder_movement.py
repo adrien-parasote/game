@@ -17,6 +17,7 @@ class TestLadderMovementUnit:
     @pytest.fixture
     def setup_map_manager(self):
         """Builds a helper to create MapManager with custom tile properties."""
+
         def _create(tile_properties=None, tx=1, ty=1, map_w=5, map_h=5):
             tile_id = 99
             grid = [[0] * map_w for _ in range(map_h)]
@@ -42,6 +43,7 @@ class TestLadderMovementUnit:
             mm.width = map_w
             mm.height = map_h
             return mm
+
         return _create
 
     def _make_entity_on_ladder(self, mm, movement_type="ladder"):
@@ -65,7 +67,7 @@ class TestLadderMovementUnit:
         """UT-LADDER-001: horizontal inputs (Left/Right) are ignored on a ladder tile."""
         mm = setup_map_manager()
         entity = self._make_entity_on_ladder(mm)
-        entity.direction = pygame.math.Vector2(1, 0) # Right
+        entity.direction = pygame.math.Vector2(1, 0)  # Right
         entity.start_move()
 
         # Should be blocked, direction reset to 0
@@ -76,7 +78,7 @@ class TestLadderMovementUnit:
         """UT-LADDER-002: vertical inputs (Up/Down) are allowed on a ladder tile."""
         mm = setup_map_manager()
         entity = self._make_entity_on_ladder(mm)
-        entity.direction = pygame.math.Vector2(0, -1) # Up
+        entity.direction = pygame.math.Vector2(0, -1)  # Up
         entity.start_move()
 
         # Should be allowed, moving to target_pos (48, 16)

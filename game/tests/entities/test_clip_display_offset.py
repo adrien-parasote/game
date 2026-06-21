@@ -190,10 +190,13 @@ class TestCustomDrawClipDisplayOffset:
         surface = MagicMock()
         surface.get_rect.return_value = pygame.Rect(0, 0, 800, 600)
 
-        with __import__("unittest.mock", fromlist=["patch"]).patch.object(
-            cg, "get_sorted_sprites", return_value=[sprite]
-        ), __import__("unittest.mock", fromlist=["patch"]).patch.object(
-            cg, "sprites", return_value=[sprite]
+        with (
+            __import__("unittest.mock", fromlist=["patch"]).patch.object(
+                cg, "get_sorted_sprites", return_value=[sprite]
+            ),
+            __import__("unittest.mock", fromlist=["patch"]).patch.object(
+                cg, "sprites", return_value=[sprite]
+            ),
         ):
             cg.custom_draw(surface)
 
@@ -213,10 +216,13 @@ class TestCustomDrawClipDisplayOffset:
         surface = MagicMock()
         surface.get_rect.return_value = pygame.Rect(0, 0, 800, 600)
 
-        with __import__("unittest.mock", fromlist=["patch"]).patch.object(
-            cg, "get_sorted_sprites", return_value=[sprite]
-        ), __import__("unittest.mock", fromlist=["patch"]).patch.object(
-            cg, "sprites", return_value=[sprite]
+        with (
+            __import__("unittest.mock", fromlist=["patch"]).patch.object(
+                cg, "get_sorted_sprites", return_value=[sprite]
+            ),
+            __import__("unittest.mock", fromlist=["patch"]).patch.object(
+                cg, "sprites", return_value=[sprite]
+            ),
         ):
             cg.custom_draw(surface)
 
@@ -242,10 +248,13 @@ class TestCustomDrawClipDisplayOffset:
         surface = MagicMock()
         surface.get_rect.return_value = pygame.Rect(0, 0, 800, 600)
 
-        with __import__("unittest.mock", fromlist=["patch"]).patch.object(
-            cg, "get_sorted_sprites", return_value=[sprite]
-        ), __import__("unittest.mock", fromlist=["patch"]).patch.object(
-            cg, "sprites", return_value=[sprite]
+        with (
+            __import__("unittest.mock", fromlist=["patch"]).patch.object(
+                cg, "get_sorted_sprites", return_value=[sprite]
+            ),
+            __import__("unittest.mock", fromlist=["patch"]).patch.object(
+                cg, "sprites", return_value=[sprite]
+            ),
         ):
             cg.custom_draw(surface)
 

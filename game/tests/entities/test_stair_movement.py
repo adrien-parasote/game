@@ -624,7 +624,7 @@ class TestStairMovementUnit:
         assert entity.stair_target_clip == 8.0
 
         # Simulate 50% progress
-        entity.pos = pygame.math.Vector2(64, 48) # Halfway from 48 to 80
+        entity.pos = pygame.math.Vector2(64, 48)  # Halfway from 48 to 80
         entity.update_stair_offset()
         assert entity.current_stair_clip == 4.0
 
@@ -638,7 +638,7 @@ class TestStairMovementUnit:
             "visual_y_offset": 100,
             "clip": True,
         }
-        entity.image = pygame.Surface((32, 32)) # height is 32
+        entity.image = pygame.Surface((32, 32))  # height is 32
         entity.update_stair_offset()
         assert entity.current_stair_clip == 32.0
 
@@ -703,4 +703,3 @@ class TestStairMovementUnit:
         # Target dir should be diagonal (-1, 1) because abs(32 - 24) < abs(-24)
         assert entity.direction == pygame.math.Vector2(-1, 1)
         assert entity.is_moving is True
-
