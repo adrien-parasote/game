@@ -706,7 +706,7 @@ def get_vertical_move_props(self, tile_x: int, tile_y: int) -> dict | None:
 
 ---
 
-*Last updated: 2026-06-11 — L-MAP-012, A-MAP-005, L-MAP-013 (tmj_parser class-default resolution gap).*
+*Last updated: 2026-06-21 — L-MAP-012, A-MAP-005, L-MAP-013, A-MAP-007, A-MAP-008, A-MAP-009 (unscoped visual jump optimization).*
 
 ### A-MAP-007: Rigid Directional Mapping (Asymmetric Stairs)
 - **Date:** 2026-06-12
@@ -714,3 +714,23 @@ def get_vertical_move_props(self, tile_x: int, tile_y: int) -> dict | None:
 - **Evidence:** Fixed a bug where descending stairs caused a "zigzag" because the `stair_half=True` property rigidly triggered a diagonal movement regardless of player travel direction (Commit 6379196).
 - **Anti-pattern:** Assuming a static tile property (`stair_half=True` or "diagonal_trigger=True") dictates physical traversal movement uniformly in all directions. When a player ascends, they hit the diagonal trigger on the second half of the stairs. When they descend, they hit the same tile FIRST, but need to move flat, and diagonal on the other tile.
 - **Fix:** When mapping physical movement properties to tiled structures, the trigger condition must be evaluated bidirectionally: `is_going_up = (dir == 'right' and dx == 1) or (dir == 'left' and dx == -1)`. Then toggle the logic: `should_move_diagonally = property if is_going_up else (not property)`. Test both ascent and descent individually.
+
+---
+
+### A-MAP-008: Overlapping Layers Property Leakage (Ladder/Stair Override)
+- **Date:** 2026-06-19
+- **Source:** game — manager.py (get_vertical_move_props layer scan)
+- **Evidence:** Player got stuck at basement stairs bottom coordinates `(29, 35)` and `(30, 35)` because visual overlays (banisters) on `02-layer` had been misconfigured with `movement_type="ladder"` in `01-stairs.tsx`. Since layer scanning is top-down, the engine resolved the cell as a ladder instead of stairs, blocking horizontal movement.
+- **Anti-pattern:** Placing movement-restricting properties (like ladders or stairs) on foreground/decorative overlay tiles (which are on higher layers) when those coordinates already have a physical movement tile (like stairs or walkable floors) on a lower layer. Top-down layer resolution will incorrectly resolve the decoration's class behavior instead of the physical floor behavior.
+- **Fix:** Ensure decorative/foreground overlays on higher layers (like handrails or wall borders) never contain movement class properties (like `movement_type` or `stair_direction`). Keep overlays as pure visual decorations (`depth >= 1`), letting the parser fall back to the underlying physical tiles on lower layers (`01-layer` or `00-layer`) to determine movement physics.
+
+---
+
+### A-MAP-009: Unscoped Visual Jump Optimization (Ladder Blocking)
+- **Date:** 2026-06-21
+- **Source:** game — base.py (_handle_vertical_step_off)
+- **Evidence:** Ladder movement test `test_ut_ladder_002_vertical_input_allowed` failed (direction flattened to `(0, 0)`) after implementing dynamic step-off optimization because ladders do not support diagonal step-offs, causing flat exit to evaluate to zero movement.
+- **Anti-pattern:** Applying visual step-off or visual Y offset jump minimization logic (which assumes two orthogonal travel axes and diagonal alternatives) to single-axis movement systems like ladders.
+- **Fix:** Scope visual Y jump minimization check specifically to `stair` movement types (e.g. check `current_vm.get("movement_type") == "stair"`). Keep other vertical movement systems like ladders functioning with their default straight vertical movement during step-offs.
+
+

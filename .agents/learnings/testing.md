@@ -1,6 +1,31 @@
 ## 🧪 Testing
 
-### L-TEST-056 · 2026-06-13 · U · Minor Rework
+### A-TEST-057 · 2026-06-21 · P · Minor Rework
+**Strict dict equality on public return dicts breaks at every extension**
+
+When a function returns a dict and a test uses strict equality (`assert result == {...}`),
+adding any new key (even backward-compatible, with a default) breaks the test.
+
+```python
+# ❌ FRAGILE: must be updated every time a new key is added to the dict
+assert props == {"stair_direction": "right", "movement_type": "stair", ...}
+
+# ✅ ROBUST: checks only the keys you care about
+assert props["stair_direction"] == "right"
+assert props["movement_type"] == "stair"
+assert "clip_display_y_offset" in props  # explicit presence check when needed
+```
+
+**Règle :** Ne jamais faire une assertion d'égalité stricte sur un dict retourné par une fonction publique
+qui est susceptible d'être étendue. Préférer des assertions ciblées sur les clés vérifiées. Si l'exhaustivité est
+nécessaire (s'assurer qu'il n'y a pas de clés inattendues), utiliser `assert set(props.keys()) == expected_keys`.
+
+**Evidence :** `test_stair_movement.py::UT-001` a cassé lors de l'ajout de `clip_display_y_offset`
+dans le dict retourné par `get_vertical_move_props()` — 1 test à mettre à jour pour chaque nouvelle clé.
+
+---
+
+### L-TEST-056 · 2026-06-13 · U · Minor Rework (occurrence ×2 — 2026-06-21 clip_display_offset)
 **Testing pygame.Surface.blit fails due to read-only attribute in Python 3.13 / newer pygame**
 
 When writing tests that assert rendering behavior, attempting to mock `surface.blit` via `patch.object(surface, 'blit', wraps=surface.blit)` throws an `AttributeError: 'pygame.surface.Surface' object attribute 'blit' is read-only`. 
@@ -1040,7 +1065,7 @@ Quand un projet utilise un simple `requirements.txt` pour fixer ses dépendances
 
 Plutôt que d'alourdir inutilement la gestion des paquets ou d'abandonner `pyproject.toml`, la création d'un fichier lock minimal documentant la vérité unique de `requirements.txt` permet de valider le scan de sécurité statique sans polluer le runtime.
 
-**Evidence :** `security_scan.py` levait une alerte `DEPS [A06]: HIGH` en raison du `pyproject.toml` sans lock. La création d'un fichier [poetry.lock](file:///Users/adrien.parasote/Documents/perso/game/poetry.lock) factice et explicite a permis de passer à 0 alerte.
+**Evidence :** `security_scan.py` levait une alerte `DEPS [A06]: HIGH` en raison du `pyproject.toml` sans lock. La création d'un fichier [poetry.lock](../../poetry.lock) factice et explicite a permis de passer à 0 alerte.
 
 *Last updated: 2026-05-22 — L-TEST-017, A-TEST-015, L-TEST-018 depuis la session camera rendering et occlusion.*
 
@@ -1333,31 +1358,34 @@ grep -rn "__new__(RenderManager)" tests/
 
 ---
 
-### A-TEST-046 · 2026-06-11 · U · Minor Rework
-**Les MagicMock dans les tests provoquent des TypeErrors lors de comparaisons ou de dépaquetages dans les chemins optimisés**
+### A-TEST-046 · 2026-06-11 · U · Minor Rework *(updated 2026-06-17 — occurrences: 2)*
+**Les MagicMock dans les tests provoquent des TypeErrors ou KeyErrors lors de comparaisons, dépaquetages ou accès par index**
 
-Quand on optimise des boucles de rendu à partir de structures spatiales, on utilise des comparaisons numériques (`x < limit` ou `depth > threshold`) ou du dépaquetage de tuples (`depth, img, occ_img = grid.get((x,y))`).
-Cependant, dans la suite de tests existante, `game.map_manager` ou d'autres objets peuvent être configurés comme des `MagicMock`. L'accès aux attributs manquants sur un mock (comme `width` ou `_fg_occlusion_grid.get()`) renvoie par défaut d'autres instances de `MagicMock`.
-En Python 3, comparer un `MagicMock` à un entier avec `<` ou `>` lève une `TypeError: '<' not supported between instances of 'int' and 'MagicMock'`. De même, tenter de dépaqueter un mock lève une `ValueError` ou une `TypeError`.
+Quand on optimise ou refactore du code qui utilise des structures renvoyées par des managers (comme `map_manager`), ces objets peuvent être configurés comme des `MagicMock` dans les tests existants.
+L'accès aux attributs manquants sur un mock renvoie par défaut d'autres instances de `MagicMock` qui sont toujours évaluées comme vraies (`if current_vm:` sera True).
+Tenter de comparer un `MagicMock` à un entier lève une `TypeError`, tenter de le dépaqueter lève une `ValueError`/`TypeError`, et tenter de faire un accès par index (`current_vm["stair_direction"]`) sur un mock qui n'est pas configuré pour cela lève une `KeyError` ou renvoie un autre mock au lieu d'une valeur attendue.
 
-**Règle :** Les chemins de rendu optimisés doivent toujours être défensifs et type-checker les propriétés obtenues de managers externes (ex: utiliser `isinstance(width, int)` ou vérifier si `_fg_occlusion_grid` est bien un `dict`). Si un attribut est un mock, le code doit proprement basculer sur le chemin de compatibilité d'origine (fallback) utilisé par les tests existants.
+**Règle :** Sécuriser les lectures de propriétés et de dictionnaires obtenus de managers externes susceptibles d'être mockés. Utiliser des gardes de type comme `isinstance(current_vm, dict)` et utiliser `.get()` pour éviter les KeyErrors.
 
 ```python
-# ❌ Comparaison directe d'un attribut de mock
-start_row = max(0, int(vp.top // tile_size))
-end_row = min(self.game.map_manager.height, int(math.ceil(vp.bottom / tile_size)))  # TypeError si map_manager.height est un mock
+# ❌ Accès par index direct sur un attribut pouvant être un MagicMock
+current_vm = self.map_manager.get_vertical_move_props(tx, ty)
+if current_vm:
+    stair_dir = current_vm["stair_direction"]  # KeyError ou mock retourné
 
-# ✅ Type-checking défensif pour basculer sur le fallback ou sécuriser la comparaison
-width = getattr(mm, "width", 0)
-if not isinstance(width, int):
-    width = int(math.ceil(vp.right / tile_size))  # Fallback si mock
+# ✅ Type-checking défensif
+current_vm = self.map_manager.get_vertical_move_props(tx, ty)
+if isinstance(current_vm, dict):
+    stair_dir = current_vm.get("stair_direction")
 ```
 
-**Evidence :** 10 tests de rendu échouaient avec des `TypeError` ou des `ValueError` sur les comparaisons et dépaquetages après intégration de `_fg_occlusion_grid` dans `RenderManager` car `map_manager` était mocké. Résolu en ajoutant des gardes `isinstance` et `isinstance(..., dict)`.
+**Evidence :**
+1. Occurrence 1 : 10 tests de rendu échouaient avec des `TypeError` ou des `ValueError` après intégration de `_fg_occlusion_grid` dans `RenderManager` car `map_manager` était mocké. Résolu en ajoutant des gardes `isinstance` et `isinstance(..., dict)`.
+2. Occurrence 2 (2026-06-17) : La refactorisation du mouvement vertical (escaliers/échelles) levait des `KeyError` dans les tests existants car le mock de `map_manager` renvoyait des objets MagicMock évalués comme vrais. Résolu en protégeant les lectures dans `base.py` avec `isinstance(current_vm, dict)`.
 
 ---
 
-*Last updated: 2026-06-11 — added A-TEST-046 from static foreground culling optimization (P-001) HARDEN session.*
+*Last updated: 2026-06-17 — updated A-TEST-046 with vertical-move refactoring mock dict lookup KeyError occurrence.*
 
 ---
 

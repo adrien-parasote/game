@@ -99,8 +99,8 @@ tools/
 
 ## Deep Links
 
-- Source file: [constants.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_convertor/core/constants.py#L1)
-- Source file: [converter_xp.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_convertor/core/converter_xp.py#L1)
-- Source file: [app.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/asset_convertor/gui/app.py#L1)
-- Source file: [calibrate_halos.py](file:///Users/adrien.parasote/Documents/perso/game/tools/src/calibration/calibrate_halos.py#L1)
-- Test suite: [tools/tests/](file:///Users/adrien.parasote/Documents/perso/game/tools/tests/#L1)
+- Source file: [constants.py](../../src/asset_convertor/core/constants.py#L1)
+- Source file: [converter_xp.py](../../src/asset_convertor/core/converter_xp.py#L1)
+- Source file: [app.py](../../src/asset_convertor/gui/app.py#L1)
+- Source file: [calibrate_halos.py](../../src/calibration/calibrate_halos.py#L1)
+- Test suite: [tools/tests/](../../tests/#L1)

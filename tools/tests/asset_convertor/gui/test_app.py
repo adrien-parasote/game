@@ -1748,3 +1748,317 @@ def test_on_type_change_internal_resize_sets_export_tsx_false():
     assert app._state.export_tsx is False
     assert app._state.resource_type == "Resize"
     app.destroy()
+
+
+@pytest.mark.unit
+def test_tiled_and_mod_type_changes():
+    """Test _on_tiled_type_change and _on_mod_type_change callbacks."""
+    app = App()
+    app._on_tiled_type_change("")
+    app._on_mod_type_change("")
+
+    app._on_tiled_type_change("🎮 Animé")
+    assert app._state.resource_type == "A1"
+    assert app._mod_type_var.get() == ""
+
+    app._on_mod_type_change("🎨 Recolor")
+    assert app._state.resource_type == "Recolor"
+    assert app._tiled_type_var.get() == ""
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_on_canvas_mode_change_a4_and_a3():
+    """Test _on_canvas_mode_change for A4 and A3 resource types."""
+    from PIL import Image
+    import dataclasses
+    app = App()
+
+    # Case resource_type is A4 but attributes not set
+    app._state = dataclasses.replace(app._state, resource_type="A4")
+    if hasattr(app, "_a4_wall_side_tiles"):
+        delattr(app, "_a4_wall_side_tiles")
+    app._on_canvas_mode_change("Top")
+
+    # Setup attributes
+    app._a4_wall_side_tiles = [Image.new("RGBA", (48, 48))] * 16
+    app._a4_wall_top_tiles = [Image.new("RGBA", (48, 48))] * 48
+    app._on_canvas_mode_change("Top")
+    assert app._state.tiles == app._a4_wall_top_tiles
+
+    app._on_canvas_mode_change("Mur")
+    assert app._state.tiles == app._a4_wall_side_tiles
+
+    # Case resource_type is A3 but attributes not set
+    app._state = dataclasses.replace(app._state, resource_type="A3")
+    if hasattr(app, "_a3_roof_tiles"):
+        delattr(app, "_a3_roof_tiles")
+    app._on_canvas_mode_change("Toit")
+
+    # Setup attributes
+    app._a3_roof_tiles = [Image.new("RGBA", (48, 48))] * 16
+    app._a3_wall_tiles = [Image.new("RGBA", (48, 48))] * 16
+    app._on_canvas_mode_change("Toit")
+    assert app._state.tiles == app._a3_roof_tiles
+
+    app._on_canvas_mode_change("Mur")
+    assert app._state.tiles == app._a3_wall_tiles
+
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_export_a3_success(tmp_path):
+    """Test direct calls to _export_a3 with and without TSX."""
+    from PIL import Image
+    import os
+    from unittest.mock import patch
+    app = App()
+    
+    if hasattr(app, "_a3_roof"):
+        delattr(app, "_a3_roof")
+    app._export_a3(str(tmp_path), "test_a3")
+
+    app._a3_roof = Image.new("RGBA", (192, 48))
+    app._a3_wall = Image.new("RGBA", (192, 48))
+    
+    # Without TSX
+    app._export_tsx_var.set(False)
+    app._export_a3(str(tmp_path), "test_a3_no_tsx")
+    assert (tmp_path / "test_a3_no_tsx_toit.png").exists()
+    assert (tmp_path / "test_a3_no_tsx_mur.png").exists()
+
+    # With TSX
+    app._export_tsx_var.set(True)
+    app._export_a3(str(tmp_path), "test_a3_with_tsx")
+    assert (tmp_path / "test_a3_with_tsx_toit.png").exists()
+    assert (tmp_path / "test_a3_with_tsx_toit.tsx").exists()
+    assert (tmp_path / "test_a3_with_tsx_mur.png").exists()
+    assert (tmp_path / "test_a3_with_tsx_mur.tsx").exists()
+
+    # Error handling (patching tsx_generator module where export_simple_sheet is imported in _export_a3)
+    with patch("asset_convertor.exporters.tsx_generator.export_simple_sheet", side_effect=ValueError("internal error")):
+        app._export_tsx_var.set(True)
+        app._export_a3(str(tmp_path), "test_a3_error")
+        assert "Erreur A3 : internal error" in app.lbl_status.cget("text")
+
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_export_a4_success(tmp_path):
+    """Test direct calls to _export_a4 with and without TSX."""
+    from PIL import Image
+    import os
+    from unittest.mock import patch
+    app = App()
+    
+    if hasattr(app, "_a4_tops"):
+        delattr(app, "_a4_tops")
+    app._export_a4(str(tmp_path), "test_a4")
+
+    # Correct dimensions: Tops must be 8 cols x 6 rows (384x288), Sides must be 16 cols (768x48)
+    app._a4_tops = Image.new("RGBA", (384, 288))
+    app._a4_sides = Image.new("RGBA", (768, 48))
+    
+    # Without TSX
+    app._export_tsx_var.set(False)
+    app._export_a4(str(tmp_path), "test_a4_no_tsx")
+    assert (tmp_path / "test_a4_no_tsx_tops.png").exists()
+    assert (tmp_path / "test_a4_no_tsx_sides.png").exists()
+
+    # With TSX
+    app._export_tsx_var.set(True)
+    app._export_a4(str(tmp_path), "test_a4_with_tsx")
+    assert (tmp_path / "test_a4_with_tsx_tops.png").exists()
+    assert (tmp_path / "test_a4_with_tsx_tops.tsx").exists()
+    assert (tmp_path / "test_a4_with_tsx_sides.png").exists()
+    assert (tmp_path / "test_a4_with_tsx_sides.tsx").exists()
+
+    # Error handling
+    with patch("asset_convertor.exporters.tsx_generator.export_wall_sides_sheet", side_effect=ValueError("internal error")):
+        app._export_tsx_var.set(True)
+        app._export_a4(str(tmp_path), "test_a4_error")
+        assert "Erreur A4 : internal error" in app.lbl_status.cget("text")
+
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_open_file_dialog_cancel():
+    """Test _open_file when the user cancels the dialog."""
+    from unittest.mock import patch
+    app = App()
+    with patch("asset_convertor.gui.app.filedialog.askopenfilename", return_value=""):
+        app._open_file()
+        assert app._state.source_path is None
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_open_file_invalid_image(tmp_path):
+    """Test _open_file when the image format is invalid."""
+    from unittest.mock import patch
+    app = App()
+    bad_file = tmp_path / "bad.png"
+    bad_file.write_text("not an image")
+    with patch("asset_convertor.gui.app.filedialog.askopenfilename", return_value=str(bad_file)):
+        app._open_file()
+        assert "Impossible de lire l'image" in app.lbl_status.cget("text")
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_open_file_valid_image(tmp_path):
+    """Test _open_file under different configuration modes with a valid image."""
+    from PIL import Image
+    from unittest.mock import patch
+    import dataclasses
+    app = App()
+    img = Image.new("RGBA", (96, 144))
+    img_path = tmp_path / "good.png"
+    img.save(img_path)
+    
+    # 1. A2 mode
+    app._tiled_type_var.set("A2")
+    app._mod_type_var.set("")
+    with patch("asset_convertor.gui.app.filedialog.askopenfilename", return_value=str(img_path)):
+        app._open_file()
+        assert app._state.source_path == str(img_path)
+        assert app._state.resource_type == "A2"
+        assert app.btn_convert.cget("state") == "normal"
+        
+    # 2. Resize mode
+    app._tiled_type_var.set("")
+    app._mod_type_var.set("🔄 Resize")
+    with patch("asset_convertor.gui.app.filedialog.askopenfilename", return_value=str(img_path)):
+        app._open_file()
+        assert app._state.resource_type == "Resize"
+
+    # 3. Recolor mode
+    app._tiled_type_var.set("")
+    app._mod_type_var.set("🎨 Recolor")
+    img.putpixel((0, 0), (255, 0, 0, 255))
+    img.save(img_path)
+    with patch("asset_convertor.gui.app.filedialog.askopenfilename", return_value=str(img_path)):
+        app._open_file()
+        assert app._state.resource_type == "Recolor"
+        assert app._state.recolor is not None
+        assert app._state.recolor.source_palette is not None
+
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_app_macos_try_except_coverage():
+    """Trigger AppKit ImportError catch blocks."""
+    import sys
+    from unittest.mock import patch
+    with patch.dict(sys.modules, {"AppKit": None}):
+        app = App()
+        app._setup_icon()
+        app._focus_window()
+        app.destroy()
+
+
+@pytest.mark.unit
+def test_tick_animation_and_log_coverage():
+    """Cover _tick_animation and early returns in _log."""
+    import dataclasses
+    from PIL import Image
+    from unittest.mock import patch
+    app = App()
+    
+    app._state = dataclasses.replace(app._state, tiles=None)
+    app._tick_animation()
+    assert app._timer_id is None
+    
+    app._state = dataclasses.replace(app._state, tiles=[Image.new("RGBA", (48, 48))])
+    with patch.object(app, "after", return_value="timer_123") as mock_after:
+        app._tick_animation()
+        assert app._timer_id == "timer_123"
+        mock_after.assert_called_once()
+        
+    if hasattr(app, "txt_log"):
+        delattr(app, "txt_log")
+    app._log("should return early")
+    
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_draw_canvas_pattern_a4():
+    """Cover _draw_canvas_pattern for A4 resource type."""
+    import dataclasses
+    from PIL import Image
+    app = App()
+    
+    app._state = dataclasses.replace(app._state, resource_type="A4")
+    app._canvas_mode_var.set("Top")
+    app._draw_canvas_pattern([Image.new("RGBA", (48, 48))], 48)
+    assert "Sol/Toit" in app.lbl_canvas_info.cget("text")
+    
+    app._canvas_mode_var.set("Mur")
+    app._draw_canvas_pattern([Image.new("RGBA", (48, 48))], 48)
+    assert "Mur" in app.lbl_canvas_info.cget("text")
+    
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_redraw_canvas_grid_animated_and_unknown_bitmask():
+    """Cover animated A1 tiles and unknown bitmask warnings in redraw."""
+    import dataclasses
+    from PIL import Image
+    from unittest.mock import patch, MagicMock
+    app = App()
+    
+    frame1 = [Image.new("RGBA", (48, 48))] * 48
+    frame2 = [Image.new("RGBA", (48, 48))] * 48
+    app._state = dataclasses.replace(app._state, tiles=[frame1, frame2], resource_type="A1")
+    app._frame_sequence = [0, 1]
+    app._current_frame_idx = 1
+    
+    app._canvas_grid = [[True]]
+    with patch("asset_convertor.gui.app.ImageTk.PhotoImage", return_value=MagicMock()), \
+         patch.object(app.canvas, "create_image") as mock_create:
+        app._redraw_canvas_grid()
+        mock_create.assert_called_once()
+    
+    app._state = dataclasses.replace(app._state, tiles=[Image.new("RGBA", (48, 48))] * 16, resource_type="A4")
+    app._canvas_mode_var.set("Mur")
+    app._canvas_grid = [[True, True], [True, True]]
+    
+    with patch("asset_convertor.gui.app.ImageTk.PhotoImage", return_value=MagicMock()), \
+         patch.object(app.canvas, "create_image"), \
+         patch("asset_convertor.gui.app._compute_wall_bitmask_4n", return_value=999), \
+         patch("asset_convertor.gui.app._logger.warning") as mock_warn:
+        app._redraw_canvas_grid()
+        mock_warn.assert_called()
+        
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_pick_output_dir_success():
+    """Cover _pick_output_dir dialog choice."""
+    from unittest.mock import patch
+    app = App()
+    with patch("asset_convertor.gui.app.filedialog.askdirectory", return_value="/tmp/test_dir"):
+        app._pick_output_dir()
+        assert app._output_dir_var.get() == "/tmp/test_dir"
+        assert app._state.output_dir == "/tmp/test_dir"
+    app.destroy()
+
+
+@pytest.mark.unit
+def test_app_mainloop():
+    """Cover App.mainloop wrapper."""
+    from unittest.mock import patch
+    app = App()
+    with patch("tkinter.Tk.mainloop") as mock_super_mainloop:
+        app.mainloop(0)
+        mock_super_mainloop.assert_called_once_with(0)
+    app.destroy()
+
+

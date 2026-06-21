@@ -1,10 +1,24 @@
 import json
 import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any, Callable, ClassVar
 
 import pygame
+
+
+@dataclass(frozen=True)
+class StairBehavior:
+    """Encapsulates movement map, slope alternation, and input restriction for one tile type."""
+
+    move_map: dict[tuple[tuple[int, int], str], tuple[int, int]]
+    # Returns True if this step should be diagonal given (half: bool, dy: int)
+    is_diagonal: Callable[[bool, int], bool]
+    # Axes allowed for input: "horizontal" | "vertical"
+    allowed_axes: str
+    # The axis to keep when is_diagonal returns False
+    fallback_axis: str
 
 
 class Settings:
@@ -15,36 +29,45 @@ class Settings:
 
     MAP_SIZE = 32
 
-    # Maps (input_direction, stair_direction) → intercepted_direction
-    #
-    # Compound direction format: "<type>,<entry_side>"
-    #   type      = "up"   (ascending visual asset)
-    #             | "down" (descending visual asset)
-    #   entry_side = "left"  (bottom/entry of asset is on the left)
-    #              | "right" (bottom/entry of asset is on the right)
-    #
-    # Group A — up,left & down,right: player enters from left side to ascend
-    #   RIGHT = ascend (+1,-1)  |  LEFT = descend (-1,+1)
-    # Group B — up,right & down,left: player enters from right side to ascend
-    #   LEFT = ascend (-1,-1)   |  RIGHT = descend (+1,+1)
-    VERTICAL_MOVE_MAP: ClassVar[dict[tuple[tuple[int, int], str], tuple[int, int]]] = {
-        # --- Group A (up,left / down,right) ---
-        # UP is Left, DOWN is Right
-        ((1, 0),  "up,left"):    (1,  1),  # Right -> Down
-        ((-1, 0), "up,left"):   (-1, -1),  # Left -> Up
-        ((1, 0),  "down,right"): (1,  1),  # Right -> Down
-        ((-1, 0), "down,right"): (-1, -1), # Left -> Up
-        # --- Group B (up,right / down,left) ---
-        # UP is Right, DOWN is Left
-        ((1, 0),  "up,right"):   (1, -1),  # Right -> Up
-        ((-1, 0), "up,right"):  (-1,  1),  # Left -> Down
-        ((1, 0),  "down,left"):  (1, -1),  # Right -> Up
-        ((-1, 0), "down,left"): (-1,  1),  # Left -> Down
-        # --- Legacy single-word keys (backward compat) ---
-        ((1, 0),  "right"):  (1, -1),
-        ((-1, 0), "right"): (-1,  1),
-        ((1, 0),  "left"):   (1,  1),
-        ((-1, 0), "left"):  (-1, -1),
+    STAIR_BEHAVIOR = StairBehavior(
+        move_map={
+            # --- Group A (up,right / down,right): ascend by going LEFT ---
+            ((1, 0), "up,right"): (1, 1),  # Right → descend
+            ((-1, 0), "up,right"): (-1, -1),  # Left  → climb
+            ((1, 0), "down,right"): (1, 1),  # Right → descend
+            ((-1, 0), "down,right"): (-1, -1),  # Left  → climb
+            # --- Group B (up,left / down,left): ascend by going RIGHT ---
+            ((1, 0), "up,left"): (1, -1),  # Right → climb
+            ((-1, 0), "up,left"): (-1, 1),  # Left  → descend
+            ((1, 0), "down,left"): (1, -1),  # Right → climb
+            ((-1, 0), "down,left"): (-1, 1),  # Left  → descend
+            # --- Legacy single-word keys (backward compat) ---
+            ((1, 0), "right"): (1, -1),  # Right → climb
+            ((-1, 0), "right"): (-1, 1),  # Left  → descend
+            ((1, 0), "left"): (1, 1),  # Right → descend
+            ((-1, 0), "left"): (-1, -1),  # Left  → climb
+        },
+        is_diagonal=lambda half, dy: (dy < 0 and half) or (
+            dy > 0 and not half
+        ),
+        allowed_axes="horizontal",
+        fallback_axis="horizontal",
+    )
+
+    LADDER_BEHAVIOR = StairBehavior(
+        move_map={
+            ((0, -1), "ladder"): (0, -1),  # Up on ladder → move up
+            ((0, 1), "ladder"): (0, 1),  # Down on ladder → move down
+        },
+        is_diagonal=lambda half, dy: False,  # Ladders are always straight vertical
+        allowed_axes="vertical",
+        fallback_axis="vertical",
+    )
+
+    # Registry: movement_type (from Tiled) → behavior
+    MOVEMENT_BEHAVIORS: ClassVar[dict[str, StairBehavior]] = {
+        "stair": STAIR_BEHAVIOR,
+        "ladder": LADDER_BEHAVIOR,
     }
 
     # Internal Defaults (Fallback)

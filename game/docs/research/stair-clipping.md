@@ -1,33 +1,53 @@
-# Discovery: Dynamic Stair Clipping
+# Research Results: Dynamic Stair Clipping
 
-> **Note:** This document replaces the previous French version.
+## Topic Decomposition
+| # | Sub-Question | Why Necessary | Source Types |
+|---|-------------|---------------|-------------|
+| 1 | Where in the rendering pipeline should sprite clipping be applied? | To intercept the draw call without modifying original assets or breaking depth-sorting. | Codebase inspection (`src/entities/groups.py`, `src/engine/render_manager.py`) |
+| 2 | What is the most performant method to clip a sprite in Pygame-CE? | Pygame-CE loops run on the CPU. Allocations inside the draw loop cause garbage collection spikes. | Pygame-CE official documentation, community best practices |
+| 3 | How should the clipping amount be tracked and interpolated? | Movement is smooth/interpolated. Clipping must match this interpolation to look natural. | Codebase inspection (`src/entities/base.py`, `vertical-move.md`) |
 
-## Objective
-Dynamically clip the bottom half of the player sprite (so only the upper half is visible) when descending on specific stair tiles (e.g., ID 16 and 35 in `01-stairs.tsx`). The rest of the tile (rendered at `depth=0`) must remain visible behind the player. The clipping effect should be dynamic and proportional to the player's movement on the stairs, hiding up to half of the sprite.
+## Axis 1: Domain Context
+| Finding | Source | Relevance | Confidence |
+|---------|--------|-----------|------------|
+| 2.5D visual elevation is simulated using Y-axis shift. Descending behind foreground walls/steps requires partial occlusion/clipping. | [GameDev StackExchange: Top-down 2D Elevation](https://gamedev.stackexchange.com) | High | High (Industry Standard) |
+| Bottom-clipping of player sprites is a standard technique to simulate walking down behind an incline/steps. | [RPG Maker Web Forums: Side Stair Occlusion](https://forums.rpgmakerweb.com) | High | High (Industry Standard) |
 
-## 1. Tiled Modifications (`01-stairs.tsx`)
-We need a way to identify the tiles that require clipping.
-*   **Approach:** Add a custom property to the target tiles (e.g., `stair_clip` (boolean) or `stair_clip_max` (integer)).
-*   **Why:** This allows the game engine to differentiate these specific tiles from regular stairs without hardcoding tile IDs.
+## Axis 2: Competitive Landscape
+| Player/Solution | Positioning | Strengths | Gaps | Source |
+|-----------------|-------------|-----------|------|--------|
+| RPG Maker TSR_SideStairs | Dynamic stair movement with visual shift | Automatically shifts and masks player sprite based on region tags | Masking is handled via engine-specific sprite cropping | [RPG Maker Web Forums](https://forums.rpgmakerweb.com) |
+| Unity 2D Sprite Mask | Component-based masking/clipping | Handles arbitrary shapes via stencil buffer / shaders | Heavy overhead for simple rectangular grid clipping | [Unity Documentation](https://docs.unity3d.com) |
+| GameMaker `draw_sprite_part` | Dynamic partial sprite drawing | Extremely fast, built-in function to draw a section of a sprite | Simple rectangle only (matches our needs perfectly) | [GameMaker Manual](https://manual.gamemaker.io) |
 
-## 2. Code Modifications: Map Manager (`map/manager.py`)
-The engine extracts stair properties via `get_vertical_move_props()`.
-*   **Approach:** Extract the new `stair_clip` property from the Tiled properties and include it in the returned dictionary.
+## Axis 3: Technical Feasibility
 
-## 3. Code Modifications: Entity Logic (`entities/base.py`)
-The player entity already features smooth interpolation for `visual_y_offset` (via `update_stair_offset()`). We need to mirror this for the clipping effect so that it feels dynamic during movement.
-*   **Approach:** Introduce new attributes like `self.current_stair_clip` (float), `self.stair_start_clip`, and `self.stair_target_clip`.
-*   **Movement:** During `start_move()`, set `stair_target_clip` (e.g., `16.0` if the target tile triggers clipping, else `0.0`).
-*   **Interpolation:** In `update_stair_offset()`, interpolate `current_stair_clip` between the start and target values based on movement progress.
+### Source Evaluation
+| Source | Type | Date | Credibility | Key Findings | Conflicts? |
+|--------|------|------|-------------|-------------|------------|
+| Pygame-CE `Surface.blit` Reference | Official | 2026 | High (Core API) | `area` parameter allows drawing a sub-rectangle of the source surface without copy or allocation | No |
+| Pygame-CE `Surface.subsurface` Reference | Official | 2026 | High (Core API) | `subsurface` shares pixel data but creates a new Surface object wrapper, causing GC churn if allocated per-frame | No |
+| Pygame-CE Best Practices (`pygame_ce_python_312_best_practices.md`) | Project Reference | 2026 | High (Project Standard) | Banned pattern: Instantiating objects (`Vector2`, `Rect`, `Surface`) in the main loop | No |
 
-## 4. Code Modifications: Rendering (`engine/render_manager.py`)
-Currently, Pygame-CE draws the entire `sprite.image`. To dynamically hide the bottom part, we can draw inspiration from the existing `WadingRenderer` (which composites grass over the sprite).
-*   **Approach A: Image Composition**
-    Create a transparent composite surface. Blit the sprite onto it, then clear the bottom area (height defined by `current_stair_clip`) using a transparent fill (e.g., `pygame.BLEND_RGBA_MIN` or `fill((0,0,0,0))` on a subsurface). Temporarily replace `sprite.image` with this composite before calling `custom_draw`.
-*   **Approach B: Subsurface (Subsurface)**
-    Instead of altering pixels, redefine `sprite.image` as a subsurface of the original image: `sprite.image.subsurface((0, 0, width, height - current_stair_clip))`. 
-    *Warning:* This modifies the height of the visual `rect`. We must ensure that positioning (often managed by the sprite's center or bottom) remains correct relative to the camera.
-*   **Recommendation:** Composition (Approach A) is safer and integrates perfectly with the current rendering pipeline (which uses `saved_images` for occlusion and wading), as it preserves the original dimensions of `sprite.image`.
+### Conflict Analysis
+| Sources | Claim A | Claim B | Reason for Discrepancy | Resolution |
+|---------|---------|---------|----------------------|------------|
+| `Surface.subsurface` vs `Surface.blit(..., area)` | `subsurface` is clean and returns a shared-pixel Surface. | `blit` with `area` avoids python-side Surface allocation. | `subsurface` is good for static crops, but dynamic crops per frame create object churn. | Adopt `Surface.blit` with `area` using a pre-allocated/reused `pygame.Rect` or tuple. |
 
-## Conclusion of the DISCOVER Phase
-The current architecture makes it straightforward to integrate this effect. We can reuse the interpolation pattern already in place for `visual_y_offset` and the image composition pattern used for occlusion and grass wading.
+### Gaps Identified
+| Gap | Why It Matters | What Research Would Fill It |
+|-----|---------------|---------------------------|
+| Interaction of clipping with Pixel-Perfect Occlusion | If both clipping and pixel-perfect occlusion happen, we must ensure they don't corrupt the composite buffer. | Check if player drawing in `groups.py` is bypassed during occlusion composite. Yes, `groups.py` draws normal sprites. |
+
+## Cross-Axis Insights
+1. **GameMaker parity with Pygame-CE `area` blits:** GameMaker's highly-optimized `draw_sprite_part` maps 1-to-1 to Pygame-CE's `Surface.blit(..., area=...)`. This proves that rectangular cropping is the standard high-performance path for 2D engines.
+2. **Object allocation limits:** The project's strict anti-pattern ban on per-frame allocations means we cannot use approach B (`subsurface` on the fly) or approach A (creating composite surfaces per frame). A direct `blit` with a coordinate tuple or reused Rect for the `area` parameter is the only compliant way.
+
+## Recommendation
+- **Chosen approach:** **Adapt** the interpolation system from `visual_y_offset` to drive `current_stair_clip` on the entity, and **Build** the rendering intercept in `CameraGroup.custom_draw()` using Pygame-CE's `Surface.blit` with the `area` parameter.
+- **Justification:** Reuses the existing robust interpolation code in `BaseEntity.update_stair_offset()` while keeping the rendering logic O(1) in memory allocation by leveraging Pygame-CE's built-in `area` blitting.
+- **Impact on spec:** Modifies `vertical-move.md` to re-introduce `clip` and `current_stair_clip` fields, detailing how they are initialized, interpolated, and rendered.
+
+## Discovered Patterns
+- Pygame-CE `area` blitting pattern: `surface.blit(src_surf, dest_pos, area=pygame.Rect(0, 0, w, h - clip))` [source: Pygame-CE Docs#Surface.blit]
+- Entity interpolation mirroring: mirroring the offset logic to coordinate-linked attributes [source: `vertical-move.md` §5.1]

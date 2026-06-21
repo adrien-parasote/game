@@ -16,7 +16,7 @@
 | Audio & Engine Setup | [audio_engine.md](learnings/audio_engine.md) | 6 | Session audio, SFX, BGM, init pygame mixer |
 | Testing & Traceability | [testing.md](learnings/testing.md) | 51 | Tout BUILD — le plus riche, lire en priorité |
 | Game Engine & Architecture | [game_engine.md](learnings/game_engine.md) | 30 | Architecture, refactoring, performance engine |
-| Map & Rendering | [map_rendering.md](learnings/map_rendering.md) | 25 | Map loading, rendering pipeline, depth, autotiles |
+| Map & Rendering | [map_rendering.md](learnings/map_rendering.md) | 26 | Map loading, rendering pipeline, depth, autotiles |
 | UI & UX | [ui.md](learnings/ui.md) | 25 | Tout travail UI (ChestUI, PauseScreen, dialogue, halos) |
 | Tooling & Utilities | [tooling.md](learnings/tooling.md) | 7 | Développement d'outils, scripts de conversion, Asset Convertor |
 | Methodology, Agent & Docs | [methodology_and_docs.md](learnings/methodology_and_docs.md) | 36 | Workflow agents, spec writing, doc urbanization |
@@ -55,3 +55,18 @@ grep -rn "L-NOM-ID" .agents/learnings/
 - **Evidence:** Player animation froze visually while moving because `OcclusionRenderer` cache key only used static `camera_offset` and `len(rects)`.
 - **Anti-pattern:** Caching composite visual surfaces of dynamic entities using only environment/static state keys (like camera position).
 - **Fix:** Include the dynamic entity's state (e.g., `is_moving` or `frame_index`) in the cache invalidation logic, or bypass the cache entirely for moving entities.
+
+### L019: Swapped stair direction mappings cause collision blockages
+- **Date:** 2026-06-19
+- **Source:** game — stair-movement (STAIR_BEHAVIOR in config.py)
+- **Evidence:** Player got blocked trying to move right in basement staircase, triggering descending step-off and solid wall collision.
+- **Anti-pattern:** Mismatch between visual stair tileset properties and engine behavioral mapping keys (`up,left` vs `up,right`).
+- **Fix:** Ensure the second parameter (`left`/`right`) of compound stair directions consistently maps to the entry side (lowest step visually) for both `up` and `down` assets. In this case, swap `up,left` and `up,right` in the engine's STAIR_BEHAVIOR move_map.
+
+### L020: Overlapping layer collision property leakage
+- **Date:** 2026-06-19
+- **Source:** game — manager.py (get_vertical_move_props layer scan)
+- **Evidence:** Player got stuck at basement stairs bottom coordinates `(29, 35)` and `(30, 35)` because visual overlays (banisters) on `02-layer` had been misconfigured with `movement_type="ladder"` in `01-stairs.tsx`. Since layer scanning is top-down, the engine resolved the cell as a ladder instead of stairs, blocking horizontal movement.
+- **Anti-pattern:** Placing movement-restricting properties (like ladders or stairs) on foreground/decorative overlay tiles (which are on higher layers) when those coordinates already have a physical movement tile (like stairs or walkable floors) on a lower layer. Top-down layer resolution will incorrectly resolve the decoration's class behavior instead of the physical floor behavior.
+- **Fix:** Ensure decorative/foreground overlays on higher layers (like handrails or wall borders) never contain movement class properties (like `movement_type` or `stair_direction`). Keep overlays as pure visual decorations (`depth >= 1`), letting the parser fall back to the underlying physical tiles on lower layers (`01-layer` or `00-layer`) to determine movement physics.
+

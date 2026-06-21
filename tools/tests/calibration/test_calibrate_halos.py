@@ -530,3 +530,70 @@ class TestDrawPoints:
         # Radius 99 is not in FIRE_COLORS dict → get() returns (255, 255, 255)
         fire = [(100, 100, 99)]
         _draw_points(self.screen, fire, [])  # must not raise
+
+
+class TestCalibrateHalosMain:
+    """Tests for the main() function in calibrate_halos.py (covering lines 183-214)."""
+
+    def test_main_error_loading_bg(self):
+        """Verify main() exits with code 1 if background image cannot be loaded."""
+        import pygame
+        import pytest
+        from unittest.mock import patch
+        from calibration.calibrate_halos import main
+
+        with patch("pygame.image.load", side_effect=pygame.error("Cannot load")), \
+             patch("sys.exit", side_effect=SystemExit(1)) as mock_exit:
+            with pytest.raises(SystemExit) as exc_info:
+                main()
+            assert exc_info.value.code == 1
+            mock_exit.assert_called_once_with(1)
+
+
+    def test_main_success_runs_loop(self, tmp_path, monkeypatch):
+        """Verify main() runs pygame loop and exits cleanly on QUIT event."""
+        import pygame
+        from unittest.mock import patch
+        from calibration.calibrate_halos import main
+
+        monkeypatch.chdir(tmp_path)
+        import os
+        os.makedirs("scripts", exist_ok=True)
+
+        dummy_surface = pygame.Surface((800, 600))
+        fake_event = pygame.event.Event(pygame.QUIT)
+
+        with patch("pygame.image.load", return_value=dummy_surface), \
+             patch("pygame.event.get", return_value=[fake_event]), \
+             patch("calibration.calibrate_halos._save") as mock_save:
+            main()
+            mock_save.assert_not_called()
+
+    def test_main_success_saves_on_exit(self, tmp_path, monkeypatch):
+        """Verify main() saves points on exit if they are present."""
+        import pygame
+        from unittest.mock import patch
+        from calibration.calibrate_halos import main
+
+        monkeypatch.chdir(tmp_path)
+        import os
+        os.makedirs("scripts", exist_ok=True)
+
+        dummy_surface = pygame.Surface((800, 600))
+        ev_click = pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=(100, 100), button=1)
+        ev_quit = pygame.event.Event(pygame.QUIT)
+
+        # Yield mouse click event first, then quit event
+        events_queue = [[ev_click], [ev_quit]]
+        def mock_get():
+            if events_queue:
+                return events_queue.pop(0)
+            return []
+
+        with patch("pygame.image.load", return_value=dummy_surface), \
+             patch("pygame.event.get", side_effect=mock_get), \
+             patch("calibration.calibrate_halos._save") as mock_save, \
+             patch("pygame.key.get_mods", return_value=0):
+            main()
+            mock_save.assert_called_once()
+

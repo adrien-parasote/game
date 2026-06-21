@@ -1,0 +1,47 @@
+version: "1"
+gap_to_generic: high
+
+reformulation: >
+  Refactor character and NPC movement on vertical-move (stairs and ladders) tiles
+  in a 2D tile-based engine. The player will climb/descend stairs diagonally using 
+  only horizontal directional inputs (Left/Right) while keeping the sprite feet 
+  visually aligned on the stairs via dynamic Y-offset interpolation, and climb ladders 
+  vertically using only vertical inputs (Up/Down). Movement will return to normal when 
+  stepping off onto floor tiles. To follow the shallow 26.5-degree angle of the stairs (instead 
+  of a steep 45-degree angle), movement must alternate between flat and diagonal steps, 
+  which is determined dynamically in the code from the tile's visual_y_offset property.
+
+acceptance_examples:
+  - input: >
+      Player standing on the floor (Y-coordinate 1088.0, offset 0.0) walks onto
+      a bottom-right staircase (which goes up-right) by pressing RIGHT.
+    expected: >
+      The player traverses diagonally on the grid, and their visual offset 
+      smoothly interpolates from 0.0 to the target tile's visual Y-offset (e.g. -16.0).
+      Their Y-coordinate changes dynamically.
+  - input: >
+      Player standing on the top of the staircase presses LEFT to descend.
+    expected: >
+      The player traverses diagonally down-left, and their visual offset smoothly
+      interpolates from -16.0 to 0.0, returning to normal floor movement at the bottom
+      with exact starting Y-coordinates and 0.0 offset (perfect traversal symmetry).
+
+defaults_ledger:
+  - dimension: "Movement restriction on stairs"
+    default: "Lock input to horizontal (Right/Left) and auto-intercept to diagonal movement"
+    status: validated
+  - dimension: "Movement restriction on ladders"
+    default: "Lock input to vertical (Up/Down) and disable horizontal movement"
+    status: validated
+  - dimension: "Visual alignment & offset calculation"
+    default: "Smoothly interpolate visual Y-offset per-frame from start tile to target tile based on movement progress"
+    status: validated
+  - dimension: "Slope angle matching (26.5 vs 45 degrees)"
+    default: "Alternate flat and diagonal steps dynamically by checking if visual_y_offset != 0 (stair_half equivalent) to follow the stairs angle"
+    status: validated
+  - dimension: "Step-off boundary handling"
+    default: "If the diagonal target tile is not a stair tile, force orthogonal movement onto the floor to prevent coordinate drift"
+    status: validated
+  - dimension: "Scope boundaries"
+    default: "Only entities inheriting from BaseEntity (Player, NPC) are affected; normal map collisions and other tile classes are untouched"
+    status: validated

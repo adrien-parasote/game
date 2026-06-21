@@ -191,7 +191,7 @@ The tool will render a small test map (~5×5 tiles) using the 47 output tiles wi
 
 ## 📦 Sample Files — Confirmed Analysis
 
-### XP Sample: [`tools/src/input/sample_xp.png`](file:///Users/adrien.parasote/Documents/perso/game/tools/src/input/sample_xp.png)
+### XP Sample: [`tools/src/input/sample_xp.png`](../../src/input/sample_xp.png)
 
 **Dimensions:** 96×128 px — **✅ Matches standard RMXP format exactly**
 
@@ -209,7 +209,7 @@ The 47 blob output tiles are assembled by sampling specific 16×16 quadrants fro
 
 ---
 
-### MV Sample: [`tools/src/input/sample_mv_32px.png`](file:///Users/adrien.parasote/Documents/perso/game/tools/src/input/sample_mv_32px.png)
+### MV Sample: [`tools/src/input/sample_mv_32px.png`](../../src/input/sample_mv_32px.png)
 
 **Dimensions:** 64×96 px — **MV/MZ autotile block with 32×32 tiles** (2 cols × 3 rows)
 

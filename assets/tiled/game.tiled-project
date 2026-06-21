@@ -81,6 +81,16 @@
             "id": 24,
             "members": [
                 {
+                    "name": "clip",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "clip_display_y_offset",
+                    "type": "int",
+                    "value": 0
+                },
+                {
                     "name": "depth",
                     "type": "int",
                     "value": 0
@@ -90,6 +100,11 @@
                     "propertyType": "23-direction",
                     "type": "string",
                     "value": ""
+                },
+                {
+                    "name": "half",
+                    "type": "bool",
+                    "value": false
                 },
                 {
                     "name": "material",

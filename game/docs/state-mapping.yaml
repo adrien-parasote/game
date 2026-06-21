@@ -1,0 +1,17 @@
+version: "1"
+operations:
+  - name: "start_move"
+    class: none
+    justification: "Purely physical entity movement and state mutation restricted to the entity itself. No shared state, no conserved value."
+
+  - name: "update_stair_offset"
+    class: none
+    justification: "Purely visual interpolation of an entity's offset. Mutates only local entity state, has no permanent side effects."
+
+  - name: "custom_draw"
+    class: none
+    justification: "Rendering function that applies an offset. Pure, no state mutation."
+
+  - name: "get_vertical_move_props"
+    class: none
+    justification: "Pure lookup function that reads static map data without mutating any state."

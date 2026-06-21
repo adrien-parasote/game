@@ -11,3 +11,4 @@ src/entities/emote_sprite.py
 src/entities/interactive_constants.py
 src/entities/pickup.py
 src/entities/base.py
+src/entities/player_constants.py

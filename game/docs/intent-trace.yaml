@@ -1,6 +1,6 @@
-# Intent Trace — business assertions with deterministic proofs
-# Created at: STRATEGY stage (assertions only)
-# Updated at: SPEC stage (proof + rationale attached)
+# Intent Trace — root-level, paths relative to repo root
+# Invocation: python3 .agents/skills/verification-loop/scripts/intent_gate.py . --trace docs/intent-trace.yaml
+# Source of truth for game sub-project: game/docs/intent-trace.yaml
 
 version: "1"
 
@@ -11,7 +11,7 @@ assertions:
     scope: code
     proof:
       type: test_exit_code
-      reference: "tests/integration/test_stairs_integration.py"
+      reference: "game/tests/integration/test_stairs_integration.py"
       expected_exit: 0
     files:
       - "game/src/entities/base.py"
@@ -23,7 +23,32 @@ assertions:
     scope: code
     proof:
       type: test_exit_code
-      reference: "tests/entities/test_stair_movement.py"
+      reference: "game/tests/entities/test_stair_movement.py"
+      expected_exit: 0
+    files:
+      - "game/src/entities/base.py"
+      - "game/src/entities/groups.py"
+    status: null
+
+  - id: "IA-003"
+    assertion: "An entity on a ladder is restricted to vertical (Up/Down) movement only, ignoring horizontal inputs."
+    rationale: "Unit tests verify that pressing Left/Right on a ladder tile blocks movement and resets direction, while Up/Down inputs trigger vertical movement."
+    scope: code
+    proof:
+      type: test_exit_code
+      reference: "game/tests/entities/test_ladder_movement.py"
+      expected_exit: 0
+    files:
+      - "game/src/entities/base.py"
+    status: null
+
+  - id: "IA-004"
+    assertion: "An entity on a tile with clip = true has its sprite bottom-cropped by the absolute value of visual_y_offset (defaulting to 8, clamped to sprite height), and the crop amount interpolates smoothly during movement."
+    rationale: "Unit tests in test_stair_movement.py verify that BaseEntity.current_stair_clip is updated when standing still and is smoothly interpolated during movement, and that CameraGroup.custom_draw applies the blit area crop when a non-zero clip is present."
+    scope: code
+    proof:
+      type: test_exit_code
+      reference: "game/tests/entities/test_stair_movement.py"
       expected_exit: 0
     files:
       - "game/src/entities/base.py"
