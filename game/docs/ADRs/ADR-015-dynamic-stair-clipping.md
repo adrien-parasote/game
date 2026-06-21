@@ -1,33 +1,47 @@
 # ADR-015: Dynamic Stair Clipping Strategy
 
 ## Status
-Accepted (integrated into stair-movement.md v7, 2026-06-13)
+Accepted (2026-06-21)
 
 ## Context
-When the player descends stairs (specifically tiles where the player is visually lower but technically still on the grid, like IDs 16 and 35 in `01-stairs.tsx`), their sprite continues to render entirely. This breaks the illusion of descent, as the player's legs should be hidden behind the staircase geometry.
+When the player or NPCs descend stairs (specifically tiles where the player is visually lower but technically still on the grid, like descending stair tiles with the `clip = true` property), their sprite continues to render entirely. This breaks the illusion of descent, as the player's legs should be hidden behind the staircase geometry.
 
-We need a mechanism to dynamically clip the bottom half of the player sprite. The clipping must be proportional to their movement down the stairs.
+We need a mechanism to dynamically clip the bottom portion of the sprite, proportional to their movement down the stairs, while maintaining horizontal physical movement.
 
 ## Decision
+We will implement **Direct Sprite Cropping (Skeleton A)** using Pygame-CE's `area` parameter in the `blit()` method, avoiding any transparent composite surface allocations.
 
-We will implement **Composition-based Clipping** driven by a new Tiled property `stair_clip`.
-
-### 1. Tiled Property (`stair_clip`)
-*   We will add a boolean property `stair_clip = true` to specific stair tiles (like ID 16 and 35).
-*   **Why a boolean instead of an integer?** It keeps the Tiled workflow simple. The maximum clip amount is a fixed value derived from the stair step geometry: `float(Settings.TILE_SIZE // 2)` = 16.0 pixels. This avoids hardcoding pixel values in the map file and ensures the clip matches the physical step height, not the sprite height.
+### 1. Tiled Properties
+* We will use the Tiled property `clip = true` (boolean) to identify tiles that require clipping.
+* The clipping amount is determined by the absolute value of the `visual_y_offset` property.
+* If `visual_y_offset` is empty or missing, it defaults to `8` pixels.
+* The clipping amount is clamped to the sprite's height to prevent full invisibility or negative dimensions.
 
 ### 2. Code Interpolation (`BaseEntity`)
-*   Similar to how `visual_y_offset` is interpolated into `current_stair_offset`, we will introduce `current_stair_clip`.
-*   When moving towards a tile with `stair_clip = true`, the target clip is `float(Settings.TILE_SIZE // 2)` (16.0 pixels). Otherwise, it's `0.0`.
-*   **Why `TILE_SIZE // 2` instead of `sprite.image.get_height() // 2`?** The clipping represents the stair step height (a fixed geometric property of the tileset), not a proportion of the sprite. Using sprite height would cause taller sprites (e.g. 48px or 64px) to be clipped above the step face, creating a "floating torso" artifact. See `_max_stair_clip()` in stair-movement.md §1.3.
-*   This ensures the player smoothly "sinks" into the stairs as they move.
+* Similar to `current_stair_offset` (which handles the vertical visual shift), we will introduce `current_stair_clip` (float) on `BaseEntity`.
+* At the start of a movement in `start_move()`, the target clip value is computed based on the target tile's properties:
+  - If `target_vm` has `clip = true`, target clip is `abs(target_vm["visual_y_offset"])` (defaulting to 8, clamped to sprite height).
+  - Otherwise, target clip is `0.0`.
+* In `update_stair_offset()`, `current_stair_clip` is smoothly interpolated between the start and target values using the movement progress percentage:
+  ```python
+  self.current_stair_clip = self.stair_start_clip + (self.stair_target_clip - self.stair_start_clip) * progress
+  ```
+* When standing still, `current_stair_clip` resolves directly to the current tile's clip amount.
 
-### 3. Rendering Approach (Composition)
-*   Instead of using `subsurface` (which alters the physical height of the image and could disrupt camera anchoring or occlusion logic), we will use image composition.
-*   The composition is integrated directly into the `custom_draw()` rendering pipeline in `CameraGroup`.
-*   It creates a transparent surface of the exact same size as the sprite, blits the sprite onto it, and clears the bottom area (defined by `current_stair_clip`) with `(0,0,0,0)` using `BLEND_RGBA_MIN`.
-*   This preserves the original `sprite.image` dimensions, matching the existing occlusion and wading rendering patterns.
+### 3. Rendering Approach (Direct Sprite Cropping)
+* In `CameraGroup.custom_draw()`, if `sprite` has a non-zero `current_stair_clip`, we pass an `area` parameter to `blit()` to only draw the top part of the sprite:
+  ```python
+  clip_amount = int(getattr(sprite, "current_stair_clip", 0.0))
+  if clip_amount > 0:
+      w, h = sprite.image.get_size()
+      clip_amount = max(0, min(clip_amount, h))
+      area = pygame.Rect(0, 0, w, h - clip_amount)
+      surface.blit(sprite.image, offset_pos, area=area)
+  else:
+      surface.blit(sprite.image, offset_pos)
+  ```
+* This approach achieves zero dynamic memory allocation and requires no temporary surface composition.
 
 ## Consequences
-*   **Positive:** Smooth, dynamic visual effect that sells the illusion of depth. No collision or camera logic changes required.
-*   **Negative:** Requires an extra composition pass for entities on stairs, but performance impact is negligible since it only applies to moving entities on specific tiles.
+* **Positive:** High performance (C-level Pygame-CE blit cropping), smooth visual effect, zero runtime memory allocations, no camera or physical collision changes.
+* **Negative:** Simple rectangular clipping only (cannot mask along arbitrary slopes), but sufficient for the current tileset geometry.

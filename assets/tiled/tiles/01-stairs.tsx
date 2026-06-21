@@ -116,17 +116,18 @@
  </tile>
  <tile id="16" type="01-vertical-move">
   <properties>
+   <property name="clip" type="bool" value="true"/>
    <property name="direction" propertytype="23-direction" value="down,left"/>
-   <property name="half" type="bool" value="true"/>
    <property name="material" value="stone"/>
-   <property name="visual_y_offset" type="int" value="-8"/>
+   <property name="visual_y_offset" type="int" value="24"/>
   </properties>
  </tile>
  <tile id="17" type="01-vertical-move">
   <properties>
+   <property name="clip" type="bool" value="true"/>
    <property name="direction" propertytype="23-direction" value="down,left"/>
    <property name="material" value="stone"/>
-   <property name="visual_y_offset" type="int" value="-24"/>
+   <property name="visual_y_offset" type="int" value="8"/>
   </properties>
  </tile>
  <tile id="18" type="01-vertical-move">
@@ -251,17 +252,18 @@
  </tile>
  <tile id="34" type="01-vertical-move">
   <properties>
+   <property name="clip" type="bool" value="true"/>
    <property name="direction" propertytype="23-direction" value="down,right"/>
    <property name="material" value="stone"/>
-   <property name="visual_y_offset" type="int" value="-24"/>
+   <property name="visual_y_offset" type="int" value="8"/>
   </properties>
  </tile>
  <tile id="35" type="01-vertical-move">
   <properties>
+   <property name="clip" type="bool" value="true"/>
    <property name="direction" propertytype="23-direction" value="down,right"/>
-   <property name="half" type="bool" value="true"/>
    <property name="material" value="stone"/>
-   <property name="visual_y_offset" type="int" value="-8"/>
+   <property name="visual_y_offset" type="int" value="24"/>
   </properties>
  </tile>
  <tile id="36" type="01-vertical-move">

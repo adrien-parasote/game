@@ -36,6 +36,7 @@ This specification defines the diagonal movement behavior for lateral stairs and
 | Path | Format | Schema Location | Consumers |
 |------|--------|-----------------|-----------|
 | `BaseEntity.current_stair_offset` | `float` | [vertical-move.md §5.1](./vertical-move.md#L256) | [camera-rendering.md](./camera-rendering.md#L76) |
+| `BaseEntity.current_stair_clip` | `float` | [vertical-move.md §5.3](./vertical-move.md#L356) | [camera-rendering.md](./camera-rendering.md), [entities-system.md](./entities-system.md) |
 | `BaseEntity._vertical_move` | `dict \| None` | [vertical-move.md §4.2](./vertical-move.md#L162) | [entities-system.md](./entities-system.md#L258) |
 | `BaseEntity.update_stair_offset()` | `method` | [vertical-move.md §5.1](./vertical-move.md#L256) | [entities-system.md](./entities-system.md#L267) |
 | `MapManager.get_vertical_move_props` | `method` | [vertical-move.md §4.2](./vertical-move.md#L162) | [entities-system.md](./entities-system.md#L258) |
@@ -87,6 +88,9 @@ This specification defines the diagonal movement behavior for lateral stairs and
 | `movement_type` value not in `MOVEMENT_BEHAVIORS` | Unknown tile type | `MOVEMENT_BEHAVIORS.get()` returns `None`. `self._vertical_move = None`. Movement normal. | `logger.warning(f"Unknown movement_type '{mtype}' at ({tx},{ty})")` |
 | `get_vertical_move_props` called out of bounds | tx/ty out of map boundaries | Bounds check at start of function -> returns `None`. | None |
 | Diagonal target not walkable | Target tile `walkable=False` | `walkable_func` resets `target_pos = self.pos`. | None |
+| `visual_y_offset` is missing or 0 on a clipped tile | Default to 8 | `visual_y_offset` is resolved as 8. | None |
+| `visual_y_offset` is negative on a clipped tile | No clipping | Target clip resolves to 0.0. | None |
+| `visual_y_offset` exceeds sprite height | Clamp to sprite height | Clip amount is clamped to `sprite.image.get_height()`. | None |
 
 ---
 
@@ -100,6 +104,10 @@ This specification defines the diagonal movement behavior for lateral stairs and
 | `UT-003` | `get_vertical_move_props(-1, 0)` (out of bounds) | Returns `None` |
 | `UT-004` | Pressing UP/DOWN on a stair tile | `is_moving` remains `False`, direction resets |
 | `UT-005` | Pressing RIGHT/LEFT on a ladder tile | `is_moving` remains `False`, direction resets |
+| `UT-006` | `get_vertical_move_props(tx, ty)` on tile with `clip = true` | Returns properties dict with `clip=True` |
+| `UT-007` | Standing still on a tile with `clip = true` and `visual_y_offset = 24` | `current_stair_clip == 24.0` |
+| `UT-008` | Moving from normal tile to clipped tile with `visual_y_offset = 8` (at 50% progress) | `current_stair_clip == 4.0` |
+| `UT-009` | Standing still on a clipped tile with `visual_y_offset = 100` (sprite height is 32) | `current_stair_clip == 32.0` (clamped to height) |
 
 ### Integration Tests
 | ID | Input | Expected Output |
@@ -107,6 +115,8 @@ This specification defines the diagonal movement behavior for lateral stairs and
 | `IT-001` | Player climbs stairs to the top and descends to the bottom | Exact starting logical coordinates and 0.0 offset (symmetry) |
 | `IT-002` | Player is at 50% movement progress on a stair step (`curr_dist == total_dist / 2`) | `current_stair_offset == stair_start_offset + (stair_target_offset - stair_start_offset) * 0.5`, within ±0.5px tolerance |
 | `IT-003` | NPC pathfinder navigates path crossing stairs (calls `start_move()` on `BaseEntity`) | NPC reaches the tile on the other side of the staircase with correct final logical coordinates |
+| `IT-004` | Player moves horizontally on row 35 across descending stair tiles with `clip = true` | Sprite is rendered partially clipped from the bottom using `area` in `custom_draw`, feet do not extend below the tile boundary |
+
 
 ---
 
@@ -229,6 +239,7 @@ def get_vertical_move_props(self, tx: int, ty: int) -> dict | None:
                 "movement_type": props.get("movement_type", "stair"),
                 "visual_y_offset": int(props.get("visual_y_offset", 0)),
                 "half": props.get("half", False) in (True, "true"),
+                "clip": props.get("clip", False) in (True, "true"),
             }
     return None
 ```
@@ -280,6 +291,10 @@ Ladder movement is handled automatically via `LADDER_BEHAVIOR` registered in `MO
 
 ### 5.1 `BaseEntity.update_stair_offset()`
 
+**Field initialization (in `__init__`):**
+To prevent `AttributeError` before the first movement, the entity must initialize these tracking fields to `0.0` in `BaseEntity.__init__()`:
+`current_stair_offset`, `stair_start_offset`, `stair_target_offset`, `current_stair_clip`, `stair_start_clip`, `stair_target_clip`.
+
 **Field initialization (in `start_move()`, step 12 of §4.0 sequence):**
 These fields must be set **before** `is_moving` is set to `True`, using `target_vm` already fetched in §4.4:
 ```python
@@ -289,6 +304,20 @@ self.stair_start_pos     = pygame.math.Vector2(self.pos)          # cache start 
 self.stair_move_distance = (target_pos - self.pos).magnitude()    # total distance for this move
 self.stair_start_offset  = self.current_stair_offset              # offset at move start
 self.stair_target_offset = float(target_vm["visual_y_offset"]) if target_vm else 0.0
+
+# Clip interpolation initialization
+self.stair_start_clip    = self.current_stair_clip
+if target_vm and target_vm.get("clip"):
+    raw_offset = target_vm.get("visual_y_offset", 8)
+    if raw_offset >= 0:
+        clip_amount = 8 if raw_offset == 0 else raw_offset
+        sprite_height = self.image.get_height() if self.image else 32
+        self.stair_target_clip = float(min(clip_amount, sprite_height))
+    else:
+        # Negative offset means upward shift, no bottom clipping applies.
+        self.stair_target_clip = 0.0
+else:
+    self.stair_target_clip = 0.0
 ```
 
 **Per-frame update in `BaseEntity.update(dt)` AFTER the physical move completes:**
@@ -296,14 +325,26 @@ self.stair_target_offset = float(target_vm["visual_y_offset"]) if target_vm else
 def update_stair_offset(self):
     if not self.is_moving:
         vm = self._vertical_move
-        self.current_stair_offset = vm["visual_y_offset"] if vm else 0.0
+        self.current_stair_offset = float(vm.get("visual_y_offset", 0.0)) if vm else 0.0
+        if vm and vm.get("clip"):
+            raw_offset = vm.get("visual_y_offset", 8)
+            if raw_offset >= 0:
+                clip_amount = 8 if raw_offset == 0 else raw_offset
+                sprite_height = self.image.get_height() if self.image else 32
+                self.current_stair_clip = float(min(clip_amount, sprite_height))
+            else:
+                self.current_stair_clip = 0.0
+        else:
+            self.current_stair_clip = 0.0
     else:
         if self.stair_move_distance > 0:
             curr_dist = (self.target_pos - self.pos).magnitude()
             progress = max(0.0, min(1.0, 1.0 - curr_dist / self.stair_move_distance))
             self.current_stair_offset = self.stair_start_offset + (self.stair_target_offset - self.stair_start_offset) * progress
+            self.current_stair_clip = self.stair_start_clip + (self.stair_target_clip - self.stair_start_clip) * progress
         else:
             self.current_stair_offset = self.stair_target_offset
+            self.current_stair_clip = self.stair_target_clip
 ```
 
 ### 5.2 `CameraGroup.custom_draw()` Rendering
@@ -313,27 +354,24 @@ def update_stair_offset(self):
 ```python
 visual_rect = sprite.image.get_rect(bottomright=sprite.rect.bottomright)
 stair_y_offset = getattr(sprite, 'current_stair_offset', 0.0)
-# ADD stair_y_offset: sign is set by the level designer in Tiled (negative = up, positive = down)
 offset_pos = (visual_rect.left + self.offset.x, visual_rect.top + self.offset.y + stair_y_offset)
 
-surface.blit(sprite.image, offset_pos)
+clip_amount = int(getattr(sprite, 'current_stair_clip', 0.0))
+if clip_amount > 0:
+    w, h = sprite.image.get_size()
+    clip_amount = max(0, min(clip_amount, h))
+    area = pygame.Rect(0, 0, w, h - clip_amount)
+    surface.blit(sprite.image, offset_pos, area=area)
+else:
+    surface.blit(sprite.image, offset_pos)
 ```
 
-### 5.3 `stair_clip` — Excluded
+### 5.3 Stair Clipping Specifications
 
-> **Out of scope.** All `stair_clip` functionality is **deleted** as part of this refactor. A separate feature may reintroduce clipping later if needed.
-
-**Deletion checklist — remove all of the following:**
-
-| Location | What to Remove |
-|----------|----------------|
-| `BaseEntity.__init__()` | Fields: `current_stair_clip`, `stair_start_clip`, `stair_target_clip` |
-| `BaseEntity.__init__()` | Method: `_max_stair_clip()` |
-| `BaseEntity.start_move()` | Lines: `self.stair_start_clip = ...`, `self.stair_target_clip = ...`, `max_clip = ...` |
-| `BaseEntity.update_stair_offset()` | All `stair_clip_exempt` branches and `current_stair_clip` interpolation |
-| `CameraGroup.custom_draw()` | The `stair_clip > 0` branch (RGBA-min surface composition + alpha clearing) |
-| `MapManager.get_vertical_move_props()` | The `"stair_clip"` key from the returned dict |
-| Tests | Any test referencing `stair_clip` fields (e.g. `test_ut_020_stair_clip_exempt`) |
+*   **Tiled trigger:** The clipping effect is triggered on any tile with Tiled property `clip = true`.
+*   **Clip calculation:** The clip amount uses the `visual_y_offset` (only if positive, resolving upward shifts to 0.0), defaulting to 8 if it is missing or 0, and clamped to the sprite's height.
+*   **Interpolation:** The clip amount is interpolated smoothly between start and target values during movement.
+*   **Grass wading interaction:** If `getattr(sprite, "current_stair_clip", 0.0) > 0`, the grass wading rendering effect is bypassed on the entity to prevent drawing grass over clipped transparent areas. The `WadingRenderer.apply_grass_wading_to_images` method in `src/engine/render_wading.py` must explicitly skip any sprite with a positive `current_stair_clip`.
 
 ---
 

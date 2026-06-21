@@ -129,6 +129,22 @@ class WadingRenderer:
         composite.blit(wading_surf, (0, local_wading_top))
         return composite
 
+    def _should_skip_sprite_wading(
+        self,
+        sprite,
+        player_depth: int,
+        walk_active: bool,
+    ) -> bool:
+        """Determine if a sprite should skip the grass wading composite build."""
+        if not sprite.image or not sprite.rect:
+            return True
+        if getattr(sprite, "depth", 1) < player_depth:
+            return True
+        if walk_active and sprite == self.game.player:
+            return True
+        clip_val = getattr(sprite, "current_stair_clip", 0.0)
+        return bool(isinstance(clip_val, (int, float)) and clip_val > 0)
+
     def apply_grass_wading_to_images(
         self,
         cam_offset: pygame.Vector2 | None = None,
@@ -154,11 +170,7 @@ class WadingRenderer:
         wading_only_originals: dict[object, pygame.Surface] = {}
 
         for sprite in self.game.visible_sprites.get_sorted_sprites():
-            if not sprite.image or not sprite.rect:
-                continue
-            if getattr(sprite, "depth", 1) < player_depth:
-                continue
-            if walk_active and sprite == self.game.player:
+            if self._should_skip_sprite_wading(sprite, player_depth, walk_active):
                 continue
 
             composite = self._build_wading_composite(

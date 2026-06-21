@@ -81,6 +81,11 @@
             "id": 24,
             "members": [
                 {
+                    "name": "clip",
+                    "type": "bool",
+                    "value": false
+                },
+                {
                     "name": "depth",
                     "type": "int",
                     "value": 0

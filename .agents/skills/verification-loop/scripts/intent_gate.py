@@ -45,7 +45,8 @@ DATA_RUNNER_ALLOWLIST = frozenset({"dbt", "great_expectations"})
 CODE_SYMBOL_PATTERNS = [
     re.compile(r"\b(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+/"),
     re.compile(r"\b\d{3}\b"),  # HTTP status codes
-    re.compile(r"\b(?:SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b", re.IGNORECASE),
+    re.compile(r"\b(?:SELECT|INSERT|UPDATE|DELETE)\b", re.IGNORECASE),
+    re.compile(r"\b(?:FROM|WHERE)\b"),  # SQL keywords case-sensitively to avoid matching prepositions
     re.compile(r"\bclass\s+\w+"),
     re.compile(r"\bdef\s+\w+"),
     re.compile(r"\bfunction\s+\w+"),

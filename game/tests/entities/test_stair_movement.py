@@ -62,6 +62,7 @@ class TestStairMovementUnit:
             "movement_type": "stair",
             "half": False,
             "visual_y_offset": -12,
+            "clip": False,
         }
 
     def test_ut_002_get_vertical_move_props_none_on_normal_tile(self, setup_map_manager):
@@ -540,3 +541,89 @@ class TestStairMovementUnit:
         # Target dir should be (-1, 0) (flat) because ascending from Bottom Half (half=False) is flat.
         assert entity.direction == pygame.math.Vector2(-1, 0)
         assert entity.is_moving is True
+
+    def test_ut_006_get_vertical_move_props_clip(self, setup_map_manager):
+        """UT-006: get_vertical_move_props(tx, ty) on tile with clip = true returns properties dict with clip=True."""
+        mm = setup_map_manager(
+            {
+                "stair_direction": "down,right",
+                "movement_type": "stair",
+                "visual_y_offset": 8,
+                "clip": True,
+            }
+        )
+        props = mm.get_vertical_move_props(1, 1)
+        assert props["clip"] is True
+
+    def test_ut_007_standing_still_clipped_tile(self):
+        """UT-007: Standing still on a tile with clip = true and visual_y_offset = 24 -> current_stair_clip == 24.0."""
+        entity = BaseEntity(pos=(48, 48))
+        entity.is_moving = False
+        entity._vertical_move = {
+            "stair_direction": "down,right",
+            "movement_type": "stair",
+            "visual_y_offset": 24,
+            "clip": True,
+        }
+        # Mock entity image with height 32
+        entity.image = pygame.Surface((32, 32))
+        entity.update_stair_offset()
+        assert entity.current_stair_clip == 24.0
+
+    def test_ut_008_moving_to_clipped_tile(self, setup_map_manager):
+        """UT-008: Moving from normal tile to clipped tile with visual_y_offset = 8 (at 50% progress) -> current_stair_clip == 4.0."""
+        mm = setup_map_manager()
+        entity = BaseEntity(pos=(48, 48))
+        entity.speed = 200
+        entity.image = pygame.Surface((32, 32))
+        mm.get_direction_flags = MagicMock(return_value=["any"])
+        entity.game = MagicMock()
+        entity.game.map_manager = mm
+
+        # Normal current tile, target (2,1) is clipped
+        current_props = None
+        target_props = {
+            "stair_direction": "down,right",
+            "movement_type": "stair",
+            "half": False,
+            "visual_y_offset": 8,
+            "clip": True,
+        }
+        mm.get_vertical_move_props = MagicMock(
+            side_effect=lambda x, y: (
+                current_props
+                if (x == 1 and y == 1)
+                else target_props
+                if (x == 2 and y == 1)
+                else None
+            )
+        )
+
+        entity._vertical_move = current_props
+        entity.direction = pygame.math.Vector2(1, 0)
+        # Move starts: this sets start and target clip properties
+        entity.start_move()
+
+        assert entity.is_moving is True
+        assert entity.stair_start_clip == 0.0
+        assert entity.stair_target_clip == 8.0
+
+        # Simulate 50% progress
+        entity.pos = pygame.math.Vector2(64, 48) # Halfway from 48 to 80
+        entity.update_stair_offset()
+        assert entity.current_stair_clip == 4.0
+
+    def test_ut_009_clamped_to_sprite_height(self):
+        """UT-009: Standing still on a clipped tile with visual_y_offset = 100 (sprite height is 32) -> current_stair_clip == 32.0."""
+        entity = BaseEntity(pos=(48, 48))
+        entity.is_moving = False
+        entity._vertical_move = {
+            "stair_direction": "down,right",
+            "movement_type": "stair",
+            "visual_y_offset": 100,
+            "clip": True,
+        }
+        entity.image = pygame.Surface((32, 32)) # height is 32
+        entity.update_stair_offset()
+        assert entity.current_stair_clip == 32.0
+

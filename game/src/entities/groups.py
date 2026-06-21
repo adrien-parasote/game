@@ -138,7 +138,15 @@ class CameraGroup(pygame.sprite.Group):
             # Simple Frustum Culling: check if sprite overlaps screen
             screen_sprite_rect = pygame.Rect(offset_pos, visual_rect.size)
             if screen_rect.colliderect(screen_sprite_rect):
-                surface.blit(sprite.image, offset_pos)
+                clip_val = getattr(sprite, "current_stair_clip", 0.0)
+                clip_amount = int(clip_val) if isinstance(clip_val, int | float) else 0
+                if clip_amount > 0:
+                    w, h = sprite.image.get_size()
+                    clip_amount = max(0, min(clip_amount, h))
+                    area = pygame.Rect(0, 0, w, h - clip_amount)
+                    surface.blit(sprite.image, offset_pos, area=area)
+                else:
+                    surface.blit(sprite.image, offset_pos)
 
                 # Debug Hitbox Rendering
                 if Settings.DEBUG:

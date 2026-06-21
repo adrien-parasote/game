@@ -1,0 +1,46 @@
+version: "1"
+gap_to_generic: medium
+
+reformulation: >
+  Implement a dynamic sprite clipping mechanic in Pygame-CE for any tile carrying the Tiled property 'clip = true'.
+  When an entity moves on these tiles, its sprite bottom is cropped by the absolute value of the tile's 'visual_y_offset'
+  (defaulting to 8 if not specified, and clamped to the sprite height if exceeded) using Pygame-CE's Surface.blit 'area'
+  parameter, while the entity's physical Y coordinate remains completely horizontal and unchanged. The clipping amount
+  is smoothly interpolated during transitions to/from clipped tiles to prevent visual popping.
+
+acceptance_examples:
+  - input: >
+      Player stands on Tile 17 with 'clip = true' and 'visual_y_offset = 8'.
+    expected: >
+      The player sprite's bottom 8 pixels are cropped, and the top is shifted down by 8 pixels.
+      The visual bottom of the drawn sprite aligns perfectly with the bottom of the tile.
+  - input: >
+      Player moves from a normal tile ('clip = false', offset = 0) to Tile 16 ('clip = true', 'visual_y_offset = 24').
+    expected: >
+      The clipping amount and visual Y shift interpolate smoothly from 0 to 24 pixels over the duration of the movement.
+      Upon arrival, 24 pixels of the sprite's bottom are cropped, and the head is shifted down by 24 pixels.
+
+defaults_ledger:
+  - dimension: "scope boundary"
+    default: "Sprite clipping is restricted strictly to descending stair tiles (ID 16, 17, 34, 35)."
+    status: vetoed
+    override: "Any tile with the Tiled property 'clip = true' is concerned."
+  - dimension: "physical Y-axis movement"
+    default: "Physical movement remains 100% horizontal. self.pos.y does not change."
+    status: validated
+  - dimension: "clipping boundary"
+    default: "The maximum amount of pixels clipped is exactly equal to the visual_y_offset."
+    status: vetoed
+    override: "Taken from the absolute value of visual_y_offset. If empty, default to 8. If greater than sprite height, clamp to sprite height."
+  - dimension: "drawing offset"
+    default: "When clipping is active, the sprite is shifted down visually by the current_stair_offset (equal to the clip amount)."
+    status: validated
+  - dimension: "NPC clipping"
+    default: "This clipping effect applies to both the Player and PNJ (NPC) sprites."
+    status: validated
+  - dimension: "transition interpolation"
+    default: "When moving between a clipped tile and a non-clipped tile, the clip amount current_stair_clip is interpolated."
+    status: validated
+  - dimension: "performance implementation"
+    default: "The clipping is performed dynamically during blit in CameraGroup.custom_draw using the area parameter."
+    status: validated
