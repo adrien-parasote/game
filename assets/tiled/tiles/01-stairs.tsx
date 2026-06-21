@@ -32,7 +32,6 @@
  <tile id="4" type="01-vertical-move">
   <properties>
    <property name="direction" propertytype="23-direction" value="down,left"/>
-   <property name="half" type="bool" value="true"/>
    <property name="material" value="stone"/>
    <property name="visual_y_offset" type="int" value="24"/>
   </properties>
@@ -40,6 +39,7 @@
  <tile id="5" type="01-vertical-move">
   <properties>
    <property name="direction" propertytype="23-direction" value="down,left"/>
+   <property name="half" type="bool" value="true"/>
    <property name="material" value="stone"/>
    <property name="visual_y_offset" type="int" value="8"/>
   </properties>
@@ -75,7 +75,6 @@
  <tile id="10" type="01-vertical-move">
   <properties>
    <property name="direction" propertytype="23-direction" value="down,left"/>
-   <property name="half" type="bool" value="true"/>
    <property name="material" value="stone"/>
    <property name="visual_y_offset" type="int" value="24"/>
   </properties>
@@ -83,6 +82,7 @@
  <tile id="11" type="01-vertical-move">
   <properties>
    <property name="direction" propertytype="23-direction" value="down,left"/>
+   <property name="half" type="bool" value="true"/>
    <property name="material" value="stone"/>
    <property name="visual_y_offset" type="int" value="8"/>
   </properties>
@@ -163,6 +163,7 @@
  <tile id="22" type="01-vertical-move">
   <properties>
    <property name="direction" propertytype="23-direction" value="down,right"/>
+   <property name="half" type="bool" value="true"/>
    <property name="material" value="stone"/>
    <property name="visual_y_offset" type="int" value="8"/>
   </properties>
@@ -170,7 +171,6 @@
  <tile id="23" type="01-vertical-move">
   <properties>
    <property name="direction" propertytype="23-direction" value="down,right"/>
-   <property name="half" type="bool" value="true"/>
    <property name="material" value="stone"/>
    <property name="visual_y_offset" type="int" value="24"/>
   </properties>
@@ -208,6 +208,7 @@
  <tile id="28" type="01-vertical-move">
   <properties>
    <property name="direction" propertytype="23-direction" value="down,right"/>
+   <property name="half" type="bool" value="true"/>
    <property name="material" value="stone"/>
    <property name="visual_y_offset" type="int" value="8"/>
   </properties>
@@ -215,7 +216,6 @@
  <tile id="29" type="01-vertical-move">
   <properties>
    <property name="direction" propertytype="23-direction" value="down,right"/>
-   <property name="half" type="bool" value="true"/>
    <property name="material" value="stone"/>
    <property name="visual_y_offset" type="int" value="24"/>
   </properties>
