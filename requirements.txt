@@ -2,7 +2,7 @@
 pygame-ce==2.5.7
 numpy
 Pillow
-customtkinter==5.2.2
+customtkinter==6.0.0
 PyYAML
 
 # Development & Testing
