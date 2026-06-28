@@ -9,5 +9,5 @@ PyYAML
 pytest==9.1.1
 pytest-cov==7.1.0
 ruff==0.15.20
-pyright==1.1.410
+pyright==1.1.411
 pyobjc-framework-Cocoa; sys_platform == 'darwin'
